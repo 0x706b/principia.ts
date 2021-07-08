@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "outDir": "../build",
+    "rootDir": "../",
+    "target": "es2018",
+    "module": "commonjs",
+    "sourceMap": true,
+    "plugins": [
+      {
+        "transform": "@principia/compile",
+        "relativeProjectRoot": "../../"
+      }
+    ]
+  },
+  "include": ["../src", "../test", "../bench"],
+  "exclude": ["../test/*Spec.ts"],
+  "extends": "../../../tsconfig.json"
+}

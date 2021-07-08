@@ -1,0 +1,24 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "incremental": true,
+    "declaration": false,
+    "sourceMap": true,
+    "module": "commonjs",
+    "target": "es2018",
+    "rootDir": "../src",
+    "outDir": "../dist/dist-traced/cjs",
+    "tsBuildInfoFile": "../tsbuildinfo/traced-cjs.tsbuildinfo",
+    "plugins": [
+      {
+        "transform": "@principia/compile",
+        "moduleMap": {
+          "^src/(.*)": "(@principia/logger): _src/$1"
+        },
+        "addExtensions": false
+      }
+    ]
+  },
+  "exclude": ["../build", "../dist", "../node_modules", "../test"],
+  "include": ["../src"]
+}

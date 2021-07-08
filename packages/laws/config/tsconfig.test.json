@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "outDir": "../build",
+    "rootDir": "../",
+    "target": "es2018",
+    "module": "commonjs",
+    "sourceMap": true
+  },
+  "include": ["../src", "../test"],
+  "extends": "../../../tsconfig.json"
+}

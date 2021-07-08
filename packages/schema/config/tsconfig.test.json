@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "outDir": "../build",
+    "rootDir": "../",
+    "target": "es2018",
+    "module": "commonjs",
+    "sourceMap": true,
+    "plugins": [
+      {
+        "transform": "@principia/compile",
+        "relativeProjectRoot": "../../"
+      },
+      {
+        "transform": "../src/Schema/transform/augmentName.ts"
+      }
+    ]
+  },
+  "include": ["../src", "../test"],
+  "extends": "../../../tsconfig.json"
+}

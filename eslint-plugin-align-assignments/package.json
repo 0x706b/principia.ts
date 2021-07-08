@@ -1,0 +1,5 @@
+{
+  "name": "eslint-plugin-align-assignments",
+  "main": "./index.js",
+  "version": "0.0.1"
+}

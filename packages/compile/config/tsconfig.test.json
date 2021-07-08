@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "outDir": "../build",
+    "rootDir": "../",
+    "target": "es2018",
+    "module": "commonjs",
+    "sourceMap": true,
+    "plugins": [
+      {
+        "transform": "../src/index.ts"
+      }
+    ]
+  },
+  "include": ["../src","../test"],
+  "extends": "../../../tsconfig.json"
+}

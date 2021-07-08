@@ -1,0 +1,93 @@
+{
+  "env": {
+    "es6": true,
+    "node": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "ignorePatterns": ["dist/", "build/", "lib/", "commonjs/"],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "module"
+  },
+  "plugins": ["align-assignments", "import", "simple-import-sort", "functional", "@typescript-eslint"],
+  "rules": {
+    "prefer-const": "off",
+
+    "sort-imports": "off",
+    "import/order": "off",
+    "import/first": "error",
+    "import/newline-after-import": "warn",
+    "import/no-duplicates": "warn",
+    "import/no-unresolved": "warn",
+
+    "simple-import-sort/imports": [
+      "error",
+      {
+        "groups": [["^.*\\u0000$"], ["^\\u0000"], ["^@?\\w"], ["^"], ["^\\."]]
+      }
+    ],
+    "simple-import-sort/exports": "error",
+
+    "no-param-reassign": ["error"],
+    "no-unexpected-multiline": "off",
+
+    "curly": ["warn", "multi-line", "consistent"],
+    "quotes": ["warn", "single", { "avoidEscape": true }],
+    "brace-style": ["warn", "1tbs", { "allowSingleLine": false }],
+    "semi": ["error", "never", { "beforeStatementContinuationChars": "always" }],
+    "object-curly-spacing": ["warn", "always"],
+
+    "align-assignments/align-assignments": ["error", { "requiresOnly": false }],
+
+    "@typescript-eslint/ban-ts-comment": "off",
+    "@typescript-eslint/ban-ts-ignore": "off",
+    "@typescript-eslint/ban-types": "off",
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "@typescript-eslint/consistent-type-imports": "warn",
+    "@typescript-eslint/member-delimiter-style": [
+      "warn",
+      {
+        "multiline": {
+          "delimiter": "none"
+        },
+        "singleline": {
+          "delimiter": "comma"
+        }
+      }
+    ],
+    "@typescript-eslint/no-empty-interface": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-unused-vars": [
+      "warn",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^ignored?$"
+      }
+    ],
+    "@typescript-eslint/no-this-alias": [
+      "error",
+      {
+        "allowDestructuring": true,
+        "allowedNames": ["self"]
+      }
+    ],
+
+    "functional/immutable-data": ["error", { "ignorePattern": "^mut", "ignoreAccessorPattern": "**.mut_*" }]
+  },
+  "settings": {
+    "import/parsers": {
+      "@typescript-eslint/parser": [".ts", ".tsx"]
+    },
+    "import/resolver": {
+      "typescript": {
+        "alwaysTryTypes": true
+      }
+    }
+  }
+}

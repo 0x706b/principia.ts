@@ -1,0 +1,5 @@
+{
+   "extends": "../../tsconfig.json",
+   "exclude": ["dist", "test", "build", "../!(ptest)/src/**"],
+   "include": ["src-esm", "src-cjs"]
+}

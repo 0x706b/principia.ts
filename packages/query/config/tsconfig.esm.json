@@ -1,0 +1,22 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "incremental": true,
+    "declaration": false,
+    "sourceMap": true,
+    "module": "esnext",
+    "target": "es2018",
+    "rootDir": "../src",
+    "outDir": "../dist/dist/esm",
+    "tsBuildInfoFile": "../tsbuildinfo/esm.tsbuildinfo",
+    "plugins": [
+      {
+        "transform": "@principia/compile",
+        "tracing": false,
+        "relativeProjectRoot": "../../"
+      }
+    ]
+  },
+  "exclude": ["../build", "../dist", "../node_modules", "../test"],
+  "include": ["../src"]
+}

@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "outDir": "../build",
+    "rootDir": "../",
+    "target": "es2018",
+    "module": "commonjs",
+    "sourceMap": true,
+    "typeRoots": ["../../../node_modules/@types", "@principia/fluent"],
+    "plugins": [
+      {
+        "transform": "@principia/compile",
+        "moduleMap": { "^src/(.*)": "(@principia/fluent): _src/$1", "^test/(.*)": "test/$1" }
+      }
+    ]
+  },
+  "include": ["../src", "../test"],
+  "extends": "../../../tsconfig.json"
+}

@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "outDir": "../build",
+    "rootDir": "../",
+    "target": "es2020",
+    "module": "commonjs",
+    "sourceMap": true,
+    "plugins": [
+      {
+        "transform": "@principia/compile",
+        "moduleMap": {
+          "^test/(.*)": "(@principia/node): build/test/$1",
+          "^src/(.*)": "(@principia/node): build/src/$1"
+        },
+        "relativeProjectRoot": "../../"
+      }
+    ]
+  },
+  "include": ["../src", "../test"],
+  "extends": "../../../tsconfig.json"
+}
