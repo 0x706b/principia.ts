@@ -133,7 +133,6 @@ export function Model<M>(__name?: string) {
 
     Object.defineProperty(schemed, 'annotate', {
       value<V>(this: S.AnyS, key: SchemaAnnotation<V>, value: V) {
-        /* eslint-disable functional/immutable-data */
         const copy = this.clone()
         // @ts-expect-error
         copy.annotations = this.annotations.annotate(key, value)

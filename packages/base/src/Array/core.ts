@@ -241,12 +241,12 @@ export function cross<B>(fb: ReadonlyArray<B>): <A>(fa: ReadonlyArray<A>) => Rea
  * @since 1.0.0
  */
 export function zipWith_<A, B, C>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>, f: (a: A, b: B) => C): ReadonlyArray<C> {
-  const mut_fc = []
-  const len    = Math.min(fa.length, fb.length)
+  const fc  = []
+  const len = Math.min(fa.length, fb.length)
   for (let i = 0; i < len; i++) {
-    mut_fc[i] = f(fa[i], fb[i])
+    fc[i] = f(fa[i], fb[i])
   }
-  return mut_fc
+  return fc
 }
 
 /**
@@ -728,12 +728,12 @@ export function fold<M>(M: P.Monoid<M>): (fa: ReadonlyArray<M>) => M {
  * @since 1.0.0
  */
 export function imap_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => B): ReadonlyArray<B> {
-  const len    = fa.length
-  const mut_bs = Array(len)
+  const len = fa.length
+  const bs  = Array(len)
   for (let i = 0; i < len; i++) {
-    mut_bs[i] = f(i, fa[i])
+    bs[i] = f(i, fa[i])
   }
-  return mut_bs
+  return bs
 }
 
 /**
@@ -773,26 +773,26 @@ export function map<A, B>(f: (a: A) => B): (fa: ReadonlyArray<A>) => ReadonlyArr
  */
 
 export function ichain_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => ReadonlyArray<B>): ReadonlyArray<B> {
-  let outLen     = 0
-  const len      = fa.length
-  const mut_temp = Array(len)
+  let outLen = 0
+  const len  = fa.length
+  const temp = Array(len)
   for (let i = 0; i < len; i++) {
-    const e     = fa[i]
-    const arr   = f(i, e)
-    outLen     += arr.length
-    mut_temp[i] = arr
+    const e   = fa[i]
+    const arr = f(i, e)
+    outLen   += arr.length
+    temp[i]   = arr
   }
-  const mut_out = Array(outLen)
-  let start     = 0
+  const out = Array(outLen)
+  let start = 0
   for (let i = 0; i < len; i++) {
-    const arr = mut_temp[i]
+    const arr = temp[i]
     const l   = arr.length
     for (let j = 0; j < l; j++) {
-      mut_out[j + start] = arr[j]
+      out[j + start] = arr[j]
     }
     start += l
   }
-  return mut_out
+  return out
 }
 
 export function ichain<A, B>(f: (i: number, a: A) => ReadonlyArray<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
@@ -831,17 +831,17 @@ export function flatten<A>(mma: ReadonlyArray<ReadonlyArray<A>>): ReadonlyArray<
   for (let i = 0; i < len; i++) {
     rLen += mma[i].length
   }
-  const mut_r = Array(rLen)
-  let start   = 0
+  const r   = Array(rLen)
+  let start = 0
   for (let i = 0; i < len; i++) {
     const arr = mma[i]
     const l   = arr.length
     for (let j = 0; j < l; j++) {
-      mut_r[j + start] = arr[j]
+      r[j + start] = arr[j]
     }
     start += l
   }
-  return mut_r
+  return r
 }
 
 /*
@@ -906,24 +906,24 @@ export function alignWith_<A, B, C>(
   fb: ReadonlyArray<B>,
   f: (_: These<A, B>) => C
 ): ReadonlyArray<C> {
-  const minlen  = Math.min(fa.length, fb.length)
-  const maxlen  = Math.max(fa.length, fb.length)
-  const mut_ret = Array(maxlen)
+  const minlen = Math.min(fa.length, fb.length)
+  const maxlen = Math.max(fa.length, fb.length)
+  const ret    = Array(maxlen)
   for (let i = 0; i < minlen; i++) {
-    mut_ret[i] = f(Th.both(fa[i], fb[i]))
+    ret[i] = f(Th.both(fa[i], fb[i]))
   }
   if (minlen === maxlen) {
-    return mut_ret
+    return ret
   } else if (fa.length > fb.length) {
     for (let i = minlen; i < maxlen; i++) {
-      mut_ret[i] = f(Th.left(fa[i]))
+      ret[i] = f(Th.left(fa[i]))
     }
   } else {
     for (let i = minlen; i < maxlen; i++) {
-      mut_ret[i] = f(Th.right(fb[i]))
+      ret[i] = f(Th.right(fb[i]))
     }
   }
-  return mut_ret
+  return ret
 }
 
 /**
@@ -1157,13 +1157,13 @@ export const separateA: P.PartitionMapAFn<[HKT.URI<ArrayURI>]> = (G) => (f) => (
  * @since 1.0.0
  */
 export function append_<A>(init: ReadonlyArray<A>, end: A): NonEmptyArray<A> {
-  const len   = init.length
-  const mut_r = Array(len + 1)
+  const len = init.length
+  const r   = Array(len + 1)
   for (let i = 0; i < len; i++) {
-    mut_r[i] = init[i]
+    r[i] = init[i]
   }
-  mut_r[len] = end
-  return mut_r as unknown as NonEmptyArray<A>
+  r[len] = end
+  return r as unknown as NonEmptyArray<A>
 }
 
 /**
@@ -1407,13 +1407,13 @@ export function dropLast(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<
  * @since 1.0.0
  */
 export function dropWhile_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): ReadonlyArray<A> {
-  const i        = spanIndexLeft_(as, predicate)
-  const l        = as.length
-  const mut_rest = Array(l - i)
+  const i    = spanIndexLeft_(as, predicate)
+  const l    = as.length
+  const rest = Array(l - i)
   for (let j = i; j < l; j++) {
-    mut_rest[j - i] = as[j]
+    rest[j - i] = as[j]
   }
-  return mut_rest
+  return rest
 }
 
 /**
@@ -1430,12 +1430,12 @@ export function dropWhile<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) 
  * @since 1.0.0
  */
 export function dropLastWhile_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): ReadonlyArray<A> {
-  const i        = spanIndexRight_(as, predicate)
-  const mut_rest = Array(i + 1)
+  const i    = spanIndexRight_(as, predicate)
+  const rest = Array(i + 1)
   for (let j = 0; j <= i; j++) {
-    mut_rest[j] = as[j]
+    rest[j] = as[j]
   }
-  return mut_rest
+  return rest
 }
 
 /**
@@ -1779,17 +1779,17 @@ export function group<A>(E: P.Eq<A>): (as: ReadonlyArray<A>) => ReadonlyArray<No
  * @since 1.0.0
  */
 export function groupBy_<A>(as: ReadonlyArray<A>, f: (a: A) => string): ReadonlyRecord<string, NonEmptyArray<A>> {
-  const mut_out: Record<string, P.Mutable<NonEmptyArray<A>>> = {}
+  const out: Record<string, P.Mutable<NonEmptyArray<A>>> = {}
   for (let i = 0; i < as.length; i++) {
     const a = as[i]
     const k = f(a)
-    if (Object.prototype.hasOwnProperty.call(mut_out, k)) {
-      mut_out[k].push(a)
+    if (Object.prototype.hasOwnProperty.call(out, k)) {
+      out[k].push(a)
     } else {
-      mut_out[k] = [a]
+      out[k] = [a]
     }
   }
-  return mut_out
+  return out
 }
 
 /**
@@ -1900,14 +1900,14 @@ export function mapAccum_<A, S, B>(
   s: S,
   f: (s: S, a: A) => readonly [B, S]
 ): readonly [ReadonlyArray<B>, S] {
-  const mut_bs = new Array(as.length)
-  let state    = s
+  const bs  = new Array(as.length)
+  let state = s
   for (let i = 0; i < as.length; i++) {
     const result = f(s, as[i])
-    mut_bs[i]    = result[0]
+    bs[i]        = result[0]
     state        = result[1]
   }
-  return [mut_bs, state]
+  return [bs, state]
 }
 
 /**
@@ -1975,11 +1975,11 @@ export const prepend: <A>(head: A) => (tail: ReadonlyArray<A>) => NonEmptyArray<
  * @since 1.0.0
  */
 export function prependAll_<A>(as: ReadonlyArray<A>, a: A): ReadonlyArray<A> {
-  const mut_out: Array<A> = []
+  const out: Array<A> = []
   for (let i = 0; i < as.length; i++) {
-    mut_out.push(a, as[i])
+    out.push(a, as[i])
   }
-  return mut_out
+  return out
 }
 
 /**
@@ -2003,11 +2003,11 @@ export function reverse<A>(as: ReadonlyArray<A>): ReadonlyArray<A> {
   } else if (as.length === 1) {
     return [as[0]]
   } else {
-    let mut_out = Array(as.length)
+    let out = Array(as.length)
     for (let j = 0, i = as.length - 1; i >= 0; i--, j++) {
-      mut_out[j] = as[i]
+      out[j] = as[i]
     }
-    return mut_out
+    return out
   }
 }
 
@@ -2056,13 +2056,13 @@ export function rotate(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<A>
  * @since 1.0.0
  */
 export function scanl_<A, B>(as: ReadonlyArray<A>, b: B, f: (b: B, a: A) => B): NonEmptyArray<B> {
-  const l     = as.length
-  const mut_r = new Array(l + 1) as P.Mutable<NonEmptyArray<B>>
-  mut_r[0]    = b
+  const l = as.length
+  const r = new Array(l + 1) as P.Mutable<NonEmptyArray<B>>
+  r[0]    = b
   for (let i = 0; i < l; i++) {
-    mut_r[i + 1] = f(mut_r[i], as[i])
+    r[i + 1] = f(r[i], as[i])
   }
-  return mut_r
+  return r
 }
 
 /**
@@ -2079,13 +2079,13 @@ export function scanl<A, B>(b: B, f: (b: B, a: A) => B): (as: ReadonlyArray<A>) 
  * @since 1.0.0
  */
 export function scanr_<A, B>(as: ReadonlyArray<A>, b: B, f: (a: A, b: B) => B): NonEmptyArray<B> {
-  const l     = as.length
-  const mut_r = new Array(l + 1) as P.Mutable<NonEmptyArray<B>>
-  mut_r[l]    = b
+  const l = as.length
+  const r = new Array(l + 1) as P.Mutable<NonEmptyArray<B>>
+  r[l]    = b
   for (let i = l - 1; i >= 0; i--) {
-    mut_r[i] = f(as[i], mut_r[i + 1])
+    r[i] = f(as[i], r[i + 1])
   }
-  return mut_r
+  return r
 }
 
 /**
@@ -2153,17 +2153,17 @@ export function spanl_<A>(
   as: ReadonlyArray<A>,
   predicate: P.Predicate<A>
 ): readonly [ReadonlyArray<A>, ReadonlyArray<A>] {
-  const i        = spanIndexLeft_(as, predicate)
-  const mut_init = Array(i)
+  const i    = spanIndexLeft_(as, predicate)
+  const init = Array(i)
   for (let j = 0; j < i; j++) {
-    mut_init[j] = as[j]
+    init[j] = as[j]
   }
-  const l        = as.length
-  const mut_rest = Array(l - i)
+  const l    = as.length
+  const rest = Array(l - i)
   for (let j = i; j < l; j++) {
-    mut_rest[j - i] = as[j]
+    rest[j - i] = as[j]
   }
-  return [mut_init, mut_rest]
+  return [init, rest]
 }
 
 /**
@@ -2198,17 +2198,17 @@ export function spanr_<A>(
   as: ReadonlyArray<A>,
   predicate: P.Predicate<A>
 ): readonly [ReadonlyArray<A>, ReadonlyArray<A>] {
-  const i        = spanIndexRight_(as, predicate)
-  const l        = as.length
-  const mut_tail = Array(l - i - 1)
+  const i    = spanIndexRight_(as, predicate)
+  const l    = as.length
+  const tail = Array(l - i - 1)
   for (let j = l - 1; j > i; j--) {
-    mut_tail[j - i - 1] = as[j]
+    tail[j - i - 1] = as[j]
   }
-  const mut_rest = Array(i)
+  const rest = Array(i)
   for (let j = i; j >= 0; j--) {
-    mut_rest[j] = as[j]
+    rest[j] = as[j]
   }
-  return [mut_rest, mut_tail]
+  return [rest, tail]
 }
 
 /**
@@ -2319,12 +2319,12 @@ export function takeLast(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<
 export function takeWhile_<A, B extends A>(as: ReadonlyArray<A>, refinement: P.Refinement<A, B>): ReadonlyArray<B>
 export function takeWhile_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): ReadonlyArray<A>
 export function takeWhile_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): ReadonlyArray<A> {
-  const i        = spanIndexLeft_(as, predicate)
-  const mut_init = Array(i)
+  const i    = spanIndexLeft_(as, predicate)
+  const init = Array(i)
   for (let j = 0; j < i; j++) {
-    mut_init[j] = as[j]
+    init[j] = as[j]
   }
-  return mut_init
+  return init
 }
 
 /**
@@ -2366,15 +2366,15 @@ export function updateAt<A>(i: number, a: A): (as: ReadonlyArray<A>) => Option<R
  * @since 1.0.0
  */
 export function unzip<A, B>(as: ReadonlyArray<readonly [A, B]>): readonly [ReadonlyArray<A>, ReadonlyArray<B>] {
-  const mut_fa: Array<A> = []
-  const mut_fb: Array<B> = []
+  const fa: Array<A> = []
+  const fb: Array<B> = []
 
   for (let i = 0; i < as.length; i++) {
-    mut_fa[i] = as[i][0]
-    mut_fb[i] = as[i][1]
+    fa[i] = as[i][0]
+    fb[i] = as[i][1]
   }
 
-  return [mut_fa, mut_fb]
+  return [fa, fb]
 }
 
 /**
@@ -2667,8 +2667,8 @@ export function unsafeModifyAt_<A>(as: ReadonlyArray<A>, i: number, f: (a: A) =>
   if (as[i] === next) {
     return as
   }
-  return mutate_(as, (mut_xs) => {
-    mut_xs[i] = next
+  return mutate_(as, (xs) => {
+    xs[i] = next
   })
 }
 
@@ -2690,8 +2690,8 @@ export function unsafeUpdateAt_<A>(as: ReadonlyArray<A>, i: number, a: A): Reado
   if (as[i] === a) {
     return as
   } else {
-    return mutate_(as, (mut_xs) => {
-      mut_xs[i] = a
+    return mutate_(as, (xs) => {
+      xs[i] = a
     })
   }
 }
@@ -2808,9 +2808,9 @@ export function mutableClone<A>(as: ReadonlyArray<A>): Array<A> {
  * Transiently mutate the Array. Copies the input array, then exececutes `f` on it
  */
 export function mutate_<A>(as: ReadonlyArray<A>, f: (as: Array<A>) => void): ReadonlyArray<A> {
-  const mut_as = mutableClone(as)
-  f(mut_as)
-  return mut_as
+  const mut = mutableClone(as)
+  f(mut)
+  return mut
 }
 
 /**

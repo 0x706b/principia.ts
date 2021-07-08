@@ -77,7 +77,6 @@ export function unsafeCurrentFiber(): O.Option<FiberContext<any, any>> {
  * `FiberContext` provides all of the context and facilities required to run a `IO`
  */
 export class FiberContext<E, A> implements RuntimeFiber<E, A> {
-  /* eslint-disable functional/immutable-data */
   readonly _tag = 'RuntimeFiber'
 
   private readonly state = new AtomicReference(initial<E, A>())

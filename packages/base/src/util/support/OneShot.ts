@@ -1,4 +1,3 @@
-/* eslint-disable functional/immutable-data */
 export class OneShot<A> {
   private value: A | undefined = undefined
 

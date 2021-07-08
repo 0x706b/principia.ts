@@ -52,17 +52,17 @@ export function updateAt_<C extends ReadonlyArray<unknown>, I extends keyof C & 
   i: I,
   f: (a: C[I]) => B
 ): TupleN<{ [J in keyof C]: J extends `${I}` ? B : C[J] }> {
-  const length  = tuple.components.length
-  const mut_out = Array(length)
+  const length = tuple.components.length
+  const out    = Array(length)
 
   for (let j = 0; j < length; j++) {
     if (j === i) {
-      mut_out[j] = f(tuple.components[j])
+      out[j] = f(tuple.components[j])
     } else {
-      mut_out[j] = tuple.components[j]
+      out[j] = tuple.components[j]
     }
   }
-  return new TupleN(mut_out) as any
+  return new TupleN(out) as any
 }
 
 export function updateAt<C extends ReadonlyArray<unknown>, I extends keyof C & number, B>(

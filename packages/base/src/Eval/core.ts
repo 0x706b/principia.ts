@@ -83,7 +83,6 @@ class Later<A> extends Eval<A> {
     } else {
       const result = this.thunk.get()
       this.thunk.set(null)
-      // eslint-disable-next-line functional/immutable-data
       this.result = result
       return result
     }
@@ -145,8 +144,7 @@ class Memoize<A> extends Eval<A> {
 
   get value(): A {
     return O.getOrElse_(this.result, () => {
-      const a = evaluate(this)
-      // eslint-disable-next-line functional/immutable-data
+      const a     = evaluate(this)
       this.result = O.some(a)
       return a
     })
@@ -306,7 +304,6 @@ export function evaluate<A>(e: Eval<A>): A {
   const addToMemo =
     <A1>(m: Memoize<A1>) =>
     (a: A1): Eval<A1> => {
-      // eslint-disable-next-line functional/immutable-data
       m.result = O.some(a)
       return new Now(a)
     }

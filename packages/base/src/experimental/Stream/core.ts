@@ -1969,7 +1969,6 @@ class Rechunker<A> {
 
   constructor(readonly n: number) {}
 
-  /* eslint-disable functional/immutable-data */
   write(elem: A) {
     this.builder.append(elem)
     this.pos += 1

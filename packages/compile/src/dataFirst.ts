@@ -1,4 +1,3 @@
-/* eslint-disable functional/immutable-data */
 import ts from 'typescript'
 
 export default function dataFirst(_program: ts.Program) {

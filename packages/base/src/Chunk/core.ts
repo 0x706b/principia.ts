@@ -1,4 +1,3 @@
-/* eslint-disable functional/immutable-data */
 import type { Byte, ByteArray } from '../Byte'
 import type { Either } from '../Either'
 import type { Eq } from '../Eq'
@@ -570,7 +569,6 @@ class Singleton<A> extends ChunkImplementation<A> {
     f(this.value)
   }
   toArray(n: number, dest: Array<A> | Uint8Array) {
-    // eslint-disable-next-line functional/immutable-data
     dest[n] = this.value
   }
   [Symbol.iterator](): Iterator<A> {
@@ -860,7 +858,6 @@ function copyArray<A>(
 ): void {
   const j = Math.min(source.length, sourcePos + length)
   for (let i = sourcePos; i < j; i++) {
-    // eslint-disable-next-line functional/immutable-data
     dest[destPos + i - sourcePos] = source[i]
   }
 }

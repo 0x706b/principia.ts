@@ -1,4 +1,3 @@
-/* eslint-disable functional/immutable-data */
 /**
  * An ArrayInt represents an integer larger than what can be represented in classical JavaScript.
  * The values stored in data must be in the range [0, 0xffffffff].

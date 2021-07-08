@@ -1,4 +1,3 @@
-/* eslint-disable functional/immutable-data */
 import type RandomGenerator from '../generator/RandomGenerator'
 import type Distribution from './Distribution'
 import type { ArrayInt64 } from './internals/ArrayInt'

@@ -54,8 +54,8 @@ export type MutableForest<A> = Array<MutableTree<A>>
  */
 export function mergeEqualValues<A>(EA: P.Eq<A>): (forest: RT.Forest<A>) => RT.Forest<A> {
   return (forest) => {
-    const collectedValues: A[]         = []
-    const mut_merged: MutableForest<A> = []
+    const collectedValues: A[]     = []
+    const merged: MutableForest<A> = []
     for (let i = 0; i < forest.length; i++) {
       const t = forest[i]
       if (collectedValues.find((p) => EA.equals_(p, t.value))) {
@@ -74,16 +74,16 @@ export function mergeEqualValues<A>(EA: P.Eq<A>): (forest: RT.Forest<A>) => RT.F
             merge = RT.roseTree(merge.value, A.concat_(merge.forest, w.forest))
           }
         }
-        mut_merged.push(merge)
+        merged.push(merge)
       }
     }
 
     // merge the inner trees
-    for (let i = 0; i < mut_merged.length; i++) {
-      mut_merged[i].forest = mergeEqualValues(EA)(mut_merged[i].forest)
+    for (let i = 0; i < merged.length; i++) {
+      merged[i].forest = mergeEqualValues(EA)(merged[i].forest)
     }
 
-    return mut_merged
+    return merged
   }
 }
 

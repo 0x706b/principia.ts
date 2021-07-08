@@ -4495,7 +4495,6 @@ export function gen(...args: any[]): any {
             return run(next)
           }
           if (state.value._trace) {
-            // eslint-disable-next-line functional/immutable-data
             f['$trace'] = state.value._trace
           }
           return chain_(state.value.T, f)
@@ -4573,21 +4572,21 @@ export function deriveLifted<T>(
   values: Values[]
 ) => DerivedLifted<T, Fns, Cns, Values> {
   return (functions, constants, values) => {
-    const mut_ret = {} as any
+    const ret = {} as any
 
     for (const k of functions) {
-      mut_ret[k] = (...args: any[]) => asksServiceIO(H)((h) => h[k](...args))
+      ret[k] = (...args: any[]) => asksServiceIO(H)((h) => h[k](...args))
     }
 
     for (const k of constants) {
-      mut_ret[k] = asksServiceIO(H)((h) => h[k])
+      ret[k] = asksServiceIO(H)((h) => h[k])
     }
 
     for (const k of values) {
-      mut_ret[k] = asksService(H)((h) => h[k])
+      ret[k] = asksService(H)((h) => h[k])
     }
 
-    return mut_ret as any
+    return ret as any
   }
 }
 
@@ -4597,13 +4596,13 @@ export type DerivedAsksIO<T, Gens extends keyof T> = {
 
 export function deriveAsksIO<T>(H: Tag<T>): <Gens extends keyof T = never>(generics: Gens[]) => DerivedAsksIO<T, Gens> {
   return (generics) => {
-    const mut_ret = {} as any
+    const ret = {} as any
 
     for (const k of generics) {
-      mut_ret[k] = (f: any) => asksServiceIO(H)((h) => f(h[k]))
+      ret[k] = (f: any) => asksServiceIO(H)((h) => f(h[k]))
     }
 
-    return mut_ret as any
+    return ret as any
   }
 }
 
@@ -4613,12 +4612,12 @@ export type DerivedAsks<T, Gens extends keyof T> = {
 
 export function deriveAsks<T>(H: Tag<T>): <Gens extends keyof T = never>(generics: Gens[]) => DerivedAsks<T, Gens> {
   return (generics) => {
-    const mut_ret = {} as any
+    const ret = {} as any
 
     for (const k of generics) {
-      mut_ret[k] = (f: any) => asksService(H)((h) => f(h[k]))
+      ret[k] = (f: any) => asksService(H)((h) => f(h[k]))
     }
 
-    return mut_ret as any
+    return ret as any
   }
 }

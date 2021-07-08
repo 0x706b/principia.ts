@@ -1,7 +1,6 @@
 /* eslint-disable prefer-const */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 /* eslint-disable no-var */
-/* eslint-disable functional/immutable-data */
 
 /**
  * `List` is an implementation of a Relaxed Radix-Balanced Tree, a fast immutable data structure.
@@ -1319,10 +1318,10 @@ export function dropWhile<A>(predicate: Predicate<A>): (as: List<A>) => List<A> 
 }
 
 export function elem_<A>(E: P.Eq<A>): (as: List<A>, a: A) => boolean {
-  const mut_elemState: ElemState = { equals: E.equals_, element: undefined, result: false }
+  const elemState: ElemState = { equals: E.equals_, element: undefined, result: false }
   return (as, a) => {
-    mut_elemState.element = a
-    return foldlCb(elemCb, mut_elemState, as).result
+    elemState.element = a
+    return foldlCb(elemCb, elemState, as).result
   }
 }
 

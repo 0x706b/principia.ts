@@ -1,4 +1,3 @@
-/* eslint-disable functional/immutable-data */
 import type { Has } from '@principia/base/Has'
 
 import * as I from '@principia/base/IO'

@@ -13,9 +13,9 @@ export function mapIO_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R, E,
       I.crossWith_(
         b,
         I.defer(() => f(a)),
-        ([i, mut_acc], b) => {
-          mut_acc[i] = b
-          return tuple(i + 1, mut_acc)
+        ([i, acc], b) => {
+          acc[i] = b
+          return tuple(i + 1, acc)
         }
       )
     ),
@@ -34,13 +34,13 @@ export function mapIO<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: ReadonlyArra
  * Effectfully maps the elements of this Array in parallel.
  */
 export function mapIOPar_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> {
-  return I.chain_(I.succeed<B[]>(Array(as.length)), (mut_bs) => {
+  return I.chain_(I.succeed<B[]>(Array(as.length)), (bs) => {
     function fn([a, n]: [A, number]) {
       return I.chain_(
         I.defer(() => f(a)),
         (b) =>
           I.succeedLazy(() => {
-            mut_bs[n] = b
+            bs[n] = b
           })
       )
     }
@@ -49,7 +49,7 @@ export function mapIOPar_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R,
         A.imap_(as, (n, a) => [a, n] as [A, number]),
         fn
       ),
-      () => I.succeedLazy(() => mut_bs)
+      () => I.succeedLazy(() => bs)
     )
   })
 }
@@ -74,17 +74,17 @@ export function mapAccumIO_<S, A, R, E, B>(
 ): I.IO<R, E, readonly [ReadonlyArray<B>, S]> {
   return I.defer(() => {
     let dest: I.IO<R, E, S> = I.succeed(s)
-    const mut_out: Array<B> = Array(as.length)
+    const out: Array<B>     = Array(as.length)
     for (let i = 0; i < as.length; i++) {
       const v = as[i]
       dest    = I.chain_(dest, (state) =>
         I.map_(f(state, v), ([b, s2]) => {
-          mut_out[i] = b
+          out[i] = b
           return s2
         })
       )
     }
-    return I.map_(dest, (s) => [mut_out, s])
+    return I.map_(dest, (s) => [out, s])
   })
 }
 

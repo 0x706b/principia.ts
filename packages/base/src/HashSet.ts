@@ -43,7 +43,6 @@ export function beginMutation<K>(set: HashSet<K>) {
  * Mark `set` as immutable.
  */
 export function endMutation<K>(set: HashSet<K>) {
-  // eslint-disable-next-line functional/immutable-data
   set.keyMap.editable = false
   return set
 }

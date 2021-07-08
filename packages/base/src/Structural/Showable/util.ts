@@ -75,7 +75,6 @@ export function hex(arrayBuffer: ArrayBuffer) {
   const hexOctets = new Array(buff.length)
 
   for (let i = 0; i < buff.length; ++i) {
-    // eslint-disable-next-line functional/immutable-data
     hexOctets[i] = byteToHex[buff[i]]
   }
 

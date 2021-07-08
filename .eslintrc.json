@@ -14,7 +14,7 @@
     "ecmaVersion": 2020,
     "sourceType": "module"
   },
-  "plugins": ["align-assignments", "import", "simple-import-sort", "functional", "@typescript-eslint"],
+  "plugins": ["align-assignments", "import", "simple-import-sort", "@typescript-eslint"],
   "rules": {
     "prefer-const": "off",
 
@@ -76,9 +76,7 @@
         "allowDestructuring": true,
         "allowedNames": ["self"]
       }
-    ],
-
-    "functional/immutable-data": ["error", { "ignorePattern": "^mut", "ignoreAccessorPattern": "**.mut_*" }]
+    ]
   },
   "settings": {
     "import/parsers": {

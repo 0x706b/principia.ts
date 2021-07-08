@@ -66,8 +66,7 @@ export abstract class Schema<U extends URIS, In, CIn, Err, CErr, Type, Out, Api>
   abstract clone(): Schema<U, In, CIn, Err, CErr, Type, Out, Api>
 
   annotate<V>(key: SchemaAnnotation<V>, value: V): this {
-    const copy = this.clone()
-    // eslint-disable-next-line functional/immutable-data
+    const copy       = this.clone()
     copy.annotations = this.annotations.annotate(key, value)
     return copy as any
   }
@@ -187,9 +186,7 @@ export interface LiteralApi<L extends NonEmptyArray<string>> {
   ) => (ks: L[number]) => A
   readonly matchW: <M extends { [K in L[number]]: (_: K) => any }>(
     _: M
-  ) => (
-    ks: L[number]
-  ) => {
+  ) => (ks: L[number]) => {
     [K in keyof M]: ReturnType<M[K]>
   }[keyof M]
 }

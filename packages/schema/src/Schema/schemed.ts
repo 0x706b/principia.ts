@@ -78,7 +78,6 @@ export function Schemed<S extends S.AnyS>(schema: S): Schemed<S> {
     }
     [fromFields](fields: any) {
       for (const k in fields) {
-        // eslint-disable-next-line functional/immutable-data
         this[k] = fields[k]
       }
     }

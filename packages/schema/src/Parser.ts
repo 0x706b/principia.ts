@@ -680,7 +680,7 @@ export function fromStruct<P extends Record<string, AnyParser>>(properties: P): 
     label,
     parse: (ur) => {
       const es: Array<PE.RequiredKeyE<string, any>> = []
-      const mut_r: any                              = {}
+      const r: any                                  = {}
 
       let isBoth = true
       for (const k in properties) {
@@ -692,16 +692,16 @@ export function fromStruct<P extends Record<string, AnyParser>>(properties: P): 
             es.push(PE.requiredKeyE(k, error))
           },
           (a) => {
-            mut_r[k] = a
+            r[k] = a
           },
           (w, a) => {
             es.push(PE.requiredKeyE(k, w))
-            mut_r[k] = a
+            r[k] = a
           }
         )
       }
 
-      return A.isNonEmpty(es) ? (isBoth ? Th.both(PE.structE(es), mut_r) : Th.left(PE.structE(es))) : Th.right(mut_r)
+      return A.isNonEmpty(es) ? (isBoth ? Th.both(PE.structE(es), r) : Th.left(PE.structE(es))) : Th.right(r)
     }
   }
 }
@@ -724,18 +724,18 @@ export function unexpectedKeys<P extends Record<string, unknown>>(properties: P)
     properties,
     parse: (ur) => {
       const ws: Array<string> = []
-      const mut_out: any      = {}
+      const out: any          = {}
       for (const key in properties) {
         if (key in ur) {
-          mut_out[key] = ur[key]
+          out[key] = ur[key]
         }
       }
       for (const key in ur) {
-        if (!(key in mut_out)) {
+        if (!(key in out)) {
           ws.push(key)
         }
       }
-      return A.isNonEmpty(ws) ? Th.both(PE.leafE(PE.unexpectedKeysE(ws)), mut_out) : Th.right(mut_out)
+      return A.isNonEmpty(ws) ? Th.both(PE.leafE(PE.unexpectedKeysE(ws)), out) : Th.right(out)
     }
   }
 }
@@ -782,16 +782,16 @@ function injectDefaults<E, P extends Record<PropertyKey, AnyParser>>(
 ): <D extends Parser<any, E, Record<PropertyKey, unknown>>>(decoder: D) => InjectDefaults<D> {
   return endo((result: These<E, Record<PropertyKey, unknown>>) => {
     return Th.map_(result, (i) => {
-      const mut_out = i
+      const out = i
       for (const key in properties) {
-        if (!mut_out[key]) {
+        if (!out[key]) {
           const od = extractDefault(properties[key])
           if (od._tag === 'Some') {
-            mut_out[key] = od.value()
+            out[key] = od.value()
           }
         }
       }
-      return mut_out
+      return out
     })
   })
 }
@@ -898,7 +898,7 @@ export function fromPartial<P extends Record<string, AnyParser>>(properties: P):
     label,
     parse: (ur) => {
       const es: Array<PE.OptionalKeyE<string, any>> = []
-      const mut_r: any                              = {}
+      const r: any                                  = {}
 
       let isBoth = true
       for (const key in properties) {
@@ -906,7 +906,7 @@ export function fromPartial<P extends Record<string, AnyParser>>(properties: P):
           continue
         }
         if (ur[key as string] === undefined) {
-          mut_r[key] = undefined
+          r[key] = undefined
           continue
         }
         const de = properties[key].parse(ur[key as string])
@@ -917,15 +917,15 @@ export function fromPartial<P extends Record<string, AnyParser>>(properties: P):
             es.push(PE.optionalKeyE(key, error))
           },
           (a) => {
-            mut_r[key] = a
+            r[key] = a
           },
           (w, a) => {
             es.push(PE.optionalKeyE(key, w))
-            mut_r[key] = a
+            r[key] = a
           }
         )
       }
-      return A.isNonEmpty(es) ? (isBoth ? Th.both(PE.partialE(es), mut_r) : Th.left(PE.partialE(es))) : Th.right(mut_r)
+      return A.isNonEmpty(es) ? (isBoth ? Th.both(PE.partialE(es), r) : Th.left(PE.partialE(es))) : Th.right(r)
     }
   }
 }
@@ -1169,7 +1169,7 @@ export function fromTuple<C extends ReadonlyArray<AnyParser>>(...components: C):
     parse: (is) => {
       const errors: Array<PE.RequiredIndexE<number, any>> = []
 
-      const mut_r: any = []
+      const r: any = []
 
       let isBoth = true
       for (let index = 0; index < components.length; index++) {
@@ -1182,19 +1182,15 @@ export function fromTuple<C extends ReadonlyArray<AnyParser>>(...components: C):
             errors.push(PE.requiredIndexE(index, error))
           },
           (a) => {
-            mut_r[index] = a
+            r[index] = a
           },
           (w, a) => {
-            mut_r[index] = a
+            r[index] = a
             errors.push(PE.requiredIndexE(index, w))
           }
         )
       }
-      return A.isNonEmpty(errors)
-        ? isBoth
-          ? Th.both(PE.tupleE(errors), mut_r)
-          : Th.left(PE.tupleE(errors))
-        : Th.right(mut_r)
+      return A.isNonEmpty(errors) ? (isBoth ? Th.both(PE.tupleE(errors), r) : Th.left(PE.tupleE(errors))) : Th.right(r)
     }
   }
 }
@@ -1346,7 +1342,7 @@ export function fromRecord<C extends AnyParser>(codomain: C): FromRecordP<C> {
     codomain,
     parse: (i) => {
       const errors: Array<PE.OptionalKeyE<string, any>> = []
-      const mut_res: Record<string, any>                = {}
+      const res: Record<string, any>                    = {}
 
       let isBoth = true
       for (const key in i) {
@@ -1359,19 +1355,19 @@ export function fromRecord<C extends AnyParser>(codomain: C): FromRecordP<C> {
             errors.push(PE.optionalKeyE(key, error))
           },
           (a) => {
-            mut_res[key] = a
+            res[key] = a
           },
           (w, a) => {
-            mut_res[key] = a
+            res[key] = a
             errors.push(PE.optionalKeyE(key, w))
           }
         )
       }
       return A.isNonEmpty(errors)
         ? isBoth
-          ? Th.both(PE.recordE(errors), mut_res)
+          ? Th.both(PE.recordE(errors), res)
           : Th.left(PE.recordE(errors))
-        : Th.right(mut_res)
+        : Th.right(res)
     }
   }
 }

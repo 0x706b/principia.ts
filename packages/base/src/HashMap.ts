@@ -1,4 +1,3 @@
-/* eslint-disable functional/immutable-data */
 import type * as Eq from './Eq'
 import type { Hash } from './Hash'
 import type * as HKT from './HKT'

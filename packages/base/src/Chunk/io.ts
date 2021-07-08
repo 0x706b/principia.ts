@@ -1,4 +1,3 @@
-/* eslint-disable functional/immutable-data */
 import type { Chunk, ChunkBuilder } from './core'
 
 import { identity, pipe } from '../function'
@@ -32,17 +31,17 @@ export function mapIO<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: Chunk<A>) =>
 }
 
 export function mapIOPar_<A, R, E, B>(as: Chunk<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Chunk<B>> {
-  return I.chain_(I.succeed<B[]>(Array(as.length)), (mut_bs) => {
+  return I.chain_(I.succeed<B[]>(Array(as.length)), (bs) => {
     function fn([a, n]: readonly [A, number]) {
       return I.chain_(
         I.defer(() => f(a)),
         (b) =>
           I.succeedLazy(() => {
-            mut_bs[n] = b
+            bs[n] = b
           })
       )
     }
-    return I.chain_(I.foreachUnitPar_(C.zipWithIndex(as), fn), () => I.succeedLazy(() => C.from(mut_bs)))
+    return I.chain_(I.foreachUnitPar_(C.zipWithIndex(as), fn), () => I.succeedLazy(() => C.from(bs)))
   })
 }
 

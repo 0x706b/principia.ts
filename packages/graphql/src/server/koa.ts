@@ -144,7 +144,6 @@ export function makeGraphQl<FieldPURI extends FieldAURIS, InputPURI extends Inpu
           const onConnect    = config.subscriptions.onConnect
           const onDisconnect = config.subscriptions.onDisconnect
 
-          // eslint-disable-next-line functional/immutable-data
           apolloConfig.subscriptions = {
             keepAlive: config.subscriptions.keepAlive,
             onConnect: (connectionParams, websocket, context) =>

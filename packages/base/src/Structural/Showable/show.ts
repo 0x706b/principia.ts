@@ -1,4 +1,3 @@
-/* eslint-disable functional/immutable-data */
 import type { Chunk } from '../../Chunk'
 import type { TypedArray } from '../../prelude'
 import type { StyleFunction } from './styles'

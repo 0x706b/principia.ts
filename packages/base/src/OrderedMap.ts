@@ -1,5 +1,3 @@
-/* eslint-disable functional/immutable-data */
-
 /**
  * A persistent ordered map implementation backed by a Red-Black Tree with iterative operations
  *

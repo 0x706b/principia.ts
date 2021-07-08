@@ -24,11 +24,11 @@ export function transformResolvers<Ctx>(
   env: any
 ) {
   const toBind = {}
-  for (const [mut_typeName, fields] of entries(res)) {
+  for (const [typeName, fields] of entries(res)) {
     const resolvers = {}
-    for (const [mut_fieldName, resolver] of entries(fields)) {
+    for (const [fieldName, resolver] of entries(fields)) {
       if (typeof resolver === 'function') {
-        (resolvers as any)[mut_fieldName] = (root: any, args: any, ctx: any, info: GraphQLResolveInfo) => {
+        (resolvers as any)[fieldName] = (root: any, args: any, ctx: any, info: GraphQLResolveInfo) => {
           return I.runPromise(
             I.gen(function* (_) {
               const ret = resolver({
@@ -53,7 +53,7 @@ export function transformResolvers<Ctx>(
           )
         }
       } else {
-        (resolvers as any)[mut_fieldName] = {
+        (resolvers as any)[fieldName] = {
           subscribe: (root: {}, args: any, ctx: ConnectionContext, info: GraphQLResolveInfo) =>
             I.runPromise(
               I.gen(function* (_) {
@@ -90,7 +90,7 @@ export function transformResolvers<Ctx>(
         }
       }
     }
-    (toBind as any)[mut_typeName] = resolvers
+    (toBind as any)[typeName] = resolvers
   }
   return toBind
 }
@@ -100,8 +100,8 @@ export function transformScalarResolvers(
   env: any
 ) {
   const toBind = {}
-  for (const [mut_typeName, resolver] of entries(scalars)) {
-    (toBind as any)[mut_typeName] = new GraphQLScalarType({
+  for (const [typeName, resolver] of entries(scalars)) {
+    (toBind as any)[typeName] = new GraphQLScalarType({
       name: resolver.name,
       parseLiteral: (u) =>
         pipe(

@@ -121,7 +121,6 @@ export const Schemable: S.Schemable<ConstructorSURI> = {
   },
   // @ts-expect-error
   properties: (properties) => {
-    /* eslint-disable functional/immutable-data */
     const required = {} as Record<string, Parser<unknown, unknown, unknown>>
     const optional = {} as Record<string, Parser<unknown, unknown, unknown>>
     const defaults = {} as Record<string, () => unknown>
@@ -166,9 +165,9 @@ export const Schemable: S.Schemable<ConstructorSURI> = {
     )} }`
 
     return Pr.parser((ur): Th.These<PE.CompoundE<PE.RequiredKeyE<string, any> | PE.OptionalKeyE<string, any>>, any> => {
-      const es         = [] as Array<PE.OptionalKeyE<string, unknown> | PE.RequiredKeyE<string, unknown>>
-      const mut_result = { ...tags } as Record<keyof typeof properties, any>
-      let isBoth       = true
+      const es     = [] as Array<PE.OptionalKeyE<string, unknown> | PE.RequiredKeyE<string, unknown>>
+      const result = { ...tags } as Record<keyof typeof properties, any>
+      let isBoth   = true
 
       for (const k in properties) {
         if (k in tags) {
@@ -176,7 +175,7 @@ export const Schemable: S.Schemable<ConstructorSURI> = {
         }
         if (k in required) {
           if (!(k in ur) && k in defaults) {
-            mut_result[k] = defaults[k]()
+            result[k] = defaults[k]()
             continue
           }
           const de = required[k].parse(ur[k as string])
@@ -187,11 +186,11 @@ export const Schemable: S.Schemable<ConstructorSURI> = {
               es.push(PE.requiredKeyE(k, error))
             },
             (a) => {
-              mut_result[k] = a
+              result[k] = a
             },
             (w, a) => {
               es.push(PE.requiredKeyE(k, w))
-              mut_result[k] = a
+              result[k] = a
             }
           )
         } else {
@@ -199,7 +198,7 @@ export const Schemable: S.Schemable<ConstructorSURI> = {
             continue
           }
           if (ur[k as string] === undefined) {
-            mut_result[k] = undefined
+            result[k] = undefined
             continue
           }
           const de = optional[k].parse(ur[k as string])
@@ -210,21 +209,17 @@ export const Schemable: S.Schemable<ConstructorSURI> = {
               es.push(PE.optionalKeyE(k, error))
             },
             (a) => {
-              mut_result[k] = a
+              result[k] = a
             },
             (w, a) => {
               es.push(PE.optionalKeyE(k, w))
-              mut_result[k] = a
+              result[k] = a
             }
           )
         }
       }
 
-      return A.isNonEmpty(es)
-        ? isBoth
-          ? Th.both(PE.structE(es), mut_result)
-          : Th.left(PE.structE(es))
-        : Th.right(mut_result)
+      return A.isNonEmpty(es) ? (isBoth ? Th.both(PE.structE(es), result) : Th.left(PE.structE(es))) : Th.right(result)
     }, label)
   },
   named: (C, _, name) => Pr.named_(C, name),

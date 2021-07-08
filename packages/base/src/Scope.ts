@@ -28,7 +28,6 @@ export class Key {
   }
 
   setRemove(remove: UIO<boolean>) {
-    // eslint-disable-next-line functional/immutable-data
     this.remove = remove
   }
 }

@@ -249,7 +249,6 @@ export function props_<S, A, P extends keyof A>(
         [K in P]?: A[K]
       } = {}
       for (const k of props) {
-        // eslint-disable-next-line functional/immutable-data
         r[k] = a[k]
       }
       return r as any
@@ -290,8 +289,7 @@ export function component_<S, A extends ReadonlyArray<unknown>, P extends keyof 
         return s
       }
       const copy: A = oa.slice() as any
-      // eslint-disable-next-line functional/immutable-data
-      copy[prop] = ap
+      copy[prop]    = ap
       return lens.replace_(s, copy)
     }
   })

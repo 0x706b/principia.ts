@@ -1,4 +1,3 @@
-/* eslint-disable functional/immutable-data */
 import type { RandomGenerator } from './RandomGenerator'
 
 class MersenneTwister implements RandomGenerator {

@@ -369,7 +369,6 @@ export const Schemable: S.Schemable<DecoderSURI> = {
   },
   // @ts-expect-error
   properties: (properties) => {
-    /* eslint-disable functional/immutable-data */
     const required = {} as Record<string, Parser<unknown, unknown, unknown>>
     const optional = {} as Record<string, Parser<unknown, unknown, unknown>>
     const defaults = {} as Record<string, () => unknown>
@@ -412,98 +411,103 @@ export const Schemable: S.Schemable<DecoderSURI> = {
       A.join(', ')
     )} }`
 
-    return Pr.parser((ur): Th.These<
-      PE.CompositionE<
-        | PE.UnknownRecordLE
-        | PE.MissingKeysE<string>
-        | PE.UnexpectedKeysLE
-        | PE.CompoundE<PE.RequiredKeyE<string, any> | PE.OptionalKeyE<string, any>>
-      >,
-      any
-    > => {
-      // UnknownRecord
-      if (!isObject(ur)) {
-        return Th.left(PE.compositionE([PE.leafE(PE.unknownRecordE(ur))]))
-      }
-
-      // RequireKeys
-      const missingKeys = [] as Array<string>
-      for (const k in required) {
-        if (!(k in ur) && !(k in defaults)) {
-          missingKeys.push(k)
+    return Pr.parser(
+      (
+        ur
+      ): Th.These<
+        PE.CompositionE<
+          | PE.UnknownRecordLE
+          | PE.MissingKeysE<string>
+          | PE.UnexpectedKeysLE
+          | PE.CompoundE<PE.RequiredKeyE<string, any> | PE.OptionalKeyE<string, any>>
+        >,
+        any
+      > => {
+        // UnknownRecord
+        if (!isObject(ur)) {
+          return Th.left(PE.compositionE([PE.leafE(PE.unknownRecordE(ur))]))
         }
-      }
-      if (A.isNonEmpty(missingKeys)) {
-        return Th.left(PE.compositionE([PE.missingKeysE(missingKeys)]))
-      }
 
-      const unexpectedKeys = [] as Array<string>
-      const es             = [] as Array<PE.OptionalKeyE<string, unknown> | PE.RequiredKeyE<string, unknown>>
-      const mut_result     = {} as Record<keyof typeof properties, any>
-      let isBoth           = true
-      for (const k in ur) {
-        if (!(k in required) && !(k in optional)) {
-          unexpectedKeys.push(k)
-        }
-      }
-
-      for (const k in properties) {
-        if (k in required) {
-          if (!(k in ur) && k in defaults) {
-            mut_result[k] = defaults[k]()
-            continue
+        // RequireKeys
+        const missingKeys = [] as Array<string>
+        for (const k in required) {
+          if (!(k in ur) && !(k in defaults)) {
+            missingKeys.push(k)
           }
-          const de = required[k].parse(ur[k as string])
-          Th.match_(
-            de,
-            (error) => {
-              isBoth = false
-              es.push(PE.requiredKeyE(k, error))
-            },
-            (a) => {
-              mut_result[k] = a
-            },
-            (w, a) => {
-              es.push(PE.requiredKeyE(k, w))
-              mut_result[k] = a
+        }
+        if (A.isNonEmpty(missingKeys)) {
+          return Th.left(PE.compositionE([PE.missingKeysE(missingKeys)]))
+        }
+
+        const unexpectedKeys = [] as Array<string>
+        const es             = [] as Array<PE.OptionalKeyE<string, unknown> | PE.RequiredKeyE<string, unknown>>
+        const result         = {} as Record<keyof typeof properties, any>
+        let isBoth           = true
+        for (const k in ur) {
+          if (!(k in required) && !(k in optional)) {
+            unexpectedKeys.push(k)
+          }
+        }
+
+        for (const k in properties) {
+          if (k in required) {
+            if (!(k in ur) && k in defaults) {
+              result[k] = defaults[k]()
+              continue
             }
-          )
-        } else {
-          if (!(k in ur)) {
-            continue
-          }
-          if (ur[k as string] === undefined) {
-            mut_result[k] = undefined
-            continue
-          }
-          const de = optional[k].parse(ur[k as string])
-          Th.match_(
-            de,
-            (error) => {
-              isBoth = false
-              es.push(PE.optionalKeyE(k, error))
-            },
-            (a) => {
-              mut_result[k] = a
-            },
-            (w, a) => {
-              es.push(PE.optionalKeyE(k, w))
-              mut_result[k] = a
+            const de = required[k].parse(ur[k as string])
+            Th.match_(
+              de,
+              (error) => {
+                isBoth = false
+                es.push(PE.requiredKeyE(k, error))
+              },
+              (a) => {
+                result[k] = a
+              },
+              (w, a) => {
+                es.push(PE.requiredKeyE(k, w))
+                result[k] = a
+              }
+            )
+          } else {
+            if (!(k in ur)) {
+              continue
             }
-          )
+            if (ur[k as string] === undefined) {
+              result[k] = undefined
+              continue
+            }
+            const de = optional[k].parse(ur[k as string])
+            Th.match_(
+              de,
+              (error) => {
+                isBoth = false
+                es.push(PE.optionalKeyE(k, error))
+              },
+              (a) => {
+                result[k] = a
+              },
+              (w, a) => {
+                es.push(PE.optionalKeyE(k, w))
+                result[k] = a
+              }
+            )
+          }
         }
-      }
 
-      const error = A.isNonEmpty(es)
-        ? A.isNonEmpty(unexpectedKeys)
-          ? PE.compositionE([PE.leafE(PE.unexpectedKeysE(unexpectedKeys)), PE.structE(es)])
-          : PE.compositionE([PE.structE(es)])
-        : A.isNonEmpty(unexpectedKeys)
-        ? PE.compositionE([PE.leafE(PE.unexpectedKeysE(unexpectedKeys))])
-        : undefined
+        const error = A.isNonEmpty(es)
+          ? A.isNonEmpty(unexpectedKeys)
+            ? PE.compositionE([PE.leafE(PE.unexpectedKeysE(unexpectedKeys)), PE.structE(es)])
+            : PE.compositionE([PE.structE(es)])
+          : A.isNonEmpty(unexpectedKeys)
+          ? PE.compositionE([PE.leafE(PE.unexpectedKeysE(unexpectedKeys))])
+          : undefined
 
-      return error ? (isBoth ? Th.both(error, mut_result) : Th.left(error)) : Th.right(mut_result)
-    }, label)
+        return error ? (isBoth ? Th.both(error, result) : Th.left(error)) : Th.right(result)
+      },
+      label
+    )
   },
   named: (D, _, name) => Pr.named_(D, name),
   newtypeIso: (D, iso) => Pr.map_(D, iso.get),

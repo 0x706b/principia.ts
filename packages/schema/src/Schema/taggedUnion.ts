@@ -46,9 +46,7 @@ export interface MatchW<Props extends Record<PropertyKey, S.AnyUS>, AS> {
       x0: { [K in keyof Props]: S.TypeOf<Props[K]> }[Exclude<keyof Props, keyof M>],
       x1: { [K in keyof Props]: S.TypeOf<Props[K]> }[Exclude<keyof Props, keyof M>]
     ) => Result
-  ): (
-    ks: AS
-  ) =>
+  ): (ks: AS) =>
     | {
         [K in keyof M]: M[K] extends (_: S.TypeOf<Props[K]>, __: S.TypeOf<Props[K]>) => any ? ReturnType<M[K]> : never
       }[keyof M]
@@ -59,9 +57,7 @@ export interface MatchW<Props extends Record<PropertyKey, S.AnyUS>, AS> {
     }
   >(
     _: M
-  ): (
-    ks: AS
-  ) => {
+  ): (ks: AS) => {
     [K in keyof M]: ReturnType<M[K]>
   }[keyof M]
 }
@@ -120,7 +116,6 @@ export class TaggedUnionS<M extends Record<PropertyKey, S.AnyUS>> extends S.Sche
         return O.some({
           key: tagField,
           index: A.foldl_(tags, {}, (b, [tagValue, memberField]) => {
-            // eslint-disable-next-line functional/immutable-data
             b[tagValue] = memberField
             return b
           }),

@@ -248,13 +248,13 @@ export function hmap_<S extends ReadonlyRecord<string, any>, F extends { [K in k
   s: S,
   fs: F
 ): { readonly [K in keyof F]: ReturnType<F[K]> } {
-  const keys    = R.keys(s)
-  const mut_out = {} as any
+  const keys = R.keys(s)
+  const out  = {} as any
   for (let i = 0; i < keys.length; i++) {
-    const key    = keys[i]
-    mut_out[key] = fs[key](s[key])
+    const key = keys[i]
+    out[key]  = fs[key](s[key])
   }
-  return mut_out
+  return out
 }
 
 /**
@@ -276,12 +276,12 @@ export function hmap<
 
 export function pick_<S extends ReadonlyRecord<string, any>>(s: S) {
   return <K extends ReadonlyArray<keyof S>>(...keys: K): { [P in K[number]]: S[P] } => {
-    const mut_out = {} as Pick<S, K[number]>
+    const out = {} as Pick<S, K[number]>
     for (let i = 0; i < keys.length; i++) {
-      const key    = keys[i]
-      mut_out[key] = s[key]
+      const key = keys[i]
+      out[key]  = s[key]
     }
-    return mut_out
+    return out
   }
 }
 
@@ -296,12 +296,12 @@ export function pick<S, K extends ReadonlyArray<keyof S extends never ? string :
 export function omit_<S extends ReadonlyRecord<string, any>>(s: S) {
   return <K extends ReadonlyArray<keyof S>>(...keys: K): { [P in Exclude<keyof S, K[number]>]: S[P] } => {
     const newKeys = A.difference_(Str.Eq)(R.keys(s), keys as ReadonlyArray<string>)
-    const mut_out = {} as Omit<S, K[number]>
+    const out     = {} as Omit<S, K[number]>
     for (let i = 0; i < newKeys.length; i++) {
-      const key    = newKeys[i]
-      mut_out[key] = s[key]
+      const key = newKeys[i]
+      out[key]  = s[key]
     }
-    return mut_out
+    return out
   }
 }
 
@@ -321,27 +321,27 @@ function _intersect<A extends ReadonlyArray<Record<string, any>>>(
   if (A.isEmpty(members)) {
     return Ev.now({} as any)
   }
-  return Ev.foldl_(members.slice(1), members[0] as UnionToIntersection<A[number]>, (mut_out, a) =>
+  return Ev.foldl_(members.slice(1), members[0] as UnionToIntersection<A[number]>, (out, a) =>
     Ev.defer(() => {
-      let computation = Ev.now(mut_out)
+      let computation = Ev.now(out)
       for (const k in a) {
         const ak = a[k]
-        if (R.UnknownRecordGuard.is(ak) && R.UnknownRecordGuard.is(mut_out[k])) {
+        if (R.UnknownRecordGuard.is(ak) && R.UnknownRecordGuard.is(out[k])) {
           computation = pipe(
             computation,
-            Ev.chain((mut_out) =>
-              Ev.map_(_intersect(mut_out[k], ak), (intersected) => {
-                mut_out[k] = intersected
-                return mut_out
+            Ev.chain((out) =>
+              Ev.map_(_intersect(out[k], ak), (intersected) => {
+                out[k] = intersected
+                return out
               })
             )
           )
         } else {
           computation = pipe(
             computation,
-            Ev.map((mut_out) => {
-              mut_out[k] = ak
-              return mut_out
+            Ev.map((out) => {
+              out[k] = ak
+              return out
             })
           )
         }

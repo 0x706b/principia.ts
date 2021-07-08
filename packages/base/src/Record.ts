@@ -234,35 +234,35 @@ export function toUnfoldable<F extends HKT.URIS, C = HKT.Auto>(U: P.Unfoldable<F
 export function separate<N extends string, A, B>(
   fa: ReadonlyRecord<N, E.Either<A, B>>
 ): readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, B>] {
-  const mut_left: Record<string, A>  = {} as any
-  const mut_right: Record<string, B> = {} as any
-  const keys                         = Object.keys(fa)
+  const left: Record<string, A>  = {} as any
+  const right: Record<string, B> = {} as any
+  const keys                     = Object.keys(fa)
   for (const key of keys) {
     const e = fa[key]
     switch (e.tag_) {
       case 'Left':
-        mut_left[key] = e.left
+        left[key] = e.left
         break
       case 'Right':
-        mut_right[key] = e.right
+        right[key] = e.right
         break
     }
   }
-  return [mut_left, mut_right]
+  return [left, right]
 }
 
 /**
  */
 export function compact<N extends string, A>(fa: ReadonlyRecord<N, O.Option<A>>): ReadonlyRecord<string, A> {
-  const mut_r = {} as Record<string, any>
-  const ks    = keys(fa)
+  const r  = {} as Record<string, any>
+  const ks = keys(fa)
   for (const key of ks) {
     const optionA = fa[key]
     if (O.isSome(optionA)) {
-      mut_r[key] = optionA.value
+      r[key] = optionA.value
     }
   }
-  return mut_r
+  return r
 }
 
 /*
@@ -298,19 +298,19 @@ export function ifilter_<A>(
   fa: ReadonlyRecord<string, A>,
   predicate: PredicateWithIndex<string, A>
 ): ReadonlyRecord<string, A> {
-  const mut_out = {} as Record<string, A>
-  let changed   = false
+  const out   = {} as Record<string, A>
+  let changed = false
   for (const key in fa) {
     if (_hasOwnProperty.call(fa, key)) {
       const a = fa[key]
       if (predicate(key, a)) {
-        mut_out[key] = a
+        out[key] = a
       } else {
         changed = true
       }
     }
   }
-  return changed ? mut_out : fa
+  return changed ? out : fa
 }
 
 /**
@@ -359,16 +359,16 @@ export function ifilterMap_<N extends string, A, B>(
   fa: ReadonlyRecord<N, A>,
   f: (k: N, a: A) => O.Option<B>
 ): ReadonlyRecord<string, B> {
-  const mut_r = {} as Record<string, B>
-  const ks    = keys(fa)
+  const r  = {} as Record<string, B>
+  const ks = keys(fa)
   for (let i = 0; i < ks.length; i++) {
     const key     = ks[i]
     const optionB = f(key, fa[key])
     if (O.isSome(optionB)) {
-      mut_r[key] = optionB.value
+      r[key] = optionB.value
     }
   }
-  return mut_r
+  return r
 }
 
 /**
@@ -407,19 +407,19 @@ export function ipartition_<N extends string, A>(
   predicate: PredicateWithIndex<N, A>
 ): readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, A>]
 export function ipartition_<A>(fa: ReadonlyRecord<string, A>, predicate: PredicateWithIndex<string, A>) {
-  const mut_left  = {} as Record<string, A>
-  const mut_right = {} as Record<string, A>
-  const ks        = keys(fa)
+  const left  = {} as Record<string, A>
+  const right = {} as Record<string, A>
+  const ks    = keys(fa)
   for (let i = 0; i < ks.length; i++) {
     const key = ks[i]
     const a   = fa[key]
     if (predicate(key, a)) {
-      mut_right[key] = a
+      right[key] = a
     } else {
-      mut_left[key] = a
+      left[key] = a
     }
   }
-  return P.tuple(mut_left, mut_right)
+  return P.tuple(left, right)
 }
 
 /**
@@ -470,23 +470,23 @@ export function ipartitionMap_<N extends string, A, B, C>(
   fa: ReadonlyRecord<N, A>,
   f: (k: N, a: A) => E.Either<B, C>
 ): readonly [ReadonlyRecord<string, B>, ReadonlyRecord<string, C>] {
-  const mut_left  = {} as Record<string, B>
-  const mut_right = {} as Record<string, C>
-  const ks        = keys(fa)
+  const left  = {} as Record<string, B>
+  const right = {} as Record<string, C>
+  const ks    = keys(fa)
   for (let i = 0; i < ks.length; i++) {
     const key = ks[i]
     const e   = f(key, fa[key])
     E.match_(
       e,
       (b) => {
-        mut_left[key] = b
+        left[key] = b
       },
       (c) => {
-        mut_right[key] = c
+        right[key] = c
       }
     )
   }
-  return [mut_left, mut_right]
+  return [left, right]
 }
 
 /**
@@ -618,10 +618,10 @@ export function fromFoldableMap<B, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigr
   ): ReadonlyRecord<N, B> =>
     P.pipe(
       fa,
-      F.foldl<A, Record<N, B>>({} as any, (mut_r, a) => {
+      F.foldl<A, Record<N, B>>({} as any, (r, a) => {
         const [k, b] = f(a)
-        mut_r[k]     = _hasOwnProperty.call(mut_r, k) ? S.combine_(mut_r[k], b) : b
-        return mut_r
+        r[k]         = _hasOwnProperty.call(r, k) ? S.combine_(r[k], b) : b
+        return r
       })
     )
 }
@@ -646,13 +646,13 @@ export function fromFoldable<A, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigroup
  * @since 1.0.0
  */
 export function imap_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, f: (k: N, a: A) => B): ReadonlyRecord<N, B> {
-  const mut_out = {} as Record<N, B>
-  const keys    = Object.keys(fa)
+  const out  = {} as Record<N, B>
+  const keys = Object.keys(fa)
   for (let i = 0; i < keys.length; i++) {
-    const k    = keys[i] as keyof typeof fa
-    mut_out[k] = f(k, fa[k])
+    const k = keys[i] as keyof typeof fa
+    out[k]  = f(k, fa[k])
   }
-  return mut_out
+  return out
 }
 
 /**
@@ -706,12 +706,12 @@ export function getMonoid<A>(S: P.Semigroup<A>): P.Monoid<ReadonlyRecord<string,
     if (len === 0) {
       return x
     }
-    const mut_r = Object.assign({}, x) as Record<string, A>
+    const r = Object.assign({}, x) as Record<string, A>
     for (let i = 0; i < len; i++) {
-      const k  = keys[i]
-      mut_r[k] = _hasOwnProperty.call(x, k) ? S.combine_(x[k], y[k]) : y[k]
+      const k = keys[i]
+      r[k]    = _hasOwnProperty.call(x, k) ? S.combine_(x[k], y[k]) : y[k]
     }
-    return mut_r
+    return r
   }, empty)
 }
 
@@ -746,15 +746,15 @@ export const imapA_: P.MapWithIndexAFn_<[HKT.URI<RecordURI>]> = P.implementMapWi
     if (ks.length === 0) {
       return G.pure(empty)
     }
-    let mut_gr: HKT.HKT<_['G'], Record<_['N'], _['B']>> = G.pure({}) as any
+    let gr: HKT.HKT<_['G'], Record<_['N'], _['B']>> = G.pure({}) as any
     for (let i = 0; i < ks.length; i++) {
       const key = ks[i]
-      mut_gr    = G.crossWith_(mut_gr, f(key, ta[key]), (mut_r, b) => {
-        mut_r[key] = b
-        return mut_r
+      gr        = G.crossWith_(gr, f(key, ta[key]), (r, b) => {
+        r[key] = b
+        return r
       })
     }
-    return mut_gr
+    return gr
   }
 )
 
@@ -838,9 +838,9 @@ export function deleteAt_<A>(r: ReadonlyRecord<string, A>, k: string): ReadonlyR
   if (!has_(r, k)) {
     return r
   }
-  const mut_out = Object.assign({}, r) as Record<string, A>
-  delete mut_out[k as any]
-  return mut_out as any
+  const out = Object.assign({}, r) as Record<string, A>
+  delete out[k as any]
+  return out as any
 }
 
 export function deleteAt(k: string): <A>(r: ReadonlyRecord<string, A>) => ReadonlyRecord<string, A> {
@@ -849,9 +849,9 @@ export function deleteAt(k: string): <A>(r: ReadonlyRecord<string, A>) => Readon
 
 export function insertAt_<A>(r: ReadonlyRecord<string, A>, k: string, a: A): O.Option<ReadonlyRecord<string, A>> {
   if (!has_(r, k)) {
-    const mut_out = Object.assign({}, r) as Record<string, A>
-    mut_out[k]    = a
-    return O.some(mut_out)
+    const out = Object.assign({}, r) as Record<string, A>
+    out[k]    = a
+    return O.some(out)
   }
   return O.none()
 }
@@ -876,9 +876,9 @@ export function modifyAt_<A>(
   if (!has_(r, k)) {
     return O.none()
   }
-  const mut_out = Object.assign({}, r) as Record<string, A>
-  mut_out[k]    = f(r[k])
-  return O.some(mut_out)
+  const out = Object.assign({}, r) as Record<string, A>
+  out[k]    = f(r[k])
+  return O.some(out)
 }
 
 export function modifyAt<A>(
@@ -910,9 +910,9 @@ export function upsertAt_<A>(r: ReadonlyRecord<string, A>, k: string, a: A): Rea
   if (has_(r, k) && r[k] === a) {
     return r
   }
-  const mut_out = Object.assign({}, r) as Record<string, A>
-  mut_out[k]    = a
-  return mut_out
+  const out = Object.assign({}, r) as Record<string, A>
+  out[k]    = a
+  return out
 }
 
 export function upsertAt<A>(k: string, a: A): (r: ReadonlyRecord<string, A>) => ReadonlyRecord<string, A> {

@@ -5,7 +5,6 @@ export const CachedGetter: PropertyDecorator = (target, key) => {
   }
   const originalGetter = desc.get
 
-  // eslint-disable-next-line functional/immutable-data
   return Object.assign({}, desc, {
     get(this: any) {
       const x = originalGetter()

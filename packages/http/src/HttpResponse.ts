@@ -117,7 +117,6 @@ export class HttpResponse {
   status(s: Status.StatusCode): UIO<void> {
     return RefM.updateIO_(this.ref, (res) =>
       I.succeedLazy(() => {
-        // eslint-disable-next-line functional/immutable-data
         res.statusCode = s.code
         return res
       })

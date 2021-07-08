@@ -1,4 +1,3 @@
-/* eslint-disable functional/immutable-data */
 import * as I from './Iterable'
 import * as O from './Option'
 import * as St from './Structural'

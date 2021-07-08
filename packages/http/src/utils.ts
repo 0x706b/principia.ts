@@ -119,15 +119,15 @@ export function parseContentType(s: string): ParsedContentType {
       if (i === 0) {
         return { type: a, parameters: {} }
       }
-      const mut_split = a.split('=')
-      if (mut_split[1][0] === '"') {
-        mut_split[1] = mut_split[1].substr(1, mut_split[1].length - 2)
+      const split = a.split('=')
+      if (split[1][0] === '"') {
+        split[1] = split[1].substr(1, split[1].length - 2)
       }
       return {
         ...b,
         parameters: {
           ...b.parameters,
-          [mut_split[0]]: mut_split[1]
+          [split[0]]: split[1]
         }
       }
     })

@@ -1,4 +1,3 @@
-/* eslint-disable functional/immutable-data */
 import { isTracingEnabled } from './global'
 
 export const tracingSymbol = '$trace'

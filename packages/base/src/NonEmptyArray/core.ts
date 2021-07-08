@@ -251,24 +251,24 @@ export function alignWith_<A, B, C>(
   fb: NonEmptyArray<B>,
   f: (_: These<A, B>) => C
 ): NonEmptyArray<C> {
-  const minlen  = Math.min(fa.length, fb.length)
-  const maxlen  = Math.max(fa.length, fb.length)
-  const mut_ret = allocWithHead(f(Th.both(head(fa), head(fb))), maxlen)
+  const minlen = Math.min(fa.length, fb.length)
+  const maxlen = Math.max(fa.length, fb.length)
+  const ret    = allocWithHead(f(Th.both(head(fa), head(fb))), maxlen)
   for (let i = 1; i < minlen; i++) {
-    mut_ret[i] = f(Th.both(fa[i], fb[i]))
+    ret[i] = f(Th.both(fa[i], fb[i]))
   }
   if (minlen === maxlen) {
-    return mut_ret
+    return ret
   } else if (fa.length > fb.length) {
     for (let i = minlen; i < maxlen; i++) {
-      mut_ret[i] = f(Th.left(fa[i]))
+      ret[i] = f(Th.left(fa[i]))
     }
   } else {
     for (let i = minlen; i < maxlen; i++) {
-      mut_ret[i] = f(Th.right(fb[i]))
+      ret[i] = f(Th.right(fb[i]))
     }
   }
-  return mut_ret
+  return ret
 }
 
 /**
@@ -356,12 +356,12 @@ export function zip<B>(fb: NonEmptyArray<B>): <A>(fa: NonEmptyArray<A>) => NonEm
 }
 
 export function zipWith_<A, B, C>(fa: NonEmptyArray<A>, fb: NonEmptyArray<B>, f: (a: A, b: B) => C): NonEmptyArray<C> {
-  const mut_cs = [f(fa[0], fb[0])] as MutableNonEmptyArray<C>
-  const len    = Math.min(fa.length, fb.length)
+  const cs  = [f(fa[0], fb[0])] as MutableNonEmptyArray<C>
+  const len = Math.min(fa.length, fb.length)
   for (let i = 1; i < len; i++) {
-    mut_cs[i] = f(fa[i], fb[i])
+    cs[i] = f(fa[i], fb[i])
   }
-  return mut_cs
+  return cs
 }
 
 export function zipWith<A, B, C>(
@@ -568,12 +568,12 @@ export function foldMap<S>(S: P.Semigroup<S>): <A>(f: (a: A) => S) => (fa: NonEm
  */
 
 export function imap_<A, B>(fa: NonEmptyArray<A>, f: (i: number, a: A) => B): NonEmptyArray<B> {
-  // perf: const mut_out = [f(0, fa[0])]
-  const mut_out = allocWithHead(f(0, fa[0]), fa.length)
+  // perf: const out = [f(0, fa[0])]
+  const out = allocWithHead(f(0, fa[0]), fa.length)
   for (let i = 1; i < fa.length; i++) {
-    mut_out[i] = f(i, fa[i])
+    out[i] = f(i, fa[i])
   }
-  return mut_out
+  return out
 }
 
 export function imap<A, B>(f: (i: number, a: A) => B): (fa: NonEmptyArray<A>) => NonEmptyArray<B> {
@@ -607,32 +607,32 @@ export function flatten<A>(mma: NonEmptyArray<NonEmptyArray<A>>): NonEmptyArray<
 export function ichain_<A, B>(ma: NonEmptyArray<A>, f: (i: number, a: A) => NonEmptyArray<B>): NonEmptyArray<B> {
   let outLen = 1
   const len  = ma.length
-  // perf: const mut_temp = [f(0, ma[0])]
-  const mut_temp = allocWithHead(f(0, ma[0]), len)
-  mut_temp[0]    = f(0, ma[0])
+  // perf: const temp = [f(0, ma[0])]
+  const temp = allocWithHead(f(0, ma[0]), len)
+  temp[0]    = f(0, ma[0])
   for (let i = 1; i < len; i++) {
-    const e     = ma[i]
-    const arr   = f(i, e)
-    outLen     += arr.length
-    mut_temp[i] = arr
+    const e   = ma[i]
+    const arr = f(i, e)
+    outLen   += arr.length
+    temp[i]   = arr
   }
-  // perf: const mut_out = clone(mut_temp[0])
-  const mut_out = Array(outLen) as MutableNonEmptyArray<B>
-  const out0    = mut_temp[0]
-  const len0    = mut_temp[0].length
+  // perf: const out = clone(temp[0])
+  const out  = Array(outLen) as MutableNonEmptyArray<B>
+  const out0 = temp[0]
+  const len0 = temp[0].length
   for (let j = 0; j < len0; j++) {
-    mut_out[j] = out0[j]
+    out[j] = out0[j]
   }
-  let start = mut_temp[0].length
+  let start = temp[0].length
   for (let i = 1; i < len; i++) {
-    const arr = mut_temp[i]
+    const arr = temp[i]
     const l   = arr.length
     for (let j = 0; j < l; j++) {
-      mut_out[j + start] = arr[j]
+      out[j + start] = arr[j]
     }
     start += l
   }
-  return mut_out
+  return out
 }
 
 export function ichain<A, B>(f: (i: number, a: A) => NonEmptyArray<B>): (ma: NonEmptyArray<A>) => NonEmptyArray<B> {
@@ -820,11 +820,11 @@ export function reverse<A>(as: NonEmptyArray<A>): NonEmptyArray<A> {
     return as
   }
   // perf: let out = [as[as.length - 1]]
-  let mut_out = allocWithHead(as[as.length - 1], as.length)
+  let out = allocWithHead(as[as.length - 1], as.length)
   for (let j = 1, i = as.length - 2; i >= 0; i--, j++) {
-    mut_out[j] = as[i]
+    out[j] = as[i]
   }
-  return mut_out
+  return out
 }
 
 function comprehensionLoop<A, R>(
@@ -884,14 +884,14 @@ export function concatW_<A, B>(xs: ReadonlyArray<A>, ys: ReadonlyArray<B>): Read
   if (leny === 0) {
     return xs
   }
-  const mut_r = Array(lenx + leny)
+  const r = Array(lenx + leny)
   for (let i = 0; i < lenx; i++) {
-    mut_r[i] = xs[i]
+    r[i] = xs[i]
   }
   for (let i = 0; i < leny; i++) {
-    mut_r[i + lenx] = ys[i]
+    r[i + lenx] = ys[i]
   }
-  return mut_r
+  return r
 }
 
 export function concatW<B>(ys: NonEmptyArray<B>): <A>(xs: ReadonlyArray<A>) => NonEmptyArray<A | B>
@@ -1015,17 +1015,17 @@ export function groupSort<A>(O: P.Ord<A>): (as: NonEmptyArray<A>) => NonEmptyArr
  * @since 1.0.0
  */
 export function groupBy_<A>(as: ReadonlyArray<A>, f: (a: A) => string): ReadonlyRecord<string, NonEmptyArray<A>> {
-  const mut_out: Record<string, P.Mutable<NonEmptyArray<A>>> = {}
+  const out: Record<string, P.Mutable<NonEmptyArray<A>>> = {}
   for (let i = 0; i < as.length; i++) {
     const a = as[i]
     const k = f(a)
-    if (Object.prototype.hasOwnProperty.call(mut_out, k)) {
-      mut_out[k].push(a)
+    if (Object.prototype.hasOwnProperty.call(out, k)) {
+      out[k].push(a)
     } else {
-      mut_out[k] = [a]
+      out[k] = [a]
     }
   }
-  return mut_out
+  return out
 }
 
 /**
@@ -1224,15 +1224,15 @@ export function union_<A>(E: P.Eq<A>): (xs: NonEmptyArray<A>, ys: NonEmptyArray<
  * @since 1.0.0
  */
 export function unzip<A, B>(as: NonEmptyArray<readonly [A, B]>): readonly [NonEmptyArray<A>, NonEmptyArray<B>] {
-  const mut_fa: MutableNonEmptyArray<A> = [as[0][0]]
-  const mut_fb: MutableNonEmptyArray<B> = [as[0][1]]
+  const fa: MutableNonEmptyArray<A> = [as[0][0]]
+  const fb: MutableNonEmptyArray<B> = [as[0][1]]
 
   for (let i = 1; i < as.length; i++) {
-    mut_fa[i] = as[i][0]
-    mut_fb[i] = as[i][1]
+    fa[i] = as[i][0]
+    fb[i] = as[i][1]
   }
 
-  return [mut_fa, mut_fb]
+  return [fa, fb]
 }
 
 /*
@@ -1246,8 +1246,8 @@ export function unsafeModifyAt_<A>(as: NonEmptyArray<A>, i: number, f: (a: A) =>
   if (as[i] === next) {
     return as
   }
-  return mutate_(as, (mut_xs) => {
-    mut_xs[i] = next
+  return mutate_(as, (xs) => {
+    xs[i] = next
   }) as unknown as NonEmptyArray<A>
 }
 
@@ -1259,8 +1259,8 @@ export function unsafeUpdateAt_<A>(as: NonEmptyArray<A>, i: number, a: A): NonEm
   if (as[i] === a) {
     return as
   }
-  return mutate_(as, (mut_xs) => {
-    mut_xs[i] = a
+  return mutate_(as, (xs) => {
+    xs[i] = a
   }) as unknown as NonEmptyArray<A>
 }
 
@@ -1313,11 +1313,11 @@ export function head<A>(as: NonEmptyArray<A>): A {
  * @since 1.0.0
  */
 export function tail<A>(as: NonEmptyArray<A>): ReadonlyArray<A> {
-  const mut_out = Array(as.length - 1)
+  const out = Array(as.length - 1)
   for (let i = 0; i < as.length - 1; i++) {
-    mut_out[i] = as[i + 1]
+    out[i] = as[i + 1]
   }
-  return mut_out
+  return out
 }
 
 /**
@@ -1335,11 +1335,11 @@ export function last<A>(as: NonEmptyArray<A>): A {
  * @since 1.0.0
  */
 export function init<A>(as: NonEmptyArray<A>): ReadonlyArray<A> {
-  const mut_out = Array(as.length - 1)
+  const out = Array(as.length - 1)
   for (let i = 0; i < as.length - 1; i++) {
-    mut_out[i] = as[i]
+    out[i] = as[i]
   }
-  return mut_out
+  return out
 }
 
 /**
@@ -1348,9 +1348,9 @@ export function init<A>(as: NonEmptyArray<A>): ReadonlyArray<A> {
  * @since 1.0.0
  */
 export function mutate_<A>(as: NonEmptyArray<A>, f: (as: P.Mutable<NonEmptyArray<A>>) => void): ReadonlyArray<A> {
-  const mut_as = mutableClone(as)
-  f(mut_as)
-  return mut_as
+  const mut = mutableClone(as)
+  f(mut)
+  return mut
 }
 
 /**
@@ -1498,7 +1498,7 @@ export const TraversableWithIndex = P.TraversableWithIndex<URI>({
  * @internal
  */
 function allocWithHead<A>(head: A, length: number): MutableNonEmptyArray<A> {
-  const mut_as = Array(length) as MutableNonEmptyArray<A>
-  mut_as[0]    = head
-  return mut_as
+  const as = Array(length) as MutableNonEmptyArray<A>
+  as[0]    = head
+  return as
 }

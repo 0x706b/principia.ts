@@ -183,20 +183,20 @@ export class TestRandom implements Random {
     const self = this
     return pipe(
       I.gen(function* (_) {
-        const rangeSize              = trimArrayIntInplace(addOneToPositiveArrayInt(substractArrayIntToNew(high, low)))
-        const rangeLength            = rangeSize.data.length
-        const mut_out: Array<number> = []
+        const rangeSize          = trimArrayIntInplace(addOneToPositiveArrayInt(substractArrayIntToNew(high, low)))
+        const rangeLength        = rangeSize.data.length
+        const out: Array<number> = []
         while (true) {
           for (let index = 0; index !== rangeLength; ++index) {
             const indexRangeSize = index === 0 ? rangeSize[0] + 1 : 0x100000000
             const g              = yield* _(self.randomIntBounded(indexRangeSize))
-            mut_out[index]       = g
+            out[index]           = g
           }
           for (let index = 0; index !== rangeLength; ++index) {
-            const current        = mut_out[index]
+            const current        = out[index]
             const currentInRange = rangeSize[index]
             if (current < currentInRange) {
-              return mut_out
+              return out
             } else if (current > currentInRange) {
               break
             }
@@ -362,8 +362,7 @@ export function substractArrayIntToNew(arrayIntA: ArrayInt, arrayIntB: ArrayInt)
   const dataB = arrayIntB.data
   if (isStrictlySmaller(dataA, dataB)) {
     const out = substractArrayIntToNew(arrayIntB, arrayIntA)
-    // eslint-disable-next-line functional/immutable-data
-    out.sign = -out.sign as -1 | 1
+    out.sign  = -out.sign as -1 | 1
     return out
   }
   const data: number[] = []
@@ -383,9 +382,9 @@ export function substractArrayIntToNew(arrayIntA: ArrayInt, arrayIntB: ArrayInt)
  * and uniform notation for zero: {sign: 1, data: [0]}
  */
 export function trimArrayIntInplace(arrayInt: ArrayInt) {
-  /* eslint-disable functional/immutable-data */
   const data       = arrayInt.data
   let firstNonZero = 0
+  // eslint-disable-next-line no-empty
   for (; firstNonZero !== data.length && data[firstNonZero] === 0; ++firstNonZero) {}
   if (firstNonZero === data.length) {
     // only zeros
@@ -428,7 +427,6 @@ export function addArrayIntToNew(arrayIntA: ArrayInt, arrayIntB: ArrayInt): Arra
  * @internal
  */
 export function addOneToPositiveArrayInt(arrayInt: ArrayInt): ArrayInt {
-  /* eslint-disable functional/immutable-data */
   arrayInt.sign = 1 // handling case { sign: -1, data: [0,...,0] }
   const data    = arrayInt.data
   for (let index = data.length - 1; index >= 0; --index) {

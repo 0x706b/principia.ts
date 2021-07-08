@@ -1214,8 +1214,8 @@ interface RemoveListener {
 }
 
 class InterruptionState {
-  private mut_isInterrupted = false
-  readonly listeners        = new Set<() => void>()
+  private isInterrupted = false
+  readonly listeners    = new Set<() => void>()
 
   listen(f: () => void): RemoveListener {
     this.listeners.add(f)
@@ -1225,11 +1225,11 @@ class InterruptionState {
   }
 
   get interrupted() {
-    return this.mut_isInterrupted
+    return this.isInterrupted
   }
 
   interrupt() {
-    this.mut_isInterrupted = true
+    this.isInterrupted = true
     this.listeners.forEach((f) => {
       f()
     })
@@ -1239,9 +1239,9 @@ class InterruptionState {
 class CancellablePromise<E, A> {
   readonly _E!: () => E
 
-  private mut_reject: ((e: Ex.Rejection<any>) => void) | undefined = undefined
+  private reject: ((e: Ex.Rejection<any>) => void) | undefined = undefined
 
-  private mut_current: Promise<A> | undefined = undefined
+  private current: Promise<A> | undefined = undefined
 
   constructor(
     readonly factory: (onInterrupt: (f: () => void) => void) => Promise<A>,
@@ -1249,7 +1249,7 @@ class CancellablePromise<E, A> {
   ) {}
 
   promise(): Promise<A> {
-    if (this.mut_current) {
+    if (this.current) {
       throw new Error('Bug: promise() has been called twice')
     }
     if (this.interruptionState.interrupted) {
@@ -1265,7 +1265,7 @@ class CancellablePromise<E, A> {
     })
 
     const p = new Promise<A>((resolve, reject) => {
-      this.mut_reject = reject
+      this.reject = reject
       this.factory((f) => {
         onInterrupt.push(f)
       })
@@ -1282,12 +1282,12 @@ class CancellablePromise<E, A> {
           }
         })
     })
-    this.mut_current = p
+    this.current = p
     return p
   }
 
   interrupt() {
-    this.mut_reject?.(Ex.interrupt())
+    this.reject?.(Ex.interrupt())
   }
 }
 

@@ -65,10 +65,12 @@ export const dual = <A>(S: Semigroup<A>): Semigroup<A> => ({
  * @category Instances
  * @since 1.0.0
  */
-export const fn = <S>(S: Semigroup<S>) => <A = never>(): Semigroup<(a: A) => S> => ({
-  combine_: (f, g) => (a) => S.combine_(f(a), g(a)),
-  combine: (g) => (f) => (a) => S.combine_(f(a), g(a))
-})
+export const fn =
+  <S>(S: Semigroup<S>) =>
+  <A = never>(): Semigroup<(a: A) => S> => ({
+    combine_: (f, g) => (a) => S.combine_(f(a), g(a)),
+    combine: (g) => (f) => (a) => S.combine_(f(a), g(a))
+  })
 
 /**
  * @category Instances
@@ -76,13 +78,13 @@ export const fn = <S>(S: Semigroup<S>) => <A = never>(): Semigroup<(a: A) => S> 
  */
 export const struct = <A>(semigroups: { [K in keyof A]: Semigroup<A[K]> }): Semigroup<A> => {
   return Semigroup((x, y) => {
-    const mut_r: A = {} as any
-    const keys     = Object.keys(semigroups)
+    const r: A = {} as any
+    const keys = Object.keys(semigroups)
     for (let i = 0; i < keys.length; i++) {
-      const key  = keys[i]
-      mut_r[key] = semigroups[key].combine_(x[key], y[key])
+      const key = keys[i]
+      r[key]    = semigroups[key].combine_(x[key], y[key])
     }
-    return mut_r
+    return r
   })
 }
 
@@ -112,5 +114,7 @@ export const assign = <A extends object = never>(): Semigroup<A> => Semigroup((x
  * @category Instances
  * @since 1.0.0
  */
-export const intercalate = <A>(a: A) => (S: Semigroup<A>): Semigroup<A> =>
-  Semigroup((x, y) => S.combine_(x, S.combine_(a, y)))
+export const intercalate =
+  <A>(a: A) =>
+  (S: Semigroup<A>): Semigroup<A> =>
+    Semigroup((x, y) => S.combine_(x, S.combine_(a, y)))

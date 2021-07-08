@@ -334,19 +334,19 @@ export const distributed = <R, S, F1 extends Msg.AnyMessage>(
               )
             )
 
-            const mut_slots: Record<string, C.Chunk<A.PendingMessage<F1>>> = {}
+            const slots: Record<string, C.Chunk<A.PendingMessage<F1>>> = {}
 
             for (const r of all) {
               const id = messageToId(r[0])
-              if (!mut_slots[id]) {
-                mut_slots[id] = C.empty()
+              if (!slots[id]) {
+                slots[id] = C.empty()
               }
-              mut_slots[id] = C.append_(mut_slots[id], r)
+              slots[id] = C.append_(slots[id], r)
             }
 
             yield* _(
-              M.foreachUnitPar_(Object.keys(mut_slots), (id) =>
-                M.foreachUnit_(mut_slots[id], ([a, p]) => {
+              M.foreachUnitPar_(Object.keys(slots), (id) =>
+                M.foreachUnit_(slots[id], ([a, p]) => {
                   return M.gen(function* (_) {
                     const leaders  = yield* _(Ref.get(leadersRef))
                     const election = electionFromNameAndId(name, id)

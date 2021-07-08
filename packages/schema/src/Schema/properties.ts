@@ -325,12 +325,12 @@ export function isPropertyRecord(u: unknown): u is PropertyRecord {
 }
 
 export function tagsFromProps(props: PropertyRecord): Record<string, string> {
-  const mut_tags = {}
+  const tags = {}
   for (const key in props) {
     const s = props[key]._schema
     if (O.isNone(props[key]._def) && props[key]._optional === 'required' && isTagS(s)) {
-      mut_tags[key] = s.api.tag
+      tags[key] = s.api.tag
     }
   }
-  return mut_tags
+  return tags
 }

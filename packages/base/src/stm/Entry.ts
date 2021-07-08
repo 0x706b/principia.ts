@@ -1,4 +1,3 @@
-/* eslint-disable functional/immutable-data */
 import type { Atomic } from './TRef'
 
 import { Versioned } from './Versioned'

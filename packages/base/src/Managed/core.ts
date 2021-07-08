@@ -607,12 +607,12 @@ export const sequenceS = <MR extends ReadonlyRecord<string, Managed<any, any, an
       ([k, v]) => map_(v, (a) => [k, a] as const)
     ),
     (kvs) => {
-      const mut_r = {}
+      const r = {}
       for (let i = 0; i < kvs.length; i++) {
         const [k, v] = kvs[i]
-        mut_r[k]     = v
+        r[k]         = v
       }
-      return mut_r
+      return r
     }
   ) as any
 
@@ -3071,7 +3071,6 @@ export function gen<T extends GenManaged<any, any, any>, A>(
           return run(next)
         }
         if (state.value._trace) {
-          // eslint-disable-next-line functional/immutable-data
           f['$trace'] = state.value._trace
         }
         return chain_(state.value.M, f)

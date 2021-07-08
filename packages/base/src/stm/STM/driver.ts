@@ -1,4 +1,3 @@
-/* eslint-disable functional/immutable-data */
 import type { FiberId } from '../../Fiber/FiberId'
 import type { Stack } from '../../util/support/Stack'
 import type { Journal } from '../Journal'

@@ -1,4 +1,3 @@
-/* eslint-disable functional/immutable-data */
 import fs from 'fs'
 import module from 'module'
 import path from 'path'
@@ -40,52 +39,13 @@ export const importExportVisitor = (
 ): { info: VisitorInfo, visitedSourceFile: ts.SourceFile } => {
   const visitorInfo: VisitorInfo = { exports: [], imports: [] }
 
-  const visitor = (info: VisitorInfo) => (node: ts.Node): ts.Node | undefined => {
-    let newInfo: VisitorInfo = { exports: [], imports: [] }
-    if (isImportOrExport(node)) {
-      const specifierText = node.moduleSpecifier.text
-      if (isSpecifierRelative(node)) {
-        if (isImport(node)) {
-          newInfo = {
-            exports: [],
-            imports: [
-              ts.factory.createImportDeclaration(
-                node.decorators,
-                node.modifiers,
-                node.importClause,
-                createValidESMPath(node, sourceFile, config)
-              )
-            ]
-          }
-        } else if (isExport(node)) {
-          newInfo = {
-            imports: [],
-            exports: [
-              ts.factory.createExportDeclaration(
-                node.decorators,
-                node.modifiers,
-                false,
-                node.exportClause,
-                createValidESMPath(node, sourceFile, config)
-              )
-            ]
-          }
-        }
-      } else if (module.builtinModules.includes(specifierText)) {
-        if (isImport(node)) {
-          newInfo = {
-            exports: [],
-            imports: [node]
-          }
-        } else if (isExport(node)) {
-          newInfo = {
-            imports: [],
-            exports: [node]
-          }
-        }
-      } else {
-        const packageJSON = getPackageJSON(node, config?.relativeProjectRoot)
-        if (packageJSON) {
+  const visitor =
+    (info: VisitorInfo) =>
+    (node: ts.Node): ts.Node | undefined => {
+      let newInfo: VisitorInfo = { exports: [], imports: [] }
+      if (isImportOrExport(node)) {
+        const specifierText = node.moduleSpecifier.text
+        if (isSpecifierRelative(node)) {
           if (isImport(node)) {
             newInfo = {
               exports: [],
@@ -94,7 +54,7 @@ export const importExportVisitor = (
                   node.decorators,
                   node.modifiers,
                   node.importClause,
-                  createValidESMPath(node, sourceFile, config, packageJSON)
+                  createValidESMPath(node, sourceFile, config)
                 )
               ]
             }
@@ -107,21 +67,62 @@ export const importExportVisitor = (
                   node.modifiers,
                   false,
                   node.exportClause,
-                  createValidESMPath(node, sourceFile, config, packageJSON)
+                  createValidESMPath(node, sourceFile, config)
                 )
               ]
             }
           }
+        } else if (module.builtinModules.includes(specifierText)) {
+          if (isImport(node)) {
+            newInfo = {
+              exports: [],
+              imports: [node]
+            }
+          } else if (isExport(node)) {
+            newInfo = {
+              imports: [],
+              exports: [node]
+            }
+          }
+        } else {
+          const packageJSON = getPackageJSON(node, config?.relativeProjectRoot)
+          if (packageJSON) {
+            if (isImport(node)) {
+              newInfo = {
+                exports: [],
+                imports: [
+                  ts.factory.createImportDeclaration(
+                    node.decorators,
+                    node.modifiers,
+                    node.importClause,
+                    createValidESMPath(node, sourceFile, config, packageJSON)
+                  )
+                ]
+              }
+            } else if (isExport(node)) {
+              newInfo = {
+                imports: [],
+                exports: [
+                  ts.factory.createExportDeclaration(
+                    node.decorators,
+                    node.modifiers,
+                    false,
+                    node.exportClause,
+                    createValidESMPath(node, sourceFile, config, packageJSON)
+                  )
+                ]
+              }
+            }
+          }
         }
-      }
 
-      info.exports = info.exports.concat(newInfo.exports)
-      info.imports = info.imports.concat(newInfo.imports)
-      return undefined
-    } else {
-      return ts.visitEachChild(node, visitor(info), ctx)
+        info.exports = info.exports.concat(newInfo.exports)
+        info.imports = info.imports.concat(newInfo.imports)
+        return undefined
+      } else {
+        return ts.visitEachChild(node, visitor(info), ctx)
+      }
     }
-  }
   const visitedSourceFile = ts.visitEachChild(sourceFile, visitor(visitorInfo), ctx)
   return {
     info: visitorInfo,

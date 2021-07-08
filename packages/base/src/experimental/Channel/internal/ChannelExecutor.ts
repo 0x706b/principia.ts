@@ -1,4 +1,3 @@
-/* eslint-disable functional/immutable-data */
 import type { Cause } from '../../../Cause'
 import type { Exit } from '../../../Exit'
 import type { IO, URIO } from '../../../IO'

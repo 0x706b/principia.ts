@@ -275,7 +275,6 @@ export function memo<R, A>(builder: (maxDepth: number) => Gen<R, A>): (maxDepth?
     if (!Object.prototype.hasOwnProperty.call(previous, n)) {
       const prev     = remainingDepth
       remainingDepth = n - 1
-      // eslint-disable-next-line functional/immutable-data
       previous[n]    = builder(n)
       remainingDepth = prev
     }

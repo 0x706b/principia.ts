@@ -1,7 +1,5 @@
 /* Forked from https://github.com/planttheidea/fast-equals */
 
-/* eslint-disable functional/immutable-data */
-
 const HAS_WEAKSET_SUPPORT = typeof WeakSet === 'function'
 
 const { keys } = Object

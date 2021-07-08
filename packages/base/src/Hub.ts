@@ -1187,8 +1187,6 @@ export abstract class UHubInternal<A> {
   abstract subscribe(): SubscriptionInternal<A>
 }
 
-/* eslint-disable functional/immutable-data */
-
 export class BoundedHubArb<A> extends UHubInternal<A> {
   array: Array<A>
   publisherIndex = 0

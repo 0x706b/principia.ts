@@ -129,11 +129,11 @@ export function struct<P extends Record<string, Encoder<any, any>>>(
   properties: P
 ): Encoder<{ readonly [K in keyof P]: InputOf<P[K]> }, { [K in keyof P]: OutputOf<P[K]> }> {
   return Encoder((a) => {
-    const mut_r = {} as any
+    const r = {} as any
     for (const k in properties) {
-      mut_r[k] = properties[k].encode(a[k])
+      r[k] = properties[k].encode(a[k])
     }
-    return mut_r
+    return r
   })
 }
 
@@ -147,16 +147,16 @@ export function partial<P extends Record<string, Encoder<any, any>>>(
   properties: P
 ): Encoder<{ readonly [K in keyof P]?: InputOf<P[K]> }, { [K in keyof P]?: OutputOf<P[K]> }> {
   return Encoder((a) => {
-    const mut_r = {} as any
+    const r = {} as any
     for (const k in properties) {
       const v = a[k]
       if (v === undefined) {
-        mut_r[k] = undefined
+        r[k] = undefined
       } else {
-        mut_r[k] = properties[k].encode(v)
+        r[k] = properties[k].encode(v)
       }
     }
-    return mut_r
+    return r
   })
 }
 
@@ -189,13 +189,13 @@ export function array<A, O>(item: Encoder<A, O>): Encoder<ReadonlyArray<A>, Arra
 
 export function chunk<A, O>(item: Encoder<A, O>): Encoder<Chunk<A>, Array<O>> {
   return Encoder((as) => {
-    const mut_out: Array<O> = Array(as.length)
-    let i                   = 0
+    const out: Array<O> = Array(as.length)
+    let i               = 0
     for (const a of as) {
-      mut_out[i] = item.encode(a)
+      out[i] = item.encode(a)
       i++
     }
-    return mut_out
+    return out
   })
 }
 

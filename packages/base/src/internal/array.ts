@@ -4,12 +4,12 @@ import type { Mutable } from '../prelude'
 export function appendW_<A, B>(init: ReadonlyArray<A>, last: B): NonEmptyArray<A | B> {
   const len = init.length
   // perf: return [...init, last]
-  const mut_r = Array(len + 1) as MutableNonEmptyArray<A | B>
-  mut_r[len]  = last
+  const r = Array(len + 1) as MutableNonEmptyArray<A | B>
+  r[len]  = last
   for (let i = 0; i < len; i++) {
-    mut_r[i] = init[i]
+    r[i] = init[i]
   }
-  return mut_r
+  return r
 }
 
 export function ifoldl_<A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, i: number, a: A) => B): B {
@@ -52,11 +52,11 @@ export function makeBy<A>(n: number, f: (i: number) => A): NonEmptyArray<A> {
  */
 export function prependW_<A, B>(tail: ReadonlyArray<A>, head: B): NonEmptyArray<A | B> {
   const len = tail.length
-  // perf: const mut_out = [head]
-  const mut_out = Array(len + 1) as MutableNonEmptyArray<A | B>
-  mut_out[0]    = head
+  // perf: const out = [head]
+  const out = Array(len + 1) as MutableNonEmptyArray<A | B>
+  out[0]    = head
   for (let i = 0; i < len; i++) {
-    mut_out[i + 1] = tail[i]
+    out[i + 1] = tail[i]
   }
-  return mut_out
+  return out
 }

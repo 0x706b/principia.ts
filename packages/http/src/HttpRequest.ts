@@ -177,13 +177,11 @@ export class HttpRequest {
                   ),
                   I.tap((url) =>
                     I.succeedLazy(() => {
-                      // eslint-disable-next-line functional/immutable-data
                       self.memoizedUrl = E.right(O.some(url))
                     })
                   ),
                   I.tapError((ex) =>
                     I.succeedLazy(() => {
-                      // eslint-disable-next-line functional/immutable-data
                       self.memoizedUrl = E.left(ex)
                     })
                   )

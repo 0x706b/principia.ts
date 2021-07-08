@@ -3808,18 +3808,18 @@ export function intersperse_<R, E, A, A1>(ma: Stream<R, E, A>, middle: A1): Stre
         chunks,
         I.chain((os) =>
           Ref.modify_(state, (first) => {
-            let r        = C.empty<A | A1>()
-            let mut_flag = first
+            let r    = C.empty<A | A1>()
+            let flag = first
             for (const o of os) {
-              if (mut_flag) {
-                mut_flag = false
-                r        = C.append_(r, o)
+              if (flag) {
+                flag = false
+                r    = C.append_(r, o)
               } else {
                 r = C.append_(r, middle)
                 r = C.append_(r, o)
               }
             }
-            return [r, mut_flag]
+            return [r, flag]
           })
         )
       )

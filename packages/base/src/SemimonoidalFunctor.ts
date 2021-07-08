@@ -1019,19 +1019,19 @@ export function crossFlatF<F extends HKT.URIS, C = HKT.Auto>(F: SemimonoidalFunc
  */
 function curried(f: Function, n: number, acc: ReadonlyArray<unknown>) {
   return function (x: unknown) {
-    const mut_combined = Array(acc.length + 1)
+    const combined = Array(acc.length + 1)
     for (let i = 0; i < acc.length; i++) {
-      mut_combined[i] = acc[i]
+      combined[i] = acc[i]
     }
-    mut_combined[acc.length] = x
+    combined[acc.length] = x
     /* eslint-disable-next-line prefer-spread */
-    return n === 0 ? f.apply(null, mut_combined) : curried(f, n - 1, mut_combined)
+    return n === 0 ? f.apply(null, combined) : curried(f, n - 1, combined)
   }
 }
 /**
  * @internal
  */
-const mut_tupleConstructors: Record<number, (a: unknown) => any> = {
+const tupleConstructors: Record<number, (a: unknown) => any> = {
   1: (a) => [a],
   2: (a) => (b: any) => [a, b],
   3: (a) => (b: any) => (c: any) => [a, b, c],
@@ -1044,10 +1044,10 @@ const mut_tupleConstructors: Record<number, (a: unknown) => any> = {
  */
 function getTupleConstructor(len: number): (a: unknown) => any {
   /* eslint-disable-next-line no-prototype-builtins */
-  if (!mut_tupleConstructors.hasOwnProperty(len)) {
-    mut_tupleConstructors[len] = curried(tuple, len - 1, [])
+  if (!tupleConstructors.hasOwnProperty(len)) {
+    tupleConstructors[len] = curried(tuple, len - 1, [])
   }
-  return mut_tupleConstructors[len]
+  return tupleConstructors[len]
 }
 
 /**
@@ -1080,11 +1080,11 @@ function getRecordConstructor(keys: ReadonlyArray<string>) {
     default:
       return curried(
         (...args: ReadonlyArray<unknown>) => {
-          const mut_r: Record<string, unknown> = {}
+          const r: Record<string, unknown> = {}
           for (let i = 0; i < len; i++) {
-            mut_r[keys[i]] = args[i]
+            r[keys[i]] = args[i]
           }
-          return mut_r
+          return r
         },
         len - 1,
         []
