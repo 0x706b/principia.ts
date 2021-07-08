@@ -1,6 +1,6 @@
 {
   "name": "@principia/actors-node",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "Actors Node",
   "repository": {
     "type": "git",
@@ -49,12 +49,12 @@
     "demo": "ts-node -r tsconfig-paths/register demo/demo.ts"
   },
   "dependencies": {
-    "@principia/actors": "^0.14.0",
-    "@principia/base": "^0.14.0",
-    "@principia/express": "^0.14.0",
-    "@principia/keeper": "^0.14.0",
-    "@principia/pg": "^0.14.0",
-    "@principia/schema": "^0.14.0",
+    "@principia/actors": "^0.15.0",
+    "@principia/base": "^0.15.0",
+    "@principia/express": "^0.15.0",
+    "@principia/keeper": "^0.15.0",
+    "@principia/pg": "^0.15.0",
+    "@principia/schema": "^0.15.0",
     "@types/node-fetch": "^2.5.11",
     "node-fetch": "^2.6.1"
   },
