@@ -111,10 +111,16 @@ function rotateAccum<A, B, C>(left: SafeFunction<A, B>, right: SafeFunction<B, C
   throw new Error('BUG')
 }
 
+/**
+ * @optimize remove
+ */
 function concrete<A, B>(_: SafeFunction<A, B>): asserts _ is Single<A, B> | Concat<A, any, B> {
   //
 }
 
+/**
+ * @optimize identity
+ */
 function concreteId<A, B>(_: SafeFunction<A, B>): Single<A, B> | Concat<A, any, B> {
   return _ as any
 }
