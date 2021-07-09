@@ -22,12 +22,12 @@ class IOSpec extends DefaultRunnableSpec {
       'bracket',
       testM('happy path', () =>
         I.gen(function* (_) {
-          const release  = yield* _(Ref.makeRef(false))
+          const release  = yield* _(Ref.make(false))
           const result   = yield* _(
             pipe(
               I.succeed(42),
               I.bracket(
-                (a) => I.effectTotal(() => a + 1),
+                (a) => I.succeedLazy(() => a + 1),
                 (_) => release.set(true)
               )
             )
@@ -52,7 +52,7 @@ class IOSpec extends DefaultRunnableSpec {
           const cause = yield* _(
             pipe(
               exit,
-              Ex.matchM(I.succeed, () => I.fail('effect should have died'))
+              Ex.matchIO(I.succeed, () => I.fail('effect should have died'))
             )
           )
           return assert(Ca.failures(cause), deepStrictEqualTo(['use failed']))

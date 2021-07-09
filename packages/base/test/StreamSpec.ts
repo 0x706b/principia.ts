@@ -22,9 +22,9 @@ class StreamSpec extends DefaultRunnableSpec {
             )
             return pipe(
               P.make<never, void>(),
-              I.bind((onEnd) =>
-                pipe(subscribe, S.ensuring(onEnd.succeed()), S.runDrain, I.fork, (_) =>
-                  _['*>'](onEnd.await)['*>'](S.runDrain(subscribe))['*>'](I.succeed(assertCompletes))
+              I.chain((onEnd) =>
+                pipe(subscribe, S.ensuring(P.succeed_(onEnd, undefined)), S.runDrain, I.fork, (_) =>
+                  _['*>'](P.await(onEnd))['*>'](S.runDrain(subscribe))['*>'](I.succeed(assertCompletes))
                 )
               )
             )
