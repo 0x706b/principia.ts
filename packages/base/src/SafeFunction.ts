@@ -1,44 +1,37 @@
 import { flow } from './function'
 
-export interface SafeFunction<I, A> {
-  (_: I): A
-}
-
 /**
  * A unary function that can compose in constant stack space with amortized
  * linear time application (in the number of constituent functions).
  *
  * A port of `AndThen` from `cats`
  */
-export abstract class SafeFunction<I, A> {
-  readonly _U!: 'SafeFunction'
-  readonly _I!: (_: I) => void
-  readonly _A!: () => A
+export interface SafeFunction<I, A> {
+  readonly _U: 'SafeFunction'
+  (_: I): A
 }
 
 const MAX_STACK_DEPTH = 128
 
-export class Single<A, B> extends SafeFunction<A, B> {
-  readonly _tag = 'Single'
-  constructor(readonly f: (a: A) => B, readonly index: number) {
-    super()
-  }
+export interface Single<A, B> extends SafeFunction<A, B> {
+  readonly _tag: 'Single'
+  readonly f: (a: A) => B
+  readonly index: number
 }
 
-export class Concat<A, B, C> extends SafeFunction<A, C> {
-  readonly _tag = 'Concat'
-  constructor(readonly f: SafeFunction<A, B>, readonly g: SafeFunction<B, C>) {
-    super()
-  }
+export interface Concat<A, B, C> extends SafeFunction<A, C> {
+  readonly _tag: 'Concat'
+  readonly f: SafeFunction<A, B>
+  readonly g: SafeFunction<B, C>
 }
 
 export function single<A, B>(f: (a: A) => B, index?: number): SafeFunction<A, B> {
-  const _ = new Single(f, index ?? 0)
+  const _ = { _tag: 'Single', f, index: index ?? 0 } as Single<A, B>
   return Object.assign(run(_), _)
 }
 
 export function concat<A, B, C>(f: SafeFunction<A, B>, g: SafeFunction<B, C>): SafeFunction<A, C> {
-  const _ = new Concat(f, g)
+  const _ = { _tag: 'Concat', f, g } as Concat<A, B, C>
   return Object.assign(run(_), _)
 }
 
