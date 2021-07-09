@@ -1,7 +1,7 @@
 // tracing: off
 
 import type { Exit } from '../../Exit/core'
-import type { IO } from '../core'
+import { defer, IO } from '../core'
 
 import { traceAs } from '@principia/compile/util'
 
@@ -33,10 +33,10 @@ export function bracketExit_<R, E, A, E1, R1, A1, R2, E2>(
       acquire,
       traceAs(use, (a) =>
         chain_(
-          result(restore(use(a))),
+          result(defer(() => restore(use(a)))),
           traceAs(release, (e) =>
             matchCauseIO_(
-              release(a, e),
+              defer(() => release(a, e)),
               (cause2) =>
                 halt(
                   Ex.match_(
