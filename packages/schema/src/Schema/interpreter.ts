@@ -40,7 +40,7 @@ import type {
 } from './core'
 import type { DateMsS, DateStringS } from './date'
 import type { NewtypeIsoS, NewtypePrismS } from './newtype'
-import type { AnyP, AnyPropertyWithInstance, AnyUPOf, PropertiesS } from './properties'
+import type { AnyPropertyWithInstance, AnyUPOf, PropertiesS } from './properties'
 import type { TaggedUnionS } from './taggedUnion'
 import type { Newtype } from '@principia/base/Newtype'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
@@ -136,202 +136,211 @@ export type Interpreter = (
 
 const CACHE = MHM.hashMap<URIS, WeakMap<AnyS, any>>()
 
-export const defaultInterpreter: Interpreter = (interpreters) => <U extends URIS>(S: Schemable<U>) => {
-  const toS = makeTo(...interpreters)(S)
-  return (schema) => {
-    concrete<U>(schema)
-    let instance: Kind<U, any, any, any, any, any, any> | undefined = undefined
-    switch (schema._tag) {
-      case 'Unknown': {
-        instance = S.unknown
-        break
-      }
-      case 'String': {
-        instance = S.string
-        break
-      }
-      case 'Number': {
-        instance = S.number
-        break
-      }
-      case 'Boolean': {
-        instance = S.boolean
-        break
-      }
-      case 'Literal': {
-        instance = S.literal(schema.literals[0], ...schema.literals.slice(1))
-        break
-      }
-      case 'DateString': {
-        instance = S.dateString
-        break
-      }
-      case 'DateMs': {
-        instance = S.dateMs
-        break
-      }
-      case 'Tag': {
-        instance = S.literal(schema.tag)
-        break
-      }
-      case 'Nullable': {
-        instance = S.nullable(toS(schema.or), schema.or)
-        break
-      }
-      case 'Refine': {
-        instance = S.refine(toS(schema.from), schema.from, schema.refinement, schema.error, schema.warn, schema.label)
-        break
-      }
-      case 'Constrain': {
-        instance = S.constrain(toS(schema.from), schema.from, schema.predicate, schema.error, schema.warn, schema.label)
-        break
-      }
-      case 'Array': {
-        instance = S.array(toS(schema.item), schema.item)
-        break
-      }
-      case 'Chunk': {
-        instance = S.chunk(toS(schema.item), schema.item)
-        break
-      }
-      case 'Record': {
-        instance = S.record(toS(schema.codomain), schema.codomain)
-        break
-      }
-      case 'Struct': {
-        instance = S.struct(R.map_(schema.properties, toS), schema.properties)
-        break
-      }
-      case 'Partial': {
-        instance = S.partial(R.map_(schema.properties, toS), schema.properties)
-        break
-      }
-      case 'Tuple': {
-        instance = S.tuple(A.map_(schema.components, toS), schema.components)
-        break
-      }
-      case 'Intersect': {
-        instance = S.intersect(NA.map_(schema.members, toS), schema.members)
-        break
-      }
-      case 'Sum': {
-        instance = S.sum(schema.tag)(R.map_(schema.members, toS), schema.members)
-        break
-      }
-      case 'Union': {
-        const s  = NA.map_(schema.members, toS)
-        instance = S.union(s, schema.members)
-        break
-      }
-      case 'Pipe': {
-        instance = S.compose(toS(schema.prev), toS(schema.next), schema.prev, schema.next)
-        break
-      }
-      case 'MapDecoderError': {
-        if (S.mapDecodeError) {
-          instance = S.mapDecodeError(toS(schema.fa), schema.fa, schema.mapError)
+export const defaultInterpreter: Interpreter =
+  (interpreters) =>
+  <U extends URIS>(S: Schemable<U>) => {
+    const toS = makeTo(...interpreters)(S)
+    return (schema) => {
+      concrete<U>(schema)
+      let instance: Kind<U, any, any, any, any, any, any> | undefined = undefined
+      switch (schema._tag) {
+        case 'Unknown': {
+          instance = S.unknown
+          break
         }
-        break
-      }
-      case 'MapOutput': {
-        if (S.mapOutput) {
-          instance = S.mapOutput(toS(schema.fa), schema.fa, schema.f)
+        case 'String': {
+          instance = S.string
+          break
         }
-        break
-      }
-      case 'Identity': {
-        instance = S.identity<any>(schema.ids)
-        break
-      }
-      case 'Decoder': {
-        if (S.withDecoder) {
-          instance = S.withDecoder(toS(schema.schema), schema.schema, schema.parser)
+        case 'Number': {
+          instance = S.number
+          break
         }
-        break
-      }
-      case 'Encoder': {
-        if (S.withEncoder) {
-          instance = S.withEncoder(toS(schema.schema), schema.schema, schema.encoder)
+        case 'Boolean': {
+          instance = S.boolean
+          break
         }
-        break
-      }
-      case 'Guard': {
-        if (S.withGuard) {
-          instance = S.withGuard(toS(schema.schema), schema.schema, schema.guard)
+        case 'Literal': {
+          instance = S.literal(schema.literals[0], ...schema.literals.slice(1))
+          break
         }
-        break
-      }
-      case 'Gen': {
-        if (S.withGen) {
-          instance = S.withGen(toS(schema.schema), schema.schema, schema.gen)
+        case 'DateString': {
+          instance = S.dateString
+          break
         }
-        break
-      }
-      case 'Eq': {
-        if (S.withEq) {
-          instance = S.withEq(toS(schema.schema), schema.schema, schema.eq)
+        case 'DateMs': {
+          instance = S.dateMs
+          break
         }
-        break
-      }
-      case 'Constructor': {
-        if (S.withConstructor) {
-          instance = S.withConstructor(toS(schema.schema), schema.schema, schema.ctor)
+        case 'Tag': {
+          instance = S.literal(schema.tag)
+          break
         }
-        break
-      }
-      case 'WithDefault': {
-        if (S.withDefault_) {
-          instance = S.withDefault_(toS(schema.or), schema.or, schema.def)
+        case 'Nullable': {
+          instance = S.nullable(toS(schema.or), schema.or)
+          break
         }
-        break
-      }
-      case 'Lazy': {
-        const ls = cacheThunk(schema.schema)
-        instance = S.lazy(() => toS(ls()), schema.id, ls)
-        break
-      }
-      case 'Properties': {
-        const ps = R.map_(
-          schema.properties,
-          (p): AnyPropertyWithInstance<any> =>
-            ({
-              ...p,
-              instance: toS(p._schema)
-            } as any)
-        )
-        instance = S.properties(ps)
-        break
-      }
-      case 'TaggedUnion': {
-        // @ts-expect-error
-        instance = S.taggedUnion(R.map_(schema.members, toS), schema)
-        break
-      }
-      case 'Named': {
-        if (S.named) {
-          instance = S.named(toS(schema.schema), schema.schema, schema.name)
+        case 'Refine': {
+          instance = S.refine(toS(schema.from), schema.from, schema.refinement, schema.error, schema.warn, schema.label)
+          break
         }
-        break
+        case 'Constrain': {
+          instance = S.constrain(
+            toS(schema.from),
+            schema.from,
+            schema.predicate,
+            schema.error,
+            schema.warn,
+            schema.label
+          )
+          break
+        }
+        case 'Array': {
+          instance = S.array(toS(schema.item), schema.item)
+          break
+        }
+        case 'Chunk': {
+          instance = S.chunk(toS(schema.item), schema.item)
+          break
+        }
+        case 'Record': {
+          instance = S.record(toS(schema.codomain), schema.codomain)
+          break
+        }
+        case 'Struct': {
+          instance = S.struct(R.map_(schema.properties, toS), schema.properties)
+          break
+        }
+        case 'Partial': {
+          instance = S.partial(R.map_(schema.properties, toS), schema.properties)
+          break
+        }
+        case 'Tuple': {
+          instance = S.tuple(A.map_(schema.components, toS), schema.components)
+          break
+        }
+        case 'Intersect': {
+          instance = S.intersect(NA.map_(schema.members, toS), schema.members)
+          break
+        }
+        case 'Sum': {
+          instance = S.sum(schema.tag)(R.map_(schema.members, toS), schema.members)
+          break
+        }
+        case 'Union': {
+          const s  = NA.map_(schema.members, toS)
+          instance = S.union(s, schema.members)
+          break
+        }
+        case 'Pipe': {
+          instance = S.compose(toS(schema.prev), toS(schema.next), schema.prev, schema.next)
+          break
+        }
+        case 'MapDecoderError': {
+          if (S.mapDecodeError) {
+            instance = S.mapDecodeError(toS(schema.fa), schema.fa, schema.mapError)
+          }
+          break
+        }
+        case 'MapOutput': {
+          if (S.mapOutput) {
+            instance = S.mapOutput(toS(schema.fa), schema.fa, schema.f)
+          }
+          break
+        }
+        case 'Identity': {
+          instance = S.identity<any, any>(schema.ids)
+          break
+        }
+        case 'Decoder': {
+          if (S.withDecoder) {
+            instance = S.withDecoder(toS(schema.schema), schema.schema, schema.parser)
+          }
+          break
+        }
+        case 'Encoder': {
+          if (S.withEncoder) {
+            instance = S.withEncoder(toS(schema.schema), schema.schema, schema.encoder)
+          }
+          break
+        }
+        case 'Guard': {
+          if (S.withGuard) {
+            instance = S.withGuard(toS(schema.schema), schema.schema, schema.guard)
+          }
+          break
+        }
+        case 'Gen': {
+          if (S.withGen) {
+            instance = S.withGen(toS(schema.schema), schema.schema, schema.gen)
+          }
+          break
+        }
+        case 'Eq': {
+          if (S.withEq) {
+            instance = S.withEq(toS(schema.schema), schema.schema, schema.eq)
+          }
+          break
+        }
+        case 'Constructor': {
+          if (S.withConstructor) {
+            instance = S.withConstructor(toS(schema.schema), schema.schema, schema.ctor)
+          }
+          break
+        }
+        case 'WithDefault': {
+          if (S.withDefault_) {
+            instance = S.withDefault_(toS(schema.or), schema.or, schema.def)
+          }
+          break
+        }
+        case 'Lazy': {
+          const ls = cacheThunk(schema.schema)
+          instance = S.lazy(() => toS(ls()), schema.id, ls)
+          break
+        }
+        case 'Properties': {
+          const ps = R.map_(
+            schema.properties,
+            (p): AnyPropertyWithInstance<any> =>
+              ({
+                ...p,
+                instance: toS(p._schema)
+              } as any)
+          )
+          instance = S.properties(ps)
+          break
+        }
+        case 'TaggedUnion': {
+          // @ts-expect-error
+          instance = S.taggedUnion(R.map_(schema.members, toS), schema)
+          break
+        }
+        case 'Named': {
+          if (S.named) {
+            instance = S.named(toS(schema.schema), schema.schema, schema.name)
+          }
+          break
+        }
+        case 'NewtypeIso': {
+          instance = S.newtypeIso(toS(schema.schema), schema.iso, schema.schema)
+          break
+        }
+        case 'NewtypePrism': {
+          instance = S.newtypePrism(toS(schema.schema), schema.prism, schema.schema)
+          break
+        }
       }
-      case 'NewtypeIso': {
-        instance = S.newtypeIso(toS(schema.schema), schema.iso, schema.schema)
-        break
+      if (instance) {
+        return O.some(instance)
       }
-      case 'NewtypePrism': {
-        instance = S.newtypePrism(toS(schema.schema), schema.prism, schema.schema)
-        break
+      if (hasContinuation(schema)) {
+        return O.some(toS(schema[SchemaContinuation]))
+      } else {
+        return O.none()
       }
-    }
-    if (instance) {
-      return O.some(instance)
-    }
-    if (hasContinuation(schema)) {
-      return O.some(toS(schema[SchemaContinuation]))
-    } else {
-      return O.none()
     }
   }
-}
 
 export function makeTo(...interpreters: ReadonlyArray<Interpreter>) {
   return <U extends URIS>(S: Schemable<U>) => {

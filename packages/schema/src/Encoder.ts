@@ -354,7 +354,7 @@ export function HashSetToArray<E extends AnyEncoder>(item: E, O: P.Ord<InputOf<E
 
 export const Schemable: S.Schemable<EncoderSURI> = {
   URI: EncoderSURI,
-  identity: (ids) => (EncoderSURI in ids ? ids[EncoderSURI]! : id()),
+  identity: () => id(),
   unknown: id(),
   literal: () => id(),
   string,

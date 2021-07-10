@@ -12,7 +12,7 @@ import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 import * as G from '@principia/test/Gen'
 
-import { GenSURI } from './Modules'
+import { GenSURI, GuardSURI } from './Modules'
 import { to } from './Schema'
 
 export type Gen<A> = G.Gen<Has<Random> & Has<Sized>, A>
@@ -105,7 +105,7 @@ export function lazy<A>(f: () => Gen<A>): Gen<A> {
 
 export const Schemable: S.Schemable<GenSURI> = {
   URI: GenSURI,
-  identity: (ids) => (GenSURI in ids ? ids[GenSURI]! : (G.anything() as Gen<any>)),
+  identity: (ids) => (GenSURI in ids ? ids[GenSURI]! : G.filter_(G.anything(), ids[GuardSURI].is)),
   unknown: G.anything(),
   literal,
   string,

@@ -7,7 +7,7 @@ import type { Guard, GuardSURI } from '../Guard'
 import type { ConstructorSURI, CoreURIS, DecoderSURI } from '../Modules'
 import type * as PE from '../ParseError'
 import type { ComposeE, Parser } from '../Parser'
-import type { IdentityOmits, Kind, URIS } from '../Schemable'
+import type { IdentityOmits, IdentityOmitURIS, IdentityRequires, IdentityRequireURIS, Kind, URIS } from '../Schemable'
 import type { CastToNumber } from '../util'
 import type { SchemaAnnotation } from './SchemaAnnotation'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
@@ -232,7 +232,7 @@ function identityApi<U extends URIS, A>(ids: { [F in U]: Kind<F, A, A, never, ne
 }
 
 export class IdentityS<U extends URIS, A> extends Schema<
-  U | keyof IdentityOmits,
+  U | IdentityOmitURIS,
   A,
   A,
   never,
@@ -247,7 +247,7 @@ export class IdentityS<U extends URIS, A> extends Schema<
     return identityApi(this.ids)
   }
 
-  constructor(readonly ids: { [F in U]: Kind<F, A, A, never, never, A, A> }) {
+  constructor(readonly ids: { [F in U | IdentityRequireURIS]: Kind<F, A, A, never, never, A, A> }) {
     super()
   }
 
@@ -256,8 +256,8 @@ export class IdentityS<U extends URIS, A> extends Schema<
   }
 }
 
-export function identity<A>(): <U extends Exclude<URIS, IdentityOmits>>(
-  ids: { [F in U]: Kind<F, A, A, never, never, A, A> }
+export function identity<A>(): <U extends Exclude<URIS, IdentityOmitURIS>>(
+  ids: { [F in U | IdentityRequireURIS]: Kind<F, A, A, never, never, A, A> }
 ) => IdentityS<U, A> {
   return (ids) => new IdentityS(ids)
 }

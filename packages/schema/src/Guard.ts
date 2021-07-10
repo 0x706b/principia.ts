@@ -229,7 +229,7 @@ export const date: Guard<Date> = Guard((u): u is Date => u instanceof Date)
 
 export const Schemable: S.Schemable<GuardSURI> = {
   URI: GuardSURI,
-  identity: (ids) => (GuardSURI in ids ? ids[GuardSURI]! : Guard((u: unknown): u is any => true)),
+  identity: (ids) => ids[GuardSURI],
   unknown: Guard((_): _ is unknown => true),
   literal,
   string,

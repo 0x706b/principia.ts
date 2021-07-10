@@ -290,7 +290,7 @@ export function HashSetFromArray<D extends AnyD>(item: D, H: P.Hash<TypeOf<D>>, 
 
 export const Schemable: S.Schemable<DecoderSURI> = {
   URI: DecoderSURI,
-  identity: (ids) => (DecoderSURI in ids ? ids[DecoderSURI]! : Pr.id()),
+  identity: () => Pr.id(),
   unknown: Pr.id(),
   literal: Pr.literal,
   string,

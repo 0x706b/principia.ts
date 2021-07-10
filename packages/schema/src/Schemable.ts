@@ -45,6 +45,12 @@ export type Schemable<F extends URIS> = RequiredSchemable<F> & Partial<OptionalS
 
 export interface IdentityOmits {}
 
+export type IdentityOmitURIS = keyof IdentityOmits
+
+export interface IdentityRequires {}
+
+export type IdentityRequireURIS = keyof IdentityRequires
+
 export type Identities<U extends URIS, A> = Omit<{ [F in U]: Kind<F, A, never, A, A, never, A> }, keyof IdentityOmits>
 
 type EnsureTag<F extends URIS, T extends string, M> = {
@@ -54,8 +60,8 @@ type EnsureTag<F extends URIS, T extends string, M> = {
 export interface RequiredSchemable<F extends URIS> {
   URI: F
 
-  readonly identity: <A>(
-    identities: Partial<{ [K in URIS]: Kind<K, A, A, never, never, A, A> }>
+  readonly identity: <U extends Exclude<URIS, IdentityOmitURIS>, A>(
+    identities: { [K in U | IdentityRequireURIS]: Kind<K, A, A, never, never, A, A> }
   ) => Kind<F, A, A, never, never, A, A>
 
   /*

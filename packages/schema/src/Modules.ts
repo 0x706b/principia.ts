@@ -55,4 +55,8 @@ declare module './Schemable' {
     [EncoderSURI]: any
     [ConstructorSURI]: any
   }
+
+  interface IdentityRequires {
+    [GuardSURI]: any
+  }
 }
