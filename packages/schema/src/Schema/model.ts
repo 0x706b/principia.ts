@@ -75,7 +75,7 @@ export interface Model<M, S extends S.AnyS>
  * @inject genericName
  */
 export function Model<M>(__name?: string) {
-  return <S extends S.AnyS>(schema: S): Model<M, S> => {
+  return <S extends S.AnyS>(schema: CoreURIS extends S.URISIn<S> ? S : never): Model<M, S> => {
     const schemed       = Schemed.Schemed(S.named_(schema, __name ?? 'Model(Anonymous)'))
     const schemedSchema = Schemed.schema(schemed)
 
