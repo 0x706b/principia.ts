@@ -1475,6 +1475,35 @@ export function absorbWith<E>(f: (e: E) => unknown): <R, A>(ma: IO<R, E, A>) => 
 }
 
 /**
+ * Returns the logical conjunction of the `Boolean` value returned by this
+ * effect and the `Boolean` value returned by the specified effect. This
+ * operator has "short circuiting" behavior so if the value returned by this
+ * effect is false the specified effect will not be evaluated.
+ *
+ * @trace call
+ */
+export function and_<R, E, R1, E1>(ma: IO<R, E, boolean>, mb: IO<R1, E1, boolean>): IO<R & R1, E | E1, boolean> {
+  const trace = accessCallTrace()
+  return chain_(
+    ma,
+    traceFrom(trace, (b) => (b ? mb : succeed(false)))
+  )
+}
+
+/**
+ * Returns the logical conjunction of the `Boolean` value returned by this
+ * effect and the `Boolean` value returned by the specified effect. This
+ * operator has "short circuiting" behavior so if the value returned by this
+ * effect is false the specified effect will not be evaluated.
+ *
+ * @dataFirst and_
+ * @trace call
+ */
+export function and<R1, E1>(mb: IO<R1, E1, boolean>): <R, E>(ma: IO<R, E, boolean>) => IO<R & R1, E | E1, boolean> {
+  return (ma) => and_(ma, mb)
+}
+
+/**
  * Maps the success value of this IO to the specified constant value.
  *
  * @category Combinators
@@ -3166,6 +3195,20 @@ export function onRight<C>(): <R, E, A>(io: IO<R, E, A>) => IO<E.Either<C, R>, E
 }
 
 /**
+ * Returns the logical negation of the `Boolean` value returned by this
+ * effect.
+ *
+ * @trace call
+ */
+export function not<R, E>(ma: IO<R, E, boolean>): IO<R, E, boolean> {
+  const trace = accessCallTrace()
+  return map_(
+    ma,
+    traceFrom(trace, (b) => !b)
+  )
+}
+
+/**
  * @trace call
  */
 export function option<R, E, A>(io: IO<R, E, A>): URIO<R, Option<A>> {
@@ -3192,6 +3235,36 @@ export function optional<R, E, A>(ma: IO<R, Option<E>, A>): IO<R, E, Option<A>> 
     ),
     flow(O.some, pure)
   )
+}
+
+/**
+ * Returns the logical disjunction of the `Boolean` value returned by this
+ * effect and the `Boolean` value returned by the specified effect. This
+ * operator has "short circuiting" behavior so if the value returned by this
+ * effect is true the specified effect will not be evaluated.
+ *
+ * @trace call
+ */
+export function or_<R, E, R1, E1>(ma: IO<R, E, boolean>, mb: IO<R1, E1, boolean>): IO<R & R1, E | E1, boolean> {
+  const trace = accessCallTrace()
+  return chain_(
+    ma,
+    traceFrom(trace, (b) => (b ? succeed(true) : mb))
+  )
+}
+
+/**
+ * Returns the logical disjunction of the `Boolean` value returned by this
+ * effect and the `Boolean` value returned by the specified effect. This
+ * operator has "short circuiting" behavior so if the value returned by this
+ * effect is true the specified effect will not be evaluated.
+ *
+ * @dataFirst or_
+ * @trace call
+ */
+export function or<R1, E1>(mb: IO<R1, E1, boolean>): <R, E>(ma: IO<R, E, boolean>) => IO<R & R1, E | E1, boolean> {
+  const trace = accessCallTrace()
+  return (ma) => traceCall(or_, trace)(ma, mb)
 }
 
 /**
