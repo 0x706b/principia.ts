@@ -8,7 +8,7 @@ const INCREMENT      = 0x00269ec3
 const MASK           = 0xffffffff
 const MASK_2: number = (1 << 31) - 1
 
-const computeNextSeed          = function (seed: number) {
+const computeNextSeed = function (seed: number) {
   return (seed * MULTIPLIER + INCREMENT) & MASK
 }
 const computeValueFromNextSeed = function (nextseed: number) {
@@ -70,7 +70,7 @@ class LinearCongruential32 implements RandomGenerator {
   }
 }
 
-export const congruential   = function (seed: number): RandomGenerator {
+export const congruential = function (seed: number): RandomGenerator {
   return new LinearCongruential(seed)
 }
 export const congruential32 = function (seed: number): RandomGenerator {

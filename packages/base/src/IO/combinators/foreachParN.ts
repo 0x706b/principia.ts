@@ -52,7 +52,7 @@ export function foreachParN_<A, R, E, B>(as: Iterable<A>, n: number, f: (a: A) =
               )
             )
           )
-          const ref   = yield* _(Ref.make(pairs.length))
+          const ref = yield* _(Ref.make(pairs.length))
           yield* _(I.fork(I.foreach_(pairs, (pair) => Q.offer_(q, pair))))
           yield* _(
             I.collectAllUnit(

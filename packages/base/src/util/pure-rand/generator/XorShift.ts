@@ -27,11 +27,11 @@ class XorShift128Plus implements RandomGenerator {
     // can be used to generate 2^64 non-overlapping subsequences
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     let rngRunner: XorShift128Plus = this
-    let ns01                       = 0
-    let ns00                       = 0
-    let ns11                       = 0
-    let ns10                       = 0
-    const jump                     = [0x635d2dff, 0x8a5cd789, 0x5c472f96, 0x121fd215]
+    let ns01   = 0
+    let ns00   = 0
+    let ns11   = 0
+    let ns10   = 0
+    const jump = [0x635d2dff, 0x8a5cd789, 0x5c472f96, 0x121fd215]
     for (let i = 0; i !== 4; ++i) {
       for (let mask = 1; mask; mask <<= 1) {
         // Because: (1 << 31) << 1 === 0

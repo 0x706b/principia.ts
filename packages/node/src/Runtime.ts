@@ -34,9 +34,9 @@ export function prettyLocationNode(traceElement: TraceElement, adapt: (path: str
 
       if (isModule) {
         const [, mod, file, line_, col] = isModule
-        const line                      = parseInt(line_)
-        const modulePath                = require.resolve(`${mod}/package.json`)
-        const realPath                  = adapt(path.join(modulePath, '..', file), mod)
+        const line       = parseInt(line_)
+        const modulePath = require.resolve(`${mod}/package.json`)
+        const realPath   = adapt(path.join(modulePath, '..', file), mod)
 
         return `${realPath}:${line}:${col}`
       } else {

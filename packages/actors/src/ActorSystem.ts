@@ -121,8 +121,8 @@ export class ActorSystem {
         self.refActorMap,
         O.some(finalName)
       )
-      const childrenSet   = yield* _(Ref.make(HS.makeDefault<AR.ActorRef<any>>()))
-      const actor         = yield* _(
+      const childrenSet = yield* _(Ref.make(HS.makeDefault<AR.ActorRef<any>>()))
+      const actor       = yield* _(
         pipe(
           stateful.makeActor(sup, new Context(path, derivedSystem, childrenSet), () =>
             self.dropFromActorMap(path, childrenSet)

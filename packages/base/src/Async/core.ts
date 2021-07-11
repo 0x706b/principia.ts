@@ -821,13 +821,13 @@ export function runPromiseExitEnv_<R, E, A>(
   interruptionState = new InterruptionState()
 ): Promise<Ex.AsyncExit<E, A>> {
   return defaultPromiseTracingContext.traced(async () => {
-    let frames: Stack<Frame> | undefined          = undefined
-    let result                                    = null
-    let env: Stack<any> | undefined               = makeStack(r)
-    let failed                                    = false
+    let frames: Stack<Frame> | undefined = undefined
+    let result = null
+    let env: Stack<any> | undefined = makeStack(r)
+    let failed = false
     let current: Async<any, any, any> | undefined = async
-    let instructionCount                          = 0
-    let interrupted                               = false
+    let instructionCount = 0
+    let interrupted      = false
 
     function isInterrupted() {
       return interrupted || interruptionState.interrupted
@@ -990,8 +990,8 @@ export function runPromiseExitEnv_<R, E, A>(
           const exits: ReadonlyArray<Ex.AsyncExit<any, any>> = await Promise.all(
             A.map_(I.asyncs, (a) => runPromiseExitEnv_(a, env?.value || {}, interruptionState))
           )
-          const results                                      = []
-          let errored                                        = false
+          const results = []
+          let errored   = false
           for (let i = 0; i < exits.length && !errored; i++) {
             const e = exits[i]
             switch (e._tag) {

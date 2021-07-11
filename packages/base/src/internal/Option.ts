@@ -15,7 +15,7 @@ const _someHash = hashString('@principia/base/Option/Some')
 
 export class None {
   readonly [OptionTypeId]: OptionTypeId = OptionTypeId
-  readonly _tag                         = 'None'
+  readonly _tag = 'None'
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   constructor() {}
   [$equals](that: unknown): boolean {
@@ -28,7 +28,7 @@ export class None {
 
 export class Some<A> {
   readonly [OptionTypeId]: OptionTypeId = OptionTypeId
-  readonly _tag                         = 'Some'
+  readonly _tag = 'Some'
   constructor(readonly value: A) {}
   [$equals](that: unknown): boolean {
     return isOption(that) && isSome(that) && equals(this.value, that.value)

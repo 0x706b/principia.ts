@@ -24,7 +24,7 @@ export const stdin: S.FStream<StdinError, Byte> = pipe(
   S.chain(([rs, cleanup]) =>
     S.ensuring_(
       S.async<unknown, StdinError, Byte>((cb) => {
-        const onData  = (data: Buffer) => {
+        const onData = (data: Buffer) => {
           cb(I.succeed(C.fromBuffer(data)))
         }
         const onError = (err: Error) => {

@@ -44,7 +44,7 @@ export function timeout<R, E, A>(ma: Managed<R, E, A>, d: number): Managed<R & H
               restore
             )
           )
-          const a          = yield* _(
+          const a = yield* _(
             E.match_(
               raceResult,
               (fiber) =>

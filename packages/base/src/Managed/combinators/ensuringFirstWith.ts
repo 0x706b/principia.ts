@@ -41,7 +41,7 @@ export function ensuringFirstWith_<R, E, A, R1>(
               restore
             )
           )
-          const releaseMapEntry      = yield* _(
+          const releaseMapEntry = yield* _(
             add(outerReleaseMap, (e) =>
               pipe(
                 cleanup(exitEA),

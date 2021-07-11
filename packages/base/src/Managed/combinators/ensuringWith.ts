@@ -41,7 +41,7 @@ export function ensuringWith_<R, E, A, R1>(
               restore
             )
           )
-          const releaseMapEntry      = yield* _(
+          const releaseMapEntry = yield* _(
             add(outerReleaseMap, (e) =>
               pipe(
                 releaseAll_(innerReleaseMap, e, sequential),
@@ -50,7 +50,7 @@ export function ensuringWith_<R, E, A, R1>(
               )
             )
           )
-          const a                    = yield* _(I.done(exitEA))
+          const a = yield* _(I.done(exitEA))
           return tuple(releaseMapEntry, a)
         })
       )

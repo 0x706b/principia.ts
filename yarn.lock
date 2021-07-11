@@ -2,6 +2,11 @@
 # yarn lockfile v1
 
 
+"@0x706b/eslint-plugin-align-assignments@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@0x706b/eslint-plugin-align-assignments/-/eslint-plugin-align-assignments-0.0.1.tgz#1524c17c223aa713a12ac5cc59066500fc3fe537"
+  integrity sha512-ggtPtF/SsKgLCkhpoF9D/+35PR+r6VGTPRKv0HSBKhFiNpDlgVVAEuHyW9I9SQE8jGKlM2CwEKZlDu6DPvZVEg==
+
 "@apollo/client@^3.2.5", "@apollo/client@~3.2.5 || ~3.3.0":
   version "3.3.21"
   resolved "https://registry.yarnpkg.com/@apollo/client/-/client-3.3.21.tgz#2862baa4e1ced8c5e89ebe6fc52877fc64a726aa"

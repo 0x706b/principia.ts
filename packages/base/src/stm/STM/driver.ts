@@ -41,7 +41,7 @@ export class STMDriver<R, E, A> {
   }
 
   run(): TEx.TExit<E, A> {
-    let curr                                          = this.self as Erased | undefined
+    let curr = this.self as Erased | undefined
     let exit: TEx.TExit<unknown, unknown> | undefined = undefined
 
     while (!exit && curr) {

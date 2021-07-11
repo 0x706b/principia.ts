@@ -233,13 +233,13 @@ function getInspectionInfo(context: ShowContext, value: object, typedArray?: str
   }
 
   let [constructor, protoProps] = getConstructorName(value)
-  let keys                      = [] as Array<PropertyKey>
-  let tag                       = value[Symbol.toStringTag]
-  let base                      = ''
-  let formatter                 = (_: any) => Z.pure(C.empty<string>()) as ShowComputationChunk
-  let braces                    = ['', ''] as [string, string]
-  let noIterator                = true
-  let extrasType                = OBJECT_TYPE
+  let keys       = [] as Array<PropertyKey>
+  let tag        = value[Symbol.toStringTag]
+  let base       = ''
+  let formatter  = (_: any) => Z.pure(C.empty<string>()) as ShowComputationChunk
+  let braces     = ['', ''] as [string, string]
+  let noIterator = true
+  let extrasType = OBJECT_TYPE
 
   if (
     typeof tag !== 'string' ||
@@ -410,8 +410,8 @@ function showRaw(value: object, typedArray?: string): ShowComputation {
               let extrasType: number
               switch (info._tag) {
                 case 'InspectionInfo': {
-                  base       = Z.pure(info.base)
-                  keys       = pipe(
+                  base = Z.pure(info.base)
+                  keys = pipe(
                     C.from(info.keys),
                     C.mapA(Z.Applicative)((key) => showProperty(value, key, info.extrasType)),
                     Z.crossWith(
@@ -621,7 +621,7 @@ function showArrayBuffer(value: ArrayBuffer | SharedArrayBuffer): ShowComputatio
       return C.single('(detached)')
     }
 
-    let str         = hex(buffer.slice(0, Math.min(context.maxArrayLength, buffer.length)))
+    let str = hex(buffer.slice(0, Math.min(context.maxArrayLength, buffer.length)))
       .replace(/(.{2})/g, '$1 ')
       .trim()
     const remaining = buffer.length - context.maxArrayLength

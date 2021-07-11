@@ -70,14 +70,14 @@ export function render<E>(
     Sy.chain_(executedSpec, (executedSpec) =>
       matchTag_(executedSpec, {
         Suite: ({ label, specs }) => {
-          const hasFailures    = ES.exists_(
+          const hasFailures = ES.exists_(
             executedSpec,
             matchTag({
               Test: ({ test }) => E.isLeft(test),
               Suite: () => false
             })
           )
-          const annotations    = ES.fold_<E, TestAnnotationMap>(
+          const annotations = ES.fold_<E, TestAnnotationMap>(
             executedSpec,
             matchTag({
               Suite: ({ specs }) => A.foldl_(specs, TestAnnotationMap.empty, (b, a) => b.combine(a)),

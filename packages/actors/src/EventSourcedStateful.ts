@@ -95,9 +95,9 @@ export class EventSourcedStateful<R, S, F1 extends AM.AnyMessage, EV> extends A.
       journal: Journal<S, EV>
     ): T.IO<R & IOEnv, ActorSystemException, void> => {
       return T.gen(function* (_) {
-        const s                   = yield* _(Ref.get(state))
-        const [fa, promise]       = msg
-        const reciever            = self.receive(
+        const s             = yield* _(Ref.get(state))
+        const [fa, promise] = msg
+        const reciever      = self.receive(
           s,
           context
         )({
@@ -105,7 +105,7 @@ export class EventSourcedStateful<R, S, F1 extends AM.AnyMessage, EV> extends A.
           payload: fa,
           return: (ev: CH.Chunk<EV>, r: (s: S) => AM.ResponseOf<F1> = () => undefined as any) => T.succeed(tuple(ev, r))
         } as any)
-        const effectfulCompleter  = (s: S, a: AM.ResponseOf<F1>) =>
+        const effectfulCompleter = (s: S, a: AM.ResponseOf<F1>) =>
           T.asUnit(Ref.set_(state, s)['>>='](() => P.succeed_(promise, a)))
         const idempotentCompleter = (a: AM.ResponseOf<F1>) => T.asUnit(P.succeed_(promise, a))
         const fullCompleter       = ([ev, sa]: readonly [CH.Chunk<EV>, (s: S) => AM.ResponseOf<F1>]) =>

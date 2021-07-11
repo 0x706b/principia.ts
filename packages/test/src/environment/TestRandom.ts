@@ -66,19 +66,19 @@ export class TestRandom implements Random {
   private bufferedBoolean = (buffer: Buffer): readonly [Option<boolean>, Buffer] => {
     return [Li.head(buffer.booleans), buffer.copy({ booleans: Li.drop_(buffer.booleans, 1) })]
   }
-  private bufferedByte    = (buffer: Buffer): readonly [Option<ReadonlyArray<Byte>>, Buffer] => {
+  private bufferedByte = (buffer: Buffer): readonly [Option<ReadonlyArray<Byte>>, Buffer] => {
     return [Li.head(buffer.bytes), buffer.copy({ bytes: Li.drop_(buffer.bytes, 1) })]
   }
-  private bufferedChar    = (buffer: Buffer): readonly [Option<string>, Buffer] => {
+  private bufferedChar = (buffer: Buffer): readonly [Option<string>, Buffer] => {
     return [Li.head(buffer.chars), buffer.copy({ chars: Li.drop_(buffer.chars, 1) })]
   }
-  private bufferedDouble  = (buffer: Buffer): readonly [Option<number>, Buffer] => {
+  private bufferedDouble = (buffer: Buffer): readonly [Option<number>, Buffer] => {
     return [Li.head(buffer.doubles), buffer.copy({ doubles: Li.drop_(buffer.doubles, 1) })]
   }
-  private bufferedInt     = (buffer: Buffer): readonly [Option<number>, Buffer] => {
+  private bufferedInt = (buffer: Buffer): readonly [Option<number>, Buffer] => {
     return [Li.head(buffer.integers), buffer.copy({ integers: Li.drop_(buffer.doubles, 1) })]
   }
-  private bufferedString  = (buffer: Buffer): readonly [Option<string>, Buffer] => {
+  private bufferedString = (buffer: Buffer): readonly [Option<string>, Buffer] => {
     return [Li.head(buffer.strings), buffer.copy({ strings: Li.drop_(buffer.strings, 1) })]
   }
 

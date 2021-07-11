@@ -1793,7 +1793,7 @@ class UnboundedHubSubscription<A> extends SubscriptionInternal<A> {
         const a = this.subscriberHead.next!.value
 
         if (a !== null) {
-          polled                           = a
+          polled = a
           this.subscriberHead.subscribers -= 1
 
           if (this.subscriberHead.subscribers === 0) {

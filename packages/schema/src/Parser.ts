@@ -680,7 +680,7 @@ export function fromStruct<P extends Record<string, AnyParser>>(properties: P): 
     label,
     parse: (ur) => {
       const es: Array<PE.RequiredKeyE<string, any>> = []
-      const r: any                                  = {}
+      const r: any = {}
 
       let isBoth = true
       for (const k in properties) {
@@ -898,7 +898,7 @@ export function fromPartial<P extends Record<string, AnyParser>>(properties: P):
     label,
     parse: (ur) => {
       const es: Array<PE.OptionalKeyE<string, any>> = []
-      const r: any                                  = {}
+      const r: any = {}
 
       let isBoth = true
       for (const key in properties) {
@@ -1013,7 +1013,7 @@ export function fromArray<I extends AnyParser>(item: I): FromArrayP<I> {
     item,
     parse: (i) => {
       const errors: Array<PE.OptionalIndexE<number, any>> = []
-      const result: Array<TypeOf<I>>                      = []
+      const result: Array<TypeOf<I>> = []
 
       let isBoth = true
       for (let index = 0; index < i.length; index++) {
@@ -1282,7 +1282,7 @@ export function tuple<C extends ReadonlyArray<AnyUParser>>(...components: C): Tu
         return Th.left(PE.compositionE([PE.leafE(PE.unknownArrayE(u))]))
       }
       const missingIndices: Array<number> = []
-      const len                           = u.length
+      const len = u.length
       for (let index = 0; index < components.length; index++) {
         if (len < index) {
           missingIndices.push(index)

@@ -102,8 +102,8 @@ export function takeWhileIO_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, bool
   return I.defer(() => {
     C.concrete(as)
     let taking: I.IO<R, E, boolean> = I.succeed(true)
-    const out                       = C.builder<A>()
-    const iterator                  = as.arrayIterator()
+    const out      = C.builder<A>()
+    const iterator = as.arrayIterator()
     let result: IteratorResult<ArrayLike<A>>
     while (!(result = iterator.next()).done) {
       const array = result.value
@@ -134,8 +134,8 @@ export function dropWhileIO_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, bool
   return I.defer(() => {
     C.concrete(as)
     let dropping: I.IO<R, E, boolean> = I.succeed(true)
-    const out                         = C.builder<A>()
-    const iterator                    = as.arrayIterator()
+    const out      = C.builder<A>()
+    const iterator = as.arrayIterator()
     let result: IteratorResult<ArrayLike<A>>
     while (!(result = iterator.next()).done) {
       const array = result.value
@@ -165,9 +165,9 @@ export function dropWhileIO<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chu
 export function filterIO_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
   return I.defer(() => {
     C.concrete(as)
-    const c                              = C.builder<A>()
+    const c = C.builder<A>()
     let out: I.IO<R, E, ChunkBuilder<A>> = I.succeed(c)
-    const iterator                       = as.arrayIterator()
+    const iterator = as.arrayIterator()
     let result: IteratorResult<ArrayLike<A>>
     while (!(result = iterator.next()).done) {
       const array = result.value

@@ -68,7 +68,7 @@ export default function rewrite(
           .split('\n')
           .map((line, i) => {
             const x: [boolean, number][] = []
-            const m                      = line.matchAll(/tracing: (on|off)/g)
+            const m = line.matchAll(/tracing: (on|off)/g)
             for (const k of m) {
               if (k && k.index) {
                 x.push([k[1] === 'on', k.index])
@@ -180,7 +180,7 @@ export default function rewrite(
                 if (isTracing) {
                   const entries: (readonly [string, string | undefined])[] =
                     symbol.getJsDocTags().map((t) => [t.name, t.text?.[0].text] as const) || []
-                  const tags: Record<string, (string | undefined)[]>       = {}
+                  const tags: Record<string, (string | undefined)[]> = {}
 
                   for (const entry of entries) {
                     if (!tags[entry[0]]) {
@@ -232,7 +232,7 @@ export default function rewrite(
                 if (isTracing) {
                   const entries: (readonly [string, string | undefined])[] =
                     signature?.getJsDocTags().map((t) => [t.name, t.text?.[0].text] as const) || []
-                  const tags: Record<string, (string | undefined)[]>       = {}
+                  const tags: Record<string, (string | undefined)[]> = {}
 
                   for (const entry of entries) {
                     if (!tags[entry[0]]) {
@@ -329,7 +329,7 @@ export default function rewrite(
                 if (isTracing) {
                   const entries: (readonly [string, string | undefined])[] =
                     signature?.getJsDocTags().map((t) => [t.name, t.text?.[0].text] as const) || []
-                  const tags: Record<string, (string | undefined)[]>       = {}
+                  const tags: Record<string, (string | undefined)[]> = {}
 
                   for (const entry of entries) {
                     if (!tags[entry[0]]) {

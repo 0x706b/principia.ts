@@ -66,8 +66,8 @@ export abstract class KoaAppConfig {
       I.asks(
         (r: R) =>
           new (class extends KoaAppConfig {
-            host                              = host
-            port                              = port
+            host = host
+            port = port
             exitHandler: ExitHandler<unknown> = (ctx, next) => flow(exitHandler(ctx, next), I.give(r))
           })()
       )
@@ -126,7 +126,7 @@ export abstract class KoaApp {
           const onError = (error: Error) => {
             k(I.die(new NodeServerListenError(error)))
           }
-          const server  = app.listen(port, host, () => {
+          const server = app.listen(port, host, () => {
             k(
               I.succeedLazy(() => {
                 server.removeListener('error', onError)

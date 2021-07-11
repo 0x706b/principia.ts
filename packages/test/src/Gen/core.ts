@@ -269,7 +269,7 @@ export function bounded<R, A>(min: number, max: number, f: (n: number) => Gen<R,
 
 export function memo<R, A>(builder: (maxDepth: number) => Gen<R, A>): (maxDepth?: number) => Gen<R, A> {
   const previous: { [depth: number]: Gen<R, A> } = {}
-  let remainingDepth                             = 10
+  let remainingDepth = 10
   return (maxDepth?: number): Gen<R, A> => {
     const n = maxDepth !== undefined ? maxDepth : remainingDepth
     if (!Object.prototype.hasOwnProperty.call(previous, n)) {
@@ -349,7 +349,7 @@ export function unwrap<R, R1, A>(effect: I.URIO<R, Gen<R1, A>>): Gen<R & R1, A> 
 }
 
 export function weighted<R, A>(...gs: ReadonlyArray<readonly [Gen<R, A>, number]>): Gen<R & Has<Random>, A> {
-  const sum   = pipe(
+  const sum = pipe(
     gs,
     A.map(([, w]) => w),
     A.sum
@@ -373,7 +373,7 @@ export function weighted<R, A>(...gs: ReadonlyArray<readonly [Gen<R, A>, number]
 }
 
 export function zipWith_<R, A, R1, B, C>(fa: Gen<R, A>, fb: Gen<R1, B>, f: (a: A, b: B) => C): Gen<R & R1, C> {
-  const left: Stream<R, never, E.Either<Sample<R, A>, Sample<R, A>>>     = pipe(
+  const left: Stream<R, never, E.Either<Sample<R, A>, Sample<R, A>>> = pipe(
     fa.sample,
     S.map(E.right),
     S.concat(pipe(fa.sample, S.map(E.left))),

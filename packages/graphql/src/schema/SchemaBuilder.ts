@@ -190,9 +190,9 @@ interface ScalarTypeFromModelConfig<E> extends ScalarConfig {
 }
 
 export const makeScalarTypeFromModelBuilder: ScalarTypeFromModelBuilder = (name, model, config) => {
-  const { parse }    = S.to(Dec.Schemable)(model)
-  const { encode }   = S.to(Enc.Schemable)(model)
-  const serialize    = (u: unknown) =>
+  const { parse }  = S.to(Dec.Schemable)(model)
+  const { encode } = S.to(Enc.Schemable)(model)
+  const serialize  = (u: unknown) =>
     pipe(
       parse(u),
       Th.match(

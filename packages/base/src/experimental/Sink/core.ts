@@ -264,10 +264,10 @@ export function matchSink_<
         (err) => onFailure(err).channel,
         ([leftovers, z]) =>
           Ch.deferTotal(() => {
-            const leftoversRef     = new AtomicReference<C.Chunk<C.Chunk<L1 | L2>>>(
+            const leftoversRef = new AtomicReference<C.Chunk<C.Chunk<L1 | L2>>>(
               C.filter_(leftovers, (a) => C.isNonEmpty(a))
             )
-            const refReader        = Ch.succeedLazy(() => leftoversRef.getAndSet(C.empty()))['>>=']((chunk) =>
+            const refReader = Ch.succeedLazy(() => leftoversRef.getAndSet(C.empty()))['>>=']((chunk) =>
               Ch.writeChunk(chunk as unknown as C.Chunk<C.Chunk<In1 & In2>>)
             )
             const passthrough      = Ch.id<InErr2, C.Chunk<In1 & In2>, unknown>()

@@ -12,7 +12,7 @@ class Node<K, V> implements Iterable<readonly [K, V]> {
   [Symbol.iterator](): Iterator<readonly [K, V]> {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     let c: Node<K, V> | undefined = this
-    let n                         = 0
+    let n = 0
     return {
       next: () => {
         if (c) {
@@ -81,7 +81,7 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
     }
 
     let next: Node<K, V> | undefined = arr.next
-    let curr                         = arr
+    let curr = arr
 
     while (next) {
       if (St.equals(k, next.k)) {
@@ -107,7 +107,7 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
     }
 
     let c: Node<K, V> | undefined = arr
-    let l                         = arr
+    let l = arr
 
     while (c) {
       if (St.equals(k, c.k)) {

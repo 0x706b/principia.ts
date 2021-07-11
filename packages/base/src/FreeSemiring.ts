@@ -39,7 +39,7 @@ export const FreeSemiringTag = {
 
 export class Single<A> {
   readonly [FreeSemiringTypeId]: FreeSemiringTypeId = FreeSemiringTypeId
-  readonly _tag                                     = FreeSemiringTag.Single
+  readonly _tag = FreeSemiringTag.Single
 
   constructor(readonly value: A) {}
 
@@ -57,7 +57,7 @@ export class Single<A> {
 
 export class Then<Z, A> {
   readonly [FreeSemiringTypeId]: FreeSemiringTypeId = FreeSemiringTypeId
-  readonly _tag                                     = FreeSemiringTag.Then
+  readonly _tag = FreeSemiringTag.Then
 
   constructor(readonly left: FreeSemiring<Z, A>, readonly right: FreeSemiring<Z, A>) {}
 
@@ -85,7 +85,7 @@ const _emptyHash = Ha.opt(Ha.randomInt())
 
 export class Empty {
   readonly [FreeSemiringTypeId]: FreeSemiringTypeId = FreeSemiringTypeId
-  readonly _tag                                     = FreeSemiringTag.Empty
+  readonly _tag = FreeSemiringTag.Empty
 
   get [Ha.$hash](): number {
     return _emptyHash
@@ -101,7 +101,7 @@ export class Empty {
 
 export class Both<Z, A> {
   readonly [FreeSemiringTypeId]: FreeSemiringTypeId = FreeSemiringTypeId
-  readonly _tag                                     = FreeSemiringTag.Both
+  readonly _tag = FreeSemiringTag.Both
 
   constructor(readonly left: FreeSemiring<Z, A>, readonly right: FreeSemiring<Z, A>) {}
 

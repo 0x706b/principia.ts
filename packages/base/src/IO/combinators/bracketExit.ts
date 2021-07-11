@@ -1,13 +1,13 @@
 // tracing: off
 
 import type { Exit } from '../../Exit/core'
-import { defer, IO } from '../core'
+import type { IO } from '../core'
 
 import { traceAs } from '@principia/compile/util'
 
 import * as C from '../../Cause/core'
 import * as Ex from '../../Exit'
-import { chain_, done, halt, matchCauseIO_, result } from '../core'
+import { chain_, defer , done, halt, matchCauseIO_, result } from '../core'
 import { uninterruptibleMask } from './interrupt'
 
 /**

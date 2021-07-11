@@ -56,8 +56,8 @@ class IOSpec extends DefaultRunnableSpec {
       'bracket',
       testM('bracket happy path', () =>
         I.gen(function* (_) {
-          const release  = yield* _(Ref.make(false))
-          const result   = yield* _(
+          const release = yield* _(Ref.make(false))
+          const result  = yield* _(
             pipe(
               I.succeed(42),
               I.bracket(
@@ -72,8 +72,8 @@ class IOSpec extends DefaultRunnableSpec {
       ),
       testM('bracketExit happy path', () =>
         I.gen(function* (_) {
-          const release  = yield* _(Ref.make(false))
-          const result   = yield* _(
+          const release = yield* _(Ref.make(false))
+          const result  = yield* _(
             pipe(
               I.succeed(42),
               I.bracketExit(
@@ -89,7 +89,7 @@ class IOSpec extends DefaultRunnableSpec {
       testM('bracketExit error handling', () => {
         const releaseDied = new RuntimeException('release died')
         return I.gen(function* (_) {
-          const exit  = yield* _(
+          const exit = yield* _(
             pipe(
               I.succeed(42),
               I.bracketExit(
@@ -113,8 +113,8 @@ class IOSpec extends DefaultRunnableSpec {
       'bracket + disconnect',
       testM('bracket happy path', () =>
         I.gen(function* (_) {
-          const release  = yield* _(Ref.make(false))
-          const result   = yield* _(
+          const release = yield* _(Ref.make(false))
+          const result  = yield* _(
             pipe(
               I.succeed(42),
               I.bracket(
@@ -130,8 +130,8 @@ class IOSpec extends DefaultRunnableSpec {
       ),
       testM('bracketExit happy path', () =>
         I.gen(function* (_) {
-          const release  = yield* _(Ref.make(false))
-          const result   = yield* _(
+          const release = yield* _(Ref.make(false))
+          const result  = yield* _(
             pipe(
               I.succeed(42),
               I.bracketExit(
@@ -148,7 +148,7 @@ class IOSpec extends DefaultRunnableSpec {
       testM('bracketExit error handling', () => {
         const releaseDied = new RuntimeException('release died')
         return I.gen(function* (_) {
-          const exit  = yield* _(
+          const exit = yield* _(
             pipe(
               I.succeed(42),
               I.bracketExit(
@@ -176,8 +176,8 @@ class IOSpec extends DefaultRunnableSpec {
       testM('bracketExit "beast mode" error handling', () => {
         const releaseDied = new RuntimeException('release died')
         return I.gen(function* (_) {
-          const released   = yield* _(Ref.make(false))
-          const exit       = yield* _(
+          const released = yield* _(Ref.make(false))
+          const exit     = yield* _(
             pipe(
               I.succeed(42),
               I.bracketExit(
@@ -190,7 +190,7 @@ class IOSpec extends DefaultRunnableSpec {
               I.result
             )
           )
-          const cause      = yield* _(
+          const cause = yield* _(
             pipe(
               exit,
               Ex.matchIO(

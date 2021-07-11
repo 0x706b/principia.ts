@@ -345,7 +345,7 @@ export const Schemable: S.Schemable<DecoderSURI> = {
       }
       const errors: Array<PE.MemberE<string, any>> = []
       let res: any
-      let isBoth                                   = false
+      let isBoth = false
       for (const k in decoders) {
         const de = decoders[k].parse(u)
         if (Th.isRight(de)) {

@@ -2050,7 +2050,7 @@ export function changes<A>(E: P.Eq<A>): <R, E>(stream: Stream<R, E, A>) => Strea
 export function chunkN_<R, E, A>(stream: Stream<R, E, A>, n: number): Stream<R, E, A> {
   return unwrap(
     I.succeedLazy(() => {
-      const rechunker                                                           = new Rechunker<A>(n)
+      const rechunker = new Rechunker<A>(n)
       const process: Ch.Channel<R, E, C.Chunk<A>, unknown, E, C.Chunk<A>, void> = Ch.readWithCause(
         (chunk) => {
           const chunkSize = chunk.length
@@ -2058,7 +2058,7 @@ export function chunkN_<R, E, A>(stream: Stream<R, E, A>, n: number): Stream<R, 
           if (chunkSize > 0) {
             let chunks                    = L.empty<C.Chunk<A>>()
             let result: C.Chunk<A> | null = null
-            let i                         = 0
+            let i = 0
 
             while (i < chunkSize) {
               while (i < chunkSize && result === null) {
@@ -2793,8 +2793,8 @@ export function groupBy_<R, E, A, R1, E1, K, V>(
           Q.shutdown
         )
       )
-      const ref     = yield* _(Ref.make<HM.HashMap<K, symbol>>(HM.makeDefault()))
-      const add     = yield* _(
+      const ref = yield* _(Ref.make<HM.HashMap<K, symbol>>(HM.makeDefault()))
+      const add = yield* _(
         pipe(
           stream,
           mapIO(f),
@@ -3781,7 +3781,7 @@ export function repeatElementsWith_<R, E, A, R1, B, C, D>(
                 (a) => Ch.write(C.single(f(a)))['*>'](step(C.drop_(inp, 1), a))
               )
             )
-          const step   = (
+          const step = (
             inp: C.Chunk<A>,
             a: A
           ): Ch.Channel<R & R1 & Has<Clock>, E, C.Chunk<A>, unknown, E, C.Chunk<C> | C.Chunk<D>, void> => {
@@ -4381,17 +4381,17 @@ function handleSuccess<A, A1, B>(
     (l) => [l, C.empty<A1>()] as const,
     (r) => [C.empty<A>(), r] as const
   )
-  const left                      = O.match_(
+  const left = O.match_(
     leftUpd,
     () => leftExcess,
     (upd) => C.concat_(leftExcess, upd)
   )
-  const right                     = O.match_(
+  const right = O.match_(
     rightUpd,
     () => rightExcess,
     (upd) => C.concat_(rightExcess, upd)
   )
-  const [emit, newExcess]         = zipChunks_(left, right, f)
+  const [emit, newExcess] = zipChunks_(left, right, f)
 
   if (leftUpd._tag === 'Some' && rightUpd._tag === 'Some') {
     return Ex.succeed(tuple(emit, new Running(newExcess)))

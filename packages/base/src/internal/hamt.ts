@@ -60,7 +60,7 @@ export function arraySpliceIn<A>(mutate: boolean, at: number, v: A, arr: A[]) {
     arr[at] = v
     return arr
   }
-  let i     = 0,
+  let i = 0,
     g = 0
   const out = new Array<A>(len + 1)
   while (i < at) out[g++] = arr[i++]

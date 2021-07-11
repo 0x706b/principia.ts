@@ -724,8 +724,8 @@ export function getTraversableWithindex<K>(O: P.Ord<K>) {
   const imapA_ = P.implementMapWithIndexA_<URI, FixK>()((_) => (AG) => (ta, f) => {
     type _ = typeof _
     let gm: HKT.HKT<_['G'], ReadonlyMap<_['K'], _['B']>> = AG.pure(empty())
-    const ks                                             = keysO(ta)
-    const len                                            = ks.length
+    const ks  = keysO(ta)
+    const len = ks.length
     for (let i = 0; i < len; i++) {
       const key = ks[i]
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

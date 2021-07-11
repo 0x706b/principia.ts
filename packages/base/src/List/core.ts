@@ -2029,7 +2029,7 @@ export function sort<B>(O: P.Ord<B>): <A extends B>(as: List<A>) => List<A> {
  */
 export function sortWith_<A>(as: List<A>, compare: (a: A, b: A) => Ordering): List<A> {
   const arr: { idx: number, elm: A }[] = []
-  let i                                = 0
+  let i = 0
   forEach_(as, (elm) => arr.push({ idx: i++, elm }))
   arr.sort(({ elm: a, idx: i }, { elm: b, idx: j }) => {
     const c = compare(a, b)
@@ -2222,11 +2222,11 @@ export function updateAt_<A>(as: List<A>, i: number, a: A): List<A> {
   if (i < prefixSize) {
     const newPrefix                     = copyArray(newList.prefix)
     newPrefix[newPrefix.length - i - 1] = a
-    newList.prefix                      = newPrefix
+    newList.prefix = newPrefix
   } else if (i >= as.length - suffixSize) {
-    const newSuffix                         = copyArray(newList.suffix)
+    const newSuffix = copyArray(newList.suffix)
     newSuffix[i - (as.length - suffixSize)] = a
-    newList.suffix                          = newSuffix
+    newList.suffix = newSuffix
   } else {
     newList.root = updateNode(as.root!, getDepth(as), i - prefixSize, as.offset, a)
   }
@@ -2647,7 +2647,7 @@ function getPath(index: number, offset: number, depth: number, sizes: Sizes): Pa
   let i = index
   if (sizes === undefined && offset !== 0) {
     pathResult.updatedOffset = 0
-    i                        = handleOffset(depth, offset, i)
+    i = handleOffset(depth, offset, i)
   }
   let path = (i >> (depth * branchBits)) & mask
   if (sizes !== undefined) {
@@ -2655,7 +2655,7 @@ function getPath(index: number, offset: number, depth: number, sizes: Sizes): Pa
       path++
     }
     const traversed = path === 0 ? 0 : sizes[path - 1]
-    i                       -= traversed
+    i              -= traversed
     pathResult.updatedOffset = offset
   }
   pathResult.path  = path
@@ -3519,7 +3519,7 @@ function sliceTreeList<A>(
   offset: number,
   l: MutableList<A>
 ): List<A> {
-  const sizes                            = tree.sizes
+  const sizes = tree.sizes
   let { index: newFrom, path: pathLeft } = getPath(from, offset, depth, sizes)
   let { index: newTo, path: pathRight }  = getPath(to, offset, depth, sizes)
   if (depth === 0) {
@@ -3550,9 +3550,9 @@ function sliceTreeList<A>(
       pathLeft === 0 ? offset : 0,
       pathLeft === pathRight
     )
-    l.offset        = newOffset
-    l.bits          = setPrefix(newAffix.length, l.bits)
-    l.prefix        = newAffix
+    l.offset = newOffset
+    l.bits   = setPrefix(newAffix.length, l.bits)
+    l.prefix = newAffix
 
     if (childLeft === undefined) {
       ++pathLeft
@@ -3569,7 +3569,7 @@ function sliceTreeList<A>(
         l.bits        = decrementDepth(l.bits)
         const newRoot =
           childRight !== undefined ? childRight : childLeft !== undefined ? childLeft : tree.array[pathLeft]
-        l.root        = new Node(newRoot.sizes, newRoot.array) // Is this size handling good enough?
+        l.root = new Node(newRoot.sizes, newRoot.array) // Is this size handling good enough?
       }
     } else {
       l.root = sliceNode(tree, from, depth, pathLeft, pathRight, childLeft, childRight)

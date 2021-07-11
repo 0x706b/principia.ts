@@ -1870,7 +1870,7 @@ export function distributedWithDynamic_<R, E, A>(
         M.bracket((_) => I.chain_(_.get, (qs) => I.foreach_(qs.values(), Q.shutdown)))
       )
     )
-    const add       = yield* _(
+    const add = yield* _(
       M.gen(function* (_) {
         const queuesLock = yield* _(Semaphore.make(1))
         const newQueue   = yield* _(
@@ -2492,7 +2492,7 @@ export function chainPar_<R, E, A, R1, E1, A1>(
   return new Stream(
     M.withChildren((getChildren) =>
       M.gen(function* (_) {
-        const outQueue     = yield* _(
+        const outQueue = yield* _(
           I.toManaged_(Q.makeBounded<I.IO<R1, O.Option<E | E1>, Chunk<A1>>>(outputBuffer), Q.shutdown)
         )
         const permits      = yield* _(Semaphore.make(n))
@@ -2598,7 +2598,7 @@ export function chainParSwitch_(n: number, bufferSize = 16) {
     return new Stream(
       M.withChildren((getChildren) =>
         M.gen(function* (_) {
-          const outQueue     = yield* _(
+          const outQueue = yield* _(
             I.toManaged_(Q.makeBounded<I.IO<R1, O.Option<E | E1>, Chunk<B>>>(bufferSize), Q.shutdown)
           )
           const permits      = yield* _(Semaphore.make(n))
@@ -3886,7 +3886,7 @@ export function interruptOn_<R, E, A, E1, A1>(ma: Stream<R, E, A>, p: P.Promise<
         I.crossSecond(doneRef.set(true)),
         I.crossSecond(Pull.end as I.IO<unknown, O.Option<E | E1>, any>)
       )
-      const pull    = pipe(
+      const pull = pipe(
         doneRef.get,
         I.cross(P.isDone(p)),
         I.chain(([b1, b2]) => {
@@ -4798,7 +4798,7 @@ export function takeUntilIO_<R, E, A, R1, E1>(
                   I.asSomeError
                 ) as I.IO<R1, O.Option<E | E1>, Chunk<A>>
               )
-              const last  = pipe(chunk, C.drop(taken.length), C.take(1))
+              const last = pipe(chunk, C.drop(taken.length), C.take(1))
               yield* _(
                 pipe(
                   keepTakingRef.set(false),
@@ -4913,9 +4913,9 @@ export function throttleEnforceIO_<R, E, A, R1, E1>(
 ): Stream<R & R1 & Has<Clock>, E | E1, A> {
   return new Stream(
     M.gen(function* (_) {
-      const chunks                                                      = yield* _(ma.proc)
-      const time                                                        = yield* _(Clock.currentTime)
-      const bucket                                                      = yield* _(Ref.make(tuple(units, time)))
+      const chunks = yield* _(ma.proc)
+      const time   = yield* _(Clock.currentTime)
+      const bucket = yield* _(Ref.make(tuple(units, time)))
       const pull: I.IO<R & R1 & Has<Clock>, O.Option<E | E1>, Chunk<A>> = pipe(
         chunks,
         I.chain((chunk) =>
@@ -5056,7 +5056,7 @@ export function debounce_<R, E, A>(ma: Stream<R, E, A>, d: number): Stream<R & H
           )
         )
       )
-      const store  = (chunk: Chunk<A>) =>
+      const store = (chunk: Chunk<A>) =>
         pipe(
           chunk,
           C.last,
@@ -5462,12 +5462,12 @@ export function zipAllWithExec_<R, E, A, R1, E1, B, C>(
       (l) => tuple(l, C.empty<B>()),
       (r) => tuple(C.empty<A>(), r)
     )
-    const chunkL             = O.match_(
+    const chunkL = O.match_(
       maybeO,
       () => excessL,
       (upd) => C.concat_(excessL, upd)
     )
-    const chunkR             = O.match_(
+    const chunkR = O.match_(
       maybeO1,
       () => excessR,
       (upd) => C.concat_(excessR, upd)

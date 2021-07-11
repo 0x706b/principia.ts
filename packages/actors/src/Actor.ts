@@ -152,7 +152,7 @@ export class Stateful<R, S, F1 extends AM.AnyMessage> extends AbstractStateful<R
           _tag: fa._tag,
           payload: fa as any
         })
-        const completer     = (a: AM.ResponseOf<F1>) =>
+        const completer = (a: AM.ResponseOf<F1>) =>
           pipe(Ref.get(s), I.chain(state.set), I.crossSecond(P.succeed_(promise, a)), I.asUnit)
         return yield* _(
           I.matchIO_(

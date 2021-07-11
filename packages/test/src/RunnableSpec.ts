@@ -29,7 +29,7 @@ export abstract class RunnableSpec<R, E> extends AbstractRunnableSpec<R, E> {
           () => false
         )
       )
-      const summary     = buildSummary(results)
+      const summary = buildSummary(results)
       yield* _(TestLogger.logLine(summary.summary))
       return hasFailures ? 1 : 0
     })

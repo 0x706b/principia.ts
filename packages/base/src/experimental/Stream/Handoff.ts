@@ -95,7 +95,7 @@ export const EmitTypeId = Symbol()
 export type EmitTypeId = typeof EmitTypeId
 export class Emit<A> {
   readonly _handoffSignalTypeId: typeof HandoffSignalTypeId = HandoffSignalTypeId
-  readonly _typeId: typeof EmitTypeId                       = EmitTypeId
+  readonly _typeId: typeof EmitTypeId = EmitTypeId
 
   constructor(readonly els: C.Chunk<A>) {}
 }
@@ -104,7 +104,7 @@ export const HaltTypeId = Symbol()
 export type HaltTypeId = typeof HaltTypeId
 export class Halt<E> {
   readonly _handoffSignalTypeId: typeof HandoffSignalTypeId = HandoffSignalTypeId
-  readonly _typeId: typeof HaltTypeId                       = HaltTypeId
+  readonly _typeId: typeof HaltTypeId = HaltTypeId
 
   constructor(readonly error: Ca.Cause<E>) {}
 }
@@ -113,7 +113,7 @@ export const EndTypeId = Symbol()
 export type EndTypeId = typeof EndTypeId
 export class End<C> {
   readonly _handoffSignalTypeId: typeof HandoffSignalTypeId = HandoffSignalTypeId
-  readonly _typeId: typeof EndTypeId                        = EndTypeId
+  readonly _typeId: typeof EndTypeId = EndTypeId
 
   constructor(readonly reason: SER.SinkEndReason<C>) {}
 }

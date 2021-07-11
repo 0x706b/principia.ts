@@ -959,12 +959,12 @@ export function corresponds_<A, B>(as: Chunk<A>, bs: Chunk<B>, f: (a: A, b: B) =
 
   let left: ArrayLike<A> | undefined  = undefined
   let right: ArrayLike<B> | undefined = undefined
-  let leftLength                      = 0
-  let rightLength                     = 0
-  let i                               = 0
-  let j                               = 0
-  let equal                           = true
-  let done                            = false
+  let leftLength  = 0
+  let rightLength = 0
+  let i           = 0
+  let j           = 0
+  let equal       = true
+  let done        = false
 
   let leftNext
   let rightNext
@@ -1290,16 +1290,16 @@ export function zipWith_<A, B, C>(as: Chunk<A>, bs: Chunk<B>, f: (a: A, b: B) =>
   if (length === 0) {
     return empty()
   } else {
-    const leftIterator                      = as.arrayIterator()
-    const rightIterator                     = bs.arrayIterator()
-    const out                               = builder<C>()
+    const leftIterator  = as.arrayIterator()
+    const rightIterator = bs.arrayIterator()
+    const out           = builder<C>()
     let left: IteratorResult<ArrayLike<A>>  = null as any
     let right: IteratorResult<ArrayLike<B>> = null as any
-    let leftLength                          = 0
-    let rightLength                         = 0
-    let i                                   = 0
-    let j                                   = 0
-    let k                                   = 0
+    let leftLength  = 0
+    let rightLength = 0
+    let i           = 0
+    let j           = 0
+    let k           = 0
     while (i < length) {
       if (j < leftLength && k < rightLength) {
         const a = left.value[j]

@@ -74,7 +74,7 @@ export function insert_<K, V>(m: OrderedMap<K, V>, key: K, value: V): OrderedMap
   if (isEmptyNode(m.root)) {
     return new OrderedMap(m.ord, Node(R, Leaf, key, value, Leaf, 1))
   }
-  const cmp                                   = m.ord.compare_
+  const cmp = m.ord.compare_
   const nodeStack: Array<Mutable<Node<K, V>>> = []
   const orderStack: Array<P.Ordering>         = []
   let n: RBNode<K, V>                         = m.root
@@ -114,8 +114,8 @@ export function insertWith_<V>(S: P.Semigroup<V>) {
     if (isEmptyNode(m.root)) {
       return new OrderedMap(m.ord, Node(R, Leaf, key, value, Leaf, 1))
     }
-    const com                                   = S.combine_
-    const cmp                                   = m.ord.compare_
+    const com = S.combine_
+    const cmp = m.ord.compare_
     const nodeStack: Array<Mutable<Node<K, V>>> = []
     const orderStack: Array<1 | -1>             = []
     let n: RBNode<K, V>                         = m.root
@@ -328,7 +328,7 @@ export function getLt<K>(key: K): <V>(m: OrderedMap<K, V>) => Option<V> {
 export function visitFull<K, V, A>(m: OrderedMap<K, V>, visit: (key: K, value: V) => Option<A>): Option<A> {
   let current: RBNode<K, V>                = m.root
   let stack: Stack<Node<K, V>> | undefined = undefined
-  let done                                 = false
+  let done = false
 
   while (!done) {
     if (current) {
@@ -449,8 +449,8 @@ export function forEachBetween<K, V>(min: K, max: K, visit: (k: K, v: V) => void
 export function visitLte<K, V, A>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V) => Option<A>): Option<A> {
   let current: RBNode<K, V>                = m.root
   let stack: Stack<Node<K, V>> | undefined = undefined
-  let done                                 = false
-  const cmp                                = m.ord.compare_
+  let done  = false
+  const cmp = m.ord.compare_
 
   while (!done) {
     if (current) {
@@ -476,8 +476,8 @@ export function visitLte<K, V, A>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: 
 export function visitLt<K, V, A>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V) => Option<A>): Option<A> {
   let current: RBNode<K, V>                = m.root
   let stack: Stack<Node<K, V>> | undefined = undefined
-  let done                                 = false
-  const cmp                                = m.ord.compare_
+  let done  = false
+  const cmp = m.ord.compare_
 
   while (!done) {
     if (current) {
@@ -503,8 +503,8 @@ export function visitLt<K, V, A>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V
 export function visitGte<K, V, A>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V) => Option<A>): Option<A> {
   let current: RBNode<K, V>                = m.root
   let stack: Stack<Node<K, V>> | undefined = undefined
-  let done                                 = false
-  const cmp                                = m.ord.compare_
+  let done  = false
+  const cmp = m.ord.compare_
 
   while (!done) {
     if (current) {
@@ -533,8 +533,8 @@ export function visitGte<K, V, A>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: 
 export function visitGt<K, V, A>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V) => Option<A>): Option<A> {
   let current: RBNode<K, V>                = m.root
   let stack: Stack<Node<K, V>> | undefined = undefined
-  let done                                 = false
-  const cmp                                = m.ord.compare_
+  let done  = false
+  const cmp = m.ord.compare_
 
   while (!done) {
     if (current) {
@@ -568,8 +568,8 @@ export function visitBetween<K, V, A>(
 ): Option<A> {
   let current: RBNode<K, V>                = m.root
   let stack: Stack<Node<K, V>> | undefined = undefined
-  let done                                 = false
-  const cmp                                = m.ord.compare_
+  let done  = false
+  const cmp = m.ord.compare_
 
   while (!done) {
     if (current) {
@@ -722,7 +722,7 @@ export function forward<K, V>(m: OrderedMap<K, V>): OrderedMapIterable<K, V> {
     ord: m.ord,
     [Symbol.iterator]() {
       const stack: Array<Node<K, V>> = []
-      let n                          = m.root
+      let n = m.root
       while (n) {
         stack.push(n)
         n = n.left
@@ -737,7 +737,7 @@ export function backward<K, V>(m: OrderedMap<K, V>): OrderedMapIterable<K, V> {
     ord: m.ord,
     [Symbol.iterator]() {
       const stack: Array<Node<K, V>> = []
-      let n                          = m.root
+      let n = m.root
       while (n) {
         stack.push(n)
         n = n.right
@@ -751,8 +751,8 @@ export function find_<K, V>(m: OrderedMap<K, V>, key: K, direction: 0 | 1 = 0): 
   return {
     ord: m.ord,
     [Symbol.iterator]() {
-      const cmp                      = m.ord.compare_
-      let n                          = m.root
+      const cmp = m.ord.compare_
+      let n     = m.root
       const stack: Array<Node<K, V>> = []
       while (n) {
         const d = cmp(key, n.key)
@@ -783,8 +783,8 @@ export function at_<K, V>(m: OrderedMap<K, V>, index: number, direction: 0 | 1 =
       if (index < 0 || !m.root) {
         return new OrderedMapIterator(m, [], direction)
       }
-      let idx                        = index
-      let n                          = m.root
+      let idx = index
+      let n   = m.root
       const stack: Array<Node<K, V>> = []
       for (;;) {
         stack.push(n)

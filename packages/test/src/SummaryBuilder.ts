@@ -19,15 +19,15 @@ export class Summary {
 }
 
 export function buildSummary<E>(executedSpec: ExecutedSpec<E>): Summary {
-  const success  = countTestResults(
+  const success = countTestResults(
     executedSpec,
     E.match(
       () => false,
       (_) => _._tag === 'Succeeded'
     )
   )
-  const fail     = countTestResults(executedSpec, E.isLeft)
-  const ignore   = countTestResults(
+  const fail   = countTestResults(executedSpec, E.isLeft)
+  const ignore = countTestResults(
     executedSpec,
     E.match(
       () => false,

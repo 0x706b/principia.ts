@@ -215,7 +215,7 @@ function forkManaged<R, E, A>(self: Managed<R, E, A>): Managed<R, never, FiberCo
             restore
           )
         )
-        const releaseMapEntry      = yield* _(
+        const releaseMapEntry = yield* _(
           RM.add(outerReleaseMap, (e) => pipe(fiber, interruptFiber, I.crossSecond(releaseAllSeq_(innerReleaseMap, e))))
         )
 

@@ -6,6 +6,7 @@ import type { Fiber, FiberContext, FiberId, InterruptStatus, RuntimeFiber } from
 import type { Has, Tag } from '@principia/base/Has'
 import type * as I from '@principia/base/IO'
 import type { IOEnv } from '@principia/base/IOEnv'
+import type * as L from '@principia/base/Layer'
 import type { Managed, Reservation } from '@principia/base/Managed'
 import type { Option } from '@principia/base/Option'
 import type { Erase, Predicate, ServicesStruct, ServicesTuple, UnionToIntersection } from '@principia/base/prelude'
@@ -13,8 +14,6 @@ import type { Promise } from '@principia/base/Promise'
 import type { Schedule } from '@principia/base/Schedule'
 import type { Scope } from '@principia/base/Scope'
 import type { Supervisor } from '@principia/base/Supervisor'
-
-import * as L from '@principia/base/Layer'
 
 declare module '@principia/base/IO/primitives' {
   export interface IO<R, E, A> {

@@ -1405,7 +1405,7 @@ export function mergeAllWith_<
     M.withChildren((getChildren) =>
       M.gen(function* (_) {
         yield* _(M.finalizer(I.chain_(getChildren, F.interruptAll)))
-        const queue       = yield* _(
+        const queue = yield* _(
           M.bracket_(Q.makeBounded<I.IO<Env, E.Either<OutErr | OutErr1, OutDone>, OutElem>>(bufferSize), Q.shutdown)
         )
         const cancelers   = yield* _(M.bracket_(Q.makeBounded<PR.Promise<never, void>>(n), Q.shutdown))
@@ -1950,7 +1950,7 @@ export function mapOutIOPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     M.withChildren((getChildren) =>
       M.gen(function* (_) {
         yield* _(M.finalizer(pipe(getChildren, I.chain(F.interruptAll))))
-        const queue       = yield* _(
+        const queue = yield* _(
           M.bracket_(Q.makeBounded<I.IO<Env1, E.Either<OutErr | OutErr1, OutDone>, OutElem1>>(n), Q.shutdown)
         )
         const errorSignal = yield* _(PR.make<OutErr1, never>())

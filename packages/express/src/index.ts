@@ -98,7 +98,7 @@ export const makeExpressApp: ManagedExpressApp = M.gen(function* (_) {
         const onError = (err: Error) => {
           cb(T.die(new NodeServerListenError(err)))
         }
-        const server  = app.listen(port, host, () => {
+        const server = app.listen(port, host, () => {
           cb(
             T.succeedLazy(() => {
               server.removeListener('error', onError)
@@ -338,11 +338,11 @@ export function use(...args: NonEmptyArray<any>): T.URIO<ExpressEnv, void> {
   })['|>'](T.asUnit)
 }
 
-export const all  = match('all')
-export const get  = match('get')
-export const post = match('post')
-export const put  = match('put')
-const delete_     = match('delete')
+export const all     = match('all')
+export const get     = match('get')
+export const post    = match('post')
+export const put     = match('put')
+const delete_ = match('delete')
 export { delete_ as delete }
 export const patch       = match('patch')
 export const options     = match('options')

@@ -176,8 +176,8 @@ export function toArray<A>(fs: FreeList<A>): ReadonlyArray<A> {
       case 'Element': {
         if (ops !== undefined) {
           let op: Stack<Ops<A>> | undefined = ops
-          let drop                          = false
-          let a                             = current.value
+          let drop = false
+          let a    = current.value
           while (op !== undefined && !drop) {
             switch (op.value._tag) {
               case 'Filter': {

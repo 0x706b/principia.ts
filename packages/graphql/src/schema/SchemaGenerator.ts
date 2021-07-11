@@ -52,7 +52,7 @@ export interface SchemaGenerator<Ctx> {
 export const makeSchemaGenerator =
   <Ctx>(): SchemaGenerator<Ctx> =>
   (...fragments) => {
-    const objectTypes: Record<string, GQLObject<any, any, any, any, any, any>>  = {
+    const objectTypes: Record<string, GQLObject<any, any, any, any, any, any>> = {
       Query: BaseQuery,
       Mutation: BaseMutation
     }
@@ -61,7 +61,7 @@ export const makeSchemaGenerator =
     const scalarTypes: Record<string, GQLScalar<any, any, any, any>>            = {}
     const unionTypes: Record<string, GQLUnion<any, any, any, any>>              = {}
     const interfaceTypes: Record<string, GQLInterface<any, any, any, any, any>> = {}
-    const subscriptions: Array<GQLSubscription<any, any>>                       = []
+    const subscriptions: Array<GQLSubscription<any, any>> = []
 
     for (const type of fragments) {
       switch (type._tag) {
@@ -134,7 +134,7 @@ export const makeSchemaGenerator =
         name: v.name
       }
     }
-    const extendFieldAST    = R.ifoldl_(
+    const extendFieldAST = R.ifoldl_(
       extendTypes,
       {} as Record<string, ReadonlyArray<FieldDefinitionNode>>,
       (b, k, v) => ({
@@ -148,11 +148,11 @@ export const makeSchemaGenerator =
         ? [...b, { ...v.ast, fields: [...(v.ast.fields || []), ...extendFieldAST[k]] }]
         : [...b, v.ast]
     })
-    const inputAST          = R.foldl_(inputObjectTypes, A.empty<InputObjectTypeDefinitionNode>(), (acc, v) => [...acc, v.ast])
-    const scalarAST         = R.foldl_(scalarTypes, A.empty<ScalarTypeDefinitionNode>(), (acc, v) => [...acc, v.ast])
-    const unionAST          = R.foldl_(unionTypes, A.empty<UnionTypeDefinitionNode>(), (acc, v) => [...acc, v.ast])
-    const interfaceAST      = R.foldl_(interfaceTypes, A.empty<InterfaceTypeDefinitionNode>(), (acc, v) => [...acc, v.ast])
-    const subscriptionAST   = createObjectTypeDefinitionNode({
+    const inputAST        = R.foldl_(inputObjectTypes, A.empty<InputObjectTypeDefinitionNode>(), (acc, v) => [...acc, v.ast])
+    const scalarAST       = R.foldl_(scalarTypes, A.empty<ScalarTypeDefinitionNode>(), (acc, v) => [...acc, v.ast])
+    const unionAST        = R.foldl_(unionTypes, A.empty<UnionTypeDefinitionNode>(), (acc, v) => [...acc, v.ast])
+    const interfaceAST    = R.foldl_(interfaceTypes, A.empty<InterfaceTypeDefinitionNode>(), (acc, v) => [...acc, v.ast])
+    const subscriptionAST = createObjectTypeDefinitionNode({
       name: 'Subscription',
       fields: A.foldl_(subscriptions, A.empty<FieldDefinitionNode>(), (acc, v) => [...acc, ...v.ast])
     })

@@ -48,7 +48,7 @@ export class Empty {
   readonly _E!: () => never;
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
-  readonly _tag                       = CauseTag.Empty
+  readonly _tag = CauseTag.Empty
 
   get [St.$hash](): number {
     return _emptyHash
@@ -76,7 +76,7 @@ export class Fail<E> {
   readonly _E!: () => E;
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
-  readonly _tag                       = CauseTag.Fail
+  readonly _tag = CauseTag.Fail
 
   constructor(readonly value: E) {}
 
@@ -109,7 +109,7 @@ export class Die {
   readonly _E!: () => never;
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
-  readonly _tag                       = CauseTag.Die
+  readonly _tag = CauseTag.Die
 
   constructor(readonly value: unknown) {}
 
@@ -142,7 +142,7 @@ export class Interrupt {
   readonly _E!: () => never;
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
-  readonly _tag                       = CauseTag.Interrupt
+  readonly _tag = CauseTag.Interrupt
 
   constructor(readonly fiberId: FiberId) {}
 
@@ -176,7 +176,7 @@ export class Then<E> {
   readonly _E!: () => E;
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
-  readonly _tag                       = CauseTag.Then
+  readonly _tag = CauseTag.Then
 
   constructor(readonly left: Cause<E>, readonly right: Cause<E>) {}
 
@@ -208,7 +208,7 @@ export class Both<E> {
   readonly _E!: () => E;
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
-  readonly _tag                       = CauseTag.Both
+  readonly _tag = CauseTag.Both
 
   constructor(readonly left: Cause<E>, readonly right: Cause<E>) {}
 
@@ -240,7 +240,7 @@ export class Traced<E> {
   readonly _E!: () => E;
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
-  readonly _tag                       = CauseTag.Traced
+  readonly _tag = CauseTag.Traced
 
   constructor(readonly cause: Cause<E>, readonly trace: Trace) {}
 
@@ -520,7 +520,7 @@ export function find<A, E>(f: (cause: Cause<E>) => O.Option<A>): (cause: Cause<E
 export function foldl_<E, A>(cause: Cause<E>, a: A, f: (a: A, cause: Cause<E>) => O.Option<A>): A {
   let causes: Stack<Cause<E>> | undefined = undefined
   let current: Cause<E> | undefined       = cause
-  let acc                                 = a
+  let acc = a
 
   while (current) {
     const x = f(acc, current)
@@ -1633,7 +1633,7 @@ type FCEStackFrame<E, A> =
 export function flipCauseEither<E, A>(cause: Cause<E.Either<E, A>>): E.Either<Cause<E>, A> {
   let stack: Stack<FCEStackFrame<E, A>> = makeStack(new FCEStackFrameDone())
   let result: E.Either<Cause<E>, A> | undefined
-  let c                                 = cause
+  let c = cause
 
   recursion: while (stack) {
     // eslint-disable-next-line no-constant-condition
@@ -1782,7 +1782,7 @@ type FCOStackFrame<E> =
 export function flipCauseOption<E>(cause: Cause<O.Option<E>>): O.Option<Cause<E>> {
   let stack: Stack<FCOStackFrame<E>> = makeStack(new FCOStackFrameDone())
   let result: O.Option<Cause<E>> | undefined
-  let c                              = cause
+  let c = cause
 
   recursion: while (stack) {
     // eslint-disable-next-line no-constant-condition

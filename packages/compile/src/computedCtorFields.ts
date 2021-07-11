@@ -15,7 +15,7 @@ export default function computedCtorFields(
       return (sourceFile: ts.SourceFile) => {
         function visitor(node: ts.Node): ts.VisitResult<ts.Node> {
           if (ts.isClassDeclaration(node)) {
-            const members                                               = node.members
+            const members = node.members
             const updatedMembers: Array<ts.ClassElement>                = []
             const constructorAssignments: Array<ts.ExpressionStatement> = []
             let ctor: ts.ConstructorDeclaration | undefined             = undefined
@@ -55,7 +55,7 @@ export default function computedCtorFields(
             let updatedConstructor: ts.ConstructorDeclaration
             if (ctor) {
               if (constructorAssignments.length !== 0) {
-                const hasSuperStatement   = ctor.body?.statements.some(
+                const hasSuperStatement = ctor.body?.statements.some(
                   (statement) =>
                     ts.isExpressionStatement(statement) &&
                     ts.isCallExpression(statement.expression) &&

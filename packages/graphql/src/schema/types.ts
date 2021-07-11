@@ -135,7 +135,7 @@ export class GQLObject<N extends string, Root, Ctx, R, E, A> {
     readonly fields: { [K in keyof A]: AnyOutput<Ctx> },
     readonly interfaces: ReadonlyArray<GQLInterface<any, any, any, any, any>> = []
   ) {
-    this.ast       = createObjectTypeDefinitionNode({
+    this.ast = createObjectTypeDefinitionNode({
       name,
       fields: [
         ...A.chain_(interfaces, (a) => a.ast.fields || []),
@@ -203,7 +203,7 @@ export class GQLInterface<N extends string, Ctx, R, E, A> {
   readonly resolvers: ReadonlyRecord<string, any>
 
   constructor(readonly name: N, readonly fields: ReadonlyRecord<string, any>, readonly resolveType: any) {
-    this.ast       = createInterfaceTypeDefinitionNode({
+    this.ast = createInterfaceTypeDefinitionNode({
       name,
       fields: R.ifoldl_(fields, [] as ReadonlyArray<FieldDefinitionNode>, (b, k, a: NonNullable<AnyOutput<Ctx>>) =>
         A.append_(b, addNameToUnnamedFieldDefinitionNode(a.ast, k))
@@ -228,7 +228,7 @@ export class GQLSubscription<R, A> {
   readonly resolvers: ReadonlyRecord<string, Subscription<any, any, any, any, any, any, any, any>>
 
   constructor(readonly fields: ReadonlyRecord<string, GQLSubscriptionField<any, any>>) {
-    this.ast       = R.ifoldl_(
+    this.ast = R.ifoldl_(
       fields,
       [] as ReadonlyArray<FieldDefinitionNode>,
       (b, k, a: NonNullable<GQLSubscriptionField<any, any>>) =>

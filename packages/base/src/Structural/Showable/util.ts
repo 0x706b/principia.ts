@@ -20,7 +20,7 @@ export const ansiPattern =
   '[\\u001B\\u009B][[\\]()#;?]*' +
   '(?:(?:(?:[a-zA-Z\\d]*(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)' +
   '|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-ntqry=><~]))'
-export const ansi        = new RegExp(ansiPattern, 'g')
+export const ansi = new RegExp(ansiPattern, 'g')
 
 // Escaped control characters (plus the single quote and the backslash). Use
 // empty strings to fill up unused entries.

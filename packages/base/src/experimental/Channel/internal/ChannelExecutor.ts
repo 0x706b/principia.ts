@@ -382,8 +382,8 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     switch (run._tag) {
       case State.ChannelStateTag.Emit: {
         const fromK: ErasedExecutor<Env> = new ChannelExecutor(() => inner.subK(inner.exec.getEmit()), this.providedEnv)
-        fromK.input                      = this.input
-        this.subexecutorStack            = new FromKAnd(fromK, inner)
+        fromK.input           = this.input
+        this.subexecutorStack = new FromKAnd(fromK, inner)
         return undefined
       }
       case State.ChannelStateTag.Done: {
@@ -621,8 +621,8 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
           switch (currentChannel._tag) {
             case C.ChannelTag.Bridge: {
               if (this.input) {
-                const inputExecutor               = this.input
-                this.input                        = undefined
+                const inputExecutor = this.input
+                this.input          = undefined
                 const drainer: URIO<Env, unknown> = I.defer(() => {
                   const state = inputExecutor.run()
 
@@ -749,7 +749,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
                 currentChannel.combineInners,
                 currentChannel.combineAll
               )
-              this.currentChannel   = undefined
+              this.currentChannel = undefined
               break
             }
             case C.ChannelTag.Fold: {

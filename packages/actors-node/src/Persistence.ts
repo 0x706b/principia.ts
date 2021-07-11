@@ -241,7 +241,6 @@ export const LivePersistence = L.fromManaged(Persistence)(
       persistenceId: string
     ) => <R, E, A>(effect: T.IO<R, E, A>) => T.IO<R & Has<ShardContext>, E, A> = () => cli.transaction
 
-    // eslint-disable-next-line align-assignments/align-assignments
     const get: (persistenceId: string) => T.IO<
       Has<ShardContext>,
       never,
