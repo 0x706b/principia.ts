@@ -232,7 +232,7 @@ export class AtomicIO<A> implements RefM<unknown, unknown, never, never, A, A> {
   }
 
   set(a: A): I.IO<unknown, never, void> {
-    return S.withPermit(this.semaphore)(this.set(a))
+    return S.withPermit(this.semaphore)(this.ref.set(a))
   }
 }
 
