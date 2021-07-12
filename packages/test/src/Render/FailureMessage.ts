@@ -114,7 +114,7 @@ function renderAssertionFailureDetails(failureDetails: NonEmptyArray<AssertionVa
 
 function renderWhole(fragment: AssertionValue<any>, whole: AssertionValue<any>, offset: number): Line {
   return withOffset(offset + tabSize)(
-    blue(whole.showValue())
+    blue(whole.showValue(offset))
       ['+'](renderSatisfied(whole))
       ['++'](highlight(cyan(whole.assertion.value.rendered), fragment.assertion.value.rendered))
   )
@@ -148,7 +148,7 @@ function renderFragment(fragment: AssertionValue<any>, offset: number): Message 
     A.map((s) => withOffset(offset + tabSize)(cyan(s).toLine())),
     (lines) => new Message(L.from(lines))
   )
-  return withOffset(offset + tabSize)(blue(fragment.showValue())['+'](renderSatisfied(fragment)))
+  return withOffset(offset + tabSize)(blue(fragment.showValue(offset))['+'](renderSatisfied(fragment)))
     .toMessage()
     ['++'](assertionMessage.withOffset(tabSize))
 }

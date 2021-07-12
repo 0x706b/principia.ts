@@ -3,6 +3,9 @@ import type { AssertionIO } from './AssertionM'
 import type { Eval } from '@principia/base/Eval'
 import type * as S from '@principia/base/Show'
 
+import * as A from '@principia/base/Array'
+import { pipe } from '@principia/base/function'
+import * as str from '@principia/base/string'
 import * as Sh from '@principia/base/Structural/Showable'
 
 export class AssertionValue<A> {
@@ -14,8 +17,15 @@ export class AssertionValue<A> {
     readonly showA?: S.Show<A>
   ) {}
 
-  showValue(): string {
-    return this.showA ? this.showA.show(this.value) : Sh.show(this.value)
+  showValue(offset = 0): string {
+    return this.showA
+      ? pipe(
+          this.showA.show(this.value),
+          str.lines,
+          A.imap((i, line) => (i === 0 ? line : ' '.repeat(offset) + line)),
+          A.join('\n')
+        )
+      : Sh.showWithOptions(this.value, { indentationLevel: offset })
   }
 
   isSameAssertionAs(that: AssertionValue<A>) {
