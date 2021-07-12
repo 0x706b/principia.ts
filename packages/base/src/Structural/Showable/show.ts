@@ -77,6 +77,7 @@ export interface ShowOptions {
   readonly colors: boolean
   readonly depth: number
   readonly showHidden: boolean
+  readonly indentationLevel: number
 }
 
 export class ShowContext extends CaseClass<ShowContextArgs> {}
@@ -125,7 +126,7 @@ function getShowContext(options?: Partial<ShowOptions>) {
     circular: HM.makeDefault<unknown, number>(),
     seen: [],
     budget: {},
-    indentationLevel: 0,
+    indentationLevel: options?.indentationLevel ?? 0,
     stylize: options?.colors === true ? stylizeWithColor : stylizeNoColor,
     currentDepth: 0,
     recurseTimes: 0,
