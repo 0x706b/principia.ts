@@ -12,9 +12,11 @@ import {
   equalTo,
   fails,
   isTrue,
+  not,
   suite,
   testM
 } from '@principia/test'
+import { TestClock } from '@principia/test/environment/TestClock'
 
 const ExampleError   = 'oh noes!'
 const IOExampleError = I.fail(ExampleError)
@@ -203,6 +205,35 @@ class IOSpec extends DefaultRunnableSpec {
           return assert(Ca.defects(cause), deepStrictEqualTo([releaseDied]))['&&'](assert(isReleased, isTrue))
         })
       })
+    ),
+    suite(
+      'cached',
+      testM('returns new instances after duration', () => {
+        const incrementAndGet = Ref.updateAndGet((n: number) => n + 1)
+        return I.gen(function* (_) {
+          const ref   = yield* _(Ref.make(0))
+          const cache = yield* _(I.cached(1000 * 60 * 60)(incrementAndGet(ref)))
+          const a     = yield* _(cache)
+          yield* _(TestClock.adjust(1000 * 60 * 59))
+          const b = yield* _(cache)
+          yield* _(TestClock.adjust(1000 * 60))
+          const c = yield* _(cache)
+          yield* _(TestClock.adjust(1000 * 60 * 59))
+          const d = yield* _(cache)
+          return assert(a, equalTo(b))
+            ['&&'](assert(b, not(equalTo(c))))
+            ['&&'](assert(c, equalTo(d)))
+        })
+      }),
+      testM('correctly handles an infinite duration time to live', () => I.gen(function* (_) {
+        const ref             = yield* _(Ref.make(0))
+        const getAndIncrement = Ref.modify_(ref, (n) => [n, n + 1])
+        const cached          = yield* _(I.cached(Infinity)(getAndIncrement))
+        const a               = yield* _(cached)
+        const b               = yield* _(cached)
+        const c               = yield* _(cached)
+        return assert([a, b, c], deepStrictEqualTo([0, 0, 0]))
+      }))
     )
   )
 }
