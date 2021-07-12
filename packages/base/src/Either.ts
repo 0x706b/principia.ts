@@ -1050,8 +1050,8 @@ export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
 export const crossS    = P.crossSF(SemimonoidalFunctor)
 export const crossT    = P.crossTF(SemimonoidalFunctor)
 
-export const crossFlat_ = P.crossFlatF_(SemimonoidalFunctor)
-export const crossFlat  = P.crossFlatF(SemimonoidalFunctor)
+export const crossFlat_ = P.crossFlatF_<URI, V>({ map_, cross_, crossWith_ })
+export const crossFlat  = P.crossFlatF<URI, V>({ map_, cross_, crossWith_ })
 
 export const Apply = P.Apply<URI, V>({
   map_,
@@ -1158,14 +1158,14 @@ export const Semialign = P.Semialign<URI, V>({
   alignWith_
 })
 
-export const alignCombine_ = P.alignCombineF_<URI, V>(Semialign)
-export const alignCombine  = P.alignCombineF<URI, V>(Semialign)
-export const padZip_       = P.padZipF_<URI, V>(Semialign)
-export const padZip        = P.padZipF<URI, V>(Semialign)
-export const padZipWith_   = P.padZipWithF_<URI, V>(Semialign)
-export const padZipWith    = P.padZipWithF<URI, V>(Semialign)
-export const zipAll_       = P.zipAllF_<URI, V>(Semialign)
-export const zipAll        = P.zipAllF<URI, V>(Semialign)
+export const alignCombine_ = P.alignCombineF_<URI, V>({ map_, align_, alignWith_ })
+export const alignCombine  = P.alignCombineF<URI, V>({ map_, align_, alignWith_ })
+export const padZip_       = P.padZipF_<URI, V>({ map_, align_, alignWith_ })
+export const padZip        = P.padZipF<URI, V>({ map_, align_, alignWith_ })
+export const padZipWith_   = P.padZipWithF_<URI, V>({ map_, align_, alignWith_ })
+export const padZipWith    = P.padZipWithF<URI, V>({ map_, align_, alignWith_ })
+export const zipAll_       = P.zipAllF_<URI, V>({ map_, align_, alignWith_ })
+export const zipAll        = P.zipAllF<URI, V>({ map_, align_, alignWith_ })
 
 /**
  * @category Instances

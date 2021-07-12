@@ -275,7 +275,7 @@ export function fold<A, B>(
 
 /*
  * -------------------------------------------------------------------------------------------------
- * Apply
+ * SemimonoidalFunctor
  * -------------------------------------------------------------------------------------------------
  */
 
@@ -307,16 +307,6 @@ export function cross<Z1, B>(
   return (fa) => cross_(fa, fb)
 }
 
-export function ap_<Z, A, Z1, B>(fab: FreeSemiring<Z, (a: A) => B>, fa: FreeSemiring<Z1, A>): FreeSemiring<Z | Z1, B> {
-  return crossWith_(fab, fa, (f, a) => f(a))
-}
-
-export function ap<Z1, A>(
-  fa: FreeSemiring<Z1, A>
-): <Z, B>(fab: FreeSemiring<Z, (a: A) => B>) => FreeSemiring<Z | Z1, B> {
-  return (fab) => ap_(fab, fa)
-}
-
 export function crossFirst_<Z, A, Z1, B>(fa: FreeSemiring<Z, A>, fb: FreeSemiring<Z1, B>): FreeSemiring<Z | Z1, A> {
   return crossWith_(fa, fb, (a, _) => a)
 }
@@ -332,6 +322,40 @@ export function crossSecond_<Z, A, Z1, B>(fa: FreeSemiring<Z, A>, fb: FreeSemiri
 export function crossSecond<Z1, B>(fb: FreeSemiring<Z1, B>): <Z, A>(fa: FreeSemiring<Z, A>) => FreeSemiring<Z | Z1, B> {
   return (fa) => crossSecond_(fa, fb)
 }
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Apply
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function ap_<Z, A, Z1, B>(fab: FreeSemiring<Z, (a: A) => B>, fa: FreeSemiring<Z1, A>): FreeSemiring<Z | Z1, B> {
+  return crossWith_(fab, fa, (f, a) => f(a))
+}
+
+export function ap<Z1, A>(
+  fa: FreeSemiring<Z1, A>
+): <Z, B>(fab: FreeSemiring<Z, (a: A) => B>) => FreeSemiring<Z | Z1, B> {
+  return (fab) => ap_(fab, fa)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * MonoidalFunctor
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function unit(): FreeSemiring<never, void> {
+  return single(undefined)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Applicative
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export const pure: <A>(a: A) => FreeSemiring<never, A> = single
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -434,10 +458,27 @@ export function first<A>(ma: FreeSemiring<never, A>): A {
  * -------------------------------------------------------------------------------------------------
  */
 
+type URI = [HKT.URI<FreeSemiringURI>]
+
 export function getEq<A>(E: P.Eq<A>): P.Eq<FreeSemiring<any, A>> {
   const equalsE = equals_(E)
   return P.Eq((x, y) => equalsE(x, y).value)
 }
+
+export const Functor = P.Functor<URI, V>({ map_ })
+
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({ map_, cross_, crossWith_ })
+
+export const crossFlat_ = P.crossFlatF_<URI, V>({ map_, cross_, crossWith_ })
+export const crossFlat  = P.crossFlatF<URI, V>({ map_, cross_, crossWith_ })
+
+export const Apply = P.Apply<URI, V>({ map_, cross_, crossWith_, ap_ })
+
+export const MonoidalFunctor = P.MonoidalFunctor<URI, V>({ map_, cross_, crossWith_, unit })
+
+export const Applicative = P.Applicative<URI, V>({ map_, cross_, crossWith_, unit, pure })
+
+export const Monad = P.Monad<URI, V>({ map_, cross_, crossWith_, unit, pure, chain_, flatten })
 
 /*
  * -------------------------------------------------------------------------------------------------

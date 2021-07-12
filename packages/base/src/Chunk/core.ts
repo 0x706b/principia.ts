@@ -2252,26 +2252,26 @@ export const Align = P.Align<URI>({
   nil: empty
 })
 
-export const alignCombine_ = P.alignCombineF_<URI>(Align)
-export const alignCombine  = P.alignCombineF<URI>(Align)
-export const padZip_       = P.padZipF_<URI>(Align)
-export const padZip        = P.padZipF<URI>(Align)
-export const padZipWith_   = P.padZipWithF_<URI>(Align)
-export const padZipWith    = P.padZipWithF<URI>(Align)
-export const zipAll_       = P.zipAllF_<URI>(Align)
-export const zipAll        = P.zipAllF<URI>(Align)
+export const alignCombine_ = P.alignCombineF_<URI>({ map_, align_, alignWith_ })
+export const alignCombine  = P.alignCombineF<URI>({ map_, align_, alignWith_ })
+export const padZip_       = P.padZipF_<URI>({ map_, align_, alignWith_ })
+export const padZip        = P.padZipF<URI>({ map_, align_, alignWith_ })
+export const padZipWith_   = P.padZipWithF_<URI>({ map_, align_, alignWith_ })
+export const padZipWith    = P.padZipWithF<URI>({ map_, align_, alignWith_ })
+export const zipAll_       = P.zipAllF_<URI>({ map_, align_, alignWith_ })
+export const zipAll        = P.zipAllF<URI>({ map_, align_, alignWith_ })
 
 export const Functor = P.Functor<URI>({
   map_
 })
 
-export const flap_   = P.flapF_<URI>(Functor)
-export const flap    = P.flapF<URI>(Functor)
-export const as_     = P.asF_<URI>(Functor)
-export const as      = P.asF<URI>(Functor)
-export const fcross_ = P.fcrossF_<URI>(Functor)
-export const fcross  = P.fcrossF<URI>(Functor)
-export const tupled  = P.tupledF<URI>(Functor)
+export const flap_   = P.flapF_<URI>({ map_ })
+export const flap    = P.flapF<URI>({ map_ })
+export const as_     = P.asF_<URI>({ map_ })
+export const as      = P.asF<URI>({ map_ })
+export const fcross_ = P.fcrossF_<URI>({ map_ })
+export const fcross  = P.fcrossF<URI>({ map_ })
+export const tupled  = P.tupledF<URI>({ map_ })
 
 export const FunctorWithIndex = P.FunctorWithIndex<URI>({
   imap_
@@ -2282,6 +2282,9 @@ export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
   cross_,
   crossWith_
 })
+
+export const crossFlat_ = P.crossFlatF_<URI>({ map_, cross_, crossWith_ })
+export const crossFlat  = P.crossFlatF<URI>({ map_, cross_, crossWith_ })
 
 export const Apply = P.Apply<URI>({
   map_,

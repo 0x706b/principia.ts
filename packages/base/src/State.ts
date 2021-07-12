@@ -207,15 +207,16 @@ export function unit<S>(): State<S, void> {
  * -------------------------------------------------------------------------------------------------
  */
 
+type URI = [HKT.URI<StateURI>]
+
 export const Functor: P.Functor<[HKT.URI<StateURI>], V> = P.Functor({
   map_
 })
 
-export const SemimonoidalFunctor: P.SemimonoidalFunctor<[HKT.URI<StateURI>]> = P.SemimonoidalFunctor({
-  map_,
-  crossWith_,
-  cross_
-})
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({ map_, crossWith_, cross_ })
+
+export const crossFlat_ = P.crossFlatF_<URI>({ map_, cross_, crossWith_ })
+export const crossFlat  = P.crossFlatF<URI>({ map_, cross_, crossWith_ })
 
 export const Apply: P.Apply<[HKT.URI<StateURI>], V> = P.Apply({
   map_,

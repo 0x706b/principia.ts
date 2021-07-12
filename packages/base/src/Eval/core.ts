@@ -419,20 +419,17 @@ export function evaluate<A>(e: Eval<A>): A {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const Functor = P.Functor<URI>({
-  map_
-})
+export const Functor = P.Functor<URI>({ map_ })
 
-export const Semimonoidal = P.SemimonoidalFunctor<URI>({
-  map_,
-  crossWith_,
-  cross_
-})
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({ map_, crossWith_, cross_ })
 
-export const sequenceT = P.sequenceTF(Semimonoidal)
-export const sequenceS = P.sequenceSF(Semimonoidal)
-export const mapN_     = P.mapNF_(Semimonoidal)
-export const mapN      = P.mapNF(Semimonoidal)
+export const crossFlat_ = P.crossFlatF_<URI>({ map_, cross_, crossWith_ })
+export const crossFlat  = P.crossFlatF<URI>({ map_, cross_, crossWith_ })
+
+export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
+export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
+export const mapN_     = P.mapNF_(SemimonoidalFunctor)
+export const mapN      = P.mapNF(SemimonoidalFunctor)
 
 export const Apply = P.Apply<URI>({
   map_,
@@ -444,7 +441,7 @@ export const Apply = P.Apply<URI>({
 export const apS = P.apSF(Apply)
 export const apT = P.apTF(Apply)
 
-export const Monoidal = P.MonoidalFunctor<URI>({
+export const MonoidalFunctor = P.MonoidalFunctor<URI>({
   map_,
   crossWith_,
   cross_,

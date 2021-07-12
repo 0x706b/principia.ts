@@ -3,6 +3,7 @@ import type * as HKT from '../HKT'
 import type { AsyncURI } from '../Modules'
 import type { Option } from '../Option'
 import type { Stack } from '../util/support/Stack'
+import type * as Z from '../util/Zipped'
 
 import * as A from '../Array/core'
 import * as E from '../Either'
@@ -1103,6 +1104,23 @@ export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({
   map_,
   crossWith_,
   cross_
+})
+
+export const crossFlat_: <R, E, A, R1, E1, B>(
+  fa: Async<R, E, A>,
+  fb: Async<R1, E1, B>
+) => Async<R & R1, E | E1, Z.Zip<A, B>> = P.crossFlatF_<URI, V>({
+  map_,
+  cross_,
+  crossWith_
+})
+
+export const crossFlat: <R1, E1, B>(
+  fb: Async<R1, E1, B>
+) => <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E | E1, Z.Zip<A, B>> = P.crossFlatF<URI, V>({
+  map_,
+  cross_,
+  crossWith_
 })
 
 export const SemimonoidalFunctorPar = P.SemimonoidalFunctor<URI, V>({

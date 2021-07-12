@@ -158,6 +158,21 @@ export function dimap<R, A, Q, B>(f: (q: Q) => R, g: (a: A) => B): (pa: ZReader<
  * -------------------------------------------------------------------------------------------------
  */
 
+type URI = [HKT.URI<ZReaderURI>]
+
+export const Functor = P.Functor<URI, V>({ map_ })
+
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({ map_, cross_, crossWith_ })
+
+export const crossFlat_ = P.crossFlatF_<URI, V>({ map_, cross_, crossWith_ })
+export const crossFlat  = P.crossFlatF<URI, V>({ map_, cross_, crossWith_ })
+
+export const Apply = P.Apply<URI, V>({ map_, cross_, crossWith_, ap_ })
+
+export const MonoidalFunctor = P.MonoidalFunctor<URI, V>({ map_, cross_, crossWith_, unit })
+
+export const Applicative = P.Applicative<URI, V>({ map_, cross_, crossWith_, unit, pure })
+
 export const MonadEnv: P.MonadEnv<[HKT.URI<ZReaderURI>], V> = P.MonadEnv({
   map_,
   crossWith_,

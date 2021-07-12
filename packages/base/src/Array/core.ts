@@ -5,6 +5,7 @@ import type { NonEmptyArray } from '../NonEmptyArray'
 import type { Option } from '../Option'
 import type { ReadonlyRecord } from '../Record'
 import type { These } from '../These'
+import type * as Z from '../util/Zipped'
 
 import * as Ev from '../Eval/core'
 import { identity, pipe, unsafeCoerce } from '../function'
@@ -2458,6 +2459,30 @@ export const FunctorWithIndex = P.FunctorWithIndex<URI>({
 })
 
 export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
+  map_,
+  cross_,
+  crossWith_
+})
+
+/**
+ * The cartesian product of two arrays
+ *
+ * @category SemimonoidalFunctor
+ * @since 1.0.0
+ */
+export const crossFlat_: <A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>) => ReadonlyArray<Z.Zip<A, B>> = P.crossFlatF_<URI>({
+  map_,
+  cross_,
+  crossWith_
+})
+
+/**
+ * The cartesian product of two arrays
+ *
+ * @category SemimonoidalFunctor
+ * @since 1.0.0
+ */
+export const crossFlat: <B>(fb: ReadonlyArray<B>) => <A>(fa: ReadonlyArray<A>) => ReadonlyArray<Z.Zip<A, B>> = P.crossFlatF<URI>({
   map_,
   cross_,
   crossWith_

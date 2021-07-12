@@ -1,15 +1,18 @@
 import type { Async } from './Async'
+import type { Cause } from './Cause'
 import type { Chunk } from './Chunk'
 import type { Const } from './Const'
 import type { Either } from './Either'
 import type { Eq } from './Eq'
 import type { Eval } from './Eval'
+import type { Exit } from './Exit'
 import type { FreeSemiring } from './FreeSemiring'
 import type { Guard } from './Guard'
 import type { HashMap } from './HashMap'
 import type { Identity } from './Identity'
 import type { IO } from './IO'
 import type { List } from './List/core'
+import type { Managed } from './Managed'
 import type { NonEmptyArray } from './NonEmptyArray'
 import type { Option } from './Option'
 import type { Ord } from './Ord'
@@ -134,6 +137,15 @@ export type RoseTreeURI = typeof RoseTreeURI
 export const HashMapURI = 'HashMap'
 export type HashMapURI = typeof HashMapURI
 
+export const CauseURI = 'Cause'
+export type CauseURI = typeof CauseURI
+
+export const ExitURI = 'Exit'
+export type ExitURI = typeof ExitURI
+
+export const ManagedURI = 'Managed'
+export type ManagedURI = typeof ManagedURI
+
 declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
     [ShowURI]: Show<A>
@@ -171,6 +183,9 @@ declare module './HKT' {
     [StateInURI]: StateIn<S, A>
     [StateOutURI]: StateOut<S, A>
     [HashMapURI]: HashMap<K, A>
+    [CauseURI]: Cause<A>
+    [ExitURI]: Exit<E, A>
+    [ManagedURI]: Managed<R, E, A>
   }
   interface URItoIndex<N, K> {
     [ArrayURI]: number

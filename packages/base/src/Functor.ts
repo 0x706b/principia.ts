@@ -150,7 +150,7 @@ export function flapF_<F extends HKT.URIS, TC = HKT.Auto>(F: FunctorMin<F, TC>):
   return (fab, a) => F.map_(fab, (f) => f(a))
 }
 
-export function flapF<F extends HKT.URIS, TC = HKT.Auto>(F: Functor<F, TC>): FlapFn<F, TC> {
+export function flapF<F extends HKT.URIS, TC = HKT.Auto>(F: FunctorMin<F, TC>): FlapFn<F, TC> {
   const flap_ = flapF_(F)
   return (a) => (fab) => flap_(fab, a)
 }
@@ -205,7 +205,7 @@ export function asF_<F extends HKT.URIS, C = HKT.Auto>(F: FunctorMin<F, C>): AsF
   return (fa, b) => F.map_(fa, b)
 }
 
-export function asF<F extends HKT.URIS, C = HKT.Auto>(F: Functor<F, C>): AsFn<F, C> {
+export function asF<F extends HKT.URIS, C = HKT.Auto>(F: FunctorMin<F, C>): AsFn<F, C> {
   return (b) => (fa) => F.map_(fa, b)
 }
 
@@ -284,7 +284,7 @@ export function fcrossF_<F extends HKT.URIS, C = HKT.Auto>(F: FunctorMin<F, C>):
   return (fa, f) => F.map_(fa, (a) => [a, f(a)])
 }
 
-export function fcrossF<F extends HKT.URIS, C = HKT.Auto>(F: Functor<F, C>): FCrossFn<F, C> {
+export function fcrossF<F extends HKT.URIS, C = HKT.Auto>(F: FunctorMin<F, C>): FCrossFn<F, C> {
   return (f) => (fa) => F.map_(fa, (a) => [a, f(a)])
 }
 
@@ -326,6 +326,6 @@ export interface TupledFn<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export function tupledF<F extends HKT.URIS, C = HKT.Auto>(F: Functor<F, C>): TupledFn<F, C> {
-  return F.map((a) => [a])
+export function tupledF<F extends HKT.URIS, C = HKT.Auto>(F: FunctorMin<F, C>): TupledFn<F, C> {
+  return (fa) => F.map_(fa, (a) => [a])
 }

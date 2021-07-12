@@ -688,6 +688,28 @@ export function pure<E>(e: E): Cause<E> {
 
 /*
  * -------------------------------------------------------------------------------------------------
+ * SemimonoidalFunctor
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function crossWith_<A, B, C>(fa: Cause<A>, fb: Cause<B>, f: (a: A, b: B) => C): Cause<C> {
+  return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
+}
+
+export function crossWith<A, B, C>(fb: Cause<B>, f: (a: A, b: B) => C): (fa: Cause<A>) => Cause<C> {
+  return (fa) => crossWith_(fa, fb, f)
+}
+
+export function cross_<A, B>(fa: Cause<A>, fb: Cause<B>): Cause<readonly [A, B]> {
+  return crossWith_(fa, fb, tuple)
+}
+
+export function cross<B>(fb: Cause<B>): <A>(fa: Cause<A>) => Cause<readonly [A, B]> {
+  return (fa) => cross_(fa, fb)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
  * Apply
  * -------------------------------------------------------------------------------------------------
  */

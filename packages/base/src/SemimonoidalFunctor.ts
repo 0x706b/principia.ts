@@ -967,9 +967,9 @@ export function crossFlatF_<F extends HKT.URIS, C = HKT.Auto>(F: SemimonoidalFun
 }
 
 export interface CrossFlatFn<F extends HKT.URIS, TC = HKT.Auto> {
-  <A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
+  <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
     fb: HKT.Kind<F, TC, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>
-  ): <N extends string, K, Q, W, X, I, S, R, E>(
+  ): <N extends string, K, Q, W, X, I, S, R, E, A>(
     fa: HKT.Kind<
       F,
       TC,

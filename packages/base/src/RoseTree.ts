@@ -326,3 +326,26 @@ export function unit(): RoseTree<void> {
     forest: A.empty()
   }
 }
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * instances
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export const Functor = P.Functor<URI>({ map_ })
+
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({ map_, cross_, crossWith_ })
+
+export const crossFlat_ = P.crossFlatF_<URI>({ map_, cross_, crossWith_ })
+export const crossFlat  = P.crossFlatF<URI>({ map_, cross_, crossWith_ })
+
+export const Apply = P.Apply<URI>({ map_, cross_, crossWith_, ap_ })
+
+export const MonoidalFunctor = P.MonoidalFunctor<URI>({ map_, cross_, crossWith_, unit })
+
+export const Applicative = P.Applicative<URI>({ map_, cross_, crossWith_, unit, pure })
+
+export const Monad = P.Monad<URI>({ map_, cross_, crossWith_, unit, pure, chain_, flatten })
+
+export const Traversable = P.Traversable<URI>({ map_, foldl_, foldr_, foldMap_, mapA_ })
