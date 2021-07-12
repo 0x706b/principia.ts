@@ -30,7 +30,7 @@ import * as O from '@principia/base/Option'
 import * as P from '@principia/base/Promise'
 import * as Ref from '@principia/base/Ref'
 import * as RefM from '@principia/base/RefM'
-import { intersect } from '@principia/base/Struct'
+import * as St from '@principia/base/Structural'
 import { tuple } from '@principia/base/tuple'
 import { matchTag } from '@principia/base/util/match'
 
@@ -167,7 +167,7 @@ export class TestClock implements Clock {
   private get awaitSuspended(): UIO<void> {
     return pipe(
       this.suspended,
-      I.crossWith(this.live.provide(I.sleep(10))['*>'](this.suspended), (x, y) => x === y),
+      I.crossWith(this.live.provide(I.sleep(10))['*>'](this.suspended), St.equals),
       I.filterOrFail(
         (_: boolean) => _,
         (): void => undefined
@@ -204,18 +204,7 @@ export class TestClock implements Clock {
 
   private get suspended(): IO<unknown, void, HashMap<FiberId, FiberStatus>> {
     return this.freeze['<*>'](this.delay['*>'](this.freeze))['>>='](([first, last]) => {
-      if (
-        /* first.size === last.size &&
-         * HM.ifilterMap_(first, (i, s) =>
-         *   pipe(
-         *     last,
-         *     HM.get(i),
-         *     O.filter((s1) => s1._tag === s._tag)
-         *   )
-         * ).size === 0
-         */
-        first === last
-      ) {
+      if (St.equals(first, last)) {
         return I.succeed(first)
       } else {
         return I.fail(undefined)
@@ -259,12 +248,17 @@ export class TestClock implements Clock {
             const test = yield* _(
               M.bracket_(I.succeed(new TestClock(ref, live, annotations, refM)), (tc) => tc.warningDone)
             )
-            return intersect(ClockTag.of(new ProxyClock(test.currentTime, test.sleep)), TestClockTag.of(test))
+            return {
+              [ClockTag.key]: new ProxyClock(test.currentTime, test.sleep),
+              [TestClockTag.key]: test
+            } as unknown as Has<Clock> & Has<TestClock>
           })
         )
       )
     )
   }
+
+  static adjust = I.deriveLifted(TestClockTag)(['adjust'], [], []).adjust
 
   static default: Layer<Has<Live> & Has<Annotations>, never, Has<Clock> & Has<TestClock>> = TestClock.live(
     new Data(0, Li.empty())
