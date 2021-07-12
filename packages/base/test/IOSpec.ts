@@ -1,8 +1,10 @@
 import * as Ca from '@principia/base/Cause'
+import { IllegalArgumentError } from '@principia/base/Error'
 import { RuntimeException } from '@principia/base/Exception'
 import * as Ex from '@principia/base/Exit'
 import { identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
+import * as O from '@principia/base/Option'
 import * as Ref from '@principia/base/Ref'
 import {
   assert,
@@ -11,6 +13,7 @@ import {
   DefaultRunnableSpec,
   equalTo,
   fails,
+  isLeft,
   isTrue,
   not,
   suite,
@@ -225,24 +228,26 @@ class IOSpec extends DefaultRunnableSpec {
             ['&&'](assert(c, equalTo(d)))
         })
       }),
-      testM('correctly handles an infinite duration time to live', () => I.gen(function* (_) {
-        const ref             = yield* _(Ref.make(0))
-        const getAndIncrement = Ref.modify_(ref, (n) => [n, n + 1])
-        const cached          = yield* _(I.cached(Infinity)(getAndIncrement))
-        const a               = yield* _(cached)
-        const b               = yield* _(cached)
-        const c               = yield* _(cached)
-        return assert([a, b, c], deepStrictEqualTo([0, 0, 0]))
-      }))
+      testM('correctly handles an infinite duration time to live', () =>
+        I.gen(function* (_) {
+          const ref             = yield* _(Ref.make(0))
+          const getAndIncrement = Ref.modify_(ref, (n) => [n, n + 1])
+          const cached          = yield* _(I.cached(Infinity)(getAndIncrement))
+          const a               = yield* _(cached)
+          const b               = yield* _(cached)
+          const c               = yield* _(cached)
+          return assert([a, b, c], deepStrictEqualTo([0, 0, 0]))
+        })
+      )
     ),
     suite(
       'cachedInvalidate',
       testM('returns new instances after duration', () => {
         const incrementAndGet = Ref.updateAndGet((n: number) => n + 1)
         return I.gen(function* (_) {
-          const ref   = yield* _(Ref.make(0))
+          const ref                  = yield* _(Ref.make(0))
           const [cached, invalidate] = yield* _(I.cachedInvalidate(1000 * 60 * 60)(incrementAndGet(ref)))
-          const a     = yield* _(cached)
+          const a                    = yield* _(cached)
           yield* _(TestClock.adjust(1000 * 60 * 59))
           const b = yield* _(cached)
           yield* _(invalidate)
@@ -251,9 +256,35 @@ class IOSpec extends DefaultRunnableSpec {
           const d = yield* _(cached)
           yield* _(TestClock.adjust(1000 * 60 * 59))
           const e = yield* _(cached)
-          return assert(a, equalTo(b))['&&'](assert(b, not(equalTo(c))))['&&'](assert(c, equalTo(d)))['&&'](assert(d, not(equalTo(e))))
+          return assert(a, equalTo(b))
+            ['&&'](assert(b, not(equalTo(c))))
+            ['&&'](assert(c, equalTo(d)))
+            ['&&'](assert(d, not(equalTo(e))))
         })
       })
+    ),
+    suite(
+      'catchSomeCause',
+      testM('catches matching cause', () =>
+        pipe(
+          I.interrupt,
+          I.catchSomeCause(
+            (c): O.Option<I.IO<unknown, never, boolean>> => (Ca.interrupted(c) ? O.some(I.succeed(true)) : O.none())
+          ),
+          I.sandbox,
+          I.map((b) => assert(b, isTrue))
+        )
+      ),
+      testM("fails if cause doesn't match", () => pipe(
+        I.fiberId(),
+        I.chain((fiberId) => pipe(
+          I.interrupt,
+          I.catchSomeCause((c): O.Option<I.IO<unknown, never, boolean>> => Ca.interrupted(c) ? O.none() : O.some(I.succeed(true))),
+          I.sandbox,
+          I.either,
+          I.map((e) => assert(e, isLeft(deepStrictEqualTo(Ca.interrupt(fiberId)))))
+        ))
+      ))
     )
   )
 }
