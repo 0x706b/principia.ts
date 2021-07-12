@@ -234,6 +234,26 @@ class IOSpec extends DefaultRunnableSpec {
         const c               = yield* _(cached)
         return assert([a, b, c], deepStrictEqualTo([0, 0, 0]))
       }))
+    ),
+    suite(
+      'cachedInvalidate',
+      testM('returns new instances after duration', () => {
+        const incrementAndGet = Ref.updateAndGet((n: number) => n + 1)
+        return I.gen(function* (_) {
+          const ref   = yield* _(Ref.make(0))
+          const [cached, invalidate] = yield* _(I.cachedInvalidate(1000 * 60 * 60)(incrementAndGet(ref)))
+          const a     = yield* _(cached)
+          yield* _(TestClock.adjust(1000 * 60 * 59))
+          const b = yield* _(cached)
+          yield* _(invalidate)
+          const c = yield* _(cached)
+          yield* _(TestClock.adjust(1000 * 60))
+          const d = yield* _(cached)
+          yield* _(TestClock.adjust(1000 * 60 * 59))
+          const e = yield* _(cached)
+          return assert(a, equalTo(b))['&&'](assert(b, not(equalTo(c))))['&&'](assert(c, equalTo(d)))['&&'](assert(d, not(equalTo(e))))
+        })
+      })
     )
   )
 }
