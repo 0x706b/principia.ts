@@ -1,8 +1,19 @@
-import type * as HKT from './HKT'
-import type { Semigroupoid } from './Semigroupoid'
+import type { SemigroupoidMin } from './Semigroupoid'
+
+import * as HKT from './HKT'
+import { Semigroupoid } from './Semigroupoid'
 
 export interface Category<F extends HKT.URIS, C = HKT.Auto> extends Semigroupoid<F, C> {
   readonly id: IdFn<F, C>
+}
+
+export type CategoryMin<F extends HKT.URIS, C = HKT.Auto> = { readonly id: IdFn<F, C> } & SemigroupoidMin<F, C>
+
+export function Category<F extends HKT.URIS, C = HKT.Auto>(F: CategoryMin<F, C>): Category<F, C> {
+  return HKT.instance<Category<F, C>>({
+    ...Semigroupoid(F),
+    id: F.id
+  })
 }
 
 export interface IdFn<F extends HKT.URIS, C = HKT.Auto> {

@@ -45,7 +45,7 @@ export function At<S, I, A>(at: AtMin<S, I, A>): At<S, I, A> {
  * @since 1.0.0
  */
 export function fromIso<T, S>(iso: Iso<T, S>): <I, A>(sia: At<S, I, A>) => At<T, I, A> {
-  return (sia) => At({ at: (i) => Iso.composeLens_(iso, sia.at(i)) })
+  return (sia) => At({ at: (i) => Iso.andThenLens_(iso, sia.at(i)) })
 }
 
 /**

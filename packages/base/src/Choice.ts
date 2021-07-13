@@ -52,7 +52,7 @@ export function splitF<F extends HKT.URIS, TC = HKT.Auto>(P: Choice<F, TC>, C: C
     HKT.Mix<TC, 'R', [R, R1]>,
     Either<A, C>,
     Either<B, D>
-  > => pipe(P.left<C>()(pab), C.compose(P.right<D>()(pcd)))
+  > => pipe(P.left<C>()(pab), C.andThen(P.right<D>()(pcd)))
 }
 
 export function fanInF<F extends HKT.URIS, TC = HKT.Auto>(P: Choice<F, TC>, C: Category<F, TC>) {
@@ -88,7 +88,7 @@ export function fanInF<F extends HKT.URIS, TC = HKT.Auto>(P: Choice<F, TC>, C: C
   > =>
     pipe(
       splitF(P, C)(pac, pbc),
-      C.compose(
+      C.andThen(
         pipe(
           C.id<C>(),
           P.dimap((cc: Either<C, C>) => (cc._tag === 'Left' ? cc.left : cc.right), identity)

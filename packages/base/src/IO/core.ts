@@ -1504,6 +1504,23 @@ export function and<R1, E1>(mb: IO<R1, E1, boolean>): <R, E>(ma: IO<R, E, boolea
 }
 
 /**
+ * @trace call
+ */
+export function andThen_<R, E, A, E1, B>(ra: IO<R, E, A>, ab: IO<A, E1, B>): IO<R, E | E1, B> {
+  const trace = accessCallTrace()
+  return pipe(ra, chain(traceFrom(trace, (a) => giveAll_(ab, a))))
+}
+
+/**
+ * @dataFirst andThen_
+ * @trace call
+ */
+export function andThen<A, E1, B>(ab: IO<A, E1, B>): <R, E>(ra: IO<R, E, A>) => IO<R, E | E1, B> {
+  const trace = accessCallTrace()
+  return (ra) => traceCall(andThen_, trace)(ra, ab)
+}
+
+/**
  * Maps the success value of this IO to the specified constant value.
  *
  * @category Combinators
@@ -1954,23 +1971,6 @@ export function compose_<R, E, A, R0, E1>(me: IO<R, E, A>, that: IO<R0, E1, R>):
 export function compose<R, R0, E1>(that: IO<R0, E1, R>): <E, A>(me: IO<R, E, A>) => IO<R0, E1 | E, A> {
   const trace = accessCallTrace()
   return (me) => traceCall(compose_, trace)(me, that)
-}
-
-/**
- * @trace call
- */
-export function andThen_<R, E, A, E1, B>(ra: IO<R, E, A>, ab: IO<A, E1, B>): IO<R, E | E1, B> {
-  const trace = accessCallTrace()
-  return pipe(ra, chain(traceFrom(trace, (a) => giveAll_(ab, a))))
-}
-
-/**
- * @dataFirst andThen_
- * @trace call
- */
-export function andThen<A, E1, B>(ab: IO<A, E1, B>): <R, E>(ra: IO<R, E, A>) => IO<R, E | E1, B> {
-  const trace = accessCallTrace()
-  return (ra) => traceCall(andThen_, trace)(ra, ab)
 }
 
 export function condIO_<R, R1, E, A>(b: boolean, onTrue: URIO<R, A>, onFalse: URIO<R1, E>): IO<R & R1, E, A> {
@@ -2716,6 +2716,16 @@ export function getOrFailWith<E>(onNone: () => E) {
  */
 export function getOrFailUnit<A>(option: Option<A>): FIO<void, A> {
   return getOrFailWith_(option, () => undefined)
+}
+
+/**
+ * Returns the identity effectful function, which performs no effects
+ *
+ * @trace call
+ */
+export function id<R>(): IO<R, never, R> {
+  const trace = accessCallTrace()
+  return asks(traceFrom(trace, identity))
 }
 
 /**

@@ -1,12 +1,30 @@
 import type * as HKT from '../HKT'
-import type { ManagedURI } from '../Modules'
+import type { ManagedCategoryURI, ManagedURI } from '../Modules'
 
 import * as P from '../prelude'
 import { apPar_, crossPar_, crossWithPar_ } from './combinators/apply-par'
-import { ap_, bimap_, catchAll_, chain_, cross_, crossWith_, fail, flatten, map_, mapError_, pure, unit } from './core'
+import {
+  andThen_,
+  ap_,
+  bimap_,
+  catchAll_,
+  chain_,
+  compose_,
+  cross_,
+  crossWith_,
+  fail,
+  flatten,
+  id,
+  map_,
+  mapError_,
+  pure,
+  unit } from './core'
 
 export type URI = [HKT.URI<ManagedURI>]
 export type V = HKT.V<'R', '-'> & HKT.V<'E', '+'>
+
+export type CURI = [HKT.URI<ManagedCategoryURI>]
+export type CV = HKT.V<'I', '-'> & HKT.V<'E', '+'>
 
 export const Functor = P.Functor<URI, V>({ map_ })
 
@@ -116,4 +134,10 @@ export const MonadExcept = P.MonadExcept<URI, V>({
   flatten,
   catchAll_,
   fail
+})
+
+export const Category = P.Category<CURI, CV>({
+  id,
+  andThen_,
+  compose_
 })

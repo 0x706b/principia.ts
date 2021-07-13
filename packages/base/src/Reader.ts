@@ -1,5 +1,5 @@
 import type * as HKT from './HKT'
-import type { ReaderURI } from './Modules'
+import type { ReaderCategoryURI, ReaderURI } from './Modules'
 
 import * as P from './prelude'
 
@@ -13,9 +13,14 @@ export interface Reader<R, A> {
   (r: R): A
 }
 
-export type V = HKT.V<'R', '-'>
 
 type URI = [HKT.URI<ReaderURI>]
+
+export type V = HKT.V<'R', '-'>
+
+type CURI = [HKT.URI<ReaderCategoryURI>]
+
+export type CV = HKT.V<'I', '-'>
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -31,7 +36,7 @@ export function asks<R, A>(f: (r: R) => A): Reader<R, A> {
   return f
 }
 
-export function asksM<R, R1, A>(f: (r: R) => Reader<R1, A>): Reader<R & R1, A> {
+export function asksReader<R, R1, A>(f: (r: R) => Reader<R1, A>): Reader<R & R1, A> {
   return (r) => f(r)(r)
 }
 
@@ -131,12 +136,20 @@ export function crossWith<A, R1, B, C>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function compose_<R, A, B>(fa: Reader<R, A>, fb: Reader<A, B>): Reader<R, B> {
-  return P.flow(fa, fb)
+export function andThen_<A, B, C>(ab: Reader<A, B>, bc: Reader<B, C>): Reader<A, C> {
+  return P.flow(ab, bc)
 }
 
-export function compose<A, B>(fb: Reader<A, B>): <R>(fa: Reader<R, A>) => Reader<R, B> {
-  return (fa) => compose_(fa, fb)
+export function andThen<B, C>(bc: Reader<B, C>): <A>(ab: Reader<A, B>) => Reader<A, C> {
+  return (ab) => andThen_(ab, bc)
+}
+
+export function compose_<A, B, C>(bc: Reader<B, C>, ab: Reader<A, B>): Reader<A, C> {
+  return andThen_(ab, bc)
+}
+
+export function compose<A, B>(ab: Reader<A, B>): <C>(bc: Reader<B, C>) => Reader<A, C> {
+  return (bc) => andThen_(ab, bc)
 }
 
 export function id<R>(): Reader<R, R> {
@@ -279,6 +292,12 @@ export const Profunctor = P.Profunctor<URI, V>({
   map_,
   dimap_,
   lmap_: gives_
+})
+
+export const Category = P.Category<CURI, V>({
+  andThen_,
+  compose_,
+  id
 })
 
 export { ReaderURI } from './Modules'

@@ -52,7 +52,7 @@ export function splitF<F extends HKT.URIS, TC = HKT.Auto>(S: Strong<F, TC>, C: C
     HKT.Mix<TC, 'R', [R, R1]>,
     readonly [A, C],
     readonly [B, D]
-  > => pipe(S.first<C>()(pab), C.compose(S.second<D>()(pcd)))
+  > => pipe(S.first<C>()(pab), C.andThen(S.second<D>()(pcd)))
 }
 
 export function fanOutF<F extends HKT.URIS, TC = HKT.Auto>(S: Strong<F, TC>, C: Category<F, TC>) {
@@ -89,6 +89,6 @@ export function fanOutF<F extends HKT.URIS, TC = HKT.Auto>(S: Strong<F, TC>, C: 
     pipe(
       C.id<A>(),
       S.dimap(identity, (a) => tuple(a, a)),
-      C.compose(splitF(S, C)(pab, pbc))
+      C.andThen(splitF(S, C)(pab, pbc))
     )
 }

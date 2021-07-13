@@ -4,7 +4,7 @@
 import type { Eq } from './Eq'
 import type { FreeSemiring } from './FreeSemiring'
 import type * as HKT from './HKT'
-import type { ZURI } from './Modules'
+import type { ZReaderCategoryURI, ZStateCategoryURI, ZURI } from './Modules'
 import type { Predicate } from './Predicate'
 import type { _E, _R } from './prelude'
 import type { Stack } from './util/support/Stack'
@@ -741,6 +741,38 @@ export function crossSecond<W, S, R1, E1, B>(
   fb: Z<W, S, S, R1, E1, B>
 ): <R, E, A>(fa: Z<W, S, S, R, E, A>) => Z<W, S, S, R & R1, E | E1, B> {
   return (fa) => crossSecond_(fa, fb)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Category
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function andThen_<W, S1, S2, A, E, B, W1, S3, E1, C>(
+  ab: Z<W, S1, S2, A, E, B>,
+  bc: Z<W1, S2, S3, B, E1, C>
+): Z<W | W1, S1, S3, A, E | E1, C> {
+  return chain_(ab, (b) => giveAll_(bc, b))
+}
+
+export function andThen<S2, B, W1, S3, E1, C>(
+  bc: Z<W1, S2, S3, B, E1, C>
+): <W, S1, A, E>(ab: Z<W, S1, S2, A, E, B>) => Z<W | W1, S1, S3, A, E | E1, C> {
+  return (ab) => andThen_(ab, bc)
+}
+
+export function compose_<W, S1, S2, A, E, B, W1, S3, E1, C>(
+  bc: Z<W, S2, S3, B, E, C>,
+  ab: Z<W1, S1, S2, A, E1, B>
+): Z<W | W1, S1, S3, A, E | E1, C> {
+  return andThen_(ab, bc)
+}
+
+export function compose<S1, S2, B, W1, A, E1>(
+  ab: Z<W1, S1, S2, A, E1, B>
+): <W, S3, E, C>(bc: Z<W, S2, S3, B, E, C>) => Z<W | W1, S1, S3, A, E | E1, C> {
+  return (bc) => andThen_(ab, bc)
 }
 
 /*
@@ -1702,6 +1734,10 @@ export function runWriter<W, A>(ma: Z<W, unknown, unknown, unknown, never, A>): 
 
 type URI = [HKT.URI<ZURI>]
 
+type RCURI = [HKT.URI<ZReaderCategoryURI>]
+
+type SCURI = [HKT.URI<ZStateCategoryURI>]
+
 export type V = HKT.V<'W', '_'> & HKT.V<'S', '_'> & HKT.V<'R', '-'> & HKT.V<'E', '+'>
 
 export const Functor = P.Functor<URI, V>({ map_ })
@@ -1772,6 +1808,18 @@ export const MonadState = P.MonadState<URI, V>({
   gets,
   put,
   modify
+})
+
+export const ReaderCategory = P.Category<RCURI, V>({
+  id: () => asks(P.identity),
+  andThen_,
+  compose_
+})
+
+export const StateCategory = P.Category<SCURI, V>({
+  id: () => modify((a) => [a, a]),
+  andThen_: (ab, bc) => chain_(ab, () => bc),
+  compose_: (bc, ab) => chain_(ab, () => bc)
 })
 
 export class GenZ<W, S, R, E, A> {

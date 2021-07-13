@@ -71,7 +71,7 @@ export function id<S, T>(): POptional<S, T, S, T> {
   })
 }
 
-export function compose_<S, T, A, B, C, D>(
+export function andThen_<S, T, A, B, C, D>(
   sa: POptional<S, T, A, B>,
   ab: POptional<A, B, C, D>
 ): POptional<S, T, C, D> {
@@ -90,8 +90,8 @@ export function compose_<S, T, A, B, C, D>(
   })
 }
 
-export function compose<A, B, C, D>(
+export function andThen<A, B, C, D>(
   ab: POptional<A, B, C, D>
 ): <S, T>(sa: POptional<S, T, A, B>) => POptional<S, T, C, D> {
-  return (sa) => compose_(sa, ab)
+  return (sa) => andThen_(sa, ab)
 }

@@ -60,7 +60,7 @@ export class Managed<R, E, A> {
     return asLazy_(this, b)
   }
   ['>>>']<E1, B>(fb: Managed<A, E1, B>): Managed<R, E | E1, B> {
-    return pipeTo_(this, fb)
+    return andThen_(this, fb)
   }
   ['<<<']<R1, E1>(fb: Managed<R1, E1, R>): Managed<R1, E | E1, A> {
     return compose_(this, fb)
@@ -263,7 +263,7 @@ export function finalizerRef(initial: Finalizer) {
  *
  * @trace call
  */
-export function identity<R>(): Managed<R, never, R> {
+export function id<R>(): Managed<R, never, R> {
   return asks(identityFn)
 }
 
@@ -1526,7 +1526,7 @@ export function collectAllUnit<R, E, A>(mas: Iterable<Managed<R, E, A>>): Manage
 /**
  * @trace call
  */
-export function pipeTo_<R, E, A, E1, B>(ma: Managed<R, E, A>, mb: Managed<A, E1, B>): Managed<R, E | E1, B> {
+export function andThen_<R, E, A, E1, B>(ma: Managed<R, E, A>, mb: Managed<A, E1, B>): Managed<R, E | E1, B> {
   const trace = accessCallTrace()
   return chain_(
     ma,
@@ -1537,9 +1537,9 @@ export function pipeTo_<R, E, A, E1, B>(ma: Managed<R, E, A>, mb: Managed<A, E1,
 /**
  * @trace call
  */
-export function pipeTo<A, E1, B>(mb: Managed<A, E1, B>): <R, E>(ma: Managed<R, E, A>) => Managed<R, E | E1, B> {
+export function andThen<A, E1, B>(mb: Managed<A, E1, B>): <R, E>(ma: Managed<R, E, A>) => Managed<R, E | E1, B> {
   const trace = accessCallTrace()
-  return (ma) => traceCall(pipeTo_, trace)(ma, mb)
+  return (ma) => traceCall(andThen_, trace)(ma, mb)
 }
 
 /**

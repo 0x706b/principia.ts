@@ -213,7 +213,7 @@ export const Schemable: S.Schemable<EqSURI> = {
   tuple: (components) => tuple(...components),
   sum: (tag) => (members) => sum(tag)(members),
   lazy: (f) => lazy(f),
-  compose: (_, ab) => ab,
+  andThen: (_, ab) => ab,
   custom: (_) => _[EqSURI],
   refine: (E) => E,
   constrain: (E) => E,

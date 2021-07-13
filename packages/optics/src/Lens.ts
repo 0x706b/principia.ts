@@ -50,8 +50,8 @@ export type V = HKT.V<'I', '_'>
  * @category Compositions
  * @since 1.0.0
  */
-export function composePrism_<S, T, A, B, C, D>(sa: PLens<S, T, A, B>, ab: PPrism<A, B, C, D>): POptional<S, T, C, D> {
-  return _.optionalComposeOptional(sa, ab)
+export function andThenPrism_<S, T, A, B, C, D>(sa: PLens<S, T, A, B>, ab: PPrism<A, B, C, D>): POptional<S, T, C, D> {
+  return _.optionalAndThenOptional(sa, ab)
 }
 
 /**
@@ -60,10 +60,10 @@ export function composePrism_<S, T, A, B, C, D>(sa: PLens<S, T, A, B>, ab: PPris
  * @category Compositions
  * @since 1.0.0
  */
-export function composePrism<A, B, C, D>(
+export function andThenPrism<A, B, C, D>(
   ab: PPrism<A, B, C, D>
 ): <S, T>(sa: PLens<S, T, A, B>) => POptional<S, T, C, D> {
-  return (sa) => composePrism_(sa, ab)
+  return (sa) => andThenPrism_(sa, ab)
 }
 
 /**
@@ -72,11 +72,11 @@ export function composePrism<A, B, C, D>(
  * @category Compositions
  * @since 1.0.0
  */
-export function composeOptional_<S, T, A, B, C, D>(
+export function andThenOptional_<S, T, A, B, C, D>(
   sa: PLens<S, T, A, B>,
   ab: POptional<A, B, C, D>
 ): POptional<S, T, C, D> {
-  return _.optionalComposeOptional(sa, ab)
+  return _.optionalAndThenOptional(sa, ab)
 }
 
 /**
@@ -85,23 +85,23 @@ export function composeOptional_<S, T, A, B, C, D>(
  * @category Compositions
  * @since 1.0.0
  */
-export function composeOptional<A, B, C, D>(
+export function andThenOptional<A, B, C, D>(
   ab: POptional<A, B, C, D>
 ): <S, T>(sa: PLens<S, T, A, B>) => POptional<S, T, C, D> {
-  return (sa) => composeOptional_(sa, ab)
+  return (sa) => andThenOptional_(sa, ab)
 }
 
-export function composeTraversal_<S, T, A, B, C, D>(
+export function andThenTraversal_<S, T, A, B, C, D>(
   sa: PLens<S, T, A, B>,
   ab: PTraversal<A, B, C, D>
 ): PTraversal<S, T, C, D> {
-  return _.traversalComposeTraversal(sa, ab)
+  return _.traversalAndThenTraversal(sa, ab)
 }
 
-export function composeTraversal<A, B, C, D>(
+export function andThenTraversal<A, B, C, D>(
   ab: PTraversal<A, B, C, D>
 ): <S, T>(sa: PLens<S, T, A, B>) => PTraversal<S, T, C, D> {
-  return (sa) => composeTraversal_(sa, ab)
+  return (sa) => andThenTraversal_(sa, ab)
 }
 
 /*
@@ -123,7 +123,7 @@ export function id<S, T>(): PLens<S, T, S, T> {
  * @category Semigroupoid
  * @since 1.0.0
  */
-export function compose_<S, T, A, B, C, D>(sa: PLens<S, T, A, B>, ab: PLens<A, B, C, D>): PLens<S, T, C, D> {
+export function andThen_<S, T, A, B, C, D>(sa: PLens<S, T, A, B>, ab: PLens<A, B, C, D>): PLens<S, T, C, D> {
   return PLens({
     get: flow(sa.get, ab.get),
     replace_: (s, d) => sa.modify_(s, ab.replace(d))
@@ -136,18 +136,17 @@ export function compose_<S, T, A, B, C, D>(sa: PLens<S, T, A, B>, ab: PLens<A, B
  * @category Semigroupoid
  * @since 1.0.0
  */
-export function compose<A, B, C, D>(ab: PLens<A, B, C, D>): <S, T>(sa: PLens<S, T, A, B>) => PLens<S, T, C, D> {
-  return (sa) => compose_(sa, ab)
+export function andThen<A, B, C, D>(ab: PLens<A, B, C, D>): <S, T>(sa: PLens<S, T, A, B>) => PLens<S, T, C, D> {
+  return (sa) => andThen_(sa, ab)
 }
 
 /**
  * @category Instances
  * @since 1.0.0
  */
-export const Category: P.Category<[HKT.URI<LensURI>], V> = HKT.instance({
+export const Category = P.Category<[HKT.URI<LensURI>], V>({
   id,
-  compose,
-  compose_
+  andThen_
 })
 
 /*
@@ -197,7 +196,7 @@ export const Invariant: P.Invariant<[HKT.URI<LensURI>], V> = HKT.instance({
  * @since 1.0.0
  */
 export function fromNullable<S, A>(sa: Lens<S, A>): Optional<S, NonNullable<A>> {
-  return composePrism_(sa, _.prismFromNullable<A>())
+  return andThenPrism_(sa, _.prismFromNullable<A>())
 }
 
 /**
@@ -207,7 +206,7 @@ export function fromNullable<S, A>(sa: Lens<S, A>): Optional<S, NonNullable<A>> 
 export function filter<A, B extends A>(refinement: Refinement<A, B>): <S>(sa: Lens<S, A>) => Optional<S, B>
 export function filter<A>(predicate: Predicate<A>): <S>(sa: Lens<S, A>) => Optional<S, A>
 export function filter<A>(predicate: Predicate<A>): <S>(sa: Lens<S, A>) => Optional<S, A> {
-  return composePrism(_.prismFromPredicate(predicate))
+  return andThenPrism(_.prismFromPredicate(predicate))
 }
 
 export function prop_<S, A, P extends keyof A>(lens: Lens<S, A>, prop: P): Lens<S, A[P]> {
@@ -314,7 +313,7 @@ export function component<A extends ReadonlyArray<unknown>, P extends keyof A>(
  * @since 1.0.0
  */
 export function index(i: number) {
-  return <S, A>(sa: Lens<S, ReadonlyArray<A>>): Optional<S, A> => pipe(sa, composeOptional(Ix.array<A>().index(i)))
+  return <S, A>(sa: Lens<S, ReadonlyArray<A>>): Optional<S, A> => pipe(sa, andThenOptional(Ix.array<A>().index(i)))
 }
 
 /**
@@ -325,7 +324,7 @@ export function index(i: number) {
  */
 export function key(key: string) {
   return <S, A>(sa: Lens<S, Readonly<Record<string, A>>>): Optional<S, A> =>
-    pipe(sa, composeOptional(Ix.record<A>().index(key)))
+    pipe(sa, andThenOptional(Ix.record<A>().index(key)))
 }
 
 /**
@@ -335,7 +334,7 @@ export function key(key: string) {
  */
 export function atKey(key: string) {
   return <S, A>(sa: Lens<S, Readonly<Record<string, A>>>): Lens<S, O.Option<A>> =>
-    pipe(sa, compose(At.atRecord<A>().at(key)))
+    pipe(sa, andThen(At.atRecord<A>().at(key)))
 }
 
 /**
@@ -344,7 +343,7 @@ export function atKey(key: string) {
  * @category Combinators
  * @since 1.0.0
  */
-export const some: <S, A>(soa: Lens<S, O.Option<A>>) => Optional<S, A> = composePrism(_.prismSome())
+export const some: <S, A>(soa: Lens<S, O.Option<A>>) => Optional<S, A> = andThenPrism(_.prismSome())
 
 /**
  * Return a `Optional` from a `Lens` focused on the `Right` of a `Either` type
@@ -352,7 +351,7 @@ export const some: <S, A>(soa: Lens<S, O.Option<A>>) => Optional<S, A> = compose
  * @category Combinators
  * @since 1.0.0
  */
-export const right: <S, E, A>(sea: Lens<S, E.Either<E, A>>) => Optional<S, A> = composePrism(_.prismRight())
+export const right: <S, E, A>(sea: Lens<S, E.Either<E, A>>) => Optional<S, A> = andThenPrism(_.prismRight())
 
 /**
  * Return a `Optional` from a `Lens` focused on the `Left` of a `Either` type
@@ -360,7 +359,7 @@ export const right: <S, E, A>(sea: Lens<S, E.Either<E, A>>) => Optional<S, A> = 
  * @category Combinators
  * @since 1.0.0
  */
-export const left: <S, E, A>(sea: Lens<S, E.Either<E, A>>) => Optional<S, E> = composePrism(_.prismLeft())
+export const left: <S, E, A>(sea: Lens<S, E.Either<E, A>>) => Optional<S, E> = andThenPrism(_.prismLeft())
 
 /**
  * Return a `Traversal` from a `Lens` focused on a `Traversable`
@@ -373,7 +372,7 @@ export function traverse<T extends HKT.URIS, C = HKT.Auto>(
 ): <S, N extends string, K, Q, W, X, I, S_, R, E, A>(
   sta: Lens<S, HKT.Kind<T, C, N, K, Q, W, X, I, S_, R, E, A>>
 ) => Traversal<S, A> {
-  return flow(composeTraversal(_.fromTraversable(T)()))
+  return flow(andThenTraversal(_.fromTraversable(T)()))
 }
 
 /**
@@ -382,5 +381,5 @@ export function traverse<T extends HKT.URIS, C = HKT.Auto>(
  */
 export const findl: <A>(predicate: Predicate<A>) => <S>(sa: Lens<S, ReadonlyArray<A>>) => Optional<S, A> = flow(
   _.findFirst,
-  composeOptional
+  andThenOptional
 )

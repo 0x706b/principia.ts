@@ -83,6 +83,9 @@ export type OptionURI = typeof OptionURI
 export const ReaderURI = 'Reader'
 export type ReaderURI = typeof ReaderURI
 
+export const ReaderCategoryURI = 'ReaderCategory'
+export type ReaderCategoryURI = typeof ReaderCategoryURI
+
 export const RecordURI = 'Record'
 export type RecordURI = typeof RecordURI
 
@@ -110,6 +113,12 @@ export type StateOutURI = typeof StateOutURI
 export const ZURI = 'Z'
 export type ZURI = typeof ZURI
 
+export const ZReaderCategoryURI = 'ZReaderCategory'
+export type ZReaderCategoryURI = typeof ZReaderCategoryURI
+
+export const ZStateCategoryURI = 'ZStateCategory'
+export type ZStateCategoryURI = typeof ZStateCategoryURI
+
 export const SyncURI = 'Sync'
 export type SyncURI = typeof SyncURI
 
@@ -128,6 +137,9 @@ export type AsyncURI = typeof AsyncURI
 export const IOURI = 'IO'
 export type IOURI = typeof IOURI
 
+export const IOCategoryURI = 'IOCategory'
+export type IOCategoryURI = typeof IOCategoryURI
+
 export const ChunkURI = 'Chunk'
 export type ChunkURI = typeof ChunkURI
 
@@ -145,6 +157,9 @@ export type ExitURI = typeof ExitURI
 
 export const ManagedURI = 'Managed'
 export type ManagedURI = typeof ManagedURI
+
+export const ManagedCategoryURI = 'ManagedCategory'
+export type ManagedCategoryURI = typeof ManagedCategoryURI
 
 declare module './HKT' {
   interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
@@ -165,6 +180,7 @@ declare module './HKT' {
     [NonEmptyArrayURI]: NonEmptyArray<A>
     [OptionURI]: Option<A>
     [ReaderURI]: Reader<R, A>
+    [ReaderCategoryURI]: Reader<I, A>
     [RecordURI]: ReadonlyRecord<N, A>
     [TheseURI]: These<E, A>
     [Tuple2URI]: Tuple2<A, I>
@@ -173,11 +189,14 @@ declare module './HKT' {
     [StateURI]: State<S, A>
     [SyncURI]: Sync<R, E, A>
     [ZURI]: Z<W, S, S, R, E, A>
+    [ZReaderCategoryURI]: Z<W, S, S, I, E, A>
+    [ZStateCategoryURI]: Z<W, I, A, R, E, A>
     [FreeSemiringURI]: FreeSemiring<X, A>
     [ZReaderURI]: ZReader<R, A>
     [ZStateURI]: ZState<S, A>
     [AsyncURI]: Async<R, E, A>
     [IOURI]: IO<R, E, A>
+    [IOCategoryURI]: IO<I, E, A>
     [ChunkURI]: Chunk<A>
     [RoseTreeURI]: RoseTree<A>
     [StateInURI]: StateIn<S, A>
@@ -186,6 +205,7 @@ declare module './HKT' {
     [CauseURI]: Cause<A>
     [ExitURI]: Exit<E, A>
     [ManagedURI]: Managed<R, E, A>
+    [ManagedCategoryURI]: Managed<I, E, A>
   }
   interface URItoIndex<N, K> {
     [ArrayURI]: number

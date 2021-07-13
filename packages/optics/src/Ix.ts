@@ -42,7 +42,7 @@ export interface IndexFn<S, I, A> {
  * @since 1.0.0
  */
 export function fromAt<T, J, B>(at: At<T, J, O.Option<B>>): Ix<T, J, B> {
-  return Ix((i) => _.optionalComposeOptional(at.at(i), _.prismSome<B>()))
+  return Ix((i) => _.optionalAndThenOptional(at.at(i), _.prismSome<B>()))
 }
 
 /**
@@ -50,7 +50,7 @@ export function fromAt<T, J, B>(at: At<T, J, O.Option<B>>): Ix<T, J, B> {
  * @since 1.0.0
  */
 export function fromIso<T, S>(iso: Iso<T, S>): <I, A>(sia: Ix<S, I, A>) => Ix<T, I, A> {
-  return (sia) => Ix((i) => _.optionalComposeOptional(iso, sia.index(i)))
+  return (sia) => Ix((i) => _.optionalAndThenOptional(iso, sia.index(i)))
 }
 
 /**

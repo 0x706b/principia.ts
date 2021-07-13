@@ -63,7 +63,7 @@ export const Schemable: S.Schemable<ConstructorSURI> = {
   tuple: (components) => Pr.fromTuple(...components),
   sum: (tag) => (members) => Pr.fromSum(tag)(members),
   lazy: (f, id) => Pr.lazy(f, id),
-  compose: (_, ab) => ab,
+  andThen: (_, ab) => ab,
   custom: (_) => _[ConstructorSURI],
   refine: (C, _, refinement, error, warn, label) => Pr.refine_(C, refinement, error, warn, label),
   constrain: (C, _, predicate, error, warn, label) => Pr.constrain_(C, predicate, error, warn, label),
@@ -225,7 +225,7 @@ export const Schemable: S.Schemable<ConstructorSURI> = {
   named: (C, _, name) => Pr.named_(C, name),
   newtypeIso: (C, iso) => Pr.map_(C, iso.get),
   newtypePrism: (C, prism) =>
-    Pr.compose_(
+    Pr.andThen_(
       C,
       Pr.parser(
         (a: InputOfPrism<typeof prism>) =>

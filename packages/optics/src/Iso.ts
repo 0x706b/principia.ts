@@ -3,11 +3,11 @@ import type { PLens } from './Lens'
 import type { IsoURI } from './Modules'
 import type { PPrism, ReverseGetFn } from './Prism'
 import type { Newtype } from '@principia/base/Newtype'
-import type * as P from '@principia/base/prelude'
 
 import * as E from '@principia/base/Either'
 import { flow, identity } from '@principia/base/function'
 import * as HKT from '@principia/base/HKT'
+import * as P from '@principia/base/prelude'
 
 import * as _ from './internal'
 
@@ -34,12 +34,12 @@ export const Iso: <S, A>(_: PIsoMin<S, S, A, A>) => Iso<S, A> = _.makePIso
 
 export type V = HKT.V<'I', '_'>
 
-export function composeLens_<S, T, A, B, C, D>(sa: PIso<S, T, A, B>, ab: PLens<A, B, C, D>): PLens<S, T, C, D> {
-  return _.lensComposeLens(sa, ab)
+export function andThenLens_<S, T, A, B, C, D>(sa: PIso<S, T, A, B>, ab: PLens<A, B, C, D>): PLens<S, T, C, D> {
+  return _.lensAndThenLens(sa, ab)
 }
 
-export function composeLens<A, B, C, D>(ab: PLens<A, B, C, D>): <S, T>(sa: PIso<S, T, A, B>) => PLens<S, T, C, D> {
-  return (sa) => composeLens_(sa, ab)
+export function andThenLens<A, B, C, D>(ab: PLens<A, B, C, D>): <S, T>(sa: PIso<S, T, A, B>) => PLens<S, T, C, D> {
+  return (sa) => andThenLens_(sa, ab)
 }
 
 /*
@@ -54,7 +54,7 @@ export function composeLens<A, B, C, D>(ab: PLens<A, B, C, D>): <S, T>(sa: PIso<
  * @category Semigroupoid
  * @since 1.0.0
  */
-export function compose_<S, T, A, B, C, D>(sa: PIso<S, T, A, B>, ab: PIso<A, B, C, D>): PIso<S, T, C, D> {
+export function andThen_<S, T, A, B, C, D>(sa: PIso<S, T, A, B>, ab: PIso<A, B, C, D>): PIso<S, T, C, D> {
   return PIso({
     get: flow(sa.get, ab.get),
     reverseGet: flow(ab.reverseGet, sa.reverseGet)
@@ -67,8 +67,8 @@ export function compose_<S, T, A, B, C, D>(sa: PIso<S, T, A, B>, ab: PIso<A, B, 
  * @category Semigroupoid
  * @since 1.0.0
  */
-export function compose<A, B, C, D>(ab: PIso<A, B, C, D>): <S, T>(sa: PIso<S, T, A, B>) => PIso<S, T, C, D> {
-  return (sa) => compose_(sa, ab)
+export function andThen<A, B, C, D>(ab: PIso<A, B, C, D>): <S, T>(sa: PIso<S, T, A, B>) => PIso<S, T, C, D> {
+  return (sa) => andThen_(sa, ab)
 }
 
 /**
@@ -86,10 +86,9 @@ export function id<S, T>(): PIso<S, T, S, T> {
  * @category Instances
  * @since 1.0.0
  */
-export const Category: P.Category<[HKT.URI<IsoURI>], V> = HKT.instance({
+export const Category = P.Category<[HKT.URI<IsoURI>], V>({
   id,
-  compose,
-  compose_
+  andThen_
 })
 
 /*

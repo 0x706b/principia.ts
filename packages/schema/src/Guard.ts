@@ -247,7 +247,7 @@ export const Schemable: S.Schemable<GuardSURI> = {
   tuple: (components) => tuple(...components),
   sum: (tag) => (members) => sum(tag)(members),
   lazy: (f) => lazy(f),
-  compose: (_, ab) => ab,
+  andThen: (_, ab) => ab,
   custom: (_) => _[GuardSURI],
   refine: (G, _, refinement) => refine(G, refinement),
   constrain: (G, _, predicate) => refine(G, predicate),

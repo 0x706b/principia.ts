@@ -142,7 +142,7 @@ export function lensId<S, T>(): PLens<S, T, S, T> {
   })
 }
 
-export function lensComposeLens<S, T, A, B, C, D>(sa: PLens<S, T, A, B>, ab: PLens<A, B, C, D>): PLens<S, T, C, D> {
+export function lensAndThenLens<S, T, A, B, C, D>(sa: PLens<S, T, A, B>, ab: PLens<A, B, C, D>): PLens<S, T, C, D> {
   return makePLens({
     get: flow(sa.get, ab.get),
     replace_: (s, d) => sa.modify_(s, ab.replace(d))
@@ -157,7 +157,7 @@ export function lensComposeLens<S, T, A, B, C, D>(sa: PLens<S, T, A, B>, ab: PLe
  * -------------------------------------------
  */
 
-export function prismComposePrism<S, T, A, B, C, D>(
+export function prismAndThenPrism<S, T, A, B, C, D>(
   sa: PPrism<S, T, A, B>,
   ab: PPrism<A, B, C, D>
 ): PPrism<S, T, C, D> {
@@ -177,11 +177,11 @@ export function prismComposePrism<S, T, A, B, C, D>(
 }
 
 /** @internal */
-export function prismComposeLens<S, T, A, B, C, D>(
+export function prismAndThenLens<S, T, A, B, C, D>(
   sa: PPrism<S, T, A, B>,
   ab: PLens<A, B, C, D>
 ): POptional<S, T, C, D> {
-  return optionalComposeOptional(sa, ab)
+  return optionalAndThenOptional(sa, ab)
 }
 
 /** @internal */
@@ -230,7 +230,7 @@ export function prismLeft<E, A>(): Prism<E.Either<E, A>, E> {
  * -------------------------------------------
  */
 
-export function optionalComposeOptional<S, T, A, B, C, D>(
+export function optionalAndThenOptional<S, T, A, B, C, D>(
   sa: POptional<S, T, A, B>,
   ab: POptional<A, B, C, D>
 ): POptional<S, T, C, D> {
@@ -275,7 +275,7 @@ export function findFirst<A>(predicate: Predicate<A>): Optional<ReadonlyArray<A>
  */
 
 /** @internal */
-export function traversalComposeTraversal<S, T, A, B, C, D>(
+export function traversalAndThenTraversal<S, T, A, B, C, D>(
   sa: PTraversal<S, T, A, B>,
   ab: PTraversal<A, B, C, D>
 ): PTraversal<S, T, C, D> {

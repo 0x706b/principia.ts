@@ -308,7 +308,7 @@ export const Schemable: S.Schemable<DecoderSURI> = {
   tuple: (components) => Pr.tuple(...components),
   sum: (tag) => (members) => Pr.sum(tag)(members),
   lazy: (f, id) => Pr.lazy(f, id),
-  compose: (ia, ab) => Pr.compose_(ia, ab),
+  andThen: (ia, ab) => Pr.andThen_(ia, ab),
   custom: (_) => _[DecoderSURI],
   refine: (D, _, refinement, error, warn, label) => Pr.refine_(D, refinement, error, warn, label),
   constrain: (D, _, predicate, error, warn, label) => Pr.constrain_(D, predicate, error, warn, label),
@@ -512,7 +512,7 @@ export const Schemable: S.Schemable<DecoderSURI> = {
   named: (D, _, name) => Pr.named_(D, name),
   newtypeIso: (D, iso) => Pr.map_(D, iso.get),
   newtypePrism: (D, prism) =>
-    Pr.compose_(
+    Pr.andThen_(
       D,
       Pr.parser(
         (a: InputOfPrism<typeof prism>) =>
