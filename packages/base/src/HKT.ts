@@ -82,8 +82,6 @@ export interface URItoKind<
   FC,
   // encodes constraints on parameters and variance at the typeclass level
   TC,
-  // encodes nominal keys
-  N extends string,
   // encodes generic keys
   K,
   // encodes free logic
@@ -112,7 +110,7 @@ export interface URItoKind<
 /**
  * A type-level dictionary for indexed HKTs
  */
-export interface URItoIndex<N extends string, K> {
+export interface URItoIndex<K> {
   [HKT_URI]: K
   [HKT2_URI]: K
   [HKT3_URI]: K
@@ -126,7 +124,7 @@ export interface URItoIndex<N extends string, K> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export type ConcreteURIS = keyof URItoKind<any, any, any, any, any, any, any, any, any, any, any, any>
+export type ConcreteURIS = keyof URItoKind<any, any, any, any, any, any, any, any, any, any, any>
 
 export type URIS = [URI<ConcreteURIS, any>, ...URI<ConcreteURIS, any>[]]
 
@@ -141,36 +139,20 @@ export type PrependURI<G extends URI<ConcreteURIS, any>, F extends URIS> = F ext
 
 export type Rest<F extends [any, ...any[]]> = F extends [any, ...infer Rest] ? Rest : []
 
-export type Kind<F extends URIS, C, N extends string, K, Q, W, X, I, S, R, E, A> = F extends [any, ...infer Next]
-  ? Next extends URIS
-    ? URItoKind<
-        F[0]['_C'],
-        C,
-        OrFix<'N', F[0]['_C'], OrFix<'N', C, N>>,
-        OrFix<'K', F[0]['_C'], OrFix<'K', C, K>>,
-        OrFix<'Q', F[0]['_C'], OrFix<'Q', C, Q>>,
-        OrFix<'W', F[0]['_C'], OrFix<'W', C, W>>,
-        OrFix<'X', F[0]['_C'], OrFix<'X', C, X>>,
-        OrFix<'I', F[0]['_C'], OrFix<'I', C, I>>,
-        OrFix<'S', F[0]['_C'], OrFix<'S', C, S>>,
-        OrFix<'R', F[0]['_C'], OrFix<'R', C, R>>,
-        OrFix<'E', F[0]['_C'], OrFix<'E', C, E>>,
-        Kind<Next, C, N, K, Q, W, X, I, S, R, E, A>
-      >[F[0]['_F']]
-    : URItoKind<
-        F[0]['_C'],
-        C,
-        OrFix<'N', F[0]['_C'], OrFix<'N', C, N>>,
-        OrFix<'K', F[0]['_C'], OrFix<'K', C, K>>,
-        OrFix<'Q', F[0]['_C'], OrFix<'Q', C, Q>>,
-        OrFix<'W', F[0]['_C'], OrFix<'W', C, W>>,
-        OrFix<'X', F[0]['_C'], OrFix<'X', C, X>>,
-        OrFix<'I', F[0]['_C'], OrFix<'I', C, I>>,
-        OrFix<'S', F[0]['_C'], OrFix<'S', C, S>>,
-        OrFix<'R', F[0]['_C'], OrFix<'R', C, R>>,
-        OrFix<'E', F[0]['_C'], OrFix<'E', C, E>>,
-        A
-      >[F[0]['_F']]
+export type Kind<F extends URIS, C, K, Q, W, X, I, S, R, E, A> = F extends [any, ...infer Next]
+  ? URItoKind<
+      F[0]['_C'],
+      C,
+      OrFix<'K', F[0]['_C'], OrFix<'K', C, K>>,
+      OrFix<'Q', F[0]['_C'], OrFix<'Q', C, Q>>,
+      OrFix<'W', F[0]['_C'], OrFix<'W', C, W>>,
+      OrFix<'X', F[0]['_C'], OrFix<'X', C, X>>,
+      OrFix<'I', F[0]['_C'], OrFix<'I', C, I>>,
+      OrFix<'S', F[0]['_C'], OrFix<'S', C, S>>,
+      OrFix<'R', F[0]['_C'], OrFix<'R', C, R>>,
+      OrFix<'E', F[0]['_C'], OrFix<'E', C, E>>,
+      Next extends URIS ? Kind<Next, C, K, Q, W, X, I, S, R, E, A> : A
+    >[F[0]['_F']]
   : never
 
 /*
@@ -181,12 +163,10 @@ export type Kind<F extends URIS, C, N extends string, K, Q, W, X, I, S, R, E, A>
  */
 
 export type Infer<F extends URIS, C, P extends Param | 'A' | 'C', K> = [K] extends [
-  Kind<F, C, infer N, infer K, infer Q, infer W, infer X, infer I, infer S, infer R, infer E, infer A>
+  Kind<F, C, infer K, infer Q, infer W, infer X, infer I, infer S, infer R, infer E, infer A>
 ]
   ? P extends 'C'
     ? C
-    : P extends 'N'
-    ? N
     : P extends 'K'
     ? K
     : P extends 'Q'
@@ -208,9 +188,8 @@ export type Infer<F extends URIS, C, P extends Param | 'A' | 'C', K> = [K] exten
     : never
   : never
 
-export type URIOf<K extends Kind<any, any, any, any, any, any, any, any, any, any, any, any>> = K extends Kind<
+export type URIOf<K extends Kind<any, any, any, any, any, any, any, any, any, any, any>> = K extends Kind<
   infer F,
-  any,
   any,
   any,
   any,
@@ -225,31 +204,27 @@ export type URIOf<K extends Kind<any, any, any, any, any, any, any, any, any, an
   ? F
   : never
 
-export type IndexForBase<F extends ConcreteURIS, N extends string, K> = F extends keyof URItoIndex<any, any>
-  ? URItoIndex<N, K>[F]
-  : K
+export type IndexForBase<F extends ConcreteURIS, K> = F extends keyof URItoIndex<any> ? URItoIndex<K>[F] : K
 
-export type IndexFor<F extends URIS, N extends string, K> = IndexForBase<
+export type IndexFor<F extends URIS, K> = IndexForBase<
   {
     [K in keyof F]: F[K] extends ConcreteURIS ? F[K] : F[K] extends URI<infer U, any> ? U : never
   }[number],
-  N,
   K
 >
 
-export type CompositionIndexForBase<F extends ConcreteURIS[], N extends string, K> = 1 extends F['length']
-  ? F[0] extends keyof URItoIndex<any, any>
-    ? URItoIndex<N, K>[F[0]]
+export type CompositionIndexForBase<F extends ConcreteURIS[], K> = 1 extends F['length']
+  ? F[0] extends keyof URItoIndex<any>
+    ? URItoIndex<K>[F[0]]
     : K
   : {
-      [P in keyof F]: F[P] extends keyof URItoIndex<any, any> ? URItoIndex<N, K>[F[P]] : K
+      [P in keyof F]: F[P] extends keyof URItoIndex<any> ? URItoIndex<K>[F[P]] : K
     }
 
-export type CompositionIndexFor<F extends URIS, N extends string, K> = CompositionIndexForBase<
+export type CompositionIndexFor<F extends URIS, K> = CompositionIndexForBase<
   {
     [K in keyof F]: F[K] extends ConcreteURIS ? F[K] : F[K] extends URI<infer U, any> ? U : never
   },
-  N,
   K
 >
 
@@ -281,7 +256,7 @@ export type AccessCustomExtends<C, P extends string, D = any> = C extends Custom
  * -------------------------------------------------------------------------------------------------
  */
 
-export type Param = 'N' | 'K' | 'Q' | 'W' | 'I' | 'X' | 'S' | 'R' | 'E'
+export type Param = 'K' | 'Q' | 'W' | 'I' | 'X' | 'S' | 'R' | 'E'
 
 export interface Fix<P extends Param, F> {
   Fix: {
@@ -291,13 +266,7 @@ export interface Fix<P extends Param, F> {
   }
 }
 
-export type OrFix<P extends Param, A, B> = A extends Fix<P, infer X>
-  ? P extends 'N'
-    ? X extends string
-      ? X
-      : B
-    : X
-  : B
+export type OrFix<P extends Param, A, B> = A extends Fix<P, infer X> ? X : B
 
 export type Unfix<C, P extends Param> = (Exclude<keyof C, 'Fix'> extends never
   ? unknown
@@ -369,9 +338,7 @@ export type MixStruct<C, P extends Param, X, Y> = C extends V<P, '_'>
   : C extends V<P, '+'>
   ? Y[keyof Y]
   : C extends V<P, '-'>
-  ? P extends 'N'
-    ? string
-    : UnionToIntersection<{ [k in keyof Y]: OrNever<Y[k]> }[keyof Y]>
+  ? UnionToIntersection<{ [k in keyof Y]: OrNever<Y[k]> }[keyof Y]>
   : X
 
 /**
@@ -389,9 +356,7 @@ export type Intro<C, P extends Param, Fixed, Current> = C extends V<P, '_'>
  * Initial type depending on variance of P in C (eg: initial Contravariant R = unknown, initial Covariant E = never)
  */
 export type Initial<C, P extends Param> = C extends V<P, '-'>
-  ? P extends 'N'
-    ? string
-    : unknown
+  ? unknown
   : C extends V<P, '+'>
   ? never
   : any

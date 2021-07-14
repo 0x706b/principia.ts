@@ -63,10 +63,10 @@ export function unfoldForest<A, B>(bs: Array<B>, f: (b: B) => [A, Array<B>]): Fo
 
 export function unfoldTreeM<M extends HKT.URIS, C = HKT.Auto>(
   M: P.Monad<M, C>
-): <N extends string, K, Q, W, X, I, S, R, E, A, B>(
+): <K, Q, W, X, I, S, R, E, A, B>(
   b: B,
-  f: (b: B) => HKT.Kind<M, C, N, K, Q, W, X, I, S, R, E, readonly [A, ReadonlyArray<B>]>
-) => HKT.Kind<M, C, N, K, Q, W, X, I, S, R, E, RoseTree<A>>
+  f: (b: B) => HKT.Kind<M, C, K, Q, W, X, I, S, R, E, readonly [A, ReadonlyArray<B>]>
+) => HKT.Kind<M, C, K, Q, W, X, I, S, R, E, RoseTree<A>>
 export function unfoldTreeM<M>(
   M: P.Monad<HKT.UHKT<M>>
 ): <A, B>(b: B, f: (b: B) => HKT.HKT<M, readonly [A, ReadonlyArray<B>]>) => HKT.HKT<M, RoseTree<A>> {
@@ -77,10 +77,10 @@ export function unfoldTreeM<M>(
 
 export function unfoldForestM<M extends HKT.URIS, C = HKT.Auto>(
   M: P.Monad<M, C>
-): <N extends string, K, Q, W, X, I, S, R, E, A, B>(
+): <K, Q, W, X, I, S, R, E, A, B>(
   bs: ReadonlyArray<B>,
-  f: (b: B) => HKT.Kind<M, C, N, K, Q, W, X, I, S, R, E, readonly [A, ReadonlyArray<B>]>
-) => HKT.Kind<M, C, N, K, Q, W, X, I, S, R, E, Forest<A>>
+  f: (b: B) => HKT.Kind<M, C, K, Q, W, X, I, S, R, E, readonly [A, ReadonlyArray<B>]>
+) => HKT.Kind<M, C, K, Q, W, X, I, S, R, E, Forest<A>>
 export function unfoldForestM<M>(
   M: P.Monad<HKT.UHKT<M>>
 ): <A, B>(bs: ReadonlyArray<B>, f: (b: B) => HKT.HKT<M, readonly [A, ReadonlyArray<B>]>) => HKT.HKT<M, Forest<A>> {

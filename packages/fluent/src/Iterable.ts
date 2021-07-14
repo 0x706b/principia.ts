@@ -143,9 +143,9 @@ declare global {
      */
     imapA<F extends HKT.URIS, C>(
       A: Applicative<F, C>
-    ): <N extends string, K, Q, W, X, I, S, R, E, A>(
-      f: (i: number, a: T) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-    ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Iterable<A>>
+    ): <K, Q, W, X, I, S, R, E, A>(
+      f: (i: number, a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+    ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Iterable<A>>
 
     /**
      * @rewrite ipartition_ from "@principia/base/Iterable"
@@ -172,9 +172,9 @@ declare global {
      */
     mapA<F extends HKT.URIS, C>(
       A: Applicative<F, C>
-    ): <N extends string, K, Q, W, X, I, S, R, E, A>(
-      f: (a: T) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-    ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Iterable<A>>
+    ): <K, Q, W, X, I, S, R, E, A>(
+      f: (a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+    ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Iterable<A>>
 
     /**
      * @rewrite partition_ from "@principia/base/Iterable"
@@ -347,9 +347,9 @@ declare global {
      */
     imapA<F extends HKT.URIS, C>(
       A: Applicative<F, C>
-    ): <N extends string, K, Q, W, X, I, S, R, E, A>(
-      f: (i: number, a: T) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-    ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Iterable<A>>
+    ): <K, Q, W, X, I, S, R, E, A>(
+      f: (i: number, a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+    ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Iterable<A>>
 
     /**
      * @rewrite ipartition_ from "@principia/base/Iterable"
@@ -376,9 +376,9 @@ declare global {
      */
     mapA<F extends HKT.URIS, C>(
       A: Applicative<F, C>
-    ): <N extends string, K, Q, W, X, I, S, R, E, A>(
-      f: (a: T) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-    ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Iterable<A>>
+    ): <K, Q, W, X, I, S, R, E, A>(
+      f: (a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+    ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Iterable<A>>
 
     /**
      * @rewrite partition_ from "@principia/base/Iterable"

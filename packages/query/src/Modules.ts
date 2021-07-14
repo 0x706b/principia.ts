@@ -4,7 +4,7 @@ export const ResultURI = 'Result'
 export type ResultURI = typeof ResultURI
 
 declare module '@principia/base/HKT' {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
+  interface URItoKind<FC, TC, K, Q, W, X, I, S, R, E, A> {
     readonly [ResultURI]: Result<R, E, A>
   }
 }

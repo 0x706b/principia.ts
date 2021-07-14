@@ -20,7 +20,7 @@ export const TraversalURI = 'optics/Traversal'
 export type TraversalURI = typeof TraversalURI
 
 declare module '@principia/base/HKT' {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
+  interface URItoKind<FC, TC, K, Q, W, X, I, S, R, E, A> {
     [IsoURI]: Iso<I, A>
     [LensURI]: Lens<I, A>
     [OptionalURI]: Optional<I, A>

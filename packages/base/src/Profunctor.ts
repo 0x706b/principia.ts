@@ -43,28 +43,37 @@ export function Profunctor<F extends HKT.URIS, C = HKT.Auto>(F: ProfunctorMin<F,
 }
 
 export interface DimapFn_<F extends HKT.URIS, TC = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, U, B>(
-    fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, U, E, A>,
+  <K, Q, W, X, I, S, R, E, A, U, B>(
+    fa: HKT.Kind<F, TC, K, Q, W, X, I, S, U, E, A>,
     f: (r: R) => U,
     g: (A: A) => B
-  ): HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, B>
+  ): HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, B>
 }
 
 export interface DimapFn<F extends HKT.URIS, TC = HKT.Auto> {
-  <R, U, A, B>(f: (r: R) => U, g: (a: A) => B): <N extends string, K, Q, W, X, I, S, E>(
-    fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, U, E, A>
-  ) => HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, B>
+  <R, U, A, B>(f: (r: R) => U, g: (a: A) => B): <K, Q, W, X, I, S, E>(
+    fa: HKT.Kind<F, TC, K, Q, W, X, I, S, U, E, A>
+  ) => HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, B>
 }
 
 export interface LMapFn_<F extends HKT.URIS, TC = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, U>(
-    fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, U, E, A>,
-    f: (r: R) => U
-  ): HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>
+  <K, Q, W, X, I, S, R, E, A, U>(fa: HKT.Kind<F, TC, K, Q, W, X, I, S, U, E, A>, f: (r: R) => U): HKT.Kind<
+    F,
+    TC,
+    K,
+    Q,
+    W,
+    X,
+    I,
+    S,
+    R,
+    E,
+    A
+  >
 }
 
 export interface LMapFn<F extends HKT.URIS, TC = HKT.Auto> {
-  <R, U>(f: (r: R) => U): <N extends string, K, Q, W, X, I, S, E, A>(
-    fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, U, E, A>
-  ) => HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>
+  <R, U>(f: (r: R) => U): <K, Q, W, X, I, S, E, A>(
+    fa: HKT.Kind<F, TC, K, Q, W, X, I, S, U, E, A>
+  ) => HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>
 }

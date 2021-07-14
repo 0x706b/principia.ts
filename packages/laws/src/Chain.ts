@@ -8,7 +8,6 @@ import { isPromise } from './utils'
 function AssociativeCompositionLaw<
   F extends HKT.URIS,
   TC,
-  N extends string,
   K,
   Q,
   W,
@@ -18,7 +17,6 @@ function AssociativeCompositionLaw<
   R,
   E,
   A,
-  NB extends string,
   KB,
   QB,
   WB,
@@ -28,7 +26,6 @@ function AssociativeCompositionLaw<
   RB,
   EB,
   B,
-  NC extends string,
   KC,
   QC,
   WC,
@@ -44,7 +41,6 @@ function AssociativeCompositionLaw<
     HKT.Kind<
       F,
       TC,
-      HKT.Mix<TC, 'N', [N, NB, NC]>,
       HKT.Mix<TC, 'K', [K, KB, KC]>,
       HKT.Mix<TC, 'Q', [Q, QB, QC]>,
       HKT.Mix<TC, 'W', [W, WB, WC]>,
@@ -56,9 +52,9 @@ function AssociativeCompositionLaw<
       C
     >
   >,
-  afb: (a: A) => HKT.Kind<F, TC, NB, KB, QB, WB, XB, IB, SB, RB, EB, B>,
-  bfc: (b: B) => HKT.Kind<F, TC, NC, KC, QC, WC, XC, IC, SC, RC, EC, C>
-): (fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>) => Promise<boolean>
+  afb: (a: A) => HKT.Kind<F, TC, KB, QB, WB, XB, IB, SB, RB, EB, B>,
+  bfc: (b: B) => HKT.Kind<F, TC, KC, QC, WC, XC, IC, SC, RC, EC, C>
+): (fa: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>) => Promise<boolean>
 function AssociativeCompositionLaw<F, A, B, C>(
   F: P.Chain<HKT.UHKT<F>>,
   S: MaybeAsyncEq<HKT.HKT<F, C>>,

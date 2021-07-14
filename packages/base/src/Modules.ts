@@ -162,7 +162,7 @@ export const ManagedCategoryURI = 'ManagedCategory'
 export type ManagedCategoryURI = typeof ManagedCategoryURI
 
 declare module './HKT' {
-  interface URItoKind<FC, TC, N, K, Q, W, X, I, S, R, E, A> {
+  interface URItoKind<FC, TC, K, Q, W, X, I, S, R, E, A> {
     [ShowURI]: Show<A>
     [EqURI]: Eq<A>
     [OrdURI]: Ord<A>
@@ -181,7 +181,7 @@ declare module './HKT' {
     [OptionURI]: Option<A>
     [ReaderURI]: Reader<R, A>
     [ReaderCategoryURI]: Reader<I, A>
-    [RecordURI]: ReadonlyRecord<N, A>
+    [RecordURI]: ReadonlyRecord<string, A>
     [TheseURI]: These<E, A>
     [Tuple2URI]: Tuple2<A, I>
     [StoreURI]: Store<E, A>
@@ -207,11 +207,11 @@ declare module './HKT' {
     [ManagedURI]: Managed<R, E, A>
     [ManagedCategoryURI]: Managed<I, E, A>
   }
-  interface URItoIndex<N, K> {
+  interface URItoIndex<K> {
     [ArrayURI]: number
     [MapURI]: K
     [NonEmptyArrayURI]: number
-    [RecordURI]: N
+    [RecordURI]: string
     [HashMapURI]: K
     [IterableURI]: number
     [AsyncIterableURI]: number

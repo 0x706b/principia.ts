@@ -76,7 +76,7 @@ export function matchers<URI extends URIS, C>(_: Base<URI, C>) {
               [tag in N]: k
             }
           >
-        ) => Kind<URI, C, any, any, any, any, any, any, any, any, any, any>
+        ) => Kind<URI, C, any, any, any, any, any, any, any, any, any>
       }
     >(
       matcher: K
@@ -85,7 +85,6 @@ export function matchers<URI extends URIS, C>(_: Base<URI, C>) {
     ) => Kind<
       URI,
       C,
-      InferMatcherParam<URI, C, 'N', K>,
       InferMatcherParam<URI, C, 'K', K>,
       InferMatcherParam<URI, C, 'Q', K>,
       InferMatcherParam<URI, C, 'W', K>,
@@ -109,10 +108,10 @@ export function matchers<URI extends URIS, C>(_: Base<URI, C>) {
                 [tag in N]: k
               }
             >
-          ) => Kind<URI, C, any, any, any, any, any, any, any, any, any, any>
+          ) => Kind<URI, C, any, any, any, any, any, any, any, any, any>
         }
       >,
-      Ret extends Kind<URI, C, any, any, any, any, any, any, any, any, any, any>
+      Ret extends Kind<URI, C, any, any, any, any, any, any, any, any, any>
     >(
       matcher: K,
       def: (_: Exclude<X, { [tag in N]: keyof K }>) => Ret
@@ -121,7 +120,6 @@ export function matchers<URI extends URIS, C>(_: Base<URI, C>) {
     ) => Kind<
       URI,
       C,
-      InferMatcherParamWithDefault<URI, C, 'N', K, Ret>,
       InferMatcherParamWithDefault<URI, C, 'K', K, Ret>,
       InferMatcherParamWithDefault<URI, C, 'Q', K, Ret>,
       InferMatcherParamWithDefault<URI, C, 'W', K, Ret>,
@@ -157,7 +155,7 @@ export function matchers<URI extends URIS, C>(_: Base<URI, C>) {
               [tag in N]: k
             }
           >
-        ) => Kind<URI, C, any, any, any, any, any, any, any, any, any, any>
+        ) => Kind<URI, C, any, any, any, any, any, any, any, any, any>
       }
     >(
       matcher: K
@@ -166,7 +164,6 @@ export function matchers<URI extends URIS, C>(_: Base<URI, C>) {
     ) => Kind<
       URI,
       C,
-      InferMatcherParam<URI, C, 'N', K>,
       InferMatcherParam<URI, C, 'K', K>,
       InferMatcherParam<URI, C, 'Q', K>,
       InferMatcherParam<URI, C, 'W', K>,
@@ -187,10 +184,10 @@ export function matchers<URI extends URIS, C>(_: Base<URI, C>) {
                 [tag in N]: k
               }
             >
-          ) => Kind<URI, C, any, any, any, any, any, any, any, any, any, any>
+          ) => Kind<URI, C, any, any, any, any, any, any, any, any, any>
         }
       >,
-      Ret extends Kind<URI, C, any, any, any, any, any, any, any, any, any, any>
+      Ret extends Kind<URI, C, any, any, any, any, any, any, any, any, any>
     >(
       matcher: K,
       def: (_: Exclude<X, { [tag in N]: keyof K }>) => Ret
@@ -199,7 +196,6 @@ export function matchers<URI extends URIS, C>(_: Base<URI, C>) {
     ) => Kind<
       URI,
       C,
-      InferMatcherParamWithDefault<URI, C, 'N', K, Ret>,
       InferMatcherParamWithDefault<URI, C, 'K', K, Ret>,
       InferMatcherParamWithDefault<URI, C, 'Q', K, Ret>,
       InferMatcherParamWithDefault<URI, C, 'W', K, Ret>,
@@ -211,12 +207,13 @@ export function matchers<URI extends URIS, C>(_: Base<URI, C>) {
       InferMatcherParamWithDefault<URI, C, 'A', K, Ret>
     >
   } {
-    return () => (...args: any[]) => {
-      return (_: any) => {
-        const matcher = args[0][_[tag]]
-        return matcher ? matcher(_) : args[1](_)
+    return () =>
+      (...args: any[]) => {
+        return (_: any) => {
+          const matcher = args[0][_[tag]]
+          return matcher ? matcher(_) : args[1](_)
+        }
       }
-    }
   }
 
   const matchTagIn = matchIn('_tag')

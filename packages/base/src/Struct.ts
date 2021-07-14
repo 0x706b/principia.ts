@@ -153,14 +153,13 @@ export function modifyAt<S, K extends keyof S extends never ? string : keyof S, 
  */
 export function modifyAtE_<F extends HKT.URIS, C = HKT.Auto>(
   F: P.Functor<F, C>
-): <S_ extends ReadonlyRecord<string, any>, K_ extends keyof S_, N extends string, K, Q, W, X, I, S, R, E, B>(
+): <S_ extends ReadonlyRecord<string, any>, K_ extends keyof S_, K, Q, W, X, I, S, R, E, B>(
   s: S_,
   k: K_,
-  f: (a: S_[K_]) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>
+  f: (a: S_[K_]) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
 ) => HKT.Kind<
   F,
   C,
-  N,
   K,
   Q,
   W,
@@ -180,15 +179,14 @@ export function modifyAtE_<F extends HKT.URIS, C = HKT.Auto>(
 
 export function modifyAtE<F extends HKT.URIS, C = HKT.Auto>(
   F: P.Functor<F, C>
-): <S_, K_ extends keyof S_ extends never ? string : keyof S, N extends string, K, Q, W, X, I, S, R, E, A, B>(
+): <S_, K_ extends keyof S_ extends never ? string : keyof S, K, Q, W, X, I, S, R, E, A, B>(
   k: keyof S_ extends never ? EnsureLiteral<K_> : K_,
-  f: (a: K_ extends keyof S_ ? S_[K_] : A) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>
+  f: (a: K_ extends keyof S_ ? S_[K_] : A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
 ) => <S1 extends { [K in K_]: A }>(
   s: keyof S_ extends never ? S1 : S_
 ) => HKT.Kind<
   F,
   C,
-  N,
   K,
   Q,
   W,

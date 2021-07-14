@@ -26,20 +26,19 @@ export function genF<
   F extends HKT.URIS,
   TC,
   Adapter = {
-    <N extends string, K, Q, W, X, I, S, R, E, A>(_: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>): GenHKT<
-      HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>,
+    <K, Q, W, X, I, S, R, E, A>(_: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>): GenHKT<
+      HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>,
       A
     >
   }
 >(
   M: P.Monad<F, TC>,
   config?: { adapter?: Adapter }
-): <T extends GenHKT<HKT.Kind<F, TC, any, any, any, any, any, any, any, any, any, any>, any>, A0>(
+): <T extends GenHKT<HKT.Kind<F, TC, any, any, any, any, any, any, any, any, any>, any>, A0>(
   f: (i: Adapter) => Generator<T, A0, any>
 ) => HKT.Kind<
   F,
   TC,
-  HKT.Infer<F, TC, 'N', T['T']>,
   HKT.Infer<F, TC, 'K', T['T']>,
   HKT.Infer<F, TC, 'Q', T['T']>,
   HKT.Infer<F, TC, 'W', T['T']>,
@@ -104,20 +103,19 @@ export function genWithHistoryF<
   F extends HKT.URIS,
   TC,
   Adapter = {
-    <N extends string, K, Q, W, X, I, S, R, E, A>(_: () => HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>): GenLazyHKT<
-      HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>,
+    <K, Q, W, X, I, S, R, E, A>(_: () => HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>): GenLazyHKT<
+      HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>,
       A
     >
   }
 >(
   M: P.Monad<F>,
   config?: { adapter?: Adapter }
-): <T extends GenLazyHKT<HKT.Kind<F, TC, any, any, any, any, any, any, any, any, any, any>, any>, A0>(
+): <T extends GenLazyHKT<HKT.Kind<F, TC, any, any, any, any, any, any, any, any, any>, any>, A0>(
   f: (i: Adapter) => Generator<T, A0, any>
 ) => HKT.Kind<
   F,
   TC,
-  HKT.Infer<F, TC, 'N', ReturnType<T['T']>>,
   HKT.Infer<F, TC, 'K', ReturnType<T['T']>>,
   HKT.Infer<F, TC, 'Q', ReturnType<T['T']>>,
   HKT.Infer<F, TC, 'W', ReturnType<T['T']>>,

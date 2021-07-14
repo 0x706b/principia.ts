@@ -131,10 +131,10 @@ declare global {
     /**
      * @rewrite _filterMapA from "@principia/base/Array"
      */
-    filterMapA<F extends HKT.URIS, N extends string, K, Q, W, X, I, S, R, E, A, C = HKT.Auto>(
+    filterMapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, C = HKT.Auto>(
       A: Applicative<F, C>,
-      f: (a: T) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Option<A>>
-    ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
+      f: (a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<A>>
+    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
 
     /**
      * @rewrite find_ from "@principia/base/Array"
@@ -240,10 +240,10 @@ declare global {
     /**
      * @rewrite _ifilterMapA from "@principia/base/Array"
      */
-    ifilterMapA<F extends HKT.URIS, N extends string, K, Q, W, X, I, S, R, E, A, C = HKT.Auto>(
+    ifilterMapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, C = HKT.Auto>(
       A: Applicative<F, C>,
-      f: (i: number, a: T) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Option<A>>
-    ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
+      f: (i: number, a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<A>>
+    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
 
     /**
      * @rewrite _ifoldMap from "@principia/base/Array"
@@ -278,10 +278,10 @@ declare global {
     /**
      * @rewrite _imapA from "@principia/base/Array"
      */
-    imapA<F extends HKT.URIS, N extends string, K, Q, W, X, I, S, R, E, A, C = HKT.Auto>(
+    imapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, C = HKT.Auto>(
       A: Applicative<F, C>,
-      f: (i: number, a: T) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-    ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
+      f: (i: number, a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
 
     /**
      * @rewriteGetter init from "@principia/base/Array"
@@ -323,10 +323,10 @@ declare global {
     /**
      * @rewrite _ipartitionMapA from "@principia/base/Array"
      */
-    ipartitionMapA<F extends HKT.URIS, N extends string, K, Q, W, X, I, S, R, E, A, B, C = HKT.Auto>(
+    ipartitionMapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, B, C = HKT.Auto>(
       A: Applicative<F, C>,
-      f: (i: number, a: T) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Either<A, B>>
-    ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, readonly [ReadonlyArray<A>, ReadonlyArray<B>]>
+      f: (i: number, a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<A, B>>
+    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [ReadonlyArray<A>, ReadonlyArray<B>]>
 
     /**
      * @rewriteGetter last from "@principia/base/Array"
@@ -351,10 +351,10 @@ declare global {
     /**
      * @rewrite _mapA from "@principia/base/Array"
      */
-    mapA<F extends HKT.URIS, N extends string, K, Q, W, X, I, S, R, E, A, C = HKT.Auto>(
+    mapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, C = HKT.Auto>(
       A: Applicative<F, C>,
-      f: (a: T) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-    ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
+      f: (a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
 
     /**
      * @rewrite mapAccum_ from "@principia/base/Array"
@@ -389,10 +389,10 @@ declare global {
     /**
      * @rewrite _partitionMapA from "@principia/base/Array"
      */
-    partitionMapA<F extends HKT.URIS, N extends string, K, Q, W, X, I, S, R, E, A, B, C = HKT.Auto>(
+    partitionMapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, B, C = HKT.Auto>(
       A: Applicative<F, C>,
-      f: (a: T) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Either<A, B>>
-    ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, readonly [ReadonlyArray<A>, ReadonlyArray<B>]>
+      f: (a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<A, B>>
+    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [ReadonlyArray<A>, ReadonlyArray<B>]>
 
     /**
      * @rewrite prepend_ from "@principia/base/Array"
@@ -634,9 +634,9 @@ declare global {
      */
     filterMapA<F extends HKT.URIS, C = HKT.Auto>(
       A: Applicative<F, C>
-    ): <N extends string, K, Q, W, X, I, S, R, E, A>(
-      f: (a: T) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Option<A>>
-    ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
+    ): <K, Q, W, X, I, S, R, E, A>(
+      f: (a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<A>>
+    ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
     /**
      * @rewrite find_ from "@principia/base/Array"
      */
@@ -745,9 +745,9 @@ declare global {
      */
     ifilterMapA<F extends HKT.URIS, C = HKT.Auto>(
       A: Applicative<F, C>
-    ): <N extends string, K, Q, W, X, I, S, R, E, A>(
-      f: (i: number, a: T) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Option<A>>
-    ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
+    ): <K, Q, W, X, I, S, R, E, A>(
+      f: (i: number, a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<A>>
+    ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
 
     /**
      * @rewrite _ifoldMap from "@principia/base/Array"
@@ -784,9 +784,9 @@ declare global {
      */
     imapA<F extends HKT.URIS, C = HKT.Auto>(
       A: Applicative<F, C>
-    ): <N extends string, K, Q, W, X, I, S, R, E, A>(
-      f: (i: number, a: T) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-    ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
+    ): <K, Q, W, X, I, S, R, E, A>(
+      f: (i: number, a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+    ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
 
     /**
      * @rewriteGetter init from "@principia/base/Array"
@@ -828,10 +828,10 @@ declare global {
     /**
      * @rewrite _ipartitionMapA from "@principia/base/Array"
      */
-    ipartitionMapA<F extends HKT.URIS, N extends string, K, Q, W, X, I, S, R, E, A, B, C = HKT.Auto>(
+    ipartitionMapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, B, C = HKT.Auto>(
       A: Applicative<F, C>,
-      f: (i: number, a: T) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Either<A, B>>
-    ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, readonly [ReadonlyArray<A>, ReadonlyArray<B>]>
+      f: (i: number, a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<A, B>>
+    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [ReadonlyArray<A>, ReadonlyArray<B>]>
 
     /**
      * @rewriteGetter last from "@principia/base/Array"
@@ -858,9 +858,9 @@ declare global {
      */
     mapA<F extends HKT.URIS, C>(
       A: Applicative<F, C>
-    ): <N extends string, K, Q, W, X, I, S, R, E, A>(
-      f: (a: T) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-    ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
+    ): <K, Q, W, X, I, S, R, E, A>(
+      f: (a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+    ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
 
     /**
      * @rewrite mapAccum_ from "@principia/base/Array"
@@ -897,9 +897,9 @@ declare global {
      */
     partitionMapA<F extends HKT.URIS, C = HKT.Auto>(
       A: Applicative<F, C>
-    ): <N extends string, K, Q, W, X, I, S, R, E, A, B>(
-      f: (a: T) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Either<A, B>>
-    ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, readonly [ReadonlyArray<A>, ReadonlyArray<B>]>
+    ): <K, Q, W, X, I, S, R, E, A, B>(
+      f: (a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<A, B>>
+    ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [ReadonlyArray<A>, ReadonlyArray<B>]>
     /**
      * @rewrite prepend_ from "@principia/base/Array"
      */

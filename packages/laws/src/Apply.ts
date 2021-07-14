@@ -11,7 +11,6 @@ function AssociativeCompositionLaw<F extends HKT.URIS, TC, C>(
     HKT.Kind<
       F,
       TC,
-      HKT.Initial<TC, 'N'>,
       HKT.Initial<TC, 'K'>,
       HKT.Initial<TC, 'Q'>,
       HKT.Initial<TC, 'W'>,
@@ -24,7 +23,6 @@ function AssociativeCompositionLaw<F extends HKT.URIS, TC, C>(
     >
   >
 ): <
-  N extends string,
   K,
   Q,
   W,
@@ -34,7 +32,6 @@ function AssociativeCompositionLaw<F extends HKT.URIS, TC, C>(
   R,
   E,
   A,
-  NB extends string,
   KB,
   QB,
   WB,
@@ -44,7 +41,6 @@ function AssociativeCompositionLaw<F extends HKT.URIS, TC, C>(
   RB,
   EB,
   B,
-  NC extends string,
   KC,
   QC,
   WC,
@@ -54,9 +50,9 @@ function AssociativeCompositionLaw<F extends HKT.URIS, TC, C>(
   RC,
   EC
 >(
-  fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>,
-  fab: HKT.Kind<F, TC, NB, KB, QB, WB, XB, IB, SB, RB, EB, (a: A) => B>,
-  fbc: HKT.Kind<F, TC, NC, KC, QC, WC, XC, IC, SC, RC, EC, (b: B) => C>
+  fa: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>,
+  fab: HKT.Kind<F, TC, KB, QB, WB, XB, IB, SB, RB, EB, (a: A) => B>,
+  fbc: HKT.Kind<F, TC, KC, QC, WC, XC, IC, SC, RC, EC, (b: B) => C>
 ) => Promise<boolean>
 function AssociativeCompositionLaw<F, A, B, C>(
   F: P.Apply<HKT.UHKT<F>>,

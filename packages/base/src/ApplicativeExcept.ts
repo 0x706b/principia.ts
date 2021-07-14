@@ -39,14 +39,13 @@ export function ApplicativeExcept<F extends HKT.URIS, C = HKT.Auto>(
 }
 
 export interface CatchAllFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, A1>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
+  <K, Q, W, X, I, S, R, E, A, K1, Q1, W1, X1, I1, S1, R1, E1, A1>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     f: (
       e: HKT.OrFix<'E', C, E>
     ) => HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N, N1>,
       HKT.Intro<C, 'K', K, K1>,
       HKT.Intro<C, 'Q', Q, Q1>,
       HKT.Intro<C, 'W', W, W1>,
@@ -60,7 +59,6 @@ export interface CatchAllFn_<F extends HKT.URIS, C = HKT.Auto> {
   ): HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N, N1]>,
     HKT.Mix<C, 'K', [K, K1]>,
     HKT.Mix<C, 'Q', [Q, Q1]>,
     HKT.Mix<C, 'W', [W, W1]>,
@@ -74,13 +72,12 @@ export interface CatchAllFn_<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface CatchAllFn<F extends HKT.URIS, C = HKT.Auto> {
-  <E, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, A1>(
-    f: (e: HKT.OrFix<'E', C, E>) => HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, A1>
-  ): <N extends string, K, Q, W, X, I, S, R, A>(
+  <E, K1, Q1, W1, X1, I1, S1, R1, E1, A1>(
+    f: (e: HKT.OrFix<'E', C, E>) => HKT.Kind<F, C, K1, Q1, W1, X1, I1, S1, R1, E1, A1>
+  ): <K, Q, W, X, I, S, R, A>(
     fa: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N1, N>,
       HKT.Intro<C, 'K', K1, K>,
       HKT.Intro<C, 'Q', Q1, Q>,
       HKT.Intro<C, 'W', W1, W>,
@@ -94,7 +91,6 @@ export interface CatchAllFn<F extends HKT.URIS, C = HKT.Auto> {
   ) => HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N1, N]>,
     HKT.Mix<C, 'K', [K1, K]>,
     HKT.Mix<C, 'Q', [Q1, Q]>,
     HKT.Mix<C, 'W', [W1, W]>,
@@ -108,15 +104,14 @@ export interface CatchAllFn<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface CatchSomeFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, A1>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
+  <K, Q, W, X, I, S, R, E, A, K1, Q1, W1, X1, I1, S1, R1, E1, A1>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     f: (
       e: HKT.OrFix<'E', C, E>
     ) => Option<
       HKT.Kind<
         F,
         C,
-        HKT.Intro<C, 'N', N, N1>,
         HKT.Intro<C, 'K', K, K1>,
         HKT.Intro<C, 'Q', Q, Q1>,
         HKT.Intro<C, 'W', W, W1>,
@@ -131,7 +126,6 @@ export interface CatchSomeFn_<F extends HKT.URIS, C = HKT.Auto> {
   ): HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N, N1]>,
     HKT.Mix<C, 'K', [K, K1]>,
     HKT.Mix<C, 'Q', [Q, Q1]>,
     HKT.Mix<C, 'W', [W, W1]>,
@@ -156,13 +150,12 @@ export function getCatchSome_<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeEx
 }
 
 export interface CatchSomeFn<F extends HKT.URIS, C = HKT.Auto> {
-  <E, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, A1>(
-    f: (e: HKT.OrFix<'E', C, E>) => Option<HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, A1>>
-  ): <N extends string, K, Q, W, X, I, S, R, A>(
+  <E, K1, Q1, W1, X1, I1, S1, R1, E1, A1>(
+    f: (e: HKT.OrFix<'E', C, E>) => Option<HKT.Kind<F, C, K1, Q1, W1, X1, I1, S1, R1, E1, A1>>
+  ): <K, Q, W, X, I, S, R, A>(
     fa: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N1, N>,
       HKT.Intro<C, 'K', K1, K>,
       HKT.Intro<C, 'Q', Q1, Q>,
       HKT.Intro<C, 'W', W1, W>,
@@ -176,7 +169,6 @@ export interface CatchSomeFn<F extends HKT.URIS, C = HKT.Auto> {
   ) => HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N1, N]>,
     HKT.Mix<C, 'K', [K1, K]>,
     HKT.Mix<C, 'Q', [Q1, Q]>,
     HKT.Mix<C, 'W', [W1, W]>,
@@ -201,10 +193,9 @@ export function getCatchSome<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeExc
 }
 
 export interface EitherFn<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>): HKT.Kind<
+  <K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>): HKT.Kind<
     F,
     C,
-    N,
     K,
     Q,
     W,

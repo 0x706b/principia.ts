@@ -49,9 +49,9 @@ declare module '@principia/base/HashMap' {
      */
     filterMapA<F extends HKT.URIS, C = HKT.Auto>(
       A: Applicative<F, C>
-    ): <N extends string, K_, Q, W, X, I, S, R, E, A>(
-      f: (a: V) => HKT.Kind<F, C, N, K_, Q, W, X, I, S, R, E, Option<A>>
-    ) => HKT.Kind<F, C, N, K_, Q, W, X, I, S, R, E, HashMap<K, A>>
+    ): <K_, Q, W, X, I, S, R, E, A>(
+      f: (a: V) => HKT.Kind<F, C, K_, Q, W, X, I, S, R, E, Option<A>>
+    ) => HKT.Kind<F, C, K_, Q, W, X, I, S, R, E, HashMap<K, A>>
     /**
      * @rewrite foldl_ from "@principia/base/HashMap"
      */
@@ -85,9 +85,9 @@ declare module '@principia/base/HashMap' {
      */
     ifilterMapA<F extends HKT.URIS, C = HKT.Auto>(
       A: Applicative<F, C>
-    ): <N extends string, K_, Q, W, X, I, S, R, E, A>(
-      f: (i: K, a: V) => HKT.Kind<F, C, N, K_, Q, W, X, I, S, R, E, Option<A>>
-    ) => HKT.Kind<F, C, N, K_, Q, W, X, I, S, R, E, HashMap<K, A>>
+    ): <K_, Q, W, X, I, S, R, E, A>(
+      f: (i: K, a: V) => HKT.Kind<F, C, K_, Q, W, X, I, S, R, E, Option<A>>
+    ) => HKT.Kind<F, C, K_, Q, W, X, I, S, R, E, HashMap<K, A>>
     /**
      * @rewrite ifoldl_ from "@principia/base/HashMap"
      */
@@ -105,9 +105,9 @@ declare module '@principia/base/HashMap' {
      */
     imapA<F extends HKT.URIS, C = HKT.Auto>(
       A: Applicative<F, C>
-    ): <N extends string, K_, Q, W, X, I, S, R, E, A>(
-      f: (i: K, a: V) => HKT.Kind<F, C, N, K_, Q, W, X, I, S, R, E, A>
-    ) => HKT.Kind<F, C, N, K_, Q, W, X, I, S, R, E, HashMap<K, A>>
+    ): <K_, Q, W, X, I, S, R, E, A>(
+      f: (i: K, a: V) => HKT.Kind<F, C, K_, Q, W, X, I, S, R, E, A>
+    ) => HKT.Kind<F, C, K_, Q, W, X, I, S, R, E, HashMap<K, A>>
     /**
      * @rewrite ipartition_ from "@principia/base/hashmap"
      */
@@ -125,9 +125,9 @@ declare module '@principia/base/HashMap' {
      */
     ipartitionMapA<F extends HKT.URIS, C = HKT.Auto>(
       A: Applicative<F, C>
-    ): <N extends string, K_, Q, W, X, I, S, R, E, A, B>(
-      f: (a: V) => HKT.Kind<F, C, N, K_, Q, W, X, I, S, R, E, Either<A, B>>
-    ) => HKT.Kind<F, C, N, K_, Q, W, X, I, S, R, E, readonly [HashMap<K, A>, HashMap<K, B>]>
+    ): <K_, Q, W, X, I, S, R, E, A, B>(
+      f: (a: V) => HKT.Kind<F, C, K_, Q, W, X, I, S, R, E, Either<A, B>>
+    ) => HKT.Kind<F, C, K_, Q, W, X, I, S, R, E, readonly [HashMap<K, A>, HashMap<K, B>]>
     /**
      * @rewriteGetter isEmpty from "@principia/base/HashMap"
      */
@@ -149,9 +149,9 @@ declare module '@principia/base/HashMap' {
      */
     mapA<F extends HKT.URIS, C = HKT.Auto>(
       A: Applicative<F, C>
-    ): <N extends string, K_, Q, W, X, I, S, R, E, A>(
-      f: (a: V) => HKT.Kind<F, C, N, K_, Q, W, X, I, S, R, E, A>
-    ) => HKT.Kind<F, C, N, K_, Q, W, X, I, S, R, E, HashMap<K, A>>
+    ): <K_, Q, W, X, I, S, R, E, A>(
+      f: (a: V) => HKT.Kind<F, C, K_, Q, W, X, I, S, R, E, A>
+    ) => HKT.Kind<F, C, K_, Q, W, X, I, S, R, E, HashMap<K, A>>
     /**
      * @rewrite modify_ from "@principia/base/HashMap"
      */
@@ -177,9 +177,9 @@ declare module '@principia/base/HashMap' {
      */
     partitionMapA<F extends HKT.URIS, C = HKT.Auto>(
       A: Applicative<F, C>
-    ): <N extends string, K_, Q, W, X, I, S, R, E, A, B>(
-      f: (i: K, a: V) => HKT.Kind<F, C, N, K_, Q, W, X, I, S, R, E, Either<A, B>>
-    ) => HKT.Kind<F, C, N, K_, Q, W, X, I, S, R, E, readonly [HashMap<K, A>, HashMap<K, B>]>
+    ): <K_, Q, W, X, I, S, R, E, A, B>(
+      f: (i: K, a: V) => HKT.Kind<F, C, K_, Q, W, X, I, S, R, E, Either<A, B>>
+    ) => HKT.Kind<F, C, K_, Q, W, X, I, S, R, E, readonly [HashMap<K, A>, HashMap<K, B>]>
     /**
      * @rewrite pop_ from "@principia/base/HashMap"
      */

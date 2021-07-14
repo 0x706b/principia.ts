@@ -19,14 +19,13 @@ export function Comonad<F extends HKT.URIS, C = HKT.Auto>(F: ComonadMin<F, C>): 
 }
 
 export interface ExtractFn<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A>(wa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>): A
+  <K, Q, W, X, I, S, R, E, A>(wa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>): A
 }
 
 export interface DuplicateFn<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A>(wa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>): HKT.Kind<
+  <K, Q, W, X, I, S, R, E, A>(wa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>): HKT.Kind<
     F,
     C,
-    N,
     K,
     Q,
     W,
@@ -35,6 +34,6 @@ export interface DuplicateFn<F extends HKT.URIS, C = HKT.Auto> {
     S,
     R,
     E,
-    HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
+    HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
   >
 }

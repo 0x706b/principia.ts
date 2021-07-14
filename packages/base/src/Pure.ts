@@ -16,7 +16,6 @@ export interface Pure2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG
 export interface PureFn<F extends HKT.URIS, C = HKT.Auto> {
   <
     A,
-    N extends string = HKT.Initial<C, 'N'>,
     K = HKT.Initial<C, 'K'>,
     Q = HKT.Initial<C, 'Q'>,
     W = HKT.Initial<C, 'W'>,
@@ -27,13 +26,12 @@ export interface PureFn<F extends HKT.URIS, C = HKT.Auto> {
     E = HKT.Initial<C, 'E'>
   >(
     a: A
-  ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
+  ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
 }
 
 export interface PureFn2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <
     A,
-    N extends string = HKT.Initial<CF, 'N'>,
     K = HKT.Initial<CF, 'K'>,
     Q = HKT.Initial<CF, 'Q'>,
     W = HKT.Initial<CF, 'W'>,
@@ -47,7 +45,6 @@ export interface PureFn2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, 
   ): HKT.Kind<
     F,
     CF,
-    N,
     K,
     Q,
     W,
@@ -59,7 +56,6 @@ export interface PureFn2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, 
     HKT.Kind<
       G,
       CG,
-      HKT.Initial<CG, 'N'>,
       HKT.Initial<CG, 'K'>,
       HKT.Initial<CG, 'Q'>,
       HKT.Initial<CG, 'W'>,

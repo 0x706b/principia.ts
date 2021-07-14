@@ -17,7 +17,6 @@ export function Fail<F extends HKT.URIS, C = HKT.Auto>(F: FailMin<F, C>): Fail<F
 export interface FailFn<F extends HKT.URIS, C = HKT.Auto> {
   <
     E,
-    N extends string = HKT.Initial<C, 'N'>,
     K = HKT.Initial<C, 'K'>,
     Q = HKT.Initial<C, 'Q'>,
     W = HKT.Initial<C, 'W'>,
@@ -28,13 +27,12 @@ export interface FailFn<F extends HKT.URIS, C = HKT.Auto> {
     A = never
   >(
     e: HKT.OrFix<'E', C, E>
-  ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
+  ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
 }
 
 export interface FailFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <
     EG,
-    NF extends string = HKT.Initial<CF, 'N'>,
     KF = HKT.Initial<CF, 'K'>,
     QF = HKT.Initial<CF, 'Q'>,
     WF = HKT.Initial<CF, 'W'>,
@@ -43,7 +41,6 @@ export interface FailFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = 
     SF = HKT.Initial<CF, 'S'>,
     RF = HKT.Initial<CF, 'R'>,
     EF = HKT.Initial<CF, 'E'>,
-    NG extends string = HKT.Initial<CG, 'N'>,
     KG = HKT.Initial<CG, 'K'>,
     QG = HKT.Initial<CG, 'Q'>,
     WG = HKT.Initial<CG, 'W'>,
@@ -54,5 +51,5 @@ export interface FailFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = 
     A = never
   >(
     e: EG
-  ): HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>
+  ): HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, A>>
 }

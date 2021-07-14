@@ -55,61 +55,36 @@ export function getFoldableComposition<F, G>(
 }
 
 export interface FoldLeftFn<F extends HKT.URIS, C = HKT.Auto> {
-  <A, B>(b: B, f: (b: B, a: A) => B): <N extends string, K, Q, W, X, I, S, R, E>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-  ) => B
+  <A, B>(b: B, f: (b: B, a: A) => B): <K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>) => B
 }
 
 export interface FoldLeftFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, B>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
-    b: B,
-    f: (b: B, a: A) => B
-  ): B
+  <K, Q, W, X, I, S, R, E, A, B>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>, b: B, f: (b: B, a: A) => B): B
 }
 
 export interface FoldLeftFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
-  <A, B>(b: B, f: (b: B, a: A) => B): <
-    NF extends string,
-    KF,
-    QF,
-    WF,
-    XF,
-    IF,
-    SF,
-    RF,
-    EF,
-    NG extends string,
-    KG,
-    QG,
-    WG,
-    XG,
-    IG,
-    SG,
-    RG,
-    EG
-  >(
-    fga: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>
+  <A, B>(b: B, f: (b: B, a: A) => B): <KF, QF, WF, XF, IF, SF, RF, EF, KG, QG, WG, XG, IG, SG, RG, EG>(
+    fga: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, A>>
   ) => B
 }
 
 export interface FoldLeftFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
-  <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, NG extends string, KG, QG, WG, XG, IG, SG, RG, EG, A, B>(
-    fga: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>,
+  <KF, QF, WF, XF, IF, SF, RF, EF, KG, QG, WG, XG, IG, SG, RG, EG, A, B>(
+    fga: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, A>>,
     b: B,
     f: (b: B, a: A) => B
   ): B
 }
 
 export interface FoldRightFn<F extends HKT.URIS, C = HKT.Auto> {
-  <A, B>(b: Eval<B>, f: (a: A, b: Eval<B>) => Eval<B>): <N extends string, K, Q, W, X, I, S, R, E>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
+  <A, B>(b: Eval<B>, f: (a: A, b: Eval<B>) => Eval<B>): <K, Q, W, X, I, S, R, E>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
   ) => Eval<B>
 }
 
 export interface FoldRightFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, B>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
+  <K, Q, W, X, I, S, R, E, A, B>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     b: Eval<B>,
     f: (a: A, b: Eval<B>) => Eval<B>
   ): Eval<B>
@@ -117,7 +92,6 @@ export interface FoldRightFn_<F extends HKT.URIS, C = HKT.Auto> {
 
 export interface FoldRightFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <A, B>(b: Eval<B>, f: (a: A, b: Eval<B>) => Eval<B>): <
-    FN extends string,
     FK,
     FQ,
     FW,
@@ -126,7 +100,6 @@ export interface FoldRightFnComposition<F extends HKT.URIS, G extends HKT.URIS, 
     FS,
     FR,
     FE,
-    GN extends string,
     GK,
     GQ,
     GW,
@@ -136,62 +109,37 @@ export interface FoldRightFnComposition<F extends HKT.URIS, G extends HKT.URIS, 
     GR,
     GE
   >(
-    fa: HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, A>>
+    fa: HKT.Kind<F, CF, FK, FQ, FW, FX, FI, FS, FR, FE, HKT.Kind<G, CG, GK, GQ, GW, GX, GI, GS, GR, GE, A>>
   ) => Eval<B>
 }
 
 export interface FoldRightFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
-  <FN extends string, FK, FQ, FW, FX, FI, FS, FR, FE, GN extends string, GK, GQ, GW, GX, GI, GS, GR, GE, A, B>(
-    fa: HKT.Kind<F, CF, FN, FK, FQ, FW, FX, FI, FS, FR, FE, HKT.Kind<G, CG, GN, GK, GQ, GW, GX, GI, GS, GR, GE, A>>,
+  <FK, FQ, FW, FX, FI, FS, FR, FE, GK, GQ, GW, GX, GI, GS, GR, GE, A, B>(
+    fa: HKT.Kind<F, CF, FK, FQ, FW, FX, FI, FS, FR, FE, HKT.Kind<G, CG, GK, GQ, GW, GX, GI, GS, GR, GE, A>>,
     b: Eval<B>,
     f: (a: A, b: Eval<B>) => Eval<B>
   ): Eval<B>
 }
 
 export interface FoldMapFn<F extends HKT.URIS, C = HKT.Auto> {
-  <M>(M: Monoid<M>): <A>(
-    f: (a: A) => M
-  ) => <N extends string, K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>) => M
+  <M>(M: Monoid<M>): <A>(f: (a: A) => M) => <K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>) => M
 }
 
 export interface FoldMapFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <M>(M: Monoid<M>): <N extends string, K, Q, W, X, I, S, R, E, A>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
-    f: (a: A) => M
-  ) => M
+  <M>(M: Monoid<M>): <K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>, f: (a: A) => M) => M
 }
 
 export interface FoldMapFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <M>(M: Monoid<M>): <A>(
     f: (a: A) => M
-  ) => <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, NG extends string, KG, QG, WG, XG, IG, SG, RG, EG>(
-    fga: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>
+  ) => <KF, QF, WF, XF, IF, SF, RF, EF, KG, QG, WG, XG, IG, SG, RG, EG>(
+    fga: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, A>>
   ) => M
 }
 
 export interface FoldMapFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
-  <M>(M: Monoid<M>): <
-    NF extends string,
-    KF,
-    QF,
-    WF,
-    XF,
-    IF,
-    SF,
-    RF,
-    EF,
-    NG extends string,
-    KG,
-    QG,
-    WG,
-    XG,
-    IG,
-    SG,
-    RG,
-    EG,
-    A
-  >(
-    fga: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>,
+  <M>(M: Monoid<M>): <KF, QF, WF, XF, IF, SF, RF, EF, KG, QG, WG, XG, IG, SG, RG, EG, A>(
+    fga: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, A>>,
     f: (a: A) => M
   ) => M
 }

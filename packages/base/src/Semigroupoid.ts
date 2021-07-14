@@ -22,9 +22,9 @@ export type SemigroupoidMin<F extends HKT.URIS, C = HKT.Auto> =
 export function Semigroupoid<F extends HKT.URIS, C = HKT.Auto>(F: SemigroupoidMin<F, C>): Semigroupoid<F, C> {
   let andThen_: AndThenFn_<F, C>
   let compose_: ComposeFn_<F, C>
-  if('andThen_' in F) {
+  if ('andThen_' in F) {
     andThen_ = F.andThen_
-    if('compose_' in F) {
+    if ('compose_' in F) {
       compose_ = F.compose_
     } else {
       compose_ = (bc, ab) => andThen_(ab, bc)
@@ -42,12 +42,11 @@ export function Semigroupoid<F extends HKT.URIS, C = HKT.Auto>(F: SemigroupoidMi
 }
 
 export interface ComposeFn_<F extends HKT.URIS, TC = HKT.Auto> {
-  <N extends string, K, Q, W, X, S, R, E, N1 extends string, K1, Q1, W1, X1, S1, R1, E1, A, B, C>(
-    bc: HKT.Kind<F, TC, N, K, Q, W, X, B, S, R, E, C>,
+  <K, Q, W, X, S, R, E, K1, Q1, W1, X1, S1, R1, E1, A, B, C>(
+    bc: HKT.Kind<F, TC, K, Q, W, X, B, S, R, E, C>,
     ab: HKT.Kind<
       F,
       TC,
-      HKT.Intro<TC, 'N', N, N1>,
       HKT.Intro<TC, 'K', K, K1>,
       HKT.Intro<TC, 'Q', Q, Q1>,
       HKT.Intro<TC, 'W', W, W1>,
@@ -61,7 +60,6 @@ export interface ComposeFn_<F extends HKT.URIS, TC = HKT.Auto> {
   ): HKT.Kind<
     F,
     TC,
-    HKT.Mix<TC, 'N', [N, N1]>,
     HKT.Mix<TC, 'K', [K, K1]>,
     HKT.Mix<TC, 'Q', [Q, Q1]>,
     HKT.Mix<TC, 'W', [W, W1]>,
@@ -75,21 +73,10 @@ export interface ComposeFn_<F extends HKT.URIS, TC = HKT.Auto> {
 }
 
 export interface ComposeFn<F extends HKT.URIS, TC = HKT.Auto> {
-  <N1 extends string, K1, Q1, W1, X1, S1, R1, E1, A, B>(ab: HKT.Kind<F, TC, N1, K1, Q1, W1, X1, A, S1, R1, E1, B>): <
-    N extends string,
-    K,
-    Q,
-    W,
-    X,
-    S,
-    R,
-    E,
-    C
-  >(
+  <K1, Q1, W1, X1, S1, R1, E1, A, B>(ab: HKT.Kind<F, TC, K1, Q1, W1, X1, A, S1, R1, E1, B>): <K, Q, W, X, S, R, E, C>(
     bc: HKT.Kind<
       F,
       TC,
-      HKT.Intro<TC, 'N', N1, N>,
       HKT.Intro<TC, 'K', K1, K>,
       HKT.Intro<TC, 'Q', Q1, Q>,
       HKT.Intro<TC, 'W', W1, W>,
@@ -103,7 +90,6 @@ export interface ComposeFn<F extends HKT.URIS, TC = HKT.Auto> {
   ) => HKT.Kind<
     F,
     TC,
-    HKT.Mix<TC, 'N', [N1, N]>,
     HKT.Mix<TC, 'K', [K1, K]>,
     HKT.Mix<TC, 'Q', [Q1, Q]>,
     HKT.Mix<TC, 'W', [W1, W]>,
@@ -117,12 +103,11 @@ export interface ComposeFn<F extends HKT.URIS, TC = HKT.Auto> {
 }
 
 export interface AndThenFn_<F extends HKT.URIS, TC = HKT.Auto> {
-  <N extends string, K, Q, W, X, S, R, E, N1 extends string, K1, Q1, W1, X1, S1, R1, E1, A, B, C>(
-    ab: HKT.Kind<F, TC, N, K, Q, W, X, A, S, R, E, B>,
+  <K, Q, W, X, S, R, E, K1, Q1, W1, X1, S1, R1, E1, A, B, C>(
+    ab: HKT.Kind<F, TC, K, Q, W, X, A, S, R, E, B>,
     bc: HKT.Kind<
       F,
       TC,
-      HKT.Intro<TC, 'N', N, N1>,
       HKT.Intro<TC, 'K', K, K1>,
       HKT.Intro<TC, 'Q', Q, Q1>,
       HKT.Intro<TC, 'W', W, W1>,
@@ -136,7 +121,6 @@ export interface AndThenFn_<F extends HKT.URIS, TC = HKT.Auto> {
   ): HKT.Kind<
     F,
     TC,
-    HKT.Mix<TC, 'N', [N, N1]>,
     HKT.Mix<TC, 'K', [K, K1]>,
     HKT.Mix<TC, 'Q', [Q, Q1]>,
     HKT.Mix<TC, 'W', [W, W1]>,
@@ -150,21 +134,10 @@ export interface AndThenFn_<F extends HKT.URIS, TC = HKT.Auto> {
 }
 
 export interface AndThenFn<F extends HKT.URIS, TC = HKT.Auto> {
-  <B, C, N1 extends string, K1, Q1, W1, X1, S1, R1, E1>(bc: HKT.Kind<F, TC, N1, K1, Q1, W1, X1, B, S1, R1, E1, C>): <
-    A,
-    N extends string,
-    K,
-    Q,
-    W,
-    X,
-    S,
-    R,
-    E
-  >(
+  <B, C, K1, Q1, W1, X1, S1, R1, E1>(bc: HKT.Kind<F, TC, K1, Q1, W1, X1, B, S1, R1, E1, C>): <A, K, Q, W, X, S, R, E>(
     ab: HKT.Kind<
       F,
       TC,
-      HKT.Intro<TC, 'N', N1, N>,
       HKT.Intro<TC, 'K', K1, K>,
       HKT.Intro<TC, 'Q', Q1, Q>,
       HKT.Intro<TC, 'W', W1, W>,
@@ -178,7 +151,6 @@ export interface AndThenFn<F extends HKT.URIS, TC = HKT.Auto> {
   ) => HKT.Kind<
     F,
     TC,
-    HKT.Mix<TC, 'N', [N1, N]>,
     HKT.Mix<TC, 'K', [K1, K]>,
     HKT.Mix<TC, 'Q', [Q1, Q]>,
     HKT.Mix<TC, 'W', [W1, W]>,

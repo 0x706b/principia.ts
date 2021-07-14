@@ -10,12 +10,12 @@ import * as fc from 'fast-check'
 
 import { isPromise } from './utils'
 
-function CompositionLaw<F extends HKT.URIS, TC, N extends string, K, Q, W, X, I, S, R, E, A, B, C>(
+function CompositionLaw<F extends HKT.URIS, TC, K, Q, W, X, I, S, R, E, A, B, C>(
   F: P.Functor<F, TC>,
-  S: MaybeAsyncEq<HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, C>>,
+  S: MaybeAsyncEq<HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, C>>,
   ab: FunctionN<[A], B>,
   bc: FunctionN<[B], C>
-): (fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>) => Promise<boolean>
+): (fa: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>) => Promise<boolean>
 function CompositionLaw<F, A, B, C>(
   F: P.Functor<HKT.UHKT<F>>,
   S: MaybeAsyncEq<HKT.HKT<F, C>>,
@@ -31,10 +31,10 @@ function CompositionLaw<F, A, B, C>(
   }
 }
 
-function IdentityLaw<F extends HKT.URIS, TC, N extends string, K, Q, W, X, I, S, R, E, A>(
+function IdentityLaw<F extends HKT.URIS, TC, K, Q, W, X, I, S, R, E, A>(
   F: P.Functor<F, TC>,
-  S: MaybeAsyncEq<HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>>
-): (fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>) => Promise<boolean>
+  S: MaybeAsyncEq<HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>>
+): (fa: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>) => Promise<boolean>
 function IdentityLaw<F, A>(
   F: P.Functor<HKT.UHKT<F>>,
   S: MaybeAsyncEq<HKT.HKT<F, A>>
@@ -62,7 +62,6 @@ export function testFunctorComposition<F extends HKT.URIS, C>(
     HKT.Kind<
       F,
       C,
-      HKT.Initial<C, 'N'>,
       HKT.Initial<C, 'K'>,
       HKT.Initial<C, 'Q'>,
       HKT.Initial<C, 'W'>,
@@ -80,7 +79,6 @@ export function testFunctorComposition<F extends HKT.URIS, C>(
     HKT.Kind<
       F,
       C,
-      HKT.Initial<C, 'N'>,
       HKT.Initial<C, 'K'>,
       HKT.Initial<C, 'Q'>,
       HKT.Initial<C, 'W'>,

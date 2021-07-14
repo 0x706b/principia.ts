@@ -26,21 +26,21 @@ export function getContravariantFunctorComposition<F, G>(
 }
 
 export interface ContramapFn<F extends HKT.URIS, C = HKT.Auto> {
-  <A, B>(f: (a: B) => A): <N extends string, K, Q, W, X, I, S, R, E>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-  ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>
+  <A, B>(f: (a: B) => A): < K, Q, W, X, I, S, R, E>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
 }
 
 export interface ContramapFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, B>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
+  < K, Q, W, X, I, S, R, E, A, B>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     f: (a: B) => A
-  ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>
+  ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
 }
 
 export interface ContramapFn2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <A, B>(f: (b: A) => B): <
-    NF extends string,
+    
     KF,
     QF,
     WF,
@@ -49,7 +49,7 @@ export interface ContramapFn2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.A
     SF,
     RF,
     EF,
-    NG extends string,
+    
     KG,
     QG,
     WG,
@@ -59,6 +59,6 @@ export interface ContramapFn2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.A
     RG,
     EG
   >(
-    fa: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>
-  ) => HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, A>>
+  ) => HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
 }

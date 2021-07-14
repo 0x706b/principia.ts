@@ -74,12 +74,11 @@ export function Semialign<F extends HKT.URIS, C = HKT.Auto>(F: SemialignMin<F, C
 }
 
 export interface AlignFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
+  <K, Q, W, X, I, S, R, E, A, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     fb: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N, N1>,
       HKT.Intro<C, 'K', K, K1>,
       HKT.Intro<C, 'Q', Q, Q1>,
       HKT.Intro<C, 'W', W, W1>,
@@ -93,7 +92,6 @@ export interface AlignFn_<F extends HKT.URIS, C = HKT.Auto> {
   ): HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N, N1]>,
     HKT.Mix<C, 'K', [K, K1]>,
     HKT.Mix<C, 'Q', [Q, Q1]>,
     HKT.Mix<C, 'W', [W, W1]>,
@@ -107,8 +105,7 @@ export interface AlignFn_<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface AlignFn<F extends HKT.URIS, C = HKT.Auto> {
-  <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>): <
-    N extends string,
+  <K1, Q1, W1, X1, I1, S1, R1, E1, B>(fb: HKT.Kind<F, C, K1, Q1, W1, X1, I1, S1, R1, E1, B>): <
     K,
     Q,
     W,
@@ -122,7 +119,6 @@ export interface AlignFn<F extends HKT.URIS, C = HKT.Auto> {
     fa: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N1, N>,
       HKT.Intro<C, 'K', K1, K>,
       HKT.Intro<C, 'Q', Q1, Q>,
       HKT.Intro<C, 'W', W1, W>,
@@ -136,7 +132,6 @@ export interface AlignFn<F extends HKT.URIS, C = HKT.Auto> {
   ) => HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N1, N]>,
     HKT.Mix<C, 'K', [K1, K]>,
     HKT.Mix<C, 'Q', [Q1, Q]>,
     HKT.Mix<C, 'W', [W1, W]>,
@@ -150,12 +145,11 @@ export interface AlignFn<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface AlignWithFn_<F extends HKT.URIS, TC = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B, C>(
-    fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>,
+  <K, Q, W, X, I, S, R, E, A, K1, Q1, W1, X1, I1, S1, R1, E1, B, C>(
+    fa: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>,
     fb: HKT.Kind<
       F,
       TC,
-      HKT.Intro<TC, 'N', N, N1>,
       HKT.Intro<TC, 'K', K, K1>,
       HKT.Intro<TC, 'Q', Q, Q1>,
       HKT.Intro<TC, 'W', W, W1>,
@@ -170,7 +164,6 @@ export interface AlignWithFn_<F extends HKT.URIS, TC = HKT.Auto> {
   ): HKT.Kind<
     F,
     TC,
-    HKT.Mix<TC, 'N', [N, N1]>,
     HKT.Mix<TC, 'K', [K, K1]>,
     HKT.Mix<TC, 'Q', [Q, Q1]>,
     HKT.Mix<TC, 'W', [W, W1]>,
@@ -184,14 +177,13 @@ export interface AlignWithFn_<F extends HKT.URIS, TC = HKT.Auto> {
 }
 
 export interface AlignWithFn<F extends HKT.URIS, TC = HKT.Auto> {
-  <A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B, C>(
-    fb: HKT.Kind<F, TC, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>,
+  <A, K1, Q1, W1, X1, I1, S1, R1, E1, B, C>(
+    fb: HKT.Kind<F, TC, K1, Q1, W1, X1, I1, S1, R1, E1, B>,
     f: (th: These<A, B>) => C
-  ): <N extends string, K, Q, W, X, I, S, R, E>(
+  ): <K, Q, W, X, I, S, R, E>(
     fa: HKT.Kind<
       F,
       TC,
-      HKT.Intro<TC, 'N', N1, N>,
       HKT.Intro<TC, 'K', K1, K>,
       HKT.Intro<TC, 'Q', Q1, Q>,
       HKT.Intro<TC, 'W', W1, W>,
@@ -205,7 +197,6 @@ export interface AlignWithFn<F extends HKT.URIS, TC = HKT.Auto> {
   ) => HKT.Kind<
     F,
     TC,
-    HKT.Mix<TC, 'N', [N1, N]>,
     HKT.Mix<TC, 'K', [K1, K]>,
     HKT.Mix<TC, 'Q', [Q1, Q]>,
     HKT.Mix<TC, 'W', [W1, W]>,
@@ -227,12 +218,11 @@ export function alignWithF_<F extends HKT.URIS, C = HKT.Auto>(F: SemialignMin<F,
 }
 
 export interface AlignCombineFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <A>(S: Semigroup<A>): <N extends string, K, Q, W, X, I, S, R, E, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1>(
-    fa1: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
+  <A>(S: Semigroup<A>): <K, Q, W, X, I, S, R, E, K1, Q1, W1, X1, I1, S1, R1, E1>(
+    fa1: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     fa2: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N, N1>,
       HKT.Intro<C, 'K', K, K1>,
       HKT.Intro<C, 'Q', Q, Q1>,
       HKT.Intro<C, 'W', W, W1>,
@@ -246,7 +236,6 @@ export interface AlignCombineFn_<F extends HKT.URIS, C = HKT.Auto> {
   ) => HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N, N1]>,
     HKT.Mix<C, 'K', [K, K1]>,
     HKT.Mix<C, 'Q', [Q, Q1]>,
     HKT.Mix<C, 'W', [W, W1]>,
@@ -260,13 +249,12 @@ export interface AlignCombineFn_<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface AlignCombineFn<F extends HKT.URIS, C = HKT.Auto> {
-  <A>(S: Semigroup<A>): <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1>(
-    fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, A>
-  ) => <N extends string, K, Q, W, X, I, S, R, E>(
+  <A>(S: Semigroup<A>): <K1, Q1, W1, X1, I1, S1, R1, E1>(
+    fb: HKT.Kind<F, C, K1, Q1, W1, X1, I1, S1, R1, E1, A>
+  ) => <K, Q, W, X, I, S, R, E>(
     fa: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N1, N>,
       HKT.Intro<C, 'K', K1, K>,
       HKT.Intro<C, 'Q', Q1, Q>,
       HKT.Intro<C, 'W', W1, W>,
@@ -280,7 +268,6 @@ export interface AlignCombineFn<F extends HKT.URIS, C = HKT.Auto> {
   ) => HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N1, N]>,
     HKT.Mix<C, 'K', [K1, K]>,
     HKT.Mix<C, 'Q', [Q1, Q]>,
     HKT.Mix<C, 'W', [W1, W]>,
@@ -303,12 +290,11 @@ export function alignCombineF<F extends HKT.URIS, C = HKT.Auto>(F: SemialignMin<
 }
 
 export interface PadZipFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
+  <K, Q, W, X, I, S, R, E, A, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     fb: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N, N1>,
       HKT.Intro<C, 'K', K, K1>,
       HKT.Intro<C, 'Q', Q, Q1>,
       HKT.Intro<C, 'W', W, W1>,
@@ -322,7 +308,6 @@ export interface PadZipFn_<F extends HKT.URIS, C = HKT.Auto> {
   ): HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N, N1]>,
     HKT.Mix<C, 'K', [K, K1]>,
     HKT.Mix<C, 'Q', [Q, Q1]>,
     HKT.Mix<C, 'W', [W, W1]>,
@@ -336,8 +321,7 @@ export interface PadZipFn_<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface PadZipFn<F extends HKT.URIS, C = HKT.Auto> {
-  <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>): <
-    N extends string,
+  <K1, Q1, W1, X1, I1, S1, R1, E1, B>(fb: HKT.Kind<F, C, K1, Q1, W1, X1, I1, S1, R1, E1, B>): <
     K,
     Q,
     W,
@@ -351,7 +335,6 @@ export interface PadZipFn<F extends HKT.URIS, C = HKT.Auto> {
     fa: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N1, N>,
       HKT.Intro<C, 'K', K1, K>,
       HKT.Intro<C, 'Q', Q1, Q>,
       HKT.Intro<C, 'W', W1, W>,
@@ -365,7 +348,6 @@ export interface PadZipFn<F extends HKT.URIS, C = HKT.Auto> {
   ) => HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N1, N]>,
     HKT.Mix<C, 'K', [K1, K]>,
     HKT.Mix<C, 'Q', [Q1, Q]>,
     HKT.Mix<C, 'W', [W1, W]>,
@@ -388,12 +370,11 @@ export function padZipF<F extends HKT.URIS, C = HKT.Auto>(F: SemialignMin<F, C>)
 }
 
 export interface PadZipWithFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B, D>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
+  <K, Q, W, X, I, S, R, E, A, K1, Q1, W1, X1, I1, S1, R1, E1, B, D>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     fb: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N, N1>,
       HKT.Intro<C, 'K', K, K1>,
       HKT.Intro<C, 'Q', Q, Q1>,
       HKT.Intro<C, 'W', W, W1>,
@@ -408,7 +389,6 @@ export interface PadZipWithFn_<F extends HKT.URIS, C = HKT.Auto> {
   ): HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N, N1]>,
     HKT.Mix<C, 'K', [K, K1]>,
     HKT.Mix<C, 'Q', [Q, Q1]>,
     HKT.Mix<C, 'W', [W, W1]>,
@@ -422,14 +402,13 @@ export interface PadZipWithFn_<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface PadZipWithFn<F extends HKT.URIS, C = HKT.Auto> {
-  <A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B, D>(
-    fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>,
+  <A, K1, Q1, W1, X1, I1, S1, R1, E1, B, D>(
+    fb: HKT.Kind<F, C, K1, Q1, W1, X1, I1, S1, R1, E1, B>,
     f: (_: readonly [Option<A>, Option<B>]) => D
-  ): <N extends string, K, Q, W, X, I, S, R, E, A>(
+  ): <K, Q, W, X, I, S, R, E, A>(
     fa: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N1, N>,
       HKT.Intro<C, 'K', K1, K>,
       HKT.Intro<C, 'Q', Q1, Q>,
       HKT.Intro<C, 'W', W1, W>,
@@ -443,7 +422,6 @@ export interface PadZipWithFn<F extends HKT.URIS, C = HKT.Auto> {
   ) => HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N1, N]>,
     HKT.Mix<C, 'K', [K1, K]>,
     HKT.Mix<C, 'Q', [Q1, Q]>,
     HKT.Mix<C, 'W', [W1, W]>,
@@ -475,12 +453,11 @@ export function padZipWithF<F extends HKT.URIS, C = HKT.Auto>(F: SemialignMin<F,
 }
 
 export interface ZipAllFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
+  <K, Q, W, X, I, S, R, E, A, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     fb: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N, N1>,
       HKT.Intro<C, 'K', K, K1>,
       HKT.Intro<C, 'Q', Q, Q1>,
       HKT.Intro<C, 'W', W, W1>,
@@ -496,7 +473,6 @@ export interface ZipAllFn_<F extends HKT.URIS, C = HKT.Auto> {
   ): HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N, N1]>,
     HKT.Mix<C, 'K', [K, K1]>,
     HKT.Mix<C, 'Q', [Q, Q1]>,
     HKT.Mix<C, 'W', [W, W1]>,
@@ -510,15 +486,19 @@ export interface ZipAllFn_<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface ZipAllFn<F extends HKT.URIS, C = HKT.Auto> {
-  <A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
-    fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>,
-    a: A,
-    b: B
-  ): <N extends string, K, Q, W, X, I, S, R, E>(
+  <A, K1, Q1, W1, X1, I1, S1, R1, E1, B>(fb: HKT.Kind<F, C, K1, Q1, W1, X1, I1, S1, R1, E1, B>, a: A, b: B): <
+    K,
+    Q,
+    W,
+    X,
+    I,
+    S,
+    R,
+    E
+  >(
     fa: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N1, N>,
       HKT.Intro<C, 'K', K1, K>,
       HKT.Intro<C, 'Q', Q1, Q>,
       HKT.Intro<C, 'W', W1, W>,
@@ -532,7 +512,6 @@ export interface ZipAllFn<F extends HKT.URIS, C = HKT.Auto> {
   ) => HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N1, N]>,
     HKT.Mix<C, 'K', [K1, K]>,
     HKT.Mix<C, 'Q', [Q1, Q]>,
     HKT.Mix<C, 'W', [W1, W]>,

@@ -50,100 +50,73 @@ export function getFunctorComposition<F extends HKT.URIS, G extends HKT.URIS, CF
 }
 
 export interface MapFn<F extends HKT.URIS, C = HKT.Auto> {
-  <A, B>(f: (a: A) => B): <N extends string, K, Q, W, X, I, S, R, E>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-  ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>
+  <A, B>(f: (a: A) => B): <K, Q, W, X, I, S, R, E>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
 }
 
 export interface MapFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, B>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
-    f: (a: A) => B
-  ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>
+  <K, Q, W, X, I, S, R, E, A, B>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>, f: (a: A) => B): HKT.Kind<
+    F,
+    C,
+    K,
+    Q,
+    W,
+    X,
+    I,
+    S,
+    R,
+    E,
+    B
+  >
 }
 
 export interface MapFn2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
-  <A, B>(f: (a: A) => B): <
-    NF extends string,
-    KF,
-    QF,
-    WF,
-    XF,
-    IF,
-    SF,
-    RF,
-    EF,
-    NG extends string,
-    KG,
-    QG,
-    WG,
-    XG,
-    IG,
-    SG,
-    RG,
-    EG
-  >(
-    fa: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>
-  ) => HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
+  <A, B>(f: (a: A) => B): <KF, QF, WF, XF, IF, SF, RF, EF, KG, QG, WG, XG, IG, SG, RG, EG>(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, A>>
+  ) => HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
 }
 
 export interface MapFn2_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
-  <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, NG extends string, KG, QG, WG, XG, IG, SG, RG, EG, A, B>(
-    fa: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>,
+  <KF, QF, WF, XF, IF, SF, RF, EF, KG, QG, WG, XG, IG, SG, RG, EG, A, B>(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, A>>,
     f: (a: A) => B
-  ): HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
+  ): HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
 }
 
 export interface FlapFn_<F extends HKT.URIS, TC = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, B>(
-    fab: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, (a: A) => B>,
-    a: A
-  ): HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, B>
+  <K, Q, W, X, I, S, R, E, A, B>(fab: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, (a: A) => B>, a: A): HKT.Kind<
+    F,
+    TC,
+    K,
+    Q,
+    W,
+    X,
+    I,
+    S,
+    R,
+    E,
+    B
+  >
 }
 
 export interface FlapFn<F extends HKT.URIS, TC = HKT.Auto> {
-  <A>(a: A): <N extends string, K, Q, W, X, I, S, R, E, B>(
-    fab: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, (a: A) => B>
-  ) => HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, B>
+  <A>(a: A): <K, Q, W, X, I, S, R, E, B>(
+    fab: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, (a: A) => B>
+  ) => HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, B>
 }
 
 export interface FlapFn2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
-  <A>(a: A): <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, NG extends string, KG, QG, WG, XG, IG, SG, RG, EG, B>(
-    fa: HKT.Kind<
-      F,
-      CF,
-      NF,
-      KF,
-      QF,
-      WF,
-      XF,
-      IF,
-      SF,
-      RF,
-      EF,
-      HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, (a: A) => B>
-    >
-  ) => HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
+  <A>(a: A): <KF, QF, WF, XF, IF, SF, RF, EF, KG, QG, WG, XG, IG, SG, RG, EG, B>(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, (a: A) => B>>
+  ) => HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
 }
 
 export interface FlapFn2_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
-  <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, NG extends string, KG, QG, WG, XG, IG, SG, RG, EG, A, B>(
-    fa: HKT.Kind<
-      F,
-      CF,
-      NF,
-      KF,
-      QF,
-      WF,
-      XF,
-      IF,
-      SF,
-      RF,
-      EF,
-      HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, (a: A) => B>
-    >,
+  <KF, QF, WF, XF, IF, SF, RF, EF, KG, QG, WG, XG, IG, SG, RG, EG, A, B>(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, (a: A) => B>>,
     a: A
-  ): HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
+  ): HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
 }
 
 export function flapF_<F extends HKT.URIS, TC = HKT.Auto>(F: FunctorMin<F, TC>): FlapFn_<F, TC> {
@@ -156,49 +129,38 @@ export function flapF<F extends HKT.URIS, TC = HKT.Auto>(F: FunctorMin<F, TC>): 
 }
 
 export interface AsFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, B>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
-    b: () => B
-  ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>
+  <K, Q, W, X, I, S, R, E, A, B>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>, b: () => B): HKT.Kind<
+    F,
+    C,
+    K,
+    Q,
+    W,
+    X,
+    I,
+    S,
+    R,
+    E,
+    B
+  >
 }
 
 export interface AsFn<F extends HKT.URIS, C = HKT.Auto> {
-  <B>(b: () => B): <N extends string, K, Q, W, X, I, S, R, E, A>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-  ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>
+  <B>(b: () => B): <K, Q, W, X, I, S, R, E, A>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
 }
 
 export interface AsFn2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
-  <B>(b: () => B): <
-    NF extends string,
-    KF,
-    QF,
-    WF,
-    XF,
-    IF,
-    SF,
-    RF,
-    EF,
-    NG extends string,
-    KG,
-    QG,
-    WG,
-    XG,
-    IG,
-    SG,
-    RG,
-    EG,
-    A
-  >(
-    fa: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>
-  ) => HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
+  <B>(b: () => B): <KF, QF, WF, XF, IF, SF, RF, EF, KG, QG, WG, XG, IG, SG, RG, EG, A>(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, A>>
+  ) => HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
 }
 
 export interface AsFn2_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
-  <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, NG extends string, KG, QG, WG, XG, IG, SG, RG, EG, A, B>(
-    fa: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>,
+  <KF, QF, WF, XF, IF, SF, RF, EF, KG, QG, WG, XG, IG, SG, RG, EG, A, B>(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, A>>,
     b: () => B
-  ): HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
+  ): HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, B>>
 }
 
 export function asF_<F extends HKT.URIS, C = HKT.Auto>(F: FunctorMin<F, C>): AsFn_<F, C> {
@@ -210,74 +172,38 @@ export function asF<F extends HKT.URIS, C = HKT.Auto>(F: FunctorMin<F, C>): AsFn
 }
 
 export interface FCrossFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, B>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
-    f: (a: A) => B
-  ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, readonly [A, B]>
+  <K, Q, W, X, I, S, R, E, A, B>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>, f: (a: A) => B): HKT.Kind<
+    F,
+    C,
+    K,
+    Q,
+    W,
+    X,
+    I,
+    S,
+    R,
+    E,
+    readonly [A, B]
+  >
 }
 
 export interface FCrossFn<F extends HKT.URIS, C = HKT.Auto> {
-  <A, B>(f: (a: A) => B): <N extends string, K, Q, W, X, I, S, R, E>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-  ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, readonly [A, B]>
+  <A, B>(f: (a: A) => B): <K, Q, W, X, I, S, R, E>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [A, B]>
 }
 
 export interface FCrossFn2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
-  <A, B>(f: (a: A) => B): <
-    NF extends string,
-    KF,
-    QF,
-    WF,
-    XF,
-    IF,
-    SF,
-    RF,
-    EF,
-    NG extends string,
-    KG,
-    QG,
-    WG,
-    XG,
-    IG,
-    SG,
-    RG,
-    EG
-  >(
-    fa: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>
-  ) => HKT.Kind<
-    F,
-    CF,
-    NF,
-    KF,
-    QF,
-    WF,
-    XF,
-    IF,
-    SF,
-    RF,
-    EF,
-    HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, readonly [A, B]>
-  >
+  <A, B>(f: (a: A) => B): <KF, QF, WF, XF, IF, SF, RF, EF, KG, QG, WG, XG, IG, SG, RG, EG>(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, A>>
+  ) => HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, readonly [A, B]>>
 }
 
 export interface FCrossFn2_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
-  <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, NG extends string, KG, QG, WG, XG, IG, SG, RG, EG, A, B>(
-    fa: HKT.Kind<F, CF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>,
+  <KF, QF, WF, XF, IF, SF, RF, EF, KG, QG, WG, XG, IG, SG, RG, EG, A, B>(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, A>>,
     f: (a: A) => B
-  ): HKT.Kind<
-    F,
-    CF,
-    NF,
-    KF,
-    QF,
-    WF,
-    XF,
-    IF,
-    SF,
-    RF,
-    EF,
-    HKT.Kind<G, CG, NG, KG, QG, WG, XG, IG, SG, RG, EG, readonly [A, B]>
-  >
+  ): HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, readonly [A, B]>>
 }
 
 export function fcrossF_<F extends HKT.URIS, C = HKT.Auto>(F: FunctorMin<F, C>): FCrossFn_<F, C> {
@@ -289,10 +215,19 @@ export function fcrossF<F extends HKT.URIS, C = HKT.Auto>(F: FunctorMin<F, C>): 
 }
 
 export interface ToSFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, BN extends string>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
-    name: BN
-  ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, { [K in BN]: A }>
+  <K, Q, W, X, I, S, R, E, A, BN extends string>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>, name: BN): HKT.Kind<
+    F,
+    C,
+    K,
+    Q,
+    W,
+    X,
+    I,
+    S,
+    R,
+    E,
+    { [K in BN]: A }
+  >
 }
 
 export function toSF_<F extends HKT.URIS, C = HKT.Auto>(F: Functor<F, C>): ToSFn_<F, C> {
@@ -300,9 +235,9 @@ export function toSF_<F extends HKT.URIS, C = HKT.Auto>(F: Functor<F, C>): ToSFn
 }
 
 export interface ToSFn<F extends HKT.URIS, C = HKT.Auto> {
-  <BN extends string>(name: BN): <N extends string, K, Q, W, X, I, S, R, E, A>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-  ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, { [K in BN]: A }>
+  <BN extends string>(name: BN): <K, Q, W, X, I, S, R, E, A>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, { [K in BN]: A }>
 }
 
 export function toSF<F extends HKT.URIS, C = HKT.Auto>(F: Functor<F, C>): ToSFn<F, C> {
@@ -310,10 +245,9 @@ export function toSF<F extends HKT.URIS, C = HKT.Auto>(F: Functor<F, C>): ToSFn<
 }
 
 export interface TupledFn<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>): HKT.Kind<
+  <K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>): HKT.Kind<
     F,
     C,
-    N,
     K,
     Q,
     W,

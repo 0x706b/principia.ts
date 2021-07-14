@@ -41,7 +41,6 @@ export function MonadEnv<F extends HKT.URIS, C extends HKT.V<'R', '-'>>(M: Monad
 export interface AskFn<F extends HKT.URIS, C extends HKT.V<'R', '-'>> {
   <
     R,
-    N extends string = HKT.Initial<C, 'N'>,
     K = HKT.Initial<C, 'K'>,
     Q = HKT.Initial<C, 'Q'>,
     W = HKT.Initial<C, 'W'>,
@@ -49,7 +48,7 @@ export interface AskFn<F extends HKT.URIS, C extends HKT.V<'R', '-'>> {
     I = HKT.Initial<C, 'I'>,
     S = HKT.Initial<C, 'S'>,
     E = HKT.Initial<C, 'E'>
-  >(): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, R>
+  >(): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, R>
 }
 
 export function askF<F extends HKT.URIS, C extends HKT.V<'R', '-'>>(F: MonadEnvMin<F, C>): AskFn<F, C> {
@@ -59,7 +58,6 @@ export function askF<F extends HKT.URIS, C extends HKT.V<'R', '-'>>(F: MonadEnvM
 export interface AsksFn<F extends HKT.URIS, C extends HKT.V<'R', '-'>> {
   <
     A,
-    N extends string = HKT.Initial<C, 'N'>,
     K = HKT.Initial<C, 'K'>,
     Q = HKT.Initial<C, 'Q'>,
     W = HKT.Initial<C, 'W'>,
@@ -70,26 +68,35 @@ export interface AsksFn<F extends HKT.URIS, C extends HKT.V<'R', '-'>> {
     E = HKT.Initial<C, 'E'>
   >(
     f: (_: R) => A
-  ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
+  ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
 }
 
 export interface AsksMFn<F extends HKT.URIS, C extends HKT.V<'R', '-'>> {
-  <R0, N extends string, K, Q, W, X, I, S, R, E, A>(
-    f: (_: HKT.OrFix<'R', C, R0>) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-  ): HKT.Kind<F, C, N, K, Q, W, X, I, S, HKT.Mix<C, 'R', [R0, R]>, E, A>
+  <R0, K, Q, W, X, I, S, R, E, A>(f: (_: HKT.OrFix<'R', C, R0>) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>): HKT.Kind<
+    F,
+    C,
+    K,
+    Q,
+    W,
+    X,
+    I,
+    S,
+    HKT.Mix<C, 'R', [R0, R]>,
+    E,
+    A
+  >
 }
 
 export interface GiveAllFn<F extends HKT.URIS, TC extends HKT.V<'R', '-'>> {
-  <R>(r: R): <N extends string, K, Q, W, X, I, S, E, A>(
-    fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>
-  ) => HKT.Kind<F, TC, N, K, Q, W, X, I, S, unknown, E, A>
+  <R>(r: R): <K, Q, W, X, I, S, E, A>(
+    fa: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>
+  ) => HKT.Kind<F, TC, K, Q, W, X, I, S, unknown, E, A>
 }
 
 export interface GiveAllFn_<F extends HKT.URIS, TC extends HKT.V<'R', '-'>> {
-  <N extends string, K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>, r: R): HKT.Kind<
+  <K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>, r: R): HKT.Kind<
     F,
     TC,
-    N,
     K,
     Q,
     W,
@@ -103,35 +110,52 @@ export interface GiveAllFn_<F extends HKT.URIS, TC extends HKT.V<'R', '-'>> {
 }
 
 export interface GiveFn<F extends HKT.URIS, TC extends HKT.V<'R', '-'>> {
-  <R>(r: R): <N extends string, K, Q, W, X, I, S, R0, E, A>(
-    ma: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R & R0, E, A>
-  ) => HKT.Kind<F, TC, N, K, Q, W, X, I, S, R0, E, A>
+  <R>(r: R): <K, Q, W, X, I, S, R0, E, A>(
+    ma: HKT.Kind<F, TC, K, Q, W, X, I, S, R & R0, E, A>
+  ) => HKT.Kind<F, TC, K, Q, W, X, I, S, R0, E, A>
 }
 
 export interface GiveFn_<F extends HKT.URIS, TC extends HKT.V<'R', '-'>> {
-  <N extends string, K, Q, W, X, I, S, R0, R, E, A>(
-    ma: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R & R0, E, A>,
-    r: R
-  ): HKT.Kind<F, TC, N, K, Q, W, X, I, S, R0, E, A>
+  <K, Q, W, X, I, S, R0, R, E, A>(ma: HKT.Kind<F, TC, K, Q, W, X, I, S, R & R0, E, A>, r: R): HKT.Kind<
+    F,
+    TC,
+    K,
+    Q,
+    W,
+    X,
+    I,
+    S,
+    R0,
+    E,
+    A
+  >
 }
 
 export interface GivesFn<F extends HKT.URIS, C extends HKT.V<'R', '-'>> {
-  <R0, R>(f: (r0: R0) => R): <N extends string, K, Q, W, X, I, S, E, A>(
-    ma: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-  ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R0, E, A>
+  <R0, R>(f: (r0: R0) => R): <K, Q, W, X, I, S, E, A>(
+    ma: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R0, E, A>
 }
 
 export interface GivesFn_<F extends HKT.URIS, C extends HKT.V<'R', '-'>> {
-  <N extends string, K, Q, W, X, I, S, R0, R, E, A>(
-    ma: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
-    f: (r0: R0) => R
-  ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R0, E, A>
+  <K, Q, W, X, I, S, R0, R, E, A>(ma: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>, f: (r0: R0) => R): HKT.Kind<
+    F,
+    C,
+    K,
+    Q,
+    W,
+    X,
+    I,
+    S,
+    R0,
+    E,
+    A
+  >
 }
 
 export interface AsksServiceFn<F extends HKT.URIS, C extends HKT.V<'R', '-'>> {
   <Service>(H: Tag<Service>): <
     A,
-    N extends string = HKT.Initial<C, 'N'>,
     K = HKT.Initial<C, 'K'>,
     Q = HKT.Initial<C, 'Q'>,
     W = HKT.Initial<C, 'W'>,
@@ -142,31 +166,30 @@ export interface AsksServiceFn<F extends HKT.URIS, C extends HKT.V<'R', '-'>> {
     E = HKT.Initial<C, 'E'>
   >(
     f: (_: Service) => A
-  ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R & Has<Service>, E, A>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R & Has<Service>, E, A>
 }
 
 export interface AsksServiceMFn<F extends HKT.URIS, C extends HKT.V<'R', '-'>> {
-  <Service>(H: Tag<Service>): <N extends string, K, Q, W, X, I, S, R, E, A>(
-    f: (_: Service) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-  ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R & Has<Service>, E, A>
+  <Service>(H: Tag<Service>): <K, Q, W, X, I, S, R, E, A>(
+    f: (_: Service) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R & Has<Service>, E, A>
 }
 
 export interface GiveServiceFn<F extends HKT.URIS, C extends HKT.V<'R', '-'>> {
   <Service>(H: Tag<Service>): (
     S: Service
-  ) => <N extends string, K, Q, W, X, I, S, R, E, A>(
-    ma: HKT.Kind<F, C, N, K, Q, W, X, I, S, R & Has<Service>, E, A>
-  ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
+  ) => <K, Q, W, X, I, S, R, E, A>(
+    ma: HKT.Kind<F, C, K, Q, W, X, I, S, R & Has<Service>, E, A>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
 }
 
 export interface GiveServiceMFn<F extends HKT.URIS, C extends HKT.V<'R', '-'>> {
-  <Service>(H: Tag<Service>): <N extends string, K, Q, W, X, I, S, R, E>(
-    S: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Service>
-  ) => <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, A>(
+  <Service>(H: Tag<Service>): <K, Q, W, X, I, S, R, E>(
+    S: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Service>
+  ) => <K1, Q1, W1, X1, I1, S1, R1, E1, A>(
     ma: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N, N1>,
       HKT.Intro<C, 'K', K, K1>,
       HKT.Intro<C, 'Q', Q, Q1>,
       HKT.Intro<C, 'W', W, W1>,
@@ -180,7 +203,6 @@ export interface GiveServiceMFn<F extends HKT.URIS, C extends HKT.V<'R', '-'>> {
   ) => HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N, N1]>,
     HKT.Mix<C, 'K', [K, K1]>,
     HKT.Mix<C, 'Q', [Q, Q1]>,
     HKT.Mix<C, 'W', [W, W1]>,

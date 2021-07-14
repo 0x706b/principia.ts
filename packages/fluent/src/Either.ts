@@ -75,9 +75,9 @@ interface EitherOps<E, A> {
   mapA<E, A, F extends HKT.URIS, C = HKT.Auto>(
     this: Either<E, A>,
     A: P.Applicative<F, C>
-  ): <N extends string, K, Q, W, X, I, S, R, E1, B>(
-    f: (a: A) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E1, B>
-  ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E1, Either<E, B>>
+  ): <K, Q, W, X, I, S, R, E1, B>(
+    f: (a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E1, B>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E1, Either<E, B>>
 
   /**
    * @rewrite mapLeft_ from "@principia/base/Either"

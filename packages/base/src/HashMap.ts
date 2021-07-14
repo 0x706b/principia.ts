@@ -106,9 +106,7 @@ export function makeDefault<K, V>() {
  * Makes a new map from a Foldable of key-value pairs
  */
 export function fromFoldable<F extends HKT.URIS, C, K, A>(C: Config<K>, S: P.Semigroup<A>, F: P.Foldable<F, C>) {
-  return <N extends string, K_, Q, W, X, I, S, R, E>(
-    fka: HKT.Kind<F, C, N, K_, Q, W, X, I, S, R, E, readonly [K, A]>
-  ): HashMap<K, A> => {
+  return <K_, Q, W, X, I, S, R, E>(fka: HKT.Kind<F, C, K_, Q, W, X, I, S, R, E, readonly [K, A]>): HashMap<K, A> => {
     return F.foldl_(fka, make(C), (b, [k, a]) => {
       const oa = get_(b, k)
       if (O.isSome(oa)) {

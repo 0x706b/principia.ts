@@ -21,13 +21,19 @@ export function Alt<F extends HKT.URIS, C = HKT.Auto>(F: AltMin<F, C>): Alt<F, C
 }
 
 export interface AltFn<F extends HKT.URIS, C = HKT.Auto> {
-  <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, A>(
-    that: () => HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, A>
-  ): <N extends string, K, Q, W, X, I, S, R, E>(
+  <K1, Q1, W1, X1, I1, S1, R1, E1, A>(that: () => HKT.Kind<F, C, K1, Q1, W1, X1, I1, S1, R1, E1, A>): <
+    K,
+    Q,
+    W,
+    X,
+    I,
+    S,
+    R,
+    E
+  >(
     fa: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N1, N>,
       HKT.Intro<C, 'K', K1, K>,
       HKT.Intro<C, 'Q', Q1, Q>,
       HKT.Intro<C, 'W', W1, W>,
@@ -41,7 +47,6 @@ export interface AltFn<F extends HKT.URIS, C = HKT.Auto> {
   ) => HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N1, N]>,
     HKT.Mix<C, 'K', [K1, K]>,
     HKT.Mix<C, 'Q', [Q1, Q]>,
     HKT.Mix<C, 'W', [W1, W]>,
@@ -55,12 +60,11 @@ export interface AltFn<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface AltFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, A>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
+  <K, Q, W, X, I, S, R, E, K1, Q1, W1, X1, I1, S1, R1, E1, A>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     that: () => HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N, N1>,
       HKT.Intro<C, 'K', K, K1>,
       HKT.Intro<C, 'Q', Q, Q1>,
       HKT.Intro<C, 'W', W, W1>,
@@ -74,7 +78,6 @@ export interface AltFn_<F extends HKT.URIS, C = HKT.Auto> {
   ): HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N1, N]>,
     HKT.Mix<C, 'K', [K1, K]>,
     HKT.Mix<C, 'Q', [Q1, Q]>,
     HKT.Mix<C, 'W', [W1, W]>,
@@ -88,13 +91,20 @@ export interface AltFn_<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface AltWFn<F extends HKT.URIS, C = HKT.Auto> {
-  <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
-    that: () => HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>
-  ): <N extends string, K, Q, W, X, I, S, R, E, A>(
+  <K1, Q1, W1, X1, I1, S1, R1, E1, B>(that: () => HKT.Kind<F, C, K1, Q1, W1, X1, I1, S1, R1, E1, B>): <
+    K,
+    Q,
+    W,
+    X,
+    I,
+    S,
+    R,
+    E,
+    A
+  >(
     fa: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N1, N>,
       HKT.Intro<C, 'K', K1, K>,
       HKT.Intro<C, 'Q', Q1, Q>,
       HKT.Intro<C, 'W', W1, W>,
@@ -108,7 +118,6 @@ export interface AltWFn<F extends HKT.URIS, C = HKT.Auto> {
   ) => HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N1, N]>,
     HKT.Mix<C, 'K', [K1, K]>,
     HKT.Mix<C, 'Q', [Q1, Q]>,
     HKT.Mix<C, 'W', [W1, W]>,
@@ -122,12 +131,11 @@ export interface AltWFn<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface AltWFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, A, B>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
+  <K, Q, W, X, I, S, R, E, K1, Q1, W1, X1, I1, S1, R1, E1, A, B>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     that: () => HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N, N1>,
       HKT.Intro<C, 'K', K, K1>,
       HKT.Intro<C, 'Q', Q, Q1>,
       HKT.Intro<C, 'W', W, W1>,
@@ -141,7 +149,6 @@ export interface AltWFn_<F extends HKT.URIS, C = HKT.Auto> {
   ): HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N1, N]>,
     HKT.Mix<C, 'K', [K1, K]>,
     HKT.Mix<C, 'Q', [Q1, Q]>,
     HKT.Mix<C, 'W', [W1, W]>,

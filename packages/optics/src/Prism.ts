@@ -403,9 +403,7 @@ export const left: <S, E, A>(sea: Prism<S, E.Either<E, A>>) => Prism<S, E> = and
  */
 export function traverse<T extends HKT.URIS, C = HKT.Auto>(
   T: P.Traversable<T, C>
-): <S, N extends string, K, Q, W, X, I, S_, R, E, A>(
-  sta: Prism<S, HKT.Kind<T, C, N, K, Q, W, X, I, S_, R, E, A>>
-) => Traversal<S, A> {
+): <S, K, Q, W, X, I, S_, R, E, A>(sta: Prism<S, HKT.Kind<T, C, K, Q, W, X, I, S_, R, E, A>>) => Traversal<S, A> {
   return andThenTraversal(_.fromTraversable(T)())
 }
 

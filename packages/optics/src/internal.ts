@@ -295,7 +295,6 @@ export function fromTraversable<T extends HKT.URIS, C = HKT.Auto>(
 ): <
   A,
   B,
-  N extends string = HKT.Initial<C, 'N'>,
   K = HKT.Initial<C, 'K'>,
   Q = HKT.Initial<C, 'Q'>,
   W = HKT.Initial<C, 'W'>,
@@ -304,7 +303,6 @@ export function fromTraversable<T extends HKT.URIS, C = HKT.Auto>(
   S = HKT.Initial<C, 'S'>,
   R = HKT.Initial<C, 'R'>,
   E = HKT.Initial<C, 'E'>,
-  N1 extends string = HKT.Initial<C, 'N'>,
   K1 = HKT.Initial<C, 'K'>,
   Q1 = HKT.Initial<C, 'Q'>,
   W1 = HKT.Initial<C, 'W'>,
@@ -313,12 +311,7 @@ export function fromTraversable<T extends HKT.URIS, C = HKT.Auto>(
   S1 = HKT.Initial<C, 'S'>,
   R1 = HKT.Initial<C, 'R'>,
   E1 = HKT.Initial<C, 'E'>
->() => PTraversal<
-  HKT.Kind<T, C, N, K, Q, W, X, I, S, R, E, A>,
-  HKT.Kind<T, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>,
-  A,
-  B
-> {
+>() => PTraversal<HKT.Kind<T, C, K, Q, W, X, I, S, R, E, A>, HKT.Kind<T, C, K1, Q1, W1, X1, I1, S1, R1, E1, B>, A, B> {
   return () =>
     makePTraversal({
       modifyA_: (F) => {

@@ -369,9 +369,7 @@ export const left: <S, E, A>(sea: Lens<S, E.Either<E, A>>) => Optional<S, E> = a
  */
 export function traverse<T extends HKT.URIS, C = HKT.Auto>(
   T: P.Traversable<T, C>
-): <S, N extends string, K, Q, W, X, I, S_, R, E, A>(
-  sta: Lens<S, HKT.Kind<T, C, N, K, Q, W, X, I, S_, R, E, A>>
-) => Traversal<S, A> {
+): <S, K, Q, W, X, I, S_, R, E, A>(sta: Lens<S, HKT.Kind<T, C, K, Q, W, X, I, S_, R, E, A>>) => Traversal<S, A> {
   return flow(andThenTraversal(_.fromTraversable(T)()))
 }
 

@@ -26,9 +26,9 @@ export function MonadExcept<F extends HKT.URIS, C = HKT.Auto>(F: MonadExceptMin<
 }
 
 export interface SubsumeEitherFn<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, E1, A>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Either<HKT.OrFix<'E', C, E1>, A>>
-  ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, HKT.Mix<C, 'E', [E, E1]>, A>
+  <K, Q, W, X, I, S, R, E, E1, A>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<HKT.OrFix<'E', C, E1>, A>>
+  ): HKT.Kind<F, C, K, Q, W, X, I, S, R, HKT.Mix<C, 'E', [E, E1]>, A>
 }
 
 export function getSubsumeEither<F extends HKT.URIS, C = HKT.Auto>(F: MonadExceptMin<F, C>): SubsumeEitherFn<F, C> {

@@ -70,9 +70,9 @@ interface OptionOps<A> {
   mapA<A, F extends HKT.URIS, C = HKT.Auto>(
     this: Option<A>,
     A: P.Applicative<F, C>
-  ): <N extends string, K, Q, W, X, I, S, R, E, B>(
-    f: (a: A) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>
-  ) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Option<B>>
+  ): <K, Q, W, X, I, S, R, E, B>(
+    f: (a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<B>>
 
   /**
    * @rewrite match_ from "@principia/base/Option"

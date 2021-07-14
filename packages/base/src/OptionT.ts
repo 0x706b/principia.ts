@@ -52,21 +52,20 @@ export interface OptionT<M extends HKT.URIS, C = HKT.Auto>
   readonly getOrElse_: GetOrElseFn_<M, C>
   readonly getOrElse: GetOrElseFn<M, C>
 
-  readonly matchOption_: <N extends string, K, Q, W, X, I, S, R, E, A, B, C>(
-    ma: HKT.Kind<M, C, N, K, Q, W, X, I, S, R, E, O.Option<A>>,
+  readonly matchOption_: <K, Q, W, X, I, S, R, E, A, B, C>(
+    ma: HKT.Kind<M, C, K, Q, W, X, I, S, R, E, O.Option<A>>,
     onNone: () => B,
     onSome: (a: A) => C
-  ) => HKT.Kind<M, C, N, K, Q, W, X, I, S, R, E, B | C>
+  ) => HKT.Kind<M, C, K, Q, W, X, I, S, R, E, B | C>
 
   readonly matchOption: <A, B, C>(
     onNone: () => B,
     onSome: (a: A) => C
-  ) => <N extends string, K, Q, W, X, I, S, R, E>(
-    ma: HKT.Kind<M, C, N, K, Q, W, X, I, S, R, E, O.Option<A>>
-  ) => HKT.Kind<M, C, N, K, Q, W, X, I, S, R, E, B | C>
+  ) => <K, Q, W, X, I, S, R, E>(
+    ma: HKT.Kind<M, C, K, Q, W, X, I, S, R, E, O.Option<A>>
+  ) => HKT.Kind<M, C, K, Q, W, X, I, S, R, E, B | C>
 
   readonly matchOptionM_: <
-    N1 extends string,
     K1,
     Q1,
     W1,
@@ -76,7 +75,6 @@ export interface OptionT<M extends HKT.URIS, C = HKT.Auto>
     R1,
     E1,
     A1,
-    N2 extends string,
     K2,
     Q2,
     W2,
@@ -86,7 +84,6 @@ export interface OptionT<M extends HKT.URIS, C = HKT.Auto>
     R2,
     E2,
     A2,
-    N3 extends string,
     K3,
     Q3,
     W3,
@@ -97,11 +94,10 @@ export interface OptionT<M extends HKT.URIS, C = HKT.Auto>
     E3,
     A3
   >(
-    ma: HKT.Kind<M, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, O.Option<A1>>,
+    ma: HKT.Kind<M, C, K1, Q1, W1, X1, I1, S1, R1, E1, O.Option<A1>>,
     onNone: () => HKT.Kind<
       M,
       C,
-      HKT.Intro<C, 'N', N1, N2>,
       HKT.Intro<C, 'K', K1, K2>,
       HKT.Intro<C, 'Q', Q1, Q2>,
       HKT.Intro<C, 'W', W1, W2>,
@@ -117,7 +113,6 @@ export interface OptionT<M extends HKT.URIS, C = HKT.Auto>
     ) => HKT.Kind<
       M,
       C,
-      HKT.Intro<C, 'N', N2, N3>,
       HKT.Intro<C, 'K', K2, K3>,
       HKT.Intro<C, 'Q', Q2, Q3>,
       HKT.Intro<C, 'W', W2, W3>,
@@ -131,7 +126,6 @@ export interface OptionT<M extends HKT.URIS, C = HKT.Auto>
   ) => HKT.Kind<
     M,
     C,
-    HKT.Mix<C, 'N', [N1, N2, N3]>,
     HKT.Mix<C, 'K', [K1, K2, K3]>,
     HKT.Mix<C, 'Q', [Q1, Q2, Q3]>,
     HKT.Mix<C, 'Q', [W1, W2, W3]>,
@@ -144,7 +138,6 @@ export interface OptionT<M extends HKT.URIS, C = HKT.Auto>
   >
 
   readonly matchOptionM: <
-    N1 extends string,
     K1,
     Q1,
     W1,
@@ -154,7 +147,6 @@ export interface OptionT<M extends HKT.URIS, C = HKT.Auto>
     R1,
     E1,
     A1,
-    N2 extends string,
     K2,
     Q2,
     W2,
@@ -164,7 +156,6 @@ export interface OptionT<M extends HKT.URIS, C = HKT.Auto>
     R2,
     E2,
     A2,
-    N3 extends string,
     K3,
     Q3,
     W3,
@@ -178,7 +169,6 @@ export interface OptionT<M extends HKT.URIS, C = HKT.Auto>
     onNone: () => HKT.Kind<
       M,
       C,
-      HKT.Intro<C, 'N', N1, N2>,
       HKT.Intro<C, 'K', K1, K2>,
       HKT.Intro<C, 'Q', Q1, Q2>,
       HKT.Intro<C, 'W', W1, W2>,
@@ -194,7 +184,6 @@ export interface OptionT<M extends HKT.URIS, C = HKT.Auto>
     ) => HKT.Kind<
       M,
       C,
-      HKT.Intro<C, 'N', N2, N3>,
       HKT.Intro<C, 'K', K2, K3>,
       HKT.Intro<C, 'Q', Q2, Q3>,
       HKT.Intro<C, 'W', W2, W3>,
@@ -206,11 +195,10 @@ export interface OptionT<M extends HKT.URIS, C = HKT.Auto>
       A3
     >
   ) => (
-    ma: HKT.Kind<M, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, O.Option<A1>>
+    ma: HKT.Kind<M, C, K1, Q1, W1, X1, I1, S1, R1, E1, O.Option<A1>>
   ) => HKT.Kind<
     M,
     C,
-    HKT.Mix<C, 'N', [N1, N2, N3]>,
     HKT.Mix<C, 'K', [K1, K2, K3]>,
     HKT.Mix<C, 'Q', [Q1, Q2, Q3]>,
     HKT.Mix<C, 'Q', [W1, W2, W3]>,
@@ -226,7 +214,6 @@ export interface OptionT<M extends HKT.URIS, C = HKT.Auto>
 export interface SomeFn<F extends HKT.URIS, C = HKT.Auto> {
   <
     A,
-    N extends string = HKT.Initial<C, 'N'>,
     K = HKT.Initial<C, 'K'>,
     Q = HKT.Initial<C, 'Q'>,
     W = HKT.Initial<C, 'W'>,
@@ -237,13 +224,12 @@ export interface SomeFn<F extends HKT.URIS, C = HKT.Auto> {
     E = HKT.Initial<C, 'E'>
   >(
     a: A
-  ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, O.Option<A>>
+  ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, O.Option<A>>
 }
 
 export interface NoneFn<F extends HKT.URIS, C = HKT.Auto> {
   <
     A = never,
-    N extends string = HKT.Initial<C, 'N'>,
     K = HKT.Initial<C, 'K'>,
     Q = HKT.Initial<C, 'Q'>,
     W = HKT.Initial<C, 'W'>,
@@ -252,14 +238,13 @@ export interface NoneFn<F extends HKT.URIS, C = HKT.Auto> {
     S = HKT.Initial<C, 'S'>,
     R = HKT.Initial<C, 'R'>,
     E = HKT.Initial<C, 'E'>
-  >(): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, O.Option<A>>
+  >(): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, O.Option<A>>
 }
 
 export interface FromFFn<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>): HKT.Kind<
+  <K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>): HKT.Kind<
     F,
     C,
-    N,
     K,
     Q,
     W,
@@ -273,12 +258,11 @@ export interface FromFFn<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface GetOrElseFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, A1>(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, O.Option<A>>,
+  <K, Q, W, X, I, S, R, E, A, K1, Q1, W1, X1, I1, S1, R1, E1, A1>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, O.Option<A>>,
     onNone: () => HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N, N1>,
       HKT.Intro<C, 'K', K, K1>,
       HKT.Intro<C, 'Q', Q, Q1>,
       HKT.Intro<C, 'W', W, W1>,
@@ -292,7 +276,6 @@ export interface GetOrElseFn_<F extends HKT.URIS, C = HKT.Auto> {
   ): HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N, N1]>,
     HKT.Mix<C, 'K', [K, K1]>,
     HKT.Mix<C, 'Q', [Q, Q1]>,
     HKT.Mix<C, 'Q', [W, W1]>,
@@ -306,8 +289,7 @@ export interface GetOrElseFn_<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface GetOrElseFn<F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A>(onNone: () => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>): <
-    N1 extends string,
+  <K, Q, W, X, I, S, R, E, A>(onNone: () => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>): <
     K1,
     Q1,
     W1,
@@ -321,7 +303,6 @@ export interface GetOrElseFn<F extends HKT.URIS, C = HKT.Auto> {
     fa: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N, N1>,
       HKT.Intro<C, 'K', K, K1>,
       HKT.Intro<C, 'Q', Q, Q1>,
       HKT.Intro<C, 'W', W, W1>,
@@ -335,7 +316,6 @@ export interface GetOrElseFn<F extends HKT.URIS, C = HKT.Auto> {
   ) => HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N, N1]>,
     HKT.Mix<C, 'K', [K, K1]>,
     HKT.Mix<C, 'Q', [Q, Q1]>,
     HKT.Mix<C, 'Q', [W, W1]>,

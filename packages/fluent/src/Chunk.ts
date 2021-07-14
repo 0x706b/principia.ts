@@ -115,10 +115,10 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewrite _filterMapA from "@principia/base/Chunk"
      */
-    filterMapA<F extends HKT.URIS, C, N extends string, K, Q, W, X, I, S, R, E, B>(
+    filterMapA<F extends HKT.URIS, C, K, Q, W, X, I, S, R, E, B>(
       A: Applicative<F, C>,
-      f: (a: A) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Option<B>>
-    ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Chunk<B>>
+      f: (a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<B>>
+    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Chunk<B>>
 
     /**
      * @rewrite find_ from "@principia/base/Chunk"
@@ -178,10 +178,10 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewrite _ifilterMapA from "@principia/base/Chunk"
      */
-    ifilterMapA<F extends HKT.URIS, C, N extends string, K, Q, W, X, I, S, R, E, B>(
+    ifilterMapA<F extends HKT.URIS, C, K, Q, W, X, I, S, R, E, B>(
       A: Applicative<F, C>,
-      f: (i: number, a: A) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Option<B>>
-    ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Chunk<B>>
+      f: (i: number, a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<B>>
+    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Chunk<B>>
 
     /**
      * @rewrite ifoldMap_ from "@principia/base/Chunk"
@@ -206,10 +206,10 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewrite _imapA from "@principia/base/Chunk"
      */
-    imapA<F extends HKT.URIS, C, N extends string, K, Q, W, X, I, S, R, E, B>(
+    imapA<F extends HKT.URIS, C, K, Q, W, X, I, S, R, E, B>(
       A: Applicative<F, C>,
-      f: (i: number, a: A) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, B>
-    ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Chunk<B>>
+      f: (i: number, a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
+    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Chunk<B>>
 
     /**
      * @rewriteGetter init from "@principia/base/Chunk"
@@ -234,10 +234,10 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewrite _ipartitionMapA from "@principia/base/Chunk"
      */
-    ipartitionMapA<F extends HKT.URIS, C, N extends string, K, Q, W, X, I, S, R, E, B, D>(
+    ipartitionMapA<F extends HKT.URIS, C, K, Q, W, X, I, S, R, E, B, D>(
       A: Applicative<F, C>,
-      f: (i: number, a: A) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Either<B, D>>
-    ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, readonly [Chunk<B>, Chunk<D>]>
+      f: (i: number, a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<B, D>>
+    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [Chunk<B>, Chunk<D>]>
 
     /**
      * @rewriteGetter isEmpty from "@principia/base/Chunk"
@@ -262,10 +262,10 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewrite _mapA from "@principia/base/Chunk"
      */
-    mapA<F extends HKT.URIS, C, N extends string, K, Q, W, X, I, S, R, E, B>(
+    mapA<F extends HKT.URIS, C, K, Q, W, X, I, S, R, E, B>(
       A: Applicative<F, C>,
-      f: (a: A) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>
-    ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Chunk<B>>
+      f: (a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Chunk<B>>
 
     /**
      * @rewrite mapAccum_ from "@principia/base/Chunk"
@@ -290,10 +290,10 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewrite _partitionMapA from "@principia/base/Chunk"
      */
-    partitionMapA<F extends HKT.URIS, C, N extends string, K, Q, W, X, I, S, R, E, B, D>(
+    partitionMapA<F extends HKT.URIS, C, K, Q, W, X, I, S, R, E, B, D>(
       A: Applicative<F, C>,
-      f: (a: A) => HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, Either<B, D>>
-    ): HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, readonly [Chunk<B>, Chunk<D>]>
+      f: (a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<B, D>>
+    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [Chunk<B>, Chunk<D>]>
 
     /**
      * @rewrite prepend_ from "@principia/base/Chunk"

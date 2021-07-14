@@ -25,16 +25,16 @@ import { PSetter } from './Setter'
  */
 
 export interface ModifyAFn_<S, T, A, B> {
-  <F extends HKT.URIS, C = HKT.Auto>(F: P.Applicative<F, C>): <N extends string, K, Q, W, X, I, _S, R, E>(
+  <F extends HKT.URIS, C = HKT.Auto>(F: P.Applicative<F, C>): <K, Q, W, X, I, _S, R, E>(
     s: S,
-    f: (a: A) => HKT.Kind<F, C, N, K, Q, W, X, I, _S, R, E, B>
-  ) => HKT.Kind<F, C, N, K, Q, W, X, I, _S, R, E, T>
+    f: (a: A) => HKT.Kind<F, C, K, Q, W, X, I, _S, R, E, B>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, _S, R, E, T>
 }
 
 export interface ModifyAFn<S, T, A, B> {
-  <F extends HKT.URIS, C = HKT.Auto>(F: P.Applicative<F, C>): <N extends string, K, Q, W, X, I, _S, R, E>(
-    f: (a: A) => HKT.Kind<F, C, N, K, Q, W, X, I, _S, R, E, B>
-  ) => (s: S) => HKT.Kind<F, C, N, K, Q, W, X, I, _S, R, E, T>
+  <F extends HKT.URIS, C = HKT.Auto>(F: P.Applicative<F, C>): <K, Q, W, X, I, _S, R, E>(
+    f: (a: A) => HKT.Kind<F, C, K, Q, W, X, I, _S, R, E, B>
+  ) => (s: S) => HKT.Kind<F, C, K, Q, W, X, I, _S, R, E, T>
 }
 
 export interface PTraversal<S, T, A, B> extends PSetter<S, T, A, B>, Fold<S, A> {
@@ -260,9 +260,7 @@ export const left: <S, E, A>(sea: Traversal<S, E.Either<E, A>>) => Traversal<S, 
  */
 export function traverse<T extends HKT.URIS, C = HKT.Auto>(
   T: P.Traversable<T, C>
-): <N extends string, K, Q, W, X, I, S_, R, S, A>(
-  sta: Traversal<S, HKT.Kind<T, C, N, K, Q, W, X, I, S_, R, S, A>>
-) => Traversal<S, A> {
+): <K, Q, W, X, I, S_, R, S, A>(sta: Traversal<S, HKT.Kind<T, C, K, Q, W, X, I, S_, R, S, A>>) => Traversal<S, A> {
   return andThen(fromTraversable(T)())
 }
 

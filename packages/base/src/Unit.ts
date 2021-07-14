@@ -16,7 +16,6 @@ export interface Unit2<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, T
 
 export interface UnitFn<F extends HKT.URIS, TC = HKT.Auto> {
   <
-    N extends string = HKT.Initial<TC, 'N'>,
     K = HKT.Initial<TC, 'K'>,
     Q = HKT.Initial<TC, 'Q'>,
     W = HKT.Initial<TC, 'W'>,
@@ -25,12 +24,11 @@ export interface UnitFn<F extends HKT.URIS, TC = HKT.Auto> {
     S = HKT.Initial<TC, 'S'>,
     R = HKT.Initial<TC, 'R'>,
     E = HKT.Initial<TC, 'E'>
-  >(/* void */): HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, void>
+  >(/* void */): HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, void>
 }
 
 export interface UnitFn2<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
   <
-    NF extends string = HKT.Initial<TCF, 'N'>,
     KF = HKT.Initial<TCF, 'K'>,
     QF = HKT.Initial<TCF, 'Q'>,
     WF = HKT.Initial<TCF, 'W'>,
@@ -39,7 +37,6 @@ export interface UnitFn2<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto,
     SF = HKT.Initial<TCF, 'S'>,
     RF = HKT.Initial<TCF, 'R'>,
     EF = HKT.Initial<TCF, 'E'>,
-    NG extends string = HKT.Initial<TCG, 'N'>,
     KG = HKT.Initial<TCG, 'K'>,
     QG = HKT.Initial<TCG, 'Q'>,
     WG = HKT.Initial<TCG, 'W'>,
@@ -51,7 +48,6 @@ export interface UnitFn2<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto,
   >(/* void */): HKT.Kind<
     F,
     TCF,
-    NF,
     KF,
     QF,
     WF,
@@ -60,6 +56,6 @@ export interface UnitFn2<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto,
     SF,
     RF,
     EF,
-    HKT.Kind<G, TCG, NG, KG, QG, WG, XG, IG, SG, RG, EG, void>
+    HKT.Kind<G, TCG, KG, QG, WG, XG, IG, SG, RG, EG, void>
   >
 }

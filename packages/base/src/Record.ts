@@ -206,7 +206,6 @@ export function toUnfoldable<F extends HKT.URIS, C = HKT.Auto>(U: P.Unfoldable<F
   ): HKT.Kind<
     F,
     C,
-    HKT.Initial<C, 'N'>,
     HKT.Initial<C, 'K'>,
     HKT.Initial<C, 'Q'>,
     HKT.Initial<C, 'W'>,
@@ -612,8 +611,8 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => <N extends st
 }
 
 export function fromFoldableMap<B, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigroup<B>, F: P.Foldable<F, C>) {
-  return <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, A, N extends string>(
-    fa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
+  return <KF, QF, WF, XF, IF, SF, RF, EF, A, N extends string>(
+    fa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>,
     f: (a: A) => readonly [N, B]
   ): ReadonlyRecord<N, B> =>
     P.pipe(
@@ -628,8 +627,8 @@ export function fromFoldableMap<B, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigr
 
 export function fromFoldable<A, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigroup<A>, F: P.Foldable<F, C>) {
   const fromFoldableMapS = fromFoldableMap(S, F)
-  return <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, N extends string>(
-    fa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, readonly [N, A]>
+  return <KF, QF, WF, XF, IF, SF, RF, EF, N extends string>(
+    fa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, readonly [N, A]>
   ): ReadonlyRecord<N, A> => fromFoldableMapS(fa, P.identity)
 }
 
@@ -746,7 +745,7 @@ export const imapA_: P.MapWithIndexAFn_<[HKT.URI<RecordURI>]> = P.implementMapWi
     if (ks.length === 0) {
       return G.pure(empty)
     }
-    let gr: HKT.HKT<_['G'], Record<_['N'], _['B']>> = G.pure({}) as any
+    let gr: HKT.HKT<_['G'], Record<string, _['B']>> = G.pure({}) as any
     for (let i = 0; i < ks.length; i++) {
       const key = ks[i]
       gr        = G.crossWith_(gr, f(key, ta[key]), (r, b) => {

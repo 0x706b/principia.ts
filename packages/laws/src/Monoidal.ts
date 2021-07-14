@@ -16,7 +16,6 @@ function LeftIdentityLaw<F extends HKT.URIS, TC, A>(
     HKT.Kind<
       F,
       TC,
-      HKT.Initial<TC, 'N'>,
       HKT.Initial<TC, 'K'>,
       HKT.Initial<TC, 'Q'>,
       HKT.Initial<TC, 'W'>,
@@ -28,7 +27,7 @@ function LeftIdentityLaw<F extends HKT.URIS, TC, A>(
       A
     >
   >
-): <N extends string, K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>) => Promise<boolean>
+): <N extends string, K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>) => Promise<boolean>
 function LeftIdentityLaw<F, A>(
   F: MonoidalFunctor<HKT.UHKT<F>>,
   S: MaybeAsyncEq<HKT.HKT<F, A>>
@@ -49,7 +48,6 @@ function RightIdentityLaw<F extends HKT.URIS, TC, A>(
     HKT.Kind<
       F,
       TC,
-      HKT.Initial<TC, 'N'>,
       HKT.Initial<TC, 'K'>,
       HKT.Initial<TC, 'Q'>,
       HKT.Initial<TC, 'W'>,
@@ -61,7 +59,7 @@ function RightIdentityLaw<F extends HKT.URIS, TC, A>(
       A
     >
   >
-): <N extends string, K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>) => Promise<boolean>
+): <N extends string, K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>) => Promise<boolean>
 function RightIdentityLaw<F, A>(
   F: MonoidalFunctor<HKT.UHKT<F>>,
   S: MaybeAsyncEq<HKT.HKT<F, A>>
@@ -82,7 +80,6 @@ function AssociativityLaw<F extends HKT.URIS, TC, A, B, C>(
     HKT.Kind<
       F,
       TC,
-      HKT.Initial<TC, 'N'>,
       HKT.Initial<TC, 'K'>,
       HKT.Initial<TC, 'Q'>,
       HKT.Initial<TC, 'W'>,
@@ -94,42 +91,11 @@ function AssociativityLaw<F extends HKT.URIS, TC, A, B, C>(
       readonly [readonly [A, B], C]
     >
   >
-): <
-  N extends string,
-  K,
-  Q,
-  W,
-  X,
-  I,
-  S,
-  R,
-  E,
-  A,
-  NB extends string,
-  KB,
-  QB,
-  WB,
-  XB,
-  IB,
-  SB,
-  RB,
-  EB,
-  B,
-  NC extends string,
-  KC,
-  QC,
-  WC,
-  XC,
-  IC,
-  SC,
-  RC,
-  EC,
-  C
->(
+): <K, Q, W, X, I, S, R, E, A, KB, QB, WB, XB, IB, SB, RB, EB, B, KC, QC, WC, XC, IC, SC, RC, EC, C>(
   fs: [
-    HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>,
-    HKT.Kind<F, TC, NB, KB, QB, WB, XB, IB, SB, RB, EB, B>,
-    HKT.Kind<F, TC, NC, KC, QC, WC, XC, IC, SC, RC, EC, C>
+    HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>,
+    HKT.Kind<F, TC, KB, QB, WB, XB, IB, SB, RB, EB, B>,
+    HKT.Kind<F, TC, KC, QC, WC, XC, IC, SC, RC, EC, C>
   ]
 ) => Promise<boolean>
 function AssociativityLaw<F, A, B, C>(
@@ -161,7 +127,6 @@ export function testMonoidalAssociativity<F extends HKT.URIS, TC>(
     HKT.Kind<
       F,
       TC,
-      HKT.Initial<TC, 'N'>,
       HKT.Initial<TC, 'K'>,
       HKT.Initial<TC, 'Q'>,
       HKT.Initial<TC, 'W'>,
@@ -181,7 +146,6 @@ export function testMonoidalAssociativity<F extends HKT.URIS, TC>(
     HKT.Kind<
       F,
       TC,
-      HKT.Initial<TC, 'N'>,
       HKT.Initial<TC, 'K'>,
       HKT.Initial<TC, 'Q'>,
       HKT.Initial<TC, 'W'>,

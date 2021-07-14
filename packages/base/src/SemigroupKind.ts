@@ -14,12 +14,11 @@ export interface SemigroupKindComposition<A, F extends HKT.URIS, G extends HKT.U
 }
 
 export interface CombineKindFn_<A, F extends HKT.URIS, C = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1>(
-    x: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
+  <K, Q, W, X, I, S, R, E, K1, Q1, W1, X1, I1, S1, R1, E1>(
+    x: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     y: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N, N1>,
       HKT.Intro<C, 'K', K, K1>,
       HKT.Intro<C, 'Q', Q, Q1>,
       HKT.Intro<C, 'W', W, W1>,
@@ -33,7 +32,6 @@ export interface CombineKindFn_<A, F extends HKT.URIS, C = HKT.Auto> {
   ): HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N, N1]>,
     HKT.Mix<C, 'K', [K, K1]>,
     HKT.Mix<C, 'Q', [Q, Q1]>,
     HKT.Mix<C, 'W', [W, W1]>,
@@ -47,21 +45,10 @@ export interface CombineKindFn_<A, F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface CombineKindFn<A, F extends HKT.URIS, C = HKT.Auto> {
-  <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1>(y: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, A>): <
-    N extends string,
-    K,
-    Q,
-    W,
-    X,
-    I,
-    S,
-    R,
-    E
-  >(
+  <K1, Q1, W1, X1, I1, S1, R1, E1>(y: HKT.Kind<F, C, K1, Q1, W1, X1, I1, S1, R1, E1, A>): <K, Q, W, X, I, S, R, E>(
     x: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N1, N>,
       HKT.Intro<C, 'K', K1, K>,
       HKT.Intro<C, 'Q', Q1, Q>,
       HKT.Intro<C, 'W', W1, W>,
@@ -75,7 +62,6 @@ export interface CombineKindFn<A, F extends HKT.URIS, C = HKT.Auto> {
   ) => HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N1, N]>,
     HKT.Mix<C, 'K', [K1, K]>,
     HKT.Mix<C, 'Q', [Q1, Q]>,
     HKT.Mix<C, 'W', [W1, W]>,
@@ -90,7 +76,6 @@ export interface CombineKindFn<A, F extends HKT.URIS, C = HKT.Auto> {
 
 export interface CombineKindFnComposition_<A, F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
   <
-    NF extends string,
     KF,
     QF,
     WF,
@@ -99,7 +84,6 @@ export interface CombineKindFnComposition_<A, F extends HKT.URIS, G extends HKT.
     SF,
     RF,
     EF,
-    NG extends string,
     KG,
     QG,
     WG,
@@ -108,7 +92,6 @@ export interface CombineKindFnComposition_<A, F extends HKT.URIS, G extends HKT.
     SG,
     RG,
     EG,
-    NF1 extends string,
     KF1,
     QF1,
     WF1,
@@ -117,7 +100,6 @@ export interface CombineKindFnComposition_<A, F extends HKT.URIS, G extends HKT.
     SF1,
     RF1,
     EF1,
-    NG1 extends string,
     KG1,
     QG1,
     WG1,
@@ -130,7 +112,6 @@ export interface CombineKindFnComposition_<A, F extends HKT.URIS, G extends HKT.
     x: HKT.Kind<
       F,
       TCF,
-      NF1,
       KF1,
       QF1,
       WF1,
@@ -139,12 +120,11 @@ export interface CombineKindFnComposition_<A, F extends HKT.URIS, G extends HKT.
       SF1,
       RF1,
       EF1,
-      HKT.Kind<G, TCG, NG1, KG1, QG1, WG1, XG1, IG1, SG1, RG1, EG1, A>
+      HKT.Kind<G, TCG, KG1, QG1, WG1, XG1, IG1, SG1, RG1, EG1, A>
     >,
     y: HKT.Kind<
       F,
       TCF,
-      HKT.Intro<TCF, 'N', NF1, NF>,
       HKT.Intro<TCF, 'K', KF1, KF>,
       HKT.Intro<TCF, 'Q', QF1, QF>,
       HKT.Intro<TCF, 'W', WF1, WF>,
@@ -156,7 +136,6 @@ export interface CombineKindFnComposition_<A, F extends HKT.URIS, G extends HKT.
       HKT.Kind<
         G,
         TCG,
-        HKT.Intro<TCG, 'N', NG1, NG>,
         HKT.Intro<TCG, 'K', KG1, KG>,
         HKT.Intro<TCG, 'Q', QG1, QG>,
         HKT.Intro<TCG, 'W', WG1, WG>,
@@ -171,7 +150,6 @@ export interface CombineKindFnComposition_<A, F extends HKT.URIS, G extends HKT.
   ): HKT.Kind<
     F,
     TCF,
-    HKT.Mix<TCF, 'N', [NF, NF1]>,
     HKT.Mix<TCF, 'K', [KF, KF1]>,
     HKT.Mix<TCF, 'Q', [QF, QF1]>,
     HKT.Mix<TCF, 'W', [WF, WF1]>,
@@ -183,7 +161,6 @@ export interface CombineKindFnComposition_<A, F extends HKT.URIS, G extends HKT.
     HKT.Kind<
       G,
       TCG,
-      HKT.Mix<TCG, 'N', [NG, NG1]>,
       HKT.Mix<TCG, 'K', [KG, KG1]>,
       HKT.Mix<TCG, 'Q', [QG, QG1]>,
       HKT.Mix<TCG, 'W', [WG, WG1]>,
@@ -198,30 +175,10 @@ export interface CombineKindFnComposition_<A, F extends HKT.URIS, G extends HKT.
 }
 
 export interface CombineKindFnComposition<A, F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
-  <
-    NF1 extends string,
-    KF1,
-    QF1,
-    WF1,
-    XF1,
-    IF1,
-    SF1,
-    RF1,
-    EF1,
-    NG1 extends string,
-    KG1,
-    QG1,
-    WG1,
-    XG1,
-    IG1,
-    SG1,
-    RG1,
-    EG1
-  >(
+  <KF1, QF1, WF1, XF1, IF1, SF1, RF1, EF1, KG1, QG1, WG1, XG1, IG1, SG1, RG1, EG1>(
     y: HKT.Kind<
       F,
       CF,
-      NF1,
       KF1,
       QF1,
       WF1,
@@ -230,13 +187,12 @@ export interface CombineKindFnComposition<A, F extends HKT.URIS, G extends HKT.U
       SF1,
       RF1,
       EF1,
-      HKT.Kind<G, CG, NG1, KG1, QG1, WG1, XG1, IG1, SG1, RG1, EG1, A>
+      HKT.Kind<G, CG, KG1, QG1, WG1, XG1, IG1, SG1, RG1, EG1, A>
     >
-  ): <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, NG extends string, KG, QG, WG, XG, IG, SG, RG, EG>(
+  ): <KF, QF, WF, XF, IF, SF, RF, EF, KG, QG, WG, XG, IG, SG, RG, EG>(
     x: HKT.Kind<
       F,
       CF,
-      HKT.Intro<CF, 'N', NF1, NF>,
       HKT.Intro<CF, 'K', KF1, KF>,
       HKT.Intro<CF, 'Q', QF1, QF>,
       HKT.Intro<CF, 'W', WF1, WF>,
@@ -248,7 +204,6 @@ export interface CombineKindFnComposition<A, F extends HKT.URIS, G extends HKT.U
       HKT.Kind<
         G,
         CG,
-        HKT.Intro<CG, 'N', NG1, NG>,
         HKT.Intro<CG, 'K', KG1, KG>,
         HKT.Intro<CG, 'Q', QG1, QG>,
         HKT.Intro<CG, 'W', WG1, WG>,
@@ -263,7 +218,6 @@ export interface CombineKindFnComposition<A, F extends HKT.URIS, G extends HKT.U
   ) => HKT.Kind<
     F,
     CF,
-    HKT.Mix<CF, 'N', [NF1, NF]>,
     HKT.Mix<CF, 'K', [KF1, KF]>,
     HKT.Mix<CF, 'Q', [QF1, QF]>,
     HKT.Mix<CF, 'W', [WF1, WF]>,
@@ -275,7 +229,6 @@ export interface CombineKindFnComposition<A, F extends HKT.URIS, G extends HKT.U
     HKT.Kind<
       G,
       CG,
-      HKT.Mix<CG, 'N', [NG1, NG]>,
       HKT.Mix<CG, 'K', [KG1, KG]>,
       HKT.Mix<CG, 'Q', [QG1, QG]>,
       HKT.Mix<CG, 'W', [WG1, WG]>,

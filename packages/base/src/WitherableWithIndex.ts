@@ -43,33 +43,15 @@ export function WitherableWithIndex<F extends HKT.URIS, C = HKT.Auto>(
 }
 
 export interface FilterMapWithIndexAFn<F extends HKT.URIS, C = HKT.Auto> {
-  <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <
-    NG extends string,
-    KG,
-    QG,
-    WG,
-    XG,
-    IG,
-    SG,
-    RG,
-    EG,
-    A,
-    B,
-    NF extends string,
-    KF
-  >(
-    f: (
-      k: HKT.IndexFor<F, HKT.OrFix<'N', C, NF>, HKT.OrFix<'K', C, KF>>,
-      a: A
-    ) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, Option<B>>
+  <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <KG, QG, WG, XG, IG, SG, RG, EG, A, B, KF>(
+    f: (k: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>, a: A) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Option<B>>
   ) => <QF, WF, XF, IF, SF, RF, EF>(
-    wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>
-  ) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>>
+    wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>
+  ) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
 export interface FilterMapWithIndexAFn_<F extends HKT.URIS, C = HKT.Auto> {
   <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <
-    NF extends string,
     KF,
     QF,
     WF,
@@ -78,7 +60,6 @@ export interface FilterMapWithIndexAFn_<F extends HKT.URIS, C = HKT.Auto> {
     SF,
     RF,
     EF,
-    NG extends string,
     KG,
     QG,
     WG,
@@ -90,20 +71,16 @@ export interface FilterMapWithIndexAFn_<F extends HKT.URIS, C = HKT.Auto> {
     A,
     B
   >(
-    wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
-    f: (
-      k: HKT.IndexFor<F, HKT.OrFix<'N', C, NF>, HKT.OrFix<'K', C, KF>>,
-      a: A
-    ) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, Option<B>>
-  ) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>>
+    wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>,
+    f: (k: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>, a: A) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Option<B>>
+  ) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
 export function implementFilterMapWithIndexA<F extends HKT.URIS, C = HKT.Auto>(): (
-  i: <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, A, B, G>(_: {
+  i: <KF, QF, WF, XF, IF, SF, RF, EF, A, B, G>(_: {
     A: A
     B: B
     G: G
-    NF: NF
     FK: KF
     FQ: QF
     FW: WF
@@ -115,21 +92,20 @@ export function implementFilterMapWithIndexA<F extends HKT.URIS, C = HKT.Auto>()
   }) => (
     G: Applicative<HKT.UHKT<G>>
   ) => (
-    f: (i: HKT.IndexFor<F, HKT.OrFix<'N', F, NF>, HKT.OrFix<'K', F, KF>>, a: A) => HKT.HKT<G, Option<B>>
+    f: (i: HKT.IndexFor<F, HKT.OrFix<'K', F, KF>>, a: A) => HKT.HKT<G, Option<B>>
   ) => (
-    wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>
-  ) => HKT.HKT<G, HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>>
+    wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>
+  ) => HKT.HKT<G, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 ) => FilterMapWithIndexAFn<F, C>
 export function implementFilterMapWithIndexA() {
   return (i: any) => i()
 }
 
 export function implementWitherWithIndex_<F extends HKT.URIS, C = HKT.Auto>(): (
-  i: <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, A, B, G>(_: {
+  i: <KF, QF, WF, XF, IF, SF, RF, EF, A, B, G>(_: {
     A: A
     B: B
     G: G
-    NF: NF
     FK: KF
     FQ: QF
     FW: WF
@@ -141,41 +117,25 @@ export function implementWitherWithIndex_<F extends HKT.URIS, C = HKT.Auto>(): (
   }) => (
     G: Applicative<HKT.UHKT<G>>
   ) => (
-    wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
-    f: (i: HKT.IndexFor<F, HKT.OrFix<'N', C, NF>, HKT.OrFix<'K', C, KF>>, a: A) => HKT.HKT<G, Option<B>>
-  ) => HKT.HKT<G, HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>>
+    wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>,
+    f: (i: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>, a: A) => HKT.HKT<G, Option<B>>
+  ) => HKT.HKT<G, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 ) => FilterMapWithIndexAFn_<F, C>
 export function implementWitherWithIndex_() {
   return (i: any) => i()
 }
 
 export interface PartitionMapWithIndexAFn<F extends HKT.URIS, C = HKT.Auto> {
-  <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <
-    NG extends string,
-    KG,
-    QG,
-    WG,
-    XG,
-    IG,
-    SG,
-    RG,
-    EG,
-    A,
-    B,
-    B2,
-    NF extends string,
-    KF
-  >(
+  <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <KG, QG, WG, XG, IG, SG, RG, EG, A, B, B2, KF>(
     f: (
-      k: HKT.IndexFor<F, HKT.OrFix<'N', C, NF>, HKT.OrFix<'K', C, KF>>,
+      k: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>,
       a: A
-    ) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, Either<B, B2>>
+    ) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Either<B, B2>>
   ) => <QF, WF, XF, IF, SF, RF, EF>(
-    wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>
+    wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>
   ) => HKT.Kind<
     G,
     GC,
-    NG,
     KG,
     QG,
     WG,
@@ -184,16 +144,12 @@ export interface PartitionMapWithIndexAFn<F extends HKT.URIS, C = HKT.Auto> {
     SG,
     RG,
     EG,
-    readonly [
-      HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>,
-      HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B2>
-    ]
+    readonly [HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B2>]
   >
 }
 
 export interface PartitionMapWithIndexAFn_<F extends HKT.URIS, C = HKT.Auto> {
   <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <
-    NF extends string,
     KF,
     QF,
     WF,
@@ -202,7 +158,6 @@ export interface PartitionMapWithIndexAFn_<F extends HKT.URIS, C = HKT.Auto> {
     SF,
     RF,
     EF,
-    NG extends string,
     KG,
     QG,
     WG,
@@ -215,15 +170,14 @@ export interface PartitionMapWithIndexAFn_<F extends HKT.URIS, C = HKT.Auto> {
     B,
     B2
   >(
-    wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
+    wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>,
     f: (
-      k: HKT.IndexFor<F, HKT.OrFix<'N', C, NF>, HKT.OrFix<'K', C, KF>>,
+      k: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>,
       a: A
-    ) => HKT.Kind<G, GC, NG, KG, QG, WG, XG, IG, SG, RG, EG, Either<B, B2>>
+    ) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Either<B, B2>>
   ) => HKT.Kind<
     G,
     GC,
-    NG,
     KG,
     QG,
     WG,
@@ -232,20 +186,16 @@ export interface PartitionMapWithIndexAFn_<F extends HKT.URIS, C = HKT.Auto> {
     SG,
     RG,
     EG,
-    readonly [
-      HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>,
-      HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B2>
-    ]
+    readonly [HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B2>]
   >
 }
 
 export function implementPartitionMapWithIndexA<F extends HKT.URIS, C = HKT.Auto>(): (
-  i: <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, A, B, B2, G>(_: {
+  i: <KF, QF, WF, XF, IF, SF, RF, EF, A, B, B2, G>(_: {
     A: A
     B: B
     B2: B2
     G: G
-    NF: NF
     FK: KF
     FQ: QF
     FW: WF
@@ -257,15 +207,12 @@ export function implementPartitionMapWithIndexA<F extends HKT.URIS, C = HKT.Auto
   }) => (
     G: Applicative<HKT.UHKT<G>>
   ) => (
-    f: (i: HKT.IndexFor<F, HKT.OrFix<'N', C, NF>, HKT.OrFix<'K', C, KF>>, a: A) => HKT.HKT<G, Either<B, B2>>
+    f: (i: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>, a: A) => HKT.HKT<G, Either<B, B2>>
   ) => (
-    wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>
+    wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>
   ) => HKT.HKT<
     G,
-    readonly [
-      HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>,
-      HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B2>
-    ]
+    readonly [HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B2>]
   >
 ) => PartitionMapWithIndexAFn<F, C>
 export function implementPartitionMapWithIndexA() {
@@ -273,12 +220,11 @@ export function implementPartitionMapWithIndexA() {
 }
 
 export function implementPartitionMapWithIndexA_<F extends HKT.URIS, C = HKT.Auto>(): (
-  i: <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, A, B, B2, G>(_: {
+  i: <KF, QF, WF, XF, IF, SF, RF, EF, A, B, B2, G>(_: {
     A: A
     B: B
     B2: B2
     G: G
-    NF: NF
     FK: KF
     FQ: QF
     FW: WF
@@ -290,14 +236,11 @@ export function implementPartitionMapWithIndexA_<F extends HKT.URIS, C = HKT.Aut
   }) => (
     G: Applicative<HKT.UHKT<G>>
   ) => (
-    wa: HKT.Kind<F, C, NF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
-    f: (i: HKT.IndexFor<F, HKT.OrFix<'N', C, NF>, HKT.OrFix<'K', C, KF>>, a: A) => HKT.HKT<G, Either<B, B2>>
+    wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>,
+    f: (i: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>, a: A) => HKT.HKT<G, Either<B, B2>>
   ) => HKT.HKT<
     G,
-    readonly [
-      HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B>,
-      HKT.Kind<F, C, string, KF, QF, WF, XF, IF, SF, RF, EF, B2>
-    ]
+    readonly [HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B2>]
   >
 ) => PartitionMapWithIndexAFn_<F, C>
 export function implementPartitionMapWithIndexA_() {

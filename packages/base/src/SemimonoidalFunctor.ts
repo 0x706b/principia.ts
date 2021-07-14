@@ -64,12 +64,11 @@ export function getSemimonoidalFunctorComposition<F extends HKT.URIS, G extends 
 }
 
 export interface CrossWithFn_<F extends HKT.URIS, TC = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B, C>(
-    fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>,
+  <K, Q, W, X, I, S, R, E, A, K1, Q1, W1, X1, I1, S1, R1, E1, B, C>(
+    fa: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>,
     fb: HKT.Kind<
       F,
       TC,
-      HKT.Intro<TC, 'N', N, N1>,
       HKT.Intro<TC, 'K', K, K1>,
       HKT.Intro<TC, 'Q', Q, Q1>,
       HKT.Intro<TC, 'W', W, W1>,
@@ -84,7 +83,6 @@ export interface CrossWithFn_<F extends HKT.URIS, TC = HKT.Auto> {
   ): HKT.Kind<
     F,
     TC,
-    HKT.Mix<TC, 'N', [N, N1]>,
     HKT.Mix<TC, 'K', [K, K1]>,
     HKT.Mix<TC, 'Q', [Q, Q1]>,
     HKT.Mix<TC, 'W', [W, W1]>,
@@ -98,14 +96,13 @@ export interface CrossWithFn_<F extends HKT.URIS, TC = HKT.Auto> {
 }
 
 export interface CrossWithFn<F extends HKT.URIS, TC = HKT.Auto> {
-  <A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B, C>(
-    fb: HKT.Kind<F, TC, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>,
+  <A, K1, Q1, W1, X1, I1, S1, R1, E1, B, C>(
+    fb: HKT.Kind<F, TC, K1, Q1, W1, X1, I1, S1, R1, E1, B>,
     f: (a: A, b: B) => C
-  ): <N extends string, K, Q, W, X, I, S, R, E>(
+  ): <K, Q, W, X, I, S, R, E>(
     fa: HKT.Kind<
       F,
       TC,
-      HKT.Intro<TC, 'N', N1, N>,
       HKT.Intro<TC, 'K', K1, K>,
       HKT.Intro<TC, 'Q', Q1, Q>,
       HKT.Intro<TC, 'W', W1, W>,
@@ -119,7 +116,6 @@ export interface CrossWithFn<F extends HKT.URIS, TC = HKT.Auto> {
   ) => HKT.Kind<
     F,
     TC,
-    HKT.Mix<TC, 'N', [N1, N]>,
     HKT.Mix<TC, 'K', [K1, K]>,
     HKT.Mix<TC, 'Q', [Q1, Q]>,
     HKT.Mix<TC, 'W', [W1, W]>,
@@ -134,7 +130,6 @@ export interface CrossWithFn<F extends HKT.URIS, TC = HKT.Auto> {
 
 export interface CrossWithFn2_<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
   <
-    NF extends string,
     KF,
     QF,
     WF,
@@ -143,7 +138,6 @@ export interface CrossWithFn2_<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT
     SF,
     RF,
     EF,
-    NG extends string,
     KG,
     QG,
     WG,
@@ -152,7 +146,6 @@ export interface CrossWithFn2_<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT
     SG,
     RG,
     EG,
-    NF1 extends string,
     KF1,
     QF1,
     WF1,
@@ -161,7 +154,6 @@ export interface CrossWithFn2_<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT
     SF1,
     RF1,
     EF1,
-    NG1 extends string,
     KG1,
     QG1,
     WG1,
@@ -174,11 +166,10 @@ export interface CrossWithFn2_<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT
     B,
     C
   >(
-    fga: HKT.Kind<F, TCF, NF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, TCG, NG, KG, QG, WG, XG, IG, SG, RG, EG, A>>,
+    fga: HKT.Kind<F, TCF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, TCG, KG, QG, WG, XG, IG, SG, RG, EG, A>>,
     fgb: HKT.Kind<
       F,
       TCF,
-      HKT.Intro<TCF, 'N', NF, NF1>,
       HKT.Intro<TCF, 'K', KF, KF1>,
       HKT.Intro<TCF, 'Q', QF, QF1>,
       HKT.Intro<TCF, 'W', WF, WF1>,
@@ -190,7 +181,6 @@ export interface CrossWithFn2_<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT
       HKT.Kind<
         G,
         TCG,
-        HKT.Intro<TCG, 'N', NG, NG1>,
         HKT.Intro<TCG, 'K', KG, KG1>,
         HKT.Intro<TCG, 'Q', QG, QG1>,
         HKT.Intro<TCG, 'W', WG, WG1>,
@@ -206,7 +196,6 @@ export interface CrossWithFn2_<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT
   ): HKT.Kind<
     F,
     TCF,
-    HKT.Mix<TCF, 'N', [NF, NF1]>,
     HKT.Mix<TCF, 'K', [KF, KF1]>,
     HKT.Mix<TCF, 'Q', [QF, QF1]>,
     HKT.Mix<TCF, 'W', [WF, WF1]>,
@@ -218,7 +207,6 @@ export interface CrossWithFn2_<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT
     HKT.Kind<
       G,
       TCG,
-      HKT.Mix<TCG, 'N', [NG, NG1]>,
       HKT.Mix<TCG, 'K', [KG, KG1]>,
       HKT.Mix<TCG, 'Q', [QG, QG1]>,
       HKT.Mix<TCG, 'W', [WG, WG1]>,
@@ -233,33 +221,10 @@ export interface CrossWithFn2_<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT
 }
 
 export interface CrossWithFn2<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
-  <
-    A,
-    NF1 extends string,
-    KF1,
-    QF1,
-    WF1,
-    XF1,
-    IF1,
-    SF1,
-    RF1,
-    EF1,
-    NG1 extends string,
-    KG1,
-    QG1,
-    WG1,
-    XG1,
-    IG1,
-    SG1,
-    RG1,
-    EG1,
-    B,
-    C
-  >(
+  <A, KF1, QF1, WF1, XF1, IF1, SF1, RF1, EF1, KG1, QG1, WG1, XG1, IG1, SG1, RG1, EG1, B, C>(
     fgb: HKT.Kind<
       F,
       TCF,
-      NF1,
       KF1,
       QF1,
       WF1,
@@ -268,14 +233,13 @@ export interface CrossWithFn2<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.
       SF1,
       RF1,
       EF1,
-      HKT.Kind<G, TCG, NG1, KG1, QG1, WG1, XG1, IG1, SG1, RG1, EG1, B>
+      HKT.Kind<G, TCG, KG1, QG1, WG1, XG1, IG1, SG1, RG1, EG1, B>
     >,
     f: (a: A, b: B) => C
-  ): <NF extends string, KF, QF, WF, XF, IF, SF, RF, EF, NG extends string, KG, QG, WG, XG, IG, SG, RG, EG>(
+  ): <KF, QF, WF, XF, IF, SF, RF, EF, KG, QG, WG, XG, IG, SG, RG, EG>(
     fga: HKT.Kind<
       F,
       TCF,
-      HKT.Intro<TCF, 'N', NF1, NF>,
       HKT.Intro<TCF, 'K', KF1, KF>,
       HKT.Intro<TCF, 'Q', QF1, QF>,
       HKT.Intro<TCF, 'W', WF1, WF>,
@@ -287,7 +251,6 @@ export interface CrossWithFn2<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.
       HKT.Kind<
         G,
         TCG,
-        HKT.Intro<TCG, 'N', NG1, NG>,
         HKT.Intro<TCG, 'K', KG1, KG>,
         HKT.Intro<TCG, 'Q', QG1, QG>,
         HKT.Intro<TCG, 'W', WG1, WG>,
@@ -302,7 +265,6 @@ export interface CrossWithFn2<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.
   ) => HKT.Kind<
     F,
     TCF,
-    HKT.Mix<TCF, 'N', [NF1, NF]>,
     HKT.Mix<TCF, 'K', [KF1, KF]>,
     HKT.Mix<TCF, 'Q', [QF1, QF]>,
     HKT.Mix<TCF, 'W', [WF1, WF]>,
@@ -314,7 +276,6 @@ export interface CrossWithFn2<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.
     HKT.Kind<
       G,
       TCG,
-      HKT.Mix<TCG, 'N', [NG1, NG]>,
       HKT.Mix<TCG, 'K', [KG1, KG]>,
       HKT.Mix<TCG, 'Q', [QG1, QG]>,
       HKT.Mix<TCG, 'W', [WG1, WG]>,
@@ -343,35 +304,12 @@ export function apF<F extends HKT.URIS, C = HKT.Auto>(A: SemimonoidalFunctor<F, 
 }
 
 export interface CrossSFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <
-    N extends string,
-    K,
-    Q,
-    W,
-    X,
-    I,
-    S,
-    R,
-    E,
-    BN extends string,
-    N1 extends string,
-    K1,
-    Q1,
-    W1,
-    X1,
-    I1,
-    S1,
-    R1,
-    E1,
-    A1,
-    A
-  >(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
+  <K, Q, W, X, I, S, R, E, BN extends string, K1, Q1, W1, X1, I1, S1, R1, E1, A1, A>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     name: Exclude<BN, keyof A>,
     fb: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N, N1>,
       HKT.Intro<C, 'K', K, K1>,
       HKT.Intro<C, 'Q', Q, Q1>,
       HKT.Intro<C, 'W', W, W1>,
@@ -385,7 +323,6 @@ export interface CrossSFn_<F extends HKT.URIS, C = HKT.Auto> {
   ): HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N, N1]>,
     HKT.Mix<C, 'K', [K, K1]>,
     HKT.Mix<C, 'Q', [Q, Q1]>,
     HKT.Mix<C, 'W', [W, W1]>,
@@ -403,14 +340,13 @@ export function crossSF_<F extends HKT.URIS, C = HKT.Auto>(F: SemimonoidalFuncto
 }
 
 export interface CrossSFn<F extends HKT.URIS, C = HKT.Auto> {
-  <BN extends string, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, A1, A>(
+  <BN extends string, K1, Q1, W1, X1, I1, S1, R1, E1, A1, A>(
     name: Exclude<BN, keyof A>,
-    fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, A1>
-  ): <N extends string, K, Q, W, X, I, S, R, E>(
+    fb: HKT.Kind<F, C, K1, Q1, W1, X1, I1, S1, R1, E1, A1>
+  ): <K, Q, W, X, I, S, R, E>(
     fa: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N1, N>,
       HKT.Intro<C, 'K', K1, K>,
       HKT.Intro<C, 'Q', Q1, Q>,
       HKT.Intro<C, 'W', W1, W>,
@@ -424,7 +360,6 @@ export interface CrossSFn<F extends HKT.URIS, C = HKT.Auto> {
   ) => HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N, N1]>,
     HKT.Mix<C, 'K', [K, K1]>,
     HKT.Mix<C, 'Q', [Q, Q1]>,
     HKT.Mix<C, 'W', [W, W1]>,
@@ -442,33 +377,11 @@ export function crossSF<F extends HKT.URIS, C = HKT.Auto>(F: SemimonoidalFunctor
 }
 
 export interface CrossTFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <
-    N extends string,
-    K,
-    Q,
-    W,
-    X,
-    I,
-    S,
-    R,
-    E,
-    N1 extends string,
-    K1,
-    Q1,
-    W1,
-    X1,
-    I1,
-    S1,
-    R1,
-    E1,
-    A1,
-    A extends ReadonlyArray<unknown>
-  >(
-    fa: HKT.Kind<F, C, N, K, Q, W, X, I, S, R, E, A>,
+  <K, Q, W, X, I, S, R, E, K1, Q1, W1, X1, I1, S1, R1, E1, A1, A extends ReadonlyArray<unknown>>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     fb: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N, N1>,
       HKT.Intro<C, 'K', K, K1>,
       HKT.Intro<C, 'Q', Q, Q1>,
       HKT.Intro<C, 'W', W, W1>,
@@ -482,7 +395,6 @@ export interface CrossTFn_<F extends HKT.URIS, C = HKT.Auto> {
   ): HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N, N1]>,
     HKT.Mix<C, 'K', [K, K1]>,
     HKT.Mix<C, 'Q', [Q, Q1]>,
     HKT.Mix<C, 'W', [W, W1]>,
@@ -500,8 +412,7 @@ export function crossTF_<F extends HKT.URIS, C = HKT.Auto>(F: SemimonoidalFuncto
 }
 
 export interface CrossTFn<F extends HKT.URIS, C = HKT.Auto> {
-  <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, A1>(fb: HKT.Kind<F, C, N1, K1, Q1, W1, X1, I1, S1, R1, E1, A1>): <
-    N extends string,
+  <K1, Q1, W1, X1, I1, S1, R1, E1, A1>(fb: HKT.Kind<F, C, K1, Q1, W1, X1, I1, S1, R1, E1, A1>): <
     K,
     Q,
     W,
@@ -515,7 +426,6 @@ export interface CrossTFn<F extends HKT.URIS, C = HKT.Auto> {
     fas: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'N', N1, N>,
       HKT.Intro<C, 'K', K1, K>,
       HKT.Intro<C, 'Q', Q1, Q>,
       HKT.Intro<C, 'W', W1, W>,
@@ -529,7 +439,6 @@ export interface CrossTFn<F extends HKT.URIS, C = HKT.Auto> {
   ) => HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'N', [N, N1]>,
     HKT.Mix<C, 'K', [K, K1]>,
     HKT.Mix<C, 'Q', [Q, Q1]>,
     HKT.Mix<C, 'W', [W, W1]>,
@@ -547,32 +456,12 @@ export function crossTF<F extends HKT.URIS, C = HKT.Auto>(F: SemimonoidalFunctor
 }
 
 export interface LiftA2Fn<F extends HKT.URIS, TC = HKT.Auto> {
-  <A, B, D>(f: (a: A) => (b: B) => D): <
-    N extends string,
-    K,
-    Q,
-    W,
-    X,
-    I,
-    S,
-    R,
-    E,
-    N1 extends string,
-    K1,
-    Q1,
-    W1,
-    X1,
-    I1,
-    S1,
-    R1,
-    E1
-  >(
-    fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>
+  <A, B, D>(f: (a: A) => (b: B) => D): <K, Q, W, X, I, S, R, E, K1, Q1, W1, X1, I1, S1, R1, E1>(
+    fa: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>
   ) => (
     fb: HKT.Kind<
       F,
       TC,
-      HKT.Intro<TC, 'N', N, N1>,
       HKT.Intro<TC, 'K', K, K1>,
       HKT.Intro<TC, 'Q', Q, Q1>,
       HKT.Intro<TC, 'W', W, W1>,
@@ -586,7 +475,6 @@ export interface LiftA2Fn<F extends HKT.URIS, TC = HKT.Auto> {
   ) => HKT.Kind<
     F,
     TC,
-    HKT.Mix<TC, 'N', [N, N1]>,
     HKT.Mix<TC, 'K', [K, K1]>,
     HKT.Mix<TC, 'Q', [Q, Q1]>,
     HKT.Mix<TC, 'W', [W, W1]>,
@@ -609,7 +497,6 @@ export interface MapNFn<F extends HKT.URIS, TC = HKT.Auto> {
       HKT.Kind<
         F,
         TC,
-        HKT.Intro<TC, 'N', N, any>,
         HKT.Intro<TC, 'K', K, any>,
         HKT.Intro<TC, 'Q', Q, any>,
         HKT.Intro<TC, 'W', W, any>,
@@ -624,7 +511,6 @@ export interface MapNFn<F extends HKT.URIS, TC = HKT.Auto> {
         HKT.Kind<
           F,
           TC,
-          HKT.Intro<TC, 'N', N, any>,
           HKT.Intro<TC, 'K', K, any>,
           HKT.Intro<TC, 'Q', Q, any>,
           HKT.Intro<TC, 'W', W, any>,
@@ -638,7 +524,6 @@ export interface MapNFn<F extends HKT.URIS, TC = HKT.Auto> {
       >
     ],
     B,
-    N extends string = HKT.Initial<TC, 'N'>,
     K = HKT.Initial<TC, 'K'>,
     Q = HKT.Initial<TC, 'Q'>,
     W = HKT.Initial<TC, 'W'>,
@@ -654,7 +539,6 @@ export interface MapNFn<F extends HKT.URIS, TC = HKT.Auto> {
   ) => HKT.Kind<
     F,
     TC,
-    InferMixTuple<F, TC, 'N', N, KT>,
     InferMixTuple<F, TC, 'K', K, KT>,
     InferMixTuple<F, TC, 'Q', Q, KT>,
     InferMixTuple<F, TC, 'W', W, KT>,
@@ -673,7 +557,6 @@ export interface MapNFn_<F extends HKT.URIS, TC = HKT.Auto> {
       HKT.Kind<
         F,
         TC,
-        HKT.Intro<TC, 'N', N, any>,
         HKT.Intro<TC, 'K', K, any>,
         HKT.Intro<TC, 'Q', Q, any>,
         HKT.Intro<TC, 'W', W, any>,
@@ -688,7 +571,6 @@ export interface MapNFn_<F extends HKT.URIS, TC = HKT.Auto> {
         HKT.Kind<
           F,
           TC,
-          HKT.Intro<TC, 'N', N, any>,
           HKT.Intro<TC, 'K', K, any>,
           HKT.Intro<TC, 'Q', Q, any>,
           HKT.Intro<TC, 'W', W, any>,
@@ -701,7 +583,6 @@ export interface MapNFn_<F extends HKT.URIS, TC = HKT.Auto> {
         >
       >
     ],
-    N extends string = HKT.Initial<TC, 'N'>,
     K = HKT.Initial<TC, 'K'>,
     Q = HKT.Initial<TC, 'Q'>,
     W = HKT.Initial<TC, 'W'>,
@@ -717,7 +598,6 @@ export interface MapNFn_<F extends HKT.URIS, TC = HKT.Auto> {
   ) => HKT.Kind<
     F,
     TC,
-    InferMixTuple<F, TC, 'N', N, KT>,
     InferMixTuple<F, TC, 'K', K, KT>,
     InferMixTuple<F, TC, 'Q', Q, KT>,
     InferMixTuple<F, TC, 'W', W, KT>,
@@ -772,7 +652,6 @@ export interface SequenceSFn<F extends HKT.URIS, TC = HKT.Auto> {
         HKT.Kind<
           F,
           TC,
-          HKT.Intro<TC, 'N', N, any>,
           HKT.Intro<TC, 'K', K, any>,
           HKT.Intro<TC, 'Q', Q, any>,
           HKT.Intro<TC, 'W', W, any>,
@@ -785,7 +664,6 @@ export interface SequenceSFn<F extends HKT.URIS, TC = HKT.Auto> {
         >
       >
     >,
-    N extends string = HKT.Initial<TC, 'N'>,
     K = HKT.Initial<TC, 'K'>,
     Q = HKT.Initial<TC, 'Q'>,
     W = HKT.Initial<TC, 'W'>,
@@ -802,7 +680,6 @@ export interface SequenceSFn<F extends HKT.URIS, TC = HKT.Auto> {
           HKT.Kind<
             F,
             TC,
-            HKT.Intro<TC, 'N', N, any>,
             HKT.Intro<TC, 'K', K, any>,
             HKT.Intro<TC, 'Q', Q, any>,
             HKT.Intro<TC, 'W', W, any>,
@@ -818,7 +695,6 @@ export interface SequenceSFn<F extends HKT.URIS, TC = HKT.Auto> {
   ): HKT.Kind<
     F,
     TC,
-    InferMixStruct<F, TC, 'N', N, KS>,
     InferMixStruct<F, TC, 'K', K, KS>,
     InferMixStruct<F, TC, 'Q', Q, KS>,
     InferMixStruct<F, TC, 'W', W, KS>,
@@ -854,7 +730,6 @@ export interface SequenceTFn<F extends HKT.URIS, TC = HKT.Auto> {
       HKT.Kind<
         F,
         TC,
-        HKT.Intro<TC, 'N', N, any>,
         HKT.Intro<TC, 'K', K, any>,
         HKT.Intro<TC, 'Q', Q, any>,
         HKT.Intro<TC, 'W', W, any>,
@@ -869,7 +744,6 @@ export interface SequenceTFn<F extends HKT.URIS, TC = HKT.Auto> {
         HKT.Kind<
           F,
           TC,
-          HKT.Intro<TC, 'N', N, any>,
           HKT.Intro<TC, 'K', K, any>,
           HKT.Intro<TC, 'Q', Q, any>,
           HKT.Intro<TC, 'W', W, any>,
@@ -882,7 +756,6 @@ export interface SequenceTFn<F extends HKT.URIS, TC = HKT.Auto> {
         >
       >
     ],
-    N extends string = HKT.Initial<TC, 'N'>,
     K = HKT.Initial<TC, 'K'>,
     Q = HKT.Initial<TC, 'Q'>,
     W = HKT.Initial<TC, 'W'>,
@@ -896,7 +769,6 @@ export interface SequenceTFn<F extends HKT.URIS, TC = HKT.Auto> {
   ): HKT.Kind<
     F,
     TC,
-    InferMixTuple<F, TC, 'N', N, KT>,
     InferMixTuple<F, TC, 'K', K, KT>,
     InferMixTuple<F, TC, 'Q', Q, KT>,
     InferMixTuple<F, TC, 'W', W, KT>,
@@ -926,12 +798,11 @@ export function sequenceTF<F>(F: SemimonoidalFunctor<HKT.UHKT<F>>): SequenceTFn<
 }
 
 export interface CrossFlatFn_<F extends HKT.URIS, TC = HKT.Auto> {
-  <N extends string, K, Q, W, X, I, S, R, E, A, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
-    fa: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, E, A>,
+  <K, Q, W, X, I, S, R, E, A, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
+    fa: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>,
     fb: HKT.Kind<
       F,
       TC,
-      HKT.Intro<TC, 'N', N, N1>,
       HKT.Intro<TC, 'K', K, K1>,
       HKT.Intro<TC, 'Q', Q, Q1>,
       HKT.Intro<TC, 'W', W, W1>,
@@ -945,7 +816,6 @@ export interface CrossFlatFn_<F extends HKT.URIS, TC = HKT.Auto> {
   ): HKT.Kind<
     F,
     TC,
-    HKT.Mix<TC, 'N', [N, N1]>,
     HKT.Mix<TC, 'K', [K, K1]>,
     HKT.Mix<TC, 'Q', [Q, Q1]>,
     HKT.Mix<TC, 'W', [W, W1]>,
@@ -967,13 +837,20 @@ export function crossFlatF_<F extends HKT.URIS, C = HKT.Auto>(F: SemimonoidalFun
 }
 
 export interface CrossFlatFn<F extends HKT.URIS, TC = HKT.Auto> {
-  <N1 extends string, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
-    fb: HKT.Kind<F, TC, N1, K1, Q1, W1, X1, I1, S1, R1, E1, B>
-  ): <N extends string, K, Q, W, X, I, S, R, E, A>(
+  <K1, Q1, W1, X1, I1, S1, R1, E1, B>(fb: HKT.Kind<F, TC, K1, Q1, W1, X1, I1, S1, R1, E1, B>): <
+    K,
+    Q,
+    W,
+    X,
+    I,
+    S,
+    R,
+    E,
+    A
+  >(
     fa: HKT.Kind<
       F,
       TC,
-      HKT.Intro<TC, 'N', N1, N>,
       HKT.Intro<TC, 'K', K1, K>,
       HKT.Intro<TC, 'Q', Q1, Q>,
       HKT.Intro<TC, 'W', W1, W>,
@@ -987,7 +864,6 @@ export interface CrossFlatFn<F extends HKT.URIS, TC = HKT.Auto> {
   ) => HKT.Kind<
     F,
     TC,
-    HKT.Mix<TC, 'N', [N1, N]>,
     HKT.Mix<TC, 'K', [K1, K]>,
     HKT.Mix<TC, 'Q', [Q1, Q]>,
     HKT.Mix<TC, 'W', [W1, W]>,

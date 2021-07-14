@@ -11,24 +11,23 @@ export interface Strong<F extends HKT.URIS, C = HKT.Auto> extends Profunctor<F, 
 }
 
 export interface FirstFn<F extends HKT.URIS, TC = HKT.Auto> {
-  <C>(): <N extends string, K, Q, W, X, I, S, R, A, B>(
-    pab: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, A, B>
-  ) => HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, readonly [A, C], readonly [B, C]>
+  <C>(): <K, Q, W, X, I, S, R, A, B>(
+    pab: HKT.Kind<F, TC, K, Q, W, X, I, S, R, A, B>
+  ) => HKT.Kind<F, TC, K, Q, W, X, I, S, R, readonly [A, C], readonly [B, C]>
 }
 
 export interface SecondFn<F extends HKT.URIS, TC = HKT.Auto> {
-  <A>(): <N extends string, K, Q, W, X, I, S, R, B, C>(
-    pbc: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, B, C>
-  ) => HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, readonly [A, B], readonly [A, C]>
+  <A>(): <K, Q, W, X, I, S, R, B, C>(
+    pbc: HKT.Kind<F, TC, K, Q, W, X, I, S, R, B, C>
+  ) => HKT.Kind<F, TC, K, Q, W, X, I, S, R, readonly [A, B], readonly [A, C]>
 }
 
 export function splitF<F extends HKT.URIS, TC = HKT.Auto>(S: Strong<F, TC>, C: Category<F, TC>) {
-  return <N extends string, K, Q, W, X, I, S, R, A, B, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, C, D>(
-    pab: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, A, B>,
+  return <K, Q, W, X, I, S, R, A, B, K1, Q1, W1, X1, I1, S1, R1, C, D>(
+    pab: HKT.Kind<F, TC, K, Q, W, X, I, S, R, A, B>,
     pcd: HKT.Kind<
       F,
       TC,
-      HKT.Intro<TC, 'N', N1, N>,
       HKT.Intro<TC, 'K', K1, K>,
       HKT.Intro<TC, 'Q', Q1, Q>,
       HKT.Intro<TC, 'W', W1, W>,
@@ -42,7 +41,6 @@ export function splitF<F extends HKT.URIS, TC = HKT.Auto>(S: Strong<F, TC>, C: C
   ): HKT.Kind<
     F,
     TC,
-    HKT.Mix<TC, 'N', [N, N1]>,
     HKT.Mix<TC, 'K', [K, K1]>,
     HKT.Mix<TC, 'Q', [Q, Q1]>,
     HKT.Mix<TC, 'W', [W, W1]>,
@@ -56,12 +54,11 @@ export function splitF<F extends HKT.URIS, TC = HKT.Auto>(S: Strong<F, TC>, C: C
 }
 
 export function fanOutF<F extends HKT.URIS, TC = HKT.Auto>(S: Strong<F, TC>, C: Category<F, TC>) {
-  return <N extends string, K, Q, W, X, I, S, R, A, B, N1 extends string, K1, Q1, W1, X1, I1, S1, R1, C>(
-    pab: HKT.Kind<F, TC, N, K, Q, W, X, I, S, R, A, B>,
+  return <K, Q, W, X, I, S, R, A, B, K1, Q1, W1, X1, I1, S1, R1, C>(
+    pab: HKT.Kind<F, TC, K, Q, W, X, I, S, R, A, B>,
     pbc: HKT.Kind<
       F,
       TC,
-      HKT.Intro<TC, 'N', N, N1>,
       HKT.Intro<TC, 'K', K, K1>,
       HKT.Intro<TC, 'Q', Q, Q1>,
       HKT.Intro<TC, 'W', W, W1>,
@@ -75,7 +72,6 @@ export function fanOutF<F extends HKT.URIS, TC = HKT.Auto>(S: Strong<F, TC>, C: 
   ): HKT.Kind<
     F,
     TC,
-    HKT.Mix<TC, 'N', [N, N1]>,
     HKT.Mix<TC, 'K', [K, K1]>,
     HKT.Mix<TC, 'Q', [Q, Q1]>,
     HKT.Mix<TC, 'W', [W, W1]>,

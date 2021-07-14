@@ -9,7 +9,6 @@ export interface MonoidKind<A, F extends HKT.URIS, C = HKT.Auto> extends Semigro
   readonly nat: HKT.Kind<
     F,
     C,
-    HKT.Initial<C, 'N'>,
     HKT.Initial<C, 'K'>,
     HKT.Initial<C, 'Q'>,
     HKT.Initial<C, 'W'>,
