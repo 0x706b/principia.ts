@@ -2,7 +2,7 @@ import type { Has, Tag } from './Has'
 import type { MonadMin } from './Monad'
 
 import { pureF } from './Applicative'
-import { chainF_ } from './Bind'
+import { chainF_ } from './Chain'
 import { flow, identity, pipe } from './function'
 import * as HKT from './HKT'
 import { Monad } from './Monad'

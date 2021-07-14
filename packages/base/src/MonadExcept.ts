@@ -4,7 +4,7 @@ import type { MonadMin } from './Monad'
 
 import { pureF } from './Applicative'
 import { ApplicativeExcept } from './ApplicativeExcept'
-import { chainF_ } from './Bind'
+import { chainF_ } from './Chain'
 import * as HKT from './HKT'
 import * as E from './internal/Either'
 import { Monad } from './Monad'

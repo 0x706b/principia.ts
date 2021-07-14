@@ -1,8 +1,8 @@
 import type { ApplicativeMin } from './Applicative'
-import type { ChainMin } from './Bind'
+import type { ChainMin } from './Chain'
 
 import { Applicative } from './Applicative'
-import { Chain } from './Bind'
+import { Chain } from './Chain'
 import * as HKT from './HKT'
 
 export interface Monad<F extends HKT.URIS, C = HKT.Auto> extends Applicative<F, C>, Chain<F, C> {}
