@@ -23,7 +23,7 @@ export function forkAll<R, E, A>(mas: Iterable<IO<R, E, A>>): URIO<R, Fiber.Fibe
       mas,
       traceFrom(trace, (_) => fork(_))
     ),
-    Ch.foldl(Fiber.succeed([]) as Fiber.Fiber<E, Chunk<A>>, (b, a) =>
+    Ch.foldl(Fiber.succeed(Ch.empty()) as Fiber.Fiber<E, Chunk<A>>, (b, a) =>
       Fiber.crossWith_(b, a, (_a, _b) => Ch.append_(_a, _b))
     )
   )
