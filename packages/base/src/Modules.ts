@@ -11,6 +11,7 @@ import type { Guard } from './Guard'
 import type { HashMap } from './HashMap'
 import type { Identity } from './Identity'
 import type { IO } from './IO'
+import type { Kleisli } from './Kleisli'
 import type { List } from './List/core'
 import type { Managed } from './Managed'
 import type { NonEmptyArray } from './NonEmptyArray'
@@ -161,6 +162,12 @@ export type ManagedURI = typeof ManagedURI
 export const ManagedCategoryURI = 'ManagedCategory'
 export type ManagedCategoryURI = typeof ManagedCategoryURI
 
+export const KleisliInURI = 'KleisliIn'
+export type KleisliInURI = typeof KleisliInURI
+
+export const KleisliInCategoryURI = 'KleisliInCategory'
+export type KleisliInCategoryURI = typeof KleisliInCategoryURI
+
 declare module './HKT' {
   interface URItoKind<FC, TC, K, Q, W, X, I, S, R, E, A> {
     [ShowURI]: Show<A>
@@ -206,6 +213,8 @@ declare module './HKT' {
     [ExitURI]: Exit<E, A>
     [ManagedURI]: Managed<R, E, A>
     [ManagedCategoryURI]: Managed<I, E, A>
+    [KleisliInURI]: (_: R) => A
+    [KleisliInCategoryURI]: (_: I) => A
   }
   interface URItoIndex<K> {
     [ArrayURI]: number
