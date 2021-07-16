@@ -1,6 +1,5 @@
 import path from 'path'
 import ts from 'typescript'
-import { inspect } from 'util'
 
 export default function tag(
   program: ts.Program,
@@ -18,8 +17,9 @@ export default function tag(
       const factory = ctx.factory
 
       return (sourceFile: ts.SourceFile) => {
+        let counter               = 0
         const visitor: ts.Visitor = (node) => {
-          if (ts.isCallExpression(node)) {
+          if (ts.isCallExpression(node) && node?.parent?.parent && ts.isSourceFile(node.parent.parent)) {
             const declaration = checker.getResolvedSignature(node)?.getDeclaration()
 
             const tag = declaration
@@ -39,7 +39,7 @@ export default function tag(
               for (const k of moduleMapKeys) {
                 const matches = finalName.match(k[1])
                 if (matches) {
-                  let [moduleName, baseName, fileName] = moduleMap[k[0]]
+                  let [moduleName, _, fileName] = moduleMap[k[0]]
                   for (let j = 1; j < matches.length; j += 1) {
                     fileName = fileName.replace('$' + j, matches[j])
                   }
@@ -55,7 +55,10 @@ export default function tag(
                   .join('/')
               }
 
-              const serviceName = factory.createUniqueName(node.typeArguments![0].getText()).text
+              const serviceName =
+                node.typeArguments && node.typeArguments.length
+                  ? node.typeArguments[0].getText()
+                  : `anonymous${counter++}`
 
               return factory.createCallExpression(node.expression, node.typeArguments, [
                 factory.createCallExpression(
