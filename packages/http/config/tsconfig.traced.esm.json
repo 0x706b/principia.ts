@@ -13,7 +13,7 @@
       {
         "transform": "@principia/compile",
         "moduleMap": {
-          "^src/(.*)": "(@principia/http): _src/$1"
+          "^src/(.*)": ["@principia/http", "_src", "$1"]
         },
         "relativeProjectRoot": "../../"
       }

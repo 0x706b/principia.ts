@@ -34,4 +34,4 @@ export abstract class TestConfig {
   }
 }
 
-export const TestConfigTag = tag(TestConfig)
+export const TestConfigTag = tag<TestConfig>()

@@ -12,6 +12,9 @@
     "plugins": [
       {
         "transform": "@principia/compile",
+        "moduleMap": {
+          "^src/(.*)": ["@principia/express", "_src", "$1"]
+        },
         "tracing": false,
         "addExtensions": false
       }

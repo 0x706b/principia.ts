@@ -38,7 +38,7 @@ function normalize(path: string) {
 
 export default function rewrite(
   _program: ts.Program,
-  _opts?: { rewrite?: boolean, tracing?: boolean, moduleMap?: Record<string, string> }
+  _opts?: { rewrite?: boolean, tracing?: boolean, moduleMap?: Record<string, [string, string, string]> }
 ) {
   const checker = _program.getTypeChecker()
 
@@ -85,11 +85,11 @@ export default function rewrite(
         for (const k of moduleMapKeys) {
           const matches = finalName.match(k[1])
           if (matches) {
-            let patchedName = moduleMap[k[0]]
+            let [moduleName, baseName, fileName] = moduleMap[k[0]]
             for (let j = 1; j < matches.length; j += 1) {
-              patchedName = patchedName.replace('$' + j, matches[j])
+              fileName = fileName.replace('$' + j, matches[j])
             }
-            finalName = patchedName
+            finalName = `(${moduleName}): ${baseName}/${fileName}`
             break
           }
         }

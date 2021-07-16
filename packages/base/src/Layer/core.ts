@@ -1126,7 +1126,7 @@ export class MemoMap {
   }
 }
 
-export const HasMemoMap = tag(MemoMap)
+export const HasMemoMap = tag<MemoMap>()
 export type HasMemoMap = H.HasTag<typeof HasMemoMap>
 
 export function makeMemoMap() {

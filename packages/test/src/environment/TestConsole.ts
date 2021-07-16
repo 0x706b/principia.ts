@@ -103,4 +103,4 @@ export class TestConsole implements Console {
   )
 }
 
-export const TestConsoleTag = tag(TestConsole)
+export const TestConsoleTag = tag<TestConsole>()

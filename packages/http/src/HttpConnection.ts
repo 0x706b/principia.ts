@@ -16,4 +16,4 @@ export class HttpConnection {
   }
 }
 
-export const HttpConnectionTag = tag(HttpConnection)
+export const HttpConnectionTag = tag<HttpConnection>()

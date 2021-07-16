@@ -13,7 +13,7 @@
       {
         "transform": "@principia/compile",
         "moduleMap": {
-          "^src/(.*)": "(@principia/optics): _src/$1"
+          "^src/(.*)": ["@principia/optics", "_src", "$1"]
         },
         "relativeProjectRoot": "../../"
       }

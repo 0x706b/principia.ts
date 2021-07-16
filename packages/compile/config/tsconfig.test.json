@@ -7,10 +7,13 @@
     "sourceMap": true,
     "plugins": [
       {
-        "transform": "../src/index.ts"
+        "transform": "../src/index.ts",
+        "moduleMap": {
+          "^test/(.*)": ["@principia/compile", "test", "$1"]
+        }
       }
     ]
   },
-  "include": ["../src","../test"],
+  "include": ["../src", "../test"],
   "extends": "../../../tsconfig.json"
 }

@@ -13,7 +13,7 @@
       {
         "transform": "@principia/compile",
         "moduleMap": {
-          "^src/(.*)": "(@principia/ptest): _src/$1"
+          "^src/(.*)": ["@principia/ptest", "_src", "$1"]
         },
         "relativeProjectRoot": "../../"
       }

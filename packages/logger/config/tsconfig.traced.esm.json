@@ -13,7 +13,7 @@
       {
         "transform": "@principia/compile",
         "moduleMap": {
-          "^src/(.*)": "(@principia/logger): _src/$1"
+          "^src/(.*)": ["@principia/logger", "_src", "$1"]
         },
         "relativeProjectRoot": "../../"
       }

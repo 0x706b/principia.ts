@@ -40,7 +40,7 @@ export default function tracer(
   _program: ts.Program,
   _opts?: {
     tracing?: boolean
-    moduleMap?: Record<string, string>
+    moduleMap?: Record<string, [string, string, string]>
   }
 ) {
   const tracingOn = !(_opts?.tracing === false)
@@ -75,11 +75,11 @@ export default function tracer(
         for (const k of moduleMapKeys) {
           const matches = finalName.match(k[1])
           if (matches) {
-            let patchedName = moduleMap[k[0]]
+            let [moduleName, baseName, fileName] = moduleMap[k[0]]
             for (let j = 1; j < matches.length; j += 1) {
-              patchedName = patchedName.replace('$' + j, matches[j])
+              fileName = fileName.replace('$' + j, matches[j])
             }
-            finalName = patchedName
+            finalName = `(${moduleName}): ${baseName}/${fileName}`
             break
           }
         }

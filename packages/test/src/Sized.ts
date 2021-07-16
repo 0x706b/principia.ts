@@ -37,4 +37,4 @@ export abstract class Sized {
     )
   }
 }
-export const SizedTag = tag(Sized)
+export const SizedTag = tag<Sized>()

@@ -13,7 +13,7 @@
       {
         "transform": "@principia/compile",
         "moduleMap": {
-          "^src/(.*)": "(@principia/laws): _src/$1"
+          "^src/(.*)": ["@principia/laws", "_src", "$1"]
         },
         "addExtensions": false
       }

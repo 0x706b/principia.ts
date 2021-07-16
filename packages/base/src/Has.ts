@@ -73,11 +73,12 @@ function makeTag<T>(def = false, key: PropertyKey = Symbol()): Tag<T> {
 
 /**
  * Create a service entry Tag from a type and a URI
+ *
+ * @tag
  */
-export function tag<T extends Constructor<any>>(_: T): Tag<ConstructorType<T>>
 export function tag<T>(): Tag<T>
-export function tag(_?: any): Tag<unknown> {
-  return makeTag()
+export function tag(key?: PropertyKey): Tag<unknown> {
+  return makeTag(false, key)
 }
 
 /**

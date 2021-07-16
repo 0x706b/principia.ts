@@ -5,14 +5,15 @@ import dataFirst from './dataFirst'
 import addSpecifierExtension from './fixESM'
 import identity from './identity'
 import rewrite from './rewrite'
+import tag from './tag'
 import tracer from './tracing'
 import unflow from './unflow'
 import unpipe from './unpipe'
 import untrace from './untrace'
 
 export default function bundle(
-  _program: ts.Program,
-  _opts?: {
+  program: ts.Program,
+  opts?: {
     tracing?: boolean
     untrace?: boolean
     pipe?: boolean
@@ -20,7 +21,7 @@ export default function bundle(
     identity?: boolean
     dataFirst?: boolean
     rewrite?: boolean
-    moduleMap?: Record<string, string>
+    moduleMap?: Record<string, [string, string, string]>
     functionModule?: string
     relativeProjectRoot?: string
     specifierExtension?: boolean
@@ -30,15 +31,16 @@ export default function bundle(
   }
 ) {
   const B0 = {
-    rewrite: rewrite(_program, _opts),
-    dataFirst: dataFirst(_program),
-    identity: identity(_program, _opts),
-    tracer: tracer(_program, _opts),
-    unflow: unflow(_program, _opts),
-    unpipe: unpipe(_program, _opts),
-    untrace: untrace(_program, _opts),
-    addSpecifierExtension: addSpecifierExtension(_program, _opts),
-    computedCtorFields: computedCtorFields(_program, _opts)
+    rewrite: rewrite(program, opts),
+    dataFirst: dataFirst(program),
+    identity: identity(program, opts),
+    tracer: tracer(program, opts),
+    unflow: unflow(program, opts),
+    unpipe: unpipe(program, opts),
+    untrace: untrace(program, opts),
+    addSpecifierExtension: addSpecifierExtension(program, opts),
+    computedCtorFields: computedCtorFields(program, opts),
+    tag: tag(program, opts)
   }
 
   return {
@@ -51,7 +53,8 @@ export default function bundle(
         unflow: B0.unflow.before(ctx),
         unpipe: B0.unpipe.before(ctx),
         untrace: B0.untrace.before(ctx),
-        computedCtorFields: B0.computedCtorFields.before(ctx)
+        computedCtorFields: B0.computedCtorFields.before(ctx),
+        tag: B0.tag.before(ctx)
       }
 
       return (sourceFile: ts.SourceFile) => {
@@ -63,8 +66,9 @@ export default function bundle(
         const untraced = B1.untrace(unflowed)
         const unid     = B1.identity(untraced)
         const df       = B1.dataFirst(unid)
+        const tagged   = B1.tag(df)
 
-        return df
+        return tagged
       }
     },
     after(ctx: ts.TransformationContext) {
@@ -73,7 +77,7 @@ export default function bundle(
       }
 
       return (sourceFile: ts.SourceFile) => {
-        if (_opts?.addExtensions === false) {
+        if (opts?.addExtensions === false) {
           return sourceFile
         } else {
           const final = B1.addSpecifierExtension(sourceFile)

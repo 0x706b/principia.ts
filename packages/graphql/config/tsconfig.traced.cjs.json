@@ -13,7 +13,7 @@
       {
         "transform": "@principia/compile",
         "moduleMap": {
-          "^src/(.*)": "(@principia/graphql): _src/$1"
+          "^src/(.*)": ["@principia/graphql", "_src", "$1"]
         },
         "addExtensions": false
       }
