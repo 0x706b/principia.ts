@@ -1,22 +1,17 @@
 import fs from 'fs'
 import module from 'module'
 import path from 'path'
-import * as ts from 'typescript'
+import ts from 'typescript'
 
-/*
- * TODO: I will clean this up
- */
-
-export default function addSpecifierExtension(
+export default function specifierExtension(
   _: ts.Program,
-  config?: {
+  opts?: {
     specifierExtension?: boolean
     ignoreExtensions?: Array<string>
-    createRequire?: boolean
   }
 ): ts.TransformerFactory<ts.SourceFile> {
   return (ctx) => (sourceFile) => {
-    const { visitedSourceFile, info } = importExportVisitor(ctx, sourceFile, config)
+    const { visitedSourceFile, info } = importExportVisitor(ctx, sourceFile, opts)
 
     const generatedTopNodes = ts.factory.createNodeArray(info.imports)
 
@@ -136,8 +131,6 @@ export const importExportVisitor = (
  * -------------------------------------------
  */
 
-type PackageJson = Record<string, any>
-
 function isDirectory(path: string): boolean {
   try {
     return fs.lstatSync(path).isDirectory()
@@ -235,18 +228,6 @@ function getAbsolutePathForSpecifier(
       } else {
         parts = [specifierText]
       }
-      /*
-       * const parts = F.pipe(
-       *   O.fromNullable<string>(p.exports?.import?.['./*'] ?? p.exports?.['./*']?.import ?? p.main ?? null),
-       *   O.map((s) => s.replace('./', '').split('/').slice(0, -1).join('/')),
-       *   O.map((mainPath): string[] => [
-       *     p.name,
-       *     mainPath,
-       *     ...specifierText.replace(p.name, '').replace(`/${mainPath}/`, '').split('/')
-       *   ]),
-       *   O.fold(() => [specifierText], F.identity)
-       * )
-       */
       return path.resolve(config?.relativeProjectRoot ?? process.cwd(), 'node_modules', ...parts)
     } else {
       return path.resolve(config?.relativeProjectRoot ?? process.cwd(), 'node_modules', specifierText)
@@ -308,3 +289,5 @@ export type VisitorInfo = {
   exports: ts.ExportDeclaration[]
   imports: ts.ImportDeclaration[]
 }
+
+type PackageJson = Record<string, any>

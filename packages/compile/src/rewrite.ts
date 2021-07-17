@@ -1,48 +1,16 @@
 import path from 'path'
 import ts from 'typescript'
 
-function checkRegionAt(regions: (readonly [[boolean, number][], number])[], line: number, char: number) {
-  const previous = regions.filter(([_, __]) => __ <= line)
-  const last     = previous[previous.length - 1]
-  let on         = true
-
-  if (last) {
-    if (last[1] === line) {
-      const prevInLine = last[0].filter(([_, c]) => c <= char)
-
-      if (prevInLine.length > 0) {
-        on = prevInLine[prevInLine.length - 1][0]
-      }
-    } else {
-      const prevOfAll = last[0]
-
-      if (prevOfAll.length > 0) {
-        on = prevOfAll[prevOfAll.length - 1][0]
-      }
-    }
-  }
-
-  return on
-}
-
-function normalize(path: string) {
-  const isExtendedLengthPath = /^\\\\\?\\/.test(path)
-  const hasNonAscii          = /[^\u0000-\u0080]+/.test(path) // eslint-disable-line no-control-regex
-
-  if (isExtendedLengthPath || hasNonAscii) {
-    return path
-  }
-
-  return path.replace(/\\/g, '/')
-}
+import { optimizePipe } from './unpipe'
+import { checkRegionAt, getTrace, normalize, traceChild } from './util'
 
 export default function rewrite(
-  _program: ts.Program,
-  _opts?: { rewrite?: boolean, tracing?: boolean, moduleMap?: Record<string, [string, string, string]> }
+  program: ts.Program,
+  opts?: { rewrite?: boolean, tracing?: boolean, moduleMap?: Record<string, [string, string, string]> }
 ) {
-  const checker = _program.getTypeChecker()
+  const checker = program.getTypeChecker()
 
-  const moduleMap     = _opts?.moduleMap || {}
+  const moduleMap     = opts?.moduleMap || {}
   const moduleMapKeys = Object.keys(moduleMap).map((k) => [k, new RegExp(k)] as const)
 
   const importTracingFrom = '@principia/compile/util'
@@ -59,7 +27,7 @@ export default function rewrite(
         const tracing        = factory.createIdentifier('tracing')
         const traceFrom      = factory.createIdentifier('traceFrom')
         const isModule       = sourceFile.statements.find((s) => ts.isImportDeclaration(s)) != null
-        const tracingOn      = !(_opts?.tracing === false) && isModule
+        const tracingOn      = !(opts?.tracing === false) && isModule
 
         const tracedIdentifier    = factory.createPropertyAccessExpression(tracing, traced)
         const traceFromIdentifier = factory.createPropertyAccessExpression(tracing, traceFrom)
@@ -94,51 +62,8 @@ export default function rewrite(
           }
         }
 
-        function getTrace(node: ts.Node, pos: 'start' | 'end') {
-          const nodeStart = sourceFile.getLineAndCharacterOfPosition(pos === 'start' ? node.getStart() : node.getEnd())
-          return factory.createBinaryExpression(
-            fileVar,
-            factory.createToken(ts.SyntaxKind.PlusToken),
-            factory.createStringLiteral(`:${nodeStart.line + 1}:${nodeStart.character + 1}`)
-          )
-        }
-
-        function traceChild(
-          tags: Record<string, (string | undefined)[]>,
-          i: number,
-          factory: ts.NodeFactory,
-          traceFromIdentifier: ts.PropertyAccessExpression,
-          getTrace: (node: ts.Node, pos: 'start' | 'end') => ts.BinaryExpression,
-          x: ts.Expression
-        ): ts.Expression {
-          const symbol = checker.getSymbolAtLocation(x)
-
-          const entries: (readonly [string, string | undefined])[] =
-            symbol?.getJsDocTags().map((t) => [t.name, t.text?.[0].text] as const) || []
-
-          const tagsX: Record<string, (string | undefined)[]> = {}
-
-          for (const entry of entries) {
-            if (!tagsX[entry[0]]) {
-              tagsX[entry[0]] = []
-            }
-            tagsX[entry[0]].push(entry[1])
-          }
-
-          const z = ts.visitNode(x, visitor)
-
-          const y =
-            tagsX['trace'] && tagsX['trace'].includes('call')
-              ? factory.createCallExpression(tracedIdentifier, undefined, [z, getTrace(x, 'end')])
-              : z
-
-          const child =
-            tags['trace'] && tags['trace'].includes(`${i}`)
-              ? factory.createCallExpression(traceFromIdentifier, undefined, [getTrace(x, 'start'), y])
-              : y
-
-          return child
-        }
+        const traceChild_ = traceChild(factory, checker, visitor, fileVar, tracedIdentifier)
+        const getTrace_   = getTrace(factory, sourceFile)
 
         function visitor(node: ts.Node): ts.VisitResult<ts.Node> {
           if (ts.isPropertyAccessExpression(node)) {
@@ -192,7 +117,7 @@ export default function rewrite(
                   if (tags['trace'] && tags['trace'].includes('getter')) {
                     return factory.createCallExpression(tracedIdentifier, undefined, [
                       rewritten,
-                      getTrace(node.name, 'start')
+                      getTrace_(node.name, fileVar, 'start')
                     ])
                   } else {
                     return rewritten
@@ -246,17 +171,14 @@ export default function rewrite(
                       factory.createCallExpression(
                         factory.createPropertyAccessExpression(mods.get(mod!)!, factory.createIdentifier(fn!)),
                         undefined,
-                        [
-                          // node.expression.expression.expression,
-                          ...node.expression.arguments.map((x, i) =>
-                            traceChild(tags, i, factory, traceFromIdentifier, getTrace, x)
-                          )
-                        ]
+                        node.expression.arguments.map((argNode, i) =>
+                          traceChild_(argNode, i, tags, traceFromIdentifier, getTrace_)
+                        )
                       ),
                       undefined,
                       [
                         node.expression.expression.expression,
-                        ...node.arguments.map((x, i) => traceChild(tags, i, factory, traceFromIdentifier, getTrace, x))
+                        ...node.arguments.map((x, i) => traceChild_(x, i, tags, traceFromIdentifier, getTrace_))
                       ]
                     ),
                     visitor,
@@ -266,7 +188,7 @@ export default function rewrite(
                   if (tags['trace'] && tags['trace'].includes('call')) {
                     return factory.createCallExpression(tracedIdentifier, undefined, [
                       rewritten,
-                      getTrace(node.expression, 'end')
+                      getTrace_(node.expression, fileVar, 'end')
                     ])
                   } else {
                     return rewritten
@@ -318,7 +240,7 @@ export default function rewrite(
                 if (mod === 'smart:pipe') {
                   if (node.arguments.findIndex((xx) => ts.isSpreadElement(xx)) === -1) {
                     const visited = ts.visitEachChild(node, visitor, ctx)
-                    return optimisePipe([node.expression.expression, ...visited.arguments], factory)
+                    return optimizePipe([node.expression.expression, ...visited.arguments], factory)
                   }
                 }
 
@@ -344,7 +266,9 @@ export default function rewrite(
                       undefined,
                       [
                         node.expression.expression,
-                        ...node.arguments.map((x, i) => traceChild(tags, i, factory, traceFromIdentifier, getTrace, x))
+                        ...node.arguments.map((argNode, i) =>
+                          traceChild_(argNode, i, tags, traceFromIdentifier, getTrace_)
+                        )
                       ]
                     ),
                     visitor,
@@ -354,7 +278,7 @@ export default function rewrite(
                   if (tags['trace'] && tags['trace'].includes('call')) {
                     return factory.createCallExpression(tracedIdentifier, undefined, [
                       rewritten,
-                      getTrace(node.expression, 'end')
+                      getTrace_(node.expression, fileVar, 'end')
                     ])
                   } else {
                     return rewritten
@@ -420,17 +344,4 @@ export default function rewrite(
       }
     }
   }
-}
-
-function optimisePipe(args: ArrayLike<ts.Expression>, factory: ts.NodeFactory): ts.Expression {
-  if (args.length === 1) {
-    return args[0]
-  }
-
-  const newArgs: ts.Expression[] = []
-  for (let i = 0; i < args.length - 1; i += 1) {
-    newArgs.push(args[i])
-  }
-
-  return factory.createCallExpression(args[args.length - 1], undefined, [optimisePipe(newArgs, factory)])
 }

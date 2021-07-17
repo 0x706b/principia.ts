@@ -1,12 +1,12 @@
 import type ts from 'typescript'
 
-import computedCtorFields from './computedCtorFields'
+import classFields from './classFields'
 import dataFirst from './dataFirst'
-import addSpecifierExtension from './fixESM'
 import identity from './identity'
 import rewrite from './rewrite'
+import specifierExtension from './specifierExtension'
 import tag from './tag'
-import tracer from './tracing'
+import trace from './trace'
 import unflow from './unflow'
 import unpipe from './unpipe'
 import untrace from './untrace'
@@ -27,19 +27,19 @@ export default function bundle(
     specifierExtension?: boolean
     ignoreExtensions?: Array<string>
     addExtensions?: boolean
-    computedCtorFields?: boolean
+    classFields?: boolean
   }
 ) {
   const B0 = {
     rewrite: rewrite(program, opts),
     dataFirst: dataFirst(program),
     identity: identity(program, opts),
-    tracer: tracer(program, opts),
+    tracer: trace(program, opts),
     unflow: unflow(program, opts),
     unpipe: unpipe(program, opts),
     untrace: untrace(program, opts),
-    addSpecifierExtension: addSpecifierExtension(program, opts),
-    computedCtorFields: computedCtorFields(program, opts),
+    addSpecifierExtension: specifierExtension(program, opts),
+    computedCtorFields: classFields(program, opts),
     tag: tag(program, opts)
   }
 

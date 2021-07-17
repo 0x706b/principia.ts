@@ -1,14 +1,14 @@
 import ts from 'typescript'
 
-export default function dataFirst(_program: ts.Program) {
-  const checker = _program.getTypeChecker()
+export default function dataFirst(program: ts.Program) {
+  const checker = program.getTypeChecker()
 
   return {
     before(ctx: ts.TransformationContext) {
       const factory = ctx.factory
 
       return (sourceFile: ts.SourceFile) => {
-        function visitor(node: ts.Node): ts.VisitResult<ts.Node> {
+        const visitor: ts.Visitor = (node) => {
           if (
             ts.isCallExpression(node) &&
             ts.isCallExpression(node.expression) &&

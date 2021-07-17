@@ -1,13 +1,15 @@
 import ts from 'typescript'
 
+import { getOptimizeTags } from './util'
+
 export default function unflow(
-  _program: ts.Program,
-  _opts?: {
+  program: ts.Program,
+  opts?: {
     flow?: boolean
   }
 ) {
-  const flowOn  = !(_opts?.flow === false)
-  const checker = _program.getTypeChecker()
+  const flowOn  = !(opts?.flow === false)
+  const checker = program.getTypeChecker()
 
   return {
     before(ctx: ts.TransformationContext) {
@@ -16,41 +18,7 @@ export default function unflow(
       return (sourceFile: ts.SourceFile) => {
         function visitor(node: ts.Node): ts.VisitResult<ts.Node> {
           if (ts.isCallExpression(node)) {
-            const symbol = checker.getTypeAtLocation(node.expression).getSymbol()
-
-            const overloadDeclarations = checker.getResolvedSignature(node)?.getDeclaration()
-
-            const optimizeTagsOverload = overloadDeclarations
-              ? (() => {
-                  try {
-                    return ts
-                      .getAllJSDocTags(
-                        overloadDeclarations,
-                        (t): t is ts.JSDocTag => t.tagName.getText() === 'optimize'
-                      )
-                      .map((e) => e.comment)
-                      .filter((s): s is string => s != null)
-                  } catch {
-                    return undefined
-                  }
-                })()
-              : undefined
-
-            const optimizeTagsMain =
-              symbol
-                ?.getDeclarations()
-                ?.map((e) => {
-                  try {
-                    return ts
-                      .getAllJSDocTags(e, (t): t is ts.JSDocTag => t.tagName?.getText() === 'optimize')
-                      .map((e) => e.comment)
-                  } catch {
-                    return []
-                  }
-                })
-                .reduce((flatten, entry) => flatten.concat(entry), []) || []
-
-            const optimizeTags = new Set([...optimizeTagsMain, ...(optimizeTagsOverload || [])])
+            const optimizeTags = getOptimizeTags(checker, node)
 
             if (flowOn && optimizeTags.has('flow')) {
               const shortcut =
@@ -82,7 +50,7 @@ export default function unflow(
                   ],
                   undefined,
                   factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
-                  optimiseFlow(
+                  optimizeFlow(
                     ts.visitEachChild(node, visitor, ctx).arguments,
                     factory,
                     shortcut ? id : factory.createSpreadElement(id)
@@ -101,7 +69,7 @@ export default function unflow(
   }
 }
 
-function optimiseFlow(args: ArrayLike<ts.Expression>, factory: ts.NodeFactory, x: ts.Expression): ts.Expression {
+function optimizeFlow(args: ArrayLike<ts.Expression>, factory: ts.NodeFactory, x: ts.Expression): ts.Expression {
   if (args.length === 1) {
     return factory.createCallExpression(args[0], undefined, [x])
   }
@@ -111,5 +79,5 @@ function optimiseFlow(args: ArrayLike<ts.Expression>, factory: ts.NodeFactory, x
     newArgs.push(args[i])
   }
 
-  return factory.createCallExpression(args[args.length - 1], undefined, [optimiseFlow(newArgs, factory, x)])
+  return factory.createCallExpression(args[args.length - 1], undefined, [optimizeFlow(newArgs, factory, x)])
 }

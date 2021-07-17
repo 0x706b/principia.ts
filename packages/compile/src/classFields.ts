@@ -1,12 +1,12 @@
 import ts from 'typescript'
 
-export default function computedCtorFields(
-  _program: ts.Program,
-  _opts?: {
-    computedCtorFields?: boolean
+export default function classFields(
+  _: ts.Program,
+  opts?: {
+    classFields?: boolean
   }
 ) {
-  const computedCtorFieldsOn = !(_opts?.computedCtorFields === false)
+  const classFields = !(opts?.classFields === false)
 
   return {
     before(ctx: ts.TransformationContext) {
@@ -81,7 +81,7 @@ export default function computedCtorFields(
                     }
                     updatedBodyStatements.push(statement)
                   }
-                  if(lastStatementWasSuper === true) {
+                  if (lastStatementWasSuper === true) {
                     updatedBodyStatements.push(...constructorAssignments)
                   }
                 } else {
@@ -151,7 +151,7 @@ export default function computedCtorFields(
           }
           return ts.visitEachChild(node, visitor, ctx)
         }
-        return computedCtorFieldsOn ? ts.visitEachChild(sourceFile, visitor, ctx) : sourceFile
+        return classFields ? ts.visitEachChild(sourceFile, visitor, ctx) : sourceFile
       }
     }
   }
