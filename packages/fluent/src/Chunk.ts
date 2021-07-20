@@ -100,50 +100,50 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewrite filter_ from "@principia/base/Chunk"
      */
-    filter(predicate: Predicate<A>): Chunk<A>
+    filter(predicate: PredicateWithIndex<number, A>): Chunk<A>
 
     /**
      * @rewrite filter_ from "@principia/base/Chunk"
      */
-    filter<B extends A>(refinement: Refinement<A, B>): Chunk<B>
+    filter<B extends A>(refinement: RefinementWithIndex<number, A, B>): Chunk<B>
 
     /**
      * @rewrite filterMap_ from "@principia/base/Chunk"
      */
-    filterMap<B>(f: (a: A) => Option<B>): Chunk<B>
+    filterMap<B>(f: (a: A, i: number) => Option<B>): Chunk<B>
 
     /**
      * @rewrite _filterMapA from "@principia/base/Chunk"
      */
     filterMapA<F extends HKT.URIS, C, K, Q, W, X, I, S, R, E, B>(
       A: Applicative<F, C>,
-      f: (a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<B>>
+      f: (a: A, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<B>>
     ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Chunk<B>>
 
     /**
      * @rewrite find_ from "@principia/base/Chunk"
      */
-    find(predicate: Predicate<A>): Option<A>
+    find(predicate: PredicateWithIndex<number, A>): Option<A>
 
     /**
      * @rewrite foldMap_ from "@principia/base/Chunk"
      */
-    foldMap<M>(M: Monoid<M>, f: (a: A) => M): M
+    foldMap<M>(M: Monoid<M>, f: (a: A, i: number) => M): M
 
     /**
      * @rewrite foldl_ from "@principia/base/Chunk"
      */
-    foldl<B>(b: B, f: (b: B, a: A) => B): B
+    foldl<B>(b: B, f: (b: B, a: A, i: number) => B): B
 
     /**
      * @rewrite foldlWhile_ from "@principia/base/Chunk"
      */
-    foldlWhile<B>(b: B, cont: Predicate<B>, f: (b: B, a: A) => B): B
+    foldlWhile<B>(b: B, cont: Predicate<B>, f: (b: B, a: A, i: number) => B): B
 
     /**
      * @rewrite foldr_ from "@principia/base/Chunk"
      */
-    foldr<B>(b: B, f: (a: A, b: B) => B): B
+    foldr<B>(b: B, f: (a: A, b: B, i: number) => B): B
 
     /**
      * @rewrite foreach_ from "@principia/base/Chunk"
@@ -159,85 +159,6 @@ declare module '@principia/base/Chunk/core' {
      * @rewriteGetter head from "@principia/base/Chunk"
      */
     head: Option<A>
-
-    /**
-     * @rewrite ifilter_ from "@principia/base/Chunk"
-     */
-    ifilter<B extends A>(refinement: RefinementWithIndex<number, A, B>): Chunk<B>
-
-    /**
-     * @rewrite ifilter_ from "@principia/base/Chunk"
-     */
-    ifilter(predicate: PredicateWithIndex<number, A>): Chunk<A>
-
-    /**
-     * @rewrite ifilterMap_ from "@principia/base/Chunk"
-     */
-    ifilterMap<B>(f: (i: number, a: A) => Option<B>): Chunk<B>
-
-    /**
-     * @rewrite _ifilterMapA from "@principia/base/Chunk"
-     */
-    ifilterMapA<F extends HKT.URIS, C, K, Q, W, X, I, S, R, E, B>(
-      A: Applicative<F, C>,
-      f: (i: number, a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<B>>
-    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Chunk<B>>
-
-    /**
-     * @rewrite ifoldMap_ from "@principia/base/Chunk"
-     */
-    ifoldMap<M>(M: Monoid<M>, f: (i: number, a: A) => M): M
-
-    /**
-     * @rewrite ifoldl_ from "@principia/base/Chunk"
-     */
-    ifoldl<B>(b: B, f: (b: B, i: number, a: A) => B): B
-
-    /**
-     * @rewrite ifoldr_ from "@principia/base/Chunk"
-     */
-    ifoldr<B>(n: B, f: (a: A, i: number, b: B) => B): B
-
-    /**
-     * @rewrite imap_ from "@principia/base/Chunk"
-     */
-    imap<B>(f: (i: number, a: A) => B): Chunk<B>
-
-    /**
-     * @rewrite _imapA from "@principia/base/Chunk"
-     */
-    imapA<F extends HKT.URIS, C, K, Q, W, X, I, S, R, E, B>(
-      A: Applicative<F, C>,
-      f: (i: number, a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
-    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Chunk<B>>
-
-    /**
-     * @rewriteGetter init from "@principia/base/Chunk"
-     */
-    init: Option<Chunk<A>>
-
-    /**
-     * @rewrite ipartition_ from "@principia/base/Chunk"
-     */
-    ipartition(predicate: PredicateWithIndex<number, A>): readonly [Chunk<A>, Chunk<A>]
-
-    /**
-     * @rewrite ipartition_ from "@principia/base/Chunk"
-     */
-    ipartition<B extends A>(refinement: RefinementWithIndex<number, A, B>): readonly [Chunk<A>, Chunk<B>]
-
-    /**
-     * @rewrite ipartitionMap_ from "@principia/base/Chunk"
-     */
-    ipartitionMap<B, C>(f: (i: number, a: A) => Either<B, C>): readonly [Chunk<B>, Chunk<C>]
-
-    /**
-     * @rewrite _ipartitionMapA from "@principia/base/Chunk"
-     */
-    ipartitionMapA<F extends HKT.URIS, C, K, Q, W, X, I, S, R, E, B, D>(
-      A: Applicative<F, C>,
-      f: (i: number, a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<B, D>>
-    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [Chunk<B>, Chunk<D>]>
 
     /**
      * @rewriteGetter isEmpty from "@principia/base/Chunk"
@@ -257,14 +178,14 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewrite map_ from "@principia/base/Chunk"
      */
-    map<B>(F: (a: A) => B): Chunk<B>
+    map<B>(F: (a: A, i: number) => B): Chunk<B>
 
     /**
      * @rewrite _mapA from "@principia/base/Chunk"
      */
     mapA<F extends HKT.URIS, C, K, Q, W, X, I, S, R, E, B>(
       A: Applicative<F, C>,
-      f: (a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+      f: (a: A, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
     ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Chunk<B>>
 
     /**
@@ -275,24 +196,24 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewrite partition_ from "@principia/base/Chunk"
      */
-    partition(predicate: Predicate<A>): readonly [Chunk<A>, Chunk<A>]
+    partition(predicate: PredicateWithIndex<number, A>): readonly [Chunk<A>, Chunk<A>]
 
     /**
      * @rewrite partition_ from "@principia/base/Chunk"
      */
-    partition<B extends A>(refinement: Refinement<A, B>): readonly [Chunk<A>, Chunk<B>]
+    partition<B extends A>(refinement: RefinementWithIndex<number, A, B>): readonly [Chunk<A>, Chunk<B>]
 
     /**
      * @rewrite partitionMap_ from "@principia/base/Chunk"
      */
-    partitionMap<B, C>(f: (a: A) => Either<B, C>): readonly [Chunk<C>, Chunk<C>]
+    partitionMap<B, C>(f: (a: A, i: number) => Either<B, C>): readonly [Chunk<C>, Chunk<C>]
 
     /**
      * @rewrite _partitionMapA from "@principia/base/Chunk"
      */
     partitionMapA<F extends HKT.URIS, C, K, Q, W, X, I, S, R, E, B, D>(
       A: Applicative<F, C>,
-      f: (a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<B, D>>
+      f: (a: A, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<B, D>>
     ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [Chunk<B>, Chunk<D>]>
 
     /**

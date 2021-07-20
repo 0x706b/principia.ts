@@ -38,7 +38,7 @@ declare global {
     /**
      * @rewrite chain_ from "@principia/base/Array"
      */
-    chain<B>(f: (a: T) => ReadonlyArray<B>): ReadonlyArray<B>
+    chain<B>(f: (a: T, i: number) => ReadonlyArray<B>): ReadonlyArray<B>
 
     /**
      * @rewrite chop_ from "@principia/base/Array"
@@ -113,33 +113,38 @@ declare global {
      * @rewrite extend_ from "@principia/base/Array"
      */
     extend<B>(f: (as: ReadonlyArray<T>) => B): ReadonlyArray<B>
-    /**
-     * @rewrite filter_ from "@principia/base/Array"
-     */
-    filter(refinement: Predicate<T>): ReadonlyArray<T>
 
     /**
      * @rewrite filter_ from "@principia/base/Array"
      */
-    filter<B extends T>(refinement: Refinement<T, B>): ReadonlyArray<B>
+    filter(refinement: PredicateWithIndex<number, T>): ReadonlyArray<T>
+
+    /**
+     * @rewrite filter_ from "@principia/base/Array"
+     */
+    filter<B extends T>(refinement: RefinementWithIndex<number, T, B>): ReadonlyArray<B>
 
     /**
      * @rewrite filterMap_ from "@principia/base/Array"
      */
-    filterMap<B>(f: (a: T) => Option<B>): ReadonlyArray<B>
+    filterMap<B>(f: (a: T, i: number) => Option<B>): ReadonlyArray<B>
 
     /**
      * @rewrite _filterMapA from "@principia/base/Array"
      */
     filterMapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, C = HKT.Auto>(
       A: Applicative<F, C>,
-      f: (a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<A>>
+      f: (a: T, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<A>>
     ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
 
     /**
      * @rewrite find_ from "@principia/base/Array"
      */
     find<B extends T>(refinement: Refinement<T, B>): Option<B>
+
+    /**
+     * @rewrite find_ from "@principia/base/Array"
+     */
     find(predicate: Predicate<T>): Option<T>
 
     /**
@@ -151,6 +156,10 @@ declare global {
      * @rewrite findLast_ from "@principia/base/Array"
      */
     findLast<B extends T>(refinement: Refinement<T, B>): Option<B>
+
+    /**
+     * @rewrite findLast_ from "@principia/base/Array"
+     */
     findLast(predicate: Predicate<T>): Option<T>
 
     /**
@@ -180,27 +189,27 @@ declare global {
     /**
      * @rewrite _foldMap from "@principia/base/Array"
      */
-    foldMap<M>(M: Monoid<M>, f: (a: T) => M): M
+    foldMap<M>(M: Monoid<M>, f: (a: T, i: number) => M): M
 
     /**
      * @rewrite foldl_ from "@principia/base/Array"
      */
-    foldl<B>(b: B, f: (b: B, a: T) => B): B
+    foldl<B>(b: B, f: (b: B, a: T, i: number) => B): B
 
     /**
      * @rewrite foldlWhile_ from "@principia/base/Array"
      */
-    foldlWhile<B>(b: B, predicate: Predicate<B>, f: (b: B, a: T) => B): B
+    foldlWhile<B>(b: B, predicate: PredicateWithIndex<number, B>, f: (b: B, a: T) => B): B
 
     /**
      * @rewrite foldr_ from "@principia/base/Array"
      */
-    foldr<B>(b: B, f: (a: T, b: B) => B): B
+    foldr<B>(b: B, f: (a: T, b: B, i: number) => B): B
 
     /**
      * @rewrite foldrWhile_ from "@principia/base/Array"
      */
-    foldrWhile<B>(b: B, f: (a: T, b: B) => B): B
+    foldrWhile<B>(b: B, f: (a: T, b: B, i: number) => B): B
 
     /**
      * @rewrite _group from "@principia/base/Array"
@@ -216,72 +225,6 @@ declare global {
      * @rewriteGetter head from "@principia/base/Array"
      */
     head: Option<T>
-
-    /**
-     * @rewrite ichain_ from "@principia/base/Array"
-     */
-    ichain<B>(f: (i: number, a: T) => ReadonlyArray<B>): ReadonlyArray<B>
-
-    /**
-     * @rewrite ifilter_ from "@principia/base/Array"
-     */
-    ifilter(refinement: PredicateWithIndex<number, T>): ReadonlyArray<T>
-
-    /**
-     * @rewrite ifilter_ from "@principia/base/Array"
-     */
-    ifilter<B extends T>(refinement: RefinementWithIndex<number, T, B>): ReadonlyArray<B>
-
-    /**
-     * @rewrite ifilterMap_ from "@principia/base/Array"
-     */
-    ifilterMap<B>(f: (i: number, a: T) => Option<B>): ReadonlyArray<B>
-
-    /**
-     * @rewrite _ifilterMapA from "@principia/base/Array"
-     */
-    ifilterMapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, C = HKT.Auto>(
-      A: Applicative<F, C>,
-      f: (i: number, a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<A>>
-    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
-
-    /**
-     * @rewrite _ifoldMap from "@principia/base/Array"
-     */
-    ifoldMap<M>(M: Monoid<M>, f: (i: number, a: T) => M): M
-
-    /**
-     * @rewrite ifoldl_ from "@principia/base/Array"
-     */
-    ifoldl<B>(b: B, f: (b: B, i: number, a: T) => B): B
-
-    /**
-     * @rewrite ifoldlWhile_ from "@principia/base/Array"
-     */
-    ifoldlWhile<B>(b: B, predicate: Predicate<B>, f: (b: B, i: number, a: T) => B): B
-
-    /**
-     * @rewrite ifoldr_ from "@principia/base/Array"
-     */
-    ifoldr<B>(b: B, f: (a: T, i: number, b: B) => B): B
-
-    /**
-     * @rewrite ifoldrWhile_ from "@principia/base/Array"
-     */
-    ifoldrWhile<B>(b: B, f: (a: T, i: number, b: B) => B): B
-
-    /**
-     * @rewrite imap_ from "@principia/base/Array"
-     */
-    imap<B>(f: (i: number, a: T) => B): ReadonlyArray<B>
-
-    /**
-     * @rewrite _imapA from "@principia/base/Array"
-     */
-    imapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, C = HKT.Auto>(
-      A: Applicative<F, C>,
-      f: (i: number, a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
-    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
 
     /**
      * @rewriteGetter init from "@principia/base/Array"
@@ -304,31 +247,6 @@ declare global {
     intersperse(a: T): ReadonlyArray<T>
 
     /**
-     * @rewrite ipartition_ from "@principia/base/Array"
-     */
-    ipartition(predicate: PredicateWithIndex<number, T>): readonly [ReadonlyArray<T>, ReadonlyArray<T>]
-
-    /**
-     * @rewrite ipartition_ from "@principia/base/Array"
-     */
-    ipartition<B extends T>(
-      refinement: RefinementWithIndex<number, T, B>
-    ): readonly [ReadonlyArray<T>, ReadonlyArray<B>]
-
-    /**
-     * @rewrite ipartitionMap_ from "@principia/base/Array"
-     */
-    ipartitionMap<B, C>(f: (i: number, a: T) => Either<B, C>): readonly [ReadonlyArray<B>, ReadonlyArray<C>]
-
-    /**
-     * @rewrite _ipartitionMapA from "@principia/base/Array"
-     */
-    ipartitionMapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, B, C = HKT.Auto>(
-      A: Applicative<F, C>,
-      f: (i: number, a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<A, B>>
-    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [ReadonlyArray<A>, ReadonlyArray<B>]>
-
-    /**
      * @rewriteGetter last from "@principia/base/Array"
      */
     last: Option<T>
@@ -346,14 +264,14 @@ declare global {
     /**
      * @rewrite map_ from "@principia/base/Array"
      */
-    map<B>(f: (a: T) => B): ReadonlyArray<B>
+    map<B>(f: (a: T, i: number) => B): ReadonlyArray<B>
 
     /**
      * @rewrite _mapA from "@principia/base/Array"
      */
     mapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, C = HKT.Auto>(
       A: Applicative<F, C>,
-      f: (a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+      f: (a: T, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
     ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
 
     /**
@@ -374,24 +292,24 @@ declare global {
     /**
      * @rewrite partition_ from "@principia/base/Array"
      */
-    partition(predicate: Predicate<T>): readonly [ReadonlyArray<T>, ReadonlyArray<T>]
+    partition(predicate: PredicateWithIndex<number, T>): readonly [ReadonlyArray<T>, ReadonlyArray<T>]
 
     /**
      * @rewrite partition_ from "@principia/base/Array"
      */
-    partition<B extends T>(refinement: Refinement<T, B>): readonly [ReadonlyArray<T>, ReadonlyArray<B>]
+    partition<B extends T>(refinement: RefinementWithIndex<number, T, B>): readonly [ReadonlyArray<T>, ReadonlyArray<B>]
 
     /**
      * @rewrite partitionMap_ from "@principia/base/Array"
      */
-    partitionMap<B, C>(f: (a: T) => Either<B, C>): readonly [ReadonlyArray<B>, ReadonlyArray<C>]
+    partitionMap<B, C>(f: (a: T, i: number) => Either<B, C>): readonly [ReadonlyArray<B>, ReadonlyArray<C>]
 
     /**
      * @rewrite _partitionMapA from "@principia/base/Array"
      */
     partitionMapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, B, C = HKT.Auto>(
       A: Applicative<F, C>,
-      f: (a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<A, B>>
+      f: (a: T, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<A, B>>
     ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [ReadonlyArray<A>, ReadonlyArray<B>]>
 
     /**
@@ -539,7 +457,7 @@ declare global {
     /**
      * @rewrite chain_ from "@principia/base/Array"
      */
-    chain<B>(f: (a: T) => ReadonlyArray<B>): ReadonlyArray<B>
+    chain<B>(f: (a: T, i: number) => ReadonlyArray<B>): ReadonlyArray<B>
 
     /**
      * @rewrite chop_ from "@principia/base/Array"
@@ -617,17 +535,17 @@ declare global {
     /**
      * @rewrite filter_ from "@principia/base/Array"
      */
-    filter(refinement: Predicate<T>): ReadonlyArray<T>
+    filter(refinement: PredicateWithIndex<number, T>): ReadonlyArray<T>
 
     /**
      * @rewrite filter_ from "@principia/base/Array"
      */
-    filter<B extends T>(refinement: Refinement<T, B>): ReadonlyArray<B>
+    filter<B extends T>(refinement: RefinementWithIndex<number, T, B>): ReadonlyArray<B>
 
     /**
      * @rewrite filterMap_ from "@principia/base/Array"
      */
-    filterMap<B>(f: (a: T) => Option<B>): ReadonlyArray<B>
+    filterMap<B>(f: (a: T, i: number) => Option<B>): ReadonlyArray<B>
 
     /**
      * @rewriteConstraint filterMapA_ from "@principia/base/Array"
@@ -635,20 +553,23 @@ declare global {
     filterMapA<F extends HKT.URIS, C = HKT.Auto>(
       A: Applicative<F, C>
     ): <K, Q, W, X, I, S, R, E, A>(
-      f: (a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<A>>
+      f: (a: T, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<A>>
     ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
     /**
      * @rewrite find_ from "@principia/base/Array"
      */
-    find<B extends T>(refinement: Refinement<T, B>): Option<B>
+    find<B extends T>(refinement: RefinementWithIndex<number, T, B>): Option<B>
 
-    find(predicate: Predicate<T>): Option<T>
+    find(predicate: PredicateWithIndex<number, T>): Option<T>
 
     /**
      * @rewrite findIndex_ from "@principia/base/Array"
      */
     findIndex(predicate: Predicate<T>): Option<number>
 
+    /**
+     * @rewrite findLast_ from "@principia/base/Array"
+     */
     findLast(predicate: Predicate<T>): Option<T>
 
     /**
@@ -684,27 +605,27 @@ declare global {
     /**
      * @rewriteConstraint foldMap_ from "@principia/base/Array"
      */
-    foldMap<M>(M: Monoid<M>): (f: (a: T) => M) => M
+    foldMap<M>(M: Monoid<M>): (f: (a: T, i: number) => M) => M
 
     /**
      * @rewrite foldl_ from "@principia/base/Array"
      */
-    foldl<B>(b: B, f: (b: B, a: T) => B): B
+    foldl<B>(b: B, f: (b: B, a: T, i: number) => B): B
 
     /**
      * @rewrite foldlWhile_ from "@principia/base/Array"
      */
-    foldlWhile<B>(b: B, predicate: Predicate<B>, f: (b: B, a: T) => B): B
+    foldlWhile<B>(b: B, predicate: Predicate<B>, f: (b: B, a: T, i: number) => B): B
 
     /**
      * @rewrite foldr_ from "@principia/base/Array"
      */
-    foldr<B>(b: B, f: (a: T, b: B) => B): B
+    foldr<B>(b: B, f: (a: T, b: B, i: number) => B): B
 
     /**
      * @rewrite foldrWhile_ from "@principia/base/Array"
      */
-    foldrWhile<B>(b: B, f: (a: T, b: B) => B): B
+    foldrWhile<B>(b: B, predicate: Predicate<B>, f: (a: T, b: B, i: number) => B): B
 
     /**
      * @rewrite _group from "@principia/base/Array"
@@ -719,74 +640,6 @@ declare global {
      * @rewriteGetter head from "@principia/base/Array"
      */
     head: Option<T>
-
-    /**
-     * @rewrite ichain_ from "@principia/base/Array"
-     */
-    ichain<B>(f: (i: number, a: T) => ReadonlyArray<B>): ReadonlyArray<B>
-
-    /**
-     * @rewrite ifilter_ from "@principia/base/Array"
-     */
-    ifilter(refinement: PredicateWithIndex<number, T>): ReadonlyArray<T>
-
-    /**
-     * @rewrite ifilter_ from "@principia/base/Array"
-     */
-    ifilter<B extends T>(refinement: RefinementWithIndex<number, T, B>): ReadonlyArray<B>
-
-    /**
-     * @rewrite ifilterMap_ from "@principia/base/Array"
-     */
-    ifilterMap<B>(f: (i: number, a: T) => Option<B>): ReadonlyArray<B>
-
-    /**
-     * @rewrite _ifilterMapA from "@principia/base/Array"
-     */
-    ifilterMapA<F extends HKT.URIS, C = HKT.Auto>(
-      A: Applicative<F, C>
-    ): <K, Q, W, X, I, S, R, E, A>(
-      f: (i: number, a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<A>>
-    ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
-
-    /**
-     * @rewrite _ifoldMap from "@principia/base/Array"
-     */
-    ifoldMap<M>(M: Monoid<M>, f: (i: number, a: T) => M): M
-
-    /**
-     * @rewrite ifoldl_ from "@principia/base/Array"
-     */
-    ifoldl<B>(b: B, f: (b: B, i: number, a: T) => B): B
-
-    /**
-     * @rewrite ifoldlWhile_ from "@principia/base/Array"
-     */
-    ifoldlWhile<B>(b: B, predicate: Predicate<B>, f: (b: B, i: number, a: T) => B): B
-
-    /**
-     * @rewrite ifoldr_ from "@principia/base/Array"
-     */
-    ifoldr<B>(b: B, f: (a: T, i: number, b: B) => B): B
-
-    /**
-     * @rewrite ifoldrWhile_ from "@principia/base/Array"
-     */
-    ifoldrWhile<B>(b: B, f: (a: T, i: number, b: B) => B): B
-
-    /**
-     * @rewrite imap_ from "@principia/base/Array"
-     */
-    imap<B>(f: (i: number, a: T) => B): ReadonlyArray<B>
-
-    /**
-     * @rewriteConstraint imapA_ from "@principia/base/Array"
-     */
-    imapA<F extends HKT.URIS, C = HKT.Auto>(
-      A: Applicative<F, C>
-    ): <K, Q, W, X, I, S, R, E, A>(
-      f: (i: number, a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
-    ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
 
     /**
      * @rewriteGetter init from "@principia/base/Array"
@@ -809,31 +662,6 @@ declare global {
     intersperse(a: T): ReadonlyArray<T>
 
     /**
-     * @rewrite ipartition_ from "@principia/base/Array"
-     */
-    ipartition(predicate: PredicateWithIndex<number, T>): readonly [ReadonlyArray<T>, ReadonlyArray<T>]
-
-    /**
-     * @rewrite ipartition_ from "@principia/base/Array"
-     */
-    ipartition<B extends T>(
-      refinement: RefinementWithIndex<number, T, B>
-    ): readonly [ReadonlyArray<T>, ReadonlyArray<B>]
-
-    /**
-     * @rewrite ipartitionMap_ from "@principia/base/Array"
-     */
-    ipartitionMap<B, C>(f: (i: number, a: T) => Either<B, C>): readonly [ReadonlyArray<B>, ReadonlyArray<C>]
-
-    /**
-     * @rewrite _ipartitionMapA from "@principia/base/Array"
-     */
-    ipartitionMapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, B, C = HKT.Auto>(
-      A: Applicative<F, C>,
-      f: (i: number, a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<A, B>>
-    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [ReadonlyArray<A>, ReadonlyArray<B>]>
-
-    /**
      * @rewriteGetter last from "@principia/base/Array"
      */
     last: Option<T>
@@ -851,7 +679,7 @@ declare global {
     /**
      * @rewrite map_ from "@principia/base/Array"
      */
-    map<B>(f: (a: T) => B): ReadonlyArray<B>
+    map<B>(f: (a: T, i: number) => B): ReadonlyArray<B>
 
     /**
      * @rewriteConstraint mapA_ from "@principia/base/Array"
@@ -859,7 +687,7 @@ declare global {
     mapA<F extends HKT.URIS, C>(
       A: Applicative<F, C>
     ): <K, Q, W, X, I, S, R, E, A>(
-      f: (a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+      f: (a: T, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
     ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
 
     /**
@@ -880,17 +708,17 @@ declare global {
     /**
      * @rewrite partition_ from "@principia/base/Array"
      */
-    partition(predicate: Predicate<T>): readonly [ReadonlyArray<T>, ReadonlyArray<T>]
+    partition(predicate: PredicateWithIndex<number, T>): readonly [ReadonlyArray<T>, ReadonlyArray<T>]
 
     /**
      * @rewrite partition_ from "@principia/base/Array"
      */
-    partition<B extends T>(refinement: Refinement<T, B>): readonly [ReadonlyArray<T>, ReadonlyArray<B>]
+    partition<B extends T>(refinement: RefinementWithIndex<number, T, B>): readonly [ReadonlyArray<T>, ReadonlyArray<B>]
 
     /**
      * @rewrite partitionMap_ from "@principia/base/Array"
      */
-    partitionMap<B, C>(f: (a: T) => Either<B, C>): readonly [ReadonlyArray<B>, ReadonlyArray<C>]
+    partitionMap<B, C>(f: (a: T, i: number) => Either<B, C>): readonly [ReadonlyArray<B>, ReadonlyArray<C>]
 
     /**
      * @rewriteConstraint partitionMapA_ from "@principia/base/Array"
@@ -898,7 +726,7 @@ declare global {
     partitionMapA<F extends HKT.URIS, C = HKT.Auto>(
       A: Applicative<F, C>
     ): <K, Q, W, X, I, S, R, E, A, B>(
-      f: (a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<A, B>>
+      f: (a: T, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<A, B>>
     ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [ReadonlyArray<A>, ReadonlyArray<B>]>
     /**
      * @rewrite prepend_ from "@principia/base/Array"

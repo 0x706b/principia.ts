@@ -111,30 +111,34 @@ declare module '@principia/base/NonEmptyArray' {
     /**
      * @rewrite filter_ from "@principia/base/Array"
      */
-    filter(refinement: Predicate<A>): ReadonlyArray<A>
+    filter(refinement: PredicateWithIndex<number, A>): ReadonlyArray<A>
 
     /**
      * @rewrite filter_ from "@principia/base/Array"
      */
-    filter<B extends A>(refinement: Refinement<A, B>): ReadonlyArray<B>
+    filter<B extends A>(refinement: RefinementWithIndex<number, A, B>): ReadonlyArray<B>
 
     /**
      * @rewrite filterMap_ from "@principia/base/Array"
      */
-    filterMap<B>(f: (a: A) => Option<B>): ReadonlyArray<B>
+    filterMap<B>(f: (a: A, i: number) => Option<B>): ReadonlyArray<B>
 
     /**
      * @rewrite _filterMapA from "@principia/base/Array"
      */
     filterMapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, C = HKT.Auto>(
       A: Applicative<F, C>,
-      f: (a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<A>>
+      f: (a: A, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<A>>
     ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
+
     /**
      * @rewrite find_ from "@principia/base/Array"
      */
     find<B extends A>(refinement: Refinement<A, B>): Option<B>
 
+    /**
+     * @rewrite find_ from "@principia/base/Array"
+     */
     find(predicate: Predicate<A>): Option<A>
 
     /**
@@ -165,7 +169,7 @@ declare module '@principia/base/NonEmptyArray' {
     /**
      * @rewrite findMap_ from "@principia/base/Array"
      */
-    findMap<B>(f: (a: A) => Option<B>): Option<B>
+    findMap<B>(f: (a: A, i: number) => Option<B>): Option<B>
 
     /**
      * @rewrite flatten from "@principia/base/Array"
@@ -180,27 +184,27 @@ declare module '@principia/base/NonEmptyArray' {
     /**
      * @rewrite _foldMap from "@principia/base/Array"
      */
-    foldMap<M>(M: Monoid<M>, f: (a: A) => M): M
+    foldMap<M>(M: Monoid<M>, f: (a: A, i: number) => M): M
 
     /**
      * @rewrite foldl_ from "@principia/base/NonEmptyArray"
      */
-    foldl<B>(b: B, f: (b: B, a: A) => B): B
+    foldl<B>(b: B, f: (b: B, a: A, i: number) => B): B
 
     /**
      * @rewrite foldlWhile_ from "@principia/base/Array"
      */
-    foldlWhile<B>(b: B, predicate: Predicate<B>, f: (b: B, a: A) => B): B
+    foldlWhile<B>(b: B, predicate: Predicate<B>, f: (b: B, a: A, i: number) => B): B
 
     /**
      * @rewrite foldr_ from "@principia/base/NonEmptyArray"
      */
-    foldr<B>(b: B, f: (a: A, b: B) => B): B
+    foldr<B>(b: B, f: (a: A, b: B, i: number) => B): B
 
     /**
      * @rewrite foldrWhile_ from "@principia/base/Array"
      */
-    foldrWhile<B>(b: B, f: (a: A, b: B) => B): B
+    foldrWhile<B>(b: B, f: (a: A, b: B, i: number) => B): B
 
     /**
      * @rewrite _group from "@principia/base/Array"
@@ -216,72 +220,6 @@ declare module '@principia/base/NonEmptyArray' {
      * @rewriteGetter head from "@principia/base/NonEmptyArray"
      */
     head: A
-
-    /**
-     * @rewrite ichain_ from "@principia/base/NonEmptyArray"
-     */
-    ichain<B>(f: (i: number, a: A) => NonEmptyArray<B>): NonEmptyArray<B>
-
-    /**
-     * @rewrite ifilter_ from "@principia/base/Array"
-     */
-    ifilter(refinement: PredicateWithIndex<number, A>): ReadonlyArray<A>
-
-    /**
-     * @rewrite ifilter_ from "@principia/base/Array"
-     */
-    ifilter<B extends A>(refinement: RefinementWithIndex<number, A, B>): ReadonlyArray<B>
-
-    /**
-     * @rewrite ifilterMap_ from "@principia/base/Array"
-     */
-    ifilterMap<B>(f: (i: number, a: A) => Option<B>): ReadonlyArray<B>
-
-    /**
-     * @rewrite _ifilterMapA from "@principia/base/Array"
-     */
-    ifilterMapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, C = HKT.Auto>(
-      A: Applicative<F, C>,
-      f: (i: number, a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<A>>
-    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
-
-    /**
-     * @rewrite _ifoldMap from "@principia/base/Array"
-     */
-    ifoldMap<M>(M: Monoid<M>, f: (i: number, a: A) => M): M
-
-    /**
-     * @rewrite ifoldl_ from "@principia/base/NonEmptyArray"
-     */
-    ifoldl<B>(b: B, f: (b: B, i: number, a: A) => B): B
-
-    /**
-     * @rewrite ifoldlWhile_ from "@principia/base/Array"
-     */
-    ifoldlWhile<B>(b: B, predicate: Predicate<B>, f: (b: B, i: number, a: A) => B): B
-
-    /**
-     * @rewrite ifoldr_ from "@principia/base/NonEmptyArray"
-     */
-    ifoldr<B>(b: B, f: (a: A, i: number, b: B) => B): B
-
-    /**
-     * @rewrite ifoldrWhile_ from "@principia/base/Array"
-     */
-    ifoldrWhile<B>(b: B, f: (a: A, i: number, b: B) => B): B
-
-    /**
-     * @rewrite imap_ from "@principia/base/NonEmptyArray"
-     */
-    imap<B>(f: (i: number, a: A) => B): NonEmptyArray<B>
-
-    /**
-     * @rewrite _imapA from "@principia/base/Array"
-     */
-    imapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, C = HKT.Auto>(
-      A: Applicative<F, C>,
-      f: (i: number, a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
-    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
 
     /**
      * @rewriteGetter init from "@principia/base/NonEmptyArray"
@@ -304,31 +242,6 @@ declare module '@principia/base/NonEmptyArray' {
     intersperse(a: A): NonEmptyArray<A>
 
     /**
-     * @rewrite ipartition_ from "@principia/base/Array"
-     */
-    ipartition(predicate: PredicateWithIndex<number, A>): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
-
-    /**
-     * @rewrite ipartition_ from "@principia/base/Array"
-     */
-    ipartition<B extends A>(
-      refinement: RefinementWithIndex<number, A, B>
-    ): readonly [ReadonlyArray<A>, ReadonlyArray<B>]
-
-    /**
-     * @rewrite ipartitionMap_ from "@principia/base/Array"
-     */
-    ipartitionMap<B, C>(f: (i: number, a: A) => Either<B, C>): readonly [ReadonlyArray<B>, ReadonlyArray<C>]
-
-    /**
-     * @rewrite _ipartitionMapA from "@principia/base/Array"
-     */
-    ipartitionMapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, B, C = HKT.Auto>(
-      A: Applicative<F, C>,
-      f: (i: number, a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<A, B>>
-    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [ReadonlyArray<A>, ReadonlyArray<B>]>
-
-    /**
      * @rewriteGetter last from "@principia/base/NonEmptyArray"
      */
     last: A
@@ -346,14 +259,14 @@ declare module '@principia/base/NonEmptyArray' {
     /**
      * @rewrite map_ from "@principia/base/NonEmptyArray"
      */
-    map<B>(f: (a: A) => B): NonEmptyArray<B>
+    map<B>(f: (a: A, i: number) => B): NonEmptyArray<B>
 
     /**
      * @rewrite _mapA from "@principia/base/Array"
      */
     mapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, C = HKT.Auto>(
       A: Applicative<F, C>,
-      f: (a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+      f: (a: A, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
     ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
 
     /**
@@ -374,24 +287,24 @@ declare module '@principia/base/NonEmptyArray' {
     /**
      * @rewrite partition_ from "@principia/base/Array"
      */
-    partition(predicate: Predicate<A>): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
+    partition(predicate: PredicateWithIndex<number, A>): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
 
     /**
      * @rewrite partition_ from "@principia/base/Array"
      */
-    partition<B extends A>(refinement: Refinement<A, B>): readonly [ReadonlyArray<A>, ReadonlyArray<B>]
+    partition<B extends A>(refinement: RefinementWithIndex<number, A, B>): readonly [ReadonlyArray<A>, ReadonlyArray<B>]
 
     /**
      * @rewrite partitionMap_ from "@principia/base/Array"
      */
-    partitionMap<B, C>(f: (a: A) => Either<B, C>): readonly [ReadonlyArray<B>, ReadonlyArray<C>]
+    partitionMap<B, C>(f: (a: A, i: number) => Either<B, C>): readonly [ReadonlyArray<B>, ReadonlyArray<C>]
 
     /**
      * @rewrite _partitionMapA from "@principia/base/Array"
      */
     partitionMapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, B, C = HKT.Auto>(
       A: Applicative<F, C>,
-      f: (a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<A, B>>
+      f: (a: A, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<A, B>>
     ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [ReadonlyArray<A>, ReadonlyArray<B>]>
 
     /**
