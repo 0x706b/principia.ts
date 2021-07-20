@@ -352,7 +352,7 @@ export function getEq<A>(E: P.Eq<A>): P.Eq<ReadonlyArray<A>> {
  * @since 1.0.0
  */
 export function extend_<A, B>(wa: ReadonlyArray<A>, f: (as: ReadonlyArray<A>) => B): ReadonlyArray<B> {
-  return imap_(wa, (i, _) => f(wa.slice(i)))
+  return map_(wa, (_, i) => f(wa.slice(i)))
 }
 
 /**
@@ -381,13 +381,13 @@ export function duplicate<A>(wa: ReadonlyArray<A>): ReadonlyArray<ReadonlyArray<
  * @category FilterableWithIndex
  * @since 1.0.0
  */
-export function ifilter_<A, B extends A>(fa: ReadonlyArray<A>, f: P.RefinementWithIndex<number, A, B>): ReadonlyArray<B>
-export function ifilter_<A>(fa: ReadonlyArray<A>, f: P.PredicateWithIndex<number, A>): ReadonlyArray<A>
-export function ifilter_<A>(fa: ReadonlyArray<A>, f: P.PredicateWithIndex<number, A>): ReadonlyArray<A> {
+export function filter_<A, B extends A>(fa: ReadonlyArray<A>, f: P.RefinementWithIndex<number, A, B>): ReadonlyArray<B>
+export function filter_<A>(fa: ReadonlyArray<A>, f: P.PredicateWithIndex<number, A>): ReadonlyArray<A>
+export function filter_<A>(fa: ReadonlyArray<A>, f: P.PredicateWithIndex<number, A>): ReadonlyArray<A> {
   const result: Array<A> = []
   for (let i = 0; i < fa.length; i++) {
     const a = fa[i]
-    if (f(i, a)) {
+    if (f(a, i)) {
       result.push(a)
     }
   }
@@ -398,42 +398,22 @@ export function ifilter_<A>(fa: ReadonlyArray<A>, f: P.PredicateWithIndex<number
  * @category FilterableWithIndex
  * @since 1.0.0
  */
-export function ifilter<A, B extends A>(
+export function filter<A, B extends A>(
   f: P.RefinementWithIndex<number, A, B>
 ): (fa: ReadonlyArray<A>) => ReadonlyArray<B>
-export function ifilter<A>(f: P.PredicateWithIndex<number, A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A>
-export function ifilter<A>(f: P.PredicateWithIndex<number, A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A> {
-  return (fa) => ifilter_(fa, f)
-}
-
-/**
- * @category Filterable
- * @since 1.0.0
- */
-export function filter_<A, B extends A>(fa: ReadonlyArray<A>, f: P.Refinement<A, B>): ReadonlyArray<B>
-export function filter_<A>(fa: ReadonlyArray<A>, f: P.Predicate<A>): ReadonlyArray<A>
-export function filter_<A>(fa: ReadonlyArray<A>, f: P.Predicate<A>): ReadonlyArray<A> {
-  return ifilter_(fa, (_, a) => f(a))
-}
-
-/**
- * @category Filterable
- * @since 1.0.0
- */
-export function filter<A, B extends A>(f: P.Refinement<A, B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B>
-export function filter<A>(f: P.Predicate<A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A>
-export function filter<A>(f: P.Predicate<A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A> {
-  return (fa) => ifilter_(fa, (_, a) => f(a))
+export function filter<A>(f: P.PredicateWithIndex<number, A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A>
+export function filter<A>(f: P.PredicateWithIndex<number, A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A> {
+  return (fa) => filter_(fa, f)
 }
 
 /**
  * @category FilterableWithIndex
  * @since 1.0.0
  */
-export function ifilterMap_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => Option<B>): ReadonlyArray<B> {
+export function filterMap_<A, B>(fa: ReadonlyArray<A>, f: (a: A, i: number) => Option<B>): ReadonlyArray<B> {
   const result = []
   for (let i = 0; i < fa.length; i++) {
-    const optionB = f(i, fa[i])
+    const optionB = f(fa[i], i)
     if (O.isSome(optionB)) {
       result.push(optionB.value)
     }
@@ -445,39 +425,23 @@ export function ifilterMap_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => 
  * @category FilterableWithIndex
  * @since 1.0.0
  */
-export function ifilterMap<A, B>(f: (i: number, a: A) => Option<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
-  return (fa) => ifilterMap_(fa, f)
+export function filterMap<A, B>(f: (a: A, i: number) => Option<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
+  return (fa) => filterMap_(fa, f)
 }
 
 /**
  * @category Filterable
  * @since 1.0.0
  */
-export function filterMap_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => Option<B>): ReadonlyArray<B> {
-  return ifilterMap_(fa, (_, a) => f(a))
-}
-
-/**
- * @category Filterable
- * @since 1.0.0
- */
-export function filterMap<A, B>(f: (a: A) => Option<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
-  return (fa) => ifilterMap_(fa, (_, a) => f(a))
-}
-
-/**
- * @category FilterableWithIndex
- * @since 1.0.0
- */
-export function ipartition_<A, B extends A>(
+export function partition_<A, B extends A>(
   ta: ReadonlyArray<A>,
   refinement: P.RefinementWithIndex<number, A, B>
 ): readonly [ReadonlyArray<A>, ReadonlyArray<B>]
-export function ipartition_<A>(
+export function partition_<A>(
   ta: ReadonlyArray<A>,
   predicate: P.PredicateWithIndex<number, A>
 ): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
-export function ipartition_<A>(
+export function partition_<A>(
   ta: ReadonlyArray<A>,
   predicate: P.PredicateWithIndex<number, A>
 ): readonly [ReadonlyArray<A>, ReadonlyArray<A>] {
@@ -485,7 +449,7 @@ export function ipartition_<A>(
   const right: Array<A> = []
   for (let i = 0; i < ta.length; i++) {
     const a = ta[i]
-    if (predicate(i, a)) {
+    if (predicate(a, i)) {
       right.push(a)
     } else {
       left.push(a)
@@ -495,68 +459,33 @@ export function ipartition_<A>(
 }
 
 /**
- * @category FilterableWithIndex
- * @since 1.0.0
- */
-export function ipartition<A, B extends A>(
-  refinement: P.RefinementWithIndex<number, A, B>
-): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<B>]
-export function ipartition<A>(
-  predicate: P.PredicateWithIndex<number, A>
-): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<A>]
-export function ipartition<A>(
-  predicate: P.PredicateWithIndex<number, A>
-): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<A>] {
-  return (ta) => ipartition_(ta, predicate)
-}
-
-/**
- * @category Filterable
- * @since 1.0.0
- */
-export function partition_<A, B extends A>(
-  ta: ReadonlyArray<A>,
-  refinement: P.Refinement<A, B>
-): readonly [ReadonlyArray<A>, ReadonlyArray<B>]
-export function partition_<A>(
-  ta: ReadonlyArray<A>,
-  predicate: P.Predicate<A>
-): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
-export function partition_<A>(
-  ta: ReadonlyArray<A>,
-  predicate: P.Predicate<A>
-): readonly [ReadonlyArray<A>, ReadonlyArray<A>] {
-  return ipartition_(ta, (_, a) => predicate(a))
-}
-
-/**
  * @category Filterable
  * @since 1.0.0
  */
 export function partition<A, B extends A>(
-  refinement: P.Refinement<A, B>
+  refinement: P.RefinementWithIndex<number, A, B>
 ): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<B>]
 export function partition<A>(
-  predicate: P.Predicate<A>
+  predicate: P.PredicateWithIndex<number, A>
 ): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<A>]
 export function partition<A>(
-  predicate: P.Predicate<A>
+  predicate: P.PredicateWithIndex<number, A>
 ): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<A>] {
-  return (ta) => ipartition_(ta, (_, a) => predicate(a))
+  return (ta) => partition_(ta, predicate)
 }
 
 /**
  * @category FilterableWithIndex
  * @since 1.0.0
  */
-export function ipartitionMap_<A, B, C>(
+export function partitionMap_<A, B, C>(
   ta: ReadonlyArray<A>,
-  f: (i: number, a: A) => Either<B, C>
+  f: (a: A, i: number) => Either<B, C>
 ): readonly [ReadonlyArray<B>, ReadonlyArray<C>] {
   const left  = [] as Array<B>
   const right = [] as Array<C>
   for (let i = 0; i < ta.length; i++) {
-    const ea = f(i, ta[i])
+    const ea = f(ta[i], i)
     E.match_(
       ea,
       (b) => {
@@ -574,31 +503,10 @@ export function ipartitionMap_<A, B, C>(
  * @category FilterableWithIndex
  * @since 1.0.0
  */
-export function ipartitionMap<A, B, C>(
-  f: (i: number, a: A) => Either<B, C>
-): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<B>, ReadonlyArray<C>] {
-  return (ta) => ipartitionMap_(ta, f)
-}
-
-/**
- * @category Filterable
- * @since 1.0.0
- */
-export function partitionMap_<A, B, C>(
-  ta: ReadonlyArray<A>,
-  f: (a: A) => Either<B, C>
-): readonly [ReadonlyArray<B>, ReadonlyArray<C>] {
-  return ipartitionMap_(ta, (_, a) => f(a))
-}
-
-/**
- * @category Filterable
- * @since 1.0.0
- */
 export function partitionMap<A, B, C>(
-  f: (a: A) => Either<B, C>
+  f: (a: A, i: number) => Either<B, C>
 ): (ta: ReadonlyArray<A>) => readonly [ReadonlyArray<B>, ReadonlyArray<C>] {
-  return (ta) => ipartitionMap_(ta, (_, a) => f(a))
+  return (ta) => partitionMap_(ta, f)
 }
 
 /*
@@ -611,59 +519,27 @@ export function partitionMap<A, B, C>(
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export const ifoldl_: <A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, i: number, a: A) => B) => B = _.ifoldl_
+export const foldl_: <A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, a: A, i: number) => B) => B = _.foldl_
 
 /**
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export function ifoldl<A, B>(b: B, f: (b: B, i: number, a: A) => B): (fa: ReadonlyArray<A>) => B {
-  return (fa) => ifoldl_(fa, b, f)
-}
-
-/**
- * @category Foldable
- * @since 1.0.0
- */
-export function foldl_<A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, a: A) => B): B {
-  return ifoldl_(fa, b, (b, _, a) => f(b, a))
-}
-
-/**
- * @category Foldable
- * @since 1.0.0
- */
-export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: ReadonlyArray<A>) => B {
-  return (fa) => ifoldl_(fa, b, (b, _, a) => f(b, a))
+export function foldl<A, B>(b: B, f: (b: B, a: A, i: number) => B): (fa: ReadonlyArray<A>) => B {
+  return (fa) => foldl_(fa, b, f)
 }
 
 /**
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export const ifoldr_: <A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, i: number, b: B) => B) => B = _.ifoldr_
+export const foldr_: <A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, b: B, i: number) => B) => B = _.foldr_
 
 /**
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export function ifoldr<A, B>(b: B, f: (a: A, i: number, b: B) => B): (fa: ReadonlyArray<A>) => B {
-  return (fa) => ifoldr_(fa, b, f)
-}
-
-/**
- * @category Foldable
- * @since 1.0.0
- */
-export function foldr_<A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, b: B) => B): B {
-  return ifoldr_(fa, b, (a, _, b) => f(a, b))
-}
-
-/**
- * @category Foldable
- * @since 1.0.0
- */
-export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: ReadonlyArray<A>) => B {
+export function foldr<A, B>(b: B, f: (a: A, b: B, i: number) => B): (fa: ReadonlyArray<A>) => B {
   return (fa) => foldr_(fa, b, f)
 }
 
@@ -671,32 +547,15 @@ export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: ReadonlyArray<A>) 
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export function ifoldMap_<M>(M: P.Monoid<M>): <A>(fa: ReadonlyArray<A>, f: (i: number, a: A) => M) => M {
-  return (fa, f) => ifoldl_(fa, M.nat, (b, i, a) => M.combine_(b, f(i, a)))
+export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: ReadonlyArray<A>, f: (a: A, i: number) => M) => M {
+  return (fa, f) => foldl_(fa, M.nat, (b, a, i) => M.combine_(b, f(a, i)))
 }
 
 /**
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export function ifoldMap<M>(M: P.Monoid<M>): <A>(f: (i: number, a: A) => M) => (fa: ReadonlyArray<A>) => M {
-  return (f) => (fa) => ifoldMap_(M)(fa, f)
-}
-
-/**
- * @category Foldable
- * @since 1.0.0
- */
-export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: ReadonlyArray<A>, f: (a: A) => M) => M {
-  const ifoldMapM_ = ifoldMap_(M)
-  return (fa, f) => ifoldMapM_(fa, (_, a) => f(a))
-}
-
-/**
- * @category Foldable
- * @since 1.0.0
- */
-export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: ReadonlyArray<A>) => M {
+export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A, i: number) => M) => (fa: ReadonlyArray<A>) => M {
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
 
@@ -705,7 +564,7 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: Readonly
  * @since 1.0.0
  */
 export function fold_<M>(fa: ReadonlyArray<M>, M: P.Monoid<M>): M {
-  return ifoldl_(fa, M.nat, (b, _, a) => M.combine_(b, a))
+  return foldl_(fa, M.nat, (b, a) => M.combine_(b, a))
 }
 
 /**
@@ -713,7 +572,7 @@ export function fold_<M>(fa: ReadonlyArray<M>, M: P.Monoid<M>): M {
  * @since 1.0.0
  */
 export function fold<M>(M: P.Monoid<M>): (fa: ReadonlyArray<M>) => M {
-  return (fa) => ifoldl_(fa, M.nat, (b, _, a) => M.combine_(b, a))
+  return (fa) => foldl_(fa, M.nat, (b, a) => M.combine_(b, a))
 }
 
 /*
@@ -728,11 +587,11 @@ export function fold<M>(M: P.Monoid<M>): (fa: ReadonlyArray<M>) => M {
  * @category FunctorWithIndex
  * @since 1.0.0
  */
-export function imap_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => B): ReadonlyArray<B> {
+export function map_<A, B>(fa: ReadonlyArray<A>, f: (a: A, i: number) => B): ReadonlyArray<B> {
   const len = fa.length
   const bs  = Array(len)
   for (let i = 0; i < len; i++) {
-    bs[i] = f(i, fa[i])
+    bs[i] = f(fa[i], i)
   }
   return bs
 }
@@ -743,27 +602,7 @@ export function imap_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => B): Re
  * @category FunctorWithIndex
  * @since 1.0.0
  */
-export function imap<A, B>(f: (i: number, a: A) => B): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
-  return (fa) => imap_(fa, f)
-}
-
-/**
- * Map over an `Array` passing the values to the iterating function
- *
- * @category Functor
- * @since 1.0.0
- */
-export function map_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => B): ReadonlyArray<B> {
-  return imap_(fa, (_, a) => f(a))
-}
-
-/**
- * Map over an `Array` passing the values to the iterating function
- *
- * @category Functor
- * @since 1.0.0
- */
-export function map<A, B>(f: (a: A) => B): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
+export function map<A, B>(f: (a: A, i: number) => B): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
   return (fa) => map_(fa, f)
 }
 
@@ -980,59 +819,27 @@ export function getShow<A>(S: P.Show<A>): P.Show<ReadonlyArray<A>> {
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const imapA_ = P.implementMapWithIndexA_<[HKT.URI<ArrayURI>]>()((_) => (G) => {
-  return (ta, f) => ifoldl_(ta, G.pure(empty<typeof _.B>()), (fbs, i, a) => G.crossWith_(fbs, f(i, a), append_))
+export const mapA_ = P.implementMapWithIndexA_<[HKT.URI<ArrayURI>]>()((_) => (G) => {
+  return (ta, f) => foldl_(ta, G.pure(empty<typeof _.B>()), (fbs, a, i) => G.crossWith_(fbs, f(a, i), append_))
 })
 
 /**
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const imapA: P.MapWithIndexAFn<[HKT.URI<ArrayURI>]> = (G) => {
-  const itraverseG_ = imapA_(G)
-  return (f) => (ta) => itraverseG_(ta, f)
+export const mapA: P.MapWithIndexAFn<[HKT.URI<ArrayURI>]> = (G) => {
+  const mapAG_ = mapA_(G)
+  return (f) => (ta) => mapAG_(ta, f)
 }
 
-export const imapAccumM_: P.MapAccumWithIndexMFn_<[HKT.URI<ArrayURI>]> = (M) => (ta, s, f) =>
-  ifoldl_(ta, M.pure([[] as any[], s]), (b, i, a) =>
-    M.chain_(b, ([bs, s]) => M.map_(f(s, i, a), ([b, s]) => [append_(bs, b), s]))
+export const mapAccumM_: P.MapAccumWithIndexMFn_<[HKT.URI<ArrayURI>]> = (M) => (ta, s, f) =>
+  foldl_(ta, M.pure([[] as any[], s]), (b, a, i) =>
+    M.chain_(b, ([bs, s]) => M.map_(f(s, a, i), ([b, s]) => [append_(bs, b), s]))
   )
 
-export const imapAccumM: P.MapAccumWithIndexMFn<[HKT.URI<ArrayURI>]> = (M) => {
-  const imapAccum_ = imapAccumM_(M)
+export const mapAccumM: P.MapAccumWithIndexMFn<[HKT.URI<ArrayURI>]> = (M) => {
+  const imapAccum_ = mapAccumM_(M)
   return (s, f) => (ta) => imapAccum_(ta, s, f)
-}
-
-/**
- * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
- *
- * @category Traversable
- * @since 1.0.0
- */
-export const mapA_: P.MapAFn_<[HKT.URI<ArrayURI>]> = (G) => {
-  const itraverseG_ = imapA_(G)
-  return (ta, f) => itraverseG_(ta, (_, a) => f(a))
-}
-
-/**
- * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
- *
- * @category Traversable
- * @since 1.0.0
- */
-export const mapA: P.MapAFn<[HKT.URI<ArrayURI>]> = (G) => {
-  const itraverseG_ = imapA_(G)
-  return (f) => (ta) => itraverseG_(ta, (_, a) => f(a))
-}
-
-export const mapAccumM_: P.MapAccumMFn_<[HKT.URI<ArrayURI>]> = (M) => {
-  const imapAccum_ = imapAccumM_(M)
-  return (ta, s, f) => imapAccum_(ta, s, (s, _, a) => f(s, a))
-}
-
-export const mapAccumM: P.MapAccumMFn<[HKT.URI<ArrayURI>]> = (M) => {
-  const imapAccum_ = imapAccumM_(M)
-  return (s, f) => (ta) => imapAccum_(ta, s, (s, _, a) => f(s, a))
 }
 
 /**
@@ -1097,35 +904,23 @@ export const unit: () => ReadonlyArray<void> = NEA.unit
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const icompactA_: P.FilterMapWithIndexAFn_<[HKT.URI<ArrayURI>]> = (G) => {
-  const traverseG = imapA_(G)
-  return (wa, f) => pipe(traverseG(wa, f), G.map(compact))
+export const filterMapA_: P.FilterMapWithIndexAFn_<[HKT.URI<ArrayURI>]> = (G) => {
+  const mapAG_ = mapA_(G)
+  return (wa, f) => pipe(mapAG_(wa, f), G.map(compact))
 }
 
 /**
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const icompactA: P.FilterMapWithIndexAFn<[HKT.URI<ArrayURI>]> = (G) => (f) => (wa) => icompactA_(G)(wa, f)
-
-/**
- * @category Witherable
- * @since 1.0.0
- */
-export const compactA_: P.FilterMapAFn_<[HKT.URI<ArrayURI>]> = (G) => (wa, f) => icompactA_(G)(wa, (_, a) => f(a))
-
-/**
- * @category Witherable
- * @since 1.0.0
- */
-export const compactA: P.FilterMapAFn<[HKT.URI<ArrayURI>]> = (G) => (f) => (wa) => compactA_(G)(wa, f)
+export const filterMapA: P.FilterMapWithIndexAFn<[HKT.URI<ArrayURI>]> = (G) => (f) => (wa) => filterMapA_(G)(wa, f)
 
 /**
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const iseparateA_: P.PartitionMapWithIndexAFn_<[HKT.URI<ArrayURI>]> = (G) => {
-  const traverseG = imapA_(G)
+export const partitionMapA_: P.PartitionMapWithIndexAFn_<[HKT.URI<ArrayURI>]> = (G) => {
+  const traverseG = mapA_(G)
   return (wa, f) => pipe(traverseG(wa, f), G.map(separate))
 }
 
@@ -1133,19 +928,8 @@ export const iseparateA_: P.PartitionMapWithIndexAFn_<[HKT.URI<ArrayURI>]> = (G)
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const iseparateA: P.PartitionMapWithIndexAFn<[HKT.URI<ArrayURI>]> = (G) => (f) => (wa) => iseparateA_(G)(wa, f)
-
-/**
- * @category Witherable
- * @since 1.0.0
- */
-export const separateA_: P.PartitionMapAFn_<[HKT.URI<ArrayURI>]> = (G) => (wa, f) => iseparateA_(G)(wa, (_, a) => f(a))
-
-/**
- * @category Witherable
- * @since 1.0.0
- */
-export const separateA: P.PartitionMapAFn<[HKT.URI<ArrayURI>]> = (G) => (f) => (wa) => separateA_(G)(wa, f)
+export const partitionMapA: P.PartitionMapWithIndexAFn<[HKT.URI<ArrayURI>]> = (G) => (f) => (wa) =>
+  partitionMapA_(G)(wa, f)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -1645,16 +1429,16 @@ export function findLastIndex<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<
  * @category combinators
  * @since 1.0.0
  */
-export function ifoldlWhile_<A, B>(
+export function foldlWhile_<A, B>(
   as: ReadonlyArray<A>,
   b: B,
   predicate: P.Predicate<B>,
-  f: (b: B, i: number, a: A) => B
+  f: (b: B, a: A, i: number) => B
 ): B {
   let out  = b
   let cont = predicate(out)
   for (let i = 0; cont && i < as.length; i++) {
-    out  = f(out, i, as[i])
+    out  = f(out, as[i], i)
     cont = predicate(out)
   }
   return out
@@ -1666,31 +1450,11 @@ export function ifoldlWhile_<A, B>(
  * @category combinators
  * @since 1.0.0
  */
-export function ifoldlWhile<A, B>(
+export function foldlWhile<A, B>(
   b: B,
   predicate: P.Predicate<B>,
-  f: (b: B, i: number, a: A) => B
+  f: (b: B, a: A, i: number) => B
 ): (as: ReadonlyArray<A>) => B {
-  return (as) => ifoldlWhile_(as, b, predicate, f)
-}
-
-/**
- * Perform a left-associative fold on an array while the predicate holds
- *
- * @category combinators
- * @since 1.0.0
- */
-export function foldlWhile_<A, B>(as: ReadonlyArray<A>, b: B, predicate: P.Predicate<B>, f: (b: B, a: A) => B): B {
-  return ifoldlWhile_(as, b, predicate, (b, _, a) => f(b, a))
-}
-
-/**
- * Perform a left-associative fold on an array while the predicate holds
- *
- * @category combinators
- * @since 1.0.0
- */
-export function foldlWhile<A, B>(b: B, predicate: P.Predicate<B>, f: (b: B, a: A) => B): (as: ReadonlyArray<A>) => B {
   return (as) => foldlWhile_(as, b, predicate, f)
 }
 
@@ -1700,16 +1464,16 @@ export function foldlWhile<A, B>(b: B, predicate: P.Predicate<B>, f: (b: B, a: A
  * @category combinators
  * @since 1.0.0
  */
-export function ifoldrWhile_<A, B>(
+export function foldrWhile_<A, B>(
   as: ReadonlyArray<A>,
   b: B,
   predicate: P.Predicate<B>,
-  f: (a: A, i: number, b: B) => B
+  f: (a: A, b: B, i: number) => B
 ): B {
   let out  = b
   let cont = predicate(out)
   for (let i = as.length - 1; cont && i >= 0; i--) {
-    out  = f(as[i], i, out)
+    out  = f(as[i], out, i)
     cont = predicate(out)
   }
   return out
@@ -1721,31 +1485,11 @@ export function ifoldrWhile_<A, B>(
  * @category combinators
  * @since 1.0.0
  */
-export function ifoldrWhile<A, B>(
+export function foldrWhile<A, B>(
   b: B,
   predicate: P.Predicate<B>,
-  f: (a: A, i: number, b: B) => B
+  f: (a: A, b: B, i: number) => B
 ): (as: ReadonlyArray<A>) => B {
-  return (as) => ifoldrWhile_(as, b, predicate, f)
-}
-
-/**
- * Perform a left-associative fold on an array while the predicate holds
- *
- * @category combinators
- * @since 1.0.0
- */
-export function foldrWhile_<A, B>(as: ReadonlyArray<A>, b: B, predicate: P.Predicate<B>, f: (a: A, b: B) => B): B {
-  return ifoldrWhile_(as, b, predicate, (a, _, b) => f(a, b))
-}
-
-/**
- * Perform a left-associative fold on an array while the predicate holds
- *
- * @category combinators
- * @since 1.0.0
- */
-export function foldrWhile<A, B>(b: B, predicate: P.Predicate<B>, f: (a: A, b: B) => B): (as: ReadonlyArray<A>) => B {
   return (as) => foldrWhile_(as, b, predicate, f)
 }
 
@@ -2455,7 +2199,7 @@ export const Functor = P.Functor<URI>({
 })
 
 export const FunctorWithIndex = P.FunctorWithIndex<URI>({
-  imap_
+  imap_: map_
 })
 
 export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
@@ -2470,11 +2214,12 @@ export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
  * @category SemimonoidalFunctor
  * @since 1.0.0
  */
-export const crossFlat_: <A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>) => ReadonlyArray<Z.Zip<A, B>> = P.crossFlatF_<URI>({
-  map_,
-  cross_,
-  crossWith_
-})
+export const crossFlat_: <A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>) => ReadonlyArray<Z.Zip<A, B>> =
+  P.crossFlatF_<URI>({
+    map_,
+    cross_,
+    crossWith_
+  })
 
 /**
  * The cartesian product of two arrays
@@ -2482,11 +2227,12 @@ export const crossFlat_: <A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>) => R
  * @category SemimonoidalFunctor
  * @since 1.0.0
  */
-export const crossFlat: <B>(fb: ReadonlyArray<B>) => <A>(fa: ReadonlyArray<A>) => ReadonlyArray<Z.Zip<A, B>> = P.crossFlatF<URI>({
-  map_,
-  cross_,
-  crossWith_
-})
+export const crossFlat: <B>(fb: ReadonlyArray<B>) => <A>(fa: ReadonlyArray<A>) => ReadonlyArray<Z.Zip<A, B>> =
+  P.crossFlatF<URI>({
+    map_,
+    cross_,
+    crossWith_
+  })
 
 export const Apply = P.Apply<URI>({
   map_,
@@ -2546,17 +2292,17 @@ export const Filterable = P.Filterable<URI>({
 })
 
 export const FilterableWithIndex = P.FilterableWithIndex<URI>({
-  imap_,
-  ifilter_,
-  ifilterMap_,
-  ipartition_,
-  ipartitionMap_
+  imap_: map_,
+  ifilter_: filter_,
+  ifilterMap_: filterMap_,
+  ipartition_: partition_,
+  ipartitionMap_: partitionMap_
 })
 
 export const FoldableWithIndex = P.FoldableWithIndex<URI>({
-  ifoldl_,
-  ifoldr_,
-  ifoldMap_
+  ifoldl_: foldl_,
+  ifoldr_: foldr_,
+  ifoldMap_: foldMap_
 })
 
 export const Foldable = P.Foldable<URI>({
@@ -2585,11 +2331,11 @@ export const Traversable = P.Traversable<URI>({
 })
 
 export const TraversableWithIndex = P.TraversableWithIndex<URI>({
-  imap_,
-  ifoldl_,
-  ifoldr_,
-  ifoldMap_,
-  imapA_: imapA_
+  imap_: map_,
+  ifoldl_: foldl_,
+  ifoldr_: foldr_,
+  ifoldMap_: foldMap_,
+  imapA_: mapA_
 })
 
 export const Unfoldable = HKT.instance<P.Unfoldable<URI>>({
@@ -2606,22 +2352,22 @@ export const Witherable = P.Witherable<URI>({
   partition_,
   partitionMap_,
   mapA_: mapA_,
-  filterMapA_: compactA_,
-  partitionMapA_: separateA_
+  filterMapA_,
+  partitionMapA_
 })
 
 export const WitherableWithIndex = P.WitherableWithIndex<URI>({
-  imap_,
-  ifoldl_,
-  ifoldr_,
-  ifoldMap_,
-  ifilter_,
-  ifilterMap_,
-  ipartition_,
-  ipartitionMap_,
-  imapA_: imapA_,
-  ifilterMapA_: icompactA_,
-  ipartitionMapA_: iseparateA_
+  imap_: map_,
+  ifoldl_: foldl_,
+  ifoldr_: foldr_,
+  ifoldMap_: foldMap_,
+  ifilter_: filter_,
+  ifilterMap_: filterMap_,
+  ipartition_: partition_,
+  ipartitionMap_: partitionMap_,
+  imapA_: mapA_,
+  ifilterMapA_: filterMapA_,
+  ipartitionMapA_: partitionMapA_
 })
 
 /*
@@ -2739,50 +2485,26 @@ export function unsafeDeleteAt_<A>(as: ReadonlyArray<A>, i: number): ReadonlyArr
 
 export const clone: <A>(as: ReadonlyArray<A>) => ReadonlyArray<A> = mutableClone
 
-export function ievery_<A, B extends A>(
+export function every_<A, B extends A>(
   as: ReadonlyArray<A>,
   refinement: P.RefinementWithIndex<number, A, B>
 ): as is ReadonlyArray<B>
-export function ievery_<A>(as: ReadonlyArray<A>, predicate: P.PredicateWithIndex<number, A>): boolean
-export function ievery_<A>(as: ReadonlyArray<A>, predicate: P.PredicateWithIndex<number, A>): boolean {
+export function every_<A>(as: ReadonlyArray<A>, predicate: P.PredicateWithIndex<number, A>): boolean
+export function every_<A>(as: ReadonlyArray<A>, predicate: P.PredicateWithIndex<number, A>): boolean {
   let result = true
   let i      = 0
   while (result && i < as.length) {
-    result = predicate(i, as[i])
+    result = predicate(as[i], i)
     i++
   }
   return result
 }
 
-export function ievery<A, B extends A>(
+export function every<A, B extends A>(
   refinement: P.RefinementWithIndex<number, A, B>
 ): (as: ReadonlyArray<A>) => as is ReadonlyArray<B>
-export function ievery<A>(predicate: P.PredicateWithIndex<number, A>): (as: ReadonlyArray<A>) => boolean
-export function ievery<A>(predicate: P.PredicateWithIndex<number, A>): (as: ReadonlyArray<A>) => boolean {
-  return (as) => ievery_(as, predicate)
-}
-
-/**
- * Determines whether every element of the array satisfies the given predicate
- *
- * @category utils
- * @since 1.0.0
- */
-export function every_<A, B extends A>(as: ReadonlyArray<A>, refinement: P.Refinement<A, B>): as is ReadonlyArray<B>
-export function every_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): boolean
-export function every_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): boolean {
-  return ievery_(as, (_, a) => predicate(a))
-}
-
-/**
- * Determines whether every element of the array satisfies the given predicate
- *
- * @category utils
- * @since 1.0.0
- */
-export function every<A, B extends A>(refinement: P.Refinement<A, B>): (as: ReadonlyArray<A>) => as is ReadonlyArray<B>
-export function every<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => boolean
-export function every<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => boolean {
+export function every<A>(predicate: P.PredicateWithIndex<number, A>): (as: ReadonlyArray<A>) => boolean
+export function every<A>(predicate: P.PredicateWithIndex<number, A>): (as: ReadonlyArray<A>) => boolean {
   return (as) => every_(as, predicate)
 }
 

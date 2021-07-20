@@ -12,7 +12,7 @@ export class CompletedRequestMap {
   concat = (that: CompletedRequestMap) => {
     return new CompletedRequestMap(
       HM.mutate_(this.map, (m) => {
-        HM.iforEach_(that.map, (k, v) => {
+        HM.forEach_(that.map, (v, k) => {
           HM.set_(m, k, v)
         })
       })

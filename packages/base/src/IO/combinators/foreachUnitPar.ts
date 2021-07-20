@@ -162,7 +162,7 @@ export function _foreachPar<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E,
     I.chain((array) =>
       I.chain_(
         foreachUnitPar_(
-          It.imap_(as, (n, a) => [a, n] as [A, number]),
+          It.map_(as, (a, n) => [a, n] as [A, number]),
           ([a, n]) =>
             I.chain_(I.defer(traceAs(f, () => f(a))), (b) =>
               I.succeedLazy(() => {

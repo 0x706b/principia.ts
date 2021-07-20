@@ -35,7 +35,7 @@ export function TraversableWithIndex<F extends HKT.URIS, C = HKT.Auto>(
 
 export interface MapWithIndexAFn<F extends HKT.URIS, CF = HKT.Auto> {
   <G extends HKT.URIS, CG = HKT.Auto>(A: Applicative<G, CG>): <KG, QG, WG, XG, IG, SG, RG, EG, KF, A, B>(
-    f: (i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>, a: A) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, B>
+    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, B>
   ) => <QF, WF, XF, IF, SF, RF, EF>(
     ta: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, A>
   ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, B>>
@@ -63,15 +63,15 @@ export interface MapWithIndexAFn_<F extends HKT.URIS, CF = HKT.Auto> {
     B
   >(
     ta: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
-    f: (i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>, a: A) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, B>
+    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, B>
   ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
 export interface MapWithIndexAFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <H extends HKT.URIS, CH = HKT.Auto>(A: Applicative<H, CH>): <FK, GK, HK, HQ, HW, HX, HI, HS, HR, HE, A, B>(
     f: (
-      i: [HKT.IndexFor<F, HKT.OrFix<'K', CF, FK>>, HKT.IndexFor<G, HKT.OrFix<'K', CG, GK>>],
-      a: A
+      a: A,
+      i: [HKT.IndexFor<F, HKT.OrFix<'K', CF, FK>>, HKT.IndexFor<G, HKT.OrFix<'K', CG, GK>>]
     ) => HKT.Kind<H, CH, HK, HQ, HW, HX, HI, HS, HR, HE, B>
   ) => <FQ, FW, FX, FI, FS, FR, FE, GQ, GW, GX, GI, GS, GR, GE>(
     fga: HKT.Kind<F, CF, FK, FQ, FW, FX, FI, FS, FR, FE, HKT.Kind<G, CG, GK, GQ, GW, GX, GI, GS, GR, GE, A>>
@@ -121,8 +121,8 @@ export interface MapWithIndexAFnComposition_<F extends HKT.URIS, G extends HKT.U
   >(
     fga: HKT.Kind<F, CF, FK, FQ, FW, FX, FI, FS, FR, FE, HKT.Kind<G, CG, GK, GQ, GW, GX, GI, GS, GR, GE, A>>,
     f: (
-      i: [HKT.IndexFor<F, HKT.OrFix<'K', CF, FK>>, HKT.IndexFor<G, HKT.OrFix<'K', CG, GK>>],
-      a: A
+      a: A,
+      i: [HKT.IndexFor<F, HKT.OrFix<'K', CF, FK>>, HKT.IndexFor<G, HKT.OrFix<'K', CG, GK>>]
     ) => HKT.Kind<H, CH, HK, HQ, HW, HX, HI, HS, HR, HE, B>
   ) => HKT.Kind<
     H,
@@ -155,7 +155,7 @@ export function implementMapWithIndexA<F extends HKT.URIS, C = HKT.Auto>(): (
   }) => (
     A: Applicative<HKT.UHKT<G>>
   ) => (
-    f: (i: HKT.IndexFor<F, HKT.OrFix<'K', C, K>>, a: A) => HKT.HKT<G, B>
+    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', C, K>>) => HKT.HKT<G, B>
   ) => (ta: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>) => HKT.HKT<G, HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>>
 ) => MapWithIndexAFn<F, C>
 export function implementMapWithIndexA() {
@@ -179,7 +179,7 @@ export function implementMapWithIndexA_<F extends HKT.URIS, C = HKT.Auto>(): (
     G: Applicative<HKT.UHKT<G>>
   ) => (
     ta: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
-    f: (i: HKT.IndexFor<F, HKT.OrFix<'K', C, K>>, a: A) => HKT.HKT<G, B>
+    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', C, K>>) => HKT.HKT<G, B>
   ) => HKT.HKT<G, HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>>
 ) => MapWithIndexAFn_<F, C>
 export function implementMapWithIndexA_() {
@@ -191,8 +191,8 @@ export interface MapAccumWithIndexMFn<F extends HKT.URIS, CF = HKT.Auto> {
     s: C,
     f: (
       s: C,
-      i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>,
-      a: A
+      a: A,
+      i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>
     ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, readonly [B, C]>
   ) => <QF, WF, XF, IF, SF, RF, EF>(
     ta: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, A>
@@ -225,8 +225,8 @@ export interface MapAccumWithIndexMFn_<F extends HKT.URIS, CF = HKT.Auto> {
     s: C,
     f: (
       s: C,
-      i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>,
-      a: A
+      a: A,
+      i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>
     ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, readonly [B, C]>
   ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, readonly [HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, B>, C]>
 }

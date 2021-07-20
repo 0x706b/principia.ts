@@ -9,17 +9,17 @@ import * as C from '../Chunk/core'
  * -------------------------------------------------------------------------------------------------
  */
 
-export function imapAChunk_<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
+export function mapAChunk_<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
   return <A, K, Q, W, X, I, S, R, E, B>(
     ta: Iterable<A>,
-    f: (i: number, a: A) => HKT.Kind<G, CG, K, Q, W, X, I, S, R, E, B>
+    f: (a: A, i: number) => HKT.Kind<G, CG, K, Q, W, X, I, S, R, E, B>
   ): HKT.Kind<G, CG, K, Q, W, X, I, S, R, E, C.Chunk<B>> => {
     let output     = G.pure(C.empty<B>())
     const iterator = ta[Symbol.iterator]()
     let result: IteratorResult<A>
     let i          = 0
     while (!(result = iterator.next()).done) {
-      output = G.crossWith_(output, f(i, result.value), C.append_)
+      output = G.crossWith_(output, f(result.value, i), C.append_)
       i++
     }
 
@@ -27,21 +27,8 @@ export function imapAChunk_<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
   }
 }
 
-export function imapAChunk<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
-  return <A, K, Q, W, X, I, S, R, E, B>(f: (i: number, a: A) => HKT.Kind<G, CG, K, Q, W, X, I, S, R, E, B>) =>
-    (ta: Iterable<A>): HKT.Kind<G, CG, K, Q, W, X, I, S, R, E, C.Chunk<B>> =>
-      imapAChunk_(G)(ta, f)
-}
-
-export function mapAChunk_<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
-  return <A, K, Q, W, X, I, S, R, E, B>(
-    ta: Iterable<A>,
-    f: (a: A) => HKT.Kind<G, CG, K, Q, W, X, I, S, R, E, B>
-  ): HKT.Kind<G, CG, K, Q, W, X, I, S, R, E, C.Chunk<B>> => imapAChunk_(G)(ta, (_, a) => f(a))
-}
-
 export function mapAChunk<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
-  return <A, K, Q, W, X, I, S, R, E, B>(f: (a: A) => HKT.Kind<G, CG, K, Q, W, X, I, S, R, E, B>) =>
+  return <A, K, Q, W, X, I, S, R, E, B>(f: (a: A, i: number) => HKT.Kind<G, CG, K, Q, W, X, I, S, R, E, B>) =>
     (ta: Iterable<A>): HKT.Kind<G, CG, K, Q, W, X, I, S, R, E, C.Chunk<B>> =>
-      imapAChunk_(G)(ta, (_, a) => f(a))
+      mapAChunk_(G)(ta, f)
 }

@@ -1202,10 +1202,10 @@ export function getEq<A>(E: P.Eq<A>): P.Eq<Chunk<A>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function imap_<A, B>(chunk: Chunk<A>, f: (i: number, a: A) => B): Chunk<B> {
+export function map_<A, B>(chunk: Chunk<A>, f: (a: A, i: number) => B): Chunk<B> {
   concrete<A>(chunk)
   if (chunk._chunkTag === ChunkTag.Singleton) {
-    return new Singleton(f(0, chunk.value))
+    return new Singleton(f(chunk.value, 0))
   }
   const b        = builder<B>()
   const iterator = chunk.arrayIterator()
@@ -1214,19 +1214,11 @@ export function imap_<A, B>(chunk: Chunk<A>, f: (i: number, a: A) => B): Chunk<B
   while (!(result = iterator.next()).done) {
     const as = result.value
     for (let j = 0; j < as.length; j++) {
-      b.append(f(i, as[j]))
+      b.append(f(as[j], i))
       i++
     }
   }
   return b.result()
-}
-
-export function imap<A, B>(f: (a: A) => B): (chunk: Chunk<A>) => Chunk<B> {
-  return (chunk) => map_(chunk, f)
-}
-
-export function map_<A, B>(chunk: Chunk<A>, f: (a: A) => B): Chunk<B> {
-  return imap_(chunk, (_, a) => f(a))
 }
 
 export function map<A, B>(f: (a: A) => B): (chunk: Chunk<A>) => Chunk<B> {
@@ -1339,9 +1331,9 @@ export function zip<B>(bs: Chunk<B>): <A>(as: Chunk<A>) => Chunk<readonly [A, B]
  * -------------------------------------------------------------------------------------------------
  */
 
-export function ifilter_<A, B extends A>(fa: Chunk<A>, refinement: P.RefinementWithIndex<number, A, B>): Chunk<B>
-export function ifilter_<A>(fa: Chunk<A>, predicate: P.PredicateWithIndex<number, A>): Chunk<A>
-export function ifilter_<A>(fa: Chunk<A>, predicate: P.PredicateWithIndex<number, A>): Chunk<A> {
+export function filter_<A, B extends A>(fa: Chunk<A>, refinement: P.RefinementWithIndex<number, A, B>): Chunk<B>
+export function filter_<A>(fa: Chunk<A>, predicate: P.PredicateWithIndex<number, A>): Chunk<A>
+export function filter_<A>(fa: Chunk<A>, predicate: P.PredicateWithIndex<number, A>): Chunk<A> {
   concrete(fa)
   const iterator = fa.arrayIterator()
   const out      = builder<A>()
@@ -1351,7 +1343,7 @@ export function ifilter_<A>(fa: Chunk<A>, predicate: P.PredicateWithIndex<number
     const array = result.value
     for (let j = 0; j < array.length; j++) {
       const a = array[j]
-      if (predicate(i, a)) {
+      if (predicate(a, i)) {
         out.append(a)
       }
       i++
@@ -1360,25 +1352,13 @@ export function ifilter_<A>(fa: Chunk<A>, predicate: P.PredicateWithIndex<number
   return out.result()
 }
 
-export function ifilter<A, B extends A>(refinement: P.RefinementWithIndex<number, A, B>): (fa: Chunk<A>) => Chunk<B>
-export function ifilter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: Chunk<A>) => Chunk<A>
-export function ifilter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: Chunk<A>) => Chunk<A> {
-  return (fa) => ifilter_(fa, predicate)
-}
-
-export function filter_<A, B extends A>(fa: Chunk<A>, refinement: Refinement<A, B>): Chunk<B>
-export function filter_<A>(fa: Chunk<A>, predicate: Predicate<A>): Chunk<A>
-export function filter_<A>(fa: Chunk<A>, predicate: Predicate<A>): Chunk<A> {
-  return ifilter_(fa, (_, a) => predicate(a))
-}
-
-export function filter<A, B extends A>(refinement: Refinement<A, B>): (fa: Chunk<A>) => Chunk<B>
-export function filter<A>(predicate: Predicate<A>): (fa: Chunk<A>) => Chunk<A>
-export function filter<A>(predicate: Predicate<A>): (fa: Chunk<A>) => Chunk<A> {
+export function filter<A, B extends A>(refinement: P.RefinementWithIndex<number, A, B>): (fa: Chunk<A>) => Chunk<B>
+export function filter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: Chunk<A>) => Chunk<A>
+export function filter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: Chunk<A>) => Chunk<A> {
   return (fa) => filter_(fa, predicate)
 }
 
-export function ifilterMap_<A, B>(fa: Chunk<A>, f: (i: number, a: A) => O.Option<B>): Chunk<B> {
+export function filterMap_<A, B>(fa: Chunk<A>, f: (a: A, i: number) => O.Option<B>): Chunk<B> {
   concrete(fa)
   const iterator = fa.arrayIterator()
   const out      = builder<B>()
@@ -1387,7 +1367,7 @@ export function ifilterMap_<A, B>(fa: Chunk<A>, f: (i: number, a: A) => O.Option
   while (!(result = iterator.next()).done) {
     const array = result.value
     for (let j = 0; j < array.length; j++) {
-      const ob = f(i, array[j])
+      const ob = f(array[j], i)
       if (O.isSome(ob)) {
         out.append(ob.value)
       }
@@ -1397,27 +1377,16 @@ export function ifilterMap_<A, B>(fa: Chunk<A>, f: (i: number, a: A) => O.Option
   return out.result()
 }
 
-export function ifilterMap<A, B>(f: (i: number, a: A) => O.Option<B>): (fa: Chunk<A>) => Chunk<B> {
-  return (self) => ifilterMap_(self, f)
-}
-
-export function filterMap_<A, B>(fa: Chunk<A>, f: (a: A) => O.Option<B>): Chunk<B> {
-  return ifilterMap_(fa, (_, a) => f(a))
-}
-
-export function filterMap<A, B>(f: (a: A) => O.Option<B>): (fa: Chunk<A>) => Chunk<B> {
+export function filterMap<A, B>(f: (a: A, i: number) => O.Option<B>): (fa: Chunk<A>) => Chunk<B> {
   return (self) => filterMap_(self, f)
 }
 
-export function ipartition_<A, B extends A>(
+export function partition_<A, B extends A>(
   fa: Chunk<A>,
   refinement: P.RefinementWithIndex<number, A, B>
 ): readonly [Chunk<A>, Chunk<B>]
-export function ipartition_<A>(fa: Chunk<A>, predicate: P.PredicateWithIndex<number, A>): readonly [Chunk<A>, Chunk<A>]
-export function ipartition_<A>(
-  fa: Chunk<A>,
-  predicate: P.PredicateWithIndex<number, A>
-): readonly [Chunk<A>, Chunk<A>] {
+export function partition_<A>(fa: Chunk<A>, predicate: P.PredicateWithIndex<number, A>): readonly [Chunk<A>, Chunk<A>]
+export function partition_<A>(fa: Chunk<A>, predicate: P.PredicateWithIndex<number, A>): readonly [Chunk<A>, Chunk<A>] {
   concrete(fa)
   const iterator = fa.arrayIterator()
   const left     = builder<A>()
@@ -1428,7 +1397,7 @@ export function ipartition_<A>(
     const array = result.value
     for (let j = 0; j < array.length; j++) {
       const a = array[j]
-      if (predicate(i, a)) {
+      if (predicate(a, i)) {
         right.append(a)
       } else {
         left.append(a)
@@ -1439,33 +1408,21 @@ export function ipartition_<A>(
   return [left.result(), right.result()]
 }
 
-export function ipartition<A, B extends A>(
+export function partition<A, B extends A>(
   refinement: P.RefinementWithIndex<number, A, B>
 ): (fa: Chunk<A>) => readonly [Chunk<A>, Chunk<B>]
-export function ipartition<A>(
+export function partition<A>(
   predicate: P.PredicateWithIndex<number, A>
 ): (fa: Chunk<A>) => readonly [Chunk<A>, Chunk<A>]
-export function ipartition<A>(
+export function partition<A>(
   predicate: P.PredicateWithIndex<number, A>
 ): (fa: Chunk<A>) => readonly [Chunk<A>, Chunk<A>] {
-  return (fa) => ipartition_(fa, predicate)
-}
-
-export function partition_<A, B extends A>(fa: Chunk<A>, refinement: Refinement<A, B>): readonly [Chunk<A>, Chunk<B>]
-export function partition_<A>(fa: Chunk<A>, predicate: Predicate<A>): readonly [Chunk<A>, Chunk<A>]
-export function partition_<A>(fa: Chunk<A>, predicate: Predicate<A>): readonly [Chunk<A>, Chunk<A>] {
-  return ipartition_(fa, (_, a) => predicate(a))
-}
-
-export function partition<A, B extends A>(refinement: Refinement<A, B>): (fa: Chunk<A>) => readonly [Chunk<A>, Chunk<B>]
-export function partition<A>(predicate: Predicate<A>): (fa: Chunk<A>) => readonly [Chunk<A>, Chunk<A>]
-export function partition<A>(predicate: Predicate<A>): (fa: Chunk<A>) => readonly [Chunk<A>, Chunk<A>] {
   return (fa) => partition_(fa, predicate)
 }
 
-export function ipartitionMap_<A, B, C>(
+export function partitionMap_<A, B, C>(
   fa: Chunk<A>,
-  f: (i: number, a: A) => Either<B, C>
+  f: (a: A, i: number) => Either<B, C>
 ): readonly [Chunk<B>, Chunk<C>] {
   concrete(fa)
   const iterator = fa.arrayIterator()
@@ -1476,7 +1433,7 @@ export function ipartitionMap_<A, B, C>(
   while (!(result = iterator.next()).done) {
     const array = result.value
     for (let j = 0; j < array.length; j++) {
-      const eab = f(i, array[j])
+      const eab = f(array[j], i)
       E.match_(
         eab,
         (b) => left.append(b),
@@ -1488,33 +1445,9 @@ export function ipartitionMap_<A, B, C>(
   return [left.result(), right.result()]
 }
 
-export function ipartitionMap<A, B, C>(
-  f: (i: number, a: A) => Either<B, C>
+export function partitionMap<A, B, C>(
+  f: (a: A, i: number) => Either<B, C>
 ): (fa: Chunk<A>) => readonly [Chunk<B>, Chunk<C>] {
-  return (fa) => ipartitionMap_(fa, f)
-}
-
-export function partitionMap_<A, B, C>(fa: Chunk<A>, f: (a: A) => Either<B, C>): readonly [Chunk<B>, Chunk<C>] {
-  concrete(fa)
-  const iterator = fa.arrayIterator()
-  const left     = builder<B>()
-  const right    = builder<C>()
-  let result: IteratorResult<ArrayLike<A>>
-  while (!(result = iterator.next()).done) {
-    const array = result.value
-    for (let i = 0; i < array.length; i++) {
-      const eab = f(array[i])
-      E.match_(
-        eab,
-        (b) => left.append(b),
-        (c) => right.append(c)
-      )
-    }
-  }
-  return [left.result(), right.result()]
-}
-
-export function partitionMap<A, B, C>(f: (a: A) => Either<B, C>): (fa: Chunk<A>) => readonly [Chunk<B>, Chunk<C>] {
   return (fa) => partitionMap_(fa, f)
 }
 
@@ -1524,7 +1457,7 @@ export function partitionMap<A, B, C>(f: (a: A) => Either<B, C>): (fa: Chunk<A>)
  * -------------------------------------------------------------------------------------------------
  */
 
-export function ifoldl_<A, B>(fa: Chunk<A>, b: B, f: (b: B, i: number, a: A) => B): B {
+export function foldl_<A, B>(fa: Chunk<A>, b: B, f: (b: B, a: A, i: number) => B): B {
   concrete(fa)
   const iterator = fa.arrayIterator()
   let out        = b
@@ -1533,26 +1466,18 @@ export function ifoldl_<A, B>(fa: Chunk<A>, b: B, f: (b: B, i: number, a: A) => 
   while (!(result = iterator.next()).done) {
     const array = result.value
     for (let j = 0; j < array.length; j++) {
-      out = f(out, i, array[i])
+      out = f(out, array[i], i)
       i++
     }
   }
   return out
 }
 
-export function ifoldl<A, B>(b: B, f: (b: B, i: number, a: A) => B): (fa: Chunk<A>) => B {
-  return (fa) => ifoldl_(fa, b, f)
-}
-
-export function foldl_<A, B>(fa: Chunk<A>, b: B, f: (b: B, a: A) => B): B {
-  return ifoldl_(fa, b, (b, _, a) => f(b, a))
-}
-
-export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: Chunk<A>) => B {
+export function foldl<A, B>(b: B, f: (b: B, a: A, i: number) => B): (fa: Chunk<A>) => B {
   return (fa) => foldl_(fa, b, f)
 }
 
-export function ifoldr_<A, B>(fa: Chunk<A>, b: B, f: (a: A, i: number, b: B) => B): B {
+export function foldr_<A, B>(fa: Chunk<A>, b: B, f: (a: A, b: B, i: number) => B): B {
   concrete(fa)
   const iterator = fa.reverseArrayIterator()
   let out        = b
@@ -1561,38 +1486,22 @@ export function ifoldr_<A, B>(fa: Chunk<A>, b: B, f: (a: A, i: number, b: B) => 
   while (!(result = iterator.next()).done) {
     const array = result.value
     for (let j = array.length - 1; j >= 0; j--) {
-      out = f(array[i], i, out)
+      out = f(array[i], out, i)
       i--
     }
   }
   return out
 }
 
-export function ifoldr<A, B>(b: B, f: (a: A, i: number, b: B) => B): (fa: Chunk<A>) => B {
-  return (fa) => ifoldr_(fa, b, f)
-}
-
-export function foldr_<A, B>(fa: Chunk<A>, b: B, f: (a: A, b: B) => B): B {
-  return ifoldr_(fa, b, (a, _, b) => f(a, b))
-}
-
-export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: Chunk<A>) => B {
+export function foldr<A, B>(b: B, f: (a: A, b: B, i: number) => B): (fa: Chunk<A>) => B {
   return (fa) => foldr_(fa, b, f)
 }
 
-export function ifoldMap_<M>(M: P.Monoid<M>): <A>(fa: Chunk<A>, f: (i: number, a: A) => M) => M {
-  return (fa, f) => ifoldl_(fa, M.nat, (b, i, a) => M.combine_(b, f(i, a)))
+export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: Chunk<A>, f: (a: A, i: number) => M) => M {
+  return (fa, f) => foldl_(fa, M.nat, (b, a, i) => M.combine_(b, f(a, i)))
 }
 
-export function ifoldMap<M>(M: P.Monoid<M>): <A>(f: (i: number, a: A) => M) => (fa: Chunk<A>) => M {
-  return (f) => (fa) => ifoldMap_(M)(fa, f)
-}
-
-export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: Chunk<A>, f: (a: A) => M) => M {
-  return (fa, f) => ifoldMap_(M)(fa, (_, a) => f(a))
-}
-
-export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: Chunk<A>) => M {
+export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A, i: number) => M) => (fa: Chunk<A>) => M {
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
 
@@ -1689,22 +1598,12 @@ export function getOrd<A>(O: P.Ord<A>): P.Ord<Chunk<A>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const imapA_: P.MapWithIndexAFn_<URI> = (A) => (ta, f) =>
-  ifoldl_(ta, A.pure(empty()), (fbs, i, a) => A.crossWith_(fbs, f(i, a), append_))
+export const mapA_: P.MapWithIndexAFn_<URI> = (A) => (ta, f) =>
+  foldl_(ta, A.pure(empty()), (fbs, a, i) => A.crossWith_(fbs, f(a, i), append_))
 
-export const imapA: P.MapWithIndexAFn<URI> = (G) => {
-  const itraverseG_ = imapA_(G)
+export const mapA: P.MapWithIndexAFn<URI> = (G) => {
+  const itraverseG_ = mapA_(G)
   return (f) => (ta) => itraverseG_(ta, f)
-}
-
-export const mapA_: P.MapAFn_<URI> = (G) => {
-  const itraverseG_ = imapA_(G)
-  return (ta, f) => itraverseG_(ta, (_, a) => f(a))
-}
-
-export const mapA: P.MapAFn<URI> = (G) => {
-  const traverseG_ = mapA_(G)
-  return (f) => (ta) => traverseG_(ta, f)
 }
 
 export const sequence: P.SequenceFn<URI> = (G) => {
@@ -1744,8 +1643,8 @@ export function unfold<A, B>(b: B, f: (b: B) => O.Option<readonly [A, B]>): Chun
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const ifilterMapA_: P.FilterMapWithIndexAFn_<URI> = (A) => {
-  const _ = imapA_(A)
+export const filterMapA_: P.FilterMapWithIndexAFn_<URI> = (A) => {
+  const _ = mapA_(A)
   return (wa, f) => pipe(_(wa, f), A.map(compact))
 }
 
@@ -1753,25 +1652,7 @@ export const ifilterMapA_: P.FilterMapWithIndexAFn_<URI> = (A) => {
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const ifilterMapA: P.FilterMapWithIndexAFn<URI> = (A) => {
-  const _ = ifilterMapA_(A)
-  return (f) => (wa) => _(wa, f)
-}
-
-/**
- * @category Witherable
- * @since 1.0.0
- */
-export const filterMapA_: P.FilterMapAFn_<URI> = (A) => {
-  const _ = ifilterMapA_(A)
-  return (wa, f) => _(wa, (_, a) => f(a))
-}
-
-/**
- * @category Witherable
- * @since 1.0.0
- */
-export const filterMapA: P.FilterMapAFn<URI> = (A) => {
+export const filterMapA: P.FilterMapWithIndexAFn<URI> = (A) => {
   const _ = filterMapA_(A)
   return (f) => (wa) => _(wa, f)
 }
@@ -1780,8 +1661,8 @@ export const filterMapA: P.FilterMapAFn<URI> = (A) => {
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const ipartitionMapA_: P.PartitionMapWithIndexAFn_<URI> = (A) => {
-  const _ = imapA_(A)
+export const partitionMapA_: P.PartitionMapWithIndexAFn_<URI> = (A) => {
+  const _ = mapA_(A)
   return (wa, f) => pipe(_(wa, f), A.map(separate))
 }
 
@@ -1789,25 +1670,7 @@ export const ipartitionMapA_: P.PartitionMapWithIndexAFn_<URI> = (A) => {
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const ipartitionMapA: P.PartitionMapWithIndexAFn<URI> = (A) => {
-  const _ = ipartitionMapA_(A)
-  return (f) => (wa) => _(wa, f)
-}
-
-/**
- * @category Witherable
- * @since 1.0.0
- */
-export const partitionMapA_: P.PartitionMapAFn_<URI> = (A) => {
-  const _ = ipartitionMapA_(A)
-  return (wa, f) => _(wa, (_, a) => f(a))
-}
-
-/**
- * @category Witherable
- * @since 1.0.0
- */
-export const partitionMapA: P.PartitionMapAFn<URI> = (A) => {
+export const partitionMapA: P.PartitionMapWithIndexAFn<URI> = (A) => {
   const _ = partitionMapA_(A)
   return (f) => (wa) => _(wa, f)
 }
@@ -2274,7 +2137,7 @@ export const fcross  = P.fcrossF<URI>({ map_ })
 export const tupled  = P.tupledF<URI>({ map_ })
 
 export const FunctorWithIndex = P.FunctorWithIndex<URI>({
-  imap_
+  imap_: map_
 })
 
 export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
@@ -2344,17 +2207,17 @@ export const Filterable = P.Filterable<URI>({
 })
 
 export const FilterableWithIndex = P.FilterableWithIndex<URI>({
-  imap_,
-  ifilter_,
-  ifilterMap_,
-  ipartition_,
-  ipartitionMap_
+  imap_: map_,
+  ifilter_: filter_,
+  ifilterMap_: filterMap_,
+  ipartition_: partition_,
+  ipartitionMap_: partitionMap_
 })
 
 export const FoldableWithIndex = P.FoldableWithIndex<URI>({
-  ifoldl_,
-  ifoldr_,
-  ifoldMap_
+  ifoldl_: foldl_,
+  ifoldr_: foldr_,
+  ifoldMap_: foldMap_
 })
 
 export const Foldable = P.Foldable<URI>({
@@ -2383,11 +2246,11 @@ export const Traversable = P.Traversable<URI>({
 })
 
 export const TraversableWithIndex = P.TraversableWithIndex<URI>({
-  imap_,
-  ifoldl_,
-  ifoldr_,
-  ifoldMap_,
-  imapA_
+  imap_: map_,
+  ifoldl_: foldl_,
+  ifoldr_: foldr_,
+  ifoldMap_: foldMap_,
+  imapA_: mapA_
 })
 
 export const Witherable = P.Witherable<URI>({
@@ -2405,17 +2268,17 @@ export const Witherable = P.Witherable<URI>({
 })
 
 export const WitherableWithIndex = P.WitherableWithIndex<URI>({
-  imap_,
-  ifoldl_,
-  ifoldr_,
-  ifoldMap_,
-  ifilterMapA_,
-  ipartitionMapA_,
-  imapA_,
-  ifilterMap_,
-  ifilter_,
-  ipartitionMap_,
-  ipartition_
+  imap_: map_,
+  ifoldl_: foldl_,
+  ifoldr_: foldr_,
+  ifoldMap_: foldMap_,
+  ifilterMapA_: filterMapA_,
+  ipartitionMapA_: partitionMapA_,
+  imapA_: mapA_,
+  ifilterMap_: filterMap_,
+  ifilter_: filter_,
+  ipartitionMap_: partitionMap_,
+  ipartition_: partition_
 })
 
 export const Unfoldable = HKT.instance<P.Unfoldable<URI>>({

@@ -37,7 +37,7 @@ import type {
 } from 'graphql'
 
 import * as A from '@principia/base/Array'
-import { ifoldl_ as reduceRecord } from '@principia/base/Record'
+import * as R from '@principia/base/Record'
 import { Kind } from 'graphql'
 
 interface FieldDefinitionNodeArgs {
@@ -308,7 +308,7 @@ export function createValueNode(value: any): ValueNode {
         const valueNodes = value.map((v) => createValueNode(v))
         return createListValueNode(valueNodes)
       } else {
-        const fieldNodes = reduceRecord(value, [] as ObjectFieldNode[], (acc, k, v) => [
+        const fieldNodes = R.foldl_(value, [] as ObjectFieldNode[], (acc, v, k) => [
           ...acc,
           createObjectFieldNode(k, createValueNode(v))
         ])

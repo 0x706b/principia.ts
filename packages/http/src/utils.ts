@@ -115,7 +115,7 @@ export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS'
 export function parseContentType(s: string): ParsedContentType {
   return pipe(
     s.split(';'),
-    A.ifoldl({ parameters: {} } as ParsedContentType, (b, i, a) => {
+    A.foldl({ parameters: {} } as ParsedContentType, (b, a, i) => {
       if (i === 0) {
         return { type: a, parameters: {} }
       }

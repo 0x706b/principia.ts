@@ -44,7 +44,7 @@ export function remove<A>(a: A): (set: OrderedSet<A>) => OrderedSet<A> {
 }
 
 export function forEach_<A>(set: OrderedSet<A>, f: (a: A) => void): void {
-  return OM.iforEach_(set.keyMap, (a) => f(a))
+  return OM.forEach_(set.keyMap, (_, a) => f(a))
 }
 
 export function forEach<A>(f: (a: A) => void): (set: OrderedSet<A>) => void {
@@ -127,7 +127,7 @@ export function map<B>(O: P.Ord<B>): <A>(f: (a: A) => B) => (fa: OrderedSet<A>) 
 export function filter_<A, B extends A>(set: OrderedSet<A>, refinement: P.Refinement<A, B>): OrderedSet<B>
 export function filter_<A>(set: OrderedSet<A>, predicate: P.Predicate<A>): OrderedSet<A>
 export function filter_<A>(set: OrderedSet<A>, predicate: P.Predicate<A>): OrderedSet<A> {
-  return new OrderedSet(OM.ifilter_(set.keyMap, (a) => predicate(a)))
+  return new OrderedSet(OM.filter_(set.keyMap, (_, a) => predicate(a)))
 }
 
 export function filter<A, B extends A>(refinement: P.Refinement<A, B>): (set: OrderedSet<A>) => OrderedSet<B>
@@ -143,7 +143,7 @@ export function filter<A>(predicate: P.Predicate<A>): (set: OrderedSet<A>) => Or
  */
 
 export function foldl_<A, Z>(fa: OrderedSet<A>, z: Z, f: (z: Z, a: A) => Z): Z {
-  return OM.ifoldl_(fa.keyMap, z, (z, a) => f(z, a))
+  return OM.foldl_(fa.keyMap, z, (z, _, a) => f(z, a))
 }
 
 export function foldl<A, Z>(z: Z, f: (z: Z, a: A) => Z): (fa: OrderedSet<A>) => Z {

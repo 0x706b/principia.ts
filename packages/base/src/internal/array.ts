@@ -12,19 +12,19 @@ export function appendW_<A, B>(init: ReadonlyArray<A>, last: B): NonEmptyArray<A
   return r
 }
 
-export function ifoldl_<A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, i: number, a: A) => B): B {
+export function foldl_<A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, a: A, i: number) => B): B {
   const len = fa.length
   let r     = b
   for (let i = 0; i < len; i++) {
-    r = f(r, i, fa[i])
+    r = f(r, fa[i], i)
   }
   return r
 }
 
-export function ifoldr_<A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, i: number, b: B) => B): B {
+export function foldr_<A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, b: B, i: number) => B): B {
   let r = b
   for (let i = fa.length - 1; i >= 0; i--) {
-    r = f(fa[i], i, r)
+    r = f(fa[i], r, i)
   }
   return r
 }

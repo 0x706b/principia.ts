@@ -530,7 +530,7 @@ export function getKeysShow<P extends Record<string, unknown>>(_: P): S.Show<Rec
   return S.Show(
     (a) =>
       `{ ${pipe(
-        R.ifoldl_(a, A.empty<string>(), (b, k, _) => A.append_(b, `${k}: unknown`)),
+        R.foldl_(a, A.empty<string>(), (b, k, _) => A.append_(b, `${k}: unknown`)),
         A.join(', ')
       )} }`
   )
@@ -543,7 +543,7 @@ export function getShow<P extends Record<string, S.Show<any>>>(
     (a) =>
       `{ ${pipe(
         properties,
-        R.ifoldl(A.empty<string>(), (b, k, s) => A.append_(b, `${k}: ${s.show(a[k])}`)),
+        R.foldl(A.empty<string>(), (b, s, k) => A.append_(b, `${k}: ${s.show(a[k])}`)),
         A.join(', ')
       )} }`
   )
@@ -556,7 +556,7 @@ export function getPartialShow<P extends Record<string, S.Show<any>>>(
     (a) =>
       `${pipe(
         properties,
-        R.ifoldl(A.empty<string>(), (b, k, s) => (a[k] == null ? b : A.append_(b, `${k}: ${s.show(a[k])}`))),
+        R.foldl(A.empty<string>(), (b, s, k) => (a[k] == null ? b : A.append_(b, `${k}: ${s.show(a[k])}`))),
         A.join(', ')
       )}`
   )

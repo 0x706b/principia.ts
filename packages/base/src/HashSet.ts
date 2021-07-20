@@ -51,7 +51,7 @@ export function endMutation<K>(set: HashSet<K>) {
  * Appy f to each element
  */
 export function forEach_<V>(map: HashSet<V>, f: (v: V, m: HashSet<V>) => void): void {
-  HM.iforEach_(map.keyMap, (k, _, m) => {
+  HM.forEach_(map.keyMap, (k, _, m) => {
     f(k, new HashSet(m))
   })
 }
@@ -360,7 +360,7 @@ export function partitionMap<B, C>(
  * Reduce a state over the set elements
  */
 export function foldl_<A, B>(fa: HashSet<A>, b: B, f: (b: B, v: A) => B): B {
-  return HM.ifoldl_(fa.keyMap, b, (b, a) => f(b, a))
+  return HM.foldl_(fa.keyMap, b, (b, a) => f(b, a))
 }
 
 /**

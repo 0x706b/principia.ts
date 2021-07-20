@@ -19,7 +19,7 @@ export function FunctorWithIndex<F extends HKT.URIS, C = HKT.Auto>(
 }
 
 export interface MapWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
-  <K, A, B>(f: (i: HKT.IndexFor<F, HKT.OrFix<'K', C, K>>, a: A) => B): <W, Q, X, I, S, R, E>(
+  <K, A, B>(f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', C, K>>) => B): <W, Q, X, I, S, R, E>(
     fa: HKT.Kind<F, C, K, W, Q, X, I, S, R, E, A>
   ) => HKT.Kind<F, C, K, W, Q, X, I, S, R, E, B>
 }
@@ -27,6 +27,6 @@ export interface MapWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
 export interface MapWithIndexFn_<F extends HKT.URIS, C = HKT.Auto> {
   <K, W, Q, X, I, S, R, E, A, B>(
     fa: HKT.Kind<F, C, K, W, Q, X, I, S, R, E, A>,
-    f: (i: HKT.IndexFor<F, HKT.OrFix<'K', C, K>>, a: A) => B
+    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', C, K>>) => B
   ): HKT.Kind<F, C, K, W, Q, X, I, S, R, E, B>
 }

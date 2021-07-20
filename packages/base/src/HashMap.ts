@@ -350,24 +350,8 @@ export function update<K, V>(key: K, f: (v: V) => V) {
 /**
  * Apply f to each element
  */
-export function iforEach_<K, V>(map: HashMap<K, V>, f: (k: K, v: V, m: HashMap<K, V>) => void): void {
-  ifoldl_(map, undefined as void, (_, key, value) => f(key, value, map))
-}
-
-/**
- * Apply f to each element
- *
- * @dataFirst forEachWithIndex_
- */
-export function iforEach<K, V>(f: (k: K, v: V, m: HashMap<K, V>) => void): (map: HashMap<K, V>) => void {
-  return (map) => iforEach_(map, f)
-}
-
-/**
- * Apply f to each element
- */
-export function forEach_<K, V>(map: HashMap<K, V>, f: (v: V, m: HashMap<K, V>) => void): void {
-  iforEach_(map, (_, value, map) => f(value, map))
+export function forEach_<K, V>(map: HashMap<K, V>, f: (v: V, k: K, m: HashMap<K, V>) => void): void {
+  foldl_(map, undefined as void, (_, value, key) => f(value, key, map))
 }
 
 /**
@@ -375,7 +359,7 @@ export function forEach_<K, V>(map: HashMap<K, V>, f: (v: V, m: HashMap<K, V>) =
  *
  * @dataFirst forEach_
  */
-export function forEach<K, V>(f: (v: V, m: HashMap<K, V>) => void): (map: HashMap<K, V>) => void {
+export function forEach<K, V>(f: (v: V, k: K, m: HashMap<K, V>) => void): (map: HashMap<K, V>) => void {
   return (map) => forEach_(map, f)
 }
 
@@ -395,24 +379,8 @@ export function size<K, V>(map: HashMap<K, V>): number {
 /**
  * Maps over the map entries
  */
-export function imap_<K, V, A>(fa: HashMap<K, V>, f: (k: K, v: V) => A): HashMap<K, A> {
-  return ifoldl_(fa, make<K, A>(fa.config), (z, k, v) => set_(z, k, f(k, v)))
-}
-
-/**
- * Maps over the map entries
- *
- * @dataFirst imap_
- */
-export function imap<K, V, A>(f: (k: K, v: V) => A): (fa: HashMap<K, V>) => HashMap<K, A> {
-  return (fa) => imap_(fa, f)
-}
-
-/**
- * Maps over the map entries
- */
-export function map_<K, V, A>(fa: HashMap<K, V>, f: (v: V) => A): HashMap<K, A> {
-  return ifoldl_(fa, make<K, A>(fa.config), (z, k, v) => set_(z, k, f(v)))
+export function map_<K, V, A>(fa: HashMap<K, V>, f: (v: V, k: K) => A): HashMap<K, A> {
+  return foldl_(fa, make<K, A>(fa.config), (z, v, k) => set_(z, k, f(v, k)))
 }
 
 /**
@@ -420,8 +388,8 @@ export function map_<K, V, A>(fa: HashMap<K, V>, f: (v: V) => A): HashMap<K, A> 
  *
  * @dataFirst map_
  */
-export function map<V, A>(f: (v: V) => A): <K>(fa: HashMap<K, V>) => HashMap<K, A> {
-  return (map) => map_(map, f)
+export function map<K, V, A>(f: (v: V, k: K) => A): (fa: HashMap<K, V>) => HashMap<K, A> {
+  return (fa) => map_(fa, f)
 }
 
 /*
@@ -433,10 +401,10 @@ export function map<V, A>(f: (v: V) => A): <K>(fa: HashMap<K, V>) => HashMap<K, 
 /**
  * Chain over the map entries, the hash and equal of the 2 maps has to be the same
  */
-export function chain_<K, V, A>(ma: HashMap<K, V>, f: (v: V) => HashMap<K, A>): HashMap<K, A> {
-  return ifoldl_(ma, make<K, A>(ma.config), (z, _, v) =>
+export function chain_<K, V, A>(ma: HashMap<K, V>, f: (v: V, k: K) => HashMap<K, A>): HashMap<K, A> {
+  return foldl_(ma, make<K, A>(ma.config), (z, k, v) =>
     mutate_(z, (m) => {
-      iforEach_(f(v), (_k, _a) => {
+      forEach_(f(k, v), (_a, _k) => {
         set_(m, _k, _a)
       })
     })
@@ -448,30 +416,8 @@ export function chain_<K, V, A>(ma: HashMap<K, V>, f: (v: V) => HashMap<K, A>): 
  *
  * @dataFirst chain_
  */
-export function chain<K, V, A>(f: (v: V) => HashMap<K, A>): (ma: HashMap<K, V>) => HashMap<K, A> {
+export function chain<K, V, A>(f: (v: V, k: K) => HashMap<K, A>): (ma: HashMap<K, V>) => HashMap<K, A> {
   return (ma) => chain_(ma, f)
-}
-
-/**
- * Chain over the map entries, the hash and equal of the 2 maps has to be the same
- */
-export function ichain_<K, V, A>(ma: HashMap<K, V>, f: (k: K, v: V) => HashMap<K, A>): HashMap<K, A> {
-  return ifoldl_(ma, make<K, A>(ma.config), (z, k, v) =>
-    mutate_(z, (m) => {
-      iforEach_(f(k, v), (_k, _a) => {
-        set_(m, _k, _a)
-      })
-    })
-  )
-}
-
-/**
- * Chain over the map entries, the hash and equal of the 2 maps has to be the same
- *
- * @dataFirst ichain_
- */
-export function ichain<K, V, A>(f: (k: K, v: V) => HashMap<K, A>): (ma: HashMap<K, V>) => HashMap<K, A> {
-  return (ma) => ichain_(ma, f)
 }
 
 /*
@@ -484,11 +430,11 @@ export function ichain<K, V, A>(f: (k: K, v: V) => HashMap<K, A>): (ma: HashMap<
  * Removes None values
  */
 export function compact<K, A>(fa: HashMap<K, O.Option<A>>): HashMap<K, A> {
-  return ifilterMap_(fa, (_, a) => a)
+  return filterMap_(fa, (a) => a)
 }
 
 export function separate<K, A, B>(fa: HashMap<K, E.Either<A, B>>): readonly [HashMap<K, A>, HashMap<K, B>] {
-  return ipartitionMap_(fa, (_, a) => a)
+  return partitionMap_(fa, (a) => a)
 }
 
 /*
@@ -500,12 +446,12 @@ export function separate<K, A, B>(fa: HashMap<K, E.Either<A, B>>): readonly [Has
 /**
  * Filter out None and map
  */
-export function ifilterMap_<K, A, B>(fa: HashMap<K, A>, f: (k: K, a: A) => O.Option<B>): HashMap<K, B> {
+export function filterMap_<K, A, B>(fa: HashMap<K, A>, f: (a: A, k: K) => O.Option<B>): HashMap<K, B> {
   const m = make<K, B>(fa.config)
 
   return mutate_(m, (m) => {
     for (const [k, a] of fa) {
-      const o = f(k, a)
+      const o = f(a, k)
       if (O.isSome(o)) {
         set_(m, k, o.value)
       }
@@ -516,42 +462,23 @@ export function ifilterMap_<K, A, B>(fa: HashMap<K, A>, f: (k: K, a: A) => O.Opt
 /**
  * Filter out None and map
  *
- * @dataFirst ifilterMap_
- */
-export function ifilterMap<K, A, B>(f: (k: K, a: A) => O.Option<B>): (fa: HashMap<K, A>) => HashMap<K, B> {
-  return (fa) => ifilterMap_(fa, f)
-}
-
-/**
- * Filter out None and map
- */
-export function filterMap_<E, A, B>(fa: HashMap<E, A>, f: (a: A) => O.Option<B>): HashMap<E, B> {
-  return ifilterMap_(fa, (_, a) => f(a))
-}
-
-/**
- * Filter out None and map
- *
  * @dataFirst filterMap_
  */
-export function filterMap<A, B>(f: (a: A) => O.Option<B>): <K>(fa: HashMap<K, A>) => HashMap<K, B> {
+export function filterMap<K, A, B>(f: (a: A, k: K) => O.Option<B>): (fa: HashMap<K, A>) => HashMap<K, B> {
   return (fa) => filterMap_(fa, f)
 }
 
 /**
  * Filter out by predicate
  */
-export function ifilter_<K, A, B extends A>(
-  fa: HashMap<K, A>,
-  refinement: P.RefinementWithIndex<K, A, B>
-): HashMap<K, B>
-export function ifilter_<K, A>(fa: HashMap<K, A>, predicate: P.PredicateWithIndex<K, A>): HashMap<K, A>
-export function ifilter_<K, A>(fa: HashMap<K, A>, predicate: P.PredicateWithIndex<K, A>): HashMap<K, A> {
+export function filter_<K, A, B extends A>(fa: HashMap<K, A>, refinement: P.RefinementWithIndex<K, A, B>): HashMap<K, B>
+export function filter_<K, A>(fa: HashMap<K, A>, predicate: P.PredicateWithIndex<K, A>): HashMap<K, A>
+export function filter_<K, A>(fa: HashMap<K, A>, predicate: P.PredicateWithIndex<K, A>): HashMap<K, A> {
   const m = make<K, A>(fa.config)
 
   return mutate_(m, (m) => {
     for (const [k, a] of fa) {
-      if (predicate(k, a)) {
+      if (predicate(a, k)) {
         set_(m, k, a)
       }
     }
@@ -561,39 +488,19 @@ export function ifilter_<K, A>(fa: HashMap<K, A>, predicate: P.PredicateWithInde
 /**
  * Filter out by predicate
  *
- * @dataFirst ifilter_
- */
-export function ifilter<K, A, B extends A>(
-  refinement: P.RefinementWithIndex<K, A, B>
-): (fa: HashMap<K, A>) => HashMap<K, B>
-export function ifilter<K, A>(predicate: P.PredicateWithIndex<K, A>): (fa: HashMap<K, A>) => HashMap<K, A>
-export function ifilter<K, A>(predicate: P.PredicateWithIndex<K, A>): (fa: HashMap<K, A>) => HashMap<K, A> {
-  return (fa) => ifilter_(fa, predicate)
-}
-
-/**
- * Filter out by predicate
- */
-export function filter_<K, A, B extends A>(fa: HashMap<K, A>, refinement: P.Refinement<A, B>): HashMap<K, B>
-export function filter_<K, A>(fa: HashMap<K, A>, predicate: P.Predicate<A>): HashMap<K, A>
-export function filter_<K, A>(fa: HashMap<K, A>, predicate: P.Predicate<A>): HashMap<K, A> {
-  return ifilter_(fa, (_, a) => predicate(a))
-}
-
-/**
- * Filter out by predicate
- *
  * @dataFirst filter_
  */
-export function filter<A, B extends A>(refinement: P.Refinement<A, B>): <K>(fa: HashMap<K, A>) => HashMap<K, B>
-export function filter<A>(predicate: P.Predicate<A>): <K>(fa: HashMap<K, A>) => HashMap<K, A>
-export function filter<A>(predicate: (a: A) => boolean): <K>(fa: HashMap<K, A>) => HashMap<K, A> {
+export function filter<K, A, B extends A>(
+  refinement: P.RefinementWithIndex<K, A, B>
+): (fa: HashMap<K, A>) => HashMap<K, B>
+export function filter<K, A>(predicate: P.PredicateWithIndex<K, A>): (fa: HashMap<K, A>) => HashMap<K, A>
+export function filter<K, A>(predicate: P.PredicateWithIndex<K, A>): (fa: HashMap<K, A>) => HashMap<K, A> {
   return (fa) => filter_(fa, predicate)
 }
 
-export function ipartitionMap_<K, V, A, B>(
+export function partitionMap_<K, V, A, B>(
   fa: HashMap<K, V>,
-  f: (i: K, a: V) => E.Either<A, B>
+  f: (a: V, i: K) => E.Either<A, B>
 ): readonly [HashMap<K, A>, HashMap<K, B>] {
   const left  = make<K, A>(fa.config)
   const right = make<K, B>(fa.config)
@@ -601,9 +508,9 @@ export function ipartitionMap_<K, V, A, B>(
   beginMutation(left)
   beginMutation(right)
 
-  iforEach_(fa, (k, v) => {
+  forEach_(fa, (v, k) => {
     E.match_(
-      f(k, v),
+      f(v, k),
       (a) => {
         set_(left, k, a)
       },
@@ -620,39 +527,23 @@ export function ipartitionMap_<K, V, A, B>(
 }
 
 /**
- * @dataFirst ipartitionMap_
- */
-export function ipartitionMap<K, V, A, B>(
-  f: (i: K, a: V) => E.Either<A, B>
-): (fa: HashMap<K, V>) => readonly [HashMap<K, A>, HashMap<K, B>] {
-  return (fa) => ipartitionMap_(fa, f)
-}
-
-export function partitionMap_<K, V, A, B>(
-  fa: HashMap<K, V>,
-  f: (a: V) => E.Either<A, B>
-): readonly [HashMap<K, A>, HashMap<K, B>] {
-  return ipartitionMap_(fa, (_, a) => f(a))
-}
-
-/**
  * @dataFirst partitionMap_
  */
-export function partitionMap<V, A, B>(
-  f: (a: V) => E.Either<A, B>
-): <K>(fa: HashMap<K, V>) => readonly [HashMap<K, A>, HashMap<K, B>] {
+export function partitionMap<K, V, A, B>(
+  f: (a: V, i: K) => E.Either<A, B>
+): (fa: HashMap<K, V>) => readonly [HashMap<K, A>, HashMap<K, B>] {
   return (fa) => partitionMap_(fa, f)
 }
 
-export function ipartition_<K, V, B extends V>(
+export function partition_<K, V, B extends V>(
   fa: HashMap<K, V>,
   refinement: P.RefinementWithIndex<K, V, B>
 ): readonly [HashMap<K, V>, HashMap<K, B>]
-export function ipartition_<K, V>(
+export function partition_<K, V>(
   fa: HashMap<K, V>,
   predicate: P.PredicateWithIndex<K, V>
 ): readonly [HashMap<K, V>, HashMap<K, V>]
-export function ipartition_<K, V>(
+export function partition_<K, V>(
   fa: HashMap<K, V>,
   predicate: P.PredicateWithIndex<K, V>
 ): readonly [HashMap<K, V>, HashMap<K, V>] {
@@ -662,8 +553,8 @@ export function ipartition_<K, V>(
   beginMutation(left)
   beginMutation(right)
 
-  iforEach_(fa, (k, v) => {
-    if (predicate(k, v)) {
+  forEach_(fa, (v, k) => {
+    if (predicate(v, k)) {
       set_(right, k, v)
     } else {
       set_(left, k, v)
@@ -677,44 +568,17 @@ export function ipartition_<K, V>(
 }
 
 /**
- * @dataFirst ipartition_
- */
-export function ipartition<K, V, B extends V>(
-  refinement: P.RefinementWithIndex<K, V, B>
-): (fa: HashMap<K, V>) => readonly [HashMap<K, V>, HashMap<K, B>]
-export function ipartition<K, V>(
-  predicate: P.PredicateWithIndex<K, V>
-): (fa: HashMap<K, V>) => readonly [HashMap<K, V>, HashMap<K, V>]
-export function ipartition<K, V>(
-  predicate: P.PredicateWithIndex<K, V>
-): (fa: HashMap<K, V>) => readonly [HashMap<K, V>, HashMap<K, V>] {
-  return (fa) => ipartition_(fa, predicate)
-}
-
-export function partition_<K, V, B extends V>(
-  fa: HashMap<K, V>,
-  refinement: P.Refinement<V, B>
-): readonly [HashMap<K, V>, HashMap<K, B>]
-export function partition_<K, V>(fa: HashMap<K, V>, predicate: P.Predicate<V>): readonly [HashMap<K, V>, HashMap<K, V>]
-export function partition_<K, V>(
-  fa: HashMap<K, V>,
-  predicate: P.Predicate<V>
-): readonly [HashMap<K, V>, HashMap<K, V>] {
-  return ipartition_(fa, (_, v) => predicate(v))
-}
-
-/**
  * @dataFirst partition_
  */
-export function partition<V, B extends V>(
-  refinement: P.Refinement<V, B>
-): <K>(fa: HashMap<K, V>) => readonly [HashMap<K, V>, HashMap<K, B>]
-export function partition<V>(
-  predicate: P.Predicate<V>
-): <K>(fa: HashMap<K, V>) => readonly [HashMap<K, V>, HashMap<K, V>]
-export function partition<V>(
-  predicate: P.Predicate<V>
-): <K>(fa: HashMap<K, V>) => readonly [HashMap<K, V>, HashMap<K, V>] {
+export function partition<K, V, B extends V>(
+  refinement: P.RefinementWithIndex<K, V, B>
+): (fa: HashMap<K, V>) => readonly [HashMap<K, V>, HashMap<K, B>]
+export function partition<K, V>(
+  predicate: P.PredicateWithIndex<K, V>
+): (fa: HashMap<K, V>) => readonly [HashMap<K, V>, HashMap<K, V>]
+export function partition<K, V>(
+  predicate: P.PredicateWithIndex<K, V>
+): (fa: HashMap<K, V>) => readonly [HashMap<K, V>, HashMap<K, V>] {
   return (fa) => partition_(fa, predicate)
 }
 
@@ -727,9 +591,9 @@ export function partition<V>(
 /**
  * Reduce a state over the map entries
  */
-export function ifoldl_<K, V, Z>(map: HashMap<K, V>, z: Z, f: (z: Z, k: K, v: V) => Z): Z {
+export function foldl_<K, V, Z>(map: HashMap<K, V>, z: Z, f: (z: Z, v: V, k: K) => Z): Z {
   const root = map.root
-  if (root._tag === 'LeafNode') return O.isSome(root.value) ? f(z, root.key, root.value.value) : z
+  if (root._tag === 'LeafNode') return O.isSome(root.value) ? f(z, root.value.value, root.key) : z
   if (root._tag === 'Empty') {
     return z
   }
@@ -742,7 +606,7 @@ export function ifoldl_<K, V, Z>(map: HashMap<K, V>, z: Z, f: (z: Z, k: K, v: V)
         if (child._tag === 'LeafNode') {
           if (O.isSome(child.value)) {
             // eslint-disable-next-line no-param-reassign
-            z = f(z, child.key, child.value.value)
+            z = f(z, child.value.value, child.key)
           }
         } else {
           toVisit.push(child.children)
@@ -756,26 +620,10 @@ export function ifoldl_<K, V, Z>(map: HashMap<K, V>, z: Z, f: (z: Z, k: K, v: V)
 /**
  * Reduce a state over the map entries
  *
- * @dataFirst ifoldl_
- */
-export function ifoldl<K, V, Z>(z: Z, f: (z: Z, k: K, v: V) => Z) {
-  return (map: HashMap<K, V>) => ifoldl_(map, z, f)
-}
-
-/**
- * Reduce a state over the map entries
- */
-export function foldl_<K, V, Z>(map: HashMap<K, V>, z: Z, f: (z: Z, v: V) => Z): Z {
-  return ifoldl_(map, z, (z, _, v) => f(z, v))
-}
-
-/**
- * Reduce a state over the map entries
- *
  * @dataFirst foldl_
  */
-export function foldl<V, Z>(z: Z, f: (z: Z, v: V) => Z) {
-  return <K>(map: HashMap<K, V>) => foldl_(map, z, f)
+export function foldl<K, V, Z>(z: Z, f: (z: Z, v: V, k: K) => Z) {
+  return (map: HashMap<K, V>) => foldl_(map, z, f)
 }
 
 /*
@@ -784,26 +632,13 @@ export function foldl<V, Z>(z: Z, f: (z: Z, v: V) => Z) {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const imapA_: P.MapWithIndexAFn_<URI> = (A) => (ta, f) =>
-  ifoldl_(ta, A.pure(make(ta.config)), (b, k, a) => A.crossWith_(b, f(k, a), (map, b) => set_(map, k, b)))
-
-/**
- * @dataFirst imapA_
- */
-export const imapA: P.MapWithIndexAFn<URI> = (A) => {
-  const _ = imapA_(A)
-  return (f) => (ta) => _(ta, f)
-}
-
-export const mapA_: P.MapAFn_<URI> = (A) => {
-  const _ = imapA_(A)
-  return (ta, f) => _(ta, (_, a) => f(a))
-}
+export const mapA_: P.MapWithIndexAFn_<URI> = (A) => (ta, f) =>
+  foldl_(ta, A.pure(make(ta.config)), (b, a, k) => A.crossWith_(b, f(a, k), (map, b) => set_(map, k, b)))
 
 /**
  * @dataFirst mapA_
  */
-export const mapA: P.MapAFn<URI> = (A) => {
+export const mapA: P.MapWithIndexAFn<URI> = (A) => {
   const _ = mapA_(A)
   return (f) => (ta) => _(ta, f)
 }
@@ -814,51 +649,25 @@ export const mapA: P.MapAFn<URI> = (A) => {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const ifilterMapA_: P.FilterMapWithIndexAFn_<URI> = (A) => (wa, f) => pipe(imapA_(A)(wa, f), A.map(compact))
-
-/**
- * @dataFirst ifilterMapA_
- */
-export const ifilterMapA: P.FilterMapWithIndexAFn<URI> = (A) => {
-  const _ = ifilterMapA_(A)
-  return (f) => (ta) => _(ta, f)
-}
-
-export const filterMapA_: P.FilterMapAFn_<URI> = (A) => {
-  const _ = ifilterMapA_(A)
-  return (wa, f) => _(wa, (_, a) => f(a))
-}
+export const filterMapA_: P.FilterMapWithIndexAFn_<URI> = (A) => (wa, f) => pipe(mapA_(A)(wa, f), A.map(compact))
 
 /**
  * @dataFirst filterMapA_
  */
-export const filterMapA: P.FilterMapAFn<URI> = (A) => {
+export const filterMapA: P.FilterMapWithIndexAFn<URI> = (A) => {
   const _ = filterMapA_(A)
-  return (f) => (wa) => _(wa, f)
+  return (f) => (ta) => _(ta, f)
 }
 
-export const ipartitionMapA_: P.PartitionMapWithIndexAFn_<URI> = (A) => {
-  const _ = imapA_(A)
+export const partitionMapA_: P.PartitionMapWithIndexAFn_<URI> = (A) => {
+  const _ = mapA_(A)
   return (wa, f) => pipe(_(wa, f), A.map(separate))
-}
-
-/**
- * @dataFirst ipartitionMapA_
- */
-export const ipartitionMapA: P.PartitionMapWithIndexAFn<URI> = (A) => {
-  const _ = ipartitionMapA_(A)
-  return (f) => (wa) => _(wa, f)
-}
-
-export const partitionMapA_: P.PartitionMapAFn_<URI> = (A) => {
-  const _ = ipartitionMapA_(A)
-  return (wa, f) => _(wa, (_, a) => f(a))
 }
 
 /**
  * @dataFirst partitionMapA_
  */
-export const partitionMapA: P.PartitionMapAFn<URI> = (A) => {
+export const partitionMapA: P.PartitionMapWithIndexAFn<URI> = (A) => {
   const _ = partitionMapA_(A)
   return (f) => (wa) => _(wa, f)
 }

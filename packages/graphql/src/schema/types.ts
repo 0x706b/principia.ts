@@ -48,7 +48,7 @@ export class GQLField<Root, Args, Ctx, R, E, A> {
   ) {
     this.ast = createUnnamedFieldDefinitionNode({
       arguments: args
-        ? R.ifoldl_(args, A.empty(), (b, k, a: GQLInputField<any>) => [
+        ? R.foldl_(args, A.empty(), (b, a: GQLInputField<any>, k) => [
             ...b,
             createInputValueDefinitionNode({
               defaultValue: a.config.defaultValue,
@@ -139,7 +139,7 @@ export class GQLObject<N extends string, Root, Ctx, R, E, A> {
       name,
       fields: [
         ...A.chain_(interfaces, (a) => a.ast.fields || []),
-        ...R.ifoldl_(fields, [] as ReadonlyArray<FieldDefinitionNode>, (b, k, a: NonNullable<AnyOutput<any>>) =>
+        ...R.foldl_(fields, [] as ReadonlyArray<FieldDefinitionNode>, (b, a: NonNullable<AnyOutput<any>>, k) =>
           A.append_(b, addNameToUnnamedFieldDefinitionNode(a.ast, k))
         )
       ],
@@ -147,7 +147,7 @@ export class GQLObject<N extends string, Root, Ctx, R, E, A> {
     })
     this.resolvers = {
       ...A.foldl_(interfaces || [], {}, (b, a) => ({ ...b, ...a.resolvers })),
-      ...R.ifoldl_(fields, {}, (b, k, a: AnyOutput<Ctx>) => {
+      ...R.foldl_(fields, {}, (b, a: AnyOutput<Ctx>, k) => {
         if (a._tag === 'GQLField') {
           return { ...b, [k]: a.resolve }
         }
@@ -205,11 +205,11 @@ export class GQLInterface<N extends string, Ctx, R, E, A> {
   constructor(readonly name: N, readonly fields: ReadonlyRecord<string, any>, readonly resolveType: any) {
     this.ast = createInterfaceTypeDefinitionNode({
       name,
-      fields: R.ifoldl_(fields, [] as ReadonlyArray<FieldDefinitionNode>, (b, k, a: NonNullable<AnyOutput<Ctx>>) =>
+      fields: R.foldl_(fields, [] as ReadonlyArray<FieldDefinitionNode>, (b, a: NonNullable<AnyOutput<Ctx>>, k) =>
         A.append_(b, addNameToUnnamedFieldDefinitionNode(a.ast, k))
       )
     })
-    this.resolvers = R.ifoldl_(fields, {}, (b, k, a: AnyOutput<Ctx>) => {
+    this.resolvers = R.foldl_(fields, {}, (b, a: AnyOutput<Ctx>, k) => {
       if (a._tag === 'GQLField') {
         return { ...b, [k]: a.resolve }
       }
@@ -228,10 +228,10 @@ export class GQLSubscription<R, A> {
   readonly resolvers: ReadonlyRecord<string, Subscription<any, any, any, any, any, any, any, any>>
 
   constructor(readonly fields: ReadonlyRecord<string, GQLSubscriptionField<any, any>>) {
-    this.ast = R.ifoldl_(
+    this.ast = R.foldl_(
       fields,
       [] as ReadonlyArray<FieldDefinitionNode>,
-      (b, k, a: NonNullable<GQLSubscriptionField<any, any>>) =>
+      (b, a: NonNullable<GQLSubscriptionField<any, any>>, k) =>
         A.append_(b, addNameToUnnamedFieldDefinitionNode(a.ast, k))
     )
     this.resolvers = R.map_(fields, (f) => f.resolve)
@@ -256,7 +256,7 @@ export class GQLSubscriptionField<R, A> {
       nullable: type.config.nullable,
       typeName: getTypeName(type.ast),
       arguments: args
-        ? R.ifoldl_(args, A.empty(), (b, k, a) => [
+        ? R.foldl_(args, A.empty(), (b, a, k) => [
             ...b,
             createInputValueDefinitionNode({
               defaultValue: a.config.defaultValue,
@@ -282,7 +282,7 @@ export class GQLExtendObject<O extends GQLObject<any, any, any, any, any, any>, 
   readonly ast: ReadonlyArray<FieldDefinitionNode>
   readonly resolvers: ReadonlyRecord<string, any>
   constructor(readonly object: O, readonly fields: Record<string, any>) {
-    this.ast = R.ifoldl_(fields as any, A.empty(), (acc, k, v: NonNullable<AnyOutput<any>>) => {
+    this.ast = R.foldl_(fields as any, A.empty(), (acc, v: NonNullable<AnyOutput<any>>, k) => {
       switch (v._tag) {
         /*
          * case "RecursiveType":
@@ -308,7 +308,7 @@ export class GQLExtendObject<O extends GQLObject<any, any, any, any, any, any>, 
       }
     })
 
-    this.resolvers = R.ifoldl_(fields as any, {}, (acc, k, v: AnyOutput<any>) => {
+    this.resolvers = R.foldl_(fields as any, {}, (acc, v: AnyOutput<any>, k) => {
       if (v._tag === 'GQLField') {
         return { ...acc, [k]: v.resolve }
       }
@@ -332,7 +332,7 @@ export class GQLInputObject<N extends string, A> {
 
   constructor(readonly name: N, readonly fields: { [K in keyof A]: GQLInputField<A[K]> }) {
     this.ast = createInputObjectTypeDefinitionNode({
-      fields: R.ifoldl_(fields, [] as InputValueDefinitionNode[], (acc, k, v) => {
+      fields: R.foldl_(fields, [] as InputValueDefinitionNode[], (acc, v, k) => {
         return [
           ...acc,
           createInputValueDefinitionNode({

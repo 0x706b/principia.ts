@@ -161,7 +161,7 @@ export function replicate<A>(n: number, a: A): NonEmptyArray<A> {
  */
 
 export function fold<A>(S: P.Semigroup<A>): (as: NonEmptyArray<A>) => A {
-  return (as) => _.ifoldl_(as.slice(1), as[0], (b, _, a) => S.combine_(b, a))
+  return (as) => _.foldl_(as.slice(1), as[0], (b, a) => S.combine_(b, a))
 }
 
 /**
@@ -472,29 +472,13 @@ export function duplicate<A>(wa: NonEmptyArray<A>): NonEmptyArray<NonEmptyArray<
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export const ifoldl_: <A, B>(fa: NonEmptyArray<A>, b: B, f: (b: B, i: number, a: A) => B) => B = _.ifoldl_
+export const foldl_: <A, B>(fa: NonEmptyArray<A>, b: B, f: (b: B, a: A, i: number) => B) => B = _.foldl_
 
 /**
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export function ifoldl<A, B>(b: B, f: (b: B, i: number, a: A) => B): (fa: NonEmptyArray<A>) => B {
-  return (fa) => ifoldl_(fa, b, f)
-}
-
-/**
- * @category Foldable
- * @since 1.0.0
- */
-export function foldl_<A, B>(fa: NonEmptyArray<A>, b: B, f: (b: B, a: A) => B): B {
-  return ifoldl_(fa, b, (b, _, a) => f(b, a))
-}
-
-/**
- * @category Foldable
- * @since 1.0.0
- */
-export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: NonEmptyArray<A>) => B {
+export function foldl<A, B>(b: B, f: (b: B, a: A, i: number) => B): (fa: NonEmptyArray<A>) => B {
   return (fa) => foldl_(fa, b, f)
 }
 
@@ -502,29 +486,13 @@ export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: NonEmptyArray<A>) 
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export const ifoldr_: <A, B>(fa: NonEmptyArray<A>, b: B, f: (a: A, i: number, b: B) => B) => B = _.ifoldr_
+export const foldr_: <A, B>(fa: NonEmptyArray<A>, b: B, f: (a: A, b: B, i: number) => B) => B = _.foldr_
 
 /**
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export function ifoldr<A, B>(b: B, f: (a: A, i: number, b: B) => B): (fa: NonEmptyArray<A>) => B {
-  return (fa) => ifoldr_(fa, b, f)
-}
-
-/**
- * @category Foldable
- * @since 1.0.0
- */
-export function foldr_<A, B>(fa: NonEmptyArray<A>, b: B, f: (a: A, b: B) => B): B {
-  return ifoldr_(fa, b, (a, _, b) => f(a, b))
-}
-
-/**
- * @category Foldable
- * @since 1.0.0
- */
-export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: NonEmptyArray<A>) => B {
+export function foldr<A, B>(b: B, f: (a: A, b: B, i: number) => B): (fa: NonEmptyArray<A>) => B {
   return (fa) => foldr_(fa, b, f)
 }
 
@@ -532,32 +500,16 @@ export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: NonEmptyArray<A>) 
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export function ifoldMap_<S>(S: P.Semigroup<S>): <A>(fa: NonEmptyArray<A>, f: (i: number, a: A) => S) => S {
-  return <A>(fa: NonEmptyArray<A>, f: (i: number, a: A) => S): S =>
-    _.ifoldl_(tail(fa), f(0, fa[0]), (s, i, a) => S.combine_(s, f(i + 1, a)))
+export function foldMap_<S>(S: P.Semigroup<S>): <A>(fa: NonEmptyArray<A>, f: (a: A, i: number) => S) => S {
+  return <A>(fa: NonEmptyArray<A>, f: (a: A, i: number) => S): S =>
+    _.foldl_(tail(fa), f(fa[0], 0), (s, a, i) => S.combine_(s, f(a, i + 1)))
 }
 
 /**
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export function ifoldMap<S>(S: P.Semigroup<S>): <A>(f: (i: number, a: A) => S) => (fa: NonEmptyArray<A>) => S {
-  return (f) => (fa) => ifoldMap_(S)(fa, f)
-}
-
-/**
- * @category Foldable
- * @since 1.0.0
- */
-export function foldMap_<S>(S: P.Semigroup<S>): <A>(fa: NonEmptyArray<A>, f: (a: A) => S) => S {
-  return (fa, f) => ifoldMap_(S)(fa, (_, a) => f(a))
-}
-
-/**
- * @category Foldable
- * @since 1.0.0
- */
-export function foldMap<S>(S: P.Semigroup<S>): <A>(f: (a: A) => S) => (fa: NonEmptyArray<A>) => S {
+export function foldMap<S>(S: P.Semigroup<S>): <A>(f: (a: A, i: number) => S) => (fa: NonEmptyArray<A>) => S {
   return (f) => (fa) => foldMap_(S)(fa, f)
 }
 
@@ -567,24 +519,16 @@ export function foldMap<S>(S: P.Semigroup<S>): <A>(f: (a: A) => S) => (fa: NonEm
  * -------------------------------------------------------------------------------------------------
  */
 
-export function imap_<A, B>(fa: NonEmptyArray<A>, f: (i: number, a: A) => B): NonEmptyArray<B> {
+export function map_<A, B>(fa: NonEmptyArray<A>, f: (a: A, i: number) => B): NonEmptyArray<B> {
   // perf: const out = [f(0, fa[0])]
-  const out = allocWithHead(f(0, fa[0]), fa.length)
+  const out = allocWithHead(f(fa[0], 0), fa.length)
   for (let i = 1; i < fa.length; i++) {
-    out[i] = f(i, fa[i])
+    out[i] = f(fa[i], i)
   }
   return out
 }
 
-export function imap<A, B>(f: (i: number, a: A) => B): (fa: NonEmptyArray<A>) => NonEmptyArray<B> {
-  return (fa) => imap_(fa, f)
-}
-
-export function map_<A, B>(fa: NonEmptyArray<A>, f: (a: A) => B): NonEmptyArray<B> {
-  return imap_(fa, (_, a) => f(a))
-}
-
-export function map<A, B>(f: (a: A) => B): (fa: NonEmptyArray<A>) => NonEmptyArray<B> {
+export function map<A, B>(f: (a: A, i: number) => B): (fa: NonEmptyArray<A>) => NonEmptyArray<B> {
   return (fa) => map_(fa, f)
 }
 
@@ -601,18 +545,18 @@ export function map<A, B>(f: (a: A) => B): (fa: NonEmptyArray<A>) => NonEmptyArr
  * @since 1.0.0
  */
 export function flatten<A>(mma: NonEmptyArray<NonEmptyArray<A>>): NonEmptyArray<A> {
-  return ichain_(mma, (_, a) => a)
+  return chain_(mma, (a) => a)
 }
 
-export function ichain_<A, B>(ma: NonEmptyArray<A>, f: (i: number, a: A) => NonEmptyArray<B>): NonEmptyArray<B> {
+export function chain_<A, B>(ma: NonEmptyArray<A>, f: (a: A, i: number) => NonEmptyArray<B>): NonEmptyArray<B> {
   let outLen = 1
   const len  = ma.length
   // perf: const temp = [f(0, ma[0])]
-  const temp = allocWithHead(f(0, ma[0]), len)
-  temp[0]    = f(0, ma[0])
+  const temp = allocWithHead(f(ma[0], 0), len)
+  temp[0]    = f(ma[0], 0)
   for (let i = 1; i < len; i++) {
     const e   = ma[i]
-    const arr = f(i, e)
+    const arr = f(e, i)
     outLen   += arr.length
     temp[i]   = arr
   }
@@ -635,27 +579,7 @@ export function ichain_<A, B>(ma: NonEmptyArray<A>, f: (i: number, a: A) => NonE
   return out
 }
 
-export function ichain<A, B>(f: (i: number, a: A) => NonEmptyArray<B>): (ma: NonEmptyArray<A>) => NonEmptyArray<B> {
-  return (ma) => ichain_(ma, f)
-}
-
-/**
- * Composes computations in sequence, using the return value of one computation as input for the next
- *
- * @category Monad
- * @since 1.0.0
- */
-export function chain_<A, B>(ma: NonEmptyArray<A>, f: (a: A) => NonEmptyArray<B>): NonEmptyArray<B> {
-  return ichain_(ma, (_, a) => f(a))
-}
-
-/**
- * Composes computations in sequence, using the return value of one computation as input for the next
- *
- * @category Monad
- * @since 1.0.0
- */
-export function chain<A, B>(f: (a: A) => NonEmptyArray<B>): (ma: NonEmptyArray<A>) => NonEmptyArray<B> {
+export function chain<A, B>(f: (a: A, i: number) => NonEmptyArray<B>): (ma: NonEmptyArray<A>) => NonEmptyArray<B> {
   return (ma) => chain_(ma, f)
 }
 
@@ -669,61 +593,28 @@ export function chain<A, B>(f: (a: A) => NonEmptyArray<B>): (ma: NonEmptyArray<A
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const imapA_: P.MapWithIndexAFn_<[HKT.URI<NonEmptyArrayURI>]> = (AG) => (ta, f) =>
-  _.ifoldl_(tail(ta), AG.map_(f(0, ta[0]), pure), (fbs, i, a) => AG.crossWith_(fbs, f(i + 1, a), appendW_))
+export const mapA_: P.MapWithIndexAFn_<[HKT.URI<NonEmptyArrayURI>]> = (AG) => (ta, f) =>
+  _.foldl_(tail(ta), AG.map_(f(ta[0], 0), pure), (fbs, a, i) => AG.crossWith_(fbs, f(a, i + 1), appendW_))
 
 /**
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const imapA: P.MapWithIndexAFn<[HKT.URI<NonEmptyArrayURI>]> = (AG) => {
-  const imapAG_ = imapA_(AG)
+export const mapA: P.MapWithIndexAFn<[HKT.URI<NonEmptyArrayURI>]> = (AG) => {
+  const imapAG_ = mapA_(AG)
   return (f) => (ta) => imapAG_(ta, f)
 }
 
-export const imapAccumM_: P.MapAccumWithIndexMFn_<[HKT.URI<NonEmptyArrayURI>]> = (M) => (ta, s, f) =>
-  _.ifoldl_(
+export const mapAccumM_: P.MapAccumWithIndexMFn_<[HKT.URI<NonEmptyArrayURI>]> = (M) => (ta, s, f) =>
+  _.foldl_(
     tail(ta),
-    M.map_(f(s, 0, head(ta)), ([b, s]) => [pure(b), s]),
-    (b, i, a) => M.chain_(b, ([bs, s]) => M.map_(f(s, i, a), ([b, s]) => [append_(bs, b), s]))
+    M.map_(f(s, head(ta), 0), ([b, s]) => [pure(b), s]),
+    (b, a, i) => M.chain_(b, ([bs, s]) => M.map_(f(s, a, i), ([b, s]) => [append_(bs, b), s]))
   )
 
-export const imapAccumM: P.MapAccumWithIndexMFn<[HKT.URI<NonEmptyArrayURI>]> = (M) => {
-  const imapAccumMG_ = imapAccumM_(M)
+export const mapAccumM: P.MapAccumWithIndexMFn<[HKT.URI<NonEmptyArrayURI>]> = (M) => {
+  const imapAccumMG_ = mapAccumM_(M)
   return (s, f) => (ta) => imapAccumMG_(ta, s, f)
-}
-
-/**
- * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
- *
- * @category Traversable
- * @since 1.0.0
- */
-export const mapA_: P.MapAFn_<[HKT.URI<NonEmptyArrayURI>]> = (AG) => {
-  const imapAG_ = imapA_(AG)
-  return (ta, f) => imapAG_(ta, (_, a) => f(a))
-}
-
-/**
- *
- * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
- *
- * @category Traversable
- * @since 1.0.0
- */
-export const mapA: P.MapAFn<[HKT.URI<NonEmptyArrayURI>]> = (AG) => {
-  const itraverseG_ = imapA_(AG)
-  return (f) => (ta) => itraverseG_(ta, (_, a) => f(a))
-}
-
-export const mapAccumM_: P.MapAccumMFn_<[HKT.URI<NonEmptyArrayURI>]> = (M) => {
-  const imapAccumMG_ = imapAccumM_(M)
-  return (ta, s, f) => imapAccumMG_(ta, s, (s, _, a) => f(s, a))
-}
-
-export const mapAccumM: P.MapAccumMFn<[HKT.URI<NonEmptyArrayURI>]> = (M) => {
-  const imapAccumMG_ = imapAccumM_(M)
-  return (s, f) => (ta) => imapAccumMG_(ta, s, (s, _, a) => f(s, a))
 }
 
 /**
@@ -1168,7 +1059,7 @@ export function sort<B>(O: P.Ord<B>): <A extends B>(as: NonEmptyArray<A>) => Non
 export function sortBy<B>(...ords: ReadonlyArray<P.Ord<B>>): <A extends B>(as: NonEmptyArray<A>) => NonEmptyArray<A> {
   if (isNonEmpty(ords)) {
     const M = Ord.getMonoid<B>()
-    return sort(_.ifoldl_(ords, M.nat, (b, _, a) => M.combine_(b, a)))
+    return sort(_.foldl_(ords, M.nat, (b, a) => M.combine_(b, a)))
   } else {
     return P.identity
   }
@@ -1407,7 +1298,7 @@ export const Functor = P.Functor<URI>({
 })
 
 export const FunctorWithIndex = P.FunctorWithIndex<URI>({
-  imap_
+  imap_: map_
 })
 
 export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
@@ -1459,9 +1350,9 @@ export const Foldable = P.Foldable<URI>({
 })
 
 export const FoldableWithIndex = P.FoldableWithIndex<URI>({
-  ifoldl_,
-  ifoldr_,
-  ifoldMap_
+  ifoldl_: foldl_,
+  ifoldr_: foldr_,
+  ifoldMap_: foldMap_
 })
 
 export const Monad = P.Monad<URI>({
@@ -1484,11 +1375,11 @@ export const Traversable = P.Traversable<URI>({
 })
 
 export const TraversableWithIndex = P.TraversableWithIndex<URI>({
-  imap_,
-  ifoldl_,
-  ifoldr_,
-  ifoldMap_,
-  imapA_: imapA_
+  imap_: map_,
+  ifoldl_: foldl_,
+  ifoldr_: foldr_,
+  ifoldMap_: foldMap_,
+  imapA_: mapA_
 })
 
 /*

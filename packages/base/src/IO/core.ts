@@ -4312,7 +4312,7 @@ export function giveServicesS_<SS extends Record<string, Tag<any>>>(tags: SS) {
         Object.assign(
           {},
           r,
-          R.ifoldl_(tags, {} as any, (b, k, tag) => mergeEnvironments(tag, b, services[k]))
+          R.foldl_(tags, {} as any, (b, tag, k) => mergeEnvironments(tag, b, services[k]))
         )
       )
     )
@@ -4342,7 +4342,7 @@ export function giveServicesSIO_<SS extends Record<string, Tag<any>>>(tags: SS) 
           Object.assign(
             {},
             r,
-            R.ifoldl_(tags, {} as any, (b, k, tag) => mergeEnvironments(tag, b, svcs[k]))
+            R.foldl_(tags, {} as any, (b, tag, k) => mergeEnvironments(tag, b, svcs[k]))
           )
         )
       )
@@ -4369,7 +4369,7 @@ export function giveServicesT_<SS extends ReadonlyArray<Tag<any>>>(...tags: SS) 
         Object.assign(
           {},
           r,
-          A.ifoldl_(tags, {} as any, (b, i, tag) => mergeEnvironments(tag, b, services[i]))
+          A.foldl_(tags, {} as any, (b, tag, i) => mergeEnvironments(tag, b, services[i]))
         )
       )
     )
@@ -4399,7 +4399,7 @@ export function giveServicesTIO_<SS extends ReadonlyArray<Tag<any>>>(...tags: SS
           Object.assign(
             {},
             r,
-            A.ifoldl_(tags, {} as any, (b, i, tag) => mergeEnvironments(tag, b, svcs[i]))
+            A.foldl_(tags, {} as any, (b, tag, i) => mergeEnvironments(tag, b, svcs[i]))
           )
         )
       )

@@ -1280,72 +1280,59 @@ function _MonoidBindUnit<W, S, R, E>(): P.Monoid<Z<W, S, S, R, E, void>> {
   return P.Monoid<Z<W, S, S, R, E, void>>((x, y) => chain_(x, () => y), unit())
 }
 
-export function iforeachUnit_<A, W, S, R, E>(
+export function foreachUnit_<A, W, S, R, E>(
   as: Iterable<A>,
-  f: (i: number, a: A) => Z<W, S, S, R, E, void>
+  f: (a: A, i: number) => Z<W, S, S, R, E, void>
 ): Z<W, S, S, R, E, void> {
-  return I.ifoldMap_(_MonoidBindUnit<W, S, R, E>())(as, f)
+  return I.foldMap_(_MonoidBindUnit<W, S, R, E>())(as, f)
 }
 
-export function iforeachUnit<A, W, S, R, E>(
-  f: (i: number, a: A) => Z<W, S, S, R, E, void>
+export function foreachUnit<A, W, S, R, E>(
+  f: (a: A, i: number) => Z<W, S, S, R, E, void>
 ): (as: Iterable<A>) => Z<W, S, S, R, E, void> {
-  return (as) => iforeachUnit_(as, f)
+  return (as) => foreachUnit_(as, f)
 }
 
-export function iforeach_<W, S, R, E, A, B>(
+export function foreach_<W, S, R, E, A, B>(
   as: Iterable<A>,
-  f: (i: number, a: A) => Z<W, S, S, R, E, B>
+  f: (a: A, i: number) => Z<W, S, S, R, E, B>
 ): Z<W, S, S, R, E, C.Chunk<B>> {
-  return I.ifoldl_(as, succeed(C.empty()) as Z<W, S, S, R, E, C.Chunk<B>>, (b, i, a) =>
+  return I.foldl_(as, succeed(C.empty()) as Z<W, S, S, R, E, C.Chunk<B>>, (b, a, i) =>
     crossWith_(
       b,
-      defer(() => f(i, a)),
+      defer(() => f(a, i)),
       C.append_
     )
   )
 }
 
-export function iforeach<A, W, S, R, E, B>(
-  f: (i: number, a: A) => Z<W, S, S, R, E, B>
-): (as: Iterable<A>) => Z<W, S, S, R, E, C.Chunk<B>> {
-  return (as) => iforeach_(as, f)
-}
-
-export function foreach_<A, W, S, R, E, B>(
-  as: Iterable<A>,
-  f: (a: A) => Z<W, S, S, R, E, B>
-): Z<W, S, S, R, E, C.Chunk<B>> {
-  return iforeach_(as, (_, a) => f(a))
-}
-
 export function foreach<A, W, S, R, E, B>(
-  f: (a: A) => Z<W, S, S, R, E, B>
+  f: (a: A, i: number) => Z<W, S, S, R, E, B>
 ): (as: Iterable<A>) => Z<W, S, S, R, E, C.Chunk<B>> {
   return (as) => foreach_(as, f)
 }
 
-export function iforeachArrayUnit_<A, W, S, R, E>(
+export function foreachArrayUnit_<A, W, S, R, E>(
   as: ReadonlyArray<A>,
-  f: (i: number, a: A) => Z<W, S, S, R, E, void>
+  f: (a: A, i: number) => Z<W, S, S, R, E, void>
 ): Z<W, S, S, R, E, void> {
-  return A.ifoldMap_(_MonoidBindUnit<W, S, R, E>())(as, f)
+  return A.foldMap_(_MonoidBindUnit<W, S, R, E>())(as, f)
 }
 
-export function iforeachArrayUnit<A, W, S, R, E>(
-  f: (i: number, a: A) => Z<W, S, S, R, E, void>
+export function foreachArrayUnit<A, W, S, R, E>(
+  f: (a: A, i: number) => Z<W, S, S, R, E, void>
 ): (as: ReadonlyArray<A>) => Z<W, S, S, R, E, void> {
-  return (as) => iforeachArrayUnit_(as, f)
+  return (as) => foreachArrayUnit_(as, f)
 }
 
-export function iforeachArray_<A, W, S, R, E, B>(
+export function foreachArray_<A, W, S, R, E, B>(
   as: ReadonlyArray<A>,
-  f: (i: number, a: A) => Z<W, S, S, R, E, B>
+  f: (a: A, i: number) => Z<W, S, S, R, E, B>
 ): Z<W, S, S, R, E, ReadonlyArray<B>> {
-  return A.ifoldl_(as, succeed([]) as Z<W, S, S, R, E, Array<B>>, (b, i, a) =>
+  return A.foldl_(as, succeed([]) as Z<W, S, S, R, E, Array<B>>, (b, a, i) =>
     crossWith_(
       b,
-      defer(() => f(i, a)),
+      defer(() => f(a, i)),
       (acc, a) => {
         acc.push(a)
         return acc
@@ -1354,33 +1341,20 @@ export function iforeachArray_<A, W, S, R, E, B>(
   )
 }
 
-export function iforeachArray<A, W, S, R, E, B>(
-  f: (i: number, a: A) => Z<W, S, S, R, E, B>
-): (as: ReadonlyArray<A>) => Z<W, S, S, R, E, ReadonlyArray<B>> {
-  return (as) => iforeachArray_(as, f)
-}
-
-export function foreachArray_<A, W, S, R, E, B>(
-  as: ReadonlyArray<A>,
-  f: (a: A) => Z<W, S, S, R, E, B>
-): Z<W, S, S, R, E, ReadonlyArray<B>> {
-  return iforeachArray_(as, (_, a) => f(a))
-}
-
 export function foreachArray<A, W, S, R, E, B>(
-  f: (a: A) => Z<W, S, S, R, E, B>
+  f: (a: A, i: number) => Z<W, S, S, R, E, B>
 ): (as: ReadonlyArray<A>) => Z<W, S, S, R, E, ReadonlyArray<B>> {
   return (as) => foreachArray_(as, f)
 }
 
-export function iforeachList_<A, W, S, R, E, B>(
+export function foreachList_<A, W, S, R, E, B>(
   as: Iterable<A>,
-  f: (i: number, a: A) => Z<W, S, S, R, E, B>
+  f: (a: A, i: number) => Z<W, S, S, R, E, B>
 ): Z<W, S, S, R, E, L.List<B>> {
-  return I.ifoldl_(as, succeed(L.emptyPushable()) as Z<W, S, S, R, E, L.MutableList<B>>, (b, i, a) =>
+  return I.foldl_(as, succeed(L.emptyPushable()) as Z<W, S, S, R, E, L.MutableList<B>>, (b, a, i) =>
     crossWith_(
       b,
-      defer(() => f(i, a)),
+      defer(() => f(a, i)),
       (acc, a) => {
         L.push(a, acc)
         return acc
@@ -1389,21 +1363,8 @@ export function iforeachList_<A, W, S, R, E, B>(
   )
 }
 
-export function iforeachList<A, W, S, R, E, B>(
-  f: (i: number, a: A) => Z<W, S, S, R, E, B>
-): (as: Iterable<A>) => Z<W, S, S, R, E, L.List<B>> {
-  return (as) => iforeachList_(as, f)
-}
-
-export function foreachList_<A, W, S, R, E, B>(
-  as: Iterable<A>,
-  f: (a: A) => Z<W, S, S, R, E, B>
-): Z<W, S, S, R, E, L.List<B>> {
-  return iforeachList_(as, (_, a) => f(a))
-}
-
 export function foreachList<A, W, S, R, E, B>(
-  f: (a: A) => Z<W, S, S, R, E, B>
+  f: (a: A, i: number) => Z<W, S, S, R, E, B>
 ): (as: Iterable<A>) => Z<W, S, S, R, E, L.List<B>> {
   return (as) => foreachList_(as, f)
 }

@@ -44,7 +44,7 @@ export function WitherableWithIndex<F extends HKT.URIS, C = HKT.Auto>(
 
 export interface FilterMapWithIndexAFn<F extends HKT.URIS, C = HKT.Auto> {
   <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <KG, QG, WG, XG, IG, SG, RG, EG, A, B, KF>(
-    f: (k: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>, a: A) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Option<B>>
+    f: (a: A, k: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Option<B>>
   ) => <QF, WF, XF, IF, SF, RF, EF>(
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>
   ) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>>
@@ -72,7 +72,7 @@ export interface FilterMapWithIndexAFn_<F extends HKT.URIS, C = HKT.Auto> {
     B
   >(
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>,
-    f: (k: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>, a: A) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Option<B>>
+    f: (a: A, k: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Option<B>>
   ) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
@@ -92,7 +92,7 @@ export function implementFilterMapWithIndexA<F extends HKT.URIS, C = HKT.Auto>()
   }) => (
     G: Applicative<HKT.UHKT<G>>
   ) => (
-    f: (i: HKT.IndexFor<F, HKT.OrFix<'K', F, KF>>, a: A) => HKT.HKT<G, Option<B>>
+    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', F, KF>>) => HKT.HKT<G, Option<B>>
   ) => (
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>
   ) => HKT.HKT<G, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>>
@@ -118,7 +118,7 @@ export function implementWitherWithIndex_<F extends HKT.URIS, C = HKT.Auto>(): (
     G: Applicative<HKT.UHKT<G>>
   ) => (
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>,
-    f: (i: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>, a: A) => HKT.HKT<G, Option<B>>
+    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>) => HKT.HKT<G, Option<B>>
   ) => HKT.HKT<G, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 ) => FilterMapWithIndexAFn_<F, C>
 export function implementWitherWithIndex_() {
@@ -128,8 +128,8 @@ export function implementWitherWithIndex_() {
 export interface PartitionMapWithIndexAFn<F extends HKT.URIS, C = HKT.Auto> {
   <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <KG, QG, WG, XG, IG, SG, RG, EG, A, B, B2, KF>(
     f: (
-      k: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>,
-      a: A
+      a: A,
+      k: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>
     ) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Either<B, B2>>
   ) => <QF, WF, XF, IF, SF, RF, EF>(
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>
@@ -172,8 +172,8 @@ export interface PartitionMapWithIndexAFn_<F extends HKT.URIS, C = HKT.Auto> {
   >(
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>,
     f: (
-      k: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>,
-      a: A
+      a: A,
+      k: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>
     ) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Either<B, B2>>
   ) => HKT.Kind<
     G,
@@ -207,7 +207,7 @@ export function implementPartitionMapWithIndexA<F extends HKT.URIS, C = HKT.Auto
   }) => (
     G: Applicative<HKT.UHKT<G>>
   ) => (
-    f: (i: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>, a: A) => HKT.HKT<G, Either<B, B2>>
+    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>) => HKT.HKT<G, Either<B, B2>>
   ) => (
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>
   ) => HKT.HKT<
@@ -237,7 +237,7 @@ export function implementPartitionMapWithIndexA_<F extends HKT.URIS, C = HKT.Aut
     G: Applicative<HKT.UHKT<G>>
   ) => (
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>,
-    f: (i: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>, a: A) => HKT.HKT<G, Either<B, B2>>
+    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>) => HKT.HKT<G, Either<B, B2>>
   ) => HKT.HKT<
     G,
     readonly [HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B2>]

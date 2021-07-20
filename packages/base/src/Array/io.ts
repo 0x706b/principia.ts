@@ -46,7 +46,7 @@ export function mapIOPar_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R,
     }
     return I.chain_(
       I.foreachUnitPar_(
-        A.imap_(as, (n, a) => [a, n] as [A, number]),
+        A.map_(as, (a, n) => [a, n] as [A, number]),
         fn
       ),
       () => I.succeedLazy(() => bs)

@@ -396,7 +396,7 @@ export const Schemable: S.Schemable<DecoderSURI> = {
     }
     const label = `{ ${pipe(
       properties,
-      R.ifoldl([] as string[], (b, k, a) => {
+      R.foldl([] as string[], (b, a, k) => {
         if (k in optional) {
           b.push(`${k}?: ${optional[k].label}`)
         } else {
