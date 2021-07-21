@@ -500,19 +500,39 @@ export function asyncIO<R, E, A, R1 = R, E1 = E>(
   )
 }
 
-function fromIteratorLoop<A>(
+function fromAsyncIterableLoop<A>(
+  iterator: AsyncIterator<A>
+): Ch.Channel<unknown, unknown, unknown, unknown, never, C.Chunk<A>, unknown> {
+  return Ch.unwrap(
+    I.async<unknown, never, Ch.Channel<unknown, unknown, unknown, unknown, never, C.Chunk<A>, unknown>>((k) => {
+      iterator
+        .next()
+        .then((result) =>
+          result.done
+            ? k(I.succeed(Ch.end(undefined)))
+            : k(I.succeed(Ch.write(C.single(result.value))['*>'](fromAsyncIterableLoop(iterator))))
+        )
+    })
+  )
+}
+
+export function fromAsyncIterable<A>(iterable: AsyncIterable<A>): Stream<unknown, never, A> {
+  return new Stream(fromAsyncIterableLoop(iterable[Symbol.asyncIterator]()))
+}
+
+function fromIterableLoop<A>(
   iterator: Iterator<A>
 ): Ch.Channel<unknown, unknown, unknown, unknown, never, C.Chunk<A>, unknown> {
   return Ch.unwrap(
     I.succeedLazy(() => {
       const v = iterator.next()
-      return v.done ? Ch.end(undefined) : pipe(Ch.write(C.single(v.value)), Ch.zipr(fromIteratorLoop(iterator)))
+      return v.done ? Ch.end(undefined) : pipe(Ch.write(C.single(v.value)), Ch.zipr(fromIterableLoop(iterator)))
     })
   )
 }
 
-export function fromIterator<A>(iterator: () => Iterator<A>): Stream<unknown, never, A> {
-  return new Stream(fromIteratorLoop(iterator()))
+export function fromIterable<A>(iterable: Iterable<A>): Stream<unknown, never, A> {
+  return new Stream(fromIterableLoop(iterable[Symbol.iterator]()))
 }
 
 /**
@@ -3967,6 +3987,27 @@ export function runIntoElementsManaged<E, A, R1, E1>(
 }
 
 /**
+ * Publishes elements of this stream to a hub. Stream failure and ending will
+ * also be signalled.
+ */
+export function runIntoHub_<R, E extends E1, A, R1, E1>(
+  sa: Stream<R, E, A>,
+  hub: H.Hub<R1, never, never, unknown, Take.Take<E1, A>, any>
+): I.IO<R & R1, E | E1, void> {
+  return runInto_(sa, H.toQueue(hub))
+}
+
+/**
+ * Publishes elements of this stream to a hub. Stream failure and ending will
+ * also be signalled.
+ */
+export function runIntoHub<A, R1, E1>(
+  hub: H.Hub<R1, never, never, unknown, Take.Take<E1, A>, any>
+): <R, E extends E1>(sa: Stream<R, E, A>) => I.IO<R & R1, E | E1, void> {
+  return (sa) => runIntoHub_(sa, hub)
+}
+
+/**
  * Like `Stream#runIntoHub`, but provides the result as a `Managed` to allow for scope
  * composition.
  */
@@ -4016,6 +4057,48 @@ export function runIntoManaged<R1, E1, A>(
   queue: Q.Queue<R1, never, never, unknown, Take.Take<E1, A>, any>
 ): <R, E extends E1>(stream: Stream<R, E, A>) => M.Managed<R & R1, E1 | E, void> {
   return (stream) => runIntoManaged_(stream, queue)
+}
+
+/**
+ * Statefully maps over the elements of this stream to produce all intermediate results
+ * of type `S` given an initial S.
+ */
+export function scan_<R, E, A, B>(sa: Stream<R, E, A>, b: B, f: (b: B, a: A) => B): Stream<R, E, B> {
+  return scanIO_(sa, b, (b, a) => I.succeed(f(b, a)))
+}
+
+/**
+ * Statefully maps over the elements of this stream to produce all intermediate results
+ * of type `S` given an initial S.
+ */
+export function scan<A, B>(b: B, f: (b: B, a: A) => B): <R, E>(sa: Stream<R, E, A>) => Stream<R, E, B> {
+  return (sa) => scan_(sa, b, f)
+}
+
+/**
+ * Statefully and effectfully maps over the elements of this stream to produce all
+ * intermediate results of type `S` given an initial S.
+ */
+export function scanIO_<R, E, A, R1, E1, B>(
+  sa: Stream<R, E, A>,
+  b: B,
+  f: (b: B, a: A) => I.IO<R1, E1, B>
+): Stream<R & R1, E | E1, B> {
+  return concat_(
+    succeed(b),
+    mapAccumIO_(sa, b, (b, a) => I.map_(f(b, a), (b) => [b, b]))
+  )
+}
+
+/**
+ * Statefully and effectfully maps over the elements of this stream to produce all
+ * intermediate results of type `S` given an initial S.
+ */
+export function scanIO<A, R1, E1, B>(
+  b: B,
+  f: (b: B, a: A) => I.IO<R1, E1, B>
+): <R, E>(sa: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
+  return (sa) => scanIO_(sa, b, f)
 }
 
 /**
@@ -4214,6 +4297,109 @@ export function ensuring_<R, E, A, R1>(sa: Stream<R, E, A>, fin: I.IO<R1, never,
 
 export function ensuring<R1>(fin: I.IO<R1, never, any>): <R, E, A>(sa: Stream<R, E, A>) => Stream<R & R1, E, A> {
   return (sa) => ensuring_(sa, fin)
+}
+
+function throttleEnforceIOLoop<E, A, R1, E1>(
+  costFn: (chunk: C.Chunk<A>) => I.IO<R1, E1, number>,
+  units: number,
+  duration: number,
+  burst: number,
+  tokens: number,
+  timestamp: number
+): Ch.Channel<R1 & Has<Clock>, E | E1, C.Chunk<A>, unknown, E | E1, C.Chunk<A>, void> {
+  return Ch.readWith(
+    (inp: C.Chunk<A>) =>
+      Ch.unwrap(
+        pipe(
+          costFn(inp)
+            ['<*>'](Clock.currentTime)
+            ['<$>'](([weight, current]) => {
+              const elapsed   = current - timestamp
+              const cycles    = elapsed / duration
+              const available = (() => {
+                const sum = tokens + cycles * units
+                const max = units + burst < 0 ? Number.MAX_SAFE_INTEGER : units + burst
+
+                return sum < 0 ? max : Math.min(sum, max)
+              })()
+
+              return weight <= available
+                ? Ch.write(inp)['*>'](
+                    throttleEnforceIOLoop(costFn, units, duration, burst, available - weight, current)
+                  )
+                : throttleEnforceIOLoop(costFn, units, duration, burst, available - weight, current)
+            })
+        )
+      ),
+    Ch.fail,
+    () => Ch.unit()
+  )
+}
+
+/**
+ * Throttles the chunks of this stream according to the given bandwidth parameters using the token bucket
+ * algorithm. Allows for burst in the processing of elements by allowing the token bucket to accumulate
+ * tokens up to a `units + burst` threshold. Chunks that do not meet the bandwidth constraints are dropped.
+ * The weight of each chunk is determined by the `costFn` function.
+ */
+export function throttleEnforce_<R, E, A>(
+  sa: Stream<R, E, A>,
+  costFn: (chunk: C.Chunk<A>) => number,
+  units: number,
+  duration: number,
+  burst = 0
+): Stream<R & Has<Clock>, E, A> {
+  return throttleEnforceIO_(sa, (chunk) => I.succeed(costFn(chunk)), units, duration, burst)
+}
+
+/**
+ * Throttles the chunks of this stream according to the given bandwidth parameters using the token bucket
+ * algorithm. Allows for burst in the processing of elements by allowing the token bucket to accumulate
+ * tokens up to a `units + burst` threshold. Chunks that do not meet the bandwidth constraints are dropped.
+ * The weight of each chunk is determined by the `costFn` function.
+ */
+export function throttleEnforce<A>(
+  costFn: (chunk: C.Chunk<A>) => number,
+  units: number,
+  duration: number,
+  burst = 0
+): <R, E>(sa: Stream<R, E, A>) => Stream<R & Has<Clock>, E, A> {
+  return (sa) => throttleEnforce_(sa, costFn, units, duration, burst)
+}
+
+/**
+ * Throttles the chunks of this stream according to the given bandwidth parameters using the token bucket
+ * algorithm. Allows for burst in the processing of elements by allowing the token bucket to accumulate
+ * tokens up to a `units + burst` threshold. Chunks that do not meet the bandwidth constraints are dropped.
+ * The weight of each chunk is determined by the `costFn` effectful function.
+ */
+export function throttleEnforceIO_<R, E, A, R1, E1>(
+  sa: Stream<R, E, A>,
+  costFn: (chunk: C.Chunk<A>) => I.IO<R1, E1, number>,
+  units: number,
+  duration: number,
+  burst = 0
+): Stream<R & R1 & Has<Clock>, E | E1, A> {
+  return new Stream(
+    Ch.fromIO(Clock.currentTime)['>>=']((current) =>
+      sa.channel['>>>'](throttleEnforceIOLoop(costFn, units, duration, burst, units, current))
+    )
+  )
+}
+
+/**
+ * Throttles the chunks of this stream according to the given bandwidth parameters using the token bucket
+ * algorithm. Allows for burst in the processing of elements by allowing the token bucket to accumulate
+ * tokens up to a `units + burst` threshold. Chunks that do not meet the bandwidth constraints are dropped.
+ * The weight of each chunk is determined by the `costFn` effectful function.
+ */
+export function throttleEnforceIO<A, R1, E1>(
+  costFn: (chunk: C.Chunk<A>) => I.IO<R1, E1, number>,
+  units: number,
+  duration: number,
+  burst = 0
+): <R, E>(sa: Stream<R, E, A>) => Stream<R & R1 & Has<Clock>, E | E1, A> {
+  return (sa) => throttleEnforceIO_(sa, costFn, units, duration, burst)
 }
 
 /**
