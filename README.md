@@ -14,6 +14,7 @@ Some parts of this library are forked or ported from other open source software.
 
 - [zio](https://github.com/zio) and its related libraries
 - [cats](https://github.com/typelevel/cats/)
+- [rxjs](https://github.com/ReactiveX/rxjs)
 - [fp-ts](https://github.com/gcanti/fp-ts/)
 - [hamt+](https://github.com/mattbierner/hamt_plus)
 - [effect-ts](https://github.com/effect-ts)
