@@ -5,7 +5,7 @@ import type { IO } from '../core'
 import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
 import * as C from '../../Cause/core'
-import { halt, matchCauseIO_, pure } from '../core'
+import { failCause, matchCauseIO_, pure } from '../core'
 import { uninterruptibleMask } from './interrupt'
 
 /**
@@ -30,13 +30,13 @@ export function ensuring_<R, E, A, R1>(ma: IO<R, E, A>, finalizer: IO<R1, never,
         (cause1) =>
           matchCauseIO_(
             finalizer,
-            (cause2) => halt(C.then(cause1, cause2)),
-            (_) => halt(cause1)
+            (cause2) => failCause(C.then(cause1, cause2)),
+            (_) => failCause(cause1)
           ),
         (value) =>
           matchCauseIO_(
             finalizer,
-            (cause1) => halt(cause1),
+            (cause1) => failCause(cause1),
             (_) => pure(value)
           )
       )

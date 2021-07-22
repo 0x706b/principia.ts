@@ -15,7 +15,7 @@ export function foreachIO_<E2, A2, R, E, A>(
 ): IO<R, never, Exit<E | E2, A>> {
   return Ex.match_(
     exit,
-    (c): I.URIO<R, Exit<E | E2, A>> => pipe(Ex.halt(c), I.succeed),
+    (c): I.URIO<R, Exit<E | E2, A>> => pipe(Ex.failCause(c), I.succeed),
     (a) => pipe(f(a), I.result)
   )
 }

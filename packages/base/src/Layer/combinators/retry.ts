@@ -23,7 +23,7 @@ export function retry_<R, E, A, R1>(
     const update = fromRawFunctionIO(([[r, s], e]: readonly [readonly [R & R1 & H.Has<Clock>, S], E]) =>
       pipe(
         Clock.currentTime,
-        I.orDie,
+        I.orHalt,
         I.chain((now) =>
           pipe(
             s(now, e),

@@ -113,7 +113,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
         )
       }
     }
-    return I.done(acc)
+    return I.fromExit(acc)
   }
 
   private popAllFinalizers(exit: Exit<unknown, unknown>): URIO<Env, Exit<unknown, unknown>> {
@@ -239,7 +239,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
           I.matchCauseIO(
             (cause) =>
               this.finishWithExit(
-                Ex.halt(
+                Ex.failCause(
                   Ca.then(
                     Ex.match_(subexecDone, identity, () => Ca.empty),
                     cause
@@ -304,10 +304,10 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     self: ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
     cause: Cause<unknown>
   ): ChannelState<Env, unknown> | undefined {
-    const closeEffect = maybeCloseBoth(exec.close(Ex.halt(cause)), rest.exec.close(Ex.halt(cause)))
+    const closeEffect = maybeCloseBoth(exec.close(Ex.failCause(cause)), rest.exec.close(Ex.failCause(cause)))
     return self.finishSubexecutorWithCloseEffect(
-      Ex.halt(cause),
-      closeEffect ? I.chain_(closeEffect, I.done) : undefined
+      Ex.failCause(cause),
+      closeEffect ? I.chain_(closeEffect, I.fromExit) : undefined
     )
   }
 
@@ -350,16 +350,16 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
                 I.matchCauseIO_(
                   closeEffect,
                   (cause) => {
-                    const restClose = rest.exec.close(Ex.halt(cause))
+                    const restClose = rest.exec.close(Ex.failCause(cause))
 
                     if (restClose) {
                       return I.matchCauseIO_(
                         restClose,
-                        (restCause) => this.finishWithExit(Ex.halt(Ca.then(cause, restCause))),
-                        () => this.finishWithExit(Ex.halt(cause))
+                        (restCause) => this.finishWithExit(Ex.failCause(Ca.then(cause, restCause))),
+                        () => this.finishWithExit(Ex.failCause(cause))
                       )
                     } else {
-                      return this.finishWithExit(Ex.halt(cause))
+                      return this.finishWithExit(Ex.failCause(cause))
                     }
                   },
                   () => I.succeedLazy(() => this.replaceSubexecutor(modifiedRest))
@@ -403,8 +403,8 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
           I.catchAllCause_(
             run.effect,
             (cause) =>
-              this.finishSubexecutorWithCloseEffect(Ex.halt(cause), inner.exec.close(Ex.halt(cause)))?.effect ||
-              I.unit()
+              this.finishSubexecutorWithCloseEffect(Ex.failCause(cause), inner.exec.close(Ex.failCause(cause)))
+                ?.effect || I.unit()
           )
         )
       }
@@ -471,7 +471,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
 
   private doneHalt(cause: Cause<unknown>): ChannelState<Env, unknown> | undefined {
     if (L.isEmpty(this.doneStack)) {
-      this.done           = Ex.halt(cause)
+      this.done           = Ex.failCause(cause)
       this.currentChannel = undefined
       return State._Done
     }
@@ -487,13 +487,13 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
 
       if (L.isEmpty(this.doneStack)) {
         this.doneStack      = finalizers
-        this.done           = Ex.halt(cause)
+        this.done           = Ex.failCause(cause)
         this.currentChannel = undefined
         return State._Done
       } else {
         const finalizerEffect = this.runFinalizers(
           L.map_(finalizers, (_) => _.finalizer),
-          Ex.halt(cause)
+          Ex.failCause(cause)
         )
         this.storeInProgressFinalizer(finalizerEffect)
         return new State.Effect(
@@ -591,7 +591,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
           restore(bracketOut.acquire),
           (cause) =>
             I.succeedLazy(() => {
-              this.currentChannel = new C.Halt(() => cause)
+              this.currentChannel = new C.Fail(() => cause)
             }),
           (out) =>
             I.succeedLazy(() => {
@@ -690,7 +690,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
               break
             }
             case C.ChannelTag.Halt: {
-              result = this.doneHalt(currentChannel.error())
+              result = this.doneHalt(currentChannel.cause())
               break
             }
             case C.ChannelTag.Effect: {
@@ -720,11 +720,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
               )
               break
             }
-            case C.ChannelTag.EffectTotal: {
-              result = this.doneSucceed(currentChannel.effect())
-              break
-            }
-            case C.ChannelTag.EffectSuspendTotal: {
+            case C.ChannelTag.Defer: {
               this.currentChannel = currentChannel.effect()
               break
             }

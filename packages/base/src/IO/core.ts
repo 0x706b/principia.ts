@@ -40,26 +40,7 @@ import * as P from '../prelude'
 import * as R from '../Record'
 import * as S from '../Sync'
 import { tuple } from '../tuple'
-import {
-  Chain,
-  CheckDescriptor,
-  DeferMaybeWith,
-  DeferPartialWith,
-  DeferTotalWith,
-  EffectAsync,
-  EffectPartial,
-  EffectTotal,
-  Fail,
-  Fork,
-  GetInterrupt,
-  GetPlatform,
-  Give,
-  Match,
-  Read,
-  Succeed,
-  Supervise,
-  Yield
-} from './primitives'
+import * as Primitives from './primitives'
 
 export * from './primitives'
 
@@ -76,8 +57,8 @@ export * from './primitives'
  * @since 1.0.0
  * @trace call
  */
-export function succeed<A>(a: A): IO<unknown, never, A> {
-  return new Succeed(a, accessCallTrace())
+export function succeed<A>(value: A): IO<unknown, never, A> {
+  return new Primitives.Succeed(value, accessCallTrace())
 }
 
 /**
@@ -89,8 +70,8 @@ export function succeed<A>(a: A): IO<unknown, never, A> {
  * @since 1.0.0
  * @trace 0
  */
-export function succeedLazy<A>(a: () => A): UIO<A> {
-  return new EffectTotal(a)
+export function succeedLazy<A>(lazyValue: () => A): UIO<A> {
+  return new Primitives.SucceedLazy(lazyValue)
 }
 
 /**
@@ -98,7 +79,7 @@ export function succeedLazy<A>(a: () => A): UIO<A> {
  * stack. Manual use of this method can improve fairness, at the cost of
  * overhead.
  */
-export const yieldNow: UIO<void> = new Yield()
+export const yieldNow: UIO<void> = new Primitives.Yield()
 
 /**
  * Imports an asynchronous side-effect into a `IO`
@@ -109,10 +90,10 @@ export const yieldNow: UIO<void> = new Yield()
  * @trace 0
  */
 export function async<R, E, A>(
-  register: (k: (_: IO<R, E, A>) => void) => void,
+  register: (resolve: (_: IO<R, E, A>) => void) => void,
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
-  return new EffectAsync(
+  return new Primitives.Async(
     traceAs(register, (cb) => {
       register(cb)
       return O.none()
@@ -132,10 +113,10 @@ export function async<R, E, A>(
  * @trace 0
  */
 export function asyncOption<R, E, A>(
-  register: (k: (_: IO<R, E, A>) => void) => O.Option<IO<R, E, A>>,
+  register: (resolve: (_: IO<R, E, A>) => void) => O.Option<IO<R, E, A>>,
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
-  return new EffectAsync(register, blockingOn)
+  return new Primitives.Async(register, blockingOn)
 }
 
 /**
@@ -145,7 +126,7 @@ export function asyncOption<R, E, A>(
  * @trace 0
  */
 function try_<A>(effect: () => A): FIO<unknown, A> {
-  return new EffectPartial(effect, identity)
+  return new Primitives.TryCatch(effect, identity)
 }
 
 export { try_ as try }
@@ -160,27 +141,8 @@ export { try_ as try }
  * @trace 0
  * @trace 1
  */
-export function tryCatch_<E, A>(effect: () => A, onThrow: (error: unknown) => E): FIO<E, A> {
-  return new EffectPartial(effect, onThrow)
-}
-
-/**
- * Imports a synchronous side-effect into an `IO`, translating any
- * thrown exceptions into typed failed effects with `IO.fail`, and mapping the error
- *
- * @category Constructors
- * @since 1.0.0
- *
- * @dataFirst tryCatch_
- * @trace 0
- */
-export function tryCatch<E>(onThrow: (error: unknown) => E): <A>(effect: () => A) => FIO<E, A> {
-  return (
-    /**
-     * @trace 0
-     */
-    (effect) => tryCatch_(effect, onThrow)
-  )
+export function tryCatch<E, A>(effect: () => A, onThrow: (error: unknown) => E): FIO<E, A> {
+  return new Primitives.TryCatch(effect, onThrow)
 }
 
 /**
@@ -190,7 +152,7 @@ export function tryCatch<E>(onThrow: (error: unknown) => E): <A>(effect: () => A
  * @trace 0
  */
 export function deferTry<R, E, A>(io: () => IO<R, E, A>): IO<R, unknown, A> {
-  return new DeferPartialWith(io, identity)
+  return new Primitives.DeferTryCatchWith(io, identity)
 }
 
 /**
@@ -202,7 +164,7 @@ export function deferTry<R, E, A>(io: () => IO<R, E, A>): IO<R, unknown, A> {
 export function deferTryWith<R, E, A>(
   io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>
 ): IO<R, unknown, A> {
-  return new DeferPartialWith(io, identity)
+  return new Primitives.DeferTryCatchWith(io, identity)
 }
 
 /**
@@ -214,27 +176,8 @@ export function deferTryWith<R, E, A>(
  * @trace 0
  * @trace 1
  */
-export function deferTryCatch_<R, E, A, E1>(io: () => IO<R, E, A>, onThrow: (error: unknown) => E1): IO<R, E | E1, A> {
-  return new DeferPartialWith(io, onThrow)
-}
-
-/**
- * Returns a lazily constructed effect, whose construction may itself require effects,
- * translating any thrown exceptions into typed failed effects and mapping the error.
- *
- * When no environment is required (i.e., when R == unknown) it is conceptually equivalent to `flatten(effect(io))`.
- *
- * @trace 0
- */
-export function deferTryCatch<E1>(
-  onThrow: (error: unknown) => E1
-): <R, E, A>(io: () => IO<R, E, A>) => IO<R, E | E1, A> {
-  return (
-    /**
-     * @trace 0
-     */
-    (io) => deferTryCatch_(io, onThrow)
-  )
+export function deferTryCatch<R, E, A, E1>(io: () => IO<R, E, A>, onThrow: (error: unknown) => E1): IO<R, E | E1, A> {
+  return new Primitives.DeferTryCatchWith(io, onThrow)
 }
 
 /**
@@ -246,28 +189,11 @@ export function deferTryCatch<E1>(
  * @trace 0
  * @trace 1
  */
-export function deferTryCatchWith_<R, E, A, E1>(
+export function deferTryCatchWith<R, E, A, E1>(
   io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>,
   onThrow: (error: unknown) => E1
 ): IO<R, E | E1, A> {
-  return new DeferPartialWith(io, onThrow)
-}
-
-/**
- * Returns a lazily constructed effect, whose construction may itself require effects,
- * translating any thrown exceptions into typed failed effects and mapping the error.
- *
- * When no environment is required (i.e., when R == unknown) it is conceptually equivalent to `flatten(effect(io))`.
- *
- * @dataFirst deferTryCatchWith_
- * @trace 0
- */
-export function deferTryCatchWith<E1>(onThrow: (error: unknown) => E1) {
-  /**
-   * @trace 0
-   */
-  return <R, E, A>(io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>): IO<R, E | E1, A> =>
-    deferTryCatchWith_(io, onThrow)
+  return new Primitives.DeferTryCatchWith(io, onThrow)
 }
 
 /**
@@ -276,7 +202,7 @@ export function deferTryCatchWith<E1>(onThrow: (error: unknown) => E1) {
 export function deferMaybeWith<E, A, R, E1, A1>(
   io: (platform: Platform<unknown>, id: FiberId) => E.Either<Exit<E, A>, IO<R, E1, A1>>
 ): IO<R, E | E1, A | A1> {
-  return new DeferMaybeWith(io)
+  return new Primitives.DeferMaybeWith(io)
 }
 
 /**
@@ -290,7 +216,7 @@ export function deferMaybeWith<E, A, R, E1, A1>(
  * @trace 0
  */
 export function defer<R, E, A>(io: () => IO<R, E, A>): IO<R, E, A> {
-  return new DeferTotalWith(io)
+  return new Primitives.DeferWith(io)
 }
 
 /**
@@ -304,7 +230,7 @@ export function defer<R, E, A>(io: () => IO<R, E, A>): IO<R, E, A> {
  * @trace 0
  */
 export function deferWith<R, E, A>(io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>): IO<R, E, A> {
-  return new DeferTotalWith(io)
+  return new Primitives.DeferWith(io)
 }
 
 /**
@@ -321,7 +247,7 @@ export function fiberId(): IO<unknown, never, FiberId> {
  * Checks the current `Platform`
  */
 export function platform<R, E, A>(f: (p: Platform<unknown>) => IO<R, E, A>): IO<R, E, A> {
-  return new GetPlatform(f)
+  return new Primitives.GetPlatform(f)
 }
 
 /**
@@ -331,9 +257,9 @@ export function platform<R, E, A>(f: (p: Platform<unknown>) => IO<R, E, A>): IO<
  * @since 1.0.0
  * @trace call
  */
-export function halt<E>(cause: C.Cause<E>): FIO<E, never> {
+export function failCause<E>(cause: C.Cause<E>): FIO<E, never> {
   const trace = accessCallTrace()
-  return new Fail(traceFrom(trace, () => cause))
+  return new Primitives.Fail(traceFrom(trace, () => cause))
 }
 
 /**
@@ -343,8 +269,8 @@ export function halt<E>(cause: C.Cause<E>): FIO<E, never> {
  *
  * @trace 0
  */
-export function haltWithTrace<E>(cause: (_: () => Trace) => Cause<E>): FIO<E, never> {
-  return new Fail(cause)
+export function failCauseWithTrace<E>(cause: (_: () => Trace) => Cause<E>): FIO<E, never> {
+  return new Primitives.Fail(cause)
 }
 
 /**
@@ -354,8 +280,8 @@ export function haltWithTrace<E>(cause: (_: () => Trace) => Cause<E>): FIO<E, ne
  * @since 1.0.0
  * @trace 0
  */
-export function haltLazy<E = never, A = never>(cause: () => Cause<E>): IO<unknown, E, A> {
-  return haltWithTrace(cause)
+export function failCauseLazy<E = never, A = never>(cause: () => Cause<E>): FIO<E, A> {
+  return failCauseWithTrace(cause)
 }
 
 /**
@@ -366,9 +292,9 @@ export function haltLazy<E = never, A = never>(cause: () => Cause<E>): IO<unknow
  *
  * @trace call
  */
-export function fail<E = never, A = never>(e: E): IO<unknown, E, A> {
+export function fail<E = never, A = never>(e: E): FIO<E, A> {
   const trace = accessCallTrace()
-  return haltWithTrace(traceFrom(trace, (trace) => C.traced(C.fail(e), trace())))
+  return failCauseWithTrace(traceFrom(trace, (trace) => C.traced(C.fail(e), trace())))
 }
 
 /**
@@ -379,12 +305,12 @@ export function fail<E = never, A = never>(e: E): IO<unknown, E, A> {
  *
  * @trace 0
  */
-export function failLazy<E = never, A = never>(e: () => E): IO<unknown, E, A> {
-  return haltWithTrace(traceAs(e, (trace) => C.traced(C.fail(e()), trace())))
+export function failLazy<E = never, A = never>(e: () => E): FIO<E, A> {
+  return failCauseWithTrace(traceAs(e, (trace) => C.traced(C.fail(e()), trace())))
 }
 
 /**
- * Creates an `IO` that has died with the specified defect
+ * Creates an `IO` that halts with the specified defect
  * This method can be used for terminating a fiber because a defect has been
  * detected in the code.
  *
@@ -393,13 +319,13 @@ export function failLazy<E = never, A = never>(e: () => E): IO<unknown, E, A> {
  *
  * @trace call
  */
-export function die(e: unknown): UIO<never> {
+export function halt(e: unknown): UIO<never> {
   const trace = accessCallTrace()
-  return haltWithTrace(traceFrom(trace, (trace) => C.traced(C.die(e), trace())))
+  return failCauseWithTrace(traceFrom(trace, (trace) => C.traced(C.halt(e), trace())))
 }
 
 /**
- * Creates an `IO` that dies with the specified lazily-evaluated defect.
+ * Creates an `IO` that halts with the specified lazily-evaluated defect.
  * This method can be used for terminating a fiber because a defect has been
  * detected in the code.
  *
@@ -408,17 +334,17 @@ export function die(e: unknown): UIO<never> {
  *
  * @trace 0
  */
-export function dieLazy<E = never, A = never>(e: () => unknown): IO<unknown, E, A> {
-  return haltWithTrace(traceAs(e, (trace) => C.traced(C.die(e()), trace())))
+export function haltLazy<E = never, A = never>(e: () => unknown): IO<unknown, E, A> {
+  return failCauseWithTrace(traceAs(e, (trace) => C.traced(C.halt(e()), trace())))
 }
 
 /**
- * Returns an IO that dies with a `RuntimeException` having the
+ * Returns an IO that halts with a `RuntimeException` having the
  * specified message. This method can be used for terminating a fiber
  * because a defect has been detected in the code.
  */
-export function dieMessage(message: string): FIO<never, never> {
-  return die(new RuntimeException(message))
+export function haltMessage(message: string): FIO<never, never> {
+  return halt(new RuntimeException(message))
 }
 
 /**
@@ -428,9 +354,9 @@ export function dieMessage(message: string): FIO<never, never> {
  * @since 1.0.0
  * @trace call
  */
-export function done<E, A>(exit: Exit<E, A>): FIO<E, A> {
+export function fromExit<E, A>(exit: Exit<E, A>): FIO<E, A> {
   const trace = accessCallTrace()
-  return Ex.match_(exit, (cause) => traceCall(halt, trace)(cause), succeed)
+  return Ex.match_(exit, (cause) => traceCall(failCause, trace)(cause), succeed)
 }
 
 /**
@@ -440,8 +366,8 @@ export function done<E, A>(exit: Exit<E, A>): FIO<E, A> {
  * @since 1.0.0
  * @trace 0
  */
-export function doneLazy<E, A>(exit: () => Exit<E, A>): FIO<E, A> {
-  return defer(traceAs(exit, () => Ex.match_(exit(), halt, succeed)))
+export function fromExitLazy<E, A>(exit: () => Exit<E, A>): FIO<E, A> {
+  return defer(traceAs(exit, () => Ex.match_(exit(), failCause, succeed)))
 }
 
 /**
@@ -499,26 +425,10 @@ export function fromOption<A = never>(option: Option<A>): IO<unknown, Option<nev
  * @trace 0
  * @trace 1
  */
-export function fromPromiseCatch_<E, A>(promise: () => Promise<A>, onReject: (reason: unknown) => E): FIO<E, A> {
+export function fromPromiseCatch<E, A>(promise: () => Promise<A>, onReject: (reason: unknown) => E): FIO<E, A> {
   return async((resolve) => {
     promise().then(flow(succeed, resolve)).catch(flow(onReject, fail, resolve))
   })
-}
-
-/**
- * Create an IO that when executed will construct `promise` and wait for its result,
- * errors will be handled using `onReject`
- *
- * @dataFirst fromPromiseCatch_
- * @trace 0
- */
-export function fromPromiseCatch<E>(onReject: (reason: unknown) => E) {
-  return (
-    /**
-     * @trace 0
-     */
-    <A>(promise: () => Promise<A>): FIO<E, A> => fromPromiseCatch_(promise, onReject)
-  )
 }
 
 /**
@@ -538,9 +448,9 @@ export function fromPromise<A>(promise: () => Promise<A>): FIO<unknown, A> {
  *
  * @trace 0
  */
-export function fromPromiseDie<A>(promise: () => Promise<A>): FIO<never, A> {
+export function fromPromiseHalt<A>(promise: () => Promise<A>): FIO<never, A> {
   return async((resolve) => {
-    promise().then(flow(pure, resolve)).catch(flow(die, resolve))
+    promise().then(flow(pure, resolve)).catch(flow(halt, resolve))
   })
 }
 
@@ -555,37 +465,6 @@ export function fromSync<R, E, A>(effect: Sync<R, E, A>): IO<R, E, A> {
 }
 
 /**
- * Lifts an `Async` computation into an `IO`
- *
- * @trace call
- */
-export function fromAsync<R, E, A>(effect: Async<R, E, A>): IO<R, E, A> {
-  const trace = accessCallTrace()
-  return asksIO(
-    traceAs(trace, (_: R) =>
-      async<unknown, E, A>((k) => {
-        runAsyncEnv(effect, _, (ex) => {
-          switch (ex._tag) {
-            case 'Success': {
-              k(succeed(ex.value))
-              break
-            }
-            case 'Failure': {
-              k(fail(ex.error))
-              break
-            }
-            case 'Interrupt': {
-              k(descriptorWith((d) => halt(C.interrupt(d.id))))
-              break
-            }
-          }
-        })
-      })
-    )
-  )
-}
-
-/**
  *
  * Returns an IO with the behavior of this one, but where all child
  * fibers forked in the effect are reported to the specified supervisor.
@@ -594,7 +473,7 @@ export function fromAsync<R, E, A>(effect: Async<R, E, A>): IO<R, E, A> {
  * @since 1.0.0
  */
 export function supervised_<R, E, A>(fa: IO<R, E, A>, supervisor: Supervisor<any>): IO<R, E, A> {
-  return new Supervise(fa, supervisor)
+  return new Primitives.Supervise(fa, supervisor)
 }
 
 /**
@@ -799,7 +678,7 @@ export function bimap<E, E1, A, B>(f: (e: E) => E1, g: (a: A) => B): <R>(pab: IO
  * @trace 1
  */
 export function mapError_<R, E, A, E1>(fea: IO<R, E, A>, f: (e: E) => E1): IO<R, E1, A> {
-  return matchCauseIO_(fea, traceAs(f, flow(C.map(f), halt)), succeed)
+  return matchCauseIO_(fea, traceAs(f, flow(C.map(f), failCause)), succeed)
 }
 
 /**
@@ -865,7 +744,7 @@ export function matchCauseIO_<R, E, A, R1, E1, A1, R2, E2, A2>(
   onFailure: (cause: Cause<E>) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return new Match(ma, onFailure, onSuccess)
+  return new Primitives.Match(ma, onFailure, onSuccess)
 }
 
 /**
@@ -879,7 +758,7 @@ export function matchCauseIO<E, A, R1, E1, A1, R2, E2, A2>(
   onFailure: (cause: Cause<E>) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): <R>(ma: IO<R, E, A>) => IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return (ma) => new Match(ma, onFailure, onSuccess)
+  return (ma) => new Primitives.Match(ma, onFailure, onSuccess)
 }
 
 /**
@@ -893,7 +772,7 @@ export function matchIO_<R, R1, R2, E, E1, E2, A, A1, A2>(
 ): IO<R & R1 & R2, E1 | E2, A1 | A2> {
   return matchCauseIO_(
     ma,
-    traceAs(onFailure, (cause) => E.match_(C.failureOrCause(cause), onFailure, halt)),
+    traceAs(onFailure, (cause) => E.match_(C.failureOrCause(cause), onFailure, failCause)),
     onSuccess
   )
 }
@@ -987,7 +866,7 @@ export function matchTraceIO_<R, E, A, R1, E1, A1, R2, E2, A2>(
       onFailure,
       flow(
         C.failureTraceOrCause,
-        E.match(([e, trace]) => onFailure(e, trace), halt)
+        E.match(([e, trace]) => onFailure(e, trace), failCause)
       )
     ),
     onSuccess
@@ -1062,7 +941,7 @@ export function map<A, B>(f: (a: A) => B): <R, E>(fa: IO<R, E, A>) => IO<R, E, B
  * @trace 1
  */
 export function chain_<R, E, A, R1, E1, B>(ma: IO<R, E, A>, f: (a: A) => IO<R1, E1, B>): IO<R & R1, E | E1, B> {
-  return new Chain(ma, f)
+  return new Primitives.Chain(ma, f)
 }
 
 /**
@@ -1099,8 +978,8 @@ export function bitap_<R, E, A, R1, E1, R2, E2>(
     (c) =>
       E.match_(
         C.failureOrCause(c),
-        (e) => chain_(onFailure(e), () => halt(c)),
-        (_) => halt(c)
+        (e) => chain_(onFailure(e), () => failCause(c)),
+        (_) => failCause(c)
       ),
     (a) => pipe(onSuccess(a), crossSecond(succeed(a)))
   )
@@ -1181,8 +1060,8 @@ export function tapError_<R, E, A, R1, E1>(fa: IO<R, E, A>, f: (e: E) => IO<R1, 
     (c) =>
       E.match_(
         C.failureOrCause(c),
-        (e) => chain_(f(e), () => halt(c)),
-        (_) => halt(c)
+        (e) => chain_(f(e), () => failCause(c)),
+        (_) => failCause(c)
       ),
     pure
   )
@@ -1213,7 +1092,7 @@ export function tapError<E, R1, E1>(f: (e: E) => IO<R1, E1, any>): <R, A>(fa: IO
  * @trace 0
  */
 export function asks<R, A>(f: (_: R) => A): URIO<R, A> {
-  return new Read(traceAs(f, (_: R) => new Succeed(f(_))))
+  return new Primitives.Read(traceAs(f, (_: R) => new Primitives.Succeed(f(_))))
 }
 
 /**
@@ -1225,7 +1104,7 @@ export function asks<R, A>(f: (_: R) => A): URIO<R, A> {
  * @trace 0
  */
 export function asksIO<R0, R, E, A>(f: (r: R0) => IO<R, E, A>): IO<R & R0, E, A> {
-  return new Read(f)
+  return new Primitives.Read(f)
 }
 
 /**
@@ -1241,7 +1120,7 @@ export function asksIO<R0, R, E, A>(f: (r: R0) => IO<R, E, A>): IO<R & R0, E, A>
  */
 export function giveAll_<R, E, A>(ma: IO<R, E, A>, r: R): FIO<E, A> {
   const trace = accessCallTrace()
-  return new Give(ma, r, trace)
+  return new Primitives.Give(ma, r, trace)
 }
 
 /**
@@ -1752,9 +1631,9 @@ export function catchSome_<R, E, A, R1, E1, A1>(
           E.match(
             flow(
               f,
-              O.getOrElse(() => halt(cause))
+              O.getOrElse(() => failCause(cause))
             ),
-            halt
+            failCause
           )
         )
     ),
@@ -1790,7 +1669,7 @@ export function catchSomeCause_<R, E, A, R1, E1, A1>(
       (c): IO<R1, E1 | E, A1> =>
         O.match_(
           f(c),
-          () => halt(c),
+          () => failCause(c),
           (a) => a
         )
     ),
@@ -1880,7 +1759,7 @@ export function causeAsError<R, E, A>(ma: IO<R, E, A>): IO<R, Cause<E>, A> {
  * @trace 0
  */
 export function checkInterruptible<R, E, A>(f: (i: InterruptStatus) => IO<R, E, A>): IO<R, E, A> {
-  return new GetInterrupt(f)
+  return new Primitives.GetInterrupt(f)
 }
 
 /**
@@ -1994,7 +1873,7 @@ export function condIO<R, A, R1, E>(onTrue: URIO<R, A>, onFalse: URIO<R1, E>): (
  * @trace 0
  */
 export function descriptorWith<R, E, A>(f: (d: FiberDescriptor) => IO<R, E, A>): IO<R, E, A> {
-  return new CheckDescriptor(f)
+  return new Primitives.CheckDescriptor(f)
 }
 
 /**
@@ -2023,7 +1902,7 @@ export function duplicate<R, E, A>(wa: IO<R, E, A>): IO<R, E, IO<R, E, A>> {
  */
 export function errorAsCause<R, E, A>(ma: IO<R, Cause<E>, A>): IO<R, E, A> {
   const trace = accessCallTrace()
-  return matchIO_(ma, traceFrom(trace, flow(halt)), traceFrom(trace, flow(succeed)))
+  return matchIO_(ma, traceFrom(trace, flow(failCause)), traceFrom(trace, flow(succeed)))
 }
 
 /**
@@ -2181,82 +2060,86 @@ export function filterOrElse<A, R1, E1, A1>(
 }
 
 /**
- * Dies with specified `unknown` if the predicate fails.
+ * Halts with specified `unknown` if the predicate fails.
  *
  * @trace call
  */
-export function filterOrDie_<R, E, A, B extends A>(
+export function filterOrHalt_<R, E, A, B extends A>(
   fa: IO<R, E, A>,
   refinement: Refinement<A, B>,
-  dieWith: (a: Exclude<A, B>) => unknown
+  haltWith: (a: Exclude<A, B>) => unknown
 ): IO<R, E, A>
-export function filterOrDie_<R, E, A>(fa: IO<R, E, A>, predicate: Predicate<A>, dieWith: (a: A) => unknown): IO<R, E, A>
-export function filterOrDie_<R, E, A>(fa: IO<R, E, A>, predicate: Predicate<A>, dieWith: unknown): IO<R, E, A> {
+export function filterOrHalt_<R, E, A>(
+  fa: IO<R, E, A>,
+  predicate: Predicate<A>,
+  haltWith: (a: A) => unknown
+): IO<R, E, A>
+export function filterOrHalt_<R, E, A>(fa: IO<R, E, A>, predicate: Predicate<A>, haltWith: unknown): IO<R, E, A> {
   const trace = accessCallTrace()
-  return filterOrElse_(fa, predicate, traceFrom(trace, flow(dieWith as (a: A) => unknown, die)))
+  return filterOrElse_(fa, predicate, traceFrom(trace, flow(haltWith as (a: A) => unknown, halt)))
 }
 
 /**
- * Dies with specified `unknown` if the predicate fails.
+ * Halts with specified `unknown` if the predicate fails.
  *
- * @dataFirst filterOrDie_
+ * @dataFirst filterOrHalt_
  * @trace call
  */
-export function filterOrDie<A, B extends A>(
+export function filterOrHalt<A, B extends A>(
   refinement: Refinement<A, B>,
-  dieWith: (a: Exclude<A, B>) => unknown
+  haltWith: (a: Exclude<A, B>) => unknown
 ): <R, E>(fa: IO<R, E, A>) => IO<R, E, A>
-export function filterOrDie<A>(
+export function filterOrHalt<A>(
   predicate: Predicate<A>,
-  dieWith: (a: A) => unknown
+  haltWith: (a: A) => unknown
 ): <R, E>(fa: IO<R, E, A>) => IO<R, E, A>
-export function filterOrDie<A>(predicate: Predicate<A>, dieWith: unknown): <R, E>(fa: IO<R, E, A>) => IO<R, E, A> {
+export function filterOrHalt<A>(predicate: Predicate<A>, haltWith: unknown): <R, E>(fa: IO<R, E, A>) => IO<R, E, A> {
   const trace = accessCallTrace()
-  return (fa) => traceCall(filterOrDie_, trace)(fa, predicate, dieWith as (a: A) => unknown)
+  return (fa) => traceCall(filterOrHalt_, trace)(fa, predicate, haltWith as (a: A) => unknown)
 }
 
 /**
- * Dies with an `Error` having the specified message
+ * Halts with an `Error` having the specified message
  * if the predicate fails.
  *
  * @trace call
  */
-export function filterOrDieMessage_<R, E, A, B extends A>(
+export function filterOrHaltMessage_<R, E, A, B extends A>(
   fa: IO<R, E, A>,
   refinement: Refinement<A, B>,
   message: (a: Exclude<A, B>) => string
 ): IO<R, E, A>
-export function filterOrDieMessage_<R, E, A>(
+export function filterOrHaltMessage_<R, E, A>(
   fa: IO<R, E, A>,
   predicate: Predicate<A>,
   message: (a: A) => string
 ): IO<R, E, A>
-export function filterOrDieMessage_<R, E, A>(fa: IO<R, E, A>, predicate: Predicate<A>, message: unknown) {
+export function filterOrHaltMessage_<R, E, A>(fa: IO<R, E, A>, predicate: Predicate<A>, message: unknown) {
   const trace = accessCallTrace()
-  return traceCall(filterOrDie_, trace)(fa, predicate, (a) => new Error((message as (a: A) => string)(a)))
+  return traceCall(filterOrHalt_, trace)(fa, predicate, (a) => new Error((message as (a: A) => string)(a)))
 }
 
 /**
- * Dies with an `Error` having the specified message
+ * Halts with an `Error` having the specified message
  * if the predicate fails.
  *
- * @dataFirst filterOrDieMessage_
+ * @dataFirst filterOrHaltMessage_
  * @trace call
  */
-export function filterOrDieMessage<A, B extends A>(
+export function filterOrHaltMessage<A, B extends A>(
   refinement: Refinement<A, B>,
   message: (a: Exclude<A, B>) => string
 ): <R, E>(fa: IO<R, E, A>) => IO<R, E, A>
-export function filterOrDieMessage<A>(
+export function filterOrHaltMessage<A>(
   predicate: Predicate<A>,
   message: (a: A) => string
 ): <R, E>(fa: IO<R, E, A>) => IO<R, E, A>
-export function filterOrDieMessage<A>(
+export function filterOrHaltMessage<A>(
   predicate: Predicate<A>,
   message: unknown
 ): <R, E>(fa: IO<R, E, A>) => IO<R, E, A> {
   const trace = accessCallTrace()
-  return (fa) => traceCall(filterOrDieMessage_, trace)(fa, predicate, message as (a: A) => string)
+  return (fa) => traceCall(filterOrHaltMessage_, trace)(fa, predicate, message as (a: A) => string)
 }
 
 /**
@@ -2568,7 +2451,7 @@ export function forever<R, E, A>(ma: IO<R, E, A>): IO<R, E, never> {
  */
 export function fork<R, E, A>(ma: IO<R, E, A>): URIO<R, FiberContext<E, A>> {
   const trace = accessCallTrace()
-  return new Fork(ma, O.none(), O.none(), trace)
+  return new Primitives.Fork(ma, O.none(), O.none(), trace)
 }
 
 /**
@@ -2597,7 +2480,7 @@ export function fork<R, E, A>(ma: IO<R, E, A>): URIO<R, FiberContext<E, A>> {
  */
 export function forkReport(reportFailure: FailureReporter): <R, E, A>(ma: IO<R, E, A>) => URIO<R, FiberContext<E, A>> {
   const trace = accessCallTrace()
-  return (ma) => new Fork(ma, O.none(), O.some(reportFailure), trace)
+  return (ma) => new Primitives.Fork(ma, O.none(), O.some(reportFailure), trace)
 }
 
 /**
@@ -2609,7 +2492,7 @@ export function get<R, E, A>(ma: IO<R, E, O.Option<A>>): IO<R, O.Option<E>, A> {
   const trace = accessCallTrace()
   return matchCauseIO_(
     ma,
-    traceFrom(trace, flow(C.map(O.some), halt)),
+    traceFrom(trace, flow(C.map(O.some), failCause)),
     traceFrom(
       trace,
       O.match(() => fail(O.none()), pure)
@@ -3120,7 +3003,7 @@ export function mapTryCatch_<R, E, A, E1, B>(
 ): IO<R, E | E1, B> {
   return chain_(
     io,
-    traceAs(f, (a) => tryCatch_(() => f(a), onThrow))
+    traceAs(f, (a) => tryCatch(() => f(a), onThrow))
   )
 }
 
@@ -3143,7 +3026,7 @@ export function mapTryCatch<A, B, E1>(f: (a: A) => B, onThrow: (u: unknown) => E
  * @trace 1
  */
 export function mapErrorCause_<R, E, A, E1>(ma: IO<R, E, A>, f: (cause: Cause<E>) => Cause<E1>): IO<R, E1, A> {
-  return matchCauseIO_(ma, traceAs(f, flow(f, halt)), pure)
+  return matchCauseIO_(ma, traceAs(f, flow(f, failCause)), pure)
 }
 
 /**
@@ -3280,32 +3163,32 @@ export function or<R1, E1>(mb: IO<R1, E1, boolean>): <R, E>(ma: IO<R, E, boolean
 /**
  * @trace call
  */
-export function orDie<R, E, A>(ma: IO<R, E, A>): IO<R, never, A> {
+export function orHalt<R, E, A>(ma: IO<R, E, A>): IO<R, never, A> {
   const trace = accessCallTrace()
-  return orDieWith_(ma, traceFrom(trace, flow(identity)))
+  return orHaltWith_(ma, traceFrom(trace, flow(identity)))
 }
 
 /**
  * @trace call
  */
-export function orDieKeep<R, E, A>(ma: IO<R, E, A>): IO<R, unknown, A> {
+export function orHaltKeep<R, E, A>(ma: IO<R, E, A>): IO<R, unknown, A> {
   const trace = accessCallTrace()
-  return matchCauseIO_(ma, traceFrom(trace, flow(C.chain(C.die), halt)), succeed)
+  return matchCauseIO_(ma, traceFrom(trace, flow(C.chain(C.halt), failCause)), succeed)
 }
 
 /**
  * @trace 1
  */
-export function orDieWith_<R, E, A>(ma: IO<R, E, A>, f: (e: E) => unknown): IO<R, never, A> {
-  return matchIO_(ma, traceAs(f, flow(f, die)), succeed)
+export function orHaltWith_<R, E, A>(ma: IO<R, E, A>, f: (e: E) => unknown): IO<R, never, A> {
+  return matchIO_(ma, traceAs(f, flow(f, halt)), succeed)
 }
 
 /**
- * @dataFirst orDieWith_
+ * @dataFirst orHaltWith_
  * @trace 0
  */
-export function orDieWith<E>(f: (e: E) => unknown): <R, A>(ma: IO<R, E, A>) => IO<R, never, A> {
-  return (ma) => orDieWith_(ma, f)
+export function orHaltWith<E>(f: (e: E) => unknown): <R, A>(ma: IO<R, E, A>) => IO<R, never, A> {
+  return (ma) => orHaltWith_(ma, f)
 }
 
 /**
@@ -3420,7 +3303,7 @@ export function parallelErrors<R, E, A>(io: IO<R, E, A>): IO<R, ReadonlyArray<E>
     (cause) => {
       const f = C.failures(cause)
       if (f.length === 0) {
-        return traceCall(halt, trace)(cause as Cause<never>)
+        return traceCall(failCause, trace)(cause as Cause<never>)
       } else {
         return traceCall(fail, trace)(f)
       }
@@ -3466,9 +3349,9 @@ export function partition<R, E, A, B>(
  */
 export function result<R, E, A>(ma: IO<R, E, A>): IO<R, never, Exit<E, A>> {
   const trace = accessCallTrace()
-  return new Match(
+  return new Primitives.Match(
     ma,
-    traceFrom(trace, (cause) => succeed(Ex.halt(cause))),
+    traceFrom(trace, (cause) => succeed(Ex.failCause(cause))),
     traceFrom(trace, (a) => succeed(Ex.succeed(a)))
   )
 }
@@ -3481,7 +3364,7 @@ export function result<R, E, A>(ma: IO<R, E, A>): IO<R, never, Exit<E, A>> {
  * included.
  */
 export function refailWithTrace<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
-  return matchCauseIO_(ma, (cause) => haltWithTrace((trace) => C.traced(cause, trace())), succeed)
+  return matchCauseIO_(ma, (cause) => failCauseWithTrace((trace) => C.traced(cause, trace())), succeed)
 }
 
 /**
@@ -3489,18 +3372,18 @@ export function refailWithTrace<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
  *
  * @trace 1
  */
-export function refineOrDie_<R, E, A, E1>(fa: IO<R, E, A>, pf: (e: E) => Option<E1>): IO<R, E1, A> {
-  return refineOrDieWith_(fa, pf, identity)
+export function refineOrHalt_<R, E, A, E1>(fa: IO<R, E, A>, pf: (e: E) => Option<E1>): IO<R, E1, A> {
+  return refineOrHaltWith_(fa, pf, identity)
 }
 
 /**
  * Keeps some of the errors, and terminates the fiber with the rest
  *
- * @dataFirst refineOrDie_
+ * @dataFirst refineOrHalt_
  * @trace 0
  */
-export function refineOrDie<E, E1>(pf: (e: E) => Option<E1>): <R, A>(fa: IO<R, E, A>) => IO<R, E1, A> {
-  return (fa) => refineOrDie_(fa, pf)
+export function refineOrHalt<E, E1>(pf: (e: E) => Option<E1>): <R, A>(fa: IO<R, E, A>) => IO<R, E1, A> {
+  return (fa) => refineOrHalt_(fa, pf)
 }
 
 /**
@@ -3509,7 +3392,7 @@ export function refineOrDie<E, E1>(pf: (e: E) => Option<E1>): <R, A>(fa: IO<R, E
  *
  * @trace call
  */
-export function refineOrDieWith_<R, E, A, E1>(
+export function refineOrHaltWith_<R, E, A, E1>(
   fa: IO<R, E, A>,
   pf: (e: E) => Option<E1>,
   f: (e: E) => unknown
@@ -3517,7 +3400,7 @@ export function refineOrDieWith_<R, E, A, E1>(
   const trace = accessCallTrace()
   return catchAll_(
     fa,
-    traceFrom(trace, (e) => O.match_(pf(e), () => die(f(e)), fail))
+    traceFrom(trace, (e) => O.match_(pf(e), () => halt(f(e)), fail))
   )
 }
 
@@ -3525,15 +3408,15 @@ export function refineOrDieWith_<R, E, A, E1>(
  * Keeps some of the errors, and terminates the fiber with the rest, using
  * the specified function to convert the `E` into an `Error`.
  *
- * @dataFirst refineOrDieWith_
+ * @dataFirst refineOrHaltWith_
  * @trace call
  */
-export function refineOrDieWith<E, E1>(
+export function refineOrHaltWith<E, E1>(
   pf: (e: E) => Option<E1>,
   f: (e: E) => unknown
 ): <R, A>(fa: IO<R, E, A>) => IO<R, E1, A> {
   const trace = accessCallTrace()
-  return (fa) => traceCall(refineOrDieWith_, trace)(fa, pf, f)
+  return (fa) => traceCall(refineOrHaltWith_, trace)(fa, pf, f)
 }
 
 /**
@@ -3763,7 +3646,7 @@ function _require<E>(error: () => E): <R, A>(ma: IO<R, E, O.Option<A>>) => IO<R,
 export { _require as require }
 
 /**
- * Recover from the unchecked failure of the `IO`. (opposite of `orDie`)
+ * Recover from the unchecked failure of the `IO`. (opposite of `orHalt`)
  *
  * @trace call
  */
@@ -3879,7 +3762,7 @@ export function tapCause_<R2, A2, R, E, E2>(
 ): IO<R2 & R, E | E2, A2> {
   return matchCauseIO_(
     ma,
-    traceAs(f, (c) => chain_(f(c), () => halt(c))),
+    traceAs(f, (c) => chain_(f(c), () => failCause(c))),
     succeed
   )
 }
@@ -4040,9 +3923,9 @@ export function tryOrElse_<R, E, A, R1, E1, A1, R2, E2, A2>(
   that: () => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): IO<R & R1 & R2, E1 | E2, A1 | A2> {
-  return new Match(
+  return matchCauseIO_(
     ma,
-    traceAs(that, (cause) => O.match_(C.keepDefects(cause), that, halt)),
+    traceAs(that, (cause) => O.match_(C.keepDefects(cause), that, failCause)),
     onSuccess
   )
 }
@@ -4072,7 +3955,7 @@ export function uncause<R, E>(ma: IO<R, never, C.Cause<E>>): IO<R, E, void> {
   const trace = accessCallTrace()
   return chain_(
     ma,
-    traceFrom(trace, (a) => (C.isEmpty(a) ? unit() : halt(a)))
+    traceFrom(trace, (a) => (C.isEmpty(a) ? unit() : failCause(a)))
   )
 }
 
@@ -4123,8 +4006,8 @@ export function unrefineWith_<R, E, A, E1, E2>(
       (cause): IO<R, E1 | E2, A> =>
         pipe(
           cause,
-          C.find((c) => (C.died(c) ? pf(c.value) : O.none())),
-          O.match(() => pipe(cause, C.map(f), halt), fail)
+          C.find((c) => (C.halted(c) ? pf(c.value) : O.none())),
+          O.match(() => pipe(cause, C.map(f), failCause), fail)
         )
     )
   )

@@ -334,9 +334,9 @@ declare module '@principia/base/experimental/Stream/core' {
      */
     groupByKey<K>(f: (a: A) => K, buffer?: number): GroupBy<R, E, K, A>
     /**
-     * @rewrite haltWhen_ from "@principia/base/experimental/Stream"
+     * @rewrite endWhen_ from "@principia/base/experimental/Stream"
      */
-    haltWhen<R1, E1>(io: I.IO<R1, E1, any>): Stream<R & R1, E | E1, A>
+    endWhen<R1, E1>(io: I.IO<R1, E1, any>): Stream<R & R1, E | E1, A>
     /**
      * @rewrite interleave_ from "@principia/base/experimental/Stream"
      */

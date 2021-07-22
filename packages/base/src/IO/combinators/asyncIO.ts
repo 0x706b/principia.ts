@@ -30,7 +30,7 @@ export function asyncIO<R, E, R1, E1, A>(
             register((k) => {
               r.run_(fulfill(p)(k))
             }),
-            I.catchAllCause((c) => P.halt_(p, c)),
+            I.catchAllCause((c) => P.failCause_(p, c)),
             restore,
             I.fork,
             I.crossSecond(restore(P.await(p)))

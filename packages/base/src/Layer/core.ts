@@ -807,18 +807,18 @@ export function catchAll_<R, E, A, R1, E1, B>(
   la: Layer<R, E, A>,
   handler: Layer<readonly [R1, E], E1, B>
 ): Layer<R & R1, E1, A | B> {
-  const failureOrDie: Layer<readonly [R1, Cause<E>], never, readonly [R1, E]> = fromRawFunctionIO(
+  const failureOrHalt: Layer<readonly [R1, Cause<E>], never, readonly [R1, E]> = fromRawFunctionIO(
     ([r, cause]: readonly [R1, Cause<E>]) =>
       pipe(
         cause,
         Ca.failureOrCause,
         E.match(
           (e) => I.succeed(tuple(r, e)),
-          (c) => I.halt(c)
+          (c) => I.failCause(c)
         )
       )
   )
-  return matchLayer_(la, failureOrDie['>>>'](handler), identity())
+  return matchLayer_(la, failureOrHalt['>>>'](handler), identity())
 }
 
 /**
@@ -883,7 +883,7 @@ export function matchLayer<E, A, R1, E1, B, E2, C>(
 export function andThen_<R, E, A, E1, A1>(from: Layer<R, E, A>, to: Layer<A, E1, A1>): Layer<R, E | E1, A1> {
   return matchLayer_(
     from,
-    fromRawFunctionIO((_: readonly [unknown, Cause<E>]) => I.halt(_[1])),
+    fromRawFunctionIO((_: readonly [unknown, Cause<E>]) => I.failCause(_[1])),
     to
   )
 }
@@ -931,8 +931,8 @@ export function memoize<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never,
  * Translates effect failure into death of the fiber, making all failures
  * unchecked and not a part of the type of the layer.
  */
-export function orDie<R, E extends Error, A>(la: Layer<R, E, A>): Layer<R, never, A> {
-  return catchAll_(la, second<E>()['>=>'](fromRawFunctionIO((e: E) => I.die(e))))
+export function orHalt<R, E extends Error, A>(la: Layer<R, E, A>): Layer<R, never, A> {
+  return catchAll_(la, second<E>()['>=>'](fromRawFunctionIO((e: E) => I.halt(e))))
 }
 
 /**
@@ -965,7 +965,7 @@ export function to<R, E, A>(from: Layer<R, E, A>) {
   return <E2, A2>(to: Layer<A, E2, A2>): Layer<R, E | E2, A2> =>
     matchLayer_(
       from,
-      fromRawFunctionIO((_: readonly [R, Cause<E>]) => I.halt(_[1])),
+      fromRawFunctionIO((_: readonly [R, Cause<E>]) => I.failCause(_[1])),
       to
     )
 }
@@ -978,7 +978,7 @@ export function to<R, E, A>(from: Layer<R, E, A>) {
 export function to_<E, A, R2, E2, A2>(from: Layer<R2, E2, A2>, to: Layer<A2, E, A>): Layer<R2, E | E2, A> {
   return matchLayer_(
     from,
-    fromRawFunctionIO((_: readonly [R2, Cause<E2>]) => I.halt(_[1])),
+    fromRawFunctionIO((_: readonly [R2, Cause<E2>]) => I.failCause(_[1])),
     to
   )
 }
@@ -1070,9 +1070,9 @@ export class MemoMap {
                           ex,
                           (cause): I.IO<unknown, E, readonly [Finalizer, A]> =>
                             pipe(
-                              P.halt_(promise, cause),
+                              P.failCause_(promise, cause),
                               I.chain(() => M.releaseAll_(innerReleaseMap, ex, sequential) as I.FIO<E, any>),
-                              I.chain(() => I.halt(cause))
+                              I.chain(() => I.failCause(cause))
                             ),
                           ([, a]) =>
                             I.gen(function* (_) {

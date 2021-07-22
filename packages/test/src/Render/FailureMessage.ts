@@ -177,7 +177,7 @@ export function renderCause(cause: Cause<any>, offset: number): Message {
       A.map((s) => withOffset(offset + tabSize)(Line.fromString(s))),
       (lines) => new Message(L.from(lines))
     )
-  return O.match_(C.dieOption(cause), printCause, (_) => {
+  return O.match_(C.haltOption(cause), printCause, (_) => {
     if (_ instanceof TestTimeoutException) {
       return new Fragment(_.message).toLine().toMessage()
     } else {

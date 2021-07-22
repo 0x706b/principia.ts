@@ -23,7 +23,7 @@ export class Take<E, A> {
  * Transforms `Take[E, A]` to `Effect[R, E, B]`.
  */
 export function done<E, A>(self: Take<E, A>): T.FIO<O.Option<E>, A.Chunk<A>> {
-  return T.done(self.exit)
+  return T.fromExit(self.exit)
 }
 
 /**
@@ -59,7 +59,11 @@ export function foldIO_<R, R1, R2, E, E1, E2, E3, A, Z>(
   error: (cause: C.Cause<E>) => T.IO<R1, E2, Z>,
   value: (chunk: A.Chunk<A>) => T.IO<R2, E3, Z>
 ): T.IO<R & R1 & R2, E1 | E2 | E3, Z> {
-  return Ex.matchIO_(self.exit, (_): T.IO<R & R1, E1 | E2, Z> => O.match_(C.flipCauseOption(_), () => end, error), value)
+  return Ex.matchIO_(
+    self.exit,
+    (_): T.IO<R & R1, E1 | E2, Z> => O.match_(C.flipCauseOption(_), () => end, error),
+    value
+  )
 }
 
 /**
@@ -163,7 +167,7 @@ export function fail<E>(e: E): Take<E, never> {
  * Error from stream when pulling is converted to `Take.halt`. Creates a singleton chunk.
  */
 export function fromIO<R, E, A>(effect: T.IO<R, E, A>): T.URIO<R, Take<E, A>> {
-  return T.matchCause_(effect, (cause) => halt(cause), single)
+  return T.matchCause_(effect, (cause) => failCause(cause), single)
 }
 
 /**
@@ -171,28 +175,28 @@ export function fromIO<R, E, A>(effect: T.IO<R, E, A>): T.URIO<R, Take<E, A>> {
  * Error from stream when pulling is converted to `Take.halt`, end of stream to `Take.end`.
  */
 export function fromPull<R, E, A>(pull: Pull<R, E, A>): T.URIO<R, Take<E, A>> {
-  return T.matchCause_(pull, (_) => O.match_(C.flipCauseOption(_), () => end, halt), chunk)
+  return T.matchCause_(pull, (_) => O.match_(C.flipCauseOption(_), () => end, failCause), chunk)
 }
 
 /**
  * Creates a failing `Take<E, never>` with the specified cause.
  */
-export function halt<E>(c: C.Cause<E>): Take<E, never> {
-  return new Take(Ex.halt(C.map_(c, O.some)))
+export function failCause<E>(c: C.Cause<E>): Take<E, never> {
+  return new Take(Ex.failCause(C.map_(c, O.some)))
 }
 
 /**
  * Creates a failing `Take<never, never>` with the specified throwable.
  */
-export function die<E>(e: E): Take<never, never> {
-  return new Take(Ex.die(e))
+export function halt<E>(e: E): Take<never, never> {
+  return new Take(Ex.halt(e))
 }
 
 /**
  * Creates a failing `Take<never, never>` with the specified error message.
  */
-export function dieMessage(msg: string): Take<never, never> {
-  return new Take(Ex.die(new RuntimeException(msg)))
+export function haltMessage(msg: string): Take<never, never> {
+  return new Take(Ex.halt(new RuntimeException(msg)))
 }
 
 /**

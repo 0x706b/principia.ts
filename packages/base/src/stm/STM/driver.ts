@@ -116,10 +116,10 @@ export class STMDriver<R, E, A> {
               if (!curr) {
                 exit = TEx.retry()
               }
-            } else if (STM.isDieException(e)) {
+            } else if (STM.isHaltException(e)) {
               curr = this.unwindStack(e.e, false)
               if (!curr) {
-                exit = TEx.die(e.e)
+                exit = TEx.halt(e.e)
               }
             } else {
               throw e

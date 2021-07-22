@@ -26,7 +26,7 @@ import { makeStack } from '../util/support/Stack'
 export const CauseTypeId = Symbol()
 export type CauseTypeId = typeof CauseTypeId
 
-export type Cause<E> = Empty | Die | Interrupt | Fail<E> | Then<E> | Both<E> | Traced<E>
+export type Cause<E> = Empty | Halt | Interrupt | Fail<E> | Then<E> | Both<E> | Traced<E>
 
 export function isCause(u: unknown): u is Cause<unknown> {
   return isObject(u) && CauseTypeId in u
@@ -35,7 +35,7 @@ export function isCause(u: unknown): u is Cause<unknown> {
 export const CauseTag = {
   Empty: 'Empty',
   Fail: 'Fail',
-  Die: 'Die',
+  Halt: 'Halt',
   Interrupt: 'Interrupt',
   Then: 'Then',
   Both: 'Both',
@@ -105,11 +105,11 @@ export class Fail<E> {
   }
 }
 
-export class Die {
+export class Halt {
   readonly _E!: () => never;
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
-  readonly _tag = CauseTag.Die
+  readonly _tag = CauseTag.Halt
 
   constructor(readonly value: unknown) {}
 
@@ -124,7 +124,7 @@ export class Die {
     const self = this
     return Ev.gen(function* (_) {
       switch (that._tag) {
-        case CauseTag.Die:
+        case CauseTag.Halt:
           return St.equals(self.value, that.value)
         case CauseTag.Then:
         case CauseTag.Both:
@@ -285,8 +285,8 @@ export function traced<E>(cause: Cause<E>, trace: Trace): Cause<E> {
 
 /**
  */
-export function die(value: unknown): Cause<never> {
-  return new Die(value)
+export function halt(value: unknown): Cause<never> {
+  return new Halt(value)
 }
 
 /**
@@ -337,10 +337,10 @@ export function contains<E, E1 extends E = E>(that: Cause<E1>): (cause: Cause<E>
 /**
  * Returns if a cause contains a defect
  */
-export function died<E>(cause: Cause<E>): cause is Die {
+export function halted<E>(cause: Cause<E>): cause is Halt {
   return pipe(
     cause,
-    dieOption,
+    haltOption,
     O.map(() => true),
     O.getOrElse(() => false)
   )
@@ -385,7 +385,7 @@ export function isEmpty<E>(cause: Cause<E>): boolean {
   let current: Cause<E> | undefined       = cause
   while (current) {
     switch (current._tag) {
-      case CauseTag.Die: {
+      case CauseTag.Halt: {
         return false
       }
       case CauseTag.Fail: {
@@ -440,11 +440,11 @@ export function interrupted<E>(cause: Cause<E>): boolean {
  */
 
 /**
- * Returns the `Error` associated with the first `Die` in this `Cause` if
+ * Returns the `Error` associated with the first `Halt` in this `Cause` if
  * one exists.
  */
-export function dieOption<E>(cause: Cause<E>): O.Option<unknown> {
-  return find_(cause, (c) => (c._tag === CauseTag.Die ? O.some(c.value) : O.none()))
+export function haltOption<E>(cause: Cause<E>): O.Option<unknown> {
+  return find_(cause, (c) => (c._tag === CauseTag.Halt ? O.some(c.value) : O.none()))
 }
 
 /**
@@ -572,11 +572,11 @@ export function interruptOption<E>(cause: Cause<E>): O.Option<FiberId> {
 /**
  * @internal
  */
-function matchEval<E, A>(
+function foldEval<E, A>(
   cause: Cause<E>,
   onEmpty: () => A,
   onFail: (reason: E) => A,
-  onDie: (reason: unknown) => A,
+  onHalt: (reason: unknown) => A,
   onInterrupt: (id: FiberId) => A,
   onThen: (l: A, r: A) => A,
   onBoth: (l: A, r: A) => A,
@@ -587,25 +587,25 @@ function matchEval<E, A>(
       return Ev.now(onEmpty())
     case CauseTag.Fail:
       return Ev.now(onFail(cause.value))
-    case CauseTag.Die:
-      return Ev.now(onDie(cause.value))
+    case CauseTag.Halt:
+      return Ev.now(onHalt(cause.value))
     case CauseTag.Interrupt:
       return Ev.now(onInterrupt(cause.fiberId))
     case CauseTag.Both:
       return Ev.crossWith_(
-        Ev.defer(() => matchEval(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
-        Ev.defer(() => matchEval(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
+        Ev.defer(() => foldEval(cause.left, onEmpty, onFail, onHalt, onInterrupt, onThen, onBoth, onTraced)),
+        Ev.defer(() => foldEval(cause.right, onEmpty, onFail, onHalt, onInterrupt, onThen, onBoth, onTraced)),
         onBoth
       )
     case CauseTag.Then:
       return Ev.crossWith_(
-        Ev.defer(() => matchEval(cause.left, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
-        Ev.defer(() => matchEval(cause.right, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
+        Ev.defer(() => foldEval(cause.left, onEmpty, onFail, onHalt, onInterrupt, onThen, onBoth, onTraced)),
+        Ev.defer(() => foldEval(cause.right, onEmpty, onFail, onHalt, onInterrupt, onThen, onBoth, onTraced)),
         onThen
       )
     case CauseTag.Traced:
       return Ev.map_(
-        Ev.defer(() => matchEval(cause.cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced)),
+        Ev.defer(() => foldEval(cause.cause, onEmpty, onFail, onHalt, onInterrupt, onThen, onBoth, onTraced)),
         (a) => onTraced(a, cause.trace)
       )
   }
@@ -617,17 +617,17 @@ function matchEval<E, A>(
  * @category Destructors
  * @since 1.0.0
  */
-export function match_<E, A>(
+export function fold_<E, A>(
   cause: Cause<E>,
   onEmpty: () => A,
   onFail: (e: E) => A,
-  onDie: (u: unknown) => A,
+  onHalt: (u: unknown) => A,
   onInterrupt: (id: FiberId) => A,
   onThen: (l: A, r: A) => A,
   onBoth: (l: A, r: A) => A,
   onTraced: (_: A, trace: Trace) => A
 ): A {
-  return matchEval(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced).value
+  return foldEval(cause, onEmpty, onFail, onHalt, onInterrupt, onThen, onBoth, onTraced).value
 }
 
 /**
@@ -636,16 +636,16 @@ export function match_<E, A>(
  * @category Destructors
  * @since 1.0.0
  */
-export function match<E, A>(
+export function fold<E, A>(
   onEmpty: () => A,
   onFail: (reason: E) => A,
-  onDie: (reason: unknown) => A,
+  onHalt: (reason: unknown) => A,
   onInterrupt: (id: FiberId) => A,
   onThen: (l: A, r: A) => A,
   onBoth: (l: A, r: A) => A,
   onTraced: (_: A, trace: Trace) => A
 ): (cause: Cause<E>) => A {
-  return (cause) => matchEval(cause, onEmpty, onFail, onDie, onInterrupt, onThen, onBoth, onTraced).value
+  return (cause) => foldEval(cause, onEmpty, onFail, onHalt, onInterrupt, onThen, onBoth, onTraced).value
 }
 
 /*
@@ -792,7 +792,7 @@ function bindEval<E, D>(ma: Cause<E>, f: (e: E) => Cause<D>): Ev.Eval<Cause<D>> 
       return Ev.now(empty)
     case CauseTag.Fail:
       return Ev.now(f(ma.value))
-    case CauseTag.Die:
+    case CauseTag.Halt:
       return Ev.now(ma)
     case CauseTag.Interrupt:
       return Ev.now(ma)
@@ -874,7 +874,7 @@ export function as<E1>(e: E1): <E>(fa: Cause<E>) => Cause<E1> {
  */
 export function defects<E>(cause: Cause<E>): ReadonlyArray<unknown> {
   return foldl_(cause, [] as ReadonlyArray<unknown>, (a, c) =>
-    c._tag === CauseTag.Die ? O.some([...a, c.value]) : O.none()
+    c._tag === CauseTag.Halt ? O.some([...a, c.value]) : O.none()
   )
 }
 
@@ -894,13 +894,13 @@ export function interruptors<E>(cause: Cause<E>): ReadonlySet<FiberId> {
 }
 
 /**
- * Determines if the `Cause` contains only interruptions and not any `Die` or
+ * Determines if the `Cause` contains only interruptions and not any `Halt` or
  * `Fail` causes.
  */
 export function interruptedOnly<E>(cause: Cause<E>): boolean {
   return pipe(
     cause,
-    find((c) => (died(c) || failed(c) ? O.some(false) : O.none())),
+    find((c) => (halted(c) || failed(c) ? O.some(false) : O.none())),
     O.getOrElse(() => true)
   )
 }
@@ -919,7 +919,7 @@ function keepDefectsEval<E>(cause: Cause<E>): Ev.Eval<O.Option<Cause<never>>> {
     case CauseTag.Interrupt: {
       return Ev.now(O.none())
     }
-    case CauseTag.Die: {
+    case CauseTag.Halt: {
       return Ev.now(O.some(cause))
     }
     case CauseTag.Then: {
@@ -967,7 +967,7 @@ function keepDefectsEval<E>(cause: Cause<E>): Ev.Eval<O.Option<Cause<never>>> {
 
 /**
  * Remove all `Fail` and `Interrupt` nodes from this `Cause`,
- * return only `Die` cause/finalizer defects.
+ * return only `Halt` cause/finalizer defects.
  */
 export function keepDefects<E>(cause: Cause<E>): O.Option<Cause<never>> {
   return keepDefectsEval(cause).value
@@ -987,7 +987,7 @@ function stripFailuresEval<E>(cause: Cause<E>): Ev.Eval<Cause<never>> {
     case CauseTag.Interrupt: {
       return Ev.now(cause)
     }
-    case CauseTag.Die: {
+    case CauseTag.Halt: {
       return Ev.now(cause)
     }
     case CauseTag.Both: {
@@ -1034,7 +1034,7 @@ export function stripInterruptsEval<E>(cause: Cause<E>): Ev.Eval<Cause<E>> {
     case CauseTag.Interrupt: {
       return Ev.now(empty)
     }
-    case CauseTag.Die: {
+    case CauseTag.Halt: {
       return Ev.now(cause)
     }
     case CauseTag.Both: {
@@ -1078,8 +1078,8 @@ function stripSomeDefectsEval<E>(cause: Cause<E>, pf: Predicate<unknown>): Ev.Ev
     case CauseTag.Fail: {
       return Ev.now(O.some(fail(cause.value)))
     }
-    case CauseTag.Die: {
-      return Ev.now(pf(cause.value) ? O.some(die(cause.value)) : O.none())
+    case CauseTag.Halt: {
+      return Ev.now(pf(cause.value) ? O.some(halt(cause.value)) : O.none())
     }
     case CauseTag.Both: {
       return Ev.crossWith_(
@@ -1139,7 +1139,7 @@ function sequenceCauseEitherEval<E, A>(cause: Cause<E.Either<E, A>>): Ev.Eval<E.
     case CauseTag.Fail: {
       return Ev.now(cause.value._tag === 'Left' ? E.left(fail(cause.value.left)) : E.right(cause.value.right))
     }
-    case CauseTag.Die: {
+    case CauseTag.Halt: {
       return Ev.now(E.left(cause))
     }
     case CauseTag.Then: {
@@ -1195,7 +1195,7 @@ function sequenceCauseOptionEval<E>(cause: Cause<O.Option<E>>): Ev.Eval<O.Option
     case CauseTag.Fail: {
       return Ev.now(O.map_(cause.value, fail))
     }
-    case CauseTag.Die: {
+    case CauseTag.Halt: {
       return Ev.now(O.some(cause))
     }
     case CauseTag.Then: {
@@ -1247,7 +1247,7 @@ export function sequenceCauseOption<E>(cause: Cause<O.Option<E>>): O.Option<Caus
 /**
  * Retrieve the first checked error on the `Left` if available,
  * if there are no checked errors return the rest of the `Cause`
- * that is known to contain only `Die` or `Interrupt` causes.
+ * that is known to contain only `Halt` or `Interrupt` causes.
  * */
 export function failureOrCause<E>(cause: Cause<E>): E.Either<E, Cause<never>> {
   return pipe(
@@ -1275,7 +1275,7 @@ export function failureTraceOption<E>(cause: Cause<E>): O.Option<readonly [E, O.
 /**
  * Retrieve the first checked error and its trace on the `Left` if available,
  * if there are no checked errors return the rest of the `Cause`
- * that is known to contain only `Die` or `Interrupt` causes.
+ * that is known to contain only `Halt` or `Interrupt` causes.
  */
 export function failureTraceOrCause<E>(cause: Cause<E>): E.Either<readonly [E, O.Option<Trace>], Cause<never>> {
   return O.match_(failureTraceOption(cause), () => E.right(cause as Cause<never>), E.left)
@@ -1296,10 +1296,11 @@ export function squash<E>(f: (e: E) => unknown): (cause: Cause<E>) => unknown {
           ? O.some<unknown>(
               new InterruptedException(
                 'Interrupted by fibers: ' +
-                  Array.from(interruptors(cause))
-                    .map((_) => _.seqNumber.toString())
-                    .map((_) => '#' + _)
-                    .join(', ')
+                  pipe(
+                    A.from(interruptors(cause)),
+                    A.map((id) => `#${id.seqNumber.toString()}`),
+                    A.join(', ')
+                  )
               )
             )
           : O.none()
@@ -1439,7 +1440,7 @@ const renderInterrupt = (fiberId: FiberId, trace: O.Option<Trace>, traceRenderer
 
 const renderError = (error: Error): string[] => lines(error.stack ? error.stack : String(error))
 
-const renderDie = (error: string[], trace: O.Option<Trace>, traceRenderer: TraceRenderer): Sequential =>
+const renderHalt = (error: string[], trace: O.Option<Trace>, traceRenderer: TraceRenderer): Sequential =>
   Sequential([Failure(['An unchecked error was produced.', '', ...error, ...renderTrace(trace, traceRenderer)])])
 
 const renderFailure = (error: string[], trace: O.Option<Trace>, traceRenderer: TraceRenderer): Sequential =>
@@ -1463,10 +1464,10 @@ const causeToSequential = <E>(cause: Cause<E>, renderer: Renderer<E>): Ev.Eval<S
           ? renderFailure(renderer.renderError(cause.value), O.none(), renderer.renderTrace)
           : renderFailure(renderer.renderFailure(cause.value), O.none(), renderer.renderTrace)
       }
-      case CauseTag.Die: {
+      case CauseTag.Halt: {
         return cause.value instanceof Error
-          ? renderDie(renderer.renderError(cause.value), O.none(), renderer.renderTrace)
-          : renderDie(renderer.renderUnknown(cause.value), O.none(), renderer.renderTrace)
+          ? renderHalt(renderer.renderError(cause.value), O.none(), renderer.renderTrace)
+          : renderHalt(renderer.renderUnknown(cause.value), O.none(), renderer.renderTrace)
       }
       case CauseTag.Interrupt: {
         return renderInterrupt(cause.fiberId, O.none(), renderer.renderTrace)
@@ -1482,8 +1483,8 @@ const causeToSequential = <E>(cause: Cause<E>, renderer: Renderer<E>): Ev.Eval<S
           case CauseTag.Fail: {
             return renderFailure(renderer.renderFailure(cause.cause.value), O.some(cause.trace), renderer.renderTrace)
           }
-          case CauseTag.Die: {
-            return renderDie(renderer.renderUnknown(cause.cause.value), O.some(cause.trace), renderer.renderTrace)
+          case CauseTag.Halt: {
+            return renderHalt(renderer.renderUnknown(cause.cause.value), O.some(cause.trace), renderer.renderTrace)
           }
           case CauseTag.Interrupt: {
             return renderInterrupt(cause.cause.fiberId, O.some(cause.trace), renderer.renderTrace)
@@ -1671,7 +1672,7 @@ export function flipCauseEither<E, A>(cause: Cause<E.Either<E, A>>): E.Either<Ca
         case CauseTag.Interrupt:
           result = E.left(interrupt(c.fiberId))
           break pushing
-        case CauseTag.Die:
+        case CauseTag.Halt:
           result = E.left(c)
           break pushing
         case CauseTag.Fail:
@@ -1820,7 +1821,7 @@ export function flipCauseOption<E>(cause: Cause<O.Option<E>>): O.Option<Cause<E>
         case CauseTag.Interrupt:
           result = O.some(interrupt(c.fiberId))
           break pushing
-        case CauseTag.Die:
+        case CauseTag.Halt:
           result = O.some(c)
           break pushing
         case CauseTag.Fail:
@@ -2224,16 +2225,16 @@ function _equalFail<A>(E: P.Eq<A>): (l: Fail<A>, r: Cause<A>) => Ev.Eval<boolean
   }
 }
 
-function _equalDie<A>(E: P.Eq<A>): (l: Die, r: Cause<A>) => Ev.Eval<boolean> {
+function _equalHalt<A>(E: P.Eq<A>): (l: Halt, r: Cause<A>) => Ev.Eval<boolean> {
   return (l, r) => {
     switch (r._tag) {
-      case CauseTag.Die:
+      case CauseTag.Halt:
         return Ev.now(St.equals(l.value, r.value))
       case CauseTag.Then:
       case CauseTag.Both:
         return symmetric(equalEmpty)(E, l, r)
       case CauseTag.Traced:
-        return Ev.defer(() => _equalDie(E)(l, r.cause))
+        return Ev.defer(() => _equalHalt(E)(l, r.cause))
       default:
         return Ev.now(false)
     }
@@ -2297,8 +2298,8 @@ function equals_<A>(E: P.Eq<A>): (l: Cause<A>, r: Cause<A>) => Ev.Eval<boolean> 
         return _equalEmpty(E)(l, r)
       case CauseTag.Fail:
         return _equalFail(E)(l, r)
-      case CauseTag.Die:
-        return _equalDie(E)(l, r)
+      case CauseTag.Halt:
+        return _equalHalt(E)(l, r)
       case CauseTag.Interrupt:
         return _equalInterrupt(E)(l, r)
       case CauseTag.Traced:

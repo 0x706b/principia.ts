@@ -16,7 +16,7 @@ export function fail<E>(e: E): I.FIO<Option<E>, never> {
 }
 
 export function halt<E>(e: Cause<E>): I.IO<unknown, Option<E>, never> {
-  return pipe(I.halt(e), I.mapError(some))
+  return pipe(I.failCause(e), I.mapError(some))
 }
 
 export function empty<A>(): I.UIO<Chunk<A>> {

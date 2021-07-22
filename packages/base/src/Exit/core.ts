@@ -70,12 +70,12 @@ export function isExit(u: unknown): u is Exit<unknown, unknown> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function die(defect: unknown): Exit<never, never> {
-  return halt(C.die(defect))
+export function halt(defect: unknown): Exit<never, never> {
+  return failCause(C.halt(defect))
 }
 
 export function fail<E = never, A = never>(e: E): Exit<E, A> {
-  return halt(C.fail(e))
+  return failCause(C.fail(e))
 }
 
 export function fromEither<E, A>(e: E.Either<E, A>): Exit<E, A> {
@@ -90,12 +90,12 @@ export function fromOption<E>(onNone: () => E): <A>(fa: O.Option<A>) => Exit<E, 
   return (fa) => fromOption_(fa, onNone)
 }
 
-export function halt<E = never, A = never>(cause: C.Cause<E>): Exit<E, A> {
+export function failCause<E = never, A = never>(cause: C.Cause<E>): Exit<E, A> {
   return new Failure(cause)
 }
 
 export function interrupt(id: FiberId) {
-  return halt(C.interrupt(id))
+  return failCause(C.interrupt(id))
 }
 
 export function succeed<E = never, A = never>(value: A): Exit<E, A> {
@@ -254,7 +254,7 @@ export function crossWithCause_<E, A, G, B, C>(
           return fa
         }
         case ExitTag.Failure: {
-          return halt(g(fa.cause, fb.cause))
+          return failCause(g(fa.cause, fb.cause))
         }
       }
     }
@@ -303,7 +303,7 @@ export function bimap<E, A, G, B>(f: (e: E) => G, g: (a: A) => B): (pab: Exit<E,
 }
 
 export function mapError_<E, A, G>(pab: Exit<E, A>, f: (e: E) => G): Exit<G, A> {
-  return isFailure(pab) ? halt(C.map_(pab.cause, f)) : pab
+  return isFailure(pab) ? failCause(C.map_(pab.cause, f)) : pab
 }
 
 export function mapError<E, G>(f: (e: E) => G): <A>(pab: Exit<E, A>) => Exit<G, A> {
@@ -311,7 +311,7 @@ export function mapError<E, G>(f: (e: E) => G): <A>(pab: Exit<E, A>) => Exit<G, 
 }
 
 export function mapErrorCause_<E, A, G>(pab: Exit<E, A>, f: (e: C.Cause<E>) => C.Cause<G>): Exit<G, A> {
-  return isFailure(pab) ? halt(f(pab.cause)) : pab
+  return isFailure(pab) ? failCause(f(pab.cause)) : pab
 }
 
 export function mapErrorCause<E, G>(f: (e: C.Cause<E>) => C.Cause<G>): <A>(pab: Exit<E, A>) => Exit<G, A> {

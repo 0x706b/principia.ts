@@ -158,7 +158,7 @@ export function make<R, E, A extends Request<E, B>, B>(
   dataSource: DataSource<R, A>,
   ref: URef<O.Option<E.Either<E, B>>>
 ): Continue<R, E, B> {
-  return get(pipe(ref.get, I.chain(O.match(() => I.dieMessage('TODO: Query Failure'), I.fromEither))))
+  return get(pipe(ref.get, I.chain(O.match(() => I.haltMessage('TODO: Query Failure'), I.fromEither))))
 }
 
 export function mapQuery_<R, E, A, R1, E1, B>(

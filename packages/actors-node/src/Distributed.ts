@@ -55,7 +55,7 @@ export function runner<R, E, R2, E2, F1 extends Msg.AnyMessage>(
         M.bracket((ref) =>
           pipe(
             Ref.get(ref),
-            I.chain((hm) => I.foreachUnitPar_(hm, ([_, r]) => pipe(r.stop, I.orDie)))
+            I.chain((hm) => I.foreachUnitPar_(hm, ([_, r]) => pipe(r.stop, I.orHalt)))
           )
         )
       )
@@ -147,7 +147,7 @@ export function runner<R, E, R2, E2, F1 extends Msg.AnyMessage>(
                     if (stats.value.inFlight === 0 && now - stats.value.last >= passivateAfter) {
                       const rem = yield* _(running.value.stop)
                       if (rem.length > 0) {
-                        yield* _(I.die('Bug, we lost messages'))
+                        yield* _(I.halt('Bug, we lost messages'))
                       }
                       yield* _(Ref.update_(statsRef, HM.remove(path)))
                       yield* _(Ref.update_(runningMapRef, HM.remove(path)))
@@ -272,7 +272,7 @@ export const distributed = <R, S, F1 extends Msg.AnyMessage>(
 
           const name = yield* _(
             pipe(
-              AS.resolvePath(context.address)['|>'](I.orDie),
+              AS.resolvePath(context.address)['|>'](I.orHalt),
               I.map(([_, __, ___, actorName]) => actorName.substr(1))
             )
           )
@@ -398,7 +398,7 @@ export const distributed = <R, S, F1 extends Msg.AnyMessage>(
 
                         // this should never be the case
                         if (O.isNone(leader)) {
-                          yield* _(I.die('cannot elect a leader'))
+                          yield* _(I.halt('cannot elect a leader'))
                         } else {
                           // we got the leadership
                           if (leader.value === cluster.nodeId) {

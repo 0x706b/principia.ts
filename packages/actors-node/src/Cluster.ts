@@ -113,7 +113,7 @@ export const makeCluster = M.gen(function* (_) {
   const membersDir = `${clusterDir}/members`
 
   if (O.isNone(system.remoteConfig)) {
-    return yield* _(T.die(`actor system ${system.actorSystemName} doesn't support remoting`))
+    return yield* _(T.halt(`actor system ${system.actorSystemName} doesn't support remoting`))
   }
 
   yield* _(cli.mkdir(membersDir))
@@ -131,7 +131,7 @@ export const makeCluster = M.gen(function* (_) {
           })
         )
       })
-      ['|>'](M.bracket((p) => cli.remove(p)['|>'](T.orDie)))
+      ['|>'](M.bracket((p) => cli.remove(p)['|>'](T.orHalt)))
   )
 
   const nodeId = `member_${nodePath.substr(prefix.length)}` as MemberId
@@ -229,7 +229,7 @@ export const makeCluster = M.gen(function* (_) {
         ),
         {}
       ),
-      M.bracket((s) => s.stop['|>'](T.orDie))
+      M.bracket((s) => s.stop['|>'](T.orHalt))
     )
   )
 
@@ -326,7 +326,7 @@ export const makeCluster = M.gen(function* (_) {
           T.chain(
             O.match(
               () =>
-                T.die(
+                T.halt(
                   new ClusterException({
                     message: `cannot find metadata on path: ${membersDir}/${member}`
                   })
@@ -370,7 +370,7 @@ export const makeCluster = M.gen(function* (_) {
         while (1) {
           const leader = yield* _(leaderId(scope))
           if (O.isNone(leader)) {
-            return yield* _(T.die('cannot find a leader'))
+            return yield* _(T.halt('cannot find a leader'))
           }
           if (leader.value === nodeId) {
             yield* _(onLeader)
@@ -388,7 +388,7 @@ export const makeCluster = M.gen(function* (_) {
     pipe(
       leaderPath(scope),
       T.chain((o) =>
-        O.isNone(o) ? T.die('cannot find a leader') : cli.waitDelete(`${clusterDir}/elections/${scope}/${o.value}`)
+        O.isNone(o) ? T.halt('cannot find a leader') : cli.waitDelete(`${clusterDir}/elections/${scope}/${o.value}`)
       )
     )
 

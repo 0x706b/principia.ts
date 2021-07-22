@@ -177,7 +177,7 @@ export class SingleProducerAsyncInput<Err, Elem, Done>
   }
 
   take = this.takeWith<Exit<Either<Err, Done>, Elem>>(
-    (c) => Ex.halt(Ca.map_(c, E.left)),
+    (c) => Ex.failCause(Ca.map_(c, E.left)),
     (el) => Ex.succeed(el),
     (d) => Ex.fail(E.right(d))
   )

@@ -8,10 +8,10 @@ import { GenericContainer } from 'testcontainers'
 export const makeKeeperTestConfig = M.gen(function* (_) {
   const container = yield* _(
     pipe(
-      T.fromPromiseDie(() =>
+      T.fromPromiseHalt(() =>
         new GenericContainer('zookeeper:3.7.0').withEnv('ZOO_MY_ID', '1').withExposedPorts(2181).start()
       ),
-      M.bracket((c) => T.fromPromiseDie(() => c.stop()))
+      M.bracket((c) => T.fromPromiseHalt(() => c.stop()))
     )
   )
 

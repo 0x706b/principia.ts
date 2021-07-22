@@ -37,7 +37,7 @@ export function makeSingleton<R, S, F1 extends AM.AnyMessage, R3, E3>(
 
         const name = yield* _(
           pipe(
-            AS.resolvePath(context.address)['|>'](T.orDie),
+            AS.resolvePath(context.address)['|>'](T.orHalt),
             T.map(([_, __, ___, actorName]) => actorName.substr(1))
           )
         )
@@ -49,7 +49,7 @@ export function makeSingleton<R, S, F1 extends AM.AnyMessage, R3, E3>(
         yield* _(
           pipe(
             cluster.join(election),
-            M.bracket((p) => cluster.leave(p)['|>'](T.orDie))
+            M.bracket((p) => cluster.leave(p)['|>'](T.orHalt))
           )
         )
 

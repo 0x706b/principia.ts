@@ -216,7 +216,7 @@ export const LivePersistence = L.fromManaged(Persistence)(
 
           if (current !== shards) {
             // TODO(mike): proper error
-            return yield* _(T.die(new Error('sharding cannot be changed')))
+            return yield* _(T.halt(new Error('sharding cannot be changed')))
           }
 
           return

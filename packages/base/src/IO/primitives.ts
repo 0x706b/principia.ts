@@ -15,10 +15,7 @@ import type { Supervisor } from '../Supervisor'
 
 import { accessCallTrace, traceAs, traceFrom } from '@principia/compile/util'
 
-import { Die } from '../Cause/core'
-import * as C from '../Cause/core'
-import * as E from '../Either'
-import { flow } from '../function'
+import { Halt } from '../Cause/core'
 import { IOURI } from '../Modules'
 import { isObject } from '../prelude'
 
@@ -37,8 +34,8 @@ export const _U = '_U'
 export const IOTag = {
   Succeed: 'Succeed',
   Chain: 'Chain',
-  EffectPartial: 'EffectPartial',
-  EffectTotal: 'EffectTotal',
+  TryCatch: 'TryCatch',
+  SucceedLazy: 'SucceedLazy',
   Async: 'Async',
   Match: 'Match',
   Fork: 'Fork',
@@ -46,13 +43,13 @@ export const IOTag = {
   Yield: 'Yield',
   Read: 'Read',
   Give: 'Give',
-  DeferTotalWith: 'DeferTotalWith',
+  DeferWith: 'DeferWith',
   Race: 'Race',
   SetInterrupt: 'SetInterrupt',
   GetInterrupt: 'GetInterrupt',
   CheckDescriptor: 'CheckDescriptor',
   Supervise: 'Supervise',
-  DeferPartialWith: 'DeferPartialWith',
+  DeferTryCatchWith: 'DeferTryCatchWith',
   DeferMaybeWith: 'DeferMaybeWith',
   NewFiberRef: 'NewFiberRef',
   ModifyFiberRef: 'ModifyFiberRef',
@@ -198,8 +195,8 @@ export class SetTracingStatus<R, E, A> extends IO<R, E, A> {
 /**
  * @internal
  */
-export class EffectPartial<E, A> extends IO<unknown, E, A> {
-  readonly _tag = IOTag.EffectPartial
+export class TryCatch<E, A> extends IO<unknown, E, A> {
+  readonly _tag = IOTag.TryCatch
   constructor(readonly effect: () => A, readonly onThrow: (u: unknown) => E) {
     super()
   }
@@ -208,8 +205,8 @@ export class EffectPartial<E, A> extends IO<unknown, E, A> {
 /**
  * @internal
  */
-export class EffectTotal<A> extends IO<unknown, never, A> {
-  readonly _tag = IOTag.EffectTotal
+export class SucceedLazy<A> extends IO<unknown, never, A> {
+  readonly _tag = IOTag.SucceedLazy
   constructor(readonly effect: () => A) {
     super()
   }
@@ -218,7 +215,7 @@ export class EffectTotal<A> extends IO<unknown, never, A> {
 /**
  * @internal
  */
-export class EffectAsync<R, E, A> extends IO<R, E, A> {
+export class Async<R, E, A> extends IO<R, E, A> {
   readonly _tag = IOTag.Async
   constructor(
     readonly register: (f: (_: IO<R, E, A>) => void) => Option<IO<R, E, A>>,
@@ -308,8 +305,8 @@ export class Give<R, E, A> extends IO<unknown, E, A> {
 /**
  * @internal
  */
-export class DeferTotalWith<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.DeferTotalWith
+export class DeferWith<R, E, A> extends IO<R, E, A> {
+  readonly _tag = IOTag.DeferWith
 
   constructor(readonly io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>) {
     super()
@@ -388,8 +385,8 @@ export class Supervise<R, E, A> extends IO<R, E, A> {
 /**
  * @internal
  */
-export class DeferPartialWith<R, E, A, E2> extends IO<R, E | E2, A> {
-  readonly _tag = IOTag.DeferPartialWith
+export class DeferTryCatchWith<R, E, A, E2> extends IO<R, E | E2, A> {
+  readonly _tag = IOTag.DeferTryCatchWith
 
   constructor(
     readonly io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>,
@@ -451,14 +448,14 @@ export class GetPlatform<R, E, A> extends IO<R, E, A> {
   }
 }
 
-export const ffiNotImplemented = new Fail(() => new Die(new Error('Integration not implemented or unsupported')))
+export const ffiNotImplemented = new Fail(() => new Halt(new Error('Integration not implemented or unsupported')))
 
 export type Instruction =
   | Chain<any, any, any, any, any, any>
   | Succeed<any>
-  | EffectPartial<any, any>
-  | EffectTotal<any>
-  | EffectAsync<any, any, any>
+  | TryCatch<any, any>
+  | SucceedLazy<any>
+  | Async<any, any, any>
   | Match<any, any, any, any, any, any, any, any, any>
   | Fork<any, any, any>
   | SetInterrupt<any, any, any>
@@ -468,8 +465,8 @@ export type Instruction =
   | Yield
   | Read<any, any, any, any>
   | Give<any, any, any>
-  | DeferTotalWith<any, any, any>
-  | DeferPartialWith<any, any, any, any>
+  | DeferWith<any, any, any>
+  | DeferTryCatchWith<any, any, any, any>
   | DeferMaybeWith<any, any, any, any, any>
   | NewFiberRef<any>
   | ModifyFiberRef<any, any>

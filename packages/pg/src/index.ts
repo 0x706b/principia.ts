@@ -54,7 +54,7 @@ export const makePG = M.gen(function* (_) {
   const pool = yield* _(
     pipe(
       T.succeedLazy(() => new pg.Pool(config)),
-      M.bracket((pool) => T.fromPromiseDie(() => pool.end()))
+      M.bracket((pool) => T.fromPromiseHalt(() => pool.end()))
     )
   )
 
@@ -64,7 +64,7 @@ export const makePG = M.gen(function* (_) {
         return effect as T.IO<R, E, A>
       }
       return pipe(
-        T.fromPromiseDie(() => pool.connect()),
+        T.fromPromiseHalt(() => pool.connect()),
         T.bracket(
           (client) => T.giveService(PGClient)(new PGClientImpl(client))(effect),
           (client) => T.succeedLazy(() => client.release())
@@ -78,7 +78,7 @@ export const makePG = M.gen(function* (_) {
       T.async<unknown, never, pg.QueryResult<pg.QueryResultRow>>((cb) => {
         const handle = (error: Error | undefined, res: pg.QueryResult<pg.QueryResultRow>) => {
           if (error) {
-            cb(T.die(new PGQueryError({ error })))
+            cb(T.halt(new PGQueryError({ error })))
           } else {
             cb(T.succeed(res))
           }

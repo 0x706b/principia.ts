@@ -58,7 +58,7 @@ export function HttpServer({ host, port }: HttpServerConfig): L.Layer<unknown, n
             }
             function onError(error: Error) {
               clean()
-              k(I.die(error))
+              k(I.halt(error))
             }
             function onDone() {
               clean()
@@ -75,7 +75,7 @@ export function HttpServer({ host, port }: HttpServerConfig): L.Layer<unknown, n
           I.async<unknown, never, void>((k) => {
             server.close((error) => {
               if (error) {
-                k(I.die(error))
+                k(I.halt(error))
               } else {
                 k(I.unit())
               }

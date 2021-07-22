@@ -105,7 +105,7 @@ export function testM<R, E>(label: string, assertion: () => IO<R, E, TestResult>
     label,
     I.matchCauseIO_(
       I.defer(assertion),
-      flow(TF.halt, I.fail),
+      flow(TF.failCause, I.fail),
       flow(
         BA.failures,
         O.match(

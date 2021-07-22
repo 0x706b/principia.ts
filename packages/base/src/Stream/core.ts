@@ -252,21 +252,21 @@ export function fail<E>(e: E): FStream<E, never> {
 }
 
 /**
- * The `Stream` that dies with the error.
+ * The `Stream` that halts with the error.
  */
-export function die(e: unknown): UStream<never> {
-  return fromIO(I.die(e))
+export function halt(e: unknown): UStream<never> {
+  return fromIO(I.halt(e))
 }
 
 /**
- * The stream that dies with an exception described by `message`.
+ * The stream that halts with an exception described by `message`.
  */
-export function dieMessage(message: string): Stream<unknown, never, never> {
-  return fromIO(I.dieMessage(message))
+export function haltMessage(message: string): Stream<unknown, never, never> {
+  return fromIO(I.haltMessage(message))
 }
 
-export function halt<E>(cause: Ca.Cause<E>): Stream<unknown, E, never> {
-  return fromIO(I.halt(cause))
+export function failCause<E>(cause: Ca.Cause<E>): Stream<unknown, E, never> {
+  return fromIO(I.failCause(cause))
 }
 
 /**
@@ -907,11 +907,11 @@ export function runManaged_<R, E, A, R1, E1, B>(
                       c,
                       Ca.map(([_]) => _),
                       Ca.sequenceCauseEither,
-                      E.match(I.halt, I.pure)
+                      E.match(I.failCause, I.pure)
                     ),
-                  () => I.dieMessage('empty stream / empty sinks')
+                  () => I.haltMessage('empty stream / empty sinks')
                 ),
-              I.halt
+              I.failCause
             )
           ),
         (os) =>
@@ -922,7 +922,7 @@ export function runManaged_<R, E, A, R1, E1, B>(
                 c,
                 Ca.map(([_]) => _),
                 Ca.sequenceCauseEither,
-                E.match(I.halt, I.pure)
+                E.match(I.failCause, I.pure)
               ),
             () => go
           )
@@ -1519,7 +1519,7 @@ export function flattenExitOption<R, E, E1, A>(ma: Stream<R, E, Ex.Exit<O.Option
                   (e) => Pull.fail(e as E | E1)
                 ),
                 flow(
-                  I.done,
+                  I.fromExit,
                   I.matchIO(
                     O.match(() => pipe(doneRef.set(true), I.crossSecond(Pull.end)), Pull.fail),
                     Pull.emit
@@ -1623,7 +1623,7 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
                   push(O.none()),
                   I.map((ps) => C.make(Take.chunk(C.map_(ps, E.right)), Take.end))
                 ),
-              I.halt,
+              I.failCause,
               (os) =>
                 I.chain_(Take.fromPull(I.asSomeError(push(O.some(os)))), (take) =>
                   I.as_(updateLastChunk(take), C.make(Take.map_(take, E.right)))
@@ -1643,7 +1643,7 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
               waitForProducer,
               (scheduleDone, producerWaiting) =>
                 pipe(
-                  I.done(scheduleDone),
+                  I.fromExit(scheduleDone),
                   I.chain(
                     O.match(
                       () =>
@@ -1651,7 +1651,7 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
                           const lastQ = yield* _(
                             pipe(
                               lastChunk.set(C.empty()),
-                              I.crossSecond(I.orDie(sdriver.last)),
+                              I.crossSecond(I.orHalt(sdriver.last)),
                               I.crossFirst(sdriver.reset)
                             )
                           )
@@ -1850,7 +1850,7 @@ export function distributedWithDynamic_<R, E, A>(
               return pipe(
                 Q.offer_(queue, Ex.succeed(o)),
                 I.matchCauseIO(
-                  (c) => (Ca.interrupted(c) ? I.succeed(C.append(id)(b)) : I.halt(c)),
+                  (c) => (Ca.interrupted(c) ? I.succeed(C.append(id)(b)) : I.failCause(c)),
                   () => I.succeed(b)
                 )
               )
@@ -1921,7 +1921,7 @@ export function distributedWithDynamic_<R, E, A>(
           pipe(
             ma,
             foreachManaged(offer(queuesRef)),
-            M.matchCauseManaged(flow(Ca.map(O.some), Ex.halt, finalize, I.toManaged()), () =>
+            M.matchCauseManaged(flow(Ca.map(O.some), Ex.failCause, finalize, I.toManaged()), () =>
               pipe(O.none(), Ex.fail, finalize, I.toManaged())
             ),
             M.fork
@@ -2148,7 +2148,7 @@ export function buffer_<R, E, A>(ma: Stream<R, E, A>, capacity: number): Stream<
           } else {
             return pipe(
               Q.take(queue),
-              I.chain(I.done),
+              I.chain(I.fromExit),
               I.catchSome(
                 O.match(() => pipe(doneRef.set(true), I.crossSecond(Pull.end), O.some), flow(O.some, I.fail, O.some))
               )
@@ -2330,7 +2330,7 @@ export function catchAllCause_<R, E, A, R1, E1, B>(
         pipe(
           finalizerRef,
           Ref.getAndSet(RM.noopFinalizer),
-          I.chain((f) => f(Ex.halt(cause))),
+          I.chain((f) => f(Ex.failCause(cause))),
           I.uninterruptible
         )
 
@@ -2420,7 +2420,7 @@ export function catchAll_<R, E, A, R1, E1, A1>(
   ma: Stream<R, E, A>,
   f: (e: E) => Stream<R1, E1, A1>
 ): Stream<R & R1, E1, A | A1> {
-  return catchAllCause_(ma, flow(Ca.failureOrCause, E.match(f, halt)))
+  return catchAllCause_(ma, flow(Ca.failureOrCause, E.match(f, failCause)))
 }
 
 /**
@@ -2463,7 +2463,9 @@ export function catchSomeCause_<R, E, A, R1, E1, A1>(
   ma: Stream<R, E, A>,
   f: (cause: Ca.Cause<E>) => Option<Stream<R1, E1, A1>>
 ): Stream<R & R1, E | E1, A | A1> {
-  return catchAllCause_(ma, (cause) => O.match_(f(cause), (): Stream<R & R1, E | E1, A | A1> => halt(cause), identity))
+  return catchAllCause_(ma, (cause) =>
+    O.match_(f(cause), (): Stream<R & R1, E | E1, A | A1> => failCause(cause), identity)
+  )
 }
 
 /**
@@ -2736,7 +2738,7 @@ export function chunkN_<R, E, A>(ma: Stream<R, E, A>, n: number): Stream<R, E, A
   }
 
   if (n < 1) {
-    return halt(Ca.die(new RuntimeException('chunkN: n must be at least 1')))
+    return failCause(Ca.halt(new RuntimeException('chunkN: n must be at least 1')))
   } else {
     return new Stream(
       M.gen(function* (_) {
@@ -2916,8 +2918,9 @@ export function combine_<R, E, A, R1, E1, B, Z, C>(
       const left  = yield* _(M.mapIO_(ma.proc, BPull.make))
       const right = yield* _(M.mapIO_(mb.proc, BPull.make))
       const pull  = yield* _(
-        unfoldIO(z, (z) => I.chain_(f(z, BPull.pullElement(left), BPull.pullElement(right)), flow(I.done, I.optional)))
-          .proc
+        unfoldIO(z, (z) =>
+          I.chain_(f(z, BPull.pullElement(left), BPull.pullElement(right)), flow(I.fromExit, I.optional))
+        ).proc
       )
       return pull
     })
@@ -2968,7 +2971,7 @@ export function combineChunks_<R, E, A, R1, E1, B, Z, C>(
         unfoldChunkIO(z, (z) =>
           pipe(
             f(z, left, right),
-            I.chain((ex) => I.optional(I.done(ex)))
+            I.chain((ex) => I.optional(I.fromExit(ex)))
           )
         ).proc
       )
@@ -3221,14 +3224,14 @@ export function drainFork_<R, E, A, R1, E1, A1>(
   return pipe(
     P.make<E | E1, never>(),
     fromIO,
-    chain((bgDied) =>
+    chain((bgHalted) =>
       pipe(
         mb,
         foreachManaged(() => I.unit()),
-        M.catchAllCause((_) => pipe(P.halt_(bgDied, _), I.toManaged())),
+        M.catchAllCause((_) => pipe(P.failCause_(bgHalted, _), I.toManaged())),
         M.fork,
         fromManaged,
-        crossSecond(interruptOn_(ma, bgDied))
+        crossSecond(interruptOn_(ma, bgHalted))
       )
     )
   )
@@ -3682,7 +3685,7 @@ export function interleaveWith_<R, E, A, R1, E1, A1>(
           Ca.sequenceCauseOption,
           O.match(
             () => I.succeed(Ex.fail(O.none())),
-            (e) => I.succeed(Ex.halt(Ca.map_(e, O.some)))
+            (e) => I.succeed(Ex.failCause(Ca.map_(e, O.some)))
           )
         ),
         (b) => {
@@ -3700,7 +3703,7 @@ export function interleaveWith_<R, E, A, R1, E1, A1>(
                         return loop(true, rightDone, s, left, right)
                       }
                     },
-                    (e) => I.succeed(Ex.halt(Ca.map_(e, O.some)))
+                    (e) => I.succeed(Ex.failCause(Ca.map_(e, O.some)))
                   )
                 ),
                 (a) => I.succeed(Ex.succeed([a, [leftDone, rightDone, s]] as const))
@@ -3720,7 +3723,7 @@ export function interleaveWith_<R, E, A, R1, E1, A1>(
                         return loop(leftDone, true, s, left, right)
                       }
                     },
-                    (e) => I.succeed(Ex.halt(Ca.map_(e, O.some)))
+                    (e) => I.succeed(Ex.failCause(Ca.map_(e, O.some)))
                   )
                 ),
                 (a) => I.succeed(Ex.succeed([a, [leftDone, rightDone, s]] as const))
@@ -4138,7 +4141,7 @@ export function mapIOPar_(n: number) {
                       pipe(
                         P.await(errorSignal),
                         I.raceFirst(f(o)),
-                        I.tapCause((_) => P.halt_(errorSignal, _)),
+                        I.tapCause((_) => P.failCause_(errorSignal, _)),
                         I.fulfill(p)
                       )
                     ),
@@ -4671,7 +4674,7 @@ export function scheduleWith<R1, A, B>(schedule: Sc.Schedule<R1, A, B>) {
                 I.orElse(() =>
                   pipe(
                     driver.last,
-                    I.orDie,
+                    I.orHalt,
                     I.map((b) => C.make<C | D>(f(o), g(b))),
                     I.crossFirst(driver.reset)
                   )
@@ -5497,7 +5500,7 @@ export function zipAllWithExec_<R, E, A, R1, E1, B, C>(
                 pullL,
                 I.optional,
                 I.crossWith(I.optional(pullR), (l, r) => handleSuccess(l, r, excess)),
-                I.catchAllCause(flow(Ca.map(O.some), Ex.halt, I.succeed))
+                I.catchAllCause(flow(Ca.map(O.some), Ex.failCause, I.succeed))
               )
             }
             default: {
@@ -5505,7 +5508,7 @@ export function zipAllWithExec_<R, E, A, R1, E1, B, C>(
                 pullL,
                 I.optional,
                 I.crossWithPar(I.optional(pullR), (l, r) => handleSuccess(l, r, excess)),
-                I.catchAllCause(flow(Ca.map(O.some), Ex.halt, I.succeed))
+                I.catchAllCause(flow(Ca.map(O.some), Ex.failCause, I.succeed))
               )
             }
           }
@@ -5515,7 +5518,7 @@ export function zipAllWithExec_<R, E, A, R1, E1, B, C>(
             pullR,
             I.optional,
             I.map((r) => handleSuccess(O.none(), r, excess)),
-            I.catchAllCause(flow(Ca.map(O.some), Ex.halt, I.succeed))
+            I.catchAllCause(flow(Ca.map(O.some), Ex.failCause, I.succeed))
           )
         }
         case 'RightDone': {
@@ -5523,7 +5526,7 @@ export function zipAllWithExec_<R, E, A, R1, E1, B, C>(
             pullL,
             I.optional,
             I.map((l) => handleSuccess(l, O.none(), excess)),
-            I.catchAllCause(flow(Ca.map(O.some), Ex.halt, I.succeed))
+            I.catchAllCause(flow(Ca.map(O.some), Ex.failCause, I.succeed))
           )
         }
         case 'End': {
@@ -5713,7 +5716,7 @@ export function zipWithExec_<R, E, A, R1, E1, B, C>(
             exec._tag === 'Sequential'
               ? I.crossWith(I.optional(p2), (l, r) => handleSuccess(l, r, st.excess))
               : I.crossWithPar(I.optional(p2), (l, r) => handleSuccess(l, r, st.excess)),
-            I.catchAllCause((e) => I.pure(Ex.halt(pipe(e, Ca.map(O.some)))))
+            I.catchAllCause((e) => I.pure(Ex.failCause(pipe(e, Ca.map(O.some)))))
           )
         }
         case 'LeftDone': {
@@ -5721,7 +5724,7 @@ export function zipWithExec_<R, E, A, R1, E1, B, C>(
             p2,
             I.optional,
             I.map((r) => handleSuccess(O.none(), r, E.left(st.excessL))),
-            I.catchAllCause((e) => I.pure(Ex.halt(pipe(e, Ca.map(O.some)))))
+            I.catchAllCause((e) => I.pure(Ex.failCause(pipe(e, Ca.map(O.some)))))
           )
         }
         case 'RightDone': {
@@ -5729,7 +5732,7 @@ export function zipWithExec_<R, E, A, R1, E1, B, C>(
             p1,
             I.optional,
             I.map((l) => handleSuccess(l, O.none(), E.right(st.excessR))),
-            I.catchAllCause((e) => I.pure(Ex.halt(pipe(e, Ca.map(O.some)))))
+            I.catchAllCause((e) => I.pure(Ex.failCause(pipe(e, Ca.map(O.some)))))
           )
         }
       }
@@ -5805,13 +5808,13 @@ export function zipWithLatest_<R, E, A, R1, E1, B, C>(
             (leftDone, rightFiber): I.IO<unknown, O.Option<E | E1>, readonly [Chunk<A>, Chunk<B>, boolean]> =>
               pipe(
                 leftDone,
-                I.done,
+                I.fromExit,
                 I.crossWith(Fi.join(rightFiber), (os, o1s) => [os, o1s, <boolean>true] as const)
               ),
             (rightDone, leftFiber) =>
               pipe(
                 rightDone,
-                I.done,
+                I.fromExit,
                 I.crossWith(Fi.join(leftFiber), (o1s, os) => [os, o1s, <boolean>false] as const)
               )
           ),
@@ -5956,7 +5959,7 @@ export function gen(...args: any[]): any {
 
           state = iterator.next(a)
         })
-        if (prematureExit) return fromIO(I.die(new PrematureGeneratorExitError('Stream.gen')))
+        if (prematureExit) return fromIO(I.halt(new PrematureGeneratorExitError('Stream.gen')))
 
         if (state.done) return succeed(state.value)
 

@@ -49,22 +49,22 @@ export function transducer<R, E, I, O, R1>(
 /**
  * Creates a transducer that always fails with the specified failure.
  */
-export function fail<E>(e: E): Transducer<unknown, E, unknown, never> {
-  return new Transducer(M.succeed((_) => I.fail(e)))
+export function fail<E>(error: E): Transducer<unknown, E, unknown, never> {
+  return new Transducer(M.succeed((_) => I.fail(error)))
 }
 
 /**
- * Creates a transducer that always dies with the specified exception.
+ * Creates a transducer that always halts with the specified exception.
  */
-export function die(e: Error): Transducer<unknown, never, unknown, never> {
-  return new Transducer(M.succeed((_) => I.die(e)))
+export function halt(defect: unknown): Transducer<unknown, never, unknown, never> {
+  return new Transducer(M.succeed((_) => I.halt(defect)))
 }
 
 /**
  * Creates a transducer that always fails with the specified cause.
  */
-export function halt<E>(c: Cause<E>): Transducer<unknown, E, unknown, never> {
-  return new Transducer(M.succeed((_) => I.halt(c)))
+export function failCause<E>(cause: Cause<E>): Transducer<unknown, E, unknown, never> {
+  return new Transducer(M.succeed((_) => I.failCause(cause)))
 }
 
 /**

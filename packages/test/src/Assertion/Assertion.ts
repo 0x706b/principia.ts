@@ -179,12 +179,12 @@ export function deepStrictEqualTo(expected: any, show?: S.Show<any>): Assertion<
   )
 }
 
-export function dies(assertion0: Assertion<any>): Assertion<Ex.Exit<any, any>> {
+export function halts(assertion0: Assertion<any>): Assertion<Ex.Exit<any, any>> {
   return assertionRec(
-    'dies',
+    'halts',
     [param(assertion0)],
     assertion0,
-    Ex.match(C.dieOption, () => O.none())
+    Ex.match(C.haltOption, () => O.none())
   )
 }
 

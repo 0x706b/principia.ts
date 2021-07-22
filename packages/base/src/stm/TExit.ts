@@ -1,7 +1,7 @@
 import * as St from '../Structural'
 import { isObject } from '../util/predicates'
 
-export type TExit<E, A> = Fail<E> | Succeed<A> | Retry | Die
+export type TExit<E, A> = Fail<E> | Succeed<A> | Retry | Halt
 
 export const FailTypeId = Symbol('@principia/base/stm/TExit/Fail')
 export type FailTypeId = typeof FailTypeId
@@ -43,11 +43,11 @@ export function isSucceed(u: unknown): u is Succeed<unknown> {
   return isObject(u) && u['_tag'] === SucceedTypeId
 }
 
-export const DieTypeId = Symbol('@principia/base/stm/TExit/Die')
-export type DieTypeId = typeof DieTypeId
+export const HaltTypeId = Symbol('@principia/base/stm/TExit/Halt')
+export type HaltTypeId = typeof HaltTypeId
 
-export class Die {
-  readonly _tag: DieTypeId = DieTypeId
+export class Halt {
+  readonly _tag: HaltTypeId = HaltTypeId
   constructor(readonly value: unknown) {}
 
   get [St.$hash](): number {
@@ -55,12 +55,12 @@ export class Die {
   }
 
   [St.$equals](that: unknown): boolean {
-    return isDie(that) && St.equals(this.value, that.value)
+    return isHalt(that) && St.equals(this.value, that.value)
   }
 }
 
-export function isDie(u: unknown): u is Die {
-  return isObject(u) && u['_tag'] === DieTypeId
+export function isHalt(u: unknown): u is Halt {
+  return isObject(u) && u['_tag'] === HaltTypeId
 }
 
 const _retryHash = St.hashString('@principia/base/stm/TExit/Retry')
@@ -94,8 +94,8 @@ export function fail<E = never, A = never>(e: E): TExit<E, A> {
   return new Fail(e)
 }
 
-export function die(e: unknown): TExit<never, never> {
-  return new Die(e)
+export function halt(e: unknown): TExit<never, never> {
+  return new Halt(e)
 }
 
 export function retry(): TExit<never, never> {

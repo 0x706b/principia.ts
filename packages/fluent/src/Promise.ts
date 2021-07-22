@@ -7,9 +7,9 @@ import type { Option } from '@principia/base/Option'
 declare module '@principia/base/Promise' {
   export interface Promise<E, A> {
     /**
-     * @rewrite die_ from "@principia/base/Promise"
+     * @rewrite halt_ from "@principia/base/Promise"
      */
-    die(defect: unknown): I.UIO<boolean>
+    halt(defect: unknown): I.UIO<boolean>
     /**
      * @rewrite done_ from "@principia/base/Promise"
      */
@@ -23,9 +23,9 @@ declare module '@principia/base/Promise' {
      */
     fulfillWith<E, A>(io: I.FIO<E, A>): I.UIO<boolean>
     /**
-     * @rewrite halt_ from "@principia/base/Promise"
+     * @rewrite failCause_ from "@principia/base/Promise"
      */
-    halt(cause: Cause<E>): I.UIO<boolean>
+    failCause(cause: Cause<E>): I.UIO<boolean>
     /**
      * @rewriteGetter interrupt from "@principia/base/Promise"
      */

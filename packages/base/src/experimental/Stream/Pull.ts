@@ -25,7 +25,7 @@ export function fail<E>(e: E): I.FIO<O.Option<E>, never> {
 }
 
 export function halt<E>(c: Ca.Cause<E>): I.FIO<O.Option<E>, never> {
-  return I.mapError_(I.halt(c), O.some)
+  return I.mapError_(I.failCause(c), O.some)
 }
 
 export function empty<A>(): I.FIO<never, C.Chunk<A>> {

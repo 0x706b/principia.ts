@@ -16,7 +16,7 @@ const mergeInterruption =
   (x: Exit<E1, A1>): IO<unknown, E1, A> => {
     return Ex.matchIO_(
       x,
-      (cause) => (C.interruptedOnly(cause) ? I.succeed(a) : I.halt(cause)),
+      (cause) => (C.interruptedOnly(cause) ? I.succeed(a) : I.failCause(cause)),
       () => I.succeed(a)
     )
   }

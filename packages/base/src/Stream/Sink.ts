@@ -484,8 +484,8 @@ export const count: Sink<unknown, never, unknown, never, number> = fold(0, (s, _
  * Creates a sink halting with the specified message, wrapped in a
  * `RuntimeException`.
  */
-export function dieMessage(m: string): Sink<unknown, never, unknown, never, never> {
-  return halt(Ca.die(new RuntimeException(m)))
+export function haltMessage(m: string): Sink<unknown, never, unknown, never, never> {
+  return halt(Ca.halt(new RuntimeException(m)))
 }
 
 /**
@@ -1310,7 +1310,7 @@ export function raceBoth_<R, E, I, L, Z, R1, E1, I1, L1, Z1>(
                         pipe(
                           f,
                           Ca.map(([r, leftover]) => tuple(E.map_(r, E.left), leftover)),
-                          I.halt
+                          I.failCause
                         )
                       )
                     ),
@@ -1332,7 +1332,7 @@ export function raceBoth_<R, E, I, L, Z, R1, E1, I1, L1, Z1>(
                         pipe(
                           f,
                           Ca.map(([r, leftover]) => tuple(E.map_(r, E.right), leftover)),
-                          I.halt
+                          I.failCause
                         )
                       )
                     ),

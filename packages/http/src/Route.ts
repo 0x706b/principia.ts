@@ -147,7 +147,7 @@ export function middleware_<R, E, R1, E1>(
 const Route404 =
   <R, E>(): RouteFn<R, E> =>
   ({ res: response }, _) =>
-    I.orDie(
+    I.orHalt(
       I.gen(function* (_) {
         yield* _(response.status(Status.NotFound))
         yield* _(response.set({ 'content-type': HttpContentType.TEXT_PLAIN }))
@@ -177,7 +177,7 @@ export function HttpExceptionHandler<R, E>(routes: Routes<R, E>): Routes<R, Excl
         ),
         I.catchAll((e) => {
           if (e instanceof HttpException) {
-            return I.orDieWith_(ctx.res.end(), () => e)
+            return I.orHaltWith_(ctx.res.end(), () => e)
           } else {
             return I.fail(<Exclude<E, HttpException>>e)
           }
@@ -237,7 +237,7 @@ export function drain<R>(rs: Routes<R, never>) {
                 pipe(
                   ctx.req.url,
                   I.tapError((ex) => I.succeedLazy(() => console.log(ex))),
-                  I.orDie
+                  I.orHalt
                 )
               )
               return yield* _(I.giveAll_(a(method, url)(ctx, b(ctx)), env))

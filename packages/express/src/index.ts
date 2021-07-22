@@ -10,7 +10,7 @@ import type { Server } from 'http'
 
 import '@principia/base/Operators'
 
-import { died, pretty } from '@principia/base/Cause'
+import { halted, pretty } from '@principia/base/Cause'
 import * as F from '@principia/base/Fiber'
 import { tag } from '@principia/base/Has'
 import * as T from '@principia/base/IO'
@@ -30,7 +30,7 @@ export class NodeServerListenError {
   constructor(readonly error: Error) {}
 }
 
-export const ExpressAppConfigTag = '@effect-ts/express/AppConfig'
+export const ExpressAppConfigTag = '@principia/express/AppConfig'
 
 export interface ExpressAppConfig {
   readonly _tag: typeof ExpressAppConfigTag
@@ -56,7 +56,7 @@ export function LiveExpressAppConfig<R>(
   )
 }
 
-export const ExpressAppTag = '@effect-ts/express/App'
+export const ExpressAppTag = '@principia/express/App'
 export type ExpressAppTag = typeof ExpressAppTag
 
 export type ManagedExpressApp = M.Managed<
@@ -96,7 +96,7 @@ export const makeExpressApp: ManagedExpressApp = M.gen(function* (_) {
     M.bracket_(
       T.async<unknown, never, Server>((cb) => {
         const onError = (err: Error) => {
-          cb(T.die(new NodeServerListenError(err)))
+          cb(T.halt(new NodeServerListenError(err)))
         }
         const server = app.listen(port, host, () => {
           cb(
@@ -112,7 +112,7 @@ export const makeExpressApp: ManagedExpressApp = M.gen(function* (_) {
         T.async<unknown, never, void>((cb) => {
           server.close((err) => {
             if (err) {
-              cb(T.die(new NodeServerCloseError(err)))
+              cb(T.halt(new NodeServerCloseError(err)))
             } else {
               cb(T.unit())
             }
@@ -292,7 +292,7 @@ export function defaultExitHandler(
 ): (cause: Cause<never>) => T.URIO<unknown, void> {
   return (cause) =>
     T.succeedLazy(() => {
-      if (died(cause)) {
+      if (halted(cause)) {
         console.error(pretty(cause))
       }
       _res.status(500).end()

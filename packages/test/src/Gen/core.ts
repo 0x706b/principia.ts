@@ -129,7 +129,7 @@ export function int(constraints: NumberConstraints = {}): Gen<Has<Random>, numbe
       const min = constraints.min ?? -0x80000000
       const max = constraints.max ?? 0x7fffffff
       if (min > max || min < Number.MIN_SAFE_INTEGER || max > Number.MAX_SAFE_INTEGER) {
-        return I.die(new IllegalArgumentError('invalid bounds', 'Gen.int'))
+        return I.halt(new IllegalArgumentError('invalid bounds', 'Gen.int'))
       } else {
         return I.map_(Random.nextIntBetween(min, max), Sa.shrinkIntegral(min))
       }

@@ -130,7 +130,7 @@ export class ActorRefRemote<F1 extends AM.AnyMessage> implements ActorRef<F1> {
 
       // TODO: PROPER CLIENT
       const response = yield* _(
-        T.fromPromiseCatch_(
+        T.fromPromiseCatch(
           () =>
             fetch(`http://${host}:${port}/cmd`, {
               method: 'POST',
@@ -156,7 +156,7 @@ export class ActorRefRemote<F1 extends AM.AnyMessage> implements ActorRef<F1> {
 
       return envOp._tag === 'Ask'
         ? yield* _(
-            S.condemnDie((u) =>
+            S.condemnHalt((u) =>
               withSystem(system)(() => Parser.for((envOp.msg as AM.AnyMessage)[AM.ResponseSchemaSymbol])(u))
             )(response.response)
           )

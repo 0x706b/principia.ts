@@ -124,7 +124,7 @@ export abstract class KoaApp {
       const server         = yield* _(
         I.async<unknown, never, http.Server>((k) => {
           const onError = (error: Error) => {
-            k(I.die(new NodeServerListenError(error)))
+            k(I.halt(new NodeServerListenError(error)))
           }
           const server = app.listen(port, host, () => {
             k(
@@ -140,7 +140,7 @@ export abstract class KoaApp {
             I.async<unknown, never, void>((k) => {
               server.close((error) => {
                 if (error) {
-                  k(I.die(new NodeServerCloseError(error)))
+                  k(I.halt(new NodeServerCloseError(error)))
                 } else {
                   k(I.unit())
                 }
@@ -187,7 +187,7 @@ export abstract class KoaRuntime {
                       ['|>'](r.runFiber)
                       ['|>']((f) => f.await)
                   ),
-                  I.succeed(Ex.halt(Ca.empty))
+                  I.succeed(Ex.failCause(Ca.empty))
                 )
                   ['|>'](I.runPromiseExit)
                   .then(Ex.flatten)
@@ -224,7 +224,7 @@ export function defaultExitHandler(
 ): (cause: Cause<never>) => URIO<Has<Console>, void> {
   return (cause) =>
     I.gen(function* (_) {
-      if (Ca.died(cause)) {
+      if (Ca.halted(cause)) {
         yield* _(putStrLnErr(Ca.pretty(cause)))
       }
       yield* _(ctx.connection.res.status(Status.InternalServerError))

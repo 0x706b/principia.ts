@@ -110,7 +110,7 @@ export function runContext_<R, E, A>(ma: Query<R, E, A>, queryContext: QueryCont
         Blocked: ({ blockedRequests, cont }) =>
           BRS.run_(blockedRequests, queryContext.cache)['*>'](Cont.runContext_(cont, queryContext)),
         Done: ({ value }) => I.succeed(value),
-        Fail: ({ cause }) => I.halt(cause)
+        Fail: ({ cause }) => I.failCause(cause)
       })
     )
   )
@@ -254,7 +254,7 @@ export function matchQuery_<R, E, A, R1, E1, B, R2, E2, C>(
   onFailure: (error: E) => Query<R1, E1, B>,
   onSuccess: (a: A) => Query<R2, E2, C>
 ): Query<R & R1 & R2, E1 | E2, B | C> {
-  return matchCauseQuery_(ma, flow(Ca.failureOrCause, E.match(onFailure, halt)), onSuccess)
+  return matchCauseQuery_(ma, flow(Ca.failureOrCause, E.match(onFailure, failCause)), onSuccess)
 }
 
 /**
@@ -352,7 +352,7 @@ export function crossWith_<R, E, A, R1, E1, B, C>(
                     blockedRequests,
                     Cont.map_(cont, (a) => f(a, value))
                   ),
-                Fail: ({ cause }) => Res.fail(cause)
+                Fail: ({ cause }) => Res.failCause(cause)
               })
             )
           }
@@ -367,10 +367,10 @@ export function crossWith_<R, E, A, R1, E1, B, C>(
                   Cont.map_(cont, (b) => f(a.value, b))
                 ),
               Done: (b) => Res.done(f(a.value, b.value)),
-              Fail: (e) => Res.fail(e.cause)
+              Fail: (e) => Res.failCause(e.cause)
             })
           ),
-        Fail: ({ cause }) => I.succeed(Res.fail(cause))
+        Fail: ({ cause }) => I.succeed(Res.failCause(cause))
       })
     )
   )
@@ -446,7 +446,7 @@ export function crossWithPar_<R, E, A, R1, E1, B, C>(
               ra.blockedRequests,
               Cont.map_(ra.cont, (a) => f(a, rb.value))
             )
-          : Res.fail(rb.cause)
+          : Res.failCause(rb.cause)
         : ra._tag === 'Done'
         ? rb._tag === 'Blocked'
           ? Res.blocked(
@@ -455,10 +455,10 @@ export function crossWithPar_<R, E, A, R1, E1, B, C>(
             )
           : rb._tag === 'Done'
           ? Res.done(f(ra.value, rb.value))
-          : Res.fail(rb.cause)
+          : Res.failCause(rb.cause)
         : rb._tag === 'Fail'
-        ? Res.fail(Ca.both(ra.cause, rb.cause))
-        : Res.fail(ra.cause)
+        ? Res.failCause(Ca.both(ra.cause, rb.cause))
+        : Res.failCause(ra.cause)
     })
   )
 }
@@ -533,7 +533,7 @@ export function crossWithBatched_<R, E, A, R1, E1, B, C>(
               ra.blockedRequests,
               Cont.map_(ra.cont, (a) => f(a, rb.value))
             )
-          : Res.fail(rb.cause)
+          : Res.failCause(rb.cause)
         : ra._tag === 'Done'
         ? rb._tag === 'Blocked'
           ? Res.blocked(
@@ -542,10 +542,10 @@ export function crossWithBatched_<R, E, A, R1, E1, B, C>(
             )
           : rb._tag === 'Done'
           ? Res.done(f(ra.value, rb.value))
-          : Res.fail(rb.cause)
+          : Res.failCause(rb.cause)
         : rb._tag === 'Fail'
-        ? Res.fail(Ca.both(ra.cause, rb.cause))
-        : Res.fail(ra.cause)
+        ? Res.failCause(Ca.both(ra.cause, rb.cause))
+        : Res.failCause(ra.cause)
     })
   )
 }
@@ -596,7 +596,7 @@ export function mapErrorCause_<R, E, A, E1>(
   pab: Query<R, E, A>,
   h: (cause: Ca.Cause<E>) => Ca.Cause<E1>
 ): Query<R, E1, A> {
-  return matchCauseQuery_(pab, flow(h, halt), succeed)
+  return matchCauseQuery_(pab, flow(h, failCause), succeed)
 }
 
 export function mapErrorCause<E, E1>(
@@ -659,19 +659,19 @@ export function defer<R, E, A>(query: () => Query<R, E, A>): Query<R, E, A> {
   return flatten(fromIO(I.succeedLazy(query)))
 }
 
-export function die(error: unknown): Query<unknown, never, never> {
-  return new Query(I.die(error))
+export function halt(error: unknown): Query<unknown, never, never> {
+  return new Query(I.halt(error))
 }
 
 export function fail<E>(error: E): Query<unknown, E, never> {
-  return halt(Ca.fail(error))
+  return failCause(Ca.fail(error))
 }
 
 export function fromIO<R, E, A>(effect: IO<R, E, A>): Query<R, E, A> {
   return new Query(
     pipe(
       effect,
-      I.matchCause(Res.fail, Res.done),
+      I.matchCause(Res.failCause, Res.done),
       I.gives(([r, _]) => r)
     )
   )
@@ -735,8 +735,8 @@ export function fromRequestUncached<R, A extends AnyRequest>(
   )
 }
 
-export function halt<E>(cause: Ca.Cause<E>): Query<unknown, E, never> {
-  return new Query(I.succeed(Res.fail(cause)))
+export function failCause<E>(cause: Ca.Cause<E>): Query<unknown, E, never> {
+  return new Query(I.succeed(Res.failCause(cause)))
 }
 
 export const never: Query<unknown, never, never> = fromIO(I.never)
@@ -769,7 +769,7 @@ export function chain_<R, E, A, R1, E1, B>(
       matchTag({
         Blocked: ({ blockedRequests, cont }) => I.succeed(Res.blocked(blockedRequests, Cont.mapQuery_(cont, f))),
         Done: ({ value }) => f(value).step,
-        Fail: ({ cause }) => I.succeed(Res.fail(cause))
+        Fail: ({ cause }) => I.succeed(Res.failCause(cause))
       })
     )
   )
@@ -850,7 +850,7 @@ export function giveLayer_<R, E, A, R1, E1, A1>(
       M.result,
       M.use(
         Ex.matchIO(
-          (c): IO<readonly [R & R1, QueryContext], never, Result<R & R1, E | E1, A>> => I.succeed(Res.fail(c)),
+          (c): IO<readonly [R & R1, QueryContext], never, Result<R & R1, E | E1, A>> => I.succeed(Res.failCause(c)),
           (r) =>
             gives_(
               ra,
@@ -873,7 +873,7 @@ export function giveLayer<R1, E1, A1>(
         M.result,
         M.use(
           Ex.matchIO(
-            (c): IO<readonly [R & R1, QueryContext], never, Result<R & R1, E | E1, A>> => I.succeed(Res.fail(c)),
+            (c): IO<readonly [R & R1, QueryContext], never, Result<R & R1, E | E1, A>> => I.succeed(Res.failCause(c)),
             (r) =>
               gives_(
                 ra,
@@ -886,10 +886,11 @@ export function giveLayer<R1, E1, A1>(
 }
 
 export function giveServiceIO<T>(_: Tag<T>) {
-  return <R, E>(f: Described<IO<R, E, T>>) => <R1, E1, A1>(ma: Query<R1 & Has<T>, E1, A1>): Query<R & R1, E | E1, A1> =>
-    asksQuery((r: R & R1) =>
-      chain_(fromIO(f.value), (t) => giveAll_(ma, Described(mergeEnvironments(_, r, t), f.description)))
-    )
+  return <R, E>(f: Described<IO<R, E, T>>) =>
+    <R1, E1, A1>(ma: Query<R1 & Has<T>, E1, A1>): Query<R & R1, E | E1, A1> =>
+      asksQuery((r: R & R1) =>
+        chain_(fromIO(f.value), (t) => giveAll_(ma, Described(mergeEnvironments(_, r, t), f.description)))
+      )
 }
 
 export function giveService<T>(
@@ -954,13 +955,13 @@ export function ensuring_<R, E, A, R1>(ma: Query<R, E, A>, finalizer: Query<R, n
     (cause1) =>
       matchCauseQuery_(
         finalizer,
-        (cause2) => halt(Ca.then(cause1, cause2)),
-        (_) => halt(cause1)
+        (cause2) => failCause(Ca.then(cause1, cause2)),
+        (_) => failCause(cause1)
       ),
     (value) =>
       matchCauseQuery_(
         finalizer,
-        (cause) => halt(cause),
+        (cause) => failCause(cause),
         () => succeed(value)
       )
   )
@@ -1076,38 +1077,38 @@ export function optional<R, E, A>(ma: Query<R, E, A>): Query<R, E, O.Option<A>> 
     ma,
     flow(
       Ca.stripSomeDefects((_) => !(_ instanceof QueryFailure)),
-      O.match(() => none(), halt)
+      O.match(() => none(), failCause)
     ),
     some
   )
 }
 
-export function orDieWith_<R, E, A>(ma: Query<R, E, A>, f: (e: E) => Error): Query<R, never, A> {
-  return matchQuery_(ma, flow(f, die), succeed)
+export function orHaltWith_<R, E, A>(ma: Query<R, E, A>, f: (e: E) => Error): Query<R, never, A> {
+  return matchQuery_(ma, flow(f, halt), succeed)
 }
 
-export function orDieWith<E>(f: (e: E) => Error): <R, A>(ma: Query<R, E, A>) => Query<R, never, A> {
-  return (ma) => matchQuery_(ma, flow(f, die), succeed)
+export function orHaltWith<E>(f: (e: E) => Error): <R, A>(ma: Query<R, E, A>) => Query<R, never, A> {
+  return (ma) => matchQuery_(ma, flow(f, halt), succeed)
 }
 
-export function orDie<R, E extends Error, A>(ma: Query<R, E, A>): Query<R, never, A> {
-  return orDieWith_(ma, identity)
+export function orHalt<R, E extends Error, A>(ma: Query<R, E, A>): Query<R, never, A> {
+  return orHaltWith_(ma, identity)
 }
 
-export function refineOrDie_<R, E extends Error, A, E1>(
+export function refineOrHalt_<R, E extends Error, A, E1>(
   ma: Query<R, E, A>,
   pf: (e: E) => O.Option<E1>
 ): Query<R, E1, A> {
-  return refineOrDieWith_(ma, pf, identity)
+  return refineOrHaltWith_(ma, pf, identity)
 }
 
-export function refineOrDie<E extends Error, E1>(
+export function refineOrHalt<E extends Error, E1>(
   pf: (e: E) => O.Option<E1>
 ): <R, A>(ma: Query<R, E, A>) => Query<R, E1, A> {
-  return (ma) => refineOrDie_(ma, pf)
+  return (ma) => refineOrHalt_(ma, pf)
 }
 
-export function refineOrDieWith_<R, E, A, E1>(
+export function refineOrHaltWith_<R, E, A, E1>(
   ma: Query<R, E, A>,
   pf: (e: E) => O.Option<E1>,
   f: (e: E) => Error
@@ -1115,16 +1116,16 @@ export function refineOrDieWith_<R, E, A, E1>(
   return catchAll_(ma, (e) =>
     pipe(
       pf(e),
-      O.match(() => die(f(e)), fail)
+      O.match(() => halt(f(e)), fail)
     )
   )
 }
 
-export function refineOrDieWith<E, E1>(
+export function refineOrHaltWith<E, E1>(
   pf: (e: E) => O.Option<E1>,
   f: (e: E) => Error
 ): <R, A>(ma: Query<R, E, A>) => Query<R, E1, A> {
-  return (ma) => refineOrDieWith_(ma, pf, f)
+  return (ma) => refineOrHaltWith_(ma, pf, f)
 }
 
 export function rightOrFail_<R, E, A, B, E1>(ma: Query<R, E, E.Either<A, B>>, e: E1): Query<R, E | E1, B> {
@@ -1200,7 +1201,7 @@ export function unrefineWith_<R, E, A, E1>(
     pipe(
       cause,
       Ca.find(pf),
-      O.match(() => pipe(cause, Ca.map(f), halt), fail)
+      O.match(() => pipe(cause, Ca.map(f), failCause), fail)
     )
   )
 }

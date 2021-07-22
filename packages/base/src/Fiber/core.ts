@@ -134,7 +134,7 @@ export function fail<E>(e: E): SyntheticFiber<E, never> {
 }
 
 export function halt<E>(cause: C.Cause<E>) {
-  return done(Ex.halt(cause))
+  return done(Ex.failCause(cause))
 }
 
 export function interruptAs(id: FiberId) {

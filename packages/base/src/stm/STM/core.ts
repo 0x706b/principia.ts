@@ -15,7 +15,7 @@ import { tryCommit, tryCommitAsync } from '../Journal'
 import { DoneTypeId, SuspendTypeId } from '../TryCommit'
 import { txnId } from '../TxnId'
 import * as _ from './primitives'
-import { DieException, Effect, Gives, RetryException } from './primitives'
+import { Effect, Gives, HaltException, RetryException } from './primitives'
 
 export const MaxFrames = 200
 
@@ -46,20 +46,20 @@ export const fail: <E>(e: E) => STM<unknown, E, never> = _.fail
 export const failLazy: <E>(e: () => E) => STM<unknown, E, never> = _.failLazy
 
 /**
- * Kills the fiber running the effect.
+ * Halts the fiber running the effect.
  */
-export function die(u: unknown): STM<unknown, never, never> {
+export function halt(u: unknown): STM<unknown, never, never> {
   return new Effect(() => {
-    throw new DieException(u)
+    throw new HaltException(u)
   })
 }
 
 /**
- * Kills the fiber running the effect.
+ * Halts the fiber running the effect.
  */
-export function dieLazy(u: () => unknown): STM<unknown, never, never> {
+export function haltLazy(u: () => unknown): STM<unknown, never, never> {
   return new Effect(() => {
-    throw new DieException(u())
+    throw new HaltException(u())
   })
 }
 
@@ -698,15 +698,15 @@ export function commitEither<R, E, A>(stm: STM<R, E, A>): T.IO<R, E, A> {
  * Kills the fiber running the effect with a `RuntimeError` that contains
  * the specified message.
  */
-export function dieMessage(message: string): STM<unknown, never, never> {
-  return dieLazy(() => new RuntimeException(message))
+export function haltMessage(message: string): STM<unknown, never, never> {
+  return haltLazy(() => new RuntimeException(message))
 }
 
 /**
  * Kills the fiber running the effect with a `RuntimeError` that contains
  * the specified message.
  */
-export function dieMessageWith(message: () => string): STM<unknown, never, never> {
+export function haltMessageWith(message: () => string): STM<unknown, never, never> {
   return succeedLazy(() => {
     throw new RuntimeException(message())
   })
@@ -750,30 +750,30 @@ export function eventually<R, E, A>(stm: STM<R, E, A>): STM<R, never, A> {
 }
 
 /**
- * Dies with specified `unknown` if the predicate fails.
+ * Halts with specified `unknown` if the predicate fails.
  *
- * @dataFirst filterOrDie_
+ * @dataFirst filterOrHalt_
  */
-export function filterOrDie<A, B extends A>(
+export function filterOrHalt<A, B extends A>(
   p: Refinement<A, B>,
-  dieWith: (a: Exclude<A, B>) => unknown
+  haltWith: (a: Exclude<A, B>) => unknown
 ): <R, E>(fa: STM<R, E, A>) => STM<R, E, B>
-export function filterOrDie<A>(p: Predicate<A>, dieWith: (a: A) => unknown): <R, E>(fa: STM<R, E, A>) => STM<R, E, A>
-export function filterOrDie<A>(p: Predicate<A>, dieWith: unknown) {
-  return <R, E>(fa: STM<R, E, A>): STM<R, E, A> => filterOrDie_(fa, p, dieWith as (a: A) => unknown)
+export function filterOrHalt<A>(p: Predicate<A>, haltWith: (a: A) => unknown): <R, E>(fa: STM<R, E, A>) => STM<R, E, A>
+export function filterOrHalt<A>(p: Predicate<A>, haltWith: unknown) {
+  return <R, E>(fa: STM<R, E, A>): STM<R, E, A> => filterOrHalt_(fa, p, haltWith as (a: A) => unknown)
 }
 
 /**
- * Dies with specified `unknown` if the predicate fails.
+ * Halts with specified `unknown` if the predicate fails.
  */
-export function filterOrDie_<R, E, A, B extends A>(
+export function filterOrHalt_<R, E, A, B extends A>(
   fa: STM<R, E, A>,
   p: Refinement<A, B>,
-  f: (a: Exclude<A, B>) => unknown
+  haltWith: (a: Exclude<A, B>) => unknown
 ): STM<R, E, B>
-export function filterOrDie_<R, E, A>(fa: STM<R, E, A>, p: Predicate<A>, f: (a: A) => unknown): STM<R, E, A>
-export function filterOrDie_<R, E, A>(fa: STM<R, E, A>, p: Predicate<A>, f: unknown) {
-  return filterOrElse_(fa, p, (x) => dieLazy(() => (f as (a: A) => unknown)(x)))
+export function filterOrHalt_<R, E, A>(fa: STM<R, E, A>, p: Predicate<A>, haltWith: (a: A) => unknown): STM<R, E, A>
+export function filterOrHalt_<R, E, A>(fa: STM<R, E, A>, p: Predicate<A>, haltWith: unknown) {
+  return filterOrElse_(fa, p, (x) => haltLazy(() => (haltWith as (a: A) => unknown)(x)))
 }
 
 /**
@@ -845,35 +845,39 @@ export function filterOrElse_<R, E, A, R2, E2, A2>(
 }
 
 /**
- * Dies with a `Error` having the specified text message
+ * Helts with an `Error` having the specified text message
  * if the predicate fails.
  *
- * @dataFirst filterOrDieMessage_
+ * @dataFirst filterOrHaltMessage_
  */
-export function filterOrDieMessage<A, B extends A>(
+export function filterOrHaltMessage<A, B extends A>(
   p: Refinement<A, B>,
   message: (a: Exclude<A, B>) => string
 ): <R, E>(fa: STM<R, E, A>) => STM<R, E, B>
-export function filterOrDieMessage<A>(
+export function filterOrHaltMessage<A>(
   p: Predicate<A>,
   message: (a: A) => string
 ): <R, E>(fa: STM<R, E, A>) => STM<R, E, A>
-export function filterOrDieMessage<A>(p: Predicate<A>, message: unknown) {
-  return <R, E>(fa: STM<R, E, A>): STM<R, E, A> => filterOrDieMessage_(fa, p, message as (a: A) => string)
+export function filterOrHaltMessage<A>(p: Predicate<A>, message: unknown) {
+  return <R, E>(fa: STM<R, E, A>): STM<R, E, A> => filterOrHaltMessage_(fa, p, message as (a: A) => string)
 }
 
 /**
- * Dies with a `Error` having the specified text message
+ * Halts with an `Error` having the specified text message
  * if the predicate fails.
  */
-export function filterOrDieMessage_<R, E, A, B extends A>(
+export function filterOrHaltMessage_<R, E, A, B extends A>(
   fa: STM<R, E, A>,
   p: Refinement<A, B>,
   message: (a: Exclude<A, B>) => string
 ): STM<R, E, B>
-export function filterOrDieMessage_<R, E, A>(fa: STM<R, E, A>, p: Predicate<A>, message: (a: A) => string): STM<R, E, A>
-export function filterOrDieMessage_<R, E, A>(fa: STM<R, E, A>, p: Predicate<A>, message: unknown) {
-  return filterOrDie_(fa, p, (a) => new RuntimeException((message as (a: A) => string)(a)))
+export function filterOrHaltMessage_<R, E, A>(
+  fa: STM<R, E, A>,
+  p: Predicate<A>,
+  message: (a: A) => string
+): STM<R, E, A>
+export function filterOrHaltMessage_<R, E, A>(fa: STM<R, E, A>, p: Predicate<A>, message: unknown) {
+  return filterOrHalt_(fa, p, (a) => new RuntimeException((message as (a: A) => string)(a)))
 }
 
 /**

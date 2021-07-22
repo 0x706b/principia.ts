@@ -126,7 +126,7 @@ export class TestRandom implements Random {
 
   private randomIntBounded = (n: number) => {
     if (n <= 0) {
-      return I.die(new IllegalArgumentError('n must be positive', 'TestRandom.randomIntBounded'))
+      return I.halt(new IllegalArgumentError('n must be positive', 'TestRandom.randomIntBounded'))
     } else if ((n & -n) === n) {
       return this.randomBits(31)['<$>']((_) => _ >> Math.clz32(n))
     } else {
@@ -300,7 +300,7 @@ function nextIntBetweenWith(
   nextIntBounded: (_: number) => UIO<number>
 ): UIO<number> {
   if (min >= max) {
-    return I.die(new IllegalArgumentError('invalid bounds', 'TestRandom.nextIntBetweenWith'))
+    return I.halt(new IllegalArgumentError('invalid bounds', 'TestRandom.nextIntBetweenWith'))
   } else {
     const difference = max - min
     if (difference > 0) return nextIntBounded(difference)['<$>']((n) => n + min)

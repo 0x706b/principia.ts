@@ -49,14 +49,14 @@ export function ensuringFirstWith_<R, E, A, R1>(
                 I.result,
                 I.crossWith(
                   I.result(releaseAll_(innerReleaseMap, e, sequential)),
-                  traceAs(cleanup, flow(Ex.crossSecond_, I.done))
+                  traceAs(cleanup, flow(Ex.crossSecond_, I.fromExit))
                 ),
                 I.flatten
               )
             )
           )
 
-          const a = yield* _(I.done(exitEA))
+          const a = yield* _(I.fromExit(exitEA))
           return tuple(releaseMapEntry, a)
         })
       )

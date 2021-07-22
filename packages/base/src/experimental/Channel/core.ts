@@ -17,8 +17,7 @@ export const ChannelTag = {
   Halt: 'Halt',
   Effect: 'Effect',
   Emit: 'Emit',
-  EffectTotal: 'EffectTotal',
-  EffectSuspendTotal: 'EffectSuspendTotal',
+  Defer: 'Defer',
   Ensuring: 'Ensuring',
   ConcatAll: 'ConcatAll',
   BracketOut: 'BracketOut',
@@ -71,7 +70,7 @@ export abstract class Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDo
     OutErr | OutErr1,
     OutElem | OutElem1,
     readonly [OutDone, OutDone1]
-  > => zip_(this, that);
+  > => cross_(this, that);
 
   readonly ['*>'] = <Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>(
     that: Channel<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>
@@ -83,7 +82,7 @@ export abstract class Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDo
     OutErr | OutErr1,
     OutElem | OutElem1,
     OutDone1
-  > => zipr_(this, that);
+  > => crossSecond_(this, that);
 
   readonly ['<*'] = <Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>(
     that: Channel<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>
@@ -95,7 +94,7 @@ export abstract class Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDo
     OutErr | OutErr1,
     OutElem | OutElem1,
     OutDone
-  > => zipl_(this, that)
+  > => crossFirst_(this, that)
 }
 
 export abstract class Continuation<Env, InErr, InElem, InDone, OutErr, OutErr2, OutElem, OutDone, OutDone2> {
@@ -220,9 +219,9 @@ export class Done<OutDone> extends Channel<unknown, unknown, unknown, unknown, n
   }
 }
 
-export class Halt<OutErr> extends Channel<unknown, unknown, unknown, unknown, OutErr, never, never> {
+export class Fail<OutErr> extends Channel<unknown, unknown, unknown, unknown, OutErr, never, never> {
   readonly _tag = ChannelTag.Halt
-  constructor(readonly error: () => Cause<OutErr>) {
+  constructor(readonly cause: () => Cause<OutErr>) {
     super()
   }
 }
@@ -234,14 +233,7 @@ export class Effect<Env, OutErr, OutDone> extends Channel<Env, unknown, unknown,
   }
 }
 
-export class EffectTotal<OutDone> extends Channel<unknown, unknown, unknown, unknown, never, never, OutDone> {
-  readonly _tag = ChannelTag.EffectTotal
-  constructor(readonly effect: () => OutDone) {
-    super()
-  }
-}
-
-export class EffectSuspendTotal<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> extends Channel<
+export class Defer<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> extends Channel<
   Env,
   InErr,
   InElem,
@@ -250,7 +242,7 @@ export class EffectSuspendTotal<Env, InErr, InElem, InDone, OutErr, OutElem, Out
   OutElem,
   OutDone
 > {
-  readonly _tag = ChannelTag.EffectSuspendTotal
+  readonly _tag = ChannelTag.Defer
   constructor(readonly effect: () => Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>) {
     super()
   }
@@ -353,7 +345,7 @@ export function concrete<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   | PipeTo<Env, InErr, InElem, InDone, OutErr, any, OutElem, any, OutDone, any>
   | Read<Env, InErr, InElem, InDone, OutErr, any, OutElem, OutDone, any>
   | Done<OutDone>
-  | Halt<OutErr>
+  | Fail<OutErr>
   | Effect<Env, OutErr, OutDone>
   | Emit<OutElem, OutDone>
   | ConcatAll<Env, InErr, InElem, InDone, OutErr, any, OutElem, any, OutDone, any>
@@ -362,23 +354,22 @@ export function concrete<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   | Give<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
   | BracketOut<Env, OutErr, OutElem, OutDone>
   | Ensuring<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
-  | EffectSuspendTotal<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
-  | EffectTotal<OutDone> {
+  | Defer<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> {
   //
 }
 
 /**
  * Halt a channel with the specified cause
  */
-export function haltLazy<E>(result: () => Cause<E>): Channel<unknown, unknown, unknown, unknown, E, never, never> {
-  return new Halt(result)
+export function failCauseLazy<E>(result: () => Cause<E>): Channel<unknown, unknown, unknown, unknown, E, never, never> {
+  return new Fail(result)
 }
 
 /**
  * Halt a channel with the specified cause
  */
-export function halt<E>(result: Cause<E>): Channel<unknown, unknown, unknown, unknown, E, never, never> {
-  return new Halt(() => result)
+export function failCause<E>(result: Cause<E>): Channel<unknown, unknown, unknown, unknown, E, never, never> {
+  return new Fail(() => result)
 }
 
 /**
@@ -469,7 +460,7 @@ export function chain_<
     OutElem | OutElem1,
     OutDone,
     OutDone2
-  >(channel, new ContinuationK(f, halt))
+  >(channel, new ContinuationK(f, failCause))
 }
 
 /**
@@ -500,7 +491,7 @@ export function chain<OutDone, Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1
  * Returns a new channel that is the sequential composition of this channel and the specified
  * channel. The returned channel terminates with a tuple of the terminal values of both channels.
  */
-export function zip_<
+export function cross_<
   Env,
   Env1,
   InErr,
@@ -534,21 +525,21 @@ export function zip_<
  * Returns a new channel that is the sequential composition of this channel and the specified
  * channel. The returned channel terminates with a tuple of the terminal values of both channels.
  *
- * @dataFirst zip_
+ * @dataFirst cross_
  */
-export function zip<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>(
+export function cross<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>(
   that: Channel<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>
 ) {
   return <Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
     self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
-  ) => zip_(self, that)
+  ) => cross_(self, that)
 }
 
 /**
  * Returns a new channel that is the sequential composition of this channel and the specified
  * channel. The returned channel terminates with the terminal value of this channel.
  */
-export function zipl_<
+export function crossFirst_<
   Env,
   Env1,
   InErr,
@@ -575,28 +566,28 @@ export function zipl_<
   OutElem | OutElem1,
   OutDone
 > {
-  return map_(zip_(self, that), ([d]) => d)
+  return map_(cross_(self, that), ([d]) => d)
 }
 
 /**
  * Returns a new channel that is the sequential composition of this channel and the specified
  * channel. The returned channel terminates with the terminal value of this channel.
  *
- * @dataFirst zipl_
+ * @dataFirst crossFirst_
  */
-export function zipl<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>(
+export function crossFirst<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>(
   that: Channel<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>
 ) {
   return <Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
     self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
-  ) => zipl_(self, that)
+  ) => crossFirst_(self, that)
 }
 
 /**
  * Returns a new channel that is the sequential composition of this channel and the specified
  * channel. The returned channel terminates with the terminal value of the other channel.
  */
-export function zipr_<
+export function crossSecond_<
   Env,
   Env1,
   InErr,
@@ -623,19 +614,19 @@ export function zipr_<
   OutElem1 | OutElem,
   OutDone1
 > {
-  return map_(zip_(self, that), ([, d1]) => d1)
+  return map_(cross_(self, that), ([, d1]) => d1)
 }
 
 /**
  * Returns a new channel that is the sequential composition of this channel and the specified
  * channel. The returned channel terminates with the terminal value of the other channel.
  *
- * @dataFirst zipr_
+ * @dataFirst crossSecond_
  */
-export function zipr<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>(
+export function crossSecond<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>(
   that: Channel<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>
 ) {
   return <Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
     self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
-  ) => zipr_(self, that)
+  ) => crossSecond_(self, that)
 }

@@ -22,7 +22,7 @@ export function fail<E, I>(e: E, leftover: Chunk<I>): I.FIO<[E.Either<E, never>,
 }
 
 export function halt<E>(c: Cause<E>): I.FIO<[E.Either<E, never>, Chunk<never>], never> {
-  return I.mapError_(I.halt(c), (e) => [E.left(e), C.empty()])
+  return I.mapError_(I.failCause(c), (e) => [E.left(e), C.empty()])
 }
 
 export function restartable<R, E, I, L, Z>(

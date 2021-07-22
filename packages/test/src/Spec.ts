@@ -190,7 +190,7 @@ export function foldM_<R, E, T, R1, E1, Z>(
     Suite: ({ label, specs, exec }) =>
       M.matchCauseManaged_(
         specs,
-        (c) => f(new SuiteCase(label, M.halt(c), exec)),
+        (c) => f(new SuiteCase(label, M.failCause(c), exec)),
         flow(
           M.foreachExec(
             O.getOrElse_(exec, () => defExec),
@@ -343,7 +343,7 @@ export function execute<R, E, T>(
   spec: Spec<R, E, T>,
   defExec: ExecutionStrategy
 ): M.Managed<R, never, Spec<unknown, E, T>> {
-  return M.asksManaged((r: R) => pipe(spec, giveAll(r), foreachExec(I.halt, I.succeed, defExec)))
+  return M.asksManaged((r: R) => pipe(spec, giveAll(r), foreachExec(I.failCause, I.succeed, defExec)))
 }
 
 export function whenM_<R, E, R1, E1>(

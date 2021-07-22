@@ -20,7 +20,7 @@ export function float(constraints: NumberConstraints & FloatConstraints = {}): G
       const minIndex = yield* _(safeFloatToIndex(min, 'min'))
       const maxIndex = yield* _(safeFloatToIndex(max, 'max'))
       if (minIndex > maxIndex) {
-        return yield* _(I.die(new Error('Gen.float constraints.min must be less than or equal to constraints.max')))
+        return yield* _(I.halt(new Error('Gen.float constraints.min must be less than or equal to constraints.max')))
       }
       if (noNaN) {
         return pipe(G.int({ min: minIndex, max: maxIndex }), G.map(indexToFloat))

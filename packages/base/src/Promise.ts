@@ -109,18 +109,18 @@ export function fulfillWith<E, A>(io: FIO<E, A>) {
  * Kills the promise with the specified error, which will be propagated to all
  * fibers waiting on the value of the promise.
  */
-export function die_<E, A>(promise: Promise<E, A>, defect: unknown): I.UIO<boolean> {
-  return fulfillWith_(promise, I.die(defect))
+export function halt_<E, A>(promise: Promise<E, A>, defect: unknown): I.UIO<boolean> {
+  return fulfillWith_(promise, I.halt(defect))
 }
 
 /**
  * Kills the promise with the specified error, which will be propagated to all
  * fibers waiting on the value of the promise.
  *
- * @dataFirst die_
+ * @dataFirst halt_
  */
-export function die(defect: unknown) {
-  return <E, A>(promise: Promise<E, A>) => die_(promise, defect)
+export function halt(defect: unknown) {
+  return <E, A>(promise: Promise<E, A>) => halt_(promise, defect)
 }
 
 /**
@@ -128,7 +128,7 @@ export function die(defect: unknown) {
  * fibers waiting on the value of the promise.
  */
 export function done_<E, A>(promise: Promise<E, A>, exit: Exit<E, A>): I.UIO<boolean> {
-  return fulfillWith_(promise, I.done(exit))
+  return fulfillWith_(promise, I.fromExit(exit))
 }
 
 /**
@@ -163,18 +163,18 @@ export function fail<E>(e: E): <A>(promise: Promise<E, A>) => I.UIO<boolean> {
  * Halts the promise with the specified cause, which will be propagated to all
  * fibers waiting on the value of the promise.
  */
-export function halt_<E, A>(promise: Promise<E, A>, cause: Cause<E>): I.UIO<boolean> {
-  return fulfillWith_(promise, I.halt(cause))
+export function failCause_<E, A>(promise: Promise<E, A>, cause: Cause<E>): I.UIO<boolean> {
+  return fulfillWith_(promise, I.failCause(cause))
 }
 
 /**
  * Halts the promise with the specified cause, which will be propagated to all
  * fibers waiting on the value of the promise.
  *
- * @dataFirst halt_
+ * @dataFirst failCause_
  */
-export function halt<E>(cause: Cause<E>): <A>(promise: Promise<E, A>) => I.UIO<boolean> {
-  return (promise) => halt_(promise, cause)
+export function failCause<E>(cause: Cause<E>): <A>(promise: Promise<E, A>) => I.UIO<boolean> {
+  return (promise) => failCause_(promise, cause)
 }
 
 /**

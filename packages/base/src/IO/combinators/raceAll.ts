@@ -30,7 +30,7 @@ const arbiter =
       (e) =>
         pipe(
           fails,
-          Ref.modify((c) => tuple(c === 0 ? pipe(P.halt_(promise, e), I.asUnit) : I.unit(), c - 1)),
+          Ref.modify((c) => tuple(c === 0 ? pipe(P.failCause_(promise, e), I.asUnit) : I.unit(), c - 1)),
           I.flatten
         ),
       (a) =>

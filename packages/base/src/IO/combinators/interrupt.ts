@@ -22,10 +22,10 @@ import {
   chain_,
   checkInterruptible,
   defer,
+  failCause,
   fiberId,
   flatten,
-  fromPromiseDie,
-  halt,
+  fromPromiseHalt,
   matchCauseIO_,
   pure,
   SetInterrupt,
@@ -42,7 +42,7 @@ import { forkDaemon } from './core-scope'
  */
 export function interruptAs(fiberId: FiberId): FIO<never, never> {
   const trace = accessCallTrace()
-  return traceCall(halt, trace)(C.interrupt(fiberId))
+  return traceCall(failCause, trace)(C.interrupt(fiberId))
 }
 
 /**
@@ -138,9 +138,9 @@ export function onInterrupt_<R, E, A, R1>(
         C.interrupted(cause)
           ? chain_(
               cleanup(C.interruptors(cause)),
-              traceAs(cleanup, () => halt(cause))
+              traceAs(cleanup, () => failCause(cause))
             )
-          : halt(cause),
+          : failCause(cause),
       succeed
     )
   )
@@ -175,10 +175,10 @@ export function onInterruptExtended_<R, E, A, R2, E2>(
         C.interrupted(cause)
           ? matchCauseIO_(
               cleanup(),
-              traceAs(cleanup, (_) => halt(_)),
-              traceAs(cleanup, () => halt(cause))
+              traceAs(cleanup, (_) => failCause(_)),
+              traceAs(cleanup, () => failCause(cause))
             )
-          : halt(cause),
+          : failCause(cause),
       succeed
     )
   )
@@ -319,7 +319,7 @@ export function asyncInterruptPromise<R, E, A>(
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
   return asyncInterruptEither<R, E, A>(
-    traceAs(register, (cb) => left(pipe(register(cb), (p) => fromPromiseDie(() => p), flatten))),
+    traceAs(register, (cb) => left(pipe(register(cb), (p) => fromPromiseHalt(() => p), flatten))),
     blockingOn
   )
 }

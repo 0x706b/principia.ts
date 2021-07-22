@@ -175,7 +175,7 @@ export function zipWith_<R, A, R1, B, C>(ma: Sample<R, A>, mb: Sample<R1, B>, f:
                       (r) =>
                         Ex.succeed(tuple(zipWith_(ea.value, r, f), tuple(leftDone, rightDone, O.some(ea.value), s2)))
                     ),
-                  (cause) => Ex.halt(cause)
+                  (cause) => Ex.failCause(cause)
                 )
               )
             }
@@ -199,7 +199,7 @@ export function zipWith_<R, A, R1, B, C>(ma: Sample<R, A>, mb: Sample<R1, B>, f:
                       (l) =>
                         Ex.succeed(tuple(zipWith_(l, eb.value, f), tuple(leftDone, rightDone, s1, O.some(eb.value))))
                     ),
-                  (cause) => Ex.halt(cause)
+                  (cause) => Ex.failCause(cause)
                 )
               )
             } else {
@@ -208,13 +208,13 @@ export function zipWith_<R, A, R1, B, C>(ma: Sample<R, A>, mb: Sample<R1, B>, f:
               const causeR = Ca.sequenceCauseOption(eb.cause)
               if (O.isSome(causeL)) {
                 if (O.isSome(causeR)) {
-                  return Ex.halt(Ca.both(causeL.value, causeR.value))
+                  return Ex.failCause(Ca.both(causeL.value, causeR.value))
                 } else {
-                  return Ex.halt(causeL.value)
+                  return Ex.failCause(causeL.value)
                 }
               } else {
                 if (O.isSome(causeR)) {
-                  return Ex.halt(causeR.value)
+                  return Ex.failCause(causeR.value)
                 } else {
                   if (!leftDone && s2._tag === 'Some') {
                     return Ex.succeed(
@@ -237,81 +237,6 @@ export function zipWith_<R, A, R1, B, C>(ma: Sample<R, A>, mb: Sample<R1, B>, f:
               }
             }
           }
-          // return ea._tag === Ex.ExitTag.Success
-          //   ? eb._tag === Ex.ExitTag.Success
-          //     ? Ex.succeed(
-          //         tuple(zipWith_(ea.value, eb.value, f), tuple(leftDone, rightDone, O.some(ea.value), O.some(eb.value)))
-          //       )
-          //     : pipe(
-          //         eb.cause,
-          //         Ca.sequenceCauseOption,
-          //         O.match(
-          //           () =>
-          //             O.match_(
-          //               s2,
-          //               () =>
-          //                 Ex.succeed(
-          //                   tuple(
-          //                     map_(ea.value, (a) => f(a, mb.value)),
-          //                     tuple(leftDone, true, O.some(ea.value), s2)
-          //                   )
-          //                 ),
-          //               (r) =>
-          //                 Ex.succeed(tuple(zipWith_(ea.value, r, f), tuple(leftDone, rightDone, O.some(ea.value), s2)))
-          //             ),
-          //           (cause) => Ex.halt(cause)
-          //         )
-          //       )
-          //   : eb._tag === Ex.ExitTag.Success
-          //   ? pipe(
-          //       ea.cause,
-          //       Ca.sequenceCauseOption,
-          //       O.match(
-          //         () =>
-          //           O.match_(
-          //             s1,
-          //             () =>
-          //               Ex.succeed(
-          //                 tuple(
-          //                   map_(eb.value, (b) => f(ma.value, b)),
-          //                   tuple(true, rightDone, s1, O.some(eb.value))
-          //                 )
-          //               ),
-          //             (l) =>
-          //               Ex.succeed(tuple(zipWith_(l, eb.value, f), tuple(leftDone, rightDone, s1, O.some(eb.value))))
-          //           ),
-          //         (cause) => Ex.halt(cause)
-          //       )
-          //     )
-          //   : (() => {
-          //       const causeL = Ca.sequenceCauseOption(ea.cause)
-          //       const causeR = Ca.sequenceCauseOption(eb.cause)
-          //       return causeL._tag === 'Some'
-          //         ? causeR._tag === 'Some'
-          //           ? Ex.halt(Ca.both(causeL.value, causeR.value))
-          //           : Ex.halt(causeL.value)
-          //         : causeR._tag === 'Some'
-          //         ? Ex.halt(causeR.value)
-          //         : (() => {
-          //             if (!leftDone && s2._tag === 'Some') {
-          //               return Ex.succeed(
-          //                 tuple(
-          //                   map_(s2.value, (b) => f(ma.value, b)),
-          //                   tuple(true, rightDone, s1, s2)
-          //                 )
-          //               )
-          //             } else if (!rightDone && s1._tag === 'Some') {
-          //               return Ex.succeed(
-          //                 tuple(
-          //                   map_(s1.value, (a) => f(a, mb.value)),
-          //                   tuple(leftDone, true, O.none(), s2)
-          //                 )
-          //               )
-          //             } else {
-          //               return Ex.fail(O.none())
-          //             }
-          //           })()
-          //     })()
         })
       )
   )

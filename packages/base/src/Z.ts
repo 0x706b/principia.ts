@@ -281,11 +281,11 @@ export function tryCatch<E>(
 }
 
 export function fail<E>(e: E): Z<never, unknown, never, unknown, E, never> {
-  return halt(FS.single(e))
+  return failCause(FS.single(e))
 }
 
 export function failLazy<E>(e: () => E): Z<never, unknown, never, unknown, E, never> {
-  return haltLazy(() => FS.single(e()))
+  return failCauseLazy(() => FS.single(e()))
 }
 
 export function fromEither<E, A>(either: E.Either<E, A>): Z<never, unknown, never, unknown, E, A> {
@@ -304,12 +304,12 @@ export function fromOptionLazy<A>(option: () => O.Option<A>): Z<never, unknown, 
   return defer(() => fromOption(option()))
 }
 
-export function halt<E>(cause: Cause<E>): Z<never, unknown, never, unknown, E, never> {
+export function failCause<E>(cause: Cause<E>): Z<never, unknown, never, unknown, E, never> {
   return new Fail(cause)
 }
 
-export function haltLazy<E>(cause: () => Cause<E>): Z<never, unknown, never, unknown, E, never> {
-  return defer(() => halt(cause()))
+export function failCauseLazy<E>(cause: () => Cause<E>): Z<never, unknown, never, unknown, E, never> {
+  return defer(() => failCause(cause()))
 }
 
 export function succeed<A, W = never, S1 = unknown, S2 = never>(a: A): Z<W, S1, S2, unknown, never, A> {
@@ -688,8 +688,8 @@ export function crossWithPar_<W, S, R, E, A, R1, E1, B, C>(
         P.pipe(
           fb,
           matchCauseZ(
-            (c2) => halt(FS.both(c1, c2)),
-            (_) => halt(c1)
+            (c2) => failCause(FS.both(c1, c2)),
+            (_) => failCause(c1)
           )
         ),
       (a) => map_(fb, (b) => f(a, b))
@@ -1064,7 +1064,7 @@ export function write<W1>(w: W1): <W, S1, S2, R, E, A>(ma: Z<W, S1, S2, R, E, A>
 export function listen<W, S1, S2, R, E, A>(wa: Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, E, readonly [A, C.Chunk<W>]> {
   return matchLogCauseZ_(
     wa,
-    (_, e) => halt(e),
+    (_, e) => failCause(e),
     (ws, a) => succeed([a, ws])
   )
 }
@@ -1565,7 +1565,7 @@ export function runAll_<W, S1, S2, E, A>(
           new MatchFrame(
             (cause: Cause<any>) => {
               log = Z.modifyLog(log)
-              return halt(cause)
+              return failCause(cause)
             },
             (a) => {
               log = Z.modifyLog(log)

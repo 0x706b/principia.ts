@@ -93,7 +93,7 @@ export function createReadStream(
         }
       })
     ),
-    S.bracket(([fd, _]) => I.orDie(close(fd))),
+    S.bracket(([fd, _]) => I.orHalt(close(fd))),
     S.chain(([fd, state]) =>
       S.repeatIOChunkOption(
         I.gen(function* (_) {
@@ -136,7 +136,7 @@ export function createWriteSink(
               open(path, options?.flags ?? fs.constants.O_CREAT | fs.constants.O_WRONLY, options?.mode),
               Ref.make(options?.start ? Integer.unwrap(options.start) : undefined)
             ),
-            ([fd, _]) => I.orDie(close(fd))
+            ([fd, _]) => I.orHalt(close(fd))
           ),
           (err) => I.toManaged_(errorRef.set(O.some(err)))
         )
@@ -489,7 +489,7 @@ export function watch(
   options?: any
 ): S.Stream<unknown, Error, { eventType: 'rename' | 'change', filename: string | Buffer }> {
   return pipe(
-    I.tryCatch_(
+    I.tryCatch(
       () => fs.watch(filename, options ?? {}),
       (err) => err as Error
     ),

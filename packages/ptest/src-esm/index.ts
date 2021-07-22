@@ -19,8 +19,8 @@ _require('ts-node').register({
     plugins: [
       {
         after: true,
-        transform: '@0x706b/ts-transform-fix-esm',
-        createRequire: false
+        transform: '@principia/compile',
+        tracing: false
       }
     ]
   },

@@ -44,7 +44,7 @@ export function blocked<R, E, A>(blockedRequests: BlockedRequests<R>, cont: Cont
   return new Blocked(blockedRequests, cont)
 }
 
-export function fail<E>(cause: Cause<E>): Result<unknown, E, never> {
+export function failCause<E>(cause: Cause<E>): Result<unknown, E, never> {
   return new Fail(cause)
 }
 
@@ -55,7 +55,7 @@ export function done<A>(value: A): Done<A> {
 export function map_<R, E, A, B>(fa: Result<R, E, A>, f: (a: A) => B): Result<R, E, B> {
   return matchTag_(fa, {
     Blocked: ({ blockedRequests, cont }) => blocked(blockedRequests, Cont.map_(cont, f)),
-    Fail: ({ cause }) => fail(cause),
+    Fail: ({ cause }) => failCause(cause),
     Done: ({ value }) => done(f(value))
   })
 }
@@ -69,7 +69,7 @@ export function mapDataSources_<R, E, A, R1>(fa: Result<R, E, A>, f: DataSourceA
     Blocked: ({ blockedRequests, cont }) =>
       blocked(BRS.mapDataSources(blockedRequests, f), Cont.mapDataSources_(cont, f)),
     Done: ({ value }) => done(value),
-    Fail: ({ cause }) => fail(cause)
+    Fail: ({ cause }) => failCause(cause)
   })
 }
 
@@ -80,7 +80,7 @@ export function mapDataSources<R1>(f: DataSourceAspect<R1>): <R, E, A>(fa: Resul
 export function fromEither<E, A>(either: E.Either<E, A>): Result<unknown, E, A> {
   return E.match_(
     either,
-    (e) => fail(Ca.fail(e)),
+    (e) => failCause(Ca.fail(e)),
     (a) => done(a)
   )
 }
@@ -88,7 +88,7 @@ export function fromEither<E, A>(either: E.Either<E, A>): Result<unknown, E, A> 
 export function gives_<R, E, A, R0>(ra: Result<R, E, A>, f: Described<(r0: R0) => R>): Result<R0, E, A> {
   return matchTag_(ra, {
     Blocked: ({ blockedRequests, cont }) => blocked(BRS.gives_(blockedRequests, f), Cont.gives_(cont, f)),
-    Fail: ({ cause }) => fail(cause),
+    Fail: ({ cause }) => failCause(cause),
     Done: ({ value }) => done(value)
   })
 }

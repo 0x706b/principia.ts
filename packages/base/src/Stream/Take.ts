@@ -17,13 +17,13 @@ export function chunk<A>(as: Chunk<A>): Take<never, A> {
 }
 
 export function halt<E>(cause: Ca.Cause<E>): Take<E, never> {
-  return Ex.halt(pipe(cause, Ca.map(O.some)))
+  return Ex.failCause(pipe(cause, Ca.map(O.some)))
 }
 
 export const end: Take<never, never> = Ex.fail(O.none())
 
 export function done<E, A>(take: Take<E, A>): I.FIO<Option<E>, Chunk<A>> {
-  return I.done(take)
+  return I.fromExit(take)
 }
 
 export function fromPull<R, E, O>(pull: Pull<R, E, O>): I.IO<R, never, Take<E, O>> {

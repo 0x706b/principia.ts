@@ -168,7 +168,7 @@ export function makeGraphQl<FieldPURI extends FieldAURIS, InputPURI extends Inpu
                 typeDefs: instanceConfig.schemaParts.typeDefs
               })
             ),
-            I.orDie
+            I.orHalt
           )
         )
 
@@ -194,13 +194,13 @@ export function makeGraphQl<FieldPURI extends FieldAURIS, InputPURI extends Inpu
               }
               return server
             }),
-            I.orDie
+            I.orHalt
           )
         )
       })
 
       return L.prepare(GraphQlInstance)(I.map_(acquire, (server) => ({ server }))).release(({ server }) =>
-        pipe(I.fromPromiseDie(server.stop))
+        pipe(I.fromPromiseHalt(server.stop))
       )
     }
 

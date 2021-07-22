@@ -323,7 +323,7 @@ export class HttpRequest {
             )
           ),
           I.chain((raw) =>
-            I.tryCatch_(
+            I.tryCatch(
               () => JSON.parse(raw),
               (_) =>
                 new HttpException('Failed to parse body JSON', {

@@ -33,22 +33,22 @@ import {
   chain_,
   ConcatAll,
   ContinuationK,
+  crossSecond,
+  crossSecond_,
+  Defer,
+  Done,
   Effect,
-  EffectSuspendTotal,
-  EffectTotal,
   Emit,
   end,
   Ensuring,
+  Fail,
+  failCause,
   Fold,
   Give,
-  Halt,
-  halt,
   map_,
   PipeTo,
   Read,
-  succeed,
-  zipr,
-  zipr_
+  succeed
 } from './core'
 import { ChannelExecutor } from './internal/ChannelExecutor'
 import * as State from './internal/ChannelState'
@@ -59,13 +59,13 @@ import { makeSingleProducerAsyncInput } from './internal/SingleProducerAsyncInpu
 export function succeedLazy<OutDone>(
   effect: () => OutDone
 ): Channel<unknown, unknown, unknown, unknown, never, never, OutDone> {
-  return new EffectTotal(effect)
+  return new Done(effect)
 }
 
 export function deferTotal<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   effect: () => Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
 ): Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> {
-  return new EffectSuspendTotal(effect)
+  return new Defer(effect)
 }
 
 /**
@@ -184,35 +184,35 @@ export function readWith<
   OutElem | OutElem1 | OutElem2,
   OutDone | OutDone1 | OutDone2
 > {
-  return readWithCause(inp, (c) => E.match_(Ca.failureOrCause(c), error, halt), done)
+  return readWithCause(inp, (c) => E.match_(Ca.failureOrCause(c), error, failCause), done)
 }
 
 /**
  * Halt a channel with the specified error
  */
 export function failLazy<E>(error: () => E): Channel<unknown, unknown, unknown, unknown, E, never, never> {
-  return new Halt(() => Ca.fail(error()))
+  return new Fail(() => Ca.fail(error()))
 }
 
 /**
  * Halt a channel with the specified error
  */
 export function fail<E>(error: E): Channel<unknown, unknown, unknown, unknown, E, never, never> {
-  return new Halt(() => Ca.fail(error))
+  return new Fail(() => Ca.fail(error))
 }
 
 /**
  * Halt a channel with the specified exception
  */
-export function die(defect: unknown): Channel<unknown, unknown, unknown, unknown, never, never, never> {
-  return new Halt(() => Ca.die(defect))
+export function halt(defect: unknown): Channel<unknown, unknown, unknown, unknown, never, never, never> {
+  return new Fail(() => Ca.halt(defect))
 }
 
 /**
  * Halt a channel with the specified exception
  */
-export function dieLazy(defect: () => unknown): Channel<unknown, unknown, unknown, unknown, never, never, never> {
-  return new Halt(() => Ca.die(defect()))
+export function haltLazy(defect: () => unknown): Channel<unknown, unknown, unknown, unknown, never, never, never> {
+  return new Fail(() => Ca.halt(defect()))
 }
 
 /**
@@ -632,7 +632,7 @@ export function drain<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
 ): Channel<Env, InErr, InElem, InDone, OutErr, never, OutDone> {
   const drainer: Channel<Env, OutErr, OutElem, OutDone, OutErr, never, OutDone> = readWithCause(
     (_) => drainer,
-    halt,
+    failCause,
     end
   )
   return channel['>>>'](drainer)
@@ -790,7 +790,7 @@ export function catchAll_<
     E.match_(
       Ca.failureOrCause(cause),
       (l) => f(l),
-      (r) => halt(r)
+      (r) => failCause(r)
     )
   )
 }
@@ -883,7 +883,7 @@ export function collect_<Env, InErr, InElem, InDone, OutErr, OutElem, OutElem2, 
       O.match_(
         f(o),
         () => collector,
-        (out2) => zipr_(write(out2), collector)
+        (out2) => crossSecond_(write(out2), collector)
       ),
     (e) => fail(e),
     (z) => end(z)
@@ -918,7 +918,7 @@ function contramapReader<InErr, InElem, InDone0, InDone>(
   f: (a: InDone0) => InDone
 ): Channel<unknown, InErr, InElem, InDone0, InErr, InElem, InDone> {
   return readWith(
-    (_in) => zipr_(write(_in), contramapReader(f)),
+    (_in) => crossSecond_(write(_in), contramapReader(f)),
     (err) => fail(err),
     (done) => end(f(done))
   )
@@ -944,7 +944,7 @@ function contramapInReader<InErr, InElem0, InElem, InDone>(
   f: (a: InElem0) => InElem
 ): Channel<unknown, InErr, InElem0, InDone, InErr, InElem, InDone> {
   return readWith(
-    (_in) => zipr_(write(f(_in)), contramapInReader(f)),
+    (_in) => crossSecond_(write(f(_in)), contramapInReader(f)),
     (err) => fail(err),
     (done) => end(done)
   )
@@ -970,7 +970,7 @@ function contramapIOReader<Env1, InErr, InElem, InDone0, InDone>(
   f: (i: InDone0) => IO<Env1, InErr, InDone>
 ): Channel<Env1, InErr, InElem, InDone0, InErr, InElem, InDone> {
   return readWith(
-    (_in) => zipr_(write(_in), contramapIOReader(f)),
+    (_in) => crossSecond_(write(_in), contramapIOReader(f)),
     (err) => fail(err),
     (done0) => fromIO(f(done0))
   )
@@ -1061,8 +1061,8 @@ export function interruptWhen_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1
   return mergeWith_(
     self,
     fromIO(io),
-    (selfDone) => MD.done(I.done(selfDone)),
-    (ioDone) => MD.done(I.done(ioDone))
+    (selfDone) => MD.done(I.fromExit(selfDone)),
+    (ioDone) => MD.done(I.fromExit(ioDone))
   )
 }
 
@@ -1171,7 +1171,7 @@ export function matchIO_<
   OutElem | OutElem2 | OutElem1,
   OutDone2 | OutDone1
 > {
-  return matchCauseIO_(self, flow(Ca.failureOrCause, E.match(onError, halt)), onSuccess)
+  return matchCauseIO_(self, flow(Ca.failureOrCause, E.match(onError, failCause)), onSuccess)
 }
 
 /**
@@ -1289,7 +1289,7 @@ export function mapErrorCause_<Env, InErr, InElem, InDone, OutErr, OutErr2, OutE
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
   f: (cause: Cause<OutErr>) => Cause<OutErr2>
 ): Channel<Env, InErr, InElem, InDone, OutErr2, OutElem, OutDone> {
-  return catchAllCause_(self, flow(f, halt))
+  return catchAllCause_(self, flow(f, failCause))
 }
 
 /**
@@ -1320,7 +1320,7 @@ function runManagedInterpret<Env, InErr, InDone, OutErr, OutDone>(
         break
       }
       case State.ChannelStateTag.Done: {
-        return I.done(exec.getDone())
+        return I.fromExit(exec.getDone())
       }
     }
   }
@@ -1341,7 +1341,7 @@ function toPullInterpret<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
     }
     case State.ChannelStateTag.Done: {
       const done = exec.getDone()
-      return Ex.matchIO_(done, flow(Ca.map(E.left), I.halt), flow(E.right, I.fail))
+      return Ex.matchIO_(done, flow(Ca.map(E.left), I.failCause), flow(E.right, I.fail))
     }
   }
 }
@@ -1425,7 +1425,7 @@ export function mergeAllWith_<
                 E.match(
                   (cause) =>
                     I.crossSecond_(
-                      Q.offer_(queue, I.halt(Ca.map_(cause, E.left))),
+                      Q.offer_(queue, I.failCause(Ca.map_(cause, E.left))),
                       I.asUnit(PR.succeed_(errorSignal, undefined))
                     ),
                   (outDone) =>
@@ -1452,7 +1452,7 @@ export function mergeAllWith_<
                     pipe(
                       getChildren,
                       I.chain(F.interruptAll),
-                      I.crossSecond(pipe(queue, Q.offer(I.halt(Ca.map_(cause, E.left))), I.as(false)))
+                      I.crossSecond(pipe(queue, Q.offer(I.failCause(Ca.map_(cause, E.left))), I.as(false)))
                     ),
                   (outDone) =>
                     I.raceWith_(
@@ -1523,7 +1523,7 @@ export function mergeAllWith_<
         pipe(
           Q.take(queue),
           I.flatten,
-          I.matchCause(flow(Ca.flipCauseEither, E.match(halt, end)), (outElem) => write(outElem)['*>'](consumer))
+          I.matchCause(flow(Ca.flipCauseEither, E.match(failCause, end)), (outElem) => write(outElem)['*>'](consumer))
         )
       )
       return consumer
@@ -1756,7 +1756,7 @@ export function mergeWith_<
           Ex.match_(
             exit,
             (cause) => {
-              const result = pipe(Ca.flipCauseEither(cause), E.match(Ex.halt, Ex.succeed), done)
+              const result = pipe(Ca.flipCauseEither(cause), E.match(Ex.failCause, Ex.succeed), done)
 
               MD.concrete(result)
 
@@ -1769,8 +1769,8 @@ export function mergeWith_<
                     fiber.await,
                     I.map(
                       Ex.match(
-                        flow(Ca.flipCauseEither, E.match(Ex.halt, Ex.succeed), result.f, fromIO),
-                        flow(write, zipr(go(single(result.f))))
+                        flow(Ca.flipCauseEither, E.match(Ex.failCause, Ex.succeed), result.f, fromIO),
+                        flow(write, crossSecond(go(single(result.f))))
                       )
                     )
                   )
@@ -1812,8 +1812,8 @@ export function mergeWith_<
               I.result(pullR),
               I.map(
                 Ex.match(
-                  flow(Ca.flipCauseEither, E.match(Ex.halt, Ex.succeed), state.f, fromIO),
-                  flow(write, zipr(go(new MS.LeftDone(state.f))))
+                  flow(Ca.flipCauseEither, E.match(Ex.failCause, Ex.succeed), state.f, fromIO),
+                  flow(write, crossSecond(go(new MS.LeftDone(state.f))))
                 )
               ),
               unwrap
@@ -1824,8 +1824,8 @@ export function mergeWith_<
               I.result(pullL),
               I.map(
                 Ex.match(
-                  flow(Ca.flipCauseEither, E.match(Ex.halt, Ex.succeed), state.f, fromIO),
-                  flow(write, zipr(go(new MS.RightDone(state.f))))
+                  flow(Ca.flipCauseEither, E.match(Ex.failCause, Ex.succeed), state.f, fromIO),
+                  flow(write, crossSecond(go(new MS.RightDone(state.f))))
                 )
               ),
               unwrap
@@ -1900,7 +1900,7 @@ export function mapOut_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, Ou
       write,
       chain(() => reader)
     ),
-    halt,
+    failCause,
     end
   )
 
@@ -1963,7 +1963,7 @@ export function mapOutIOPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
               flow(
                 Ca.flipCauseEither,
                 E.match(
-                  flow(Ca.map(E.left), I.halt, (_) => Q.offer_(queue, _)),
+                  flow(Ca.map(E.left), I.failCause, (_) => Q.offer_(queue, _)),
                   (outDone) =>
                     pipe(
                       Sem.withPermits(permits, n)(I.unit()),
@@ -1985,7 +1985,7 @@ export function mapOutIOPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
                           pipe(
                             PR.await(errorSignal),
                             I.raceFirst(f(outElem)),
-                            I.tapCause((cause) => PR.halt_(p, cause)),
+                            I.tapCause((cause) => PR.failCause_(p, cause)),
                             I.fulfill(p)
                           )
                         )
@@ -2009,7 +2009,9 @@ export function mapOutIOPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
         pipe(
           Q.take(queue),
           I.flatten,
-          I.matchCause(flow(Ca.flipCauseEither, E.match(halt, end)), (outElem) => zipr_(write(outElem), consumer))
+          I.matchCause(flow(Ca.flipCauseEither, E.match(failCause, end)), (outElem) =>
+            crossSecond_(write(outElem), consumer)
+          )
         )
       )
       return consumer
@@ -2028,36 +2030,36 @@ export function mapOutIOPar<OutElem, Env1, OutErr1, OutElem1>(
 
 export const never: Channel<unknown, unknown, unknown, unknown, never, never, never> = fromIO(I.never)
 
-export function orDie_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, E>(
+export function orHalt_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, E>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
   err: E
 ): Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> {
-  return orDieWith_(self, (_) => err)
+  return orHaltWith_(self, (_) => err)
 }
 
 /**
- * @dataFirst orDie_
+ * @dataFirst orHalt_
  */
-export function orDie<E>(err: E) {
+export function orHalt<E>(err: E) {
   return <Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
     self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
-  ) => orDie_(self, err)
+  ) => orHalt_(self, err)
 }
 
-export function orDieWith_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, E>(
+export function orHaltWith_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, E>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
   f: (e: OutErr) => E
 ) {
-  return catchAll_(self, (e) => die(f(e)))
+  return catchAll_(self, (e) => halt(f(e)))
 }
 
 /**
- * @dataFirst orDieWith_
+ * @dataFirst orHaltWith_
  */
-export function orDieWith<OutErr, E>(f: (e: OutErr) => E) {
+export function orHaltWith<OutErr, E>(f: (e: OutErr) => E) {
   return <Env, InErr, InElem, InDone, OutElem, OutDone>(
     self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
-  ) => orDieWith_(self, f)
+  ) => orHaltWith_(self, f)
 }
 
 /**
@@ -2159,8 +2161,8 @@ export function zipPar_<
   return mergeWith_(
     self,
     that,
-    (exit1) => MD.await((exit2) => I.done(Ex.cross_(exit1, exit2))),
-    (exit2) => MD.await((exit1) => I.done(Ex.cross_(exit1, exit2)))
+    (exit1) => MD.await((exit2) => I.fromExit(Ex.cross_(exit1, exit2))),
+    (exit2) => MD.await((exit1) => I.fromExit(Ex.cross_(exit1, exit2)))
   )
 }
 
@@ -2331,14 +2333,14 @@ export function buffer<InElem, InErr, InDone>(
       if (isEmpty(v)) {
         return tuple(
           readWith(
-            (_in) => zipr_(write(_in), buffer(empty, isEmpty, ref)),
+            (_in) => crossSecond_(write(_in), buffer(empty, isEmpty, ref)),
             (err) => fail(err),
             (done) => end(done)
           ),
           v
         )
       } else {
-        return tuple(zipr_(write(v), buffer(empty, isEmpty, ref)), empty)
+        return tuple(crossSecond_(write(v), buffer(empty, isEmpty, ref)), empty)
       }
     })
   )
@@ -2374,14 +2376,14 @@ export function fromOption<A>(option: O.Option<A>): Channel<unknown, unknown, un
 
 export function id<Err, Elem, Done>(): Channel<unknown, Err, Elem, Done, Err, Elem, Done> {
   return readWith(
-    (_in) => zipr_(write(_in), id<Err, Elem, Done>()),
+    (_in) => crossSecond_(write(_in), id<Err, Elem, Done>()),
     (err) => fail(err),
     (done) => end(done)
   )
 }
 
 export function interrupt(fiberId: F.FiberId): Channel<unknown, unknown, unknown, unknown, never, never, never> {
-  return halt(Ca.interrupt(fiberId))
+  return failCause(Ca.interrupt(fiberId))
 }
 
 export function managed_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1, OutElem, OutDone, A>(
@@ -2443,8 +2445,8 @@ export function fromInput<Err, Elem, Done>(
 ): Channel<unknown, unknown, unknown, unknown, Err, Elem, Done> {
   return unwrap(
     input.takeWith(
-      (_) => halt(_),
-      (_) => zipr_(write(_), fromInput(input)),
+      (_) => failCause(_),
+      (_) => crossSecond_(write(_), fromInput(input)),
       (_) => end(_)
     )
   )
@@ -2459,10 +2461,10 @@ export function fromQueue<Err, Elem, Done>(
       (cause) =>
         E.match_(
           Ca.flipCauseEither(cause),
-          (cause) => halt(cause),
+          (cause) => failCause(cause),
           (done) => end(done)
         ),
-      (elem) => zipr_(write(elem), fromQueue(queue))
+      (elem) => crossSecond_(write(elem), fromQueue(queue))
     )
   )
 }
@@ -2475,8 +2477,8 @@ export function toQueue<Err, Done, Elem>(
   queue: Q.Enqueue<Ex.Exit<E.Either<Err, Done>, Elem>>
 ): Channel<unknown, Err, Elem, Done, never, never, any> {
   return readWithCause(
-    (in_: Elem) => zipr_(fromIO(Q.offer_(queue, Ex.succeed(in_))), toQueue(queue)),
-    (cause: Ca.Cause<Err>) => fromIO(Q.offer_(queue, Ex.halt(Ca.map_(cause, (_) => E.left(_))))),
+    (in_: Elem) => crossSecond_(fromIO(Q.offer_(queue, Ex.succeed(in_))), toQueue(queue)),
+    (cause: Ca.Cause<Err>) => fromIO(Q.offer_(queue, Ex.failCause(Ca.map_(cause, (_) => E.left(_))))),
     (done: Done) => fromIO(Q.offer_(queue, Ex.fail(E.right(done))))
   )
 }
@@ -2487,7 +2489,7 @@ export function writeAll<Out>(
   return AR.foldr_(
     outs,
     Ev.now(end(undefined)) as Ev.Eval<Channel<unknown, unknown, unknown, unknown, never, Out, void>>,
-    (out, conduit) => Ev.map_(conduit, (conduit) => zipr_(write(out), conduit))
+    (out, conduit) => Ev.map_(conduit, (conduit) => crossSecond_(write(out), conduit))
   ).value
 }
 

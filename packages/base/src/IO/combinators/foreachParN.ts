@@ -29,7 +29,7 @@ export function foreachParN_<A, R, E, B>(as: Iterable<A>, n: number, f: (a: A) =
           pipe(
             f(a),
             I.matchCauseIO(
-              (c) => I.foreach_(pairs, (_) => P.halt_(_[0], c)),
+              (c) => I.foreach_(pairs, (_) => P.failCause_(_[0], c)),
               (b) => P.succeed_(p, b)
             )
           )

@@ -104,16 +104,16 @@ export function isFailException(u: unknown): u is FailException<unknown> {
   return isObject(u) && FailExceptionTypeId in u
 }
 
-export const DieExceptionTypeId = Symbol()
-export type DieExceptionTypeId = typeof DieExceptionTypeId
+export const HaltExceptionTypeId = Symbol()
+export type HaltExceptionTypeId = typeof HaltExceptionTypeId
 
-export class DieException<E> {
-  readonly [DieExceptionTypeId]: DieExceptionTypeId = DieExceptionTypeId
+export class HaltException<E> {
+  readonly [HaltExceptionTypeId]: HaltExceptionTypeId = HaltExceptionTypeId
   constructor(readonly e: E) {}
 }
 
-export function isDieException(u: unknown): u is DieException<unknown> {
-  return isObject(u) && DieExceptionTypeId in u
+export function isHaltException(u: unknown): u is HaltException<unknown> {
+  return isObject(u) && HaltExceptionTypeId in u
 }
 
 export const RetryExceptionTypeId = Symbol()

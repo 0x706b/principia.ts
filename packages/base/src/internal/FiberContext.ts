@@ -344,7 +344,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
   get await(): I.UIO<Exit<E, A>> {
     return I.effectAsyncInterruptEither((k): E.Either<I.UIO<void>, I.UIO<Exit<E, A>>> => {
-      const cb: Callback<never, Exit<E, A>> = (x) => k(I.done(x))
+      const cb: Callback<never, Exit<E, A>> = (x) => k(I.fromExit(x))
       return O.match_(this.observe(cb), () => E.left(I.succeedLazy(() => this.interruptObserver(cb))), E.right)
     })
   }
@@ -440,7 +440,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
           this.setInterrupting(true)
 
-          return I.concrete(I.chain_(this.openScope.close(v), () => I.done(v)))
+          return I.concrete(I.chain_(this.openScope.close(v), () => I.fromExit(v)))
         }
       }
     }
@@ -491,7 +491,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
         if (this.shouldInterrupt) {
           // Fiber interrupted, so go back into running state:
           this.exitAsync(epoch)
-          return I.concrete(I.halt(this.state.get.interrupted))
+          return I.concrete(I.failCause(this.state.get.interrupted))
         } else {
           return undefined
         }
@@ -800,7 +800,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                         current = I.concrete(k(nested.value))
                         break
                       }
-                      case IOTag.EffectTotal: {
+                      case IOTag.SucceedLazy: {
                         const kTrace = this.fastPathTrace(k, nested.effect, fastPathChainContinuationTrace)
                         if (this.platform.traceExecution && this.inTracingRegion) {
                           this.addTraceValue(kTrace)
@@ -811,7 +811,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                         current = I.concrete(k(nested.effect()))
                         break
                       }
-                      case IOTag.EffectPartial: {
+                      case IOTag.TryCatch: {
                         const kTrace = this.fastPathTrace(k, nested.effect, fastPathChainContinuationTrace)
                         try {
                           current = I.concrete(k(nested.effect()))
@@ -866,7 +866,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     current = this.next(current.value)
                     break
                   }
-                  case IOTag.EffectTotal: {
+                  case IOTag.SucceedLazy: {
                     if (this.platform.traceEffects) {
                       this.addTrace(current.effect)
                     }
@@ -891,7 +891,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                         return causeAndInterrupt
                       }
                       this.setInterrupting(true)
-                      current = this.done(Ex.halt(cause()))
+                      current = this.done(Ex.failCause(cause()))
                     } else {
                       this.setInterrupting(false)
                       current = this.next(maybeRedactedCause)
@@ -919,7 +919,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     current = I.concrete(current.f(interruptStatus(this.isInterruptible)))
                     break
                   }
-                  case IOTag.EffectPartial: {
+                  case IOTag.TryCatch: {
                     const c = current
                     try {
                       if (this.inTracingRegion && this.platform.traceEffects) {
@@ -1000,14 +1000,14 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     )
                     break
                   }
-                  case IOTag.DeferTotalWith: {
+                  case IOTag.DeferWith: {
                     if (this.platform.traceExecution && this.inTracingRegion) {
                       this.addTrace(current.io)
                     }
                     current = I.concrete(current.io(this.platform, this.fiberId))
                     break
                   }
-                  case IOTag.DeferPartialWith: {
+                  case IOTag.DeferTryCatchWith: {
                     const c = current
                     try {
                       if (this.platform.traceExecution && this.inTracingRegion) {
@@ -1031,7 +1031,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                       c.io(this.platform, this.fiberId),
                       Ex.match(
                         (cause) => {
-                          current = I.concrete(I.halt(cause))
+                          current = I.concrete(I.failCause(cause))
                         },
                         (value) => {
                           current = this.next(value)
@@ -1124,14 +1124,14 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                 }
               }
             } else {
-              current = I.concrete(I.halt(this.state.get.interrupted))
+              current = I.concrete(I.failCause(this.state.get.interrupted))
               this.setInterrupting(true)
             }
             opCount++
           }
         } catch (e) {
           this.setInterrupting(true)
-          current = I.concrete(I.die(e))
+          current = I.concrete(I.halt(e))
         }
       }
     } finally {

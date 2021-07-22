@@ -89,19 +89,19 @@ export function condemnExceptionWhen<E extends PE.HasDefaultLeafE>(
   return (parse) => condemnExceptionWhen_(parse, predicate)
 }
 
-export function condemnDie<I, A>(parse: Parse<I, PE.AnyDefaultError, A>): (i: I) => I.FIO<never, A> {
-  return flow(condemnException(parse), I.orDie)
+export function condemnHalt<I, A>(parse: Parse<I, PE.AnyDefaultError, A>): (i: I) => I.FIO<never, A> {
+  return flow(condemnException(parse), I.orHalt)
 }
 
-export function condemnDieWhen_<I, E extends PE.HasDefaultLeafE, A>(
+export function condemnHaltWhen_<I, E extends PE.HasDefaultLeafE, A>(
   parse: Parse<I, PE.ParseError<E>, A>,
   predicate: Predicate<E>
 ): (i: I) => I.FIO<never, A> {
-  return flow(condemnExceptionWhen_(parse, predicate), I.orDie)
+  return flow(condemnExceptionWhen_(parse, predicate), I.orHalt)
 }
 
-export function condemnDieWhen<E extends PE.HasDefaultLeafE>(
+export function condemnHaltWhen<E extends PE.HasDefaultLeafE>(
   predicate: Predicate<E>
 ): <I, A>(parse: Parse<I, PE.ParseError<E>, A>) => (i: I) => I.FIO<never, A> {
-  return (parse) => condemnDieWhen_(parse, predicate)
+  return (parse) => condemnHaltWhen_(parse, predicate)
 }

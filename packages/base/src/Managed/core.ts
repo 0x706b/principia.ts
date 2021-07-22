@@ -136,7 +136,7 @@ export { _try as try }
  * @trace 1
  */
 export function tryCatch_<E, A>(thunk: () => A, onThrow: (error: unknown) => E): Managed<unknown, E, A> {
-  return fromIO(I.tryCatch_(thunk, onThrow))
+  return fromIO(I.tryCatch(thunk, onThrow))
 }
 
 /**
@@ -181,8 +181,8 @@ export function fail<E = never, A = never>(e: E): Managed<unknown, E, A> {
 /**
  * @trace 0
  */
-export function haltLazy<E = never, A = never>(cause: () => Cause<E>): Managed<unknown, E, A> {
-  return haltWithTrace(cause)
+export function failCauseLazy<E = never, A = never>(cause: () => Cause<E>): Managed<unknown, E, A> {
+  return failCauseWithTrace(cause)
 }
 
 /**
@@ -190,33 +190,33 @@ export function haltLazy<E = never, A = never>(cause: () => Cause<E>): Managed<u
  *
  * @trace call
  */
-export function halt<E = never, A = never>(cause: Cause<E>): Managed<unknown, E, A> {
+export function failCause<E = never, A = never>(cause: Cause<E>): Managed<unknown, E, A> {
   const trace = accessCallTrace()
-  return fromIO(traceCall(I.halt, trace)(cause))
+  return fromIO(traceCall(I.failCause, trace)(cause))
 }
 
 /**
  * @trace 0
  */
-export function haltWithTrace<E = never, A = never>(cause: (_: () => Trace) => Cause<E>): Managed<unknown, E, A> {
-  return fromIO(I.haltWithTrace(cause))
+export function failCauseWithTrace<E = never, A = never>(cause: (_: () => Trace) => Cause<E>): Managed<unknown, E, A> {
+  return fromIO(I.failCauseWithTrace(cause))
 }
 
 /**
  * @trace 0
  */
-export function dieLazy(e: () => unknown): Managed<unknown, never, never> {
-  return fromIO(I.dieLazy(e))
+export function haltLazy(e: () => unknown): Managed<unknown, never, never> {
+  return fromIO(I.haltLazy(e))
 }
 
 /**
- * Returns a Managed that dies with the specified error
+ * Returns a Managed that halts with the specified error
  *
  * @trace call
  */
-export function die(e: unknown): Managed<unknown, never, never> {
+export function halt(e: unknown): Managed<unknown, never, never> {
   const trace = accessCallTrace()
-  return traceCall(halt, trace)(C.die(e))
+  return traceCall(failCause, trace)(C.halt(e))
 }
 
 /**
@@ -781,7 +781,7 @@ export function matchManaged_<R, E, A, R1, E1, B, R2, E2, C>(
   f: (e: E) => Managed<R1, E1, B>,
   g: (a: A) => Managed<R2, E2, C>
 ): Managed<R & R1 & R2, E1 | E2, B | C> {
-  return matchCauseManaged_(ma, traceAs(f, flow(C.failureOrCause, E.match(f, halt))), g)
+  return matchCauseManaged_(ma, traceAs(f, flow(C.failureOrCause, E.match(f, failCause))), g)
 }
 
 /**
@@ -961,7 +961,7 @@ export function chain_<R, E, A, R1, E1, A1>(
         I.map_(f(a).io, ([releaseThat, b]) => [
           (e) =>
             I.chain_(I.result(releaseThat(e)), (e1) =>
-              I.chain_(I.result(releaseSelf(e1)), (e2) => I.done(Ex.crossSecond_(e1, e2)))
+              I.chain_(I.result(releaseSelf(e1)), (e2) => I.fromExit(Ex.crossSecond_(e1, e2)))
             ),
           b
         ])
@@ -1064,7 +1064,7 @@ export function tapCause_<R, E, A, R1, E1>(
 ): Managed<R & R1, E | E1, A> {
   return catchAllCause_(
     ma,
-    traceAs(f, (c) => chain_(f(c), () => halt(c)))
+    traceAs(f, (c) => chain_(f(c), () => failCause(c)))
   )
 }
 
@@ -1426,7 +1426,7 @@ export function catchSomeCause_<R, E, A, R1, E1, B>(
 ): Managed<R & R1, E | E1, A | B> {
   return catchAllCause_(
     ma,
-    traceAs(pf, (e) => O.getOrElse_(pf(e), () => halt<E | E1>(e)))
+    traceAs(pf, (e) => O.getOrElse_(pf(e), () => failCause<E | E1>(e)))
   )
 }
 
@@ -1863,7 +1863,7 @@ export function interrupt(): Managed<unknown, never, never> {
   const trace = accessCallTrace()
   return chain_(
     fromIO(I.descriptorWith((d) => I.succeed(d.id))),
-    traceFrom(trace, (id) => halt(C.interrupt(id)))
+    traceFrom(trace, (id) => failCause(C.interrupt(id)))
   )
 }
 
@@ -1871,7 +1871,7 @@ export function interrupt(): Managed<unknown, never, never> {
  * Returns a Managed that is interrupted as if by the specified fiber.
  */
 export function interruptAs(fiberId: FiberId): Managed<unknown, never, never> {
-  return halt(C.interrupt(fiberId))
+  return failCause(C.interrupt(fiberId))
 }
 
 /**
@@ -2117,19 +2117,19 @@ export function optional<R, E, A>(ma: Managed<R, O.Option<E>, A>): Managed<R, E,
  *
  * @trace 1
  */
-export function orDieWith_<R, E, A>(ma: Managed<R, E, A>, f: (e: E) => unknown): Managed<R, never, A> {
-  return new Managed(I.orDieWith_(ma.io, f))
+export function orHaltWith_<R, E, A>(ma: Managed<R, E, A>, f: (e: E) => unknown): Managed<R, never, A> {
+  return new Managed(I.orHaltWith_(ma.io, f))
 }
 
 /**
  * Keeps none of the errors, and terminates the fiber with them, using
  * the specified function to convert the `E` into an unknown.
  *
- * @dataFirst orDieWith_
+ * @dataFirst orHaltWith_
  * @trace 0
  */
-export function orDieWith<E>(f: (e: E) => unknown): <R, A>(ma: Managed<R, E, A>) => Managed<R, never, A> {
-  return (ma) => orDieWith_(ma, f)
+export function orHaltWith<E>(f: (e: E) => unknown): <R, A>(ma: Managed<R, E, A>) => Managed<R, never, A> {
+  return (ma) => orHaltWith_(ma, f)
 }
 
 /**
@@ -2138,9 +2138,9 @@ export function orDieWith<E>(f: (e: E) => unknown): <R, A>(ma: Managed<R, E, A>)
  *
  * @trace call
  */
-export function orDie<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, A> {
+export function orHalt<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, A> {
   const trace = accessCallTrace()
-  return orDieWith_(
+  return orHaltWith_(
     ma,
     traceFrom(trace, (e) => e)
   )
@@ -2309,7 +2309,7 @@ export function orElseSucceed<A1>(that: () => A1): <R, E, A>(ma: Managed<R, E, A
  *
  * @trace call
  */
-export function refineOrDieWith_<R, E, A, E1>(
+export function refineOrHaltWith_<R, E, A, E1>(
   ma: Managed<R, E, A>,
   pf: (e: E) => O.Option<E1>,
   f: (e: E) => unknown
@@ -2317,7 +2317,7 @@ export function refineOrDieWith_<R, E, A, E1>(
   const trace = accessCallTrace()
   return catchAll_(
     ma,
-    traceFrom(trace, (e) => O.match_(pf(e), () => die(f(e)), fail))
+    traceFrom(trace, (e) => O.match_(pf(e), () => halt(f(e)), fail))
   )
 }
 
@@ -2325,15 +2325,15 @@ export function refineOrDieWith_<R, E, A, E1>(
  * Keeps some of the errors, and terminates the fiber with the rest, using
  * the specified function to convert the `E` into a `Throwable`.
  *
- * @dataFirst refineOrDieWith_
+ * @dataFirst refineOrHaltWith_
  * @trace call
  */
-export function refineOrDieWith<E, E1>(
+export function refineOrHaltWith<E, E1>(
   pf: (e: E) => O.Option<E1>,
   f: (e: E) => unknown
 ): <R, A>(ma: Managed<R, E, A>) => Managed<R, E1, A> {
   const trace = accessCallTrace()
-  return (ma) => traceCall(refineOrDieWith_, trace)(ma, pf, f)
+  return (ma) => traceCall(refineOrHaltWith_, trace)(ma, pf, f)
 }
 
 /**
@@ -2341,20 +2341,20 @@ export function refineOrDieWith<E, E1>(
  *
  * @trace call
  */
-export function refineOrDie_<R, E, A, E1>(ma: Managed<R, E, A>, pf: (e: E) => O.Option<E1>): Managed<R, E1, A> {
+export function refineOrHalt_<R, E, A, E1>(ma: Managed<R, E, A>, pf: (e: E) => O.Option<E1>): Managed<R, E1, A> {
   const trace = accessCallTrace()
-  return traceCall(refineOrDieWith_, trace)(ma, pf, identityFn)
+  return traceCall(refineOrHaltWith_, trace)(ma, pf, identityFn)
 }
 
 /**
  * Keeps some of the errors, and terminates the fiber with the rest
  *
- * @dataFirst refineOrDie_
+ * @dataFirst refineOrHalt_
  * @trace call
  */
-export function refineOrDie<E, E1>(pf: (e: E) => O.Option<E1>): <R, A>(ma: Managed<R, E, A>) => Managed<R, E1, A> {
+export function refineOrHalt<E, E1>(pf: (e: E) => O.Option<E1>): <R, A>(ma: Managed<R, E, A>) => Managed<R, E1, A> {
   const trace = accessCallTrace()
-  return (ma) => traceCall(refineOrDie_, trace)(ma, pf)
+  return (ma) => traceCall(refineOrHalt_, trace)(ma, pf)
 }
 
 /**
@@ -2444,7 +2444,7 @@ export function result<R, E, A>(ma: Managed<R, E, A>): Managed<R, never, Ex.Exit
   const trace = accessCallTrace()
   return matchCauseManaged_(
     ma,
-    traceFrom(trace, (cause) => succeed(Ex.halt(cause))),
+    traceFrom(trace, (cause) => succeed(Ex.failCause(cause))),
     traceFrom(trace, (a) => succeed(Ex.succeed(a)))
   )
 }

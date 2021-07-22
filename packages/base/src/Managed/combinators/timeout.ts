@@ -37,7 +37,7 @@ export function timeout<R, E, A>(ma: Managed<R, E, A>, d: number): Managed<R & H
               I.raceWith(
                 pipe(I.sleep(d), I.as(O.none())),
                 (result, sleeper) =>
-                  pipe(sleeper.interruptAs(id), I.crossSecond(I.done(Ex.map_(result, ([, a]) => E.right(a))))),
+                  pipe(sleeper.interruptAs(id), I.crossSecond(I.fromExit(Ex.map_(result, ([, a]) => E.right(a))))),
                 (_, resultFiber) => I.succeed(E.left(resultFiber))
               ),
               I.giveAll(r),

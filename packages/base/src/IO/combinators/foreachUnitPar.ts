@@ -114,7 +114,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
       useManaged_(interruptor, () =>
         pipe(
           P.fail_(result, undefined),
-          I.crossSecond(I.chain_(causes.get, I.halt)),
+          I.crossSecond(I.chain_(causes.get, I.failCause)),
           I.whenIO(
             pipe(
               fibers,
@@ -178,11 +178,11 @@ export function _foreachPar<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E,
 }
 
 function joinAllFibers<E, A>(as: Iterable<Fiber<E, A>>): I.IO<unknown, E, Chunk<A>> {
-  return I.tap_(I.chain_(awaitAllFibers(as), I.done), () => I.foreach_(as, (f) => f.inheritRefs))
+  return I.tap_(I.chain_(awaitAllFibers(as), I.fromExit), () => I.foreach_(as, (f) => f.inheritRefs))
 }
 
 function awaitAllFibers<E, A>(as: Iterable<Fiber<E, A>>): I.IO<unknown, never, Exit<E, Chunk<A>>> {
-  return I.result(_foreachPar(as, (f) => I.chain_(f.await, I.done)))
+  return I.result(_foreachPar(as, (f) => I.chain_(f.await, I.fromExit)))
 }
 
 function useManaged_<R, E, A, R2, E2, B>(
@@ -237,7 +237,7 @@ function releaseAllSeq_(_: RM.ReleaseMap, exit: Exit<any, any>): I.UIO<any> {
           return [
             I.chain_(
               I.foreach_(Array.from(RM.finalizers(s)).reverse(), ([_, f]) => I.result(s.update(f)(exit))),
-              (e) => I.done(O.getOrElse_(Ex.collectAll(...e), () => Ex.succeed([])))
+              (e) => I.fromExit(O.getOrElse_(Ex.collectAll(...e), () => Ex.succeed([])))
             ),
             new RM.Exited(s.nextKey, exit, s.update)
           ]

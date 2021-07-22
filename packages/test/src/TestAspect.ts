@@ -110,7 +110,7 @@ export function after<R, E>(effect: IO<R, E, any>): TestAspect<R, E> {
       test,
       I.result,
       I.crossWith(I.result(I.catchAllCause_(effect, (cause) => I.fail(new RuntimeFailure(cause)))), Ex.crossFirst_),
-      I.chain(I.done)
+      I.chain(I.fromExit)
     )
   )
 }
@@ -262,7 +262,7 @@ function warn<R, E>(
   return I.raceWith_(
     test,
     withLive_(showWarning(suiteLabels, testLabel, duration), I.delay(duration)),
-    (result, fiber) => Fi.interrupt(fiber)['*>'](I.done(result)),
+    (result, fiber) => Fi.interrupt(fiber)['*>'](I.fromExit(result)),
     (_, fiber) => Fi.join(fiber)
   )
 }

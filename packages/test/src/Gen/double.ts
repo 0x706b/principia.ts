@@ -49,7 +49,7 @@ export function double(constraints: NumberConstraints & FloatConstraints = {}): 
       const minIndex = yield* _(safeDoubleToIndex(min, 'min'))
       const maxIndex = yield* _(safeDoubleToIndex(max, 'max'))
       if (isStrictlySmaller64(maxIndex, minIndex)) {
-        return yield* _(I.die(new IllegalArgumentError('min must be less than or equal to max', 'Gen.double')))
+        return yield* _(I.halt(new IllegalArgumentError('min must be less than or equal to max', 'Gen.double')))
       }
       if (noNaN) {
         return G.map_(arrayInt64(minIndex, maxIndex), indexToDouble)

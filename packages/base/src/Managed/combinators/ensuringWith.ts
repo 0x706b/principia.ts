@@ -50,7 +50,7 @@ export function ensuringWith_<R, E, A, R1>(
               )
             )
           )
-          const a = yield* _(I.done(exitEA))
+          const a = yield* _(I.fromExit(exitEA))
           return tuple(releaseMapEntry, a)
         })
       )

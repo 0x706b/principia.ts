@@ -400,7 +400,7 @@ function collectLoop<Err, A>(
 ): Ch.Channel<unknown, Err, C.Chunk<A>, unknown, Err, C.Chunk<never>, C.Chunk<A>> {
   return Ch.readWithCause(
     (i) => collectLoop(C.concat_(state, i)),
-    Ch.halt,
+    Ch.failCause,
     (_) => Ch.end(state)
   )
 }
@@ -418,7 +418,7 @@ export function collectAll<Err, A>() {
 export function drain<Err, A>() {
   const drain: Ch.Channel<unknown, Err, C.Chunk<A>, unknown, Err, C.Chunk<never>, void> = Ch.readWithCause(
     (_) => drain,
-    Ch.halt,
+    Ch.failCause,
     (_) => Ch.unit()
   )
 
@@ -887,7 +887,7 @@ function foreachWhileLoop<R, Err, In>(
 export function foreachWhile<R, Err, In>(f: (_: In) => I.IO<R, Err, boolean>): Sink<R, Err, In, Err, In, void> {
   const process: Ch.Channel<R, Err, C.Chunk<In>, unknown, Err, C.Chunk<In>, void> = Ch.readWithCause(
     (inp: C.Chunk<In>) => foreachWhileLoop(f, inp, 0, inp.length, process),
-    Ch.halt,
+    Ch.failCause,
     () => Ch.unit()
   )
   return new Sink(process)

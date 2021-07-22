@@ -209,7 +209,7 @@ export class Transactional<R, S, Ev, F1 extends AM.AnyMessage> extends AbstractS
   })
 
   readonly decodeState = (s: unknown, system: AS.ActorSystem) =>
-    S.condemnDie((u) => withSystem(system)(() => Decoder.for(this.dbStateSchema)(u)))(s)
+    S.condemnHalt((u) => withSystem(system)(() => Decoder.for(this.dbStateSchema)(u)))(s)
 
   readonly encodeState = Encoder.for(this.dbStateSchema)
 
@@ -289,7 +289,7 @@ export class Transactional<R, S, Ev, F1 extends AM.AnyMessage> extends AbstractS
     const process = (msg: PendingMessage<F1>, initial: S) => {
       return T.asksServicesIO({ prov: StateStorageAdapter })(({ prov }) =>
         pipe(
-          AS.resolvePath(context.address)['|>'](T.orDie),
+          AS.resolvePath(context.address)['|>'](T.orHalt),
           T.map(([sysName, __, ___, actorName]) => `${sysName}(${actorName})`),
           T.chain((actorName) =>
             prov.transaction(actorName)(

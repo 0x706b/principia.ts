@@ -19,14 +19,14 @@ export function assertion(result: TestResult): TestFailure<never> {
   return new AssertionFailure(result)
 }
 
-export function die(error: Error): TestFailure<never> {
-  return new RuntimeFailure(C.die(error))
+export function halt(defect: unknown): TestFailure<never> {
+  return new RuntimeFailure(C.halt(defect))
 }
 
 export function fail<E>(e: E): TestFailure<E> {
   return new RuntimeFailure(C.fail(e))
 }
 
-export function halt<E>(cause: Cause<E>): TestFailure<E> {
+export function failCause<E>(cause: Cause<E>): TestFailure<E> {
   return new RuntimeFailure(cause)
 }

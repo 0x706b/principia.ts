@@ -19,11 +19,11 @@ export function safeFloatToIndex(f: number, label: string): I.IO<unknown, never,
   const conversionTrick = 'you can convert any double to a 32-bit float by using `new Float32Array([myDouble])[0]`'
   const errorMessage    = 'fc.floatNext constraints.' + label + ' must be a 32-bit float - ' + conversionTrick
   if (Number.isNaN(f) || (Number.isFinite(f) && (f < -MAX_VALUE_32 || f > MAX_VALUE_32))) {
-    return I.die(new Error(errorMessage))
+    return I.halt(new Error(errorMessage))
   }
   const index = floatToIndex(f)
   if (!Number.isInteger(index)) {
-    return I.die(new Error(errorMessage))
+    return I.halt(new Error(errorMessage))
   }
   return I.succeed(index)
 }
@@ -405,7 +405,7 @@ export function indexToDouble(index: ArrayInt64): number {
 export function safeDoubleToIndex(d: number, label: string): I.IO<unknown, never, ArrayInt64> {
   if (Number.isNaN(d)) {
     // Number.NaN does not have any associated index in the current implementation
-    return I.die(new Error('fc.doubleNext constraints.' + label + ' must be a 32-bit float'))
+    return I.halt(new Error('fc.doubleNext constraints.' + label + ' must be a 32-bit float'))
   }
   return I.succeed(doubleToIndex(d))
 }

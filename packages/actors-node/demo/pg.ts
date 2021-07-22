@@ -8,7 +8,7 @@ import { GenericContainer } from 'testcontainers'
 export const makeTestPG = M.gen(function* (_) {
   const container = yield* _(
     pipe(
-      T.fromPromiseDie(() =>
+      T.fromPromiseHalt(() =>
         new GenericContainer('postgres:alpine')
           .withEnv('POSTGRES_USER', 'user')
           .withEnv('POSTGRES_PASSWORD', 'pass')
@@ -16,7 +16,7 @@ export const makeTestPG = M.gen(function* (_) {
           .withExposedPorts(5432)
           .start()
       ),
-      M.bracket((c) => T.fromPromiseDie(() => c.stop()))
+      M.bracket((c) => T.fromPromiseHalt(() => c.stop()))
     )
   )
 

@@ -114,7 +114,7 @@ function _get<R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<re
               )
             )
           ),
-          I.chain((a) => (a._tag === 'None' ? I.die(new RuntimeException('bug')) : restore(P.await(a.value[1]))))
+          I.chain((a) => (a._tag === 'None' ? I.halt(new RuntimeException('bug')) : restore(P.await(a.value[1]))))
         )
       )
     )

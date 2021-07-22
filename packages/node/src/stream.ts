@@ -24,10 +24,10 @@ export class ReadableError {
  */
 export function streamFromReadable(r: () => stream.Readable): S.Stream<unknown, ReadableError, Byte> {
   return pipe(
-    I.tryCatch_(r, (err) => new ReadableError(err as Error)),
+    I.tryCatch(r, (err) => new ReadableError(err as Error)),
     I.tap((sr) =>
       sr.readableEncoding != null
-        ? I.dieMessage(`stream.Readable encoding set to ${sr.readableEncoding} cannot be used to produce Buffer`)
+        ? I.haltMessage(`stream.Readable encoding set to ${sr.readableEncoding} cannot be used to produce Buffer`)
         : I.unit()
     ),
     S.bracket((sr) =>
@@ -68,7 +68,7 @@ export function sinkFromWritable(w: () => stream.Writable): Sink.Sink<unknown, W
       I.async<unknown, never, stream.Writable>((cb) => {
         const onError = (err: Error) => {
           clearImmediate(im)
-          cb(I.die(err))
+          cb(I.halt(err))
         }
 
         const sw = w().once('error', onError)

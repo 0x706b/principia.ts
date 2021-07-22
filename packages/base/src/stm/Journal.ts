@@ -9,7 +9,7 @@ import type { TxnId } from './TxnId'
 import * as HM from '../HashMap'
 import * as I from '../IO'
 import { STMDriver } from './STM/driver'
-import { DieTypeId, FailTypeId, RetryTypeId, SucceedTypeId } from './TExit'
+import { FailTypeId, HaltTypeId, RetryTypeId, SucceedTypeId } from './TExit'
 import { Done, DoneTypeId, Suspend, SuspendTypeId } from './TryCommit'
 
 export type Journal = Map<Atomic<any>, Entry>
@@ -164,8 +164,8 @@ export function tryCommit<R, E, A>(fiberId: FiberId, stm: STM<R, E, A>, r: R): T
     case FailTypeId: {
       return completeTodos(I.fail(value.value), journal)
     }
-    case DieTypeId: {
-      return completeTodos(I.die(value.value), journal)
+    case HaltTypeId: {
+      return completeTodos(I.halt(value.value), journal)
     }
   }
 }

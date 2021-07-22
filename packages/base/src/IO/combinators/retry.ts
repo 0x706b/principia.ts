@@ -9,7 +9,7 @@ import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compi
 import * as E from '../../Either'
 import { pipe } from '../../function'
 import * as S from '../../Schedule'
-import { catchAll, chain, fail, map, map_, matchIO, orDie } from '../core'
+import { catchAll, chain, fail, map, map_, matchIO, orHalt } from '../core'
 
 /**
  * Retries with the specified retry policy.
@@ -87,7 +87,7 @@ const _loop = <R, E extends I, A, R1, I, O, R2, E2, A2>(
       pipe(
         driver.next(e),
         matchIO(
-          () => pipe(driver.last, orDie, chain(traceAs(orElse, (o) => pipe(orElse(e, o), map(E.left))))),
+          () => pipe(driver.last, orHalt, chain(traceAs(orElse, (o) => pipe(orElse(e, o), map(E.left))))),
           () => _loop(fa, orElse, driver)
         )
       )

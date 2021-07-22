@@ -49,7 +49,7 @@ export function isDataSource(u: unknown): u is DataSource<unknown, unknown> {
 export function batchN_<R, A>(dataSource: DataSource<R, A>, n: number): DataSource<R, A> {
   return new DataSource(`${dataSource.identifier}.batchN(${n})`, (requests) =>
     n < 1
-      ? I.die(new IllegalArgumentError('batchN: n must be at least one', 'DataSource.batchN'))
+      ? I.halt(new IllegalArgumentError('batchN: n must be at least one', 'DataSource.batchN'))
       : dataSource.runAll(C.foldl_(requests, C.empty(), (b, a) => C.concat_(b, C.chunksOf_(a, n))))
   )
 }
