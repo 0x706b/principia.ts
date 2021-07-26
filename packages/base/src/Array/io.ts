@@ -1,104 +1,14 @@
-import { pipe } from '../function'
+import type { Option } from '../Option'
+
+import { constVoid, pipe } from '../function'
 import * as I from '../IO'
-import { tuple } from '../prelude'
+import * as It from '../Iterable/core'
+import * as O from '../Option'
 import * as A from './core'
 
 /**
- * Effectfully maps the elements of this Array.
+ * Discards elements of an Array while the effectful predicate holds
  */
-export function mapIO_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> {
-  return pipe(
-    as,
-    A.foldl(I.succeed([0, Array(as.length)]) as I.IO<R, E, readonly [number, Array<B>]>, (b, a) =>
-      I.crossWith_(
-        b,
-        I.defer(() => f(a)),
-        ([i, acc], b) => {
-          acc[i] = b
-          return tuple(i + 1, acc)
-        }
-      )
-    ),
-    I.map(([, bs]) => bs)
-  )
-}
-
-/**
- * Effectfully maps the elements of this Array.
- */
-export function mapIO<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: ReadonlyArray<A>) => I.IO<R, E, ReadonlyArray<B>> {
-  return (as) => mapIO_(as, f)
-}
-
-/**
- * Effectfully maps the elements of this Array in parallel.
- */
-export function mapIOPar_<A, R, E, B>(as: ReadonlyArray<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, ReadonlyArray<B>> {
-  return I.chain_(I.succeed<B[]>(Array(as.length)), (bs) => {
-    function fn([a, n]: [A, number]) {
-      return I.chain_(
-        I.defer(() => f(a)),
-        (b) =>
-          I.succeedLazy(() => {
-            bs[n] = b
-          })
-      )
-    }
-    return I.chain_(
-      I.foreachUnitPar_(
-        A.map_(as, (a, n) => [a, n] as [A, number]),
-        fn
-      ),
-      () => I.succeedLazy(() => bs)
-    )
-  })
-}
-
-/**
- * Effectfully maps the elements of this Array in parallel.
- */
-export function mapIOPar<A, R, E, B>(
-  f: (a: A) => I.IO<R, E, B>
-): (as: ReadonlyArray<A>) => I.IO<R, E, ReadonlyArray<B>> {
-  return (as) => mapIOPar_(as, f)
-}
-
-/**
- * Statefully and effectfully maps over the elements of this Array to produce
- * new elements.
- */
-export function mapAccumIO_<S, A, R, E, B>(
-  as: ReadonlyArray<A>,
-  s: S,
-  f: (s: S, a: A) => I.IO<R, E, readonly [B, S]>
-): I.IO<R, E, readonly [ReadonlyArray<B>, S]> {
-  return I.defer(() => {
-    let dest: I.IO<R, E, S> = I.succeed(s)
-    const out: Array<B>     = Array(as.length)
-    for (let i = 0; i < as.length; i++) {
-      const v = as[i]
-      dest    = I.chain_(dest, (state) =>
-        I.map_(f(state, v), ([b, s2]) => {
-          out[i] = b
-          return s2
-        })
-      )
-    }
-    return I.map_(dest, (s) => [out, s])
-  })
-}
-
-/**
- * Statefully and effectfully maps over the elements of this Array to produce
- * new elements.
- */
-export function mapAccumIO<S, A, R, E, B>(
-  s: S,
-  f: (s: S, a: A) => I.IO<R, E, readonly [B, S]>
-): (as: ReadonlyArray<A>) => I.IO<R, E, readonly [ReadonlyArray<B>, S]> {
-  return (as) => mapAccumIO_(as, s, f)
-}
-
 export function dropWhileIO_<A, R, E>(
   as: ReadonlyArray<A>,
   p: (a: A) => I.IO<R, E, boolean>
@@ -126,12 +36,201 @@ export function dropWhileIO_<A, R, E>(
   })
 }
 
+/**
+ * Discards elements of an Array while the effectful predicate holds
+ */
 export function dropWhileIO<A, R, E>(
   p: (a: A) => I.IO<R, E, boolean>
 ): (as: ReadonlyArray<A>) => I.IO<R, E, ReadonlyArray<A>> {
   return (as) => dropWhileIO_(as, p)
 }
 
+/**
+ * Filters an Array with an effectful function
+ */
+export function filterIO_<A, R, E>(
+  as: ReadonlyArray<A>,
+  f: (a: A) => I.IO<R, E, boolean>
+): I.IO<R, E, ReadonlyArray<A>> {
+  return I.defer(() => {
+    const ret: Array<A>               = []
+    let computation: I.IO<R, E, void> = I.unit()
+    for (let i = 0; i < as.length; i++) {
+      const a     = as[i]
+      computation = pipe(
+        computation,
+        I.chain(() => f(a)),
+        I.map((b) => (b ? (ret.push(a), undefined) : undefined))
+      )
+    }
+    return I.asLazy_(computation, () => ret)
+  })
+}
+
+/**
+ * Filters an Array with an effectful function
+ */
+export function filterIO<A, R, E>(
+  f: (a: A) => I.IO<R, E, boolean>
+): (as: ReadonlyArray<A>) => I.IO<R, E, ReadonlyArray<A>> {
+  return (as) => filterIO_(as, f)
+}
+
+/**
+ * Filters and maps an Array with an effectful function
+ */
+export function filterMapIO_<A, R, E, B>(
+  as: ReadonlyArray<A>,
+  f: (a: A) => I.IO<R, E, Option<B>>
+): I.IO<R, E, ReadonlyArray<B>> {
+  return I.defer(() => {
+    const ret: Array<B>               = []
+    let computation: I.IO<R, E, void> = I.unit()
+    for (let i = 0; i < as.length; i++) {
+      const a     = as[i]
+      computation = pipe(
+        computation,
+        I.chain(() => f(a)),
+        I.map(
+          O.match(constVoid, (b) => {
+            ret.push(b)
+          })
+        )
+      )
+    }
+    return I.asLazy_(computation, () => ret)
+  })
+}
+
+/**
+ * Filters and maps an Array with an effectful function
+ */
+export function filterMapIO<A, R, E, B>(
+  f: (a: A) => I.IO<R, E, Option<B>>
+): (as: ReadonlyArray<A>) => I.IO<R, E, ReadonlyArray<B>> {
+  return (as) => filterMapIO_(as, f)
+}
+
+/**
+ * Performs an effectful left-associative fold over an Array
+ */
+export function foldlIO_<A, R, E, B>(as: ReadonlyArray<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
+  return A.foldl_(as, I.succeed(b) as I.IO<R, E, B>, (acc, a) => I.chain_(acc, (b) => f(b, a)))
+}
+
+/**
+ * Performs an effectful left-associative fold over an Array
+ */
+export function foldlIO<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: ReadonlyArray<A>) => I.IO<R, E, B> {
+  return (as) => foldlIO_(as, b, f)
+}
+
+/**
+ * Statefully and effectfully maps over the elements of this Array to produce
+ * new elements.
+ */
+export function mapAccumIO_<S, A, R, E, B>(
+  as: ReadonlyArray<A>,
+  s: S,
+  f: (s: S, a: A) => I.IO<R, E, readonly [B, S]>
+): I.IO<R, E, readonly [ReadonlyArray<B>, S]> {
+  return I.defer(() => {
+    let computation: I.IO<R, E, S> = I.succeed(s)
+    const out: Array<B>            = Array(as.length)
+    for (let i = 0; i < as.length; i++) {
+      const v     = as[i]
+      computation = I.chain_(computation, (state) =>
+        I.map_(f(state, v), ([b, s2]) => {
+          out[i] = b
+          return s2
+        })
+      )
+    }
+    return I.map_(computation, (s) => [out, s])
+  })
+}
+
+/**
+ * Statefully and effectfully maps over the elements of this Array to produce
+ * new elements.
+ */
+export function mapAccumIO<S, A, R, E, B>(
+  s: S,
+  f: (s: S, a: A) => I.IO<R, E, readonly [B, S]>
+): (as: ReadonlyArray<A>) => I.IO<R, E, readonly [ReadonlyArray<B>, S]> {
+  return (as) => mapAccumIO_(as, s, f)
+}
+
+/**
+ * Effectfully maps the elements of this Array.
+ */
+export function mapIO_<A, R, E, B>(
+  as: ReadonlyArray<A>,
+  f: (a: A, i: number) => I.IO<R, E, B>
+): I.IO<R, E, ReadonlyArray<B>> {
+  return pipe(
+    as,
+    A.foldl(I.succeed(Array(as.length)) as I.IO<R, E, Array<B>>, (computation, value, index) =>
+      I.crossWith_(
+        computation,
+        I.defer(() => f(value, index)),
+        (acc, b) => {
+          acc[index] = b
+          return acc
+        }
+      )
+    )
+  )
+}
+
+/**
+ * Effectfully maps the elements of this Array.
+ */
+export function mapIO<A, R, E, B>(
+  f: (a: A, i: number) => I.IO<R, E, B>
+): (as: ReadonlyArray<A>) => I.IO<R, E, ReadonlyArray<B>> {
+  return (as) => mapIO_(as, f)
+}
+
+/**
+ * Effectfully maps the elements of this Array in parallel.
+ */
+export function mapIOPar_<A, R, E, B>(
+  as: ReadonlyArray<A>,
+  f: (a: A, i: number) => I.IO<R, E, B>
+): I.IO<R, E, ReadonlyArray<B>> {
+  return I.chain_(I.succeed<B[]>(Array(as.length)), (bs) => {
+    function fn([a, n]: [A, number]) {
+      return I.chain_(
+        I.defer(() => f(a, n)),
+        (b) =>
+          I.succeedLazy(() => {
+            bs[n] = b
+          })
+      )
+    }
+    return I.chain_(
+      I.foreachUnitPar_(
+        It.map_(as, (a, n) => [a, n] as [A, number]),
+        fn
+      ),
+      () => I.succeedLazy(() => bs)
+    )
+  })
+}
+
+/**
+ * Effectfully maps the elements of this Array in parallel.
+ */
+export function mapIOPar<A, R, E, B>(
+  f: (a: A) => I.IO<R, E, B>
+): (as: ReadonlyArray<A>) => I.IO<R, E, ReadonlyArray<B>> {
+  return (as) => mapIOPar_(as, f)
+}
+
+/**
+ * Takes elements of an Array while the effectful predicate holds
+ */
 export function takeWhileIO_<R, E, A>(
   as: ReadonlyArray<A>,
   p: (a: A) => I.IO<R, E, boolean>
@@ -159,16 +258,11 @@ export function takeWhileIO_<R, E, A>(
   })
 }
 
+/**
+ * Takes elements of an Array while the effectful predicate holds
+ */
 export function takeWhileIO<A, R, E>(
   p: (a: A) => I.IO<R, E, boolean>
 ): (as: ReadonlyArray<A>) => I.IO<R, E, ReadonlyArray<A>> {
   return (as) => takeWhileIO_(as, p)
-}
-
-export function foldlIO_<A, R, E, B>(as: ReadonlyArray<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
-  return A.foldl_(as, I.succeed(b) as I.IO<R, E, B>, (acc, a) => I.chain_(acc, (b) => f(b, a)))
-}
-
-export function foldlIO<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: ReadonlyArray<A>) => I.IO<R, E, B> {
-  return (as) => foldlIO_(as, b, f)
 }
