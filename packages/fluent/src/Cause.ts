@@ -1,11 +1,11 @@
-import type { Cause, Die, Renderer } from '@principia/base/Cause'
+import type { Cause, Halt, Renderer } from '@principia/base/Cause'
 import type { Either } from '@principia/base/Either'
 import type { FiberId } from '@principia/base/Fiber'
 import type { Trace } from '@principia/base/Fiber/trace'
 import type { Option } from '@principia/base/Option'
 import type { Predicate } from '@principia/base/prelude'
 
-export interface CauseOps<E> {
+export interface CauseOps {
   /**
    * @rewrite chain_ from "@principia/base/Cause"
    */
@@ -17,9 +17,9 @@ export interface CauseOps<E> {
   defects<E>(this: Cause<E>): ReadonlyArray<unknown>
 
   /**
-   * @rewrite died from "@principia/base/Cause"
+   * @rewrite halted from "@principia/base/Cause"
    */
-  died<E>(this: Cause<E>): this is Die
+  halted<E>(this: Cause<E>): this is Halt
 
   /**
    * @rewrite equals from "@principia/base/Cause"
@@ -78,7 +78,7 @@ export interface CauseOps<E> {
     this: Cause<E>,
     onEmpty: () => A,
     onFail: (e: E) => A,
-    onDie: (u: unknown) => A,
+    onHalt: (u: unknown) => A,
     onInterrupt: (id: FiberId) => A,
     onThen: (l: A, r: A) => A,
     onBoth: (l: A, r: A) => A,
@@ -152,11 +152,11 @@ export interface CauseOps<E> {
 }
 
 declare module '@principia/base/Cause/core' {
-  export interface Empty extends CauseOps<never> {}
-  export interface Fail<E> extends CauseOps<E> {}
-  export interface Die extends CauseOps<never> {}
-  export interface Interrupt extends CauseOps<never> {}
-  export interface Then<E> extends CauseOps<E> {}
-  export interface Both<E> extends CauseOps<E> {}
-  export interface Traced<E> extends CauseOps<E> {}
+  export interface Empty extends CauseOps {}
+  export interface Fail<E> extends CauseOps {}
+  export interface Halt extends CauseOps {}
+  export interface Interrupt extends CauseOps {}
+  export interface Then<E> extends CauseOps {}
+  export interface Both<E> extends CauseOps {}
+  export interface Traced<E> extends CauseOps {}
 }

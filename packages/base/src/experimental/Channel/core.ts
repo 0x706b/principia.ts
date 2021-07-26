@@ -31,70 +31,7 @@ export abstract class Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDo
   readonly _InDone!: (_: InDone) => void
   readonly _OutErr!: () => OutErr
   readonly _OutElem!: () => OutElem
-  readonly _OutDone!: () => OutDone;
-
-  readonly ['>>>'] = <Env2, OutErr2, OutElem2, OutDone2>(
-    that: Channel<Env2, OutErr, OutElem, OutDone, OutErr2, OutElem2, OutDone2>
-  ): Channel<Env & Env2, InErr, InElem, InDone, OutErr2, OutElem2, OutDone2> =>
-    new PipeTo<Env & Env2, InErr, InElem, InDone, OutErr, OutErr2, OutElem, OutElem2, OutDone, OutDone2>(
-      () => this,
-      () => that
-    );
-
-  readonly ['<$>'] = <OutDone2>(
-    f: (_: OutDone) => OutDone2
-  ): Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone2> => map_(this, f);
-
-  readonly ['$>'] = <OutDone2>(z2: OutDone2): Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone2> =>
-    map_(this, () => z2);
-
-  readonly ['>>='] = <Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone2>(
-    f: (d: OutDone) => Channel<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone2>
-  ): Channel<
-    Env & Env1,
-    InErr & InErr1,
-    InElem & InElem1,
-    InDone & InDone1,
-    OutErr | OutErr1,
-    OutElem | OutElem1,
-    OutDone2
-  > => chain_(this, f);
-
-  readonly ['<*>'] = <Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>(
-    that: Channel<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>
-  ): Channel<
-    Env & Env1,
-    InErr & InErr1,
-    InElem & InElem1,
-    InDone & InDone1,
-    OutErr | OutErr1,
-    OutElem | OutElem1,
-    readonly [OutDone, OutDone1]
-  > => cross_(this, that);
-
-  readonly ['*>'] = <Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>(
-    that: Channel<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>
-  ): Channel<
-    Env & Env1,
-    InErr & InErr1,
-    InElem & InElem1,
-    InDone & InDone1,
-    OutErr | OutErr1,
-    OutElem | OutElem1,
-    OutDone1
-  > => crossSecond_(this, that);
-
-  readonly ['<*'] = <Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>(
-    that: Channel<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>
-  ): Channel<
-    Env & Env1,
-    InErr & InErr1,
-    InElem & InElem1,
-    InDone & InDone1,
-    OutErr | OutErr1,
-    OutElem | OutElem1,
-    OutDone
-  > => crossFirst_(this, that)
+  readonly _OutDone!: () => OutDone
 }
 
 export abstract class Continuation<Env, InErr, InElem, InDone, OutErr, OutErr2, OutElem, OutDone, OutDone2> {
@@ -625,7 +562,17 @@ export function crossSecond_<
  */
 export function crossSecond<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>(
   that: Channel<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>
-) {
+): <Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
+  self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
+) => Channel<
+  Env & Env1,
+  InErr & InErr1,
+  InElem & InElem1,
+  InDone & InDone1,
+  OutErr1 | OutErr,
+  OutElem1 | OutElem,
+  OutDone1
+> {
   return <Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
     self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
   ) => crossSecond_(self, that)

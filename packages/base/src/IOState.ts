@@ -4,6 +4,7 @@ import type { Layer } from './Layer'
 
 import * as FR from './FiberRef'
 import { toLayer } from './IO/combinators/toLayer'
+import * as I from './IO/core'
 
 export const IOStateTypeId = Symbol('@principia/base/IOState')
 export type IOStateTypeId = typeof IOStateTypeId
@@ -24,7 +25,7 @@ export class IOStateFiberRef<S> implements IOState<S> {
 }
 
 export function make<S>(initial: S): UIO<IOState<S>> {
-  return FR.make(initial)['<$>']((fiberRef) => new IOStateFiberRef(fiberRef))
+  return I.map_(FR.make(initial), (fiberRef) => new IOStateFiberRef(fiberRef))
 }
 
 export function makeLayer<S>(initial: S, tag: Tag<IOState<S>>): Layer<unknown, never, Has<IOState<S>>> {

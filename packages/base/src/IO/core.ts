@@ -216,7 +216,7 @@ export function deferMaybeWith<E, A, R, E1, A1>(
  * @trace 0
  */
 export function defer<R, E, A>(io: () => IO<R, E, A>): IO<R, E, A> {
-  return new Primitives.DeferWith(io)
+  return new Primitives.Defer(io)
 }
 
 /**

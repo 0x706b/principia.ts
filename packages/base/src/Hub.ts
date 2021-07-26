@@ -276,7 +276,8 @@ export class UnsafeHub<A> extends HubInternal<unknown, unknown, never, never, A,
       I.defer(() => {
         this.shutdownFlag.set(true)
         return pipe(
-          M.releaseAll_(this.releaseMap, Ex.interrupt(fiberId), parallel)['*>'](this.strategy.shutdown),
+          M.releaseAll_(this.releaseMap, Ex.interrupt(fiberId), parallel),
+          I.crossSecond(this.strategy.shutdown),
           I.whenIO(P.succeed_(this.shutdownHook, undefined))
         )
       })
@@ -426,9 +427,8 @@ class UnsafeSubscription<A> extends Q.QueueInternal<never, unknown, unknown, nev
       I.defer(() => {
         this.shutdownFlag.set(true)
         return pipe(
-          I.foreachPar_(_unsafePollAllQueue(this.pollers), P.interruptAs(fiberId))['*>'](
-            I.succeedLazy(() => this.subscription.unsubscribe())
-          ),
+          I.foreachPar_(_unsafePollAllQueue(this.pollers), P.interruptAs(fiberId)),
+          I.crossSecond(I.succeedLazy(() => this.subscription.unsubscribe())),
           I.whenIO(P.succeed_(this.shutdownHook, undefined))
         )
       })

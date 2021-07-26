@@ -19,7 +19,6 @@ import { defaultRandom, RandomTag } from '../Random'
 import * as Scope from '../Scope'
 import * as Super from '../Supervisor'
 import * as I from './core'
-import { _I } from './core'
 
 export const defaultEnv: IOEnv = {
   [ClockTag.key]: new LiveClock(),
@@ -48,7 +47,7 @@ export const defaultPlatform = new Platform({
   ancestryLength: 25,
   renderer: C.defaultRenderer,
   reportFailure: constVoid,
-  maxOp: 10_000,
+  maxOp: 500,
   supervisor: Super.trackMainFibers
 })
 
@@ -92,7 +91,7 @@ export class CustomRuntime<R, A> {
 
   runFiber<E, A>(self: I.IO<R, E, A>): FiberContext<E, A> {
     const context = this.fiberContext<E, A>(self)
-    context.evaluateLater(self[_I])
+    context.evaluateLater(I.concrete(self))
     return context
   }
 
@@ -102,7 +101,7 @@ export class CustomRuntime<R, A> {
   run_<E, A>(_: I.IO<R, E, A>, cb?: Callback<E, A>) {
     const context = this.fiberContext<E, A>(_)
 
-    context.evaluateLater(_[_I])
+    context.evaluateLater(I.concrete(_))
     context.runAsync(cb || constVoid)
   }
 
@@ -119,7 +118,7 @@ export class CustomRuntime<R, A> {
   runAsap_<E, A>(_: I.IO<R, E, A>, cb?: Callback<E, A>) {
     const context = this.fiberContext<E, A>(_)
 
-    context.evaluateNow(_[_I])
+    context.evaluateNow(I.concrete(_))
     context.runAsync(cb || constVoid)
   }
 
@@ -137,7 +136,7 @@ export class CustomRuntime<R, A> {
   runCancel_<E, A>(_: I.IO<R, E, A>, cb?: Callback<E, A>): AsyncCancel<E, A> {
     const context = this.fiberContext<E, A>(_)
 
-    context.evaluateLater(_[_I])
+    context.evaluateLater(I.concrete(_))
     context.runAsync(cb || constVoid)
 
     return context.interruptAs(context.id)
@@ -157,7 +156,7 @@ export class CustomRuntime<R, A> {
   runPromise<E, A>(_: I.IO<R, E, A>): Promise<A> {
     const context = this.fiberContext<E, A>(_)
 
-    context.evaluateLater(_[_I])
+    context.evaluateLater(I.concrete(_))
 
     return new Promise((res, rej) => {
       context.runAsync(Ex.match(flow(C.squash(identity), rej), res))
@@ -171,7 +170,7 @@ export class CustomRuntime<R, A> {
   runPromiseExit<E, A>(_: I.IO<R, E, A>): Promise<Exit<E, A>> {
     const context = this.fiberContext<E, A>(_)
 
-    context.evaluateLater(_[_I])
+    context.evaluateLater(I.concrete(_))
 
     return new Promise((res) => {
       context.runAsync((exit) => {

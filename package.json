@@ -41,6 +41,7 @@
     "eslint-import-resolver-typescript": "^2.4.0",
     "eslint-plugin-import": "^2.23.4",
     "eslint-plugin-simple-import-sort": "^7.0.0",
+    "eslint-plugin-typescript-sort-keys": "^1.7.0",
     "fp-ts": "^2.10.5",
     "glob": "^7.1.7",
     "lerna": "^4.0.0",

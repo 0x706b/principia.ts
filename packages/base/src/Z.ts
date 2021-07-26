@@ -31,33 +31,6 @@ export type ZTypeId = typeof ZTypeId
 
 export type Cause<E> = FreeSemiring<never, E>
 
-abstract class ZSyntax<W, S1, S2, R, E, A> {
-  ['>>=']<W1, S3, Q, D, B>(
-    this: Z<W, S1, S2, R, E, A>,
-    f: (a: A) => Z<W1, S2, S3, Q, D, B>
-  ): Z<W | W1, S1, S3, Q & R, D | E, B> {
-    return new Chain(this, f)
-  }
-  ['<$>']<B>(this: Z<W, S1, S2, R, E, A>, f: (a: A) => B): Z<W, S1, S2, R, E, B> {
-    return this['>>=']((a) => new Succeed(f(a)))
-  }
-  ['$>']<B>(this: Z<W, S1, S2, R, E, A>, b: () => B): Z<W, S1, S2, R, E, B> {
-    return this['<$>'](b)
-  }
-  ['*>']<W1, S3, Q, D, B>(this: Z<W, S1, S2, R, E, A>, mb: Z<W1, S2, S3, Q, D, B>): Z<W | W1, S1, S3, Q & R, D | E, B> {
-    return zipSecond_(this, mb)
-  }
-  ['<*']<W1, S3, Q, D, B>(this: Z<W, S1, S2, R, E, A>, mb: Z<W1, S2, S3, Q, D, B>): Z<W | W1, S1, S3, Q & R, D | E, A> {
-    return zipFirst_(this, mb)
-  }
-  ['<*>']<W1, S3, Q, D, B>(
-    this: Z<W, S1, S2, R, E, A>,
-    mb: Z<W1, S2, S3, Q, D, B>
-  ): Z<W | W1, S1, S3, Q & R, D | E, readonly [A, B]> {
-    return zip_(this, mb)
-  }
-}
-
 /**
  * `Z<W, S1, S2, R, E, A>` is a purely functional description of a synchronous computation
  * that requires an environment `R` and an initial state `S1` and may either
@@ -70,19 +43,14 @@ abstract class ZSyntax<W, S1, S2, R, E, A> {
  *
  * @since 1.0.0
  */
-export abstract class Z<W, S1, S2, R, E, A> extends ZSyntax<W, S1, S2, R, E, A> {
-  readonly [ZTypeId]: ZTypeId = ZTypeId
-
+export abstract class Z<W, S1, S2, R, E, A> {
+  abstract readonly [ZTypeId]: ZTypeId
   readonly _W!: () => W
   readonly _S1!: (_: S1) => void
   readonly _S2!: () => S2
   readonly _R!: (_: R) => void
   readonly _E!: () => E
   readonly _A!: () => A
-
-  constructor() {
-    super()
-  }
 }
 
 export function isZ(u: unknown): u is Z<unknown, unknown, unknown, unknown, unknown, unknown> {
@@ -114,56 +82,64 @@ const ZTag = {
 } as const
 
 class Succeed<A> extends Z<never, unknown, never, unknown, never, A> {
-  readonly _tag = ZTag.Succeed
+  readonly [ZTypeId]: ZTypeId = ZTypeId
+  readonly _tag               = ZTag.Succeed
   constructor(readonly value: A) {
     super()
   }
 }
 
 class EffectTotal<A> extends Z<never, unknown, never, unknown, never, A> {
-  readonly _tag = ZTag.EffectTotal
+  readonly [ZTypeId]: ZTypeId = ZTypeId
+  readonly _tag               = ZTag.EffectTotal
   constructor(readonly effect: () => A) {
     super()
   }
 }
 
 class EffectPartial<E, A> extends Z<never, unknown, never, unknown, E, A> {
-  readonly _tag = ZTag.EffectPartial
+  readonly [ZTypeId]: ZTypeId = ZTypeId
+  readonly _tag               = ZTag.EffectPartial
   constructor(readonly effect: () => A, readonly onThrow: (u: unknown) => E) {
     super()
   }
 }
 
 class DeferTotal<W, S1, S2, R, E, A> extends Z<W, S1, S2, R, E, A> {
-  readonly _tag = ZTag.DeferTotal
+  readonly [ZTypeId]: ZTypeId = ZTypeId
+  readonly _tag               = ZTag.DeferTotal
   constructor(readonly z: () => Z<W, S1, S2, R, E, A>) {
     super()
   }
 }
 
 class DeferPartial<W, S1, S2, R, E, A, E1> extends Z<W, S1, S2, R, E | E1, A> {
-  readonly _tag = ZTag.DeferPartial
+  readonly [ZTypeId]: ZTypeId = ZTypeId
+  readonly _tag               = ZTag.DeferPartial
   constructor(readonly z: () => Z<W, S1, S2, R, E, A>, readonly onThrow: (u: unknown) => E1) {
     super()
   }
 }
 
 class Fail<E> extends Z<never, unknown, never, unknown, E, never> {
-  readonly _tag = ZTag.Fail
+  readonly [ZTypeId]: ZTypeId = ZTypeId
+  readonly _tag               = ZTag.Fail
   constructor(readonly cause: Cause<E>) {
     super()
   }
 }
 
 class Modify<S1, S2, A> extends Z<never, S1, S2, unknown, never, A> {
-  readonly _tag = ZTag.Modify
+  readonly [ZTypeId]: ZTypeId = ZTypeId
+  readonly _tag               = ZTag.Modify
   constructor(readonly run: (s1: S1) => readonly [A, S2]) {
     super()
   }
 }
 
 class Chain<W, S1, S2, R, E, A, W1, S3, Q, D, B> extends Z<W | W1, S1, S3, Q & R, D | E, B> {
-  readonly _tag = ZTag.Chain
+  readonly [ZTypeId]: ZTypeId = ZTypeId
+  readonly _tag               = ZTag.Chain
   constructor(readonly z: Z<W, S1, S2, R, E, A>, readonly cont: (a: A) => Z<W1, S2, S3, Q, D, B>) {
     super()
   }
@@ -177,7 +153,8 @@ class Match<W, S1, S2, S5, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C> extend
   E1 | E2,
   B | C
 > {
-  readonly _tag = ZTag.Match
+  readonly [ZTypeId]: ZTypeId = ZTypeId
+  readonly _tag               = ZTag.Match
   constructor(
     readonly z: Z<W, S1, S2, R, E, A>,
     readonly onFailure: (ws: C.Chunk<W>, e: Cause<E>) => Z<W1, S5, S3, R1, E1, B>,
@@ -188,28 +165,32 @@ class Match<W, S1, S2, S5, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C> extend
 }
 
 class Asks<W, R0, S1, S2, R, E, A> extends Z<W, S1, S2, R0 & R, E, A> {
-  readonly _tag = ZTag.Asks
+  readonly [ZTypeId]: ZTypeId = ZTypeId
+  readonly _tag               = ZTag.Asks
   constructor(readonly asks: (r: R0) => Z<W, S1, S2, R, E, A>) {
     super()
   }
 }
 
 class Give<W, S1, S2, R, E, A> extends Z<W, S1, S2, unknown, E, A> {
-  readonly _tag = ZTag.Give
+  readonly [ZTypeId]: ZTypeId = ZTypeId
+  readonly _tag               = ZTag.Give
   constructor(readonly z: Z<W, S1, S2, R, E, A>, readonly env: R) {
     super()
   }
 }
 
 class Tell<W> extends Z<W, unknown, never, unknown, never, void> {
-  readonly _tag = ZTag.Tell
+  readonly [ZTypeId]: ZTypeId = ZTypeId
+  readonly _tag               = ZTag.Tell
   constructor(readonly log: C.Chunk<W>) {
     super()
   }
 }
 
 class Censor<W, S1, S2, R, E, A, W1> extends Z<W1, S1, S2, R, E, A> {
-  readonly _tag = ZTag.Censor
+  readonly [ZTypeId]: ZTypeId = ZTypeId
+  readonly _tag               = ZTag.Censor
   constructor(readonly z: Z<W, S1, S2, R, E, A>, readonly modifyLog: (ws: C.Chunk<W>) => C.Chunk<W1>) {
     super()
   }
@@ -447,7 +428,7 @@ export function mapState<S2, S3>(
  * Provides this computation with its initial state.
  */
 export function giveState_<W, S1, S2, R, E, A>(ma: Z<W, S1, S2, R, E, A>, s: S1): Z<W, unknown, S2, R, E, A> {
-  return put(s)['*>'](ma)
+  return zipSecond_(put(s), ma)
 }
 
 /**
@@ -1511,7 +1492,7 @@ export function runAll_<W, S1, S2, E, A>(
         pushContinuation(
           new MatchFrame(
             (cause: Cause<any>) => {
-              const m = put(state)['*>'](Z.onFailure(log, cause))
+              const m = crossSecond_(put(state), Z.onFailure(log, cause))
               log     = C.empty()
               return m
             },
@@ -1532,8 +1513,8 @@ export function runAll_<W, S1, S2, E, A>(
         pushEnv(Z.env)
         current = matchZ_(
           Z.z,
-          (e) => succeed(popEnv())['*>'](fail(e)),
-          (a) => succeed(popEnv())['*>'](succeed(a))
+          (e) => crossSecond_(succeed(popEnv()), fail(e)),
+          (a) => crossSecond_(succeed(popEnv()), succeed(a))
         )
         break
       }

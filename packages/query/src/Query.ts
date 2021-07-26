@@ -108,7 +108,7 @@ export function runContext_<R, E, A>(ma: Query<R, E, A>, queryContext: QueryCont
     I.chain(
       matchTag({
         Blocked: ({ blockedRequests, cont }) =>
-          BRS.run_(blockedRequests, queryContext.cache)['*>'](Cont.runContext_(cont, queryContext)),
+          I.crossSecond_(BRS.run_(blockedRequests, queryContext.cache), Cont.runContext_(cont, queryContext)),
         Done: ({ value }) => I.succeed(value),
         Fail: ({ cause }) => I.failCause(cause)
       })
@@ -690,9 +690,10 @@ export function fromRequest<R, A extends AnyRequest>(request: A, dataSource: Dat
     pipe(
       I.ask<readonly [R, QueryContext]>(),
       I.chain(([, queryContext]) =>
-        FR.get(queryContext.cachingEnabled)['>>=']((cachingEnabled) => {
+        I.chain_(FR.get(queryContext.cachingEnabled), (cachingEnabled) => {
           if (cachingEnabled) {
-            return queryContext.cache.lookup(request)['>>='](
+            return I.chain_(
+              queryContext.cache.lookup(request),
               E.match(
                 (ref) =>
                   I.succeed(
@@ -702,13 +703,14 @@ export function fromRequest<R, A extends AnyRequest>(request: A, dataSource: Dat
                     )
                   ),
                 (ref) =>
-                  ref.get['<$>'](
+                  I.map_(
+                    ref.get,
                     O.match(() => Res.blocked(BRS.empty, Cont.make(request, dataSource, ref)), Res.fromEither)
                   )
               )
             )
           } else {
-            return Ref.make<O.Option<E.Either<_E<A>, _A<A>>>>(O.none())['<$>']((ref) =>
+            return I.map_(Ref.make<O.Option<E.Either<_E<A>, _A<A>>>>(O.none()), (ref) =>
               Res.blocked(
                 BRS.single(dataSource, BlockedRequest.make(request, ref)),
                 Cont.make(request, dataSource, ref)

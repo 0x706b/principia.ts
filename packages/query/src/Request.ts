@@ -1,6 +1,7 @@
 import * as A from '@principia/base/Array'
 import { CaseClass, CaseTypeId } from '@principia/base/Case'
 import * as C from '@principia/base/Chunk'
+import { pipe } from '@principia/base/function'
 import * as St from '@principia/base/Structural'
 import * as Z from '@principia/base/Z'
 
@@ -31,7 +32,11 @@ export abstract class StaticRequest<X extends Record<PropertyKey, any>, E, A> ex
     return St.showComputationComplex({
       base: Z.pure(`Request (${this.constructor.name})`),
       braces: ['{', '}'],
-      keys: Z.foreach_(this[CaseTypeId], (key) => St.showProperty(this, key, 0))['<$>'](C.from)
+      keys: pipe(
+        this[CaseTypeId],
+        Z.foreach((key) => St.showProperty(this, key, 0)),
+        Z.map(C.from)
+      )
     })
   }
 }

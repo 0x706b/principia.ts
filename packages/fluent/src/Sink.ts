@@ -15,21 +15,31 @@ declare module '@principia/base/experimental/Sink' {
     /**
      * @rewrite contramap_ from "@principia/base/experimental/Sink"
      */
-    contramap<In1>(f: (_: In1) => In): Sink<R, InErr, In1, OutErr, L, Z>
+    contramap<R, InErr, In, OutErr, L, Z, In1>(
+      this: Sink<R, InErr, In, OutErr, L, Z>,
+      f: (_: In1) => In
+    ): Sink<R, InErr, In1, OutErr, L, Z>
     /**
      * @rewrite contramapChunks_ from "@principia/base/experimental/Sink"
      */
-    contramapChunks<In1>(f: (chunk: C.Chunk<In1>) => C.Chunk<In>): Sink<R, InErr, In1, OutErr, L, Z>
+    contramapChunks<R, InErr, In, OutErr, L, Z, In1>(
+      this: Sink<R, InErr, In, OutErr, L, Z>,
+      f: (chunk: C.Chunk<In1>) => C.Chunk<In>
+    ): Sink<R, InErr, In1, OutErr, L, Z>
     /**
      * @rewrite contramapChunksIO_ from "@principia/base/experimental/Sink"
      */
-    contramapChunksIO<R1, InErr1, In1>(
+    contramapChunksIO<R, InErr, In, OutErr, L, Z, R1, InErr1, In1>(
+      this: Sink<R, InErr, In, OutErr, L, Z>,
       f: (chunk: C.Chunk<In1>) => I.IO<R1, InErr1, C.Chunk<In>>
     ): Sink<R & R1, InErr & InErr1, In1, OutErr, L, Z>
     /**
      * @rewrite contramapIO_ from "@principia/base/experimental/Sink"
      */
-    contramapIO<R1, InErr1, In1>(f: (_: In1) => I.IO<R1, InErr1, In>): Sink<R & R1, InErr & InErr1, In1, OutErr, L, Z>
+    contramapIO<R, InErr, In, OutErr, L, Z, R1, InErr1, In1>(
+      this: Sink<R, InErr, In, OutErr, L, Z>,
+      f: (_: In1) => I.IO<R1, InErr1, In>
+    ): Sink<R & R1, InErr & InErr1, In1, OutErr, L, Z>
     /**
      * @rewrite crossSecond_ from "@principia/base/experimental/Sink"
      */
@@ -56,11 +66,17 @@ declare module '@principia/base/experimental/Sink' {
     /**
      * @rewrite map_ from "@principia/base/experimental/Sink"
      */
-    map<Z2>(f: (z: Z) => Z2): Sink<R, InErr, In, OutErr, L, Z2>
+    map<R, InErr, In, OutErr, L, Z, Z2>(
+      this: Sink<R, InErr, In, OutErr, L, Z>,
+      f: (z: Z) => Z2
+    ): Sink<R, InErr, In, OutErr, L, Z2>
     /**
      * @rewrite mapIO_ from "@principia/base/experimental/Sink"
      */
-    mapIO<R1, OutErr1, Z1>(f: (z: Z) => I.IO<R1, OutErr1, Z1>): Sink<R & R1, InErr, In, OutErr | OutErr1, L, Z1>
+    mapIO<R, InErr, In, OutErr, L, Z, R1, OutErr1, Z1>(
+      this: Sink<R, InErr, In, OutErr, L, Z>,
+      f: (z: Z) => I.IO<R1, OutErr1, Z1>
+    ): Sink<R & R1, InErr, In, OutErr | OutErr1, L, Z1>
     /**
      * @rewrite matchSink_ from "@principia/base/experimental/Sink"
      */
@@ -91,7 +107,8 @@ declare module '@principia/base/experimental/Sink' {
     /**
      * @rewrite summarized_ from "@principia/base/experimental/Sink"
      */
-    summarized<R1, E1, B, C>(
+    summarized<R, InErr, In, OutErr, L, Z, R1, E1, B, C>(
+      this: Sink<R, InErr, In, OutErr, L, Z>,
       summary: I.IO<R1, E1, B>,
       f: (b1: B, b2: B) => C
     ): Sink<R & R1, InErr, In, OutErr | E1, L, readonly [Z, C]>

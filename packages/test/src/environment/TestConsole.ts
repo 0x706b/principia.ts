@@ -38,37 +38,49 @@ export class ConsoleData {
 
 export class TestConsole implements Console {
   put(...input: any[]): UIO<void> {
-    return Ref.update_(
+    return pipe(
       this.consoleState,
-      (data) =>
-        new ConsoleData(
-          data.input,
-          pipe(
-            input,
-            A.foldl(Li.empty(), (b, a) => Li.append_(b, inspect(a, { colors: false })))
-          ),
-          data.errOutput,
-          data.debugOutput
-        )
-    )['*>'](I.whenIO_(this.live.provide(Console.put(...input)), FR.get(this.debugState)))
+      Ref.update(
+        (data) =>
+          new ConsoleData(
+            data.input,
+            pipe(
+              input,
+              A.foldl(Li.empty(), (b, a) => Li.append_(b, inspect(a, { colors: false })))
+            ),
+            data.errOutput,
+            data.debugOutput
+          )
+      ),
+      I.crossSecond(I.whenIO_(this.live.provide(Console.put(...input)), FR.get(this.debugState)))
+    )
   }
   putStrLn(line: string): UIO<void> {
-    return Ref.update_(
+    return pipe(
       this.consoleState,
-      (data) => new ConsoleData(data.input, Li.append_(data.output, `${line}\n`), data.errOutput, data.debugOutput)
-    )['*>'](I.whenIO_(this.live.provide(Console.putStrLn(line)), FR.get(this.debugState)))
+      Ref.update(
+        (data) => new ConsoleData(data.input, Li.append_(data.output, `${line}\n`), data.errOutput, data.debugOutput)
+      ),
+      I.crossSecond(I.whenIO_(this.live.provide(Console.putStrLn(line)), FR.get(this.debugState)))
+    )
   }
   putStrLnErr(line: string): UIO<void> {
-    return Ref.update_(
+    return pipe(
       this.consoleState,
-      (data) => new ConsoleData(data.input, data.output, Li.append_(data.errOutput, `${line}\n`), data.debugOutput)
-    )['*>'](I.whenIO_(this.live.provide(Console.putStrLnErr(line)), FR.get(this.debugState)))
+      Ref.update(
+        (data) => new ConsoleData(data.input, data.output, Li.append_(data.errOutput, `${line}\n`), data.debugOutput)
+      ),
+      I.crossSecond(I.whenIO_(this.live.provide(Console.putStrLnErr(line)), FR.get(this.debugState)))
+    )
   }
   putStrLnDebug(line: string): UIO<void> {
-    return Ref.update_(
+    return pipe(
       this.consoleState,
-      (data) => new ConsoleData(data.input, data.output, data.errOutput, Li.append_(data.debugOutput, `${line}\n`))
-    )['*>'](I.whenIO_(this.live.provide(Console.putStrLnDebug(line)), FR.get(this.debugState)))
+      Ref.update(
+        (data) => new ConsoleData(data.input, data.output, data.errOutput, Li.append_(data.debugOutput, `${line}\n`))
+      ),
+      I.crossSecond(I.whenIO_(this.live.provide(Console.putStrLnDebug(line)), FR.get(this.debugState)))
+    )
   }
   constructor(readonly consoleState: URef<ConsoleData>, readonly live: Live, readonly debugState: FiberRef<boolean>) {}
   clearInput: UIO<void>  = Ref.update_(this.consoleState, (data) => data.copy({ input: Li.empty() }))
@@ -79,9 +91,9 @@ export class TestConsole implements Console {
   feedLines(...lines: ReadonlyArray<string>): UIO<void> {
     return Ref.update_(this.consoleState, (data) => data.copy({ input: Li.concat_(Li.from(lines), data.input) }))
   }
-  output: UIO<ReadonlyArray<string>>      = this.consoleState.get['<$>']((data) => Li.toArray(data.output))
-  outputErr: UIO<ReadonlyArray<string>>   = this.consoleState.get['<$>']((data) => Li.toArray(data.errOutput))
-  outputDebug: UIO<ReadonlyArray<string>> = this.consoleState.get['<$>']((data) => Li.toArray(data.debugOutput))
+  output: UIO<ReadonlyArray<string>>      = I.map_(this.consoleState.get, (data) => Li.toArray(data.output))
+  outputErr: UIO<ReadonlyArray<string>>   = I.map_(this.consoleState.get, (data) => Li.toArray(data.errOutput))
+  outputDebug: UIO<ReadonlyArray<string>> = I.map_(this.consoleState.get, (data) => Li.toArray(data.debugOutput))
   silent<R, E, A>(io: IO<R, E, A>): IO<R, E, A> {
     return FR.locally_(this.debugState, false, io)
   }

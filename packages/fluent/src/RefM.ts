@@ -13,7 +13,10 @@ declare module '@principia/base/RefM' {
      * @rewrite collect_ from "@principia/base/RefM"
      * @trace 0
      */
-    collect<C>(f: (b: B) => Option<C>): RefM<RA, RB, EA, Option<EB>, A, C>
+    collect<RA, RB, EA, EB, A, B, C>(
+      this: RefM<RA, RB, EA, EB, A, B>,
+      f: (b: B) => Option<C>
+    ): RefM<RA, RB, EA, Option<EB>, A, C>
 
     /**
      * Maps and filters the `get` value of the `RefM` with the specified
@@ -24,7 +27,10 @@ declare module '@principia/base/RefM' {
      * @rewrite collectIO_ from "@principia/base/RefM"
      * @trace 0
      */
-    collectIO<RC, EC, C>(f: (b: B) => Option<IO<RC, EC, C>>): RefM<RA, RB & RC, EA, Option<EC | EB>, A, C>
+    collectIO<RA, RB, EA, EB, A, B, RC, EC, C>(
+      this: RefM<RA, RB, EA, EB, A, B>,
+      f: (b: B) => Option<IO<RC, EC, C>>
+    ): RefM<RA, RB & RC, EA, Option<EC | EB>, A, C>
 
     /**
      * Transforms the `set` value of the `RefM` with the specified function.
@@ -32,7 +38,7 @@ declare module '@principia/base/RefM' {
      * @rewrite contramap_ from "@principia/base/RefM"
      * @trace 0
      */
-    contramap<C>(f: (_: C) => A): RefM<RA, RB, EA, EB, C, B>
+    contramap<RA, RB, EA, EB, A, B, C>(this: RefM<RA, RB, EA, EB, A, B>, f: (_: C) => A): RefM<RA, RB, EA, EB, C, B>
 
     /**
      * Transforms the `set` value of the `RefM` with the specified effectful
@@ -41,7 +47,10 @@ declare module '@principia/base/RefM' {
      * @rewrite contramapIO_ from "@principia/base/RefM"
      * @trace 0
      */
-    contramapIO<RC, EC, C>(f: (_: C) => IO<RC, EC, A>): RefM<RA & RC, RB, EC | EA, EB, C, B>
+    contramapIO<RA, RB, EA, EB, A, B, RC, EC, C>(
+      this: RefM<RA, RB, EA, EB, A, B>,
+      f: (_: C) => IO<RC, EC, A>
+    ): RefM<RA & RC, RB, EC | EA, EB, C, B>
 
     /**
      * Transforms both the `set` and `get` errors of the `RefM` with the
@@ -51,7 +60,11 @@ declare module '@principia/base/RefM' {
      * @trace 0
      * @trace 1
      */
-    dimapError<EC, ED>(f: (_: EA) => EC, g: (_: EB) => ED): RefM<RA, RB, EC, ED, A, B>
+    dimapError<RA, RB, EA, EB, A, B, EC, ED>(
+      this: RefM<RA, RB, EA, EB, A, B>,
+      f: (_: EA) => EC,
+      g: (_: EB) => ED
+    ): RefM<RA, RB, EC, ED, A, B>
 
     /**
      * Transforms both the `set` and `get` values of the `RefM` with the
@@ -61,7 +74,8 @@ declare module '@principia/base/RefM' {
      * @trace 0
      * @trace 1
      */
-    dimapIO<RC, EC, C, RD, ED, D>(
+    dimapIO<RA, RB, EA, EB, A, B, RC, EC, C, RD, ED, D>(
+      this: RefM<RA, RB, EA, EB, A, B>,
       f: (_: C) => IO<RC, EC, A>,
       g: (_: B) => IO<RD, ED, D>
     ): RefM<RA & RC, RB & RD, EA | EC, EB | ED, C, D>
@@ -74,7 +88,10 @@ declare module '@principia/base/RefM' {
      * @rewrite filterInput_ from "@principia/base/RefM"
      * @trace 0
      */
-    filterInput<A1 extends A>(predicate: Predicate<A1>): RefM<RA, RB, Option<EA>, EB, A1, B>
+    filterInput<RA, RB, EA, EB, A, B, A1 extends A>(
+      this: RefM<RA, RB, EA, EB, A, B>,
+      predicate: Predicate<A1>
+    ): RefM<RA, RB, Option<EA>, EB, A1, B>
 
     /**
      * Filters the `set` value of the `RefM` with the specified effectful
@@ -84,7 +101,8 @@ declare module '@principia/base/RefM' {
      * @rewrite filterInputIO_ from "@principia/base/RefM"
      * @trace 0
      */
-    filterInputIO<RC, EC, A1 extends A>(
+    filterInputIO<RA, RB, EA, EB, A, B, RC, EC, A1 extends A>(
+      this: RefM<RA, RB, EA, EB, A, B>,
       f: (a: A1) => IO<RC, EC, boolean>
     ): RefM<RA & RC, RB, Option<EC | EA>, EB, A1, B>
 
@@ -106,7 +124,10 @@ declare module '@principia/base/RefM' {
      * @rewrite filterOutputIO_ from "@principia/base/RefM"
      * @trace 0
      */
-    filterOutputIO<RC, EC>(f: (b: B) => IO<RC, EC, boolean>): RefM<RA, RB & RC, EA, Option<EB | EC>, A, B>
+    filterOutputIO<RA, RB, EA, EB, A, B, RC, EC>(
+      this: RefM<RA, RB, EA, EB, A, B>,
+      f: (b: B) => IO<RC, EC, boolean>
+    ): RefM<RA, RB & RC, EA, Option<EB | EC>, A, B>
 
     /**
      * Reads the value from the `RefM`.
@@ -149,7 +170,7 @@ declare module '@principia/base/RefM' {
      * @rewrite map_ from "@principia/base/RefM"
      * @trace 0
      */
-    map<C>(f: (b: B) => C): RefM<RA, RB, EA, EB, A, C>
+    map<RA, RB, EA, EB, A, B, C>(this: RefM<RA, RB, EA, EB, A, B>, f: (b: B) => C): RefM<RA, RB, EA, EB, A, C>
 
     /**
      * Transforms the `get` value of the `RefM` with the specified effectful
@@ -158,7 +179,10 @@ declare module '@principia/base/RefM' {
      * @rewrite mapIO_ from "@principia/base/RefM"
      * @trace 0
      */
-    mapIO<RC, EC, C>(f: (b: B) => IO<RC, EC, C>): RefM<RA, RB & RC, EA, EB | EC, A, C>
+    mapIO<RA, RB, EA, EB, A, B, RC, EC, C>(
+      this: RefM<RA, RB, EA, EB, A, B>,
+      f: (b: B) => IO<RC, EC, C>
+    ): RefM<RA, RB & RC, EA, EB | EC, A, C>
 
     /**
      * Folds over the error and value types of the `RefM`. This is a highly
@@ -266,7 +290,10 @@ declare module '@principia/base/RefM' {
      * @rewrite tapInput_ from "@principia/base/RefM"
      * @trace 0
      */
-    tapInput<RC, EC>(f: (a: A) => IO<RC, EC, any>): RefM<RA & RC, RB, EA | EC, EB, A, B>
+    tapInput<RA, RB, EA, EB, A, B, RC, EC>(
+      this: RefM<RA, RB, EA, EB, A, B>,
+      f: (a: A) => IO<RC, EC, any>
+    ): RefM<RA & RC, RB, EA | EC, EB, A, B>
 
     /**
      * Performs the specified effect every time a value is read from this
@@ -275,7 +302,10 @@ declare module '@principia/base/RefM' {
      * @rewrite tapOutput_ from "@principia/base/RefM"
      * @trace 0
      */
-    tapOutput<RC, EC>(f: (b: B) => IO<RC, EC, any>): RefM<RA, RB & RC, EA, EB | EC, A, B>
+    tapOutput<RA, RB, EA, EB, A, B, RC, EC>(
+      this: RefM<RA, RB, EA, EB, A, B>,
+      f: (b: B) => IO<RC, EC, any>
+    ): RefM<RA, RB & RC, EA, EB | EC, A, B>
 
     /**
      * @rewrite updateAndGetIO_ from "@principia/base/RefM"

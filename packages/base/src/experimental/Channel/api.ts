@@ -612,7 +612,7 @@ export function gives_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, Env
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
   f: (env0: Env0) => Env
 ): Channel<Env0, InErr, InElem, InDone, OutErr, OutElem, OutDone> {
-  return ask<Env0>()['>>=']((env0) => giveAll_(self, f(env0)))
+  return chain_(ask<Env0>(), (env0) => giveAll_(self, f(env0)))
 }
 
 export function gives<Env0, Env>(
@@ -635,7 +635,7 @@ export function drain<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
     failCause,
     end
   )
-  return channel['>>>'](drainer)
+  return pipeTo_(channel, drainer)
 }
 
 /**
@@ -994,7 +994,7 @@ export function contramapIO<Env1, InErr, InDone0, InDone>(f: (i: InDone0) => IO<
 function contramapInIOReader<Env1, InErr, InElem0, InElem, InDone>(
   f: (a: InElem0) => IO<Env1, InErr, InElem>
 ): Channel<Env1, InErr, InElem0, InDone, InErr, InElem, InDone> {
-  return readWith((_in) => fromIO(f(_in))['>>='](write)['*>'](contramapInIOReader(f)), fail, end)
+  return readWith((_in) => pipe(fromIO(f(_in)), chain(write), crossSecond(contramapInIOReader(f))), fail, end)
 }
 
 export function contramapInIO_<Env, Env1, InErr, InElem0, InElem, InDone, OutErr, OutElem, OutDone>(
@@ -1017,11 +1017,14 @@ function doneCollectReader<Env, OutErr, OutElem, OutDone>(
 ): Channel<Env, OutErr, OutElem, OutDone, OutErr, never, OutDone> {
   return readWith(
     (out) =>
-      fromIO(
-        I.succeedLazy(() => {
-          builder.append(out)
-        })
-      )['*>'](doneCollectReader(builder)),
+      crossSecond_(
+        fromIO(
+          I.succeedLazy(() => {
+            builder.append(out)
+          })
+        ),
+        doneCollectReader(builder)
+      ),
     fail,
     end
   )
@@ -1523,7 +1526,9 @@ export function mergeAllWith_<
         pipe(
           Q.take(queue),
           I.flatten,
-          I.matchCause(flow(Ca.flipCauseEither, E.match(failCause, end)), (outElem) => write(outElem)['*>'](consumer))
+          I.matchCause(flow(Ca.flipCauseEither, E.match(failCause, end)), (outElem) =>
+            crossSecond_(write(outElem), consumer)
+          )
         )
       )
       return consumer
@@ -1719,8 +1724,8 @@ export function mergeWith_<
     M.gen(function* (_) {
       const input       = yield* _(makeSingleProducerAsyncInput<InErr & InErr1, InElem & InElem1, InDone & InDone1>())
       const queueReader = fromInput(input)
-      const pullL       = yield* _(toPull(queueReader['>>>'](self)))
-      const pullR       = yield* _(toPull(queueReader['>>>'](that)))
+      const pullL       = yield* _(toPull(pipeTo_(queueReader, self)))
+      const pullR       = yield* _(toPull(pipeTo_(queueReader, that)))
       type MergeState = MS.MergeState<
         Env & Env1,
         OutErr,
@@ -1762,7 +1767,7 @@ export function mergeWith_<
 
               switch (result._tag) {
                 case MD.MergeDecisionTag.Done: {
-                  return pipe(F.interrupt(fiber)['*>'](result.io), fromIO, I.succeed)
+                  return pipe(I.crossSecond_(F.interrupt(fiber), result.io), fromIO, I.succeed)
                 }
                 case MD.MergeDecisionTag.Await: {
                   return pipe(
@@ -1777,7 +1782,7 @@ export function mergeWith_<
                 }
               }
             },
-            (elem) => I.fork(pull)['<$>']((leftFiber) => write(elem)['*>'](go(both(leftFiber, fiber))))
+            (elem) => I.map_(I.fork(pull), (leftFiber) => crossSecond_(write(elem), go(both(leftFiber, fiber))))
           )
 
       const go = (
@@ -1904,7 +1909,7 @@ export function mapOut_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, Ou
     end
   )
 
-  return self['>>>'](reader)
+  return pipeTo_(self, reader)
 }
 
 /**
@@ -1923,7 +1928,16 @@ export function mapOut<OutElem, OutElem2>(
 const mapOutIOReader = <Env, Env1, OutErr, OutErr1, OutElem, OutElem1, OutDone>(
   f: (o: OutElem) => IO<Env1, OutErr1, OutElem1>
 ): Channel<Env & Env1, OutErr, OutElem, OutDone, OutErr | OutErr1, OutElem1, OutDone> =>
-  readWith((out) => fromIO(f(out))['>>='](write)['*>'](mapOutIOReader(f)), fail, end)
+  readWith(
+    (out) =>
+      pipe(
+        fromIO(f(out)),
+        chain(write),
+        crossSecond(mapOutIOReader<Env, Env1, OutErr, OutErr1, OutElem, OutElem1, OutDone>(f))
+      ),
+    fail,
+    end
+  )
 
 export function mapOutIO_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1, OutElem, OutElem1, OutDone>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
@@ -2499,7 +2513,7 @@ function writeChunkWriter<Out>(
   len: number
 ): Channel<unknown, unknown, unknown, unknown, never, Out, void> {
   if (idx === len) return unit()
-  return write(A.unsafeGet_(outs, idx))['*>'](writeChunkWriter(outs, idx + 1, len))
+  return crossSecond_(write(A.unsafeGet_(outs, idx)), writeChunkWriter(outs, idx + 1, len))
 }
 
 export function writeChunk<Out>(outs: Chunk<Out>): Channel<unknown, unknown, unknown, unknown, never, Out, void> {

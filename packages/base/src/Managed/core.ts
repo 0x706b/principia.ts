@@ -43,28 +43,6 @@ export class Managed<R, E, A> {
   readonly [I._E]: () => E;
   readonly [I._A]: () => A
   constructor(readonly io: I.IO<readonly [R, ReleaseMap], E, readonly [Finalizer, A]>) {}
-
-  ['>>=']<R1, E1, B>(f: (a: A) => Managed<R1, E1, B>): Managed<R & R1, E | E1, B> {
-    return chain_(this, f)
-  }
-  ['*>']<R1, E1, A1>(fb: Managed<R1, E1, A1>): Managed<R & R1, E | E1, A1> {
-    return crossSecond_(this, fb)
-  }
-  ['<*']<R1, E1, A1>(fb: Managed<R1, E1, A1>): Managed<R & R1, E | E1, A> {
-    return crossFirst_(this, fb)
-  }
-  ['<$>']<B>(f: (a: A) => B): Managed<R, E, B> {
-    return map_(this, f)
-  }
-  ['$>']<B>(b: () => B): Managed<R, E, B> {
-    return asLazy_(this, b)
-  }
-  ['>>>']<E1, B>(fb: Managed<A, E1, B>): Managed<R, E | E1, B> {
-    return andThen_(this, fb)
-  }
-  ['<<<']<R1, E1>(fb: Managed<R1, E1, R>): Managed<R1, E | E1, A> {
-    return compose_(this, fb)
-  }
 }
 
 export type UManaged<A> = Managed<unknown, never, A>

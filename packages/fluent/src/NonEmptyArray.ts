@@ -16,83 +16,81 @@ declare module '@principia/base/NonEmptyArray' {
     /**
      * @rewrite align_ from "@principia/base/NonEmptyArray"
      */
-    align<B>(fb: NonEmptyArray<B>): NonEmptyArray<These<A, B>>
+    align<A, B>(this: NonEmptyArray<A>, fb: NonEmptyArray<B>): NonEmptyArray<These<A, B>>
 
     /**
      * @rewrite alignWith_ from "@principia/base/NonEmptyArray"
      */
-    alignWith<B, C>(fb: NonEmptyArray<B>, f: (_: These<A, B>) => C): ReadonlyArray<C>
+    alignWith<A, B, C>(this: NonEmptyArray<A>, fb: NonEmptyArray<B>, f: (_: These<A, B>) => C): ReadonlyArray<C>
 
     /**
      * @rewrite _ap from "@principia/base/NonEmptyArray"
      */
-    ap<B>(fab: NonEmptyArray<(a: A) => B>): NonEmptyArray<B>
+    ap<A, B>(this: NonEmptyArray<A>, fab: NonEmptyArray<(a: A) => B>): NonEmptyArray<B>
 
     /**
      * @rewrite append_ from "@principia/base/NonEmptyArray"
      */
-    append(a: A): NonEmptyArray<A>
+    append<A>(this: NonEmptyArray<A>, a: A): NonEmptyArray<A>
 
     /**
      * @rewrite chain_ from "@principia/base/NonEmptyArray"
      */
-    chain<B>(f: (a: A) => NonEmptyArray<B>): NonEmptyArray<B>
+    chain<A, B>(this: NonEmptyArray<A>, f: (a: A) => NonEmptyArray<B>): NonEmptyArray<B>
 
     /**
      * @rewrite chop_ from "@principia/base/NonEmptyArray"
      */
-    chop<B>(f: (as: NonEmptyArray<A>) => readonly [B, ReadonlyArray<A>]): NonEmptyArray<B>
+    chop<A, B>(this: NonEmptyArray<A>, f: (as: NonEmptyArray<A>) => readonly [B, ReadonlyArray<A>]): NonEmptyArray<B>
 
     /**
      * @rewrite chunksOf_ from "@principia/base/Array"
      */
-    chunksOf(n: number): NonEmptyArray<NonEmptyArray<A>>
+    chunksOf<A>(this: NonEmptyArray<A>, n: number): NonEmptyArray<NonEmptyArray<A>>
 
     /**
      * @rewrite collectWhile_ from "@principia/base/Array"
      */
-    collectWhile<B>(f: (a: A) => Option<B>): ReadonlyArray<B>
+    collectWhile<A, B>(this: NonEmptyArray<A>, f: (a: A) => Option<B>): ReadonlyArray<B>
     /**
      * @rewrite compact from "@principia/base/Array"
      */
     compact<A>(this: NonEmptyArray<Option<A>>): ReadonlyArray<A>
 
-    concat<B>(bs: NonEmptyArray<B>): NonEmptyArray<A | B>
-
     /**
      * @rewrite concat_ from "@principia/base/NonEmptyArray"
      */
-    concat<B>(bs: ReadonlyArray<B>): NonEmptyArray<A | B>
+    concat<A, B>(this: NonEmptyArray<A>, bs: ReadonlyArray<B>): NonEmptyArray<A | B>
 
     /**
      * @rewrite cross_ from "@principia/base/NonEmptyArray"
      */
-    cross<B>(fb: NonEmptyArray<B>): NonEmptyArray<readonly [A, B]>
+    cross<A, B>(this: NonEmptyArray<A>, fb: NonEmptyArray<B>): NonEmptyArray<readonly [A, B]>
 
     /**
      * @rewrite crossWith_ from "@principia/base/NonEmptyArray"
      */
-    crossWith<B, C>(fb: NonEmptyArray<B>, f: (a: A, b: B) => C): NonEmptyArray<C>
+    crossWith<A, B, C>(this: NonEmptyArray<A>, fb: NonEmptyArray<B>, f: (a: A, b: B) => C): NonEmptyArray<C>
 
     /**
      * @rewrite deleteAt_ from "@principia/base/Array"
      */
-    deleteAt(i: number): Option<ReadonlyArray<A>>
+    deleteAt<A>(this: NonEmptyArray<A>, i: number): Option<ReadonlyArray<A>>
 
     /**
      * @rewrite drop_ from "@principia/base/Array"
      */
-    drop(n: number): ReadonlyArray<A>
+    drop<A>(this: NonEmptyArray<A>, n: number): ReadonlyArray<A>
 
     /**
      * @rewrite dropLast_ from "@principia/base/Array"
      */
-    dropLast(n: number): ReadonlyArray<A>
+    dropLast<A>(this: NonEmptyArray<A>, n: number): ReadonlyArray<A>
 
     /**
      * @rewrite dropLastWhile_ from "@principia/base/Array"
      */
-    dropLastWhile(predicate: Predicate<A>): ReadonlyArray<A>
+    dropLastWhile<A>(this: NonEmptyArray<A>, predicate: Predicate<A>): ReadonlyArray<A>
 
     /**
      * @rewriteGetter duplicate from "@principia/base/Array"
@@ -100,76 +98,79 @@ declare module '@principia/base/NonEmptyArray' {
     duplicate: ReadonlyArray<ReadonlyArray<A>>
 
     /**
-     * @rewrite _elem from "@principia/base/Array"
+     * @rewriteConstraint elem_ from "@principia/base/Array"
      */
-    elem(E: Eq<A>, a: A): boolean
+    elem<A>(this: NonEmptyArray<A>, E: Eq<A>): (a: A) => boolean
 
     /**
      * @rewrite extend_ from "@principia/base/NonEmptyArray"
      */
-    extend<B>(f: (as: NonEmptyArray<A>) => B): NonEmptyArray<B>
-    /**
-     * @rewrite filter_ from "@principia/base/Array"
-     */
-    filter(refinement: PredicateWithIndex<number, A>): ReadonlyArray<A>
+    extend<A, B>(this: NonEmptyArray<A>, f: (as: NonEmptyArray<A>) => B): NonEmptyArray<B>
 
     /**
      * @rewrite filter_ from "@principia/base/Array"
      */
-    filter<B extends A>(refinement: RefinementWithIndex<number, A, B>): ReadonlyArray<B>
+    filter<A>(this: NonEmptyArray<A>, refinement: PredicateWithIndex<number, A>): ReadonlyArray<A>
+
+    /**
+     * @rewrite filter_ from "@principia/base/Array"
+     */
+    filter<A, B extends A>(this: NonEmptyArray<A>, refinement: RefinementWithIndex<number, A, B>): ReadonlyArray<B>
 
     /**
      * @rewrite filterMap_ from "@principia/base/Array"
      */
-    filterMap<B>(f: (a: A, i: number) => Option<B>): ReadonlyArray<B>
+    filterMap<A, B>(this: NonEmptyArray<A>, f: (a: A, i: number) => Option<B>): ReadonlyArray<B>
 
     /**
-     * @rewrite _filterMapA from "@principia/base/Array"
+     * @rewriteConstraint filterMapA_ from "@principia/base/Array"
      */
-    filterMapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, C = HKT.Auto>(
-      A: Applicative<F, C>,
-      f: (a: A, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<A>>
-    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
-
-    /**
-     * @rewrite find_ from "@principia/base/Array"
-     */
-    find<B extends A>(refinement: Refinement<A, B>): Option<B>
+    filterMapA<A, F extends HKT.URIS, C = HKT.Auto>(
+      this: NonEmptyArray<A>,
+      A: Applicative<F, C>
+    ): <K, Q, W, X, I, S, R, E, B>(
+      f: (a: A, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<B>>
+    ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<B>>
 
     /**
      * @rewrite find_ from "@principia/base/Array"
      */
-    find(predicate: Predicate<A>): Option<A>
+    find<A, B extends A>(this: NonEmptyArray<A>, refinement: Refinement<A, B>): Option<B>
+
+    /**
+     * @rewrite find_ from "@principia/base/Array"
+     */
+    find<A>(this: NonEmptyArray<A>, predicate: Predicate<A>): Option<A>
 
     /**
      * @rewrite findIndex_ from "@principia/base/Array"
      */
-    findIndex(predicate: Predicate<A>): Option<number>
+    findIndex<A>(this: NonEmptyArray<A>, predicate: Predicate<A>): Option<number>
 
     /**
      * @rewrite findLast_ from "@principia/base/Array"
      */
-    findLast(predicate: Predicate<A>): Option<A>
+    findLast<A>(this: NonEmptyArray<A>, predicate: Predicate<A>): Option<A>
 
     /**
      * @rewrite findLast_ from "@principia/base/Array"
      */
-    findLast<B extends A>(refinement: Refinement<A, B>): Option<B>
+    findLast<A, B extends A>(this: NonEmptyArray<A>, refinement: Refinement<A, B>): Option<B>
 
     /**
      * @rewrite findLastIndex_ from "@principia/base/Array"
      */
-    findLastIndex(predicate: Predicate<A>): Option<number>
+    findLastIndex<A>(this: NonEmptyArray<A>, predicate: Predicate<A>): Option<number>
 
     /**
      * @rewrite findLastMap_ from "@principia/base/Array"
      */
-    findLastMap<B>(f: (a: A) => Option<B>): Option<B>
+    findLastMap<A, B>(this: NonEmptyArray<A>, f: (a: A) => Option<B>): Option<B>
 
     /**
      * @rewrite findMap_ from "@principia/base/Array"
      */
-    findMap<B>(f: (a: A, i: number) => Option<B>): Option<B>
+    findMap<A, B>(this: NonEmptyArray<A>, f: (a: A, i: number) => Option<B>): Option<B>
 
     /**
      * @rewrite flatten from "@principia/base/Array"
@@ -182,29 +183,29 @@ declare module '@principia/base/NonEmptyArray' {
     fold<M>(this: ReadonlyArray<M>, M: Monoid<M>): M
 
     /**
-     * @rewrite _foldMap from "@principia/base/Array"
+     * @rewriteConstraint foldMap_ from "@principia/base/Array"
      */
-    foldMap<M>(M: Monoid<M>, f: (a: A, i: number) => M): M
+    foldMap<A, M>(this: NonEmptyArray<A>, M: Monoid<M>): (f: (a: A, i: number) => M) => M
 
     /**
      * @rewrite foldl_ from "@principia/base/NonEmptyArray"
      */
-    foldl<B>(b: B, f: (b: B, a: A, i: number) => B): B
+    foldl<A, B>(this: NonEmptyArray<A>, b: B, f: (b: B, a: A, i: number) => B): B
 
     /**
      * @rewrite foldlWhile_ from "@principia/base/Array"
      */
-    foldlWhile<B>(b: B, predicate: Predicate<B>, f: (b: B, a: A, i: number) => B): B
+    foldlWhile<A, B>(this: NonEmptyArray<A>, b: B, predicate: Predicate<B>, f: (b: B, a: A, i: number) => B): B
 
     /**
      * @rewrite foldr_ from "@principia/base/NonEmptyArray"
      */
-    foldr<B>(b: B, f: (a: A, b: B, i: number) => B): B
+    foldr<A, B>(this: NonEmptyArray<A>, b: B, f: (a: A, b: B, i: number) => B): B
 
     /**
      * @rewrite foldrWhile_ from "@principia/base/Array"
      */
-    foldrWhile<B>(b: B, f: (a: A, b: B, i: number) => B): B
+    foldrWhile<A, B>(this: NonEmptyArray<A>, b: B, f: (a: A, b: B, i: number) => B): B
 
     /**
      * @rewrite _group from "@principia/base/Array"
@@ -232,14 +233,14 @@ declare module '@principia/base/NonEmptyArray' {
     insertAt(i: number, a: A): Option<NonEmptyArray<A>>
 
     /**
-     * @rewrite _intersection from "@principia/base/Array"
+     * @rewrite intersection_ from "@principia/base/Array"
      */
-    intersection(E: Eq<A>, ys: ReadonlyArray<A>): ReadonlyArray<A>
+    intersection<A>(this: NonEmptyArray<A>, E: Eq<A>): (ys: ReadonlyArray<A>) => ReadonlyArray<A>
 
     /**
      * @rewrite intersperse_ from "@principia/base/NonEmptyArray"
      */
-    intersperse(a: A): NonEmptyArray<A>
+    intersperse<A>(this: NonEmptyArray<A>, a: A): NonEmptyArray<A>
 
     /**
      * @rewriteGetter last from "@principia/base/NonEmptyArray"
@@ -254,68 +255,81 @@ declare module '@principia/base/NonEmptyArray' {
     /**
      * @rewrite lookup_ from "@principia/base/Array"
      */
-    lookup(i: number): Option<A>
+    lookup<A>(this: NonEmptyArray<A>, i: number): Option<A>
 
     /**
      * @rewrite map_ from "@principia/base/NonEmptyArray"
      */
-    map<B>(f: (a: A, i: number) => B): NonEmptyArray<B>
+    map<A, B>(this: NonEmptyArray<A>, f: (a: A, i: number) => B): NonEmptyArray<B>
 
     /**
      * @rewrite _mapA from "@principia/base/Array"
      */
-    mapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, C = HKT.Auto>(
-      A: Applicative<F, C>,
-      f: (a: A, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
-    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
+    mapA<A, F extends HKT.URIS, C = HKT.Auto>(
+      this: NonEmptyArray<A>,
+      A: Applicative<F, C>
+    ): <K, Q, W, X, I, S, R, E, B>(
+      f: (a: A, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
+    ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, NonEmptyArray<B>>
 
     /**
      * @rewrite mapAccum_ from "@principia/base/Array"
      */
-    mapAccum<S, B>(s: S, f: (s: S, a: A) => readonly [B, S]): readonly [NonEmptyArray<B>, S]
+    mapAccum<A, S, B>(this: NonEmptyArray<A>, s: S, f: (s: S, a: A) => readonly [B, S]): readonly [NonEmptyArray<B>, S]
 
     /**
      * @rewrite modifyAt_ from "@principia/base/Array"
      */
-    modifyAt(i: number, f: (a: A) => A): Option<NonEmptyArray<A>>
+    modifyAt<A>(this: NonEmptyArray<A>, i: number, f: (a: A) => A): Option<NonEmptyArray<A>>
 
     /**
      * @rewrite mutate_ from "@principia/base/NonEmptyArray"
      */
-    mutate(f: (as: MutableNonEmptyArray<A>) => void): ReadonlyArray<A>
+    mutate<A>(this: NonEmptyArray<A>, f: (as: MutableNonEmptyArray<A>) => void): ReadonlyArray<A>
 
     /**
      * @rewrite partition_ from "@principia/base/Array"
      */
-    partition(predicate: PredicateWithIndex<number, A>): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
+    partition<A>(
+      this: NonEmptyArray<A>,
+      predicate: PredicateWithIndex<number, A>
+    ): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
 
     /**
      * @rewrite partition_ from "@principia/base/Array"
      */
-    partition<B extends A>(refinement: RefinementWithIndex<number, A, B>): readonly [ReadonlyArray<A>, ReadonlyArray<B>]
+    partition<A, B extends A>(
+      this: NonEmptyArray<A>,
+      refinement: RefinementWithIndex<number, A, B>
+    ): readonly [ReadonlyArray<A>, ReadonlyArray<B>]
 
     /**
      * @rewrite partitionMap_ from "@principia/base/Array"
      */
-    partitionMap<B, C>(f: (a: A, i: number) => Either<B, C>): readonly [ReadonlyArray<B>, ReadonlyArray<C>]
+    partitionMap<A, B, C>(
+      this: NonEmptyArray<A>,
+      f: (a: A, i: number) => Either<B, C>
+    ): readonly [ReadonlyArray<B>, ReadonlyArray<C>]
 
     /**
      * @rewrite _partitionMapA from "@principia/base/Array"
      */
-    partitionMapA<F extends HKT.URIS, K, Q, W, X, I, S, R, E, A, B, C = HKT.Auto>(
-      A: Applicative<F, C>,
-      f: (a: A, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<A, B>>
-    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [ReadonlyArray<A>, ReadonlyArray<B>]>
+    partitionMapA<A, F extends HKT.URIS, C = HKT.Auto>(
+      this: NonEmptyArray<A>,
+      A: Applicative<F, C>
+    ): <K, Q, W, X, I, S, R, E, B, D>(
+      f: (a: A, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<B, D>>
+    ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [ReadonlyArray<B>, ReadonlyArray<D>]>
 
     /**
      * @rewrite prepend_ from "@principia/base/Array"
      */
-    prepend(head: A): NonEmptyArray<A>
+    prepend<A>(this: NonEmptyArray<A>, head: A): NonEmptyArray<A>
 
     /**
      * @rewrite prependAll_ from "@principia/base/Array"
      */
-    prependAll(a: A): ReadonlyArray<A>
+    prependAll<A>(this: NonEmptyArray<A>, a: A): ReadonlyArray<A>
 
     /**
      * @rewriteGetter reverse from "@principia/base/Array"
@@ -330,17 +344,17 @@ declare module '@principia/base/NonEmptyArray' {
     /**
      * @rewrite rotate_ from "@principia/base/NonEmptyArray"
      */
-    rotate(n: number): NonEmptyArray<A>
+    rotate<A>(this: NonEmptyArray<A>, n: number): NonEmptyArray<A>
 
     /**
      * @rewrite scanl_ from "@principia/base/Array"
      */
-    scanl<B>(b: B, f: (b: B, a: A) => B): ReadonlyArray<B>
+    scanl<A, B>(this: NonEmptyArray<A>, b: B, f: (b: B, a: A) => B): ReadonlyArray<B>
 
     /**
      * @rewrite scanr_ from "@principia/base/Array"
      */
-    scanr<B>(b: B, f: (a: A, b: B) => B): ReadonlyArray<B>
+    scanr<A, B>(this: NonEmptyArray<A>, b: B, f: (a: A, b: B) => B): ReadonlyArray<B>
 
     /**
      * @rewrite separate from "@principia/base/Array"
@@ -350,30 +364,38 @@ declare module '@principia/base/NonEmptyArray' {
     /**
      * @rewrite spanl_ from "@principia/base/Array"
      */
-    spanl<B extends A>(refinement: Refinement<A, B>): readonly [ReadonlyArray<B>, ReadonlyArray<A>]
+    spanl<A, B extends A>(
+      this: NonEmptyArray<A>,
+      refinement: Refinement<A, B>
+    ): readonly [ReadonlyArray<B>, ReadonlyArray<A>]
+
     /**
      * @rewrite spanl_ from "@principia/base/Array"
      */
-    spanl(predicate: Predicate<A>): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
+    spanl<A>(this: NonEmptyArray<A>, predicate: Predicate<A>): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
 
     /**
      * @rewrite spanr_ from "@principia/base/Array"
      */
-    spanr<B extends A>(refinement: Refinement<A, B>): readonly [ReadonlyArray<A>, ReadonlyArray<B>]
+    spanr<A, B extends A>(
+      this: NonEmptyArray<A>,
+      refinement: Refinement<A, B>
+    ): readonly [ReadonlyArray<A>, ReadonlyArray<B>]
+
     /**
      * @rewrite spanr_ from "@principia/base/Array"
      */
-    spanr(predicate: Predicate<A>): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
+    spanr<A>(this: NonEmptyArray<A>, predicate: Predicate<A>): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
 
     /**
      * @rewrite splitAt_ from "@principia/base/NonEmptyArray"
      */
-    splitAt(n: number): readonly [NonEmptyArray<A>, ReadonlyArray<A>]
+    splitAt<A>(this: NonEmptyArray<A>, n: number): readonly [NonEmptyArray<A>, ReadonlyArray<A>]
 
     /**
      * @rewrite splitWhere_ from "@principia/base/Array"
      */
-    splitWhere(predicate: Predicate<A>): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
+    splitWhere<A>(this: NonEmptyArray<A>, predicate: Predicate<A>): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
 
     /**
      * @rewriteGetter tail from "@principia/base/NonEmptyArray"
@@ -383,21 +405,21 @@ declare module '@principia/base/NonEmptyArray' {
     /**
      * @rewrite take_ from "@principia/base/Array"
      */
-    take(n: number): ReadonlyArray<A>
+    take<A>(this: NonEmptyArray<A>, n: number): ReadonlyArray<A>
 
     /**
      * @rewrite takeLast_ from "@principia/base/Array"
      */
-    takeLast(n: number): ReadonlyArray<A>
+    takeLast<A>(this: NonEmptyArray<A>, n: number): ReadonlyArray<A>
 
     /**
      * @rewrite takeWhile_ from "@principia/base/Array"
      */
-    takeWhile<B extends A>(refinement: Refinement<A, B>): ReadonlyArray<B>
+    takeWhile<A, B extends A>(this: NonEmptyArray<A>, refinement: Refinement<A, B>): ReadonlyArray<B>
     /**
      * @rewrite takeWhile_ from "@principia/base/Array"
      */
-    takeWhile(predicate: Predicate<A>): ReadonlyArray<A>
+    takeWhile<A>(this: NonEmptyArray<A>, predicate: Predicate<A>): ReadonlyArray<A>
 
     /**
      * @rewrite toBuffer from "@principia/base/Array"
@@ -405,28 +427,28 @@ declare module '@principia/base/NonEmptyArray' {
     toBuffer(this: ReadonlyArray<Byte>): Uint8Array
 
     /**
-     * @rewrite _union from "@principia/base/Array"
+     * @rewriteConstraint union_ from "@principia/base/Array"
      */
-    union(E: Eq<A>, ys: ReadonlyArray<A>): ReadonlyArray<A>
+    union<A>(this: NonEmptyArray<A>, E: Eq<A>): (ys: ReadonlyArray<A>) => ReadonlyArray<A>
 
     /**
      * @rewrite _uniq from "@principia/base/Array"
      */
-    uniq(E: Eq<A>): ReadonlyArray<A>
+    uniq<A>(this: NonEmptyArray<A>, E: Eq<A>): ReadonlyArray<A>
 
     /**
      * @rewrite updateAt_ from "@principia/base/Array"
      */
-    updateAt(i: number, a: A): Option<ReadonlyArray<A>>
+    updateAt<A>(this: NonEmptyArray<A>, i: number, a: A): Option<ReadonlyArray<A>>
 
     /**
      * @rewrite zip_ from "@principia/base/Array"
      */
-    zip<B>(fb: ReadonlyArray<B>): ReadonlyArray<readonly [A, B]>
+    zip<A, B>(this: NonEmptyArray<A>, fb: ReadonlyArray<B>): ReadonlyArray<readonly [A, B]>
 
     /**
      * @rewrite zipWith_ from "@principia/base/Array"
      */
-    zipWith<B, C>(fb: ReadonlyArray<B>, f: (a: A, b: B) => C): ReadonlyArray<C>
+    zipWith<A, B, C>(this: NonEmptyArray<A>, fb: ReadonlyArray<B>, f: (a: A, b: B) => C): ReadonlyArray<C>
   }
 }

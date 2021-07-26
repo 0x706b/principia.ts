@@ -16,7 +16,7 @@ export function getState<S>(tag: Tag<IOState<S>>): IO<Has<IOState<S>>, never, S>
  * function.
  */
 export function getStateWith<S>(tag: Tag<IOState<S>>): <A>(f: (s: S) => A) => IO<Has<IOState<S>>, never, A> {
-  return (f) => I.serviceWith(tag)((state) => state.get['<$>'](f))
+  return (f) => I.serviceWith(tag)((state) => I.map_(state.get, f))
 }
 
 /**

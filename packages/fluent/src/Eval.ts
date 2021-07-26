@@ -3,22 +3,22 @@ declare module '@principia/base/Eval/core' {
     /**
      * @rewrite chain_ from "@principia/base/Eval"
      */
-    chain<B>(f: (a: A) => Eval<B>): Eval<B>
+    chain<A, B>(this: Eval<A>, f: (a: A) => Eval<B>): Eval<B>
 
     /**
      * @rewrite cross_ from "@principia/base/Eval"
      */
-    cross<B>(that: Eval<B>): Eval<readonly [A, B]>
+    cross<A, B>(this: Eval<A>, that: Eval<B>): Eval<readonly [A, B]>
 
     /**
      * @rewrite crossWith_ from "@principia/base/Eval"
      */
-    crossWith<B, C>(that: Eval<B>, f: (a: A, b: B) => C): Eval<C>
+    crossWith<A, B, C>(this: Eval<A>, that: Eval<B>, f: (a: A, b: B) => C): Eval<C>
 
     /**
      * @rewrite map_ from "@principia/base/Eval"
      */
-    map<B>(f: (a: A) => B): Eval<B>
+    map<A, B>(this: Eval<A>, f: (a: A) => B): Eval<B>
   }
 }
 

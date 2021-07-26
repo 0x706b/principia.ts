@@ -27,7 +27,7 @@ declare module '@principia/base/Queue' {
      * @rewrite contramap_ from "@principia/base/Queue"
      * @trace 0
      */
-    contramap<C>(f: (_: C) => A): Queue<RA, RB, EA, EB, C, B>
+    contramap<RA, RB, EA, EB, A, B, C>(this: Queue<RA, RB, EA, EB, A, B>, f: (_: C) => A): Queue<RA, RB, EA, EB, C, B>
 
     /**
      * Transforms elements enqueued into this queue with an effectful function.
@@ -35,7 +35,10 @@ declare module '@principia/base/Queue' {
      * @rewrite contramapIO_ from "@principia/base/Queue"
      * @trace 0
      */
-    contramapIO<RC, EC, C>(f: (_: C) => IO<RC, EC, A>): Queue<RA & RC, RB, EA | EC, EB, C, B>
+    contramapIO<RA, RB, EA, EB, A, B, RC, EC, C>(
+      this: Queue<RA, RB, EA, EB, A, B>,
+      f: (_: C) => IO<RC, EC, A>
+    ): Queue<RA & RC, RB, EA | EC, EB, C, B>
 
     /**
      * Like `crossWith`, but tuples the elements instead of applying a function.
@@ -44,6 +47,7 @@ declare module '@principia/base/Queue' {
      * @trace call
      */
     cross<RA, RB, EA, EB, A, B, RA1, RB1, EA1, EB1, C extends A, D>(
+      this: Queue<RA, RB, EA, EB, A, B>,
       that: Queue<RA1, RB1, EA1, EB1, C, D>
     ): Queue<RA & RA1, RB & RB1, EA | EA1, EB | EB1, C, readonly [B, D]>
 
@@ -54,6 +58,7 @@ declare module '@principia/base/Queue' {
      * @trace 1
      */
     crossWith<RA, RB, EA, EB, A, B, RA1, RB1, EA1, EB1, C extends A, D, F>(
+      this: Queue<RA, RB, EA, EB, A, B>,
       that: Queue<RA1, RB1, EA1, EB1, C, D>,
       f: (b: B, d: D) => F
     ): Queue<RA & RA1, RB & RB1, EA | EA1, EB | EB1, C, F>
@@ -71,6 +76,7 @@ declare module '@principia/base/Queue' {
      * @trace 1
      */
     crossWithIO<RA, RB, EA, EB, A, B, RA1, RB1, EA1, EB1, C extends A, D, R3, E3, F>(
+      this: Queue<RA, RB, EA, EB, A, B>,
       that: Queue<RA1, RB1, EA1, EB1, C, D>,
       f: (b: B, d: D) => IO<R3, E3, F>
     ): Queue<RA & RA1, RB & RB1 & R3, EA | EA1, E3 | EB | EB1, C, F>
@@ -83,7 +89,11 @@ declare module '@principia/base/Queue' {
      * @trace 0
      * @trace 1
      */
-    dimap<C, D>(f: (_: C) => A, g: (_: B) => D): Queue<RA, RB, EA, EB, C, D>
+    dimap<RA, RB, EA, EB, A, B, C, D>(
+      this: Queue<RA, RB, EA, EB, A, B>,
+      f: (_: C) => A,
+      g: (_: B) => D
+    ): Queue<RA, RB, EA, EB, C, D>
 
     /**
      * Transforms elements enqueued into and dequeued from this queue with the
@@ -93,7 +103,8 @@ declare module '@principia/base/Queue' {
      * @trace 0
      * @trace 1
      */
-    dimapIO<RC, EC, C, RD, ED, D>(
+    dimapIO<RA, RB, EA, EB, A, B, RC, EC, C, RD, ED, D>(
+      this: Queue<RA, RB, EA, EB, A, B>,
       f: (_: C) => IO<RC, EC, A>,
       g: (_: B) => IO<RD, ED, D>
     ): Queue<RA & RC, RB & RD, EA | EC, EB | ED, C, D>
@@ -105,7 +116,10 @@ declare module '@principia/base/Queue' {
      * @rewrite filterInput_ from "@principia/base/Queue"
      * @trace 0
      */
-    filterInput(predicate: Predicate<A>): Queue<RA, RB, EA, EB, A, B>
+    filterInput<RA, RB, EA, EB, A, B>(
+      this: Queue<RA, RB, EA, EB, A, B>,
+      predicate: Predicate<A>
+    ): Queue<RA, RB, EA, EB, A, B>
 
     /**
      * Applies an effectful filter to elements enqueued into this queue. Elements that do not
@@ -114,13 +128,19 @@ declare module '@principia/base/Queue' {
      * @rewrite filterInputIO_ from "@principia/base/Queue"
      * @trace 0
      */
-    filterInputIO<R, E>(f: (_: A) => IO<R, E, boolean>): Queue<RA & R, RB, EA | E, EB, A, B>
+    filterInputIO<RA, RB, EA, EB, A, B, R, E>(
+      this: Queue<RA, RB, EA, EB, A, B>,
+      f: (_: A) => IO<R, E, boolean>
+    ): Queue<RA & R, RB, EA | E, EB, A, B>
 
     /**
      * @rewrite filterOutputIO_ from "@principia/base/Queue"
      * @trace 0
      */
-    filterOutputIO<R, E>(f: (_: B) => IO<R, E, boolean>): Queue<RA, RB & R, EA, EB | E, A, B>
+    filterOutputIO<RA, RB, EA, EB, A, B, R, E>(
+      this: Queue<RA, RB, EA, EB, A, B>,
+      f: (_: B) => IO<R, E, boolean>
+    ): Queue<RA, RB & R, EA, EB | E, A, B>
 
     /**
      * @rewriteGetter isShutdown from "@principia/base/Queue"
@@ -132,7 +152,7 @@ declare module '@principia/base/Queue' {
      * @rewrite map_ from "@principia/base/Queue"
      * @trace 0
      */
-    map<C>(f: (_: B) => C): Queue<RA, RB, EA, EB, A, C>
+    map<RA, RB, EA, EB, A, B, C>(this: Queue<RA, RB, EA, EB, A, B>, f: (_: B) => C): Queue<RA, RB, EA, EB, A, C>
 
     /**
      * Transforms elements dequeued from this queue with an effectful function.
@@ -140,7 +160,10 @@ declare module '@principia/base/Queue' {
      * @rewrite mapIO_ from "@principia/base/Queue"
      * @trace 0
      */
-    mapIO<R, E, C>(f: (_: B) => IO<R, E, C>): Queue<RA, RB & R, EA, EB, A, C>
+    mapIO<RA, RB, EA, EB, A, B, R, E, C>(
+      this: Queue<RA, RB, EA, EB, A, B>,
+      f: (_: B) => IO<R, E, C>
+    ): Queue<RA, RB & R, EA, EB, A, C>
 
     /**
      * Places one value in the queue.
@@ -148,7 +171,7 @@ declare module '@principia/base/Queue' {
      * @rewrite offer_ from "@principia/base/Queue"
      * @trace call
      */
-    offer(a: A): IO<RA, EA, boolean>
+    offer<RA, RB, EA, EB, A, B>(this: Queue<RA, RB, EA, EB, A, B>, a: A): IO<RA, EA, boolean>
 
     /**
      * For Bounded Queue: uses the `BackPressure` Strategy, places the values in the queue and always returns true.
@@ -169,7 +192,7 @@ declare module '@principia/base/Queue' {
      * @rewrite offerAll_ from "@principia/base/Queue"
      * @trace call
      */
-    offerAll(as: Iterable<A>): IO<RA, EA, boolean>
+    offerAll<RA, RB, EA, EB, A, B>(this: Queue<RA, RB, EA, EB, A, B>, as: Iterable<A>): IO<RA, EA, boolean>
 
     /**
      * Take the head option of values in the queue.
@@ -222,7 +245,7 @@ declare module '@principia/base/Queue' {
      * @rewrite takeAllUpTo_ from "@principia/base/Queue"
      * @trace call
      */
-    takeAllUpTo(n: number): IO<RB, EB, Chunk<B>>
+    takeAllUpTo<RA, RB, EA, EB, A, B>(this: Queue<RA, RB, EA, EB, A, B>, n: number): IO<RB, EB, Chunk<B>>
 
     /**
      * Takes between min and max number of values from the queue. If there
@@ -232,6 +255,6 @@ declare module '@principia/base/Queue' {
      * @rewrite takeBetween_ from "@principia/base/Queue"
      * @trace call
      */
-    takeBetween(min: number, max: number): IO<RB, EB, Chunk<B>>
+    takeBetween<RA, RB, EA, EB, A, B>(this: Queue<RA, RB, EA, EB, A, B>, min: number, max: number): IO<RB, EB, Chunk<B>>
   }
 }

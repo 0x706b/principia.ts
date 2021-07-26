@@ -18,18 +18,6 @@ import * as Ch from '../Channel'
  */
 export class Sink<R, InErr, In, OutErr, L, Z> {
   constructor(readonly channel: Ch.Channel<R, InErr, C.Chunk<In>, unknown, OutErr, C.Chunk<L>, Z>) {}
-  ['*>']<R, InErr, In, OutErr, L extends In1 & L1, Z, R1, InErr1, In1 extends In, OutErr1, L1, Z1>(
-    this: Sink<R, InErr, In, OutErr, L, Z>,
-    that: Sink<R1, InErr1, In1, OutErr1, L1, Z1>
-  ): Sink<R & R1, InErr & InErr1, In1, OutErr | OutErr1, L1, Z1> {
-    return apr_(this, that)
-  }
-  ['>>=']<R, InErr, In, OutErr, L extends In1 & L1, Z, R1, InErr1, In1 extends In, OutErr1, L1, Z1>(
-    this: Sink<R, InErr, In, OutErr, L, Z>,
-    f: (z: Z) => Sink<R1, InErr1, In1, OutErr1, L1, Z1>
-  ): Sink<R & R1, InErr & InErr1, In1, OutErr | OutErr1, L1, Z1> {
-    return chain_(this, f)
-  }
 }
 
 export function succeedLazy<A>(a: () => A): Sink<unknown, unknown, unknown, never, never, A> {
@@ -118,11 +106,11 @@ export function contramapChunks_<R, InErr, In, OutErr, L, Z, In1>(
   f: (chunk: C.Chunk<In1>) => C.Chunk<In>
 ): Sink<R, InErr, In1, OutErr, L, Z> {
   const loop: Ch.Channel<R, InErr, C.Chunk<In1>, unknown, InErr, C.Chunk<In>, unknown> = Ch.readWith(
-    (chunk) => Ch.write(f(chunk))['*>'](loop),
+    (chunk) => Ch.crossSecond_(Ch.write(f(chunk)), loop),
     Ch.fail,
     Ch.succeed
   )
-  return new Sink(loop['>>>'](sink.channel))
+  return new Sink(Ch.pipeTo_(loop, sink.channel))
 }
 
 /**
@@ -151,9 +139,9 @@ export function contramapChunksIO_<R, InErr, In, OutErr, L, Z, R1, InErr1, In1>(
     InErr | InErr1,
     C.Chunk<In>,
     unknown
-  > = Ch.readWith((chunk) => Ch.fromIO(f(chunk))['>>='](Ch.write)['*>'](loop), Ch.fail, Ch.succeed)
+  > = Ch.readWith((chunk) => pipe(Ch.fromIO(f(chunk)), Ch.chain(Ch.write), Ch.crossSecond(loop)), Ch.fail, Ch.succeed)
   return new Sink(
-    loop['>>>'](sink.channel as Ch.Channel<R, InErr | InErr1, C.Chunk<In>, unknown, OutErr, C.Chunk<L>, Z>)
+    Ch.pipeTo_(loop, sink.channel as Ch.Channel<R, InErr | InErr1, C.Chunk<In>, unknown, OutErr, C.Chunk<L>, Z>)
   )
 }
 
@@ -267,16 +255,19 @@ export function matchSink_<
             const leftoversRef = new AtomicReference<C.Chunk<C.Chunk<L1 | L2>>>(
               C.filter_(leftovers, (a) => C.isNonEmpty(a))
             )
-            const refReader = Ch.succeedLazy(() => leftoversRef.getAndSet(C.empty()))['>>=']((chunk) =>
-              Ch.writeChunk(chunk as unknown as C.Chunk<C.Chunk<In1 & In2>>)
+            const refReader = Ch.chain_(
+              Ch.succeedLazy(() => leftoversRef.getAndSet(C.empty())),
+              (chunk) => Ch.writeChunk(chunk as unknown as C.Chunk<C.Chunk<In1 & In2>>)
             )
             const passthrough      = Ch.id<InErr2, C.Chunk<In1 & In2>, unknown>()
-            const continuationSink = refReader['*>'](passthrough)['>>>'](onSuccess(z).channel)
+            const continuationSink = pipe(refReader, Ch.crossSecond(passthrough), Ch.pipeTo(onSuccess(z).channel))
 
-            return Ch.doneCollect(continuationSink)['>>='](([newLeftovers, z1]) =>
-              Ch.succeedLazy(() => leftoversRef.get)
-                ['>>='](Ch.writeChunk)
-                ['*>'](Ch.writeChunk(newLeftovers)['$>'](z1))
+            return Ch.chain_(Ch.doneCollect(continuationSink), ([newLeftovers, z1]) =>
+              pipe(
+                Ch.succeedLazy(() => leftoversRef.get),
+                Ch.chain(Ch.writeChunk),
+                Ch.crossSecond(Ch.as_(Ch.writeChunk(newLeftovers), z1))
+              )
             )
           })
       )
@@ -456,7 +447,7 @@ function foldReader<Err, In, S>(
     return Ch.readWith(
       (inp: C.Chunk<In>) => {
         const [nextS, leftovers] = foldChunkSplit(s0, inp, cont, f)
-        return C.isNonEmpty(leftovers) ? Ch.write(leftovers)['$>'](nextS) : foldReader(nextS, cont, f)
+        return C.isNonEmpty(leftovers) ? Ch.as_(Ch.write(leftovers), nextS) : foldReader(nextS, cont, f)
       },
       Ch.fail,
       () => Ch.end(s0)
@@ -510,7 +501,7 @@ function foldChunksIOReader<Env, Err, In, S>(
 ): Ch.Channel<Env, Err, C.Chunk<In>, unknown, Err, never, S> {
   return Ch.readWith(
     (inp: C.Chunk<In>) =>
-      Ch.fromIO(f(s, inp))['>>=']((nextS) => (cont(nextS) ? foldChunksIOReader(nextS, cont, f) : Ch.end(nextS))),
+      Ch.chain_(Ch.fromIO(f(s, inp)), (nextS) => (cont(nextS) ? foldChunksIOReader(nextS, cont, f) : Ch.end(nextS))),
     Ch.fail,
     () => Ch.end(s)
   )
@@ -539,7 +530,7 @@ function foldChunkSplitIO<Env, Err, In, S>(
     if (idx === len) {
       return I.succeed([s, O.none()])
     } else {
-      return f(s, C.unsafeGet_(chunk, idx))['>>=']((s1) =>
+      return I.chain_(f(s, C.unsafeGet_(chunk, idx)), (s1) =>
         cont(s1) ? go(s, chunk, idx + 1, len) : I.succeed([s1, O.some(C.drop_(chunk, idx + 1))])
       )
     }
@@ -554,11 +545,11 @@ function foldIOReader<Env, Err, In, S>(
 ): Ch.Channel<Env, Err, C.Chunk<In>, unknown, Err, C.Chunk<In>, S> {
   return Ch.readWith(
     (inp: C.Chunk<In>) =>
-      Ch.fromIO(foldChunkSplitIO(s, inp, cont, f))['>>='](([nextS, leftovers]) =>
+      Ch.chain_(Ch.fromIO(foldChunkSplitIO(s, inp, cont, f)), ([nextS, leftovers]) =>
         O.match_(
           leftovers,
           () => foldIOReader(nextS, cont, f),
-          (l) => Ch.write(l)['$>'](nextS)
+          (l) => Ch.as_(Ch.write(l), nextS)
         )
       ),
     Ch.fail,
@@ -642,7 +633,7 @@ export function foldUntilIO<Env, In, Err, S>(
     foldIO<Env, Err, In, readonly [S, number]>(
       tuple(s, 0),
       ([, n]) => n < max,
-      ([o, count], i) => f(o, i)['<$>']((s) => tuple(s, count + 1))
+      ([o, count], i) => I.map_(f(o, i), (s) => tuple(s, count + 1))
     ),
     map(([o]) => o)
   )
@@ -711,7 +702,7 @@ function foldWeightedDecomposeLoop<Err, In, S>(
         chunk = C.empty()
       }
       if (C.isNonEmpty(chunk)) {
-        return Ch.write(chunk)['*>'](Ch.end(s))
+        return Ch.crossSecond_(Ch.write(chunk), Ch.end(s))
       } else if (cost0 > max) {
         return Ch.end(s)
       } else {
@@ -791,15 +782,16 @@ function foldWeightedDecomposeIOLoop<Env, Err, In, S, Env1, Err1, Env2, Err2, En
           return I.succeed([s, cost, dirty, C.empty()])
         } else {
           const elem = C.unsafeGet_(inp, idx)
-          return costFn(s, elem)
-            ['<$>']((_) => cost + _)
-            ['>>=']((total) => {
+          return pipe(
+            costFn(s, elem),
+            I.map((_) => cost + _),
+            I.chain((total) => {
               if (total <= max) {
-                return f(s, elem)['>>=']((s) => go(inp, s, true, total, idx + 1))
+                return I.chain_(f(s, elem), (s) => go(inp, s, true, total, idx + 1))
               } else {
-                return decompose(elem)['>>=']((decomposed) => {
+                return I.chain_(decompose(elem), (decomposed) => {
                   if (decomposed.length <= 1 && !dirty) {
-                    return f(s, elem)['<$>']((s) => [s, total, true, C.drop_(inp, idx + 1)])
+                    return I.map_(f(s, elem), (s) => [s, total, true, C.drop_(inp, idx + 1)])
                   } else if (decomposed.length <= 1 && dirty) {
                     return I.succeed([s, cost, dirty, C.drop_(inp, idx)])
                   } else {
@@ -808,11 +800,12 @@ function foldWeightedDecomposeIOLoop<Env, Err, In, S, Env1, Err1, Env2, Err2, En
                 })
               }
             })
+          )
         }
       }
-      return Ch.fromIO(go(inp, s0, dirty0, cost0, 0))['>>='](([nextS, nextCost, nextDirty, leftovers]) => {
+      return Ch.chain_(Ch.fromIO(go(inp, s0, dirty0, cost0, 0)), ([nextS, nextCost, nextDirty, leftovers]) => {
         if (C.isNonEmpty(leftovers)) {
-          return Ch.write(leftovers)['*>'](Ch.end(nextS))
+          return Ch.crossSecond_(Ch.write(leftovers), Ch.end(nextS))
         } else if (cost0 > max) {
           return Ch.end(nextS)
         } else {
@@ -876,7 +869,7 @@ function foreachWhileLoop<R, Err, In>(
   return pipe(
     Ch.fromIO(f(C.unsafeGet_(chunk, idx))),
     Ch.chain((b) => (b ? foreachWhileLoop(f, chunk, idx + 1, len, cont) : Ch.write(C.drop_(chunk, idx)))),
-    Ch.catchAll((e) => Ch.write(C.drop_(chunk, idx))['*>'](Ch.fail(e)))
+    Ch.catchAll((e) => Ch.crossSecond_(Ch.write(C.drop_(chunk, idx)), Ch.fail(e)))
   )
 }
 
@@ -901,7 +894,7 @@ export function foreachChunkWhile<R, Err, In>(
   f: (chunk: C.Chunk<In>) => I.IO<R, Err, boolean>
 ): Sink<R, Err, In, Err, In, void> {
   const reader: Ch.Channel<R, Err, C.Chunk<In>, unknown, Err, C.Chunk<In>, void> = Ch.readWith(
-    (inp: C.Chunk<In>) => Ch.fromIO(f(inp))['>>=']((cont) => (cont ? reader : Ch.end(undefined))),
+    (inp: C.Chunk<In>) => Ch.chain_(Ch.fromIO(f(inp)), (cont) => (cont ? reader : Ch.end(undefined))),
     (err: Err) => Ch.fail(err),
     () => Ch.unit()
   )
@@ -927,10 +920,13 @@ export function leftover<L>(c: C.Chunk<L>): Sink<unknown, unknown, unknown, neve
 }
 
 export function take<Err, In>(n: number): Sink<unknown, Err, In, Err, In, C.Chunk<In>> {
-  return foldChunks<Err, In, C.Chunk<In>>(C.empty(), (c) => c.length < n, C.concat_)['>>=']((acc) => {
-    const [taken, leftover] = C.splitAt_(acc, n)
-    return new Sink(Ch.write(leftover)['*>'](Ch.end(taken)))
-  })
+  return chain_(
+    foldChunks<Err, In, C.Chunk<In>>(C.empty(), (c) => c.length < n, C.concat_),
+    (acc) => {
+      const [taken, leftover] = C.splitAt_(acc, n)
+      return new Sink(Ch.crossSecond_(Ch.write(leftover), Ch.end(taken)))
+    }
+  )
 }
 
 export function summarized_<R, InErr, In, OutErr, L, Z, R1, E1, B, C>(
@@ -939,8 +935,8 @@ export function summarized_<R, InErr, In, OutErr, L, Z, R1, E1, B, C>(
   f: (b1: B, b2: B) => C
 ): Sink<R & R1, InErr, In, OutErr | E1, L, readonly [Z, C]> {
   return new Sink(
-    Ch.fromIO(summary)['>>=']((start) =>
-      sink.channel['>>=']((done) => Ch.fromIO(summary)['<$>']((end) => [done, f(start, end)]))
+    Ch.chain_(Ch.fromIO(summary), (start) =>
+      Ch.chain_(sink.channel, (done) => Ch.map_(Ch.fromIO(summary), (end) => [done, f(start, end)]))
     )
   )
 }

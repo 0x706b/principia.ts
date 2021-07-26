@@ -18,73 +18,82 @@ declare module '@principia/base/Managed/core' {
      * @rewrite as_ from "@principia/base/Managed"
      * @trace call
      */
-    ['$>']<B>(b: B): M.Managed<R, E, B>
+    ['$>']<R, E, A, B>(this: M.Managed<R, E, A>, b: B): M.Managed<R, E, B>
 
     /**
      * @rewrite crossSecondPar_ from "@principia/base/Managed"
      * @trace call
      */
-    ['&>']<R1, E1, B>(that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, B>
+    ['&>']<R, E, A, R1, E1, B>(this: M.Managed<R, E, A>, that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, B>
 
     /**
      * @rewrite crossSecond_ from "@principia/base/Managed"
      * @trace call
      */
-    ['*>']<R1, E1, B>(that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, B>
+    ['*>']<R, E, A, R1, E1, B>(this: M.Managed<R, E, A>, that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, B>
 
     /**
      * @rewrite map_ from "@principia/base/Managed"
      * @trace 0
      */
-    ['<$>']<B>(f: (a: A) => B): M.Managed<R, E, B>
+    ['<$>']<R, E, A, B>(this: M.Managed<R, E, A>, f: (a: A) => B): M.Managed<R, E, B>
 
     /**
      * @rewrite crossFirstPar_ from "@principia/base/Managed"
      * @trace call
      */
-    ['<&']<R1, E1, B>(that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, B>
+    ['<&']<R, E, A, R1, E1, B>(this: M.Managed<R, E, A>, that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, B>
 
     /**
      * @rewrite crossPar_ from "@principia/base/Managed"
      * @trace call
      */
-    ['<&>']<R1, E1, B>(that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, readonly [A, B]>
+    ['<&>']<R, E, A, R1, E1, B>(
+      this: M.Managed<R, E, A>,
+      that: M.Managed<R1, E1, B>
+    ): M.Managed<R & R1, E | E1, readonly [A, B]>
 
     /**
      * @rewrite crossFirst_ from "@principia/base/Managed"
      * @trace call
      */
-    ['<*']<R1, E1, B>(that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, B>
+    ['<*']<R, E, A, R1, E1, B>(this: M.Managed<R, E, A>, that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, B>
 
     /**
      * @rewrite cross_ from "@principia/base/Managed"
      * @trace call
      */
-    ['<*>']<R1, E1, B>(that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, readonly [A, B]>
+    ['<*>']<R, E, A, R1, E1, B>(
+      this: M.Managed<R, E, A>,
+      that: M.Managed<R1, E1, B>
+    ): M.Managed<R & R1, E | E1, readonly [A, B]>
 
     /**
      * @rewrite chain_ from "@principia/base/Managed"
      * @trace 0
      */
-    ['>>=']<R1, E1, B>(f: (a: A) => M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, B>
+    ['>>=']<R, E, A, R1, E1, B>(
+      this: M.Managed<R, E, A>,
+      f: (a: A) => M.Managed<R1, E1, B>
+    ): M.Managed<R & R1, E | E1, B>
 
     /**
      * @rewrite andThen_ from "@principia/base/Managed"
      * @trace call
      */
-    andThen<E1, B>(that: M.Managed<A, E1, B>): M.Managed<R, E | E1, B>
+    andThen<R, E, A, E1, B>(this: M.Managed<R, E, A>, that: M.Managed<A, E1, B>): M.Managed<R, E | E1, B>
 
     /**
      * @rewrite as_ from "@principia/base/Managed"
      * @trace 0
      */
-    as<B>(b: B): M.Managed<R, E, B>
+    as<R, E, A, B>(this: M.Managed<R, E, A>, b: B): M.Managed<R, E, B>
 
     /**
      * @rewrite asLazy_ from "@principia/base/Managed"
      * @trace 0
      */
-    asLazy<B>(b: () => B): M.Managed<R, E, B>
+    asLazy<R, E, A, B>(this: M.Managed<R, E, A>, b: () => B): M.Managed<R, E, B>
 
     /**
      * @rewriteGetter asSome from "@principia/base/Managed"
@@ -109,110 +118,146 @@ declare module '@principia/base/Managed/core' {
      * @trace 0
      * @trace 1
      */
-    bimap<E1, B>(f: (e: E) => E1, g: (a: A) => B): M.Managed<R, E1, B>
+    bimap<R, E, A, E1, B>(this: M.Managed<R, E, A>, f: (e: E) => E1, g: (a: A) => B): M.Managed<R, E1, B>
 
     /**
      * @rewrite catchAll_ from "@principia/base/Managed"
      * @trace 0
      */
-    catchAll<R1, E1, B>(f: (e: E) => M.Managed<R1, E1, B>): M.Managed<R & R1, E1, A | B>
+    catchAll<R, E, A, R1, E1, B>(
+      this: M.Managed<R, E, A>,
+      f: (e: E) => M.Managed<R1, E1, B>
+    ): M.Managed<R & R1, E1, A | B>
 
     /**
      * @rewrite catchAllCause_ from "@principia/base/Managed"
      * @trace 0
      */
-    catchAllCause<R1, E1, B>(f: (e: Cause<E>) => M.Managed<R1, E1, B>): M.Managed<R & R1, E1, A | B>
+    catchAllCause<R, E, A, R1, E1, B>(
+      this: M.Managed<R, E, A>,
+      f: (e: Cause<E>) => M.Managed<R1, E1, B>
+    ): M.Managed<R & R1, E1, A | B>
 
     /**
      * @rewrite catchSome_ from "@principia/base/Managed"
      * @trace 0
      */
-    catchSome<R1, E1, B>(pf: (e: E) => Option<Managed<R1, E1, B>>): M.Managed<R & R1, E | E1, A | B>
+    catchSome<R, E, A, R1, E1, B>(
+      this: M.Managed<R, E, A>,
+      pf: (e: E) => Option<Managed<R1, E1, B>>
+    ): M.Managed<R & R1, E | E1, A | B>
 
     /**
      * @rewrite catchSomeCause_ from "@principia/base/Managed"
      * @trace 0
      */
-    catchSomeCause<R1, E1, B>(pf: (cause: Cause<E>) => Option<Managed<R1, E1, B>>): M.Managed<R & R1, E | E1, A | B>
+    catchSomeCause<R, E, A, R1, E1, B>(
+      this: M.Managed<R, E, A>,
+      pf: (cause: Cause<E>) => Option<Managed<R1, E1, B>>
+    ): M.Managed<R & R1, E | E1, A | B>
 
     /**
      * @rewrite chain_ from "@principia/base/Managed"
      * @trace 0
      */
-    chain<R1, E1, B>(f: (a: A) => M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, B>
+    chain<R, E, A, R1, E1, B>(this: M.Managed<R, E, A>, f: (a: A) => M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, B>
 
     /**
      * @rewrite chainError_ from "@principia/base/Managed"
      * @trace 0
      */
-    chainError<R1, E1>(f: (e: E) => M.URManaged<R1, E1>): M.Managed<R & R1, E1, A>
+    chainError<R, E, A, R1, E1>(this: M.Managed<R, E, A>, f: (e: E) => M.URManaged<R1, E1>): M.Managed<R & R1, E1, A>
 
     /**
      * @rewrite collect_ from "@principia/base/Managed"
      * @trace 1
      */
-    collect<E1, B>(e: E1, pf: (a: A) => Option<B>): M.Managed<R, E | E1, B>
+    collect<R, E, A, E1, B>(this: M.Managed<R, E, A>, e: E1, pf: (a: A) => Option<B>): M.Managed<R, E | E1, B>
 
     /**
      * @rewrite collectManaged_ from "@principia/base/Managed"
      * @trace 1
      */
-    collectManaged<E1, R2, E2, B>(e: E1, pf: (a: A) => Option<M.Managed<R2, E2, B>>): M.Managed<R & R2, E | E1 | E2, B>
+    collectManaged<R, E, A, E1, R2, E2, B>(
+      this: M.Managed<R, E, A>,
+      e: E1,
+      pf: (a: A) => Option<M.Managed<R2, E2, B>>
+    ): M.Managed<R & R2, E | E1 | E2, B>
 
     /**
      * @rewrite compose_ from "@principia/base/Managed"
      * @trace call
      */
-    compose<R1, E1>(that: M.Managed<R1, E1, R>): M.Managed<R1, E | E1, A>
+    compose<R, E, A, R1, E1>(this: M.Managed<R, E, A>, that: M.Managed<R1, E1, R>): M.Managed<R1, E | E1, A>
 
     /**
      * @rewrite cross_ from "@principia/base/Managed"
      * @trace call
      */
-    cross<R1, E1, B>(that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, readonly [A, B]>
+    cross<R, E, A, R1, E1, B>(
+      this: M.Managed<R, E, A>,
+      that: M.Managed<R1, E1, B>
+    ): M.Managed<R & R1, E | E1, readonly [A, B]>
 
     /**
      * @rewrite crossFirst_ from "@principia/base/Managed"
      * @trace call
      */
-    crossFirst<R1, E1, B>(that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, A>
+    crossFirst<R, E, A, R1, E1, B>(this: M.Managed<R, E, A>, that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, A>
 
     /**
      * @rewrite crossFirstPar_ from "@principia/base/Managed"
      * @trace call
      */
-    crossFirstPar<R1, E1, B>(that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, A>
+    crossFirstPar<R, E, A, R1, E1, B>(
+      this: M.Managed<R, E, A>,
+      that: M.Managed<R1, E1, B>
+    ): M.Managed<R & R1, E | E1, A>
 
     /**
      *
      * @rewrite crossPar_ from "@principia/base/Managed"
      * @trace call
      */
-    crossPar<R1, E1, B>(that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, readonly [A, B]>
+    crossPar<R, E, A, R1, E1, B>(
+      this: M.Managed<R, E, A>,
+      that: M.Managed<R1, E1, B>
+    ): M.Managed<R & R1, E | E1, readonly [A, B]>
 
     /**
      * @rewrite crossSecond_ from "@principia/base/Managed"
      * @trace call
      */
-    crossSecond<R1, E1, B>(that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, B>
+    crossSecond<R, E, A, R1, E1, B>(this: M.Managed<R, E, A>, that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, B>
 
     /**
      * @rewrite crossSecondPar_ from "@principia/base/Managed"
      * @trace call
      */
-    crossSecondPar<R1, E1, B>(that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, B>
+    crossSecondPar<R, E, A, R1, E1, B>(
+      this: M.Managed<R, E, A>,
+      that: M.Managed<R1, E1, B>
+    ): M.Managed<R & R1, E | E1, B>
 
     /**
      * @rewrite crossWith_ from "@principia/base/Managed"
      * @trace 1
      */
-    crossWith<R1, E1, B, C>(that: M.Managed<R1, E1, B>, f: (a: A, b: B) => C): M.Managed<R & R1, E | E1, C>
+    crossWith<R, E, A, R1, E1, B, C>(
+      this: M.Managed<R, E, A>,
+      that: M.Managed<R1, E1, B>,
+      f: (a: A, b: B) => C
+    ): M.Managed<R & R1, E | E1, C>
 
     /**
      * @rewrite crossWithPar_ from "@principia/base/Managed"
      * @trace 1
      */
-    crossWithPar<R1, E1, B, C>(that: M.Managed<R1, E1, B>, f: (a: A, b: B) => C): M.Managed<R & R1, E | E1, C>
+    crossWithPar<R, E, A, R1, E1, B, C>(
+      this: M.Managed<R, E, A>,
+      that: M.Managed<R1, E1, B>,
+      f: (a: A, b: B) => C
+    ): M.Managed<R & R1, E | E1, C>
 
     /**
      * @rewriteGetter either from "@principia/base/Managed"
@@ -223,13 +268,13 @@ declare module '@principia/base/Managed/core' {
      * @rewrite ensuring_ from "@principia/base/Managed"
      * @trace call
      */
-    ensuring<R1>(finalizer: I.IO<R1, never, any>): M.Managed<R & R1, E, A>
+    ensuring<R, E, A, R1>(this: M.Managed<R, E, A>, finalizer: I.IO<R1, never, any>): M.Managed<R & R1, E, A>
 
     /**
      * @rewrite ensuringFirst_ from "@principia/base/Managed"
      * @trace call
      */
-    ensuringFirst<R1>(finalizer: I.IO<R1, never, any>): M.Managed<R & R1, E, A>
+    ensuringFirst<R, E, A, R1>(this: M.Managed<R, E, A>, finalizer: I.IO<R1, never, any>): M.Managed<R & R1, E, A>
 
     /**
      * @rewriteGetter eventually from "@principia/base/Managed"
@@ -265,13 +310,13 @@ declare module '@principia/base/Managed/core' {
      * @rewrite giveAll_ from "@principia/base/Managed"
      * @trace call
      */
-    giveAll(env: R): M.Managed<unknown, E, A>
+    giveAll<R, E, A>(this: M.Managed<R, E, A>, env: R): M.Managed<unknown, E, A>
 
     /**
      * @rewrite gives_ from "@principia/base/Managed"
      * @trace 0
      */
-    gives<R0>(f: (r0: R0) => R): M.Managed<R0, E, A>
+    gives<R, E, A, R0>(this: M.Managed<R, E, A>, f: (r0: R0) => R): M.Managed<R0, E, A>
 
     /**
      * @rewrite ifManaged_ from "@principia/base/Managed"
@@ -312,70 +357,89 @@ declare module '@principia/base/Managed/core' {
      * @rewrite join_ from "@principia/base/Managed"
      * @trace call
      */
-    join<R1, E1, A1>(that: M.Managed<R1, E1, A1>): M.Managed<Either<R, R1>, E | E1, A | A1>
+    join<R, E, A, R1, E1, A1>(
+      this: M.Managed<R, E, A>,
+      that: M.Managed<R1, E1, A1>
+    ): M.Managed<Either<R, R1>, E | E1, A | A1>
 
     /**
      * @rewrite joinEither_ from "@principia/base/Managed"
      * @trace call
      */
-    joinEither<R1, E1, A1>(that: M.Managed<R1, E1, A1>): M.Managed<Either<R, R1>, E | E1, Either<A, A1>>
+    joinEither<R, E, A, R1, E1, A1>(
+      this: M.Managed<R, E, A>,
+      that: M.Managed<R1, E1, A1>
+    ): M.Managed<Either<R, R1>, E | E1, Either<A, A1>>
 
     /**
      * @rewrite map_ from "@principia/base/Managed"
      * @trace 0
      */
-    map<B>(f: (a: A) => B): M.Managed<R, E, B>
+    map<R, E, A, B>(this: M.Managed<R, E, A>, f: (a: A) => B): M.Managed<R, E, B>
 
     /**
      * @rewrite mapError_ from "@principia/base/Managed"
      * @trace 0
      */
-    mapError<E1>(f: (e: E) => E1): M.Managed<R, E1, A>
+    mapError<R, E, A, E1>(this: M.Managed<R, E, A>, f: (e: E) => E1): M.Managed<R, E1, A>
 
     /**
      * @rewrite mapErrorCause_ from "@principia/base/Managed"
      * @trace 0
      */
-    mapErrorCause<E1>(f: (e: Cause<E>) => Cause<E1>): M.Managed<R, E1, A>
+    mapErrorCause<R, E, A, E1>(this: M.Managed<R, E, A>, f: (e: Cause<E>) => Cause<E1>): M.Managed<R, E1, A>
 
     /**
      * @rewrite mapIO_ from "@principia/base/Managed"
      * @trace 0
      */
-    mapIO<R1, E1, B>(f: (a: A) => I.IO<R1, E1, B>): M.Managed<R & R1, E | E1, B>
+    mapIO<R, E, A, R1, E1, B>(this: M.Managed<R, E, A>, f: (a: A) => I.IO<R1, E1, B>): M.Managed<R & R1, E | E1, B>
 
     /**
      * @rewrite mapTry_ from "@principia/base/Managed"
      * @trace 0
      */
-    mapTry<B>(f: (a: A) => B): M.Managed<R, unknown, B>
+    mapTry<R, E, A, B>(this: M.Managed<R, E, A>, f: (a: A) => B): M.Managed<R, unknown, B>
 
     /**
      * @rewrite mapTryCatch_ from "@principia/base/Managed"
      * @trace 0
      */
-    mapTryCatch<E1, B>(f: (a: A) => B, onThrow: (error: unknown) => E1): M.Managed<R, E | E1, B>
+    mapTryCatch<R, E, A, E1, B>(
+      this: M.Managed<R, E, A>,
+      f: (a: A) => B,
+      onThrow: (error: unknown) => E1
+    ): M.Managed<R, E | E1, B>
 
     /**
      * @rewrite match_ from "@principia/base/Managed"
      * @trace 0
      * @trace 1
      */
-    match<B, C>(onFailure: (e: E) => B, onSuccess: (a: A) => C): M.Managed<R, never, B | C>
+    match<R, E, A, B, C>(
+      this: M.Managed<R, E, A>,
+      onFailure: (e: E) => B,
+      onSuccess: (a: A) => C
+    ): M.Managed<R, never, B | C>
 
     /**
      * @rewrite matchCause_ from "@principia/base/Managed"
      * @trace 0
      * @trace 1
      */
-    matchCause<B, C>(onFailure: (cause: Cause<E>) => B, onSuccess: (a: A) => C): M.Managed<R, never, B | C>
+    matchCause<R, E, A, B, C>(
+      this: M.Managed<R, E, A>,
+      onFailure: (cause: Cause<E>) => B,
+      onSuccess: (a: A) => C
+    ): M.Managed<R, never, B | C>
 
     /**
      * @rewrite matchCauseManaged_ from "@principia/base/Managed"
      * @trace 0
      * @trace 1
      */
-    matchCauseManaged<R1, E1, B, R2, E2, C>(
+    matchCauseManaged<R, E, A, R1, E1, B, R2, E2, C>(
+      this: M.Managed<R, E, A>,
       onFailure: (cause: Cause<E>) => M.Managed<R1, E1, B>,
       onSuccess: (a: A) => M.Managed<R2, E2, C>
     ): M.Managed<R & R1 & R2, E1 | E2, B | C>
@@ -385,7 +449,8 @@ declare module '@principia/base/Managed/core' {
      * @trace 0
      * @trace 1
      */
-    matchManaged<R1, E1, B, R2, E2, C>(
+    matchManaged<R, E, A, R1, E1, B, R2, E2, C>(
+      this: M.Managed<R, E, A>,
       onFailure: (e: E) => M.Managed<R1, E1, B>,
       onSuccess: (a: A) => M.Managed<R2, E2, C>
     ): M.Managed<R & R1 & R2, E1 | E2, B | C>
@@ -430,25 +495,28 @@ declare module '@principia/base/Managed/core' {
      * @rewrite orDieWith_ from "@principia/base/Managed"
      * @trace 0
      */
-    orDieWith(f: (e: E) => unknown): M.Managed<R, never, A>
+    orDieWith<R, E, A>(this: M.Managed<R, E, A>, f: (e: E) => unknown): M.Managed<R, never, A>
 
     /**
      * @rewrite orElse_ from "@principia/base/Managed"
      * @trace 0
      */
-    orElse<R1, E1, B>(that: () => M.Managed<R1, E1, B>): M.Managed<R & R1, E1, A | B>
+    orElse<R, E, A, R1, E1, B>(this: M.Managed<R, E, A>, that: () => M.Managed<R1, E1, B>): M.Managed<R & R1, E1, A | B>
 
     /**
      * @rewrite orElseEither_ from "@principia/base/Managed"
      * @trace 0
      */
-    orElseEither<R1, E1, B>(that: () => M.Managed<R1, E1, B>): M.Managed<R & R1, E1, Either<B, A>>
+    orElseEither<R, E, A, R1, E1, B>(
+      this: M.Managed<R, E, A>,
+      that: () => M.Managed<R1, E1, B>
+    ): M.Managed<R & R1, E1, Either<B, A>>
 
     /**
      * @rewrite orElseFail_ from "@principia/base/Managed"
      * @trace 0
      */
-    orElseFail<E1>(e: () => E1): M.Managed<R, E | E1, A>
+    orElseFail<R, E, A, E1>(this: M.Managed<R, E, A>, e: () => E1): M.Managed<R, E | E1, A>
 
     /**
      * @rewrite orElseOptional_ from "@principia/base/Managed"
@@ -463,7 +531,7 @@ declare module '@principia/base/Managed/core' {
      * @rewrite orElseSucceed_ from "@principia/base/Managed"
      * @trace 0
      */
-    orElseSucceed<A1>(a: () => A1): M.Managed<R, E, A | A1>
+    orElseSucceed<R, E, A, A1>(this: M.Managed<R, E, A>, a: () => A1): M.Managed<R, E, A | A1>
 
     /**
      * @rewriteGetter preallocate from "@principia/base/Managed"
@@ -481,26 +549,33 @@ declare module '@principia/base/Managed/core' {
      * @rewrite refineOrDie_ from "@principia/base/Managed"
      * @trace 0
      */
-    refineOrDie<E1>(pf: (e: E) => Option<E1>): M.Managed<R, E1, A>
+    refineOrDie<R, E, A, E1>(this: M.Managed<R, E, A>, pf: (e: E) => Option<E1>): M.Managed<R, E1, A>
 
     /**
      * @rewrite refineOrDieWith_ from "@principia/base/Managed"
      * @trace 0
      * @trace 1
      */
-    refineOrDieWith<E1>(pf: (e: E) => Option<E1>, f: (e: E) => unknown): M.Managed<R, E1, A>
+    refineOrDieWith<R, E, A, E1>(
+      this: M.Managed<R, E, A>,
+      pf: (e: E) => Option<E1>,
+      f: (e: E) => unknown
+    ): M.Managed<R, E1, A>
 
     /**
      * @rewrite reject_ from "@principia/base/Managed"
      * @trace 0
      */
-    reject<E1>(pf: (a: A) => Option<E1>): M.Managed<R, E | E1, A>
+    reject<R, E, A, E1>(this: M.Managed<R, E, A>, pf: (a: A) => Option<E1>): M.Managed<R, E | E1, A>
 
     /**
      * @rewrite rejectManaged_ from "@principia/base/Managed"
      * @trace 0
      */
-    rejectManaged<R1, E1>(pf: (a: A) => Option<M.Managed<R1, E1, E1>>): M.Managed<R & R1, E | E1, A>
+    rejectManaged<R, E, A, R1, E1>(
+      this: M.Managed<R, E, A>,
+      pf: (a: A) => Option<M.Managed<R1, E1, E1>>
+    ): M.Managed<R & R1, E | E1, A>
 
     /**
      * @rewriteGetter release from "@principia/base/Managed"
@@ -512,7 +587,7 @@ declare module '@principia/base/Managed/core' {
      * @rewrite require_ from "@principia/base/Managed"
      * @trace 0
      */
-    require(error: () => E): M.Managed<R, E, A>
+    require<R, E, A>(this: M.Managed<R, E, A>, error: () => E): M.Managed<R, E, A>
 
     /**
      * @rewriteGetter result from "@principia/base/Managed"
@@ -524,7 +599,7 @@ declare module '@principia/base/Managed/core' {
      * @rewrite retry_ from "@principia/base/Managed"
      * @trace call
      */
-    retry<R1, O>(schedule: Schedule<R1, E, O>): M.Managed<R & R1 & Has<Clock>, E, A>
+    retry<R, E, A, R1, O>(this: M.Managed<R, E, A>, schedule: Schedule<R1, E, O>): M.Managed<R & R1 & Has<Clock>, E, A>
 
     /**
      * @rewriteGetter sandbox from "@principia/base/Managed"
@@ -536,7 +611,8 @@ declare module '@principia/base/Managed/core' {
      * @rewrite sandboxWith_ from "@principia/base/Managed"
      * @trace 0
      */
-    sandboxWith<R1, E1, B>(
+    sandboxWith<R, E, A, R1, E1, B>(
+      this: M.Managed<R, E, A>,
       f: (_: M.Managed<R, Cause<E>, A>) => M.Managed<R1, Cause<E1>, B>
     ): M.Managed<R & R1, E | E1, B>
 
@@ -583,20 +659,24 @@ declare module '@principia/base/Managed/core' {
      * @rewrite swapWith_ from "@principia/base/Managed"
      * @trace 0
      */
-    swapWith<R1, E1, B>(f: (_: M.Managed<R, A, E>) => M.Managed<R1, B, E1>): M.Managed<R1, E1, B>
+    swapWith<R, E, A, R1, E1, B>(
+      this: M.Managed<R, E, A>,
+      f: (_: M.Managed<R, A, E>) => M.Managed<R1, B, E1>
+    ): M.Managed<R1, E1, B>
 
     /**
      * @rewrite tap_ from "@principia/base/Managed"
      * @trace 0
      */
-    tap<R1, E1>(f: (a: A) => M.Managed<R1, E1, any>): M.Managed<R & R1, E | E1, A>
+    tap<R, E, A, R1, E1>(this: M.Managed<R, E, A>, f: (a: A) => M.Managed<R1, E1, any>): M.Managed<R & R1, E | E1, A>
 
     /**
      * @rewrite tapBoth_ from "@principia/base/Managed"
      * @trace 0
      * @trace 2
      */
-    tapBoth<R1, E1, R2, E2>(
+    tapBoth<R, E, A, R1, E1, R2, E2>(
+      this: M.Managed<R, E, A>,
       f: (e: E) => M.Managed<R1, E1, any>,
       g: (a: A) => M.Managed<R2, E2, any>
     ): M.Managed<R & R1 & R2, E | E1 | E2, A>
@@ -605,19 +685,25 @@ declare module '@principia/base/Managed/core' {
      * @rewrite tapCause_ from "@principia/base/Managed"
      * @trace 0
      */
-    tapCause<R1, E1>(f: (cause: Cause<E>) => M.Managed<R1, E1, any>): M.Managed<R & R1, E | E1, A>
+    tapCause<R, E, A, R1, E1>(
+      this: M.Managed<R, E, A>,
+      f: (cause: Cause<E>) => M.Managed<R1, E1, any>
+    ): M.Managed<R & R1, E | E1, A>
 
     /**
      * @rewrite tapError_ from "@principia/base/Managed"
      * @trace 0
      */
-    tapError<R1, E1>(f: (e: E) => M.Managed<R1, E1, any>): M.Managed<R & R1, E | E1, A>
+    tapError<R, E, A, R1, E1>(
+      this: M.Managed<R, E, A>,
+      f: (e: E) => M.Managed<R1, E1, any>
+    ): M.Managed<R & R1, E | E1, A>
 
     /**
      * @rewrite tapIO_ from "@principia/base/Managed"
      * @trace 0
      */
-    tapIO<R1, E1>(f: (a: A) => I.IO<R1, E1, any>): M.Managed<R & R1, E | E1, A>
+    tapIO<R, E, A, R1, E1>(this: M.Managed<R, E, A>, f: (a: A) => I.IO<R1, E1, any>): M.Managed<R & R1, E | E1, A>
 
     /**
      * @rewriteGetter timed from "@principia/base/Managed"
@@ -629,19 +715,22 @@ declare module '@principia/base/Managed/core' {
      * @rewrite timeout from "@principia/base/Managed"
      * @trace call
      */
-    timeout(ms: number): M.Managed<R & Has<Clock>, E, Option<A>>
+    timeout<R, E, A>(this: M.Managed<R, E, A>, ms: number): M.Managed<R & Has<Clock>, E, Option<A>>
 
     /**
      * @rewrite unlessManaged_ from "@principia/base/Managed"
      * @trace call
      */
-    unlessManaged<R1, E1>(mb: M.Managed<R1, E1, boolean>): M.Managed<R & R1, E | E1, void>
+    unlessManaged<R, E, A, R1, E1>(
+      this: M.Managed<R, E, A>,
+      mb: M.Managed<R1, E1, boolean>
+    ): M.Managed<R & R1, E | E1, void>
 
     /**
      * @rewrite use_ from "@principia/base/Managed"
      * @trace 0
      */
-    use<R1, E1, B>(f: (a: A) => I.IO<R1, E1, B>): I.IO<R & R1, E | E1, B>
+    use<R, E, A, R1, E1, B>(this: M.Managed<R, E, A>, f: (a: A) => I.IO<R1, E1, B>): I.IO<R & R1, E | E1, B>
 
     /**
      * @rewriteGetter useForever from "@principia/base/Managed"
@@ -659,7 +748,10 @@ declare module '@principia/base/Managed/core' {
      * @rewrite whenManaged_ from "@principia/base/Managed"
      * @trace call
      */
-    whenManaged<R1, E1>(mb: M.Managed<R1, E1, boolean>): M.Managed<R & R1, E | E1, void>
+    whenManaged<R, E, A, R1, E1>(
+      this: M.Managed<R, E, A>,
+      mb: M.Managed<R1, E1, boolean>
+    ): M.Managed<R & R1, E | E1, void>
 
     /**
      * @rewriteGetter withEarlyRelease from "@principia/base/Managed"
@@ -671,7 +763,10 @@ declare module '@principia/base/Managed/core' {
      * @rewrite withEarlyReleaseExit_ from "@principia/base/Managed"
      * @trace call
      */
-    withEarlyReleaseExit(exit: Exit<any, any>): M.Managed<R, E, readonly [I.UIO<unknown>, A]>
+    withEarlyReleaseExit<R, E, A>(
+      this: M.Managed<R, E, A>,
+      exit: Exit<any, any>
+    ): M.Managed<R, E, readonly [I.UIO<unknown>, A]>
 
     /**
      * @rewriteGetter zipEnv from "@principia/base/Managed"

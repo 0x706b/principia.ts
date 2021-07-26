@@ -106,7 +106,10 @@ export class EventSourcedStateful<R, S, F1 extends AM.AnyMessage, EV> extends A.
           return: (ev: CH.Chunk<EV>, r: (s: S) => AM.ResponseOf<F1> = () => undefined as any) => T.succeed(tuple(ev, r))
         } as any)
         const effectfulCompleter = (s: S, a: AM.ResponseOf<F1>) =>
-          T.asUnit(Ref.set_(state, s)['>>='](() => P.succeed_(promise, a)))
+          pipe(
+            T.asUnit(Ref.set_(state, s)),
+            T.chain(() => P.succeed_(promise, a))
+          )
         const idempotentCompleter = (a: AM.ResponseOf<F1>) => T.asUnit(P.succeed_(promise, a))
         const fullCompleter       = ([ev, sa]: readonly [CH.Chunk<EV>, (s: S) => AM.ResponseOf<F1>]) =>
           ev.length === 0

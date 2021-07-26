@@ -7,15 +7,15 @@ declare module '@principia/base/Layer/core' {
     /**
      * @rewrite and_ from "@principia/base/Layer"
      */
-    and<R1, E1, A1>(right: Layer<R1, E1, A1>): Layer<R & R1, E1 | E, A & A1>
+    and<R, E, A, R1, E1, A1>(this: Layer<R, E, A>, right: Layer<R1, E1, A1>): Layer<R & R1, E1 | E, A & A1>
     /**
      * @rewrite andSeq_ from "@principia/base/Layer"
      */
-    andSeq<R1, E1, A1>(that: Layer<R1, E1, A1>): Layer<R & R1, E1 | E, A & A1>
+    andSeq<R, E, A, R1, E1, A1>(this: Layer<R, E, A>, that: Layer<R1, E1, A1>): Layer<R & R1, E1 | E, A & A1>
     /**
      * @rewrite andThen_ from "@principia/base/Layer"
      */
-    andThen<E1, A1>(to: Layer<A, E1, A1>): Layer<R, E | E1, A1>
+    andThen<R, E, A, E1, A1>(this: Layer<R, E, A>, to: Layer<A, E1, A1>): Layer<R, E | E1, A1>
     /**
      * @rewriteGetter build from "@principia/base/Layer"
      */
@@ -23,31 +23,42 @@ declare module '@principia/base/Layer/core' {
     /**
      * @rewrite catchAll_ from "@principia/base/Layer"
      */
-    catchAll<R1, E1, B>(handler: Layer<readonly [R1, E], E1, B>): Layer<R & R1, E1, A | B>
+    catchAll<R, E, A, R1, E1, B>(
+      this: Layer<R, E, A>,
+      handler: Layer<readonly [R1, E], E1, B>
+    ): Layer<R & R1, E1, A | B>
     /**
      * @rewrite chain_ from "@principia/base/Layer"
      */
-    chain<R1, E1, B>(f: (a: A) => Layer<R1, E1, B>): Layer<R & R1, E1 | E, B>
+    chain<R, E, A, R1, E1, B>(this: Layer<R, E, A>, f: (a: A) => Layer<R1, E1, B>): Layer<R & R1, E1 | E, B>
     /**
      * @rewrite compose_ from "@principia/base/Layer"
      */
-    compose<R0, E1>(from: Layer<R0, E1, R>): Layer<R0, E | E1, A>
+    compose<R, E, A, R0, E1>(this: Layer<R, E, A>, from: Layer<R0, E1, R>): Layer<R0, E | E1, A>
     /**
      * @rewrite cross_ from "@principia/base/Layer"
      */
-    cross<R1, E1, B>(right: Layer<R1, E1, B>): Layer<R & R1, E | E1, readonly [A, B]>
+    cross<R, E, A, R1, E1, B>(this: Layer<R, E, A>, right: Layer<R1, E1, B>): Layer<R & R1, E | E1, readonly [A, B]>
     /**
      * @rewrite crossPar_ from "@principia/base/Layer"
      */
-    crossPar<R1, E1, B>(right: Layer<R1, E1, B>): Layer<R & R1, E | E1, readonly [A, B]>
+    crossPar<R, E, A, R1, E1, B>(this: Layer<R, E, A>, right: Layer<R1, E1, B>): Layer<R & R1, E | E1, readonly [A, B]>
     /**
      * @rewrite crossWith_ from "@principia/base/Layer"
      */
-    crossWith<R1, E1, B, C>(fb: Layer<R1, E1, B>, f: (a: A, b: B) => C): Layer<R & R1, E | E1, C>
+    crossWith<R, E, A, R1, E1, B, C>(
+      this: Layer<R, E, A>,
+      fb: Layer<R1, E1, B>,
+      f: (a: A, b: B) => C
+    ): Layer<R & R1, E | E1, C>
     /**
      * @rewrite crossWithPar_ from "@principia/base/Layer"
      */
-    crossWithPar<R1, E1, B, C>(fb: Layer<R1, E1, B>, f: (a: A, b: B) => C): Layer<R & R1, E | E1, C>
+    crossWithPar<R, E, A, R1, E1, B, C>(
+      this: Layer<R, E, A>,
+      fb: Layer<R1, E1, B>,
+      f: (a: A, b: B) => C
+    ): Layer<R & R1, E | E1, C>
     /**
      * @rewriteGetter fresh from "@principia/base/Layer"
      */
@@ -59,15 +70,16 @@ declare module '@principia/base/Layer/core' {
     /**
      * @rewrite map_ from "@principia/base/Layer"
      */
-    map<B>(f: (a: A) => B): Layer<R, E, B>
+    map<R, E, A, B>(this: Layer<R, E, A>, f: (a: A) => B): Layer<R, E, B>
     /**
      * @rewrite mapError_ from "@principia/base/Layer"
      */
-    mapError<E1>(f: (e: E) => E1): Layer<R, E1, A>
+    mapError<R, E, A, E1>(this: Layer<R, E, A>, f: (e: E) => E1): Layer<R, E1, A>
     /**
      * @rewrite matchLayer_ from "@principia/base/Layer"
      */
-    matchLayer<R1, E1, B, E2, C>(
+    matchLayer<R, E, A, R1, E1, B, E2, C>(
+      this: Layer<R, E, A>,
       onFailure: Layer<readonly [R1, Cause<E>], E1, B>,
       onSuccess: Layer<A, E2, C>
     ): Layer<R & R1, E1 | E2, B | C>
@@ -82,6 +94,6 @@ declare module '@principia/base/Layer/core' {
     /**
      * @rewrite orElse_ from "@principia/base/Layer"
      */
-    orElse<R1, E1, A1>(that: Layer<R1, E1, A1>): Layer<R & R1, E | E1, A | A1>
+    orElse<R, E, A, R1, E1, A1>(this: Layer<R, E, A>, that: Layer<R1, E1, A1>): Layer<R & R1, E | E1, A | A1>
   }
 }

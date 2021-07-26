@@ -8,15 +8,12 @@ import type { FiberId } from '../Fiber/FiberId'
 import type { Trace } from '../Fiber/trace'
 import type { FiberRef } from '../FiberRef'
 import type * as HKT from '../HKT'
-import type { IOAspect } from '../IOAspect'
+import type { IOURI } from '../Modules'
 import type { Option } from '../Option'
 import type { Scope } from '../Scope'
 import type { Supervisor } from '../Supervisor'
 
-import { accessCallTrace, traceAs, traceFrom } from '@principia/compile/util'
-
 import { Halt } from '../Cause/core'
-import { IOURI } from '../Modules'
 import { isObject } from '../prelude'
 
 /*
@@ -34,6 +31,7 @@ export const _U = '_U'
 export const IOTag = {
   Succeed: 'Succeed',
   Chain: 'Chain',
+  Defer: 'Defer',
   TryCatch: 'TryCatch',
   SucceedLazy: 'SucceedLazy',
   Async: 'Async',
@@ -62,81 +60,14 @@ export const IOTag = {
   GetPlatform: 'GetPlatform'
 } as const
 
-abstract class IOSyntax<R, E, A> {
-  readonly [_R]: (_: R) => void;
-  readonly [_E]: () => E;
-  readonly [_A]: () => A;
-  /**
-   * A symbolic alias for `bind`
-   *
-   * @trace 0
-   */
-  ['>>=']<R1, E1, B>(this: IO<R, E, A>, f: (a: A) => IO<R1, E1, B>): IO<R & R1, E | E1, B> {
-    return new Chain(this, f)
-  }
-  /**
-   * A symbolic alias for `map`
-   *
-   * @trace 0
-   */
-  ['<$>']<B>(this: IO<R, E, A>, f: (a: A) => B): IO<R, E, B> {
-    return this['>>='](traceAs(f, (a) => new Succeed(f(a))))
-  }
-  /**
-   * A symbolic alias for `as`
-   *
-   * @trace 0
-   */
-  ['$>']<B>(this: IO<R, E, A>, b: B): IO<R, E, B> {
-    return this['<$>'](() => b)
-  }
-  /**
-   * @trace call
-   */
-  ['*>']<R1, E1, B>(this: IO<R, E, A>, mb: IO<R1, E1, B>): IO<R & R1, E | E1, B> {
-    const trace = accessCallTrace()
-    return this['>>='](traceFrom(trace, () => mb))
-  }
-  /**
-   * @trace call
-   */
-  ['<*']<R1, E1, B>(this: IO<R, E, A>, mb: IO<R1, E1, B>): IO<R & R1, E | E1, A> {
-    const trace = accessCallTrace()
-    return this['>>='](traceFrom(trace, (a) => mb['$>'](a)))
-  }
-  /**
-   * @trace call
-   */
-  ['<*>']<R1, E1, B>(this: IO<R, E, A>, mb: IO<R1, E1, B>): IO<R & R1, E | E1, readonly [A, B]> {
-    const trace = accessCallTrace()
-    return this['>>='](traceFrom(trace, (a) => mb['<$>']((b) => [a, b])))
-  }
-  ['@@']<R, E extends EC, A extends A1, R1, E1, A1, EC>(
-    this: IO<R, E, A>,
-    aspect: IOAspect<R1, E1, A1, EC>
-  ): IO<R & R1, E | E1, A> {
-    return aspect.apply(this)
-  }
-}
-
 export const IOTypeId = Symbol('@principia/base/IO')
 export type IOTypeId = typeof IOTypeId
 
-export abstract class IO<R, E, A> extends IOSyntax<R, E, A> {
-  readonly [IOTypeId]: IOTypeId = IOTypeId;
+export abstract class IO<R, E, A> {
   readonly [_U]: IOURI;
   readonly [_E]: () => E;
   readonly [_A]: () => A;
   readonly [_R]: (_: R) => void
-
-  constructor() {
-    super()
-    this[_U] = IOURI
-  }
-
-  get [_I](): Instruction {
-    return this as any
-  }
 }
 
 export function isIO(u: unknown): u is IO<any, any, any> {
@@ -153,7 +84,8 @@ export function isIO(u: unknown): u is IO<any, any, any> {
  * @internal
  */
 export class Chain<R, R1, E, E1, A, A1> extends IO<R & R1, E | E1, A1> {
-  readonly _tag = IOTag.Chain
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.Chain
   constructor(readonly io: IO<R, E, A>, readonly f: (a: A) => IO<R1, E1, A1>) {
     super()
   }
@@ -163,21 +95,24 @@ export class Chain<R, R1, E, E1, A, A1> extends IO<R & R1, E | E1, A1> {
  * @internal
  */
 export class Succeed<A> extends IO<unknown, never, A> {
-  readonly _tag = IOTag.Succeed
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.Succeed
   constructor(readonly value: A, readonly trace?: string) {
     super()
   }
 }
 
 export class GetTrace extends IO<unknown, never, Trace> {
-  readonly _tag = IOTag.GetTrace
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.GetTrace
   constructor() {
     super()
   }
 }
 
 export class GetTracingStatus<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.SetTracingStatus
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.SetTracingStatus
 
   constructor(readonly effect: IO<R, E, A>, readonly flag: boolean) {
     super()
@@ -185,7 +120,8 @@ export class GetTracingStatus<R, E, A> extends IO<R, E, A> {
 }
 
 export class SetTracingStatus<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.GetTracingStatus
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.GetTracingStatus
 
   constructor(readonly f: (tracingStatus: boolean) => IO<R, E, A>) {
     super()
@@ -196,7 +132,8 @@ export class SetTracingStatus<R, E, A> extends IO<R, E, A> {
  * @internal
  */
 export class TryCatch<E, A> extends IO<unknown, E, A> {
-  readonly _tag = IOTag.TryCatch
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.TryCatch
   constructor(readonly effect: () => A, readonly onThrow: (u: unknown) => E) {
     super()
   }
@@ -206,7 +143,8 @@ export class TryCatch<E, A> extends IO<unknown, E, A> {
  * @internal
  */
 export class SucceedLazy<A> extends IO<unknown, never, A> {
-  readonly _tag = IOTag.SucceedLazy
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.SucceedLazy
   constructor(readonly effect: () => A) {
     super()
   }
@@ -216,7 +154,8 @@ export class SucceedLazy<A> extends IO<unknown, never, A> {
  * @internal
  */
 export class Async<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.Async
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.Async
   constructor(
     readonly register: (f: (_: IO<R, E, A>) => void) => Option<IO<R, E, A>>,
     readonly blockingOn: ReadonlyArray<FiberId>
@@ -229,7 +168,8 @@ export class Async<R, E, A> extends IO<R, E, A> {
  * @internal
  */
 export class Match<R, E, A, R1, E1, B, R2, E2, C> extends IO<R & R1 & R2, E1 | E2, B | C> {
-  readonly _tag = IOTag.Match
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.Match
 
   constructor(
     readonly io: IO<R, E, A>,
@@ -246,7 +186,8 @@ export type FailureReporter = (e: Cause<unknown>) => void
  * @internal
  */
 export class Fork<R, E, A> extends IO<R, never, FiberContext<E, A>> {
-  readonly _tag = IOTag.Fork
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.Fork
 
   constructor(
     readonly io: IO<R, E, A>,
@@ -262,7 +203,8 @@ export class Fork<R, E, A> extends IO<R, never, FiberContext<E, A>> {
  * @internal
  */
 export class Fail<E> extends IO<unknown, E, never> {
-  readonly _tag = IOTag.Fail
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.Fail
 
   constructor(readonly fill: (_: () => Trace) => Cause<E>) {
     super()
@@ -273,7 +215,8 @@ export class Fail<E> extends IO<unknown, E, never> {
  * @internal
  */
 export class Yield extends IO<unknown, never, void> {
-  readonly _tag = IOTag.Yield
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.Yield
 
   constructor() {
     super()
@@ -284,7 +227,8 @@ export class Yield extends IO<unknown, never, void> {
  * @internal
  */
 export class Read<R0, R, E, A> extends IO<R & R0, E, A> {
-  readonly _tag = IOTag.Read
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.Read
 
   constructor(readonly f: (_: R0) => IO<R, E, A>) {
     super()
@@ -295,7 +239,8 @@ export class Read<R0, R, E, A> extends IO<R & R0, E, A> {
  * @internal
  */
 export class Give<R, E, A> extends IO<unknown, E, A> {
-  readonly _tag = IOTag.Give
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.Give
 
   constructor(readonly io: IO<R, E, A>, readonly env: R, readonly trace?: string) {
     super()
@@ -305,8 +250,21 @@ export class Give<R, E, A> extends IO<unknown, E, A> {
 /**
  * @internal
  */
+export class Defer<R, E, A> extends IO<R, E, A> {
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.Defer
+
+  constructor(readonly io: () => IO<R, E, A>) {
+    super()
+  }
+}
+
+/**
+ * @internal
+ */
 export class DeferWith<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.DeferWith
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.DeferWith
 
   constructor(readonly io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>) {
     super()
@@ -314,7 +272,8 @@ export class DeferWith<R, E, A> extends IO<R, E, A> {
 }
 
 export class DeferMaybeWith<R, E, A, E1, A1> extends IO<R, E | E1, A | A1> {
-  readonly _tag = IOTag.DeferMaybeWith
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.DeferMaybeWith
   constructor(readonly io: (platform: Platform<unknown>, id: FiberId) => Either<Exit<E, A>, IO<R, E1, A1>>) {
     super()
   }
@@ -324,7 +283,8 @@ export class DeferMaybeWith<R, E, A, E1, A1> extends IO<R, E | E1, A | A1> {
  * @internal
  */
 export class Race<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3> extends IO<R & R1 & R2 & R3, E2 | E3, A2 | A3> {
-  readonly _tag = 'Race'
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = 'Race'
 
   constructor(
     readonly left: IO<R, E, A>,
@@ -342,7 +302,8 @@ export class Race<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3> extends IO<R & R1
  * @internal
  */
 export class SetInterrupt<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.SetInterrupt
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.SetInterrupt
 
   constructor(readonly io: IO<R, E, A>, readonly flag: InterruptStatus, readonly trace?: string) {
     super()
@@ -353,7 +314,8 @@ export class SetInterrupt<R, E, A> extends IO<R, E, A> {
  * @internal
  */
 export class GetInterrupt<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.GetInterrupt
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.GetInterrupt
 
   constructor(readonly f: (_: InterruptStatus) => IO<R, E, A>) {
     super()
@@ -364,7 +326,8 @@ export class GetInterrupt<R, E, A> extends IO<R, E, A> {
  * @internal
  */
 export class CheckDescriptor<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.CheckDescriptor
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.CheckDescriptor
 
   constructor(readonly f: (_: FiberDescriptor) => IO<R, E, A>) {
     super()
@@ -375,7 +338,8 @@ export class CheckDescriptor<R, E, A> extends IO<R, E, A> {
  * @internal
  */
 export class Supervise<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.Supervise
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.Supervise
 
   constructor(readonly io: IO<R, E, A>, readonly supervisor: Supervisor<any>) {
     super()
@@ -386,7 +350,8 @@ export class Supervise<R, E, A> extends IO<R, E, A> {
  * @internal
  */
 export class DeferTryCatchWith<R, E, A, E2> extends IO<R, E | E2, A> {
-  readonly _tag = IOTag.DeferTryCatchWith
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.DeferTryCatchWith
 
   constructor(
     readonly io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>,
@@ -400,7 +365,8 @@ export class DeferTryCatchWith<R, E, A, E2> extends IO<R, E | E2, A> {
  * @internal
  */
 export class NewFiberRef<A> extends IO<unknown, never, FiberRef<A>> {
-  readonly _tag = IOTag.NewFiberRef
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.NewFiberRef
 
   constructor(readonly initial: A, readonly onFork: (a: A) => A, readonly onJoin: (a: A, a2: A) => A) {
     super()
@@ -411,7 +377,8 @@ export class NewFiberRef<A> extends IO<unknown, never, FiberRef<A>> {
  * @internal
  */
 export class ModifyFiberRef<A, B> extends IO<unknown, never, B> {
-  readonly _tag = IOTag.ModifyFiberRef
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.ModifyFiberRef
 
   constructor(readonly fiberRef: FiberRef<A>, readonly f: (a: A) => [B, A]) {
     super()
@@ -422,7 +389,8 @@ export class ModifyFiberRef<A, B> extends IO<unknown, never, B> {
  * @internal
  */
 export class GetForkScope<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.GetForkScope
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.GetForkScope
 
   constructor(readonly f: (_: Scope<Exit<any, any>>) => IO<R, E, A>) {
     super()
@@ -433,7 +401,8 @@ export class GetForkScope<R, E, A> extends IO<R, E, A> {
  * @internal
  */
 export class OverrideForkScope<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.OverrideForkScope
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.OverrideForkScope
 
   constructor(readonly io: IO<R, E, A>, readonly forkScope: Option<Scope<Exit<any, any>>>, readonly trace?: string) {
     super()
@@ -441,7 +410,8 @@ export class OverrideForkScope<R, E, A> extends IO<R, E, A> {
 }
 
 export class GetPlatform<R, E, A> extends IO<R, E, A> {
-  readonly _tag = IOTag.GetPlatform
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag                 = IOTag.GetPlatform
 
   constructor(readonly f: (_: Platform<unknown>) => IO<R, E, A>) {
     super()
@@ -465,6 +435,7 @@ export type Instruction =
   | Yield
   | Read<any, any, any, any>
   | Give<any, any, any>
+  | Defer<any, any, any>
   | DeferWith<any, any, any>
   | DeferTryCatchWith<any, any, any, any>
   | DeferMaybeWith<any, any, any, any, any>

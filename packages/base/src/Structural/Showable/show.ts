@@ -390,9 +390,12 @@ function showRaw(value: object, typedArray?: string): ShowComputation {
         if (info.constructor !== null) {
           constructorName = `[${constructorName}]`
         }
-        return Z.update((context: ShowContext) =>
-          context.copy({ recurseTimes: context.recurseTimes - 1, currentDepth: context.currentDepth - 1 })
-        )['*>'](Z.pure(context.stylize(constructorName, 'special')))
+        return Z.crossSecond_(
+          Z.update((context: ShowContext) =>
+            context.copy({ recurseTimes: context.recurseTimes - 1, currentDepth: context.currentDepth - 1 })
+          ),
+          Z.pure(context.stylize(constructorName, 'special'))
+        )
       }
       if (info._tag === 'InspectionEarlyReturn') {
         return Z.pure(info.shown)
@@ -429,7 +432,8 @@ function showRaw(value: object, typedArray?: string): ShowComputation {
                   const externalComputation = info.computation
                   if (externalComputation._tag === 'Primitive') {
                     return Z.getsZ((context) =>
-                      externalComputation.computation['<$>'](
+                      Z.map_(
+                        externalComputation.computation,
                         str.replace(/\n/g, `\n${' '.repeat(context.indentationLevel)}`)
                       )
                     )
@@ -451,7 +455,7 @@ function showRaw(value: object, typedArray?: string): ShowComputation {
                   O.match(
                     () => base,
                     (index) =>
-                      base['<$>']((base) => {
+                      Z.map_(base, (base) => {
                         const ref = context.stylize(`<ref *${index}>`, 'special')
                         return base === '' ? ref : `${ref} ${base}`
                       })
@@ -596,10 +600,10 @@ function showTypedArray(value: TypedArray): ShowComputationChunk {
         return pipe(
           Z.update((_: ShowContext) => _.copy({ indentationLevel: _.indentationLevel + 2 })),
           Z.crossSecond(
-            Z.pure(output)['>>=']((output) =>
+            Z.chain_(Z.pure(output), (output) =>
               pipe(
                 C.make('BYTES_PER_ELEMENT', 'length', 'byteLength', 'byteOffset', 'buffer'),
-                C.mapA(Z.Applicative)((key) => _show(value[key])['<$>']((shown) => `[${key}]: ${shown}`)),
+                C.mapA(Z.Applicative)((key) => Z.map_(_show(value[key]), (shown) => `[${key}]: ${shown}`)),
                 Z.map((shownKeys) => output['++'](shownKeys))
               )
             )

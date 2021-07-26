@@ -1,47 +1,50 @@
 import type { Byte } from '@principia/base/Byte'
 import type { Either } from '@principia/base/Either'
 import type * as HKT from '@principia/base/HKT'
+import type { IO } from '@principia/base/IO'
 import type { Option } from '@principia/base/Option'
 import type { Applicative, Eq, Monoid, Predicate, PredicateWithIndex } from '@principia/base/prelude'
 import type { Refinement, RefinementWithIndex } from '@principia/base/Refinement'
 import type { These } from '@principia/base/These'
+
+/* eslint typescript-sort-keys/interface: "error" */
 
 declare module '@principia/base/Chunk/core' {
   export interface Chunk<A> {
     /**
      * @rewrite align_ from "@principia/base/Chunk"
      */
-    align<B>(that: Chunk<B>): Chunk<These<A, B>>
+    align<A, B>(this: Chunk<A>, that: Chunk<B>): Chunk<These<A, B>>
 
     /**
      * @rewrite alignWith_ from "@principia/base/Chunk"
      */
-    alignWith<B, C>(that: Chunk<B>, f: (_: These<A, B>) => C): Chunk<C>
+    alignWith<A, B, C>(this: Chunk<A>, that: Chunk<B>, f: (_: These<A, B>) => C): Chunk<C>
 
     /**
      * @rewrite append_ from "@principia/base/Chunk"
      */
-    append<B>(b: B): Chunk<A | B>
+    append<A, B>(this: Chunk<A>, b: B): Chunk<A | B>
 
     /**
      * @rewrite chain_ from "@principia/base/Chunk"
      */
-    chain<B>(f: (a: A) => Chunk<B>): Chunk<B>
+    chain<A, B>(this: Chunk<A>, f: (a: A) => Chunk<B>): Chunk<B>
 
     /**
      * @rewrite chop_ from "@principia/base/Chunk"
      */
-    chop<B>(f: (as: Chunk<A>) => readonly [B, Chunk<A>]): Chunk<B>
+    chop<A, B>(this: Chunk<A>, f: (as: Chunk<A>) => readonly [B, Chunk<A>]): Chunk<B>
 
     /**
      * @rewrite chunksOf_ from "@principia/base/Chunk"
      */
-    chunksOf(n: number): Chunk<Chunk<A>>
+    chunksOf<A>(this: Chunk<A>, n: number): Chunk<Chunk<A>>
 
     /**
      * @rewrite collectWhile_ from "@principia/base/Chunk"
      */
-    collectWhile<B>(f: (a: A) => Option<B>): Chunk<B>
+    collectWhile<A, B>(this: Chunk<A>, f: (a: A) => Option<B>): Chunk<B>
 
     /**
      * @rewrite compact from "@principia/base/Chunk"
@@ -50,110 +53,132 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewrite concat_ from "@principia/base/Chunk"
      */
-    concat<B>(that: Chunk<B>): Chunk<A | B>
+    concat<A, B>(this: Chunk<A>, that: Chunk<B>): Chunk<A | B>
 
     /**
      * @rewrite corresponds_ from "@principia/base/Chunk"
      */
-    corresponds<B>(that: Chunk<B>, f: (a: A, b: B) => boolean): boolean
+    corresponds<A, B>(this: Chunk<A>, that: Chunk<B>, f: (a: A, b: B) => boolean): boolean
 
     /**
      * @rewrite cross_ from "@principia/base/Chunk"
      */
-    cross<B>(that: Chunk<B>): Chunk<readonly [A, B]>
+    cross<A, B>(this: Chunk<A>, that: Chunk<B>): Chunk<readonly [A, B]>
 
     /**
      * @rewrite crossWith_ from "@principia/base/Chunk"
      */
-    crossWith<B, C>(that: Chunk<B>, f: (a: A, b: B) => C): Chunk<C>
+    crossWith<A, B, C>(this: Chunk<A>, that: Chunk<B>, f: (a: A, b: B) => C): Chunk<C>
 
     /**
      * @rewrite drop_ from "@principia/base/Chunk"
      */
-    drop(n: number): Chunk<A>
+    drop<A>(this: Chunk<A>, n: number): Chunk<A>
 
     /**
      * @rewrite dropWhile_ from "@principia/base/Chunk"
      */
-    dropWhile(predicate: Predicate<A>): Chunk<A>
+    dropWhile<A>(this: Chunk<A>, predicate: Predicate<A>): Chunk<A>
 
     /**
-     * @rewrite _elem from "@principia/base/Chunk"
+     * @rewrite dropWhileIO from "@principia/base/Chunk"
      */
-    elem(E: Eq<A>, a: A): boolean
+    dropWhileIO<A, R, E>(this: Chunk<A>, p: (a: A) => IO<R, E, boolean>): IO<R, E, Chunk<A>>
+
+    /**
+     * @rewriteConstraint elem_ from "@principia/base/Chunk"
+     */
+    elem<A>(this: Chunk<A>, E: Eq<A>): (a: A) => boolean
 
     /**
      * @rewrite every_ from "@principia/base/Chunk"
      */
-    every<B extends A>(refinement: Refinement<A, B>): this is Chunk<B>
+    every<A>(this: Chunk<A>, predicate: Predicate<A>): boolean
 
     /**
      * @rewrite every_ from "@principia/base/Chunk"
      */
-    every(predicate: Predicate<A>): boolean
+    every<A, B extends A>(this: Chunk<A>, refinement: Refinement<A, B>): this is Chunk<B>
 
     /**
      * @rewrite exists_ from "@principia/base/Chunk"
      */
-    exists(predicate: Predicate<A>): boolean
+    exists<A>(this: Chunk<A>, predicate: Predicate<A>): boolean
 
     /**
      * @rewrite filter_ from "@principia/base/Chunk"
      */
-    filter(predicate: PredicateWithIndex<number, A>): Chunk<A>
+    filter<A, B extends A>(this: Chunk<A>, refinement: RefinementWithIndex<number, A, B>): Chunk<B>
 
     /**
      * @rewrite filter_ from "@principia/base/Chunk"
      */
-    filter<B extends A>(refinement: RefinementWithIndex<number, A, B>): Chunk<B>
+    filter<A>(this: Chunk<A>, predicate: PredicateWithIndex<number, A>): Chunk<A>
+
+    /**
+     * @rewrite filterIO_ from "@principia/base/Chunk"
+     */
+    filterIO<A, R, E>(this: Chunk<A>, p: (a: A) => IO<R, E, boolean>): IO<R, E, Chunk<A>>
 
     /**
      * @rewrite filterMap_ from "@principia/base/Chunk"
      */
-    filterMap<B>(f: (a: A, i: number) => Option<B>): Chunk<B>
+    filterMap<A, B>(this: Chunk<A>, f: (a: A, i: number) => Option<B>): Chunk<B>
 
     /**
-     * @rewrite _filterMapA from "@principia/base/Chunk"
+     * @rewriteConstraint filterMapA_ from "@principia/base/Chunk"
      */
-    filterMapA<F extends HKT.URIS, C, K, Q, W, X, I, S, R, E, B>(
-      A: Applicative<F, C>,
+    filterMapA<A, F extends HKT.URIS, C>(
+      this: Chunk<A>,
+      A: Applicative<F, C>
+    ): <K, Q, W, X, I, S, R, E, B>(
       f: (a: A, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<B>>
-    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Chunk<B>>
+    ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Chunk<B>>
 
     /**
      * @rewrite find_ from "@principia/base/Chunk"
      */
-    find(predicate: PredicateWithIndex<number, A>): Option<A>
+    find<A>(this: Chunk<A>, predicate: PredicateWithIndex<number, A>): Option<A>
+
+    /**
+     * @rewrite findIO_ from "@principia/base/Chunk"
+     */
+    findIO<A, R, E>(this: Chunk<A>, p: (a: A) => IO<R, E, boolean>): IO<R, E, Option<A>>
 
     /**
      * @rewrite foldMap_ from "@principia/base/Chunk"
      */
-    foldMap<M>(M: Monoid<M>, f: (a: A, i: number) => M): M
+    foldMap<A, M>(this: Chunk<A>, M: Monoid<M>, f: (a: A, i: number) => M): M
 
     /**
      * @rewrite foldl_ from "@principia/base/Chunk"
      */
-    foldl<B>(b: B, f: (b: B, a: A, i: number) => B): B
+    foldl<A, B>(this: Chunk<A>, b: B, f: (b: B, a: A, i: number) => B): B
+
+    /**
+     * @rewrite foldlIO_ from "@principia/base/Chunk"
+     */
+    foldlIO<A, R, E, B>(this: Chunk<A>, b: B, f: (b: B, a: A) => IO<R, E, B>): IO<R, E, B>
 
     /**
      * @rewrite foldlWhile_ from "@principia/base/Chunk"
      */
-    foldlWhile<B>(b: B, cont: Predicate<B>, f: (b: B, a: A, i: number) => B): B
+    foldlWhile<A, B>(this: Chunk<A>, b: B, cont: Predicate<B>, f: (b: B, a: A, i: number) => B): B
 
     /**
      * @rewrite foldr_ from "@principia/base/Chunk"
      */
-    foldr<B>(b: B, f: (a: A, b: B, i: number) => B): B
+    foldr<A, B>(this: Chunk<A>, b: B, f: (a: A, b: B, i: number) => B): B
 
     /**
      * @rewrite foreach_ from "@principia/base/Chunk"
      */
-    forEach<B>(f: (a: A) => B): void
+    forEach<A, B>(this: Chunk<A>, f: (a: A) => B): void
 
     /**
      * @rewrite get_ from "@principia/base/Chunk"
      */
-    get(n: number): Option<A>
+    get<A>(this: Chunk<A>, n: number): Option<A>
 
     /**
      * @rewriteGetter head from "@principia/base/Chunk"
@@ -178,48 +203,65 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewrite map_ from "@principia/base/Chunk"
      */
-    map<B>(F: (a: A, i: number) => B): Chunk<B>
+    map<A, B>(this: Chunk<A>, F: (a: A, i: number) => B): Chunk<B>
 
     /**
-     * @rewrite _mapA from "@principia/base/Chunk"
+     * @rewriteConstraint mapA_ from "@principia/base/Chunk"
      */
-    mapA<F extends HKT.URIS, C, K, Q, W, X, I, S, R, E, B>(
-      A: Applicative<F, C>,
+    mapA<A, F extends HKT.URIS, C>(
+      this: Chunk<A>,
+      A: Applicative<F, C>
+    ): <K, Q, W, X, I, S, R, E, B>(
       f: (a: A, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
-    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Chunk<B>>
+    ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Chunk<B>>
 
     /**
      * @rewrite mapAccum_ from "@principia/base/Chunk"
      */
-    mapAccum<S, B>(s: S, f: (s: S, a: A) => readonly [B, S]): readonly [Chunk<B>, S]
+    mapAccum<A, S, B>(this: Chunk<A>, s: S, f: (s: S, a: A) => readonly [B, S]): readonly [Chunk<B>, S]
+
+    /**
+     * @rewrite mapIO_ from "@principia/base/Chunk"
+     */
+    mapIO<A, R, E, B>(this: Chunk<A>, f: (a: A) => IO<R, E, B>): IO<R, E, Chunk<B>>
+
+    /**
+     * @rewrite mapIOPar_ from "@principia/base/Chunk"
+     */
+    mapIOPar<A, R, E, B>(this: Chunk<A>, f: (a: A) => IO<R, E, B>): IO<R, E, Chunk<B>>
 
     /**
      * @rewrite partition_ from "@principia/base/Chunk"
      */
-    partition(predicate: PredicateWithIndex<number, A>): readonly [Chunk<A>, Chunk<A>]
+    partition<A>(this: Chunk<A>, predicate: PredicateWithIndex<number, A>): readonly [Chunk<A>, Chunk<A>]
 
     /**
      * @rewrite partition_ from "@principia/base/Chunk"
      */
-    partition<B extends A>(refinement: RefinementWithIndex<number, A, B>): readonly [Chunk<A>, Chunk<B>]
+    partition<A, B extends A>(
+      this: Chunk<A>,
+      refinement: RefinementWithIndex<number, A, B>
+    ): readonly [Chunk<A>, Chunk<B>]
 
     /**
      * @rewrite partitionMap_ from "@principia/base/Chunk"
      */
-    partitionMap<B, C>(f: (a: A, i: number) => Either<B, C>): readonly [Chunk<C>, Chunk<C>]
+    partitionMap<A, B, C>(this: Chunk<A>, f: (a: A, i: number) => Either<B, C>): readonly [Chunk<C>, Chunk<C>]
 
     /**
-     * @rewrite _partitionMapA from "@principia/base/Chunk"
+     * @rewriteConstraint partitionMapA_ from "@principia/base/Chunk"
      */
-    partitionMapA<F extends HKT.URIS, C, K, Q, W, X, I, S, R, E, B, D>(
-      A: Applicative<F, C>,
+    partitionMapA<A, F extends HKT.URIS, C>(
+      this: Chunk<A>,
+      A: Applicative<F, C>
+    ): <K, Q, W, X, I, S, R, E, B, D>(
       f: (a: A, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<B, D>>
-    ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [Chunk<B>, Chunk<D>]>
+    ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [Chunk<B>, Chunk<D>]>
 
     /**
      * @rewrite prepend_ from "@principia/base/Chunk"
      */
-    prepend<B>(b: B): Chunk<A | B>
+    prepend<A, B>(this: Chunk<A>, b: B): Chunk<A | B>
 
     /**
      * @rewrite separate from "@principia/base/Chunk"
@@ -229,12 +271,12 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewrite splitAt_ from "@principia/base/Chunk"
      */
-    splitAt(n: number): readonly [Chunk<A>, Chunk<A>]
+    splitAt<A>(this: Chunk<A>, n: number): readonly [Chunk<A>, Chunk<A>]
 
     /**
      * @rewrite splitWhere_ from "@principia/base/Chunk"
      */
-    splitWhere(predicate: Predicate<A>): readonly [Chunk<A>, Chunk<A>]
+    splitWhere<A>(this: Chunk<A>, predicate: Predicate<A>): readonly [Chunk<A>, Chunk<A>]
 
     /**
      * @rewriteGetter tail from "@principia/base/Chunk"
@@ -244,17 +286,22 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewrite take_ from "@principia/base/Chunk"
      */
-    take(n: number): Chunk<A>
+    take<A>(this: Chunk<A>, n: number): Chunk<A>
 
     /**
      * @rewrite takeWhile_ from "@principia/base/Chunk"
      */
-    takeWhile(predicate: Predicate<A>): Chunk<A>
+    takeWhile<A>(this: Chunk<A>, predicate: Predicate<A>): Chunk<A>
+
+    /**
+     * @rewrite takeWhileIO_ from "@principia/base/Chunk"
+     */
+    takeWhileIO<A, R, E>(this: Chunk<A>, p: (a: A) => IO<R, E, boolean>): IO<R, E, Chunk<A>>
 
     /**
      * @rewrite toArray from "@principia/base/Chunk"
      */
-    toArray(): ReadonlyArray<A>
+    toArray<A>(this: Chunk<A>): ReadonlyArray<A>
 
     /**
      * @rewrite toBuffer from "@principia/base/Chunk"
@@ -264,31 +311,31 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewrite unsafeGet_ from "@principia/base/Chunk"
      */
-    unsafeGet(n: number): A
+    unsafeGet<A>(this: Chunk<A>, n: number): A
 
     /**
      * @rewrite unsafeHead from "@principia/base/Chunk"
      */
-    unsafeHeaf(): A
+    unsafeHead<A>(this: Chunk<A>): A
 
     /**
      * @rewrite unsafeTail from "@principia/base/Chunk"
      */
-    unsafeTail(): Chunk<A>
+    unsafeTail<A>(this: Chunk<A>): Chunk<A>
 
     /**
      * @rewrite zip_ from "@principia/base/Chunk"
      */
-    zip<B>(that: Chunk<B>): Chunk<readonly [A, B]>
+    zip<A, B>(this: Chunk<A>, that: Chunk<B>): Chunk<readonly [A, B]>
 
     /**
      * @rewrite zipWith_ from "@principia/base/Chunk"
      */
-    zipWith<B, C>(that: Chunk<B>, f: (a: A, b: B) => C): Chunk<C>
+    zipWith<A, B, C>(this: Chunk<A>, that: Chunk<B>, f: (a: A, b: B) => C): Chunk<C>
 
     /**
      * @rewrite zipWithIndexOffset_ from "@principia/base/Chunk"
      */
-    zipWithIndexOffset(offset: number): Chunk<readonly [A, number]>
+    zipWithIndexOffset<A>(this: Chunk<A>, offset: number): Chunk<readonly [A, number]>
   }
 }

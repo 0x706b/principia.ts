@@ -128,7 +128,7 @@ export class Semaphore {
 export function _withPermits<R, E, A>(s: Semaphore, n: number, io: I.IO<R, E, A>): I.IO<R, E, A> {
   return bracket_(
     s.prepare(n),
-    (a) => a.waitAcquire['*>'](io),
+    (a) => I.crossSecond_(a.waitAcquire, io),
     (a) => a.release
   )
 }

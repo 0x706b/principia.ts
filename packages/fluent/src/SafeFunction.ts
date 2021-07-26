@@ -3,11 +3,11 @@ declare module '@principia/base/SafeFunction' {
     /**
      * @rewrite andThen_ from "@principia/base/SafeFunction"
      */
-    andThen<B>(f: (a: A) => B): SafeFunction<I, B>
+    andThen<I, A, B>(this: SafeFunction<I, A>, f: (a: A) => B): SafeFunction<I, B>
     /**
      * @rewrite pipeTo_ from "@principia/base/SafeFunction"
      */
-    pipeTo<B>(f: SafeFunction<A, B>): SafeFunction<I, B>
+    pipeTo<I, A, B>(this: SafeFunction<I, A>, f: SafeFunction<A, B>): SafeFunction<I, B>
   }
 }
 

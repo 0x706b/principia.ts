@@ -13,7 +13,7 @@ declare module '@principia/base/Ref' {
      * @rewrite contramap_ from "@principia/base/Ref"
      * @trace 0
      */
-    contramap<C>(f: (_: C) => A): R.Ref<EA, EB, C, B>
+    contramap<EA, EB, A, B, C>(this: R.Ref<EA, EB, A, B>, f: (_: C) => A): R.Ref<EA, EB, C, B>
 
     /**
      * Transforms the `set` value of the `Ref` with the specified fallible
@@ -22,7 +22,10 @@ declare module '@principia/base/Ref' {
      * @rewrite contramapEither_ from "@principia/base/Ref"
      * @trace 0
      */
-    contramapEither<EC, C>(f: (_: C) => Either<EC, A>): R.Ref<EA | EC, EB, C, B>
+    contramapEither<EA, EB, A, B, EC, C>(
+      this: R.Ref<EA, EB, A, B>,
+      f: (_: C) => Either<EC, A>
+    ): R.Ref<EA | EC, EB, C, B>
 
     /**
      * Transforms both the `set` and `get` values of the `Ref` with the
@@ -32,7 +35,7 @@ declare module '@principia/base/Ref' {
      * @trace 0
      * @trace 1
      */
-    dimap<C, D>(f: (_: C) => A, g: (_: B) => D): R.Ref<EA, EB, C, D>
+    dimap<EA, EB, A, B, C, D>(this: R.Ref<EA, EB, A, B>, f: (_: C) => A, g: (_: B) => D): R.Ref<EA, EB, C, D>
 
     /**
      * Transforms both the `set` and `get` values of the `Ref` with the
@@ -42,7 +45,11 @@ declare module '@principia/base/Ref' {
      * @trace 0
      * @trace 1
      */
-    dimapEither<EC, C, ED, D>(f: (_: C) => Either<EC, A>, g: (_: B) => Either<ED, D>): R.Ref<EC | EA, ED | EB, C, D>
+    dimapEither<EA, EB, A, B, EC, C, ED, D>(
+      this: R.Ref<EA, EB, A, B>,
+      f: (_: C) => Either<EC, A>,
+      g: (_: B) => Either<ED, D>
+    ): R.Ref<EC | EA, ED | EB, C, D>
 
     /**
      * Transforms both the `set` and `get` errors of the `Ref` with the
@@ -52,7 +59,7 @@ declare module '@principia/base/Ref' {
      * @trace 0
      * @trace 1
      */
-    dimapError<EC, ED>(f: (_: EA) => EC, g: (_: EB) => ED): R.Ref<EC, ED, A, B>
+    dimapError<EA, EB, A, B, EC, ED>(this: R.Ref<EA, EB, A, B>, f: (_: EA) => EC, g: (_: EB) => ED): R.Ref<EC, ED, A, B>
 
     /**
      * Filters the `set` value of the `Ref` with the specified predicate,
@@ -62,7 +69,10 @@ declare module '@principia/base/Ref' {
      * @rewrite filterInput_ from "@principia/base/Ref"
      * @trace 0
      */
-    filterInput<A1 extends A>(predicate: Predicate<A1>): R.Ref<Option<EA>, EB, A1, B>
+    filterInput<EA, EB, A, B, A1 extends A>(
+      this: R.Ref<EA, EB, A, B>,
+      predicate: Predicate<A1>
+    ): R.Ref<Option<EA>, EB, A1, B>
 
     /**
      * Maps and filters the `get` value of the `Ref` with the specified partial
@@ -72,7 +82,7 @@ declare module '@principia/base/Ref' {
      * @rewrite collect_ from "@principia/base/Ref"
      * @trace 0
      */
-    filterMap<C>(f: (_: B) => Option<C>): R.Ref<EA, Option<EB>, A, C>
+    filterMap<EA, EB, A, B, C>(this: R.Ref<EA, EB, A, B>, f: (_: B) => Option<C>): R.Ref<EA, Option<EB>, A, C>
 
     /**
      * Filters the `get` value of the `Ref` with the specified predicate,
@@ -82,7 +92,7 @@ declare module '@principia/base/Ref' {
      * @rewrite filterOutput_ from "@principia/base/Ref"
      * @trace 0
      */
-    filterOutput(predicate: Predicate<B>): R.Ref<EA, Option<EB>, A, B>
+    filterOutput<EA, EB, A, B>(this: R.Ref<EA, EB, A, B>, predicate: Predicate<B>): R.Ref<EA, Option<EB>, A, B>
 
     /**
      * Reads the value from the `Ref`.
@@ -126,7 +136,7 @@ declare module '@principia/base/Ref' {
      * @rewrite map_ from "@principia/base/Ref"
      * @trace 0
      */
-    map<C>(f: (b: B) => C): R.Ref<EA, EB, A, C>
+    map<EA, EB, A, B, C>(this: R.Ref<EA, EB, A, B>, f: (b: B) => C): R.Ref<EA, EB, A, C>
 
     /**
      * Transforms the `get` value of the `Ref` with the specified fallible
@@ -135,7 +145,7 @@ declare module '@principia/base/Ref' {
      * @rewrite mapEither_ from "@principia/base/Ref"
      * @trace 0
      */
-    mapEither<EC, C>(f: (_: B) => Either<EC, C>): R.Ref<EA, EB | EC, A, C>
+    mapEither<EA, EB, A, B, EC, C>(this: R.Ref<EA, EB, A, B>, f: (_: B) => Either<EC, C>): R.Ref<EA, EB | EC, A, C>
 
     /**
      * Atomically modifies the `Ref` with the specified function, which

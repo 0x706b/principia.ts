@@ -18,7 +18,7 @@ import * as O from '@principia/base/Option'
 import { pipe } from '@principia/base/prelude'
 import { RandomTag } from '@principia/base/Random'
 import * as Ref from '@principia/base/Ref'
-import { intersect } from '@principia/base/struct'
+import { intersect } from '@principia/base/Struct'
 import { Mash } from '@principia/base/util/Mash'
 import { ImmutableQueue } from '@principia/base/util/support/ImmutableQueue'
 
@@ -53,7 +53,7 @@ export class TestRandom implements Random {
   feedStrings(...strings: ReadonlyArray<string>): UIO<void> {
     return Ref.update_(this.bufferState, (data) => data.copy({ strings: Li.concat_(Li.from(strings), data.strings) }))
   }
-  getSeed: UIO<number> = this.randomState.get['<$>']((data) => ((data.seed1 << 24) | data.seed2) ^ 0x5deece66d)
+  getSeed: UIO<number> = I.map_(this.randomState.get, (data) => ((data.seed1 << 24) | data.seed2) ^ 0x5deece66d)
 
   setSeed(seed: string): UIO<void> {
     const mash    = Mash()
@@ -83,7 +83,7 @@ export class TestRandom implements Random {
   }
 
   private getOrElse = <A>(buffer: (_: Buffer) => readonly [Option<A>, Buffer], random: UIO<A>): UIO<A> => {
-    return Ref.modify_(this.bufferState, buffer)['>>='](O.match(() => random, I.succeed))
+    return pipe(this.bufferState, Ref.modify(buffer), I.chain(O.match(() => random, I.succeed)))
   }
 
   private leastSignificantBits = (x: number): number => {
@@ -108,29 +108,29 @@ export class TestRandom implements Random {
     })
   }
 
-  private randomBoolean = this.randomBits(1)['<$>']((n) => n !== 0)
+  private randomBoolean = I.map_(this.randomBits(1), (n) => n !== 0)
 
   private randomBytes = (length: number): UIO<ReadonlyArray<Byte>> => {
     const loop = (i: number, rnd: UIO<number>, n: number, acc: UIO<List<Byte>>): UIO<List<Byte>> => {
       if (i === length) {
-        return acc['<$>'](Li.reverse)
+        return I.map_(acc, Li.reverse)
       } else if (n > 0) {
-        return rnd['>>=']((rnd) => loop(i + 1, I.succeed(rnd >> 8), n - 1, acc['<$>'](Li.prepend(Byte.wrap(rnd)))))
+        return I.chain_(rnd, (rnd) => loop(i + 1, I.succeed(rnd >> 8), n - 1, I.map_(acc, Li.prepend(Byte.wrap(rnd)))))
       } else {
         return loop(i, this.nextInt, Math.min(length - i, 4), acc)
       }
     }
 
-    return loop(0, this.randomInt, Math.min(length, 4), I.succeed(Li.empty()))['<$>'](Li.toArray)
+    return I.map_(loop(0, this.randomInt, Math.min(length, 4), I.succeed(Li.empty())), Li.toArray)
   }
 
   private randomIntBounded = (n: number) => {
     if (n <= 0) {
       return I.halt(new IllegalArgumentError('n must be positive', 'TestRandom.randomIntBounded'))
     } else if ((n & -n) === n) {
-      return this.randomBits(31)['<$>']((_) => _ >> Math.clz32(n))
+      return I.map_(this.randomBits(31), (_) => _ >> Math.clz32(n))
     } else {
-      const loop: UIO<number> = this.randomBits(31)['>>=']((i) => {
+      const loop: UIO<number> = I.chain_(this.randomBits(31), (i) => {
         const value = i % n
         if (i - value + (n - 1) < 0) return loop
         else return I.succeed(value)
@@ -139,14 +139,14 @@ export class TestRandom implements Random {
     }
   }
 
-  private randomLong: UIO<bigint> = this.randomBits(32)['>>=']((i1) =>
-    this.randomBits(32)['>>=']((i2) => I.succeed(BigInt(i1 << 32) + BigInt(i2)))
+  private randomLong: UIO<bigint> = I.chain_(this.randomBits(32), (i1) =>
+    I.chain_(this.randomBits(32), (i2) => I.succeed(BigInt(i1 << 32) + BigInt(i2)))
   )
 
   private randomInt = this.randomBits(32)
 
-  private randomDouble = this.randomBits(26)['>>=']((i1) =>
-    this.randomBits(27)['<$>']((i2) => (i1 * (1 << 27) + i2) / (1 << 53))
+  private randomDouble = I.chain_(this.randomBits(26), (i1) =>
+    I.map_(this.randomBits(27), (i2) => (i1 * (1 << 27) + i2) / (1 << 53))
   )
 
   private random = this.randomBits(26)
@@ -176,7 +176,7 @@ export class TestRandom implements Random {
   }
 
   nextRange(low: number, high: number): UIO<number> {
-    return this.next['<$>']((n) => (high - low + 1) * n + low)
+    return I.map_(this.next, (n) => (high - low + 1) * n + low)
   }
 
   nextArrayInt(low: ArrayInt, high: ArrayInt): UIO<ArrayInt> {
@@ -303,7 +303,7 @@ function nextIntBetweenWith(
     return I.halt(new IllegalArgumentError('invalid bounds', 'TestRandom.nextIntBetweenWith'))
   } else {
     const difference = max - min
-    if (difference > 0) return nextIntBounded(difference)['<$>']((n) => n + min)
+    if (difference > 0) return I.map_(nextIntBounded(difference), (n) => n + min)
     else return I.repeatUntil_(nextInt, (n) => min <= n && n < max)
   }
 }

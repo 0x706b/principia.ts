@@ -57,6 +57,6 @@ export function unroll<R, E>(runStep: () => ChannelState<R, E>): IO<R, E, Either
     case ChannelStateTag.Emit:
       return I.succeed(E.left(_Emit))
     case ChannelStateTag.Effect:
-      return state.io['*>'](unroll(runStep))
+      return I.crossSecond_(state.io, unroll(runStep))
   }
 }

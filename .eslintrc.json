@@ -14,7 +14,13 @@
     "ecmaVersion": 2020,
     "sourceType": "module"
   },
-  "plugins": ["@0x706b/align-assignments", "import", "simple-import-sort", "@typescript-eslint"],
+  "plugins": [
+    "typescript-sort-keys",
+    "@0x706b/align-assignments",
+    "import",
+    "simple-import-sort",
+    "@typescript-eslint"
+  ],
   "rules": {
     "@0x706b/align-assignments/align-assignments": "error",
     "@typescript-eslint/ban-ts-comment": "off",

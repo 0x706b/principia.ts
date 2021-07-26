@@ -62,7 +62,7 @@ function findIOLoop_<R, E, A>(
 ): I.IO<R, E, O.Option<A>> {
   if (i < length) {
     const a = array[i]
-    return f(a)['>>=']((b) => (b ? I.succeed(O.some(a)) : findIOLoop_(iterator, f, array, i + 1, length)))
+    return I.chain_(f(a), (b) => (b ? I.succeed(O.some(a)) : findIOLoop_(iterator, f, array, i + 1, length)))
   }
   let result
   if (!(result = iterator.next()).done) {

@@ -98,19 +98,19 @@ export class TestClock implements Clock {
       yield* _(
         I.defer(() => {
           if (wait) {
-            return self.warningStart['*>'](P.await(promise))
+            return I.crossSecond_(self.warningStart, P.await(promise))
           } else {
-            return P.succeed_(promise, undefined)['*>'](I.unit())
+            return I.crossSecond_(P.succeed_(promise, undefined), I.unit())
           }
         })
       )
     })
   }
 
-  currentTime = this.clockState.get['<$>']((data) => data.duration)
+  currentTime = I.map_(this.clockState.get, (data) => data.duration)
 
   adjust(duration: number): UIO<void> {
-    return this.warningDone['*>'](this.run((d) => d + duration))
+    return pipe(this.warningDone, I.crossSecond(this.run((d) => d + duration)))
   }
 
   setDate(date: Date): UIO<void> {
@@ -118,32 +118,32 @@ export class TestClock implements Clock {
   }
 
   setTime(time: number): UIO<void> {
-    return this.warningDone['*>'](this.run((_) => time))
+    return pipe(this.warningDone, I.crossSecond(this.run((_) => time)))
   }
 
-  sleeps = this.clockState.get['<$>']((data) => Li.map_(data.sleeps, ([_]) => _))
+  sleeps = I.map_(this.clockState.get, (data) => Li.map_(data.sleeps, ([_]) => _))
 
   get supervizedFibers(): UIO<HashSet<RuntimeFiber<any, any>>> {
     return I.descriptorWith((descriptor) =>
-      this.annotations
-        .get(fibers)
-        ['>>='](
-          E.match(
-            (_) => I.succeed(HS.make(HashEqFiber)),
-            flow(
-              I.foreach(Ref.get),
-              I.map(C.foldl(HS.make(HashEqFiber), HS.union_)),
-              I.map(HS.filter((f) => !eqFiberId.equals_(f.id, descriptor.id)))
-            )
+      I.chain_(
+        this.annotations.get(fibers),
+        E.match(
+          (_) => I.succeed(HS.make(HashEqFiber)),
+          flow(
+            I.foreach(Ref.get),
+            I.map(C.foldl(HS.make(HashEqFiber), HS.union_)),
+            I.map(HS.filter((f) => !eqFiberId.equals_(f.id, descriptor.id)))
           )
         )
+      )
     )
   }
 
   private get freeze(): IO<unknown, void, HashMap<FiberId, FiberStatus>> {
-    return this.supervizedFibers['>>='](
+    return I.chain_(
+      this.supervizedFibers,
       I.foldl(HM.make(HashEqFiberId), (map, fiber) =>
-        fiber.status['>>=']((status) => {
+        I.chain_(fiber.status, (status) => {
           switch (status._tag) {
             case 'Done': {
               return I.succeed(HM.set_(map, fiber.id, status))
@@ -167,7 +167,7 @@ export class TestClock implements Clock {
   private get awaitSuspended(): UIO<void> {
     return pipe(
       this.suspended,
-      I.crossWith(this.live.provide(I.sleep(10))['*>'](this.suspended), St.equals),
+      I.crossWith(pipe(this.live.provide(I.sleep(10)), I.crossSecond(this.suspended)), St.equals),
       I.filterOrFail(
         (_: boolean) => _,
         (): void => undefined
@@ -178,38 +178,46 @@ export class TestClock implements Clock {
   }
 
   private run(f: (duration: number) => number): UIO<void> {
-    return this.awaitSuspended['*>'](
-      Ref.modify_(this.clockState, (data) => {
-        const end    = f(data.duration)
-        const sorted = Li.sortWith_(data.sleeps, ([x], [y]) => N.Ord.compare_(x, y))
-        return pipe(
-          sorted,
-          Li.head,
-          O.chain(([duration, promise]) =>
-            duration <= end ? O.some(tuple(O.some(tuple(end, promise)), new Data(duration, Li.tail(sorted)))) : O.none()
-          ),
-          O.getOrElse(() => tuple(O.none(), new Data(end, data.sleeps)))
+    return pipe(
+      this.awaitSuspended,
+      I.crossSecond(
+        Ref.modify_(this.clockState, (data) => {
+          const end    = f(data.duration)
+          const sorted = Li.sortWith_(data.sleeps, ([x], [y]) => N.Ord.compare_(x, y))
+          return pipe(
+            sorted,
+            Li.head,
+            O.chain(([duration, promise]) =>
+              duration <= end
+                ? O.some(tuple(O.some(tuple(end, promise)), new Data(duration, Li.tail(sorted))))
+                : O.none()
+            ),
+            O.getOrElse(() => tuple(O.none(), new Data(end, data.sleeps)))
+          )
+        })
+      ),
+      I.chain(
+        O.match(
+          () => I.unit(),
+          ([end, promise]) =>
+            pipe(P.succeed_(promise, undefined), I.crossSecond(I.yieldNow), I.crossSecond(this.run((_) => end)))
         )
-      })
-    )['>>='](
-      O.match(
-        () => I.unit(),
-        ([end, promise]) =>
-          P.succeed_(promise, undefined)
-            ['*>'](I.yieldNow)
-            ['*>'](this.run((_) => end))
       )
     )
   }
 
   private get suspended(): IO<unknown, void, HashMap<FiberId, FiberStatus>> {
-    return this.freeze['<*>'](this.delay['*>'](this.freeze))['>>='](([first, last]) => {
-      if (St.equals(first, last)) {
-        return I.succeed(first)
-      } else {
-        return I.fail(undefined)
-      }
-    })
+    return pipe(
+      this.freeze,
+      I.cross(I.crossSecond_(this.delay, this.freeze)),
+      I.chain(([first, last]) => {
+        if (St.equals(first, last)) {
+          return I.succeed(first)
+        } else {
+          return I.fail(undefined)
+        }
+      })
+    )
   }
 
   private warningDone: UIO<void> = RefM.updateSomeIO_(

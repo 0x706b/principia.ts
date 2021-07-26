@@ -157,7 +157,11 @@ export class Stateful<R, S, F1 extends AM.AnyMessage> extends AbstractStateful<R
         return yield* _(
           I.matchIO_(
             reciever,
-            (e) => supervisor.supervise(reciever, e)['|>'](I.matchIO(() => I.asUnit(P.fail_(promise, e)), completer)),
+            (e) =>
+              pipe(
+                supervisor.supervise(reciever, e),
+                I.matchIO(() => I.asUnit(P.fail_(promise, e)), completer)
+              ),
             completer
           )
         )
@@ -168,10 +172,12 @@ export class Stateful<R, S, F1 extends AM.AnyMessage> extends AbstractStateful<R
         const state = yield* _(Ref.make(initial))
         const queue = yield* _(Q.makeBounded<PendingMessage<F1>>(mailboxSize))
         yield* _(
-          Q.take(queue)
-            ['>>=']((t) => process(t, state))
-            ['|>'](I.forever)
-            ['|>'](I.fork)
+          pipe(
+            Q.take(queue),
+            I.chain((t) => process(t, state)),
+            I.forever,
+            I.fork
+          )
         )
         return new Actor(self.messages, queue, optOutActorSystem)
       })
@@ -198,7 +204,7 @@ export class ActorProxy<R, S, F1 extends AM.AnyMessage, E> extends AbstractState
     return (initial) =>
       I.gen(function* (_) {
         const queue = yield* _(Q.makeBounded<PendingMessage<F1>>(mailboxSize))
-        yield* _(self.process(queue, context, initial)['|>'](I.fork))
+        yield* _(pipe(self.process(queue, context, initial), I.fork))
         return new Actor(self.messages, queue, optOutActorSystem)
       })
   }

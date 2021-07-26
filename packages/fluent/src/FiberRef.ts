@@ -11,36 +11,36 @@ declare module '@principia/base/FiberRef/core' {
     /**
      * @rewrite getAndSet_ from "@principia/base/FiberRef"
      */
-    getAndSet(a: A): UIO<A>
+    getAndSet<A>(this: FiberRef<A>, a: A): UIO<A>
 
     /**
      * @rewrite getAndUpdate_ from "@principia/base/FiberRef"
      */
-    getAndUpdate(f: (a: A) => A): UIO<A>
+    getAndUpdate<A>(this: FiberRef<A>, f: (a: A) => A): UIO<A>
 
     /**
      * @rewrite getAndUpdateSome_ from "@principia/base/FiberRef"
      */
-    getAndUpdateSome(f: (a: A) => Option<A>): UIO<A>
+    getAndUpdateSome<A>(this: FiberRef<A>, f: (a: A) => Option<A>): UIO<A>
 
     /**
      * @rewrite locally_ from "@principia/base/FiberRef"
      */
-    locally<R, E, B>(value: A, use: IO<R, E, B>): IO<R, E, B>
+    locally<A, R, E, B>(this: FiberRef<A>, value: A, use: IO<R, E, B>): IO<R, E, B>
 
     /**
      * @rewrite modify_ from "@principia/base/FiberRef"
      */
-    modify<B>(f: (a: A) => readonly [B, A]): UIO<B>
+    modify<A, B>(this: FiberRef<A>, f: (a: A) => readonly [B, A]): UIO<B>
 
     /**
      * @rewrite set_ from "@principia/base/FiberRef"
      */
-    set(a: A): UIO<void>
+    set<A>(this: FiberRef<A>, a: A): UIO<void>
 
     /**
      * @rewrite update_ from "@principia/base/FiberRef"
      */
-    update(f: (a: A) => A): UIO<void>
+    update<A>(this: FiberRef<A>, f: (a: A) => A): UIO<void>
   }
 }

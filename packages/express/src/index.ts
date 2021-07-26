@@ -329,11 +329,12 @@ export function use<Handlers extends NonEmptyArray<EffectRequestHandler<any, any
 export function use(...args: NonEmptyArray<any>): T.URIO<ExpressEnv, void> {
   return withExpressApp((app) => {
     if (typeof args[0] === 'function') {
-      return expressRuntime(args)['>>=']((expressHandlers) => T.succeedLazy(() => app.use(...expressHandlers)))
+      return T.chain_(expressRuntime(args), (expressHandlers) => T.succeedLazy(() => app.use(...expressHandlers)))
     } else {
-      return expressRuntime(
-        args.slice(1) as unknown as NonEmptyArray<EffectRequestHandler<any, any, any, any, any, any>>
-      )['>>=']((expressHandlers) => T.succeedLazy(() => app.use(args[0], ...expressHandlers)))
+      return T.chain_(
+        expressRuntime(args.slice(1) as unknown as NonEmptyArray<EffectRequestHandler<any, any, any, any, any, any>>),
+        (expressHandlers) => T.succeedLazy(() => app.use(args[0], ...expressHandlers))
+      )
     }
   })['|>'](T.asUnit)
 }

@@ -8,27 +8,36 @@ declare module '@principia/base/Z' {
     /**
      * @rewrite alt_ from "@principia/base/Z"
      */
-    alt<W1, S1, S3, R1, E1, A1>(fb: () => Z<W1, S1, S3, R1, E1, A1>): Z<W | W1, S1, S2 | S3, R & R1, E | E1, A | A1>
+    alt<W, S1, S2, R, E, A, W1, S3, R1, E1, A1>(
+      this: Z<W, S1, S2, R, E, A>,
+      fb: () => Z<W1, S1, S3, R1, E1, A1>
+    ): Z<W | W1, S1, S2 | S3, R & R1, E | E1, A | A1>
     /**
      * @rewrite bimap_ from "@principia/base/Z"
      */
-    bimap<G, B>(f: (e: E) => G, g: (a: A) => B): Z<W, S1, S2, R, G, B>
+    bimap<W, S1, S2, R, E, A, G, B>(this: Z<W, S1, S2, R, E, A>, f: (e: E) => G, g: (a: A) => B): Z<W, S1, S2, R, G, B>
     /**
      * @rewrite catchAll_ from "@principia/base/Z"
      */
-    catchAll<S3, R1, E1, B>(onFailure: (e: E) => Z<W, S1, S3, R1, E1, B>): Z<W, S1, S3, R & R1, E1, B | A>
+    catchAll<W, S1, S2, R, E, A, S3, R1, E1, B>(
+      this: Z<W, S1, S2, R, E, A>,
+      onFailure: (e: E) => Z<W, S1, S3, R1, E1, B>
+    ): Z<W, S1, S3, R & R1, E1, B | A>
     /**
      * @rewrite catchSome_ from "@principia/base/Z"
      */
-    catchSome<S3, R1, E1, B>(f: (e: E) => Option<Z<W, S1, S3, R1, E1, B>>): Z<W, S1, S2 | S3, R & R1, E | E1, B | A>
+    catchSome<W, S1, S2, R, E, A, S3, R1, E1, B>(
+      this: Z<W, S1, S2, R, E, A>,
+      f: (e: E) => Option<Z<W, S1, S3, R1, E1, B>>
+    ): Z<W, S1, S2 | S3, R & R1, E | E1, B | A>
     /**
      * @rewrite censor_ from "@principia/base/Z"
      */
-    censor<W1>(f: (ws: Chunk<W>) => Chunk<W1>): Z<W1, S1, S2, R, E, A>
+    censor<W, S1, S2, R, E, A, W1>(this: Z<W, S1, S2, R, E, A>, f: (ws: Chunk<W>) => Chunk<W1>): Z<W1, S1, S2, R, E, A>
     /**
      * @rewrite contramapState_ from "@principia/base/Z"
      */
-    contramapState<S0>(f: (s: S0) => S1): Z<W, S0, S2, R, E, A>
+    contramapState<W, S1, S2, R, E, A, S0>(this: Z<W, S1, S2, R, E, A>, f: (s: S0) => S1): Z<W, S0, S2, R, E, A>
     /**
      * @rewrite cross_ from "@principia/base/Z"
      */
@@ -84,7 +93,7 @@ declare module '@principia/base/Z' {
     /**
      * @rewrite give_ from "@principia/base/Z"
      */
-    give<R0>(r: R0): Z<W, S1, S2, Erase<R, R0>, E, A>
+    give<W, S1, S2, R, E, A, R0>(this: Z<W, S1, S2, R, E, A>, r: R0): Z<W, S1, S2, Erase<R, R0>, E, A>
     /**
      * @rewrite giveAll_ from "@principia/base/Z"
      */
@@ -96,7 +105,7 @@ declare module '@principia/base/Z' {
     /**
      * @rewrite gives_ from "@principia/base/Z"
      */
-    gives<R0>(f: (r0: R0) => R): Z<W, S1, S2, R0, E, A>
+    gives<W, S1, S2, R, E, A, R0>(this: Z<W, S1, S2, R, E, A>, f: (r0: R0) => R): Z<W, S1, S2, R0, E, A>
     /**
      * @rewriteGetter listen from "@principia/base/Z"
      */
@@ -104,55 +113,72 @@ declare module '@principia/base/Z' {
     /**
      * @rewrite listens_ from "@principia/base/Z"
      */
-    listens<B>(f: (l: Chunk<W>) => B): Z<W, S1, S2, R, E, readonly [A, B]>
+    listens<W, S1, S2, R, E, A, B>(
+      this: Z<W, S1, S2, R, E, A>,
+      f: (l: Chunk<W>) => B
+    ): Z<W, S1, S2, R, E, readonly [A, B]>
     /**
      * @rewrite mapError_ from "@principia/base/Z"
      */
-    mapError<G>(f: (e: E) => G): Z<W, S1, S2, R, G, A>
+    mapError<W, S1, S2, R, E, A, G>(this: Z<W, S1, S2, R, E, A>, f: (e: E) => G): Z<W, S1, S2, R, G, A>
     /**
      * @rewrite mapState_ from "@principia/base/Z"
      */
-    mapState<S3>(f: (s: S2) => S3): Z<W, S1, S3, R, E, A>
+    mapState<W, S1, S2, R, E, A, S3>(this: Z<W, S1, S2, R, E, A>, f: (s: S2) => S3): Z<W, S1, S3, R, E, A>
     /**
      * @rewrite match_ from "@principia/base/Z"
      */
-    match<B, C>(onFailure: (e: E) => B, onSuccess: (a: A) => C): Z<W, S1, S2, R, never, B | C>
+    match<W, S1, S2, R, E, A, B, C>(
+      this: Z<W, S1, S2, R, E, A>,
+      onFailure: (e: E) => B,
+      onSuccess: (a: A) => C
+    ): Z<W, S1, S2, R, never, B | C>
     /**
      * @rewrite matchCauseZ_ from "@principia/base/Z"
      */
-    matchCauseZ<W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
+    matchCauseZ<W, S1, S2, R, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
+      this: Z<W, S1, S2, R, E, A>,
       onFailure: (e: Cause<E>) => Z<W1, S0, S3, R1, E1, B>,
       onSuccess: (a: A) => Z<W2, S2, S4, R2, E2, C>
     ): Z<W | W1 | W2, S1 & S0, S3 | S4, R & R1 & R2, E1 | E2, B | C>
     /**
      * @rewrite matchLogCauseZ_ from "@principia/base/Z"
      */
-    matchLogCauseZ<W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
+    matchLogCauseZ<W, S1, S2, R, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
+      this: Z<W, S1, S2, R, E, A>,
       onFailure: (ws: Chunk<W>, e: Cause<E>) => Z<W1, S0, S3, R1, E1, B>,
       onSuccess: (ws: Chunk<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
     ): Z<W1 | W2, S0 & S1, S3 | S4, R & R1 & R2, E1 | E2, B | C>
     /**
      * @rewrite matchLogZ_ from "@principia/base/Z"
      */
-    matchLogZ<W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
+    matchLogZ<W, S1, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
+      this: Z<W, S1, S2, R, E, A>,
       onFailure: (ws: Chunk<W>, e: E) => Z<W1, S1, S3, R1, E1, B>,
       onSuccess: (ws: Chunk<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
     ): Z<W | W1 | W2, S1, S3 | S4, R & R1 & R2, E1 | E2, B | C>
     /**
      * @rewrite matchZ_ from "@principia/base/Z"
      */
-    matchZ<W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
+    matchZ<W, S1, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
+      this: Z<W, S1, S2, R, E, A>,
       onFailure: (e: E) => Z<W1, S1, S3, R1, E1, B>,
       onSuccess: (a: A) => Z<W2, S2, S4, R2, E2, C>
     ): Z<W | W1 | W2, S1, S3 | S4, R & R1 & R2, E1 | E2, B | C>
     /**
      * @rewrite orElse_ from "@principia/base/Z"
      */
-    orElse<S3, S4, R1, E1>(onFailure: (e: E) => Z<W, S3, S4, R1, E1, A>): Z<W, S1 & S3, S4 | S2, R & R1, E1, A>
+    orElse<W, S1, S2, R, E, A, S3, S4, R1, E1>(
+      this: Z<W, S1, S2, R, E, A>,
+      onFailure: (e: E) => Z<W, S3, S4, R1, E1, A>
+    ): Z<W, S1 & S3, S4 | S2, R & R1, E1, A>
     /**
      * @rewrite orElseEither_ from "@principia/base/Z"
      */
-    orElseEither<S3, S4, R1, E1, A1>(that: Z<W, S3, S4, R1, E1, A1>): Z<W, S1 & S3, S4 | S2, R & R1, E1, Either<A, A1>>
+    orElseEither<W, S1, S2, R, E, A, S3, S4, R1, E1, A1>(
+      this: Z<W, S1, S2, R, E, A>,
+      that: Z<W, S3, S4, R1, E1, A1>
+    ): Z<W, S1 & S3, S4 | S2, R & R1, E1, Either<A, A1>>
     /**
      * @rewrite repeatN_ from "@principia/base/Z"
      */
@@ -209,7 +235,7 @@ declare module '@principia/base/Z' {
     /**
      * @rewrite runWriter from "@principia/base/Z"
      */
-    runWriter<W, A>(ma: Z<W, unknown, unknown, unknown, never, A>): readonly [Chunk<W>, A]
+    runWriter<W, A>(this: Z<W, unknown, unknown, unknown, never, A>): readonly [Chunk<W>, A]
     /**
      * @rewrite subsumeEither from "@principia/base/Z"
      */
@@ -217,27 +243,43 @@ declare module '@principia/base/Z' {
     /**
      * @rewrite tap_ from "@principia/base/Z"
      */
-    tap<W1, S3, R1, E1, B>(f: (a: A) => Z<W1, S2, S3, R1, E1, B>): Z<W | W1, S1, S3, R1 & R, E1 | E, A>
+    tap<W, S1, S2, R, E, A, W1, S3, R1, E1, B>(
+      this: Z<W, S1, S2, R, E, A>,
+      f: (a: A) => Z<W1, S2, S3, R1, E1, B>
+    ): Z<W | W1, S1, S3, R1 & R, E1 | E, A>
     /**
      * @rewrite transform_ from "@principia/base/Z"
      */
-    transform<S3, B>(f: (s: S2, a: A) => readonly [B, S3]): Z<W, S1, S3, R, E, B>
+    transform<W, S1, S2, R, E, A, S3, B>(
+      this: Z<W, S1, S2, R, E, A>,
+      f: (s: S2, a: A) => readonly [B, S3]
+    ): Z<W, S1, S3, R, E, B>
     /**
      * @rewrite zip_ from "@principia/base/Z"
      */
-    zip<W1, S3, Q, D, B>(fb: Z<W1, S2, S3, Q, D, B>): Z<W | W1, S1, S3, Q & R, D | E, readonly [A, B]>
+    zip<W, S1, S2, R, E, A, W1, S3, Q, D, B>(
+      this: Z<W, S1, S2, R, E, A>,
+      fb: Z<W1, S2, S3, Q, D, B>
+    ): Z<W | W1, S1, S3, Q & R, D | E, readonly [A, B]>
     /**
      * @rewrite zipFirst_ from "@principia/base/Z"
      */
-    zipFirst<W1, S3, Q, D, B>(fb: Z<W1, S2, S3, Q, D, B>): Z<W | W1, S1, S3, Q & R, D | E, A>
+    zipFirst<W, S1, S2, R, E, A, W1, S3, Q, D, B>(
+      this: Z<W, S1, S2, R, E, A>,
+      fb: Z<W1, S2, S3, Q, D, B>
+    ): Z<W | W1, S1, S3, Q & R, D | E, A>
     /**
      * @rewrite zipSecond from "@principia/base/Z"
      */
-    zipSecond<W1, S3, Q, D, B>(fb: Z<W1, S2, S3, Q, D, B>): Z<W | W1, S1, S3, Q & R, D | E, B>
+    zipSecond<W, S1, S2, R, E, A, W1, S3, Q, D, B>(
+      this: Z<W, S1, S2, R, E, A>,
+      fb: Z<W1, S2, S3, Q, D, B>
+    ): Z<W | W1, S1, S3, Q & R, D | E, B>
     /**
      * @rewrite zipWith_ from "@principia/base/Z"
      */
-    zipWith<W1, S3, R1, E1, B, C>(
+    zipWith<W, S1, S2, R, E, A, W1, S3, R1, E1, B, C>(
+      this: Z<W, S1, S2, R, E, A>,
       fb: Z<W1, S2, S3, R1, E1, B>,
       f: (a: A, b: B) => C
     ): Z<W | W1, S1, S3, R1 & R, E1 | E, C>

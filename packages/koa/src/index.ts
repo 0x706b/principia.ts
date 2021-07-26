@@ -172,12 +172,13 @@ export abstract class KoaRuntime {
   static live: L.Layer<unknown, never, Has<KoaRuntime>> = L.fromManaged(KoaRuntimeTag)(
     M.gen(function* (_) {
       const open       = yield* _(Ref.make(true)['|>'](M.bracket((ref) => ref.set(false))))
-      const supervisor = yield* _(Su.track['|>'](M.bracket((s) => s.value['>>='](Fi.interruptAll))))
+      const supervisor = yield* _(Su.track['|>'](M.bracket((s) => I.chain_(s.value, Fi.interruptAll))))
 
       function runtime<R>() {
-        return I.runtime<R>()
-          ['<$>']((r) => r.supervised(supervisor))
-          ['<$>'](
+        return pipe(
+          I.runtime<R>(),
+          I.map((r) => r.supervised(supervisor)),
+          I.map(
             (r) =>
               <E, A>(effect: IO<R & IOEnv, E, A>) =>
                 I.ifIO_(
@@ -192,6 +193,7 @@ export abstract class KoaRuntime {
                   ['|>'](I.runPromiseExit)
                   .then(Ex.flatten)
           )
+        )
       }
 
       return {

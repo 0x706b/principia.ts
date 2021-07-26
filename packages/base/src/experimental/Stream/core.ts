@@ -66,43 +66,6 @@ export class Stream<R, E, A> {
   readonly _A!: () => A
 
   constructor(readonly channel: Ch.Channel<R, unknown, unknown, unknown, E, C.Chunk<A>, unknown>) {}
-
-  ['@@']<R, E extends EC, A extends A1, R1, E1, A1, EC>(
-    this: Stream<R, E, A>,
-    aspect: StreamAspect<R1, E1, A1, EC>
-  ): Stream<R & R1, E | E1, A> {
-    return aspect.apply(this)
-  }
-  ['*>']<R1, E1, A1>(that: Stream<R1, E1, A1>): Stream<R & R1, E | E1, A1> {
-    return crossSecond_(this, that)
-  }
-  ['<*']<R1, E1, A1>(that: Stream<R1, E1, A1>): Stream<R & R1, E | E1, A> {
-    return crossFirst_(this, that)
-  }
-  ['<*>']<R1, E1, A1>(that: Stream<R1, E1, A1>): Stream<R & R1, E | E1, readonly [A, A1]> {
-    return cross_(this, that)
-  }
-  ['&>']<R1, E1, A1>(that: Stream<R1, E1, A1>): Stream<R & R1, E | E1, A1> {
-    return zipSecond_(this, that)
-  }
-  ['<&']<R1, E1, A1>(that: Stream<R1, E1, A1>): Stream<R & R1, E | E1, A> {
-    return zipFirst_(this, that)
-  }
-  ['<&>']<R1, E1, A1>(that: Stream<R1, E1, A1>): Stream<R & R1, E | E1, readonly [A, A1]> {
-    return zip_(this, that)
-  }
-  ['++']<R1, E1, A1>(that: Stream<R1, E1, A1>): Stream<R & R1, E | E1, A | A1> {
-    return concat_(this, that)
-  }
-  ['>>=']<R1, E1, B>(f: (a: A) => Stream<R1, E1, B>): Stream<R & R1, E | E1, B> {
-    return chain_(this, f)
-  }
-  ['<$>']<B>(f: (a: A) => B): Stream<R, E, B> {
-    return map_(this, f)
-  }
-  ['>>>']<R1, E1, Z>(sink: Sink.Sink<R1, E, A, E1, never, Z>): I.IO<R & R1, E | E1, Z> {
-    return run_(this, sink)
-  }
 }
 
 /**
@@ -510,7 +473,7 @@ function fromAsyncIterableLoop<A>(
         .then((result) =>
           result.done
             ? k(I.succeed(Ch.end(undefined)))
-            : k(I.succeed(Ch.write(C.single(result.value))['*>'](fromAsyncIterableLoop(iterator))))
+            : k(I.succeed(Ch.crossSecond_(Ch.write(C.single(result.value)), fromAsyncIterableLoop(iterator))))
         )
     })
   )
@@ -822,7 +785,7 @@ export function filterIO_<R, E, A, R1, E1>(
   fa: Stream<R, E, A>,
   f: (a: A) => I.IO<R1, E1, boolean>
 ): Stream<R & R1, E | E1, A> {
-  return loopOnPartialChunksElements_(fa, (a, emit) => f(a)['>>=']((r) => (r ? emit(a) : I.unit())))
+  return loopOnPartialChunksElements_(fa, (a, emit) => I.chain_(f(a), (r) => (r ? emit(a) : I.unit())))
 }
 
 export function filterIO<A, R1, E1>(
@@ -847,7 +810,12 @@ export function filterMapIO_<R, E, A, R1, E1, B>(
   fa: Stream<R, E, A>,
   f: (a: A) => I.IO<R1, E1, O.Option<B>>
 ): Stream<R & R1, E | E1, B> {
-  return loopOnPartialChunksElements_(fa, (a, emit) => f(a)['>>='](O.match(() => I.unit(), emit)))
+  return loopOnPartialChunksElements_(fa, (a, emit) =>
+    I.chain_(
+      f(a),
+      O.match(() => I.unit(), emit)
+    )
+  )
 }
 
 export function filterMapIO<A, R1, E1, B>(
@@ -1025,7 +993,7 @@ export function giveAll<R>(r: R): <E, A>(ra: Stream<R, E, A>) => Stream<unknown,
  * leaving the remainder `R0`.
  */
 export function gives_<R, E, A, R0>(ra: Stream<R, E, A>, f: (r0: R0) => R): Stream<R0, E, A> {
-  return ask<R0>()['>>=']((r0) => giveAll_(ra, f(r0)))
+  return chain_(ask<R0>(), (r0) => giveAll_(ra, f(r0)))
 }
 
 /**
@@ -1074,11 +1042,13 @@ function combineChunksProducer<Err, Elem>(
   handoff: HO.Handoff<Take.Take<Err, Elem>>,
   latch: HO.Handoff<void>
 ): Ch.Channel<unknown, Err, C.Chunk<Elem>, unknown, never, never, any> {
-  return Ch.fromIO(HO.take(latch))['*>'](
+  return Ch.crossSecond_(
+    Ch.fromIO(HO.take(latch)),
     Ch.readWithCause(
-      (chunk) => Ch.fromIO(HO.offer(handoff, Take.chunk(chunk)))['*>'](combineChunksProducer(handoff, latch)),
+      (chunk) =>
+        Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, Take.chunk(chunk))), combineChunksProducer(handoff, latch)),
       (cause) => Ch.fromIO(HO.offer(handoff, Take.failCause(cause))),
-      () => Ch.fromIO(HO.offer(handoff, Take.end))['*>'](combineChunksProducer(handoff, latch))
+      () => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, Take.end)), combineChunksProducer(handoff, latch))
     )
   )
 }
@@ -1106,14 +1076,14 @@ export function combineChunks_<R, E, A, R1, E1, A1, S, R2, A2>(
         const right  = yield* _(HO.make<Take.Take<E1, A1>>())
         const latchL = yield* _(HO.make<void>())
         const latchR = yield* _(HO.make<void>())
-        yield* _(pipe(stream.channel['>>>'](combineChunksProducer(left, latchL)), Ch.runManaged, M.fork))
-        yield* _(pipe(that.channel['>>>'](combineChunksProducer(right, latchR)), Ch.runManaged, M.fork))
+        yield* _(pipe(stream.channel, Ch.pipeTo(combineChunksProducer(left, latchL)), Ch.runManaged, M.fork))
+        yield* _(pipe(that.channel, Ch.pipeTo(combineChunksProducer(right, latchR)), Ch.runManaged, M.fork))
         return tuple(left, right, latchL, latchR)
       }),
       ([left, right, latchL, latchR]) => {
-        const pullLeft  = HO.offer(latchL, undefined)['*>'](HO.take(left))['>>='](Take.done)
-        const pullRight = HO.offer(latchR, undefined)['*>'](HO.take(right))['>>='](Take.done)
-        return unfoldChunkIO(s, (s) => f(s, pullLeft, pullRight)['>>='](flow(I.fromExit, I.optional))).channel
+        const pullLeft  = pipe(HO.offer(latchL, undefined), I.crossSecond(HO.take(left)), I.chain(Take.done))
+        const pullRight = pipe(HO.offer(latchR, undefined), I.crossSecond(HO.take(right)), I.chain(Take.done))
+        return unfoldChunkIO(s, (s) => I.chain_(f(s, pullLeft, pullRight), flow(I.fromExit, I.optional))).channel
       }
     )
   )
@@ -1158,7 +1128,7 @@ export function loopOnChunks_<R, E, A, R1, E1, A1>(
     Ch.failCause,
     (_) => Ch.end(false)
   )
-  return new Stream(stream.channel['>>>'](loop))
+  return new Stream(Ch.pipeTo_(stream.channel, loop))
 }
 
 /**
@@ -1217,7 +1187,7 @@ export function run_<R, E, A, R2, E2, Z>(
   stream: Stream<R, E, A>,
   sink: Sink.Sink<R2, E, A, E2, unknown, Z>
 ): I.IO<R & R2, E2, Z> {
-  return Ch.runDrain(stream.channel['>>>'](sink.channel))
+  return Ch.runDrain(Ch.pipeTo_(stream.channel, sink.channel))
 }
 
 /**
@@ -1238,7 +1208,7 @@ export function runManaged_<R, E, A, R2, E2, Z>(
   stream: Stream<R, E, A>,
   sink: Sink.Sink<R2, E, A, E2, unknown, Z>
 ): M.Managed<R & R2, E | E2, Z> {
-  return Ch.runManaged(Ch.drain(stream.channel['>>>'](sink.channel)))
+  return Ch.runManaged(Ch.drain(Ch.pipeTo_(stream.channel, sink.channel)))
 }
 
 /**
@@ -1343,7 +1313,7 @@ export function take_<R, E, A>(stream: Stream<R, E, A>, n: number): Stream<R, E,
   if (!Number.isInteger(n)) {
     return halt(new IllegalArgumentError(`${n} should be an integer`, 'Stream.take'))
   }
-  return new Stream(stream.channel['>>>'](takeLoop(n)))
+  return new Stream(Ch.pipeTo_(stream.channel, takeLoop(n)))
 }
 
 /**
@@ -1516,7 +1486,7 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
 
       return pipe(
         Ch.managed_(I.forkManaged(timeout), (fiber) => {
-          return Ch.chain_(Ch.doneCollect(handoffConsumer['>>>'](sink.channel)), ([leftovers, b]) => {
+          return Ch.chain_(Ch.doneCollect(Ch.pipeTo_(handoffConsumer, sink.channel)), ([leftovers, b]) => {
             return Ch.crossSecond_(
               Ch.fromIO(I.crossSecond_(F.interrupt(fiber), Ref.set_(sinkLeftovers, C.flatten(leftovers)))),
               Ch.unwrap(
@@ -1550,7 +1520,7 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
     }
 
     return zipSecond_(
-      fromManaged(pipe(stream.channel['>>>'](handoffProducer), Ch.runManaged, M.fork)),
+      fromManaged(pipe(Ch.pipeTo_(stream.channel, handoffProducer), Ch.runManaged, M.fork)),
       new Stream(scheduledAggregator(O.none()))
     )
   })
@@ -1834,11 +1804,12 @@ function bufferSignalProducer<R, E, A>(
 function bufferSignalConsumer<R, E, A>(
   queue: Q.UQueue<readonly [Take.Take<E, A>, Pr.Promise<never, void>]>
 ): Ch.Channel<R, unknown, unknown, unknown, E, C.Chunk<A>, void> {
-  const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = Ch.fromIO(Q.take(queue))['>>='](
+  const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = Ch.chain_(
+    Ch.fromIO(Q.take(queue)),
     ([take, promise]) =>
       Ch.crossSecond_(
         Ch.fromIO(Pr.succeed_(promise, undefined)),
-        Take.fold_(take, Ch.end(undefined), Ch.failCause, (value) => Ch.write(value)['*>'](process))
+        Take.fold_(take, Ch.end(undefined), Ch.failCause, (value) => Ch.crossSecond_(Ch.write(value), process))
       )
   )
   return process
@@ -2028,7 +1999,7 @@ function changesWithWriter<R, E, A>(
           (o) => (f(o, o1) ? [O.some(o1), os] : [O.some(o1), os[':+'](o1)])
         )
       )
-      return Ch.write(newChunk)['*>'](changesWithWriter(f, newLast))
+      return Ch.crossSecond_(Ch.write(newChunk), changesWithWriter(f, newLast))
     },
     Ch.failCause,
     () => Ch.unit()
@@ -2041,7 +2012,7 @@ function changesWithWriter<R, E, A>(
  * whether two elements are equal.
  */
 export function changesWith_<R, E, A>(stream: Stream<R, E, A>, f: (x: A, y: A) => boolean): Stream<R, E, A> {
-  return new Stream(stream.channel['>>>'](changesWithWriter<R, E, A>(f, O.none())))
+  return new Stream(Ch.pipeTo_(stream.channel, changesWithWriter<R, E, A>(f, O.none())))
 }
 
 /**
@@ -2101,7 +2072,7 @@ export function chunkN_<R, E, A>(stream: Stream<R, E, A>, n: number): Stream<R, 
         (_) => rechunker.emitOfNotEmpty()
       )
 
-      return new Stream(stream.channel['>>>'](process))
+      return new Stream(Ch.pipeTo_(stream.channel, process))
     })
   )
 }
@@ -2223,7 +2194,7 @@ export function collectWhile_<R, E, A, A1>(stream: Stream<R, E, A>, pf: (a: A) =
     Ch.succeed
   )
 
-  return new Stream(stream.channel['>>>'](loop))
+  return new Stream(Ch.pipeTo_(stream.channel, loop))
 }
 
 /**
@@ -2323,11 +2294,12 @@ function combineProducer<Err, Elem>(
   handoff: HO.Handoff<Ex.Exit<O.Option<Err>, Elem>>,
   latch: HO.Handoff<void>
 ): Ch.Channel<unknown, Err, Elem, unknown, never, never, any> {
-  return Ch.fromIO(HO.take(latch))['*>'](
+  return Ch.crossSecond_(
+    Ch.fromIO(HO.take(latch)),
     Ch.readWithCause(
-      (value) => Ch.fromIO(HO.offer(handoff, Ex.succeed(value)))['*>'](combineProducer(handoff, latch)),
+      (value) => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, Ex.succeed(value))), combineProducer(handoff, latch)),
       (cause) => Ch.fromIO(HO.offer(handoff, Ex.failCause(Ca.map_(cause, O.some)))),
-      () => Ch.fromIO(HO.offer(handoff, Ex.fail(O.none())))['*>'](combineProducer(handoff, latch))
+      () => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, Ex.fail(O.none()))), combineProducer(handoff, latch))
     )
   )
 }
@@ -2378,9 +2350,9 @@ export function combine<R, E, A, R1, E1, A1, S, R2, A2>(
         return tuple(left, right, latchL, latchR)
       }),
       ([left, right, latchL, latchR]) => {
-        const pullLeft  = HO.offer(latchL, undefined)['*>'](HO.take(left))['>>='](I.fromExit)
-        const pullRight = HO.offer(latchR, undefined)['*>'](HO.take(right))['>>='](I.fromExit)
-        return unfoldIO(s, (s) => f(s, pullLeft, pullRight)['>>='](flow(I.fromExit, I.optional))).channel
+        const pullLeft  = pipe(HO.offer(latchL, undefined), I.crossSecond(HO.take(left)), I.chain(I.fromExit))
+        const pullRight = pipe(HO.offer(latchR, undefined), I.crossSecond(HO.take(right)), I.chain(I.fromExit))
+        return unfoldIO(s, (s) => I.chain_(f(s, pullLeft, pullRight), flow(I.fromExit, I.optional))).channel
       }
     )
   )
@@ -2424,7 +2396,7 @@ export function debounce_<R, E, A>(stream: Stream<R, E, A>, duration: number): S
             C.last(inp),
             O.match(
               () => producer,
-              (last) => Ch.fromIO(HO.offer(handoff, new HO.Emit(C.single(last))))['*>'](producer)
+              (last) => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, new HO.Emit(C.single(last)))), producer)
             )
           ),
         (cause: Ca.Cause<E>) => Ch.fromIO(HO.offer(handoff, new HO.Halt(cause))),
@@ -2436,7 +2408,8 @@ export function debounce_<R, E, A>(stream: Stream<R, E, A>, duration: number): S
         return Ch.unwrap(
           DS.match_(state, {
             NotStarted: () =>
-              HO.take(handoff)['<$>'](
+              I.map_(
+                HO.take(handoff),
                 HO.matchSignal({
                   Emit: ({ els }) => Ch.unwrap(enqueue(els)),
                   Halt: ({ error }) => Ch.failCause(error),
@@ -2444,7 +2417,8 @@ export function debounce_<R, E, A>(stream: Stream<R, E, A>, duration: number): S
                 })
               ),
             Current: ({ fiber }) =>
-              F.join(fiber)['<$>'](
+              I.map_(
+                F.join(fiber),
                 HO.matchSignal({
                   Emit: ({ els }) => Ch.unwrap(enqueue(els)),
                   Halt: ({ error }) => Ch.failCause(error),
@@ -2458,24 +2432,25 @@ export function debounce_<R, E, A>(stream: Stream<R, E, A>, duration: number): S
                 (ex, current) =>
                   Ex.match_(
                     ex,
-                    (cause) => F.interrupt(current)['$>'](Ch.failCause(cause)),
-                    (chunk) => I.succeed(Ch.write(chunk)['*>'](consumer(new DS.Current(current))))
+                    (cause) => I.as_(F.interrupt(current), Ch.failCause(cause)),
+                    (chunk) => I.succeed(Ch.crossSecond_(Ch.write(chunk), consumer(new DS.Current(current))))
                   ),
                 (ex, previous) =>
                   Ex.match_(
                     ex,
-                    (cause) => F.interrupt(previous)['$>'](Ch.failCause(cause)),
+                    (cause) => I.as_(F.interrupt(previous), Ch.failCause(cause)),
                     HO.matchSignal({
-                      Emit: ({ els }) => F.interrupt(previous)['*>'](enqueue(els)),
-                      Halt: ({ error }) => F.interrupt(previous)['$>'](Ch.failCause(error)),
-                      End: () => F.join(previous)['<$>']((chunk) => Ch.write(chunk)['*>'](Ch.unit()))
+                      Emit: ({ els }) => I.crossSecond_(F.interrupt(previous), enqueue(els)),
+                      Halt: ({ error }) => I.as_(F.interrupt(previous), Ch.failCause(error)),
+                      End: () => I.map_(F.join(previous), (chunk) => Ch.crossSecond_(Ch.write(chunk), Ch.unit()))
                     })
                   )
               )
           })
         )
       }
-      return fromManaged(pipe(stream.channel, Ch.pipeTo(producer), Ch.runManaged, M.fork))['*>'](
+      return crossSecond_(
+        fromManaged(pipe(stream.channel, Ch.pipeTo(producer), Ch.runManaged, M.fork)),
         new Stream(consumer(new DS.NotStarted()))
       )
     })
@@ -2680,7 +2655,7 @@ function dropLoop<R, E, A>(r: number): Ch.Channel<R, E, C.Chunk<A>, unknown, E, 
       const dropped  = C.drop_(inp, r)
       const leftover = Math.max(0, r - inp.length)
       const more     = C.isEmpty(inp) || leftover > 0
-      return more ? dropLoop(leftover) : Ch.write(dropped)['*>'](Ch.id())
+      return more ? dropLoop(leftover) : Ch.crossSecond_(Ch.write(dropped), Ch.id())
     },
     Ch.fail,
     () => Ch.unit()
@@ -2691,7 +2666,7 @@ function dropLoop<R, E, A>(r: number): Ch.Channel<R, E, C.Chunk<A>, unknown, E, 
  * Drops the specified number of elements from this stream.
  */
 export function drop_<R, E, A>(stream: Stream<R, E, A>, n: number): Stream<R, E, A> {
-  return new Stream(stream.channel['>>>'](dropLoop(n)))
+  return new Stream(Ch.pipeTo_(stream.channel, dropLoop(n)))
 }
 
 /**
@@ -2709,13 +2684,13 @@ export function dropWhile_<R, E, A>(stream: Stream<R, E, A>, predicate: P.Predic
   const loop: Ch.Channel<R, E, C.Chunk<A>, unknown, E, C.Chunk<A>, unknown> = Ch.readWith(
     (inp: C.Chunk<A>) => {
       const leftover = C.dropWhile_(inp, predicate)
-      return C.isEmpty(leftover) ? loop : Ch.write(leftover)['*>'](Ch.id())
+      return C.isEmpty(leftover) ? loop : Ch.crossSecond_(Ch.write(leftover), Ch.id())
     },
     Ch.fail,
     () => Ch.unit()
   )
 
-  return new Stream(stream.channel['>>>'](loop))
+  return new Stream(Ch.pipeTo_(stream.channel, loop))
 }
 
 /**
@@ -2765,7 +2740,7 @@ export function find_<R, E, A>(stream: Stream<R, E, A>, f: Predicate<A>): Stream
     Ch.fail,
     () => Ch.unit()
   )
-  return new Stream(stream.channel['>>>'](loop))
+  return new Stream(Ch.pipeTo_(stream.channel, loop))
 }
 
 /**
@@ -2787,7 +2762,7 @@ export function findIO_<R, E, A, R1, E1>(
     Ch.fail,
     () => Ch.unit()
   )
-  return new Stream(stream.channel['>>>'](loop))
+  return new Stream(Ch.pipeTo_(stream.channel, loop))
 }
 
 /**
@@ -2885,11 +2860,12 @@ function endWhenWriter<E, A, E1>(
   fiber: F.Fiber<E1, any>
 ): Ch.Channel<unknown, E | E1, C.Chunk<A>, unknown, E | E1, C.Chunk<A>, void> {
   return Ch.unwrap(
-    fiber.poll['<$>'](
+    I.map_(
+      fiber.poll,
       O.match(
         () =>
           Ch.readWith(
-            (inp: C.Chunk<A>) => Ch.write(inp)['*>'](endWhenWriter(fiber)),
+            (inp: C.Chunk<A>) => Ch.crossSecond_(Ch.write(inp), endWhenWriter(fiber)),
             Ch.fail,
             () => Ch.unit()
           ),
@@ -2909,7 +2885,9 @@ function endWhenWriter<E, A, E1>(
  * If the IO completes with a failure, the stream will emit that failure.
  */
 export function endWhen_<R, E, A, R1, E1>(stream: Stream<R, E, A>, io: I.IO<R1, E1, any>): Stream<R & R1, E | E1, A> {
-  return new Stream(Ch.unwrapManaged(I.forkManaged(io)['<$>']((fiber) => stream.channel['>>>'](endWhenWriter(fiber)))))
+  return new Stream(
+    Ch.unwrapManaged(M.map_(I.forkManaged(io), (fiber) => Ch.pipeTo_(stream.channel, endWhenWriter(fiber))))
+  )
 }
 
 /**
@@ -2944,7 +2922,7 @@ function interleaveWithProducer<R, E, A>(
   handoff: HO.Handoff<Take.Take<E, A>>
 ): Ch.Channel<R, E, A, unknown, never, never, void> {
   return Ch.readWithCause(
-    (value: A) => Ch.fromIO(HO.offer(handoff, Take.single(value)))['*>'](interleaveWithProducer(handoff)),
+    (value: A) => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, Take.single(value))), interleaveWithProducer(handoff)),
     (cause) => Ch.fromIO(HO.offer(handoff, Take.failCause(cause))),
     () => Ch.fromIO(HO.offer(handoff, Take.end))
   )
@@ -2984,20 +2962,22 @@ export function interleaveWith_<R, E, A, R1, E1, B, R2, E2>(
           Ch.readWithCause(
             (b: boolean) => {
               if (b && leftDone) {
-                return Ch.fromIO(HO.take(left))['>>='](
+                return Ch.chain_(
+                  Ch.fromIO(HO.take(left)),
                   Take.fold(
                     rightDone ? Ch.unit() : process(true, rightDone),
                     (cause) => Ch.failCause(cause),
-                    (chunk) => Ch.write(chunk)['*>'](process(leftDone, rightDone))
+                    (chunk) => Ch.crossSecond_(Ch.write(chunk), process(leftDone, rightDone))
                   )
                 )
               }
               if (!b && !rightDone) {
-                return Ch.fromIO(HO.take(right))['>>='](
+                return Ch.chain_(
+                  Ch.fromIO(HO.take(right)),
                   Take.fold(
                     leftDone ? Ch.unit() : process(leftDone, true),
                     (cause) => Ch.failCause(cause),
-                    (chunk) => Ch.write(chunk)['*>'](process(leftDone, rightDone))
+                    (chunk) => Ch.crossSecond_(Ch.write(chunk), process(leftDone, rightDone))
                   )
                 )
               }
@@ -3036,7 +3016,7 @@ function intersperseWriter<R, E, A, A1>(
           builder.append(a)
         }
       })
-      return Ch.write(builder.result())['*>'](intersperseWriter(middle, flagResult))
+      return Ch.crossSecond_(Ch.write(builder.result()), intersperseWriter(middle, flagResult))
     },
     Ch.fail,
     () => Ch.unit()
@@ -3047,7 +3027,7 @@ function intersperseWriter<R, E, A, A1>(
  * Intersperse stream with provided element
  */
 export function intersperse_<R, E, A, A1>(stream: Stream<R, E, A>, middle: A1): Stream<R, E, A | A1> {
-  return new Stream(stream.channel['>>>'](intersperseWriter(middle, true)))
+  return new Stream(Ch.pipeTo_(stream.channel, intersperseWriter(middle, true)))
 }
 
 /**
@@ -3093,7 +3073,7 @@ function mapAccumAccumulator<S, E = never, A = never, B = never>(
   return Ch.readWith(
     (inp: C.Chunk<A>) => {
       const [bs, nextS] = C.mapAccum_(inp, currS, f)
-      return Ch.write(bs)['*>'](mapAccumAccumulator(nextS, f))
+      return Ch.crossSecond_(Ch.write(bs), mapAccumAccumulator(nextS, f))
     },
     Ch.fail,
     () => Ch.unit()
@@ -3108,7 +3088,7 @@ export function mapAccum_<R, E, A, S, B>(
   s: S,
   f: (s: S, a: A) => readonly [B, S]
 ): Stream<R, E, B> {
-  return new Stream(stream.channel['>>>'](mapAccumAccumulator(s, f)))
+  return new Stream(Ch.pipeTo_(stream.channel, mapAccumAccumulator(s, f)))
 }
 
 /**
@@ -3139,15 +3119,17 @@ function mapAccumIOAccumulator<R, E, A, R1, E1, S, B>(
             I.foldl(s, (s1, a) =>
               pipe(
                 f(s1, a),
-                I.chain(([b, s2]) => emit(b)['$>'](s2))
+                I.chain(([b, s2]) => I.as_(emit(b), s2))
               )
             ),
             I.match(
               (failure) => {
                 const partialResult = outputChunk.result()
-                return C.isNonEmpty(partialResult) ? Ch.write(partialResult)['*>'](Ch.fail(failure)) : Ch.fail(failure)
+                return C.isNonEmpty(partialResult)
+                  ? Ch.crossSecond_(Ch.write(partialResult), Ch.fail(failure))
+                  : Ch.fail(failure)
               },
-              (s) => Ch.write(outputChunk.result())['*>'](mapAccumIOAccumulator(s, f))
+              (s) => Ch.crossSecond_(Ch.write(outputChunk.result()), mapAccumIOAccumulator(s, f))
             )
           )
         })
@@ -3166,7 +3148,7 @@ export function mapAccumIO_<R, E, A, R1, E1, S, B>(
   s: S,
   f: (s: S, a: A) => I.IO<R1, E1, readonly [B, S]>
 ): Stream<R & R1, E | E1, B> {
-  return new Stream(stream.channel['>>>'](mapAccumIOAccumulator(s, f)))
+  return new Stream(Ch.pipeTo_(stream.channel, mapAccumIOAccumulator(s, f)))
 }
 
 /**
@@ -3396,9 +3378,9 @@ export function mergeWith_<R, E, A, R1, E1, A1, B, C>(
 ): Stream<R & R1, E | E1, B | C> {
   return new Stream<R & R1, E | E1, B | C>(
     pipe(
-      sa['<$>'](l).channel,
+      map_(sa, l).channel,
       Ch.mergeWith(
-        sb['<$>'](r).channel,
+        map_(sb, r).channel,
         mergeWithHandler<R & R1, E | E1>(strategy === 'Either' || strategy === 'Left'),
         mergeWithHandler<R & R1, E | E1>(strategy === 'Either' || strategy === 'Right')
       )
@@ -3424,7 +3406,7 @@ export function onError_<R, E, A, R1>(
   stream: Stream<R, E, A>,
   cleanup: (e: Ca.Cause<E>) => I.IO<R1, never, any>
 ): Stream<R & R1, E, A> {
-  return catchAllCause_(stream, (cause) => fromIO(cleanup(cause)['*>'](I.failCause(cause))))
+  return catchAllCause_(stream, (cause) => fromIO(I.crossSecond_(cleanup(cause), I.failCause(cause))))
 }
 
 /**
@@ -3471,8 +3453,9 @@ export function orElseEither_<R, E, A, R1, E1, A1>(
   that: () => Stream<R1, E1, A1>
 ): Stream<R & R1, E1, E.Either<A, A1>> {
   return pipe(
-    stream['<$>'](E.left),
-    orElse(() => that()['<$>'](E.right))
+    stream,
+    map(E.left),
+    orElse(() => map_(that(), E.right))
   )
 }
 
@@ -3786,7 +3769,8 @@ export function repeatElementsWith_<R, E, A, R1, B, C, D>(
   g: (b: B) => D
 ): Stream<R & R1 & Has<Clock>, E, C | D> {
   return new Stream<R & R1 & Has<Clock>, E, C | D>(
-    stream.channel['>>>'](
+    Ch.pipeTo_(
+      stream.channel,
       Ch.unwrap(
         I.gen(function* (_) {
           const driver = yield* _(SC.driver(schedule))
@@ -3798,18 +3782,18 @@ export function repeatElementsWith_<R, E, A, R1, B, C, D>(
               C.head,
               O.match(
                 () => loop,
-                (a) => Ch.write(C.single(f(a)))['*>'](step(C.drop_(inp, 1), a))
+                (a) => Ch.crossSecond_(Ch.write(C.single(f(a))), step(C.drop_(inp, 1), a))
               )
             )
           const step = (
             inp: C.Chunk<A>,
             a: A
           ): Ch.Channel<R & R1 & Has<Clock>, E, C.Chunk<A>, unknown, E, C.Chunk<C> | C.Chunk<D>, void> => {
-            const advance = driver.next(a)['$>'](Ch.write(C.single(f(a)))['*>'](step(inp, a)))
+            const advance = I.as_(driver.next(a), Ch.crossSecond_(Ch.write(C.single(f(a))), step(inp, a)))
             const reset   = I.gen(function* (_) {
               const b = yield* _(I.orHalt(driver.last))
               yield* _(driver.reset)
-              return Ch.write(C.single(g(b)))['*>'](feed(inp))
+              return Ch.crossSecond_(Ch.write(C.single(g(b))), feed(inp))
             })
             return Ch.unwrap(I.orElse_(advance, () => reset))
           }
@@ -3865,17 +3849,22 @@ export function repeatWith_<R, E, A, R1, B, C, D>(
     I.gen(function* (_) {
       const driver         = yield* _(SC.driver(schedule))
       const scheduleOutput = pipe(driver.last, I.orHalt, I.map(g))
-      const process        = stream['<$>'](f).channel
+      const process        = map_(stream, f).channel
 
       const loop: Ch.Channel<R & R1 & Has<Clock>, unknown, unknown, unknown, E, C.Chunk<C | D>, void> = pipe(
         driver.next(undefined),
         I.match(
           () => Ch.unit(),
-          () => process['*>'](Ch.unwrap(scheduleOutput['<$>']((d) => Ch.write(C.single(d)))))['*>'](loop)
+          () =>
+            pipe(
+              process,
+              Ch.crossSecond(Ch.unwrap(I.map_(scheduleOutput, (d) => Ch.write(C.single(d))))),
+              Ch.crossSecond(loop)
+            )
         ),
         Ch.unwrap
       )
-      return new Stream(process['*>'](loop))
+      return new Stream(Ch.crossSecond_(process, loop))
     })
   )
 }
@@ -4041,7 +4030,8 @@ export function runIntoManaged_<R, R1, E extends E1, E1, A>(
   )
 
   return pipe(
-    stream.channel['>>>'](writer),
+    stream.channel,
+    Ch.pipeTo(writer),
     Ch.mapOutIO((_) => Q.offer_(queue, _)),
     Ch.drain,
     Ch.runManaged,
@@ -4153,7 +4143,7 @@ export function scheduleWith_<R, E, A, R1, B, C, D>(
   g: (b: B) => D
 ): Stream<R & R1 & Has<Clock>, E, C | D> {
   return unwrap(
-    SC.driver(schedule)['<$>']((driver) =>
+    I.map_(SC.driver(schedule), (driver) =>
       loopOnPartialChunksElements_(stream, (a, emit) =>
         pipe(
           driver.next(a),
@@ -4162,7 +4152,7 @@ export function scheduleWith_<R, E, A, R1, B, C, D>(
             pipe(
               driver.last,
               I.orHalt,
-              I.chain((b) => emit(f(a))['*>'](emit(g(b)))),
+              I.chain((b) => I.crossSecond_(emit(f(a)), emit(g(b)))),
               I.crossFirst(driver.reset)
             )
           )
@@ -4241,7 +4231,7 @@ export function flattenExitOption<R, E, E1, A>(stream: Stream<R, E, Ex.Exit<O.Op
     (_) => Ch.end(undefined)
   )
 
-  return new Stream(stream.channel['>>>'](process))
+  return new Stream(Ch.pipeTo_(stream.channel, process))
 }
 
 /**
@@ -4311,24 +4301,25 @@ function throttleEnforceIOLoop<E, A, R1, E1>(
     (inp: C.Chunk<A>) =>
       Ch.unwrap(
         pipe(
-          costFn(inp)
-            ['<*>'](Clock.currentTime)
-            ['<$>'](([weight, current]) => {
-              const elapsed   = current - timestamp
-              const cycles    = elapsed / duration
-              const available = (() => {
-                const sum = tokens + cycles * units
-                const max = units + burst < 0 ? Number.MAX_SAFE_INTEGER : units + burst
+          costFn(inp),
+          I.cross(Clock.currentTime),
+          I.map(([weight, current]) => {
+            const elapsed   = current - timestamp
+            const cycles    = elapsed / duration
+            const available = (() => {
+              const sum = tokens + cycles * units
+              const max = units + burst < 0 ? Number.MAX_SAFE_INTEGER : units + burst
 
-                return sum < 0 ? max : Math.min(sum, max)
-              })()
+              return sum < 0 ? max : Math.min(sum, max)
+            })()
 
-              return weight <= available
-                ? Ch.write(inp)['*>'](
-                    throttleEnforceIOLoop(costFn, units, duration, burst, available - weight, current)
-                  )
-                : throttleEnforceIOLoop(costFn, units, duration, burst, available - weight, current)
-            })
+            return weight <= available
+              ? Ch.crossSecond_(
+                  Ch.write(inp),
+                  throttleEnforceIOLoop(costFn, units, duration, burst, available - weight, current)
+                )
+              : throttleEnforceIOLoop(costFn, units, duration, burst, available - weight, current)
+          })
         )
       ),
     Ch.fail,
@@ -4381,8 +4372,8 @@ export function throttleEnforceIO_<R, E, A, R1, E1>(
   burst = 0
 ): Stream<R & R1 & Has<Clock>, E | E1, A> {
   return new Stream(
-    Ch.fromIO(Clock.currentTime)['>>=']((current) =>
-      sa.channel['>>>'](throttleEnforceIOLoop(costFn, units, duration, burst, units, current))
+    Ch.chain_(Ch.fromIO(Clock.currentTime), (current) =>
+      Ch.pipeTo_(sa.channel, throttleEnforceIOLoop(costFn, units, duration, burst, units, current))
     )
   )
 }
