@@ -4,6 +4,15 @@ import { Suite } from 'benchmark'
 
 import * as Eval from '../src/Eval'
 import * as IO from '../src/IO'
+import * as Z from '../src/Z'
+
+export const fibZ = (n: bigint): Z.Z<never, unknown, never, unknown, never, bigint> =>
+  Z.defer(() => {
+  if(n < BigInt(2)) {
+    return Z.succeed(BigInt(1))
+  }
+  return Z.chain_(fibZ(n - BigInt(1)), (a) => Z.map_(fibZ(n - BigInt(2)), (b) => a + b))
+})
 
 export const fibIO = (n: bigint): IO.UIO<bigint> =>
   IO.defer(() => {
@@ -24,6 +33,9 @@ export const fibEval = (n: bigint): Eval.Eval<bigint> =>
 new Suite('')
   .add('Eval', () => {
     Eval.evaluate(fibEval(BigInt(20)))
+  })
+  .add('Z', () => {
+    Z.runResult(fibZ(BigInt(20)))
   })
   .add(
     'IO',

@@ -18,26 +18,13 @@ type URI = [HKT.URI<EvalURI>]
 export const EvalTypeId = Symbol()
 export type EvalTypeId = typeof EvalTypeId
 
-export const NowTag = Symbol()
-export type NowTag = typeof NowTag
-export const LaterTag = Symbol()
-export type LaterTag = typeof LaterTag
-export const AlwaysTag = Symbol()
-export type AlwaysTag = typeof AlwaysTag
-export const DeferTag = Symbol()
-export type DeferTag = typeof DeferTag
-export const BindTag = Symbol()
-export type BindTag = typeof BindTag
-export const MemoizeTag = Symbol()
-export type MemoizeTag = typeof MemoizeTag
-
 export const EvalTag = {
-  Now: NowTag,
-  Later: LaterTag,
-  Always: AlwaysTag,
-  Defer: DeferTag,
-  Bind: BindTag,
-  Memoize: MemoizeTag
+  Now: 'Now',
+  Later: 'Later',
+  Always: 'Always',
+  Defer: 'Defer',
+  Bind: 'Chain',
+  Memoize: 'Memoize'
 } as const
 
 /**
@@ -49,7 +36,6 @@ export const EvalTag = {
  * use `Sync`, `Async`, or `IO` from the `io` package
  */
 export abstract class Eval<A> {
-  readonly [EvalTypeId]: EvalTypeId = EvalTypeId
   readonly _A!: () => A
 
   abstract get value(): A
@@ -57,7 +43,7 @@ export abstract class Eval<A> {
 }
 
 class Now<A> extends Eval<A> {
-  readonly _evalTag: NowTag = EvalTag.Now
+  readonly _evalTag = EvalTag.Now
   constructor(readonly a: A) {
     super()
   }
@@ -70,9 +56,10 @@ class Now<A> extends Eval<A> {
 }
 
 class Later<A> extends Eval<A> {
-  readonly _evalTag: LaterTag = EvalTag.Later
-  private thunk               = new AtomicReference<null | (() => A)>(null)
-  private result: A | null    = null
+  readonly [EvalTypeId]: EvalTypeId = EvalTypeId
+  readonly _evalTag                 = EvalTag.Later
+  private thunk                     = new AtomicReference<null | (() => A)>(null)
+  private result: A | null          = null
   constructor(f: () => A) {
     super()
     this.thunk.set(f)
@@ -93,7 +80,8 @@ class Later<A> extends Eval<A> {
 }
 
 class Always<A> extends Eval<A> {
-  readonly _evalTag: AlwaysTag = EvalTag.Always
+  readonly [EvalTypeId]: EvalTypeId = EvalTypeId
+  readonly _evalTag                 = EvalTag.Always
   constructor(readonly thunk: () => A) {
     super()
   }
@@ -106,7 +94,8 @@ class Always<A> extends Eval<A> {
 }
 
 class Defer<A> extends Eval<A> {
-  readonly _evalTag: DeferTag = EvalTag.Defer
+  readonly [EvalTypeId]: EvalTypeId = EvalTypeId
+  readonly _evalTag                 = EvalTag.Defer
   constructor(readonly thunk: () => Eval<A>) {
     super()
   }
@@ -119,7 +108,8 @@ class Defer<A> extends Eval<A> {
 }
 
 class Chain<A, B> extends Eval<B> {
-  readonly _evalTag: BindTag = EvalTag.Bind
+  readonly [EvalTypeId]: EvalTypeId = EvalTypeId
+  readonly _evalTag                 = EvalTag.Bind
   constructor(readonly ma: Eval<A>, readonly f: (a: A) => Eval<B>) {
     super()
   }
@@ -132,7 +122,8 @@ class Chain<A, B> extends Eval<B> {
 }
 
 class Memoize<A> extends Eval<A> {
-  readonly _evalTag: MemoizeTag = EvalTag.Memoize
+  readonly [EvalTypeId]: EvalTypeId = EvalTypeId
+  readonly _evalTag                 = EvalTag.Memoize
   constructor(readonly ma: Eval<A>) {
     super()
   }
@@ -312,77 +303,51 @@ export function evaluate<A>(e: Eval<A>): A {
   let current = e as Eval<any> | undefined
   let result  = null
 
+  function pushContinuation(cont: (_: any) => Eval<any>) {
+    frames = makeStack(cont, frames)
+  }
+
+  function popContinuation() {
+    const current = frames?.value
+    frames        = frames?.previous
+    return current
+  }
+
   while (current != null) {
     const I = current as Concrete
     switch (I._evalTag) {
       case EvalTag.Bind: {
-        const nested       = I.ma as Concrete
-        const continuation = I.f
-
-        switch (nested._evalTag) {
-          case EvalTag.Now: {
-            current = continuation(nested.a)
-            break
-          }
-          case EvalTag.Later: {
-            current = continuation(nested.value)
-            break
-          }
-          case EvalTag.Always: {
-            current = continuation(nested.thunk())
-            break
-          }
-          case EvalTag.Memoize: {
-            if (nested.result._tag === 'Some') {
-              current = I.f(nested.result.value)
-              break
-            } else {
-              frames  = makeStack(continuation, frames)
-              frames  = makeStack(addToMemo(nested))
-              current = nested.ma
-              break
-            }
-          }
-          default: {
-            current = nested
-            frames  = makeStack(continuation, frames)
-            break
-          }
-        }
+        current = I.ma
+        pushContinuation(I.f)
         break
       }
       case EvalTag.Now: {
-        const continuation = frames?.value
-        frames             = frames?.previous
+        result             = I.a
+        const continuation = popContinuation()
         if (continuation) {
-          current = continuation(I.a)
+          current = continuation(result)
         } else {
           current = undefined
-          result  = I.a
         }
         break
       }
       case EvalTag.Later: {
-        const a            = I.value
-        const continuation = frames?.value
-        frames             = frames?.previous
+        result             = I.value
+        const continuation = popContinuation()
         if (continuation) {
-          current = continuation(a)
+          current = continuation(result)
         } else {
           current = undefined
-          result  = a
         }
         break
       }
       case EvalTag.Always: {
-        const a            = I.thunk()
-        const continuation = frames?.value
-        frames             = frames?.previous
+        result             = I.thunk()
+        const continuation = popContinuation()
         if (continuation) {
-          current = continuation(a)
+          current = continuation(result)
         } else {
           current = undefined
-          result  = a
         }
         break
       }
@@ -392,18 +357,17 @@ export function evaluate<A>(e: Eval<A>): A {
       }
       case EvalTag.Memoize: {
         if (I.result._tag === 'Some') {
-          const f = frames?.value
-          frames  = frames?.previous
-          if (f) {
-            current = f(I.result.value)
+          result             = I.result.value
+          const continuation = popContinuation()
+          if (continuation) {
+            current = continuation(result)
             break
           } else {
-            result  = I.result.value
             current = undefined
             break
           }
         } else {
-          frames  = makeStack(addToMemo(I))
+          pushContinuation(addToMemo(I))
           current = I.ma
           break
         }
