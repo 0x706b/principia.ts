@@ -438,13 +438,13 @@ declare module '@principia/base/IO/primitives' {
      * @rewrite give_ from "@principia/base/IO"
      * @trace call
      */
-    give<E, A, R = unknown, R0 = unknown>(this: I.IO<R & R0, E, A>, r: R): I.IO<R0, E, A>
+    give<R0, E, A, R>(this: I.IO<R0, E, A>, r: R): I.IO<Erase<R0, R>, E, A>
 
     /**
      * @rewrite giveLayer_ from "@principia/base/IO"
      * @trace call
      */
-    give<R, E, A, R1, E1, A1>(this: I.IO<R & A1, E, A>, layer: L.Layer<R1, E1, A1>): I.IO<R & R1, E | E1, A>
+    give<R, E, A, R1, E1, A1>(this: I.IO<R, E, A>, layer: L.Layer<R1, E1, A1>): I.IO<Erase<R, A1> & R1, E | E1, A>
 
     /**
      * @rewrite giveAll_ from "@principia/base/IO"
@@ -521,10 +521,8 @@ declare module '@principia/base/IO/primitives' {
     ): <R1, E1>(
       services: I.IO<R1, E1, ServicesTuple<SS>>
     ) => I.IO<
-      Erase<
-        R & R1,
-        UnionToIntersection<{ [K in keyof SS]: [SS[K]] extends [Tag<infer T>] ? Has<T> : unknown }[number]>
-      >,
+      Erase<R, UnionToIntersection<{ [K in keyof SS]: [SS[K]] extends [Tag<infer T>] ? Has<T> : unknown }[number]>> &
+        R1,
       E | E1,
       A
     >
