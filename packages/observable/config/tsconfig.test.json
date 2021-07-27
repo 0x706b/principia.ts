@@ -8,11 +8,12 @@
     "plugins": [
       {
         "transform": "@principia/compile",
-        "relativeProjectRoot": "../../"
+        "relativeProjectRoot": "../../",
+        "tracing": false
       }
     ]
   },
-  "include": ["../src", "../test", "../bench"],
+  "include": ["../test"],
   "exclude": ["../test/*Spec.ts"],
   "extends": "../../../tsconfig.json"
 }
