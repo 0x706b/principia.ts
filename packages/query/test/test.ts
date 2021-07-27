@@ -59,46 +59,43 @@ const backendGetSome = (ids: Chunk<string>): I.IO<Has<Console>, never, Record<st
 
 type Req = Get | GetAll
 
-const ds = DS.makeBatched(
-  'test',
-  (requests: Chunk<Req>): IO<Has<Console>, never, CompletedRequestMap> => {
-    const [all, one] = C.partition_(requests, (req) => (req._tag === 'GetAll' ? false : true))
+const ds = DS.makeBatched('test', (requests: Chunk<Req>): IO<Has<Console>, never, CompletedRequestMap> => {
+  const [all, one] = C.partition_(requests, (req) => (req._tag === 'GetAll' ? false : true))
 
-    if (C.isNonEmpty(all)) {
+  if (C.isNonEmpty(all)) {
+    return pipe(
+      backendGetAll,
+      I.map((allItems) =>
+        R.foldl_(allItems, CompletedRequestMap.empty(), (result, id, value) =>
+          result.insert(new Get({ id }), E.right(value))
+        ).insert(new GetAll(), E.right(allItems))
+      )
+    )
+  } else {
+    return I.gen(function* (_) {
+      const items = yield* _(
+        backendGetSome(C.chain_(one, matchTag({ Get: ({ id }) => C.single(id), GetAll: () => C.empty<string>() })))
+      )
       return pipe(
-        backendGetAll,
-        I.map((allItems) =>
-          R.ifoldl_(allItems, CompletedRequestMap.empty(), (result, id, value) =>
-            result.insert(new Get({ id }), E.right(value))
-          ).insert(new GetAll(), E.right(allItems))
+        one,
+        C.foldl(CompletedRequestMap.empty(), (result, req) =>
+          matchTag_(req, {
+            GetAll: () => result,
+            Get: (req) =>
+              pipe(
+                items,
+                R.lookup(req.id),
+                O.match(
+                  () => result.insert(req, E.left('not found')),
+                  (value) => result.insert(req, E.right(value))
+                )
+              )
+          })
         )
       )
-    } else {
-      return I.gen(function* (_) {
-        const items = yield* _(
-          backendGetSome(C.chain_(one, matchTag({ Get: ({ id }) => C.single(id), GetAll: () => C.empty<string>() })))
-        )
-        return pipe(
-          one,
-          C.foldl(CompletedRequestMap.empty(), (result, req) =>
-            matchTag_(req, {
-              GetAll: () => result,
-              Get: (req) =>
-                pipe(
-                  items,
-                  R.lookup(req.id),
-                  O.match(
-                    () => result.insert(req, E.left('not found')),
-                    (value) => result.insert(req, E.right(value))
-                  )
-                )
-            })
-          )
-        )
-      })
-    }
+    })
   }
-)
+})
 
 const getAll = Query.fromRequest(new GetAll(), ds)
 

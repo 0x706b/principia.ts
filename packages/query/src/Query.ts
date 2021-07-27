@@ -55,36 +55,6 @@ export type QueryTypeId = typeof QueryTypeId
 export class Query<R, E, A> {
   readonly [QueryTypeId]: QueryTypeId = QueryTypeId
   constructor(readonly step: IO<readonly [R, QueryContext], never, Result<R, E, A>>) {}
-  ['@@']<R1>(f: DataSourceAspect<R1>): Query<R & R1, E, A> {
-    return mapDataSources_(this, f)
-  }
-  ['<$>']<B>(f: (a: A) => B): Query<R, E, B> {
-    return map_(this, f)
-  }
-  ['$>']<B>(b: B): Query<R, E, B> {
-    return as_(this, b)
-  }
-  ['>>=']<R1, E1, B>(f: (a: A) => Query<R1, E1, B>): Query<R & R1, E | E1, B> {
-    return chain_(this, f)
-  }
-  ['*>']<R1, E1, B>(fb: Query<R1, E1, B>): Query<R & R1, E | E1, B> {
-    return apr_(this, fb)
-  }
-  ['<*']<R1, E1, B>(fb: Query<R1, E1, B>): Query<R & R1, E | E1, A> {
-    return apl_(this, fb)
-  }
-  ['<*>']<R1, E1, B>(fb: Query<R1, E1, B>): Query<R & R1, E | E1, readonly [A, B]> {
-    return cross_(this, fb)
-  }
-  ['&>']<R1, E1, B>(fb: Query<R1, E1, B>): Query<R & R1, E | E1, B> {
-    return aprPar_(this, fb)
-  }
-  ['<&']<R1, E1, B>(fb: Query<R1, E1, B>): Query<R & R1, E | E1, A> {
-    return aplPar_(this, fb)
-  }
-  ['<&>']<R1, E1, B>(fb: Query<R1, E1, B>): Query<R & R1, E | E1, readonly [A, B]> {
-    return crossPar_(this, fb)
-  }
 }
 
 export function isQuery(u: unknown): u is Query<unknown, unknown, unknown> {
@@ -313,20 +283,22 @@ export function ap<R, E, A>(
   return (fab) => ap_(fab, fa)
 }
 
-export function apl_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, A> {
+export function crossFirst_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, A> {
   return crossWith_(fa, fb, (a, _) => a)
 }
 
-export function apl<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, A> {
-  return (fa) => apl_(fa, fb)
+export function crossFirst<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, A> {
+  return (fa) => crossFirst_(fa, fb)
 }
 
-export function apr_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, B> {
+export function crossSecond_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, B> {
   return crossWith_(fa, fb, (_, b) => b)
 }
 
-export function apr<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, B> {
-  return (fa) => apr_(fa, fb)
+export function crossSecond<R1, E1, B>(
+  fb: Query<R1, E1, B>
+): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, B> {
+  return (fa) => crossSecond_(fa, fb)
 }
 
 export function crossWith_<R, E, A, R1, E1, B, C>(
@@ -415,20 +387,27 @@ export function apPar<R, E, A>(
   return (fab) => apPar_(fab, fa)
 }
 
-export function aplPar_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, A> {
+export function crossFirstPar_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, A> {
   return crossWithPar_(fa, fb, (a, _) => a)
 }
 
-export function aplPar<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, A> {
-  return (fa) => aplPar_(fa, fb)
+export function crossFirstPar<R1, E1, B>(
+  fb: Query<R1, E1, B>
+): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, A> {
+  return (fa) => crossFirstPar_(fa, fb)
 }
 
-export function aprPar_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, B> {
+export function crossSecondPar_<R, E, A, R1, E1, B>(
+  fa: Query<R, E, A>,
+  fb: Query<R1, E1, B>
+): Query<R & R1, E | E1, B> {
   return crossWithPar_(fa, fb, (_, b) => b)
 }
 
-export function aprPar<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, B> {
-  return (fa) => aprPar_(fa, fb)
+export function crossSecondPar<R1, E1, B>(
+  fb: Query<R1, E1, B>
+): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, B> {
+  return (fa) => crossSecondPar_(fa, fb)
 }
 
 export function crossWithPar_<R, E, A, R1, E1, B, C>(
@@ -502,20 +481,30 @@ export function apBatched<R, E, A>(
   return (fab) => apBatched_(fab, fa)
 }
 
-export function aplBatched_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, A> {
+export function crossFirstBatched_<R, E, A, R1, E1, B>(
+  fa: Query<R, E, A>,
+  fb: Query<R1, E1, B>
+): Query<R & R1, E | E1, A> {
   return crossWithBatched_(fa, fb, (a, _) => a)
 }
 
-export function aplBatched<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, A> {
-  return (fa) => aplBatched_(fa, fb)
+export function crossFirstBatched<R1, E1, B>(
+  fb: Query<R1, E1, B>
+): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, A> {
+  return (fa) => crossFirstBatched_(fa, fb)
 }
 
-export function aprBatched_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, B> {
+export function crossSecondBatched_<R, E, A, R1, E1, B>(
+  fa: Query<R, E, A>,
+  fb: Query<R1, E1, B>
+): Query<R & R1, E | E1, B> {
   return crossWithBatched_(fa, fb, (_, b) => b)
 }
 
-export function aprBatched<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, B> {
-  return (fa) => aprBatched_(fa, fb)
+export function crossSecondBatched<R1, E1, B>(
+  fb: Query<R1, E1, B>
+): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, B> {
+  return (fa) => crossSecondBatched_(fa, fb)
 }
 
 export function crossWithBatched_<R, E, A, R1, E1, B, C>(
@@ -611,11 +600,11 @@ export function mapErrorCause<E, E1>(
  * -------------------------------------------
  */
 
-export function refail<R, E, E1, A>(v: Query<R, E, E.Either<E1, A>>): Query<R, E | E1, A> {
+export function subsumeEither<R, E, E1, A>(v: Query<R, E, E.Either<E1, A>>): Query<R, E | E1, A> {
   return chain_(v, fromEither)
 }
 
-export function attempt<R, E, A>(ma: Query<R, E, A>): Query<R, never, E.Either<E, A>> {
+export function either<R, E, A>(ma: Query<R, E, A>): Query<R, never, E.Either<E, A>> {
   return match_(ma, E.left, E.right)
 }
 
@@ -887,18 +876,29 @@ export function giveLayer<R1, E1, A1>(
     )
 }
 
+export function giveServiceIO_<T>(
+  _: Tag<T>
+): <R, E, A, R1, E1>(ma: Query<R & Has<T>, E, A>, f: Described<IO<R1, E1, T>>) => Query<R & R1, E | E1, A> {
+  return <R, E, A, R1, E1>(ma: Query<R & Has<T>, E, A>, f: Described<IO<R1, E1, T>>): Query<R & R1, E | E1, A> =>
+    asksQuery((r: R & R1) =>
+      chain_(fromIO(f.value), (t) => giveAll_(ma, Described(mergeEnvironments(_, r, t), f.description)))
+    )
+}
+
 export function giveServiceIO<T>(_: Tag<T>) {
   return <R, E>(f: Described<IO<R, E, T>>) =>
     <R1, E1, A1>(ma: Query<R1 & Has<T>, E1, A1>): Query<R & R1, E | E1, A1> =>
-      asksQuery((r: R & R1) =>
-        chain_(fromIO(f.value), (t) => giveAll_(ma, Described(mergeEnvironments(_, r, t), f.description)))
-      )
+      giveServiceIO_(_)(ma, f)
+}
+
+export function giveService_<T>(_: Tag<T>): <R, E, A>(ma: Query<R & Has<T>, E, A>, f: Described<T>) => Query<R, E, A> {
+  return (ma, f) => giveServiceIO_(_)(ma, Described(I.succeed(f.value), f.description))
 }
 
 export function giveService<T>(
   _: Tag<T>
 ): (f: Described<T>) => <R1, E1, A1>(ma: Query<R1 & Has<T>, E1, A1>) => Query<R1, E1, A1> {
-  return (f) => (ma) => giveServiceIO(_)(Described(I.succeed(f.value), f.description))(ma)
+  return (f) => (ma) => giveService_(_)(ma, f)
 }
 
 /*
@@ -911,7 +911,7 @@ export function partitionQuery_<A, R, E, B>(
   as: Iterable<A>,
   f: (a: A) => Query<R, E, B>
 ): Query<R, never, readonly [ReadonlyArray<E>, ReadonlyArray<B>]> {
-  return pipe(as, foreach(flow(f, attempt)), map(A.partitionMap(identity)))
+  return pipe(as, foreach(flow(f, either)), map(A.partitionMap(identity)))
 }
 
 export function partitionQuery<A, R, E, B>(
@@ -924,7 +924,7 @@ export function partitonParQuery_<A, R, E, B>(
   as: Iterable<A>,
   f: (a: A) => Query<R, E, B>
 ): Query<R, never, readonly [ReadonlyArray<E>, ReadonlyArray<B>]> {
-  return pipe(as, foreachPar(flow(f, attempt)), map(A.partitionMap(identity)))
+  return pipe(as, foreachPar(flow(f, either)), map(A.partitionMap(identity)))
 }
 
 export function partitionParQuery<A, R, E, B>(
@@ -1085,19 +1085,19 @@ export function optional<R, E, A>(ma: Query<R, E, A>): Query<R, E, O.Option<A>> 
   )
 }
 
-export function orHaltWith_<R, E, A>(ma: Query<R, E, A>, f: (e: E) => Error): Query<R, never, A> {
+export function orHaltWith_<R, E, A>(ma: Query<R, E, A>, f: (e: E) => unknown): Query<R, never, A> {
   return matchQuery_(ma, flow(f, halt), succeed)
 }
 
-export function orHaltWith<E>(f: (e: E) => Error): <R, A>(ma: Query<R, E, A>) => Query<R, never, A> {
+export function orHaltWith<E>(f: (e: E) => unknown): <R, A>(ma: Query<R, E, A>) => Query<R, never, A> {
   return (ma) => matchQuery_(ma, flow(f, halt), succeed)
 }
 
-export function orHalt<R, E extends Error, A>(ma: Query<R, E, A>): Query<R, never, A> {
+export function orHalt<R, E, A>(ma: Query<R, E, A>): Query<R, never, A> {
   return orHaltWith_(ma, identity)
 }
 
-export function refineOrHalt_<R, E extends Error, A, E1>(
+export function refineOrHalt_<R, E, A, E1>(
   ma: Query<R, E, A>,
   pf: (e: E) => O.Option<E1>
 ): Query<R, E1, A> {
@@ -1113,7 +1113,7 @@ export function refineOrHalt<E extends Error, E1>(
 export function refineOrHaltWith_<R, E, A, E1>(
   ma: Query<R, E, A>,
   pf: (e: E) => O.Option<E1>,
-  f: (e: E) => Error
+  f: (e: E) => unknown
 ): Query<R, E1, A> {
   return catchAll_(ma, (e) =>
     pipe(
@@ -1125,7 +1125,7 @@ export function refineOrHaltWith_<R, E, A, E1>(
 
 export function refineOrHaltWith<E, E1>(
   pf: (e: E) => O.Option<E1>,
-  f: (e: E) => Error
+  f: (e: E) => unknown
 ): <R, A>(ma: Query<R, E, A>) => Query<R, E1, A> {
   return (ma) => refineOrHaltWith_(ma, pf, f)
 }

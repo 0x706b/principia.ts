@@ -29,9 +29,6 @@ export class DataSource<R, A> implements St.Equatable, St.Hashable {
     readonly identifier: string,
     readonly runAll: (requests: Chunk<Chunk<A>>) => I.IO<R, never, CompletedRequestMap>
   ) {}
-  ['@@']<R1>(aspect: DataSourceAspect<R1>): DataSource<R & R1, A> {
-    return aspect.apply(this)
-  }
 
   [St.$equals](that: unknown): boolean {
     return isDataSource(that) && this.identifier === that.identifier
@@ -255,6 +252,13 @@ export function fromFunctionOption<A extends Request<never, any>>(
   f: (a: A) => O.Option<_A<A>>
 ): DataSource<unknown, A> {
   return fromFunctionIOOption(name, flow(f, I.succeed))
+}
+
+export function applyAspect_<R, A, R1>(
+  dataSource: DataSource<R, A>,
+  aspect: DataSourceAspect<R1>
+): DataSource<R & R1, A> {
+  return aspect.apply(dataSource)
 }
 
 export const never: DataSource<unknown, any> = new DataSource('never', () => I.never)
