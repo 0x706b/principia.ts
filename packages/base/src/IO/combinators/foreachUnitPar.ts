@@ -126,6 +126,8 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
         )
       )
     )
+
+    yield* _(I.foreach_(fibers, (f) => f.inheritRefs))
   })
 }
 
