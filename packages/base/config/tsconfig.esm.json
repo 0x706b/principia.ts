@@ -16,7 +16,8 @@
           "^src/(.*)": ["@principia/base", "_src", "$1"]
         },
         "tracing": false,
-        "relativeProjectRoot": "../../"
+        "relativeProjectRoot": "../../",
+        "rewrite": false
       }
     ]
   },

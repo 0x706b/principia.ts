@@ -16,7 +16,8 @@
           "^src/(.*)": ["@principia/base", "_src", "$1"]
         },
         "tracing": false,
-        "addExtensions": false
+        "addExtensions": false,
+        "rewrite": false
       }
     ]
   },

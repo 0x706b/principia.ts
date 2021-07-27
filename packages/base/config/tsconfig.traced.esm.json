@@ -15,7 +15,8 @@
         "moduleMap": {
           "^src/(.*)": ["@principia/base", "_src", "$1"]
         },
-        "relativeProjectRoot": "../../"
+        "relativeProjectRoot": "../../",
+        "rewrite": false
       }
     ]
   },

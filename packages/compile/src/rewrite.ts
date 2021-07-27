@@ -10,6 +10,7 @@ export default function rewrite(
 ) {
   const checker = program.getTypeChecker()
 
+  const rewriteOn     = !(opts?.rewrite === false)
   const moduleMap     = opts?.moduleMap || {}
   const moduleMapKeys = Object.keys(moduleMap).map((k) => [k, new RegExp(k)] as const)
 
@@ -300,47 +301,51 @@ export default function rewrite(
           return ts.visitEachChild(node, visitor, ctx)
         }
 
-        const fileNode = factory.createVariableStatement(
-          undefined,
-          factory.createVariableDeclarationList(
-            [
-              factory.createVariableDeclaration(
-                fileVar,
-                undefined,
-                undefined,
-                factory.createStringLiteral(normalize(finalName))
-              )
-            ],
-            ts.NodeFlags.Const
-          )
-        )
-
-        const visited = ts.visitNode(sourceFile, visitor)
-
-        const imports = Array.from(mods).map(([mod, id]) =>
-          factory.createImportDeclaration(
+        if (rewriteOn) {
+          const fileNode = factory.createVariableStatement(
             undefined,
-            undefined,
-            factory.createImportClause(false, undefined, factory.createNamespaceImport(id)),
-            factory.createStringLiteral(mod)
+            factory.createVariableDeclarationList(
+              [
+                factory.createVariableDeclaration(
+                  fileVar,
+                  undefined,
+                  undefined,
+                  factory.createStringLiteral(normalize(finalName))
+                )
+              ],
+              ts.NodeFlags.Const
+            )
           )
-        )
 
-        if (tracingOn) {
-          return factory.updateSourceFile(visited, [
+          const visited = ts.visitNode(sourceFile, visitor)
+
+          const imports = Array.from(mods).map(([mod, id]) =>
             factory.createImportDeclaration(
               undefined,
               undefined,
-              factory.createImportClause(false, undefined, factory.createNamespaceImport(tracing)),
-              factory.createStringLiteral(importTracingFrom)
-            ),
-            ...imports,
-            fileNode,
-            ...visited.statements
-          ])
-        }
+              factory.createImportClause(false, undefined, factory.createNamespaceImport(id)),
+              factory.createStringLiteral(mod)
+            )
+          )
 
-        return factory.updateSourceFile(visited, [...imports, ...visited.statements])
+          if (tracingOn) {
+            return factory.updateSourceFile(visited, [
+              factory.createImportDeclaration(
+                undefined,
+                undefined,
+                factory.createImportClause(false, undefined, factory.createNamespaceImport(tracing)),
+                factory.createStringLiteral(importTracingFrom)
+              ),
+              ...imports,
+              fileNode,
+              ...visited.statements
+            ])
+          }
+
+          return factory.updateSourceFile(visited, [...imports, ...visited.statements])
+        } else {
+          return sourceFile
+        }
       }
     }
   }
