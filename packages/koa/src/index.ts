@@ -3,6 +3,7 @@ import type { Cause } from '@principia/base/Cause'
 import type { Console } from '@principia/base/Console'
 import type { Exit } from '@principia/base/Exit'
 import type { RuntimeFiber } from '@principia/base/Fiber'
+import type {} from '@principia/base/fluent'
 import type { Has } from '@principia/base/Has'
 import type { IO, URIO } from '@principia/base/IO'
 import type { IOEnv } from '@principia/base/IOEnv'
@@ -20,7 +21,7 @@ import * as Ca from '@principia/base/Cause'
 import { putStrLnErr } from '@principia/base/Console'
 import * as Ex from '@principia/base/Exit'
 import * as Fi from '@principia/base/Fiber'
-import { flow, pipe } from '@principia/base/function'
+import { flow } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as I from '@principia/base/IO'
 import { live as liveIOEnv } from '@principia/base/IOEnv'
@@ -135,18 +136,16 @@ export abstract class KoaApp {
             )
           })
           server.addListener('error', onError)
-        })['|>'](
-          M.bracket((server) =>
-            I.async<unknown, never, void>((k) => {
-              server.close((error) => {
-                if (error) {
-                  k(I.halt(new NodeServerCloseError(error)))
-                } else {
-                  k(I.unit())
-                }
-              })
+        }).toManaged((server) =>
+          I.async<unknown, never, void>((k) => {
+            server.close((error) => {
+              if (error) {
+                k(I.halt(new NodeServerCloseError(error)))
+              } else {
+                k(I.unit())
+              }
             })
-          )
+          })
         )
       )
 
@@ -171,29 +170,23 @@ export abstract class KoaRuntime {
 
   static live: L.Layer<unknown, never, Has<KoaRuntime>> = L.fromManaged(KoaRuntimeTag)(
     M.gen(function* (_) {
-      const open       = yield* _(Ref.make(true)['|>'](M.bracket((ref) => ref.set(false))))
-      const supervisor = yield* _(Su.track['|>'](M.bracket((s) => I.chain_(s.value, Fi.interruptAll))))
+      const open       = yield* _(Ref.make(true).toManaged((ref) => ref.set(false)))
+      const supervisor = yield* _(Su.track.toManaged((s) => s.value.chain(Fi.interruptAll)))
 
       function runtime<R>() {
-        return pipe(
-          I.runtime<R>(),
-          I.map((r) => r.supervised(supervisor)),
-          I.map(
+        return I.runtime<R>()
+          .map((r) => r.supervised(supervisor))
+          .map(
             (r) =>
               <E, A>(effect: IO<R & IOEnv, E, A>) =>
-                I.ifIO_(
-                  open.get,
-                  I.defer(() =>
-                    effect['|>'](I.giveLayer(liveIOEnv))
-                      ['|>'](r.runFiber)
-                      ['|>']((f) => f.await)
-                  ),
-                  I.succeed(Ex.failCause(Ca.empty))
-                )
-                  ['|>'](I.runPromiseExit)
+                open.get
+                  .ifIO(
+                    I.defer(() => effect['|>'](I.giveLayer(liveIOEnv))['|>'](r.runFiber).await),
+                    I.succeed(Ex.failCause(Ca.empty))
+                  )
+                  .runPromiseExit()
                   .then(Ex.flatten)
           )
-        )
       }
 
       return {
@@ -273,11 +266,10 @@ export function route(
           I.succeedLazy(() => {
             config.router[method](
               path,
-              ...A.map_(
-                handlers,
+              ...handlers.map(
                 (h): Middleware<DefaultState, Context> =>
                   async (ctx, next) => {
-                    await pipe(h(ctx, next), I.onTermination(exitHandler(ctx, next)), run)
+                    await run(h(ctx, next).onTermination(exitHandler(ctx, next)))
                   }
               )
             )
@@ -322,21 +314,19 @@ export function use(
         I.succeedLazy(() => {
           if (typeof args[0] === 'function') {
             config.router.use(
-              ...A.map_(
-                args,
+              ...args.map(
                 (h: RequestHandler<unknown>): Middleware<DefaultState, Context> =>
                   async (ctx, next) =>
-                    await pipe(h(ctx, next), I.onTermination(exitHandler(ctx, next)), run)
+                    await run(h(ctx, next).onTermination(exitHandler(ctx, next)))
               )
             )
           } else {
             config.router.use(
               args[0],
-              ...A.map_(
-                args.slice(1),
+              ...args.slice(1).map(
                 (h: RequestHandler<unknown>): Middleware<DefaultState, Context> =>
                   async (ctx, next) =>
-                    await pipe(h(ctx, next), I.onTermination(exitHandler(ctx, next)), run)
+                    await run(h(ctx, next).onTermination(exitHandler(ctx, next)))
               )
             )
           }
