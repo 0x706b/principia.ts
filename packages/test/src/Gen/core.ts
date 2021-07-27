@@ -185,12 +185,12 @@ export function map<A, B>(f: (a: A) => B): <R>(fa: Gen<R, A>) => Gen<R, B> {
   return (fa) => map_(fa, f)
 }
 
-export function mapM_<R, A, R1, B>(fa: Gen<R, A>, f: (a: A) => IO<R1, never, B>): Gen<R & R1, B> {
+export function mapIO_<R, A, R1, B>(fa: Gen<R, A>, f: (a: A) => IO<R1, never, B>): Gen<R & R1, B> {
   return new Gen(S.mapIO_(fa.sample, Sa.foreach(f)))
 }
 
-export function mapM<A, R1, B>(f: (a: A) => IO<R1, never, B>): <R>(fa: Gen<R, A>) => Gen<R & R1, B> {
-  return (fa) => mapM_(fa, f)
+export function mapIO<A, R1, B>(f: (a: A) => IO<R1, never, B>): <R>(fa: Gen<R, A>) => Gen<R & R1, B> {
+  return (fa) => mapIO_(fa, f)
 }
 
 /*
