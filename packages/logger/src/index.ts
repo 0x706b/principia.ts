@@ -69,53 +69,44 @@ export interface LogEntry {
   level: LogLevel
   message: string
 }
-const LogEntryTag = tag<LogEntry>()
 
 const timestamp = Clock.currentTime.map(
   (ms) => `${formatISO9075(ms)}.${getMilliseconds(ms).toString().padStart(3, '0')}`
 )
 
-const showConsoleLogEntry = I.gen(function* (_) {
-  const config    = yield* _(LoggerConfigTag)
-  const { chalk } = yield* _(ChalkTag)
-  const time      = yield* _(timestamp)
-  const entry     = yield* _(LogEntryTag)
-  const theme     = yield* _(config.theme)
-  return `[${theme[entry.level](entry.level.toUpperCase())}] ${entry.message} ${chalk.gray.dim(time)}`
-})
+const showConsoleLogEntry = (entry: LogEntry) =>
+  I.gen(function* (_) {
+    const config    = yield* _(LoggerConfigTag)
+    const { chalk } = yield* _(ChalkTag)
+    const time      = yield* _(timestamp)
+    const theme     = yield* _(config.theme)
+    return `[${theme[entry.level](entry.level.toUpperCase())}] ${entry.message} ${chalk.gray.dim(time)}`
+  })
 
-const showFileLogEntry = I.gen(function* (_) {
-  const time  = yield* _(timestamp)
-  const entry = yield* _(LogEntryTag)
-  return `${time} [${entry.level.toUpperCase()}] ${stripAnsi(entry.message)}\n`
-})
+const showFileLogEntry = (entry: LogEntry) =>
+  timestamp.map((time) => `${time} [${entry.level.toUpperCase()}] ${stripAnsi(entry.message)}\n`)
 
-const logToConsole = I.gen(function* (_) {
-  const entry = yield* _(showConsoleLogEntry)
-  return yield* _(Console.putStrLn(entry))
-})
+const logToConsole = (entry: LogEntry) => showConsoleLogEntry(entry).chain(Console.putStrLn)
 
-const logToFile = I.gen(function* (_) {
-  const show   = yield* _(showFileLogEntry)
-  const config = yield* _(LoggerConfigTag)
-  return yield* _(fs.appendFile(config.path, show))
-})
+const logToFile = (entry: LogEntry) =>
+  showFileLogEntry(entry).chain((s) => I.asksServiceIO(LoggerConfigTag)((config) => fs.appendFile(config.path, s)))
 
 function _log(message: ChalkFn, level: LogLevel) {
   return I.gen(function* (_) {
     const { level: configLevel, path } = yield* _(LoggerConfigTag)
 
-    const { chalk }       = yield* _(ChalkTag)
+    const { chalk } = yield* _(ChalkTag)
+
     const entry: LogEntry = {
       message: message(chalk),
       level
     }
 
     yield* _(
-      logToConsole['*>'](logToFile)
+      logToConsole(entry)
+        ['*>'](logToFile(entry))
         .catchAll((error) => Console.putStrLn(`Error when writing to path ${path}\n${error}`))
         .when(() => severity[configLevel] >= severity[level])
-        .giveService(LogEntryTag)(entry)
     )
   })
 }
