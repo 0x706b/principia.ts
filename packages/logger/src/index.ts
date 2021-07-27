@@ -1,9 +1,9 @@
+import type {} from '@principia/base/fluent'
 import type { Has } from '@principia/base/Has'
 import type ChalkType from 'chalk'
 
 import { Clock } from '@principia/base/Clock'
 import { Console, ConsoleTag } from '@principia/base/Console'
-import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as I from '@principia/base/IO'
 import * as L from '@principia/base/Layer'
@@ -71,8 +71,7 @@ export interface LogEntry {
 }
 const LogEntryTag = tag<LogEntry>()
 
-const timestamp = I.map_(
-  Clock.currentTime,
+const timestamp = Clock.currentTime.map(
   (ms) => `${formatISO9075(ms)}.${getMilliseconds(ms).toString().padStart(3, '0')}`
 )
 
@@ -113,13 +112,10 @@ function _log(message: ChalkFn, level: LogLevel) {
     }
 
     yield* _(
-      pipe(
-        logToConsole,
-        I.crossSecond(logToFile),
-        I.catchAll((error) => Console.putStrLn(`Error when writing to path ${path}\n${error}`)),
-        I.when(() => severity[configLevel] >= severity[level]),
-        I.giveService(LogEntryTag)(entry)
-      )
+      logToConsole['*>'](logToFile)
+        .catchAll((error) => Console.putStrLn(`Error when writing to path ${path}\n${error}`))
+        .when(() => severity[configLevel] >= severity[level])
+        .giveService(LogEntryTag)(entry)
     )
   })
 }
@@ -127,14 +123,10 @@ function _log(message: ChalkFn, level: LogLevel) {
 export const LiveLogger = L.create(Logger).fromEffect(
   I.asksServices({ config: LoggerConfigTag, console: ConsoleTag, chalk: ChalkTag })(
     ({ config, console, chalk }): Logger => ({
-      debug: (m) =>
-        pipe(_log(m, 'debug'), I.giveServicesT(ConsoleTag, LoggerConfigTag, ChalkTag)(console, config, chalk)),
-      info: (m) =>
-        pipe(_log(m, 'info'), I.giveServicesT(ConsoleTag, LoggerConfigTag, ChalkTag)(console, config, chalk)),
-      warning: (m) =>
-        pipe(_log(m, 'warning'), I.giveServicesT(ConsoleTag, LoggerConfigTag, ChalkTag)(console, config, chalk)),
-      error: (m) =>
-        pipe(_log(m, 'error'), I.giveServicesT(ConsoleTag, LoggerConfigTag, ChalkTag)(console, config, chalk))
+      debug: (m) => _log(m, 'debug').giveServicesT(ConsoleTag, LoggerConfigTag, ChalkTag)(console, config, chalk),
+      info: (m) => _log(m, 'info').giveServicesT(ConsoleTag, LoggerConfigTag, ChalkTag)(console, config, chalk),
+      warning: (m) => _log(m, 'warning').giveServicesT(ConsoleTag, LoggerConfigTag, ChalkTag)(console, config, chalk),
+      error: (m) => _log(m, 'error').giveServicesT(ConsoleTag, LoggerConfigTag, ChalkTag)(console, config, chalk)
     })
   )
 )
