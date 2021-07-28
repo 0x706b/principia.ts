@@ -268,7 +268,7 @@ export function surround(x: string): (s: string) => string {
  *
  * If `n` is a float, it will be rounded down to the nearest integer.
  */
-export function takeLeft_(s: string, n: number): string {
+export function take_(s: string, n: number): string {
   return s.slice(0, max_(N.Ord)(0, n))
 }
 
@@ -282,8 +282,8 @@ export function takeLeft_(s: string, n: number): string {
  *
  * If `n` is a float, it will be rounded down to the nearest integer.
  */
-export function takeLeft(n: number): (s: string) => string {
-  return (s) => takeLeft_(s, n)
+export function take(n: number): (s: string) => string {
+  return (s) => take_(s, n)
 }
 
 /**
@@ -296,7 +296,7 @@ export function takeLeft(n: number): (s: string) => string {
  *
  * If `n` is a float, it will be rounded down to the nearest integer.
  */
-export function takeRight_(s: string, n: number): string {
+export function takeLast_(s: string, n: number): string {
   return s.slice(max_(N.Ord)(0, s.length - Math.floor(n)), Infinity)
 }
 
@@ -310,8 +310,8 @@ export function takeRight_(s: string, n: number): string {
  *
  * If `n` is a float, it will be rounded down to the nearest integer.
  */
-export function takeRight(n: number): (s: string) => string {
-  return (s) => takeRight_(s, n)
+export function takeLast(n: number): (s: string) => string {
+  return (s) => takeLast_(s, n)
 }
 
 /**
