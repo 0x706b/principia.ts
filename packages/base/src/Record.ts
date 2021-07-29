@@ -35,21 +35,19 @@ type URI = [HKT.URI<RecordURI>]
  * -------------------------------------------------------------------------------------------------
  */
 
-export function _elem<N extends string, A>(r: ReadonlyRecord<N, A>, E: Eq<A>, a: A): boolean {
-  for (const k in r) {
-    if (E.equals(r[k])(a)) {
-      return true
-    }
-  }
-  return false
-}
-
 /**
  * @category Guards
  * @since 1.0.0
  */
 export function elem_<A>(E: Eq<A>): <N extends string>(r: Readonly<Record<N, A>>, a: A) => boolean {
-  return (r, a) => _elem(r, E, a)
+  return (r, a) => {
+    for (const k in r) {
+      if (E.equals(r[k])(a)) {
+        return true
+      }
+    }
+    return false
+  }
 }
 
 /**
@@ -66,12 +64,12 @@ export function elem<A>(E: Eq<A>): (a: A) => <N extends string>(r: Readonly<Reco
  */
 export function every_<N extends string, A, B extends A>(
   r: ReadonlyRecord<N, A>,
-  predicate: Refinement<A, B>
+  predicate: RefinementWithIndex<N, A, B>
 ): r is ReadonlyRecord<N, B>
-export function every_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: Predicate<A>): boolean
-export function every_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: Predicate<A>): boolean {
+export function every_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: PredicateWithIndex<N, A>): boolean
+export function every_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: PredicateWithIndex<N, A>): boolean {
   for (const k in r) {
-    if (!predicate(r[k])) {
+    if (!predicate(r[k], k)) {
       return false
     }
   }
@@ -82,11 +80,11 @@ export function every_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: 
  * @category Guards
  * @since 1.0.0
  */
-export function every<A, B extends A>(
-  predicate: Refinement<A, B>
-): <N extends string>(r: ReadonlyRecord<N, A>) => r is ReadonlyRecord<N, B>
-export function every<A>(predicate: Predicate<A>): <N extends string>(r: ReadonlyRecord<N, A>) => boolean
-export function every<A>(predicate: Predicate<A>): <N extends string>(r: ReadonlyRecord<N, A>) => boolean {
+export function every<N extends string, A, B extends A>(
+  predicate: RefinementWithIndex<N, A, B>
+): (r: ReadonlyRecord<N, A>) => r is ReadonlyRecord<N, B>
+export function every<N extends string, A>(predicate: PredicateWithIndex<N, A>): (r: ReadonlyRecord<N, A>) => boolean
+export function every<N extends string, A>(predicate: PredicateWithIndex<N, A>): (r: ReadonlyRecord<N, A>) => boolean {
   return (r) => every_(r, predicate)
 }
 
@@ -143,9 +141,9 @@ export function isSubrecord<A>(
  * @category Guards
  * @since 1.0.0
  */
-export function some_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: (a: A) => boolean): boolean {
+export function some_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: PredicateWithIndex<N, A>): boolean {
   for (const k in r) {
-    if (predicate(r[k])) {
+    if (predicate(r[k], k)) {
       return true
     }
   }
@@ -156,7 +154,7 @@ export function some_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: (
  * @category Guards
  * @since 1.0.0
  */
-export function some<A>(predicate: (a: A) => boolean): <N extends string>(r: Readonly<Record<N, A>>) => boolean {
+export function some<N extends string, A>(predicate: PredicateWithIndex<N, A>): (r: Readonly<Record<N, A>>) => boolean {
   return (r) => some_(r, predicate)
 }
 
@@ -314,13 +312,13 @@ export function filter_<A>(
 
 /**
  */
-export function ifilter<N extends string, A, B extends A>(
+export function filter<N extends string, A, B extends A>(
   refinement: RefinementWithIndex<N, A, B>
 ): (fa: ReadonlyRecord<N, A>) => ReadonlyRecord<string, B>
-export function ifilter<N extends string, A>(
+export function filter<N extends string, A>(
   predicate: PredicateWithIndex<N, A>
 ): (fa: ReadonlyRecord<N, A>) => ReadonlyRecord<string, A>
-export function ifilter<A>(
+export function filter<A>(
   predicate: PredicateWithIndex<string, A>
 ): (fa: ReadonlyRecord<string, A>) => ReadonlyRecord<string, A> {
   return (fa) => filter_(fa, predicate)
