@@ -2,6 +2,7 @@ import type { Async } from './Async'
 import type { Cause } from './Cause'
 import type { Chunk } from './Chunk'
 import type { Const } from './Const'
+import type { Dictionary } from './Dictionary'
 import type { Either } from './Either'
 import type { Eq } from './Eq'
 import type { Eval } from './Eval'
@@ -11,7 +12,6 @@ import type { Guard } from './Guard'
 import type { HashMap } from './HashMap'
 import type { Identity } from './Identity'
 import type { IO } from './IO'
-import type { Kleisli } from './Kleisli'
 import type { List } from './List/core'
 import type { Managed } from './Managed'
 import type { NonEmptyArray } from './NonEmptyArray'
@@ -168,6 +168,9 @@ export type KleisliInURI = typeof KleisliInURI
 export const KleisliInCategoryURI = 'KleisliInCategory'
 export type KleisliInCategoryURI = typeof KleisliInCategoryURI
 
+export const DictionaryURI = 'Dictionary'
+export type DictionaryURI = typeof DictionaryURI
+
 declare module './HKT' {
   interface URItoKind<FC, TC, K, Q, W, X, I, S, R, E, A> {
     [ShowURI]: Show<A>
@@ -215,6 +218,7 @@ declare module './HKT' {
     [ManagedCategoryURI]: Managed<I, E, A>
     [KleisliInURI]: (_: R) => A
     [KleisliInCategoryURI]: (_: I) => A
+    [DictionaryURI]: Dictionary<A>
   }
   interface URItoIndex<K> {
     [ArrayURI]: number
@@ -226,5 +230,6 @@ declare module './HKT' {
     [AsyncIterableURI]: number
     [ChunkURI]: number
     [ListURI]: number
+    [DictionaryURI]: string
   }
 }

@@ -4,7 +4,7 @@
 
 # principia.ts
 
-`principia.ts` represents an ongoing effort in learning the principles behind category theory and functional programming, as well as creating a correct and structured implementation of those principles. However, it is also aimed at being functional functional library (🙂) with high-performance data types and powerful abstractions.
+`principia.ts` represents an ongoing effort in learning the principles behind category theory and functional programming, as well as creating a correct and structured implementation of those principles. However, it is also aimed at being a functional functional library (🙂) with high-performance data types and powerful abstractions.
 
 There are very few tests written as of yet. Use at your own risk!
 
