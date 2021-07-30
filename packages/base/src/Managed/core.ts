@@ -580,10 +580,7 @@ export const sequenceS = <MR extends ReadonlyRecord<string, Managed<any, any, an
   }
 > =>
   map_(
-    foreach_(
-      R.collect_(mr, (k, v) => [k, v] as const),
-      ([k, v]) => map_(v, (a) => [k, a] as const)
-    ),
+    foreach_(R.toArray(mr), ([k, v]) => map_(v, (a) => [k, a] as const)),
     (kvs) => {
       const r = {}
       for (let i = 0; i < kvs.length; i++) {

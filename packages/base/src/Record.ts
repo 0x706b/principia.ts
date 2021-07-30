@@ -189,7 +189,7 @@ export function toRecord<N extends string, A>(r: ReadonlyRecord<N, A>): Record<N
  * @since 1.0.0
  */
 export function toArray<N extends string, A>(r: ReadonlyRecord<N, A>): ReadonlyArray<readonly [N, A]> {
-  return collect_(r, (k, a) => [k, a])
+  return collect_(r, (a, k) => [k, a])
 }
 
 /**
@@ -581,7 +581,7 @@ export function getMonoid<A>(S: P.Semigroup<A>): P.Monoid<ReadonlyRecord<string,
 export function getShow<A>(S: Show<A>): Show<ReadonlyRecord<string, A>> {
   return {
     show: (a) => {
-      const elements = collect_(a, (k, a) => `${JSON.stringify(k)}: ${S.show(a)}`).join(', ')
+      const elements = collect_(a, (a, k) => `${JSON.stringify(k)}: ${S.show(a)}`).join(', ')
       return elements === '' ? '{}' : `{ ${elements} }`
     }
   }
@@ -660,17 +660,17 @@ export function size(r: ReadonlyRecord<string, unknown>): number {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function collect_<N extends string, A, B>(r: ReadonlyRecord<N, A>, f: (k: N, a: A) => B): ReadonlyArray<B> {
+export function collect_<N extends string, A, B>(r: ReadonlyRecord<N, A>, f: (a: A, k: N) => B): ReadonlyArray<B> {
   const out: Array<B> = []
   const ks            = keys(r)
   for (let i = 0; i < ks.length; i++) {
     const key = ks[i]
-    out.push(f(key, r[key]))
+    out.push(f(r[key], key))
   }
   return out
 }
 
-export function collect<N extends string, A, B>(f: (k: N, a: A) => B): (r: ReadonlyRecord<N, A>) => ReadonlyArray<B> {
+export function collect<N extends string, A, B>(f: (a: A, k: N) => B): (r: ReadonlyRecord<N, A>) => ReadonlyArray<B> {
   return (r) => collect_(r, f)
 }
 

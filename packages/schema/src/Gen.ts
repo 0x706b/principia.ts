@@ -137,7 +137,7 @@ export const Schemable: S.Schemable<GenSURI> = {
     )
     return G.intersect(G.struct(required), G.partial(optional)) as any
   },
-  taggedUnion: (gens) => G.oneOf(...R.collect_(gens, (_, a) => a)),
+  taggedUnion: (gens) => G.oneOf(...R.collect_(gens, (gen) => gen)),
   newtypeIso: (gen, iso) => G.map_(gen, iso.get),
   newtypePrism: (gen, prism) =>
     pipe(

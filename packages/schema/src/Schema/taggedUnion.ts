@@ -90,7 +90,7 @@ export class TaggedUnionS<M extends Record<PropertyKey, S.AnyUS>> extends S.Sche
   readonly guards = R.map_(this.members, to(G.Schemable))
   constructor(readonly members: M) {
     super()
-    this.entries     = R.collect_(members, (k, v) => tuple(k, v))
+    this.entries     = R.toArray(members)
     this.entriesTags = A.map_(this.entries, ([k, s]) =>
       tuple(
         k,

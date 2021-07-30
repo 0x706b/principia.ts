@@ -174,10 +174,7 @@ export function sequenceSPar<MR extends ReadonlyRecord<string, Managed<any, any,
   }
 > {
   return map_(
-    foreachPar_(
-      R.collect_(mr, (k, v) => [k, v] as const),
-      ([k, v]) => map_(v, (a) => [k, a] as const)
-    ),
+    foreachPar_(R.toArray(mr), ([k, v]) => map_(v, (a) => [k, a] as const)),
     (kvs) => {
       const r = {}
       for (let i = 0; i < kvs.length; i++) {
@@ -200,11 +197,7 @@ export function sequenceSParN(n: number) {
     }
   > =>
     map_(
-      foreachParN_(
-        R.collect_(mr, (k, v) => [k, v] as const),
-        n,
-        ([k, v]) => map_(v, (a) => [k, a] as const)
-      ),
+      foreachParN_(R.toArray(mr), n, ([k, v]) => map_(v, (a) => [k, a] as const)),
       (kvs) => {
         const r = {}
         for (let i = 0; i < kvs.length; i++) {
