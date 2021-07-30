@@ -13,12 +13,12 @@ import * as C from '@principia/base/Chunk'
 import * as Ev from '@principia/base/Eval'
 import { memoize } from '@principia/base/function'
 import * as G from '@principia/base/Guard'
+import * as HR from '@principia/base/HeterogeneousRecord'
 import * as NA from '@principia/base/NonEmptyArray'
 import * as O from '@principia/base/Option'
 import { flow, isArray, isIterable, isObject, pipe } from '@principia/base/prelude'
 import * as R from '@principia/base/Record'
 import * as RT from '@principia/base/RoseTree'
-import * as st from '@principia/base/Struct'
 import { show } from '@principia/base/Structural'
 import * as Sy from '@principia/base/Sync'
 import * as Th from '@principia/base/These'
@@ -399,7 +399,7 @@ export function intersectAll<M extends NonEmptyArray<Parser<any, any, Record<str
           ? PE.pruneAllUnexpected(errors[0])
           : PE.pruneDifference(errors)
         : null
-      return error ? (isBoth ? Th.both(error, st.intersect(...ms)) : Th.left(error)) : Th.right(st.intersect(...ms))
+      return error ? (isBoth ? Th.both(error, HR.intersect(...ms)) : Th.left(error)) : Th.right(HR.intersect(...ms))
     }
   }
 }

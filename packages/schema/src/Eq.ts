@@ -7,11 +7,11 @@ import * as A from '@principia/base/Array'
 import * as C from '@principia/base/Chunk'
 import * as E from '@principia/base/Either'
 import * as _ from '@principia/base/Eq'
+import * as HR from '@principia/base/HeterogeneousRecord'
 import * as NA from '@principia/base/NonEmptyArray'
 import * as O from '@principia/base/Option'
 import { flow } from '@principia/base/prelude'
 import * as R from '@principia/base/Record'
-import * as st from '@principia/base/Struct'
 import { DefaultEq } from '@principia/base/Structural/Equatable'
 import * as tup from '@principia/base/tuple'
 
@@ -67,11 +67,11 @@ export function nullable<A>(or: Eq<A>): Eq<Option<A>> {
  */
 
 export function requireKeys<P extends Record<string, any>>(struct: P): Eq<{ [K in keyof P]: unknown }> {
-  return st.getKeysEq(struct)
+  return HR.getKeysEq(struct)
 }
 
 export function struct<P extends Record<string, Eq<any>>>(struct: P): Eq<{ readonly [K in keyof P]: TypeOf<P[K]> }> {
-  return st.getEq(struct)
+  return HR.getEq(struct)
 }
 
 /*
@@ -124,7 +124,7 @@ export function tuple<C extends ReadonlyArray<Eq<any>>>(
  */
 
 export function partial<P extends Record<string, Eq<any>>>(struct: P): Eq<{ readonly [K in keyof P]?: TypeOf<P[K]> }> {
-  return st.getPartialEq(struct)
+  return HR.getPartialEq(struct)
 }
 
 /*

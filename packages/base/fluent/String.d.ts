@@ -11,14 +11,14 @@ declare global {
     append(s: string): string
 
     /**
-     * @rewrite capitalize_ from "@principia/base/string"
+     * @rewrite capitalize from "@principia/base/string"
      */
-    capitalize(s: string): string
+    capitalize(this: string): string
 
     /**
-     * @rewrite capitalizeAll_ from "@principia/base/string"
+     * @rewrite capitalizeAll from "@principia/base/string"
      */
-    capitalizeAll(s: string): string
+    capitalizeAll(this: string): string
 
     /**
      * @rewrite contains_ from "@principia/base/string"
