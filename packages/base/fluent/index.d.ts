@@ -1,6 +1,7 @@
 export {} from './Array'
 export {} from './Cause'
 export {} from './Chunk'
+export {} from './Dictionary'
 export {} from './Either'
 export {} from './Eval'
 export {} from './Exit'
