@@ -1,0 +1,11 @@
+export const WarningCodes = {
+  RESPONSE_STALE: 110,
+  REVALIDATION_FAILED: 111,
+  DISCONNECTED_OPERATION: 112,
+  HEURISTIC_EXPIRATION: 113,
+  MISCELLANEOUS: 199,
+  TRANSFORMATION_APPLIES: 214,
+  MISCELLANEOUS_PERSISTENT: 299
+} as const
+
+export type WarningCode = typeof WarningCodes[keyof typeof WarningCodes]
