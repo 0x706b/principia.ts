@@ -5,9 +5,11 @@ import type * as O from './Option'
 import type { Show } from './Show'
 
 import * as HKT from './HKT'
+import * as E from './internal/Either'
 import { none, some } from './internal/Option'
 import * as T from './internal/These'
 import * as P from './prelude'
+import { tailRec_ } from './prelude'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -370,6 +372,49 @@ export function getShow<E, A>(SE: Show<E>, SA: Show<A>): Show<These<E, A>> {
       (l, r) => `Both(${SE.show(l)}, ${SA.show(r)})`
     )
   }
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * TailRec
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function getTailRec<E>(SE: P.Semigroup<E>): P.TailRec<URI, HKT.Fix<'E', E>> {
+  const chainRec_: P.ChainRecFn_<URI, HKT.Fix<'E', E>> = (a, f) =>
+    tailRec_(
+      f(a),
+      match(
+        (e) => E.right(left(e)),
+        E.match(
+          (a) => E.left(f(a)),
+          (b) => E.right(right(b))
+        ),
+        (e, ab) =>
+          P.pipe(
+            ab,
+            E.match(
+              P.flow(
+                f,
+                match(
+                  (e1) => E.right(left(SE.combine_(e, e1))),
+                  E.match(
+                    (a) => E.left(both(e, E.left(a))),
+                    (b) => E.right(both(e, b))
+                  ),
+                  (e1, ab) => E.left(both(SE.combine_(e, e1), ab))
+                )
+              ),
+              (b) => E.right(both(e, b))
+            )
+          )
+      )
+    )
+
+  return HKT.instance<P.TailRec<URI, HKT.Fix<'E', E>>>({
+    chainRec_,
+    chainRec: (f) => (a) => chainRec_(a, f)
+  })
 }
 
 /*
