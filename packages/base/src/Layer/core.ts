@@ -14,8 +14,9 @@ import { sequential } from '../ExecutionStrategy'
 import * as Ex from '../Exit'
 import { pipe } from '../function'
 import { mergeEnvironments, tag } from '../Has'
+import * as HM from '../HashMap'
 import * as RelMap from '../Managed/ReleaseMap'
-import { insert } from '../Map'
+import * as O from '../Option'
 import * as P from '../Promise'
 import * as Ref from '../Ref'
 import * as RefM from '../RefM'
@@ -127,8 +128,9 @@ function concrete(_: Layer<any, any, any>): asserts _ is LayerInstruction {
 
 export const LayerTag = {
   Fold: 'Fold',
-  FMap: 'FMap',
-  Bind: 'Bind',
+  Flatten: 'Flatten',
+  Map: 'Map',
+  Chain: 'Chain',
   Fresh: 'Fresh',
   FromManaged: 'FromManaged',
   Defer: 'Defer',
@@ -147,8 +149,8 @@ export function main<E, A>(layer: Layer<IOEnv, E, A>) {
 
 export type LayerInstruction =
   | Fold<any, any, any, any, any, any, any, any>
-  | FMap<any, any, any, any>
-  | Bind<any, any, any, any, any, any>
+  | Map<any, any, any, any>
+  | Chain<any, any, any, any, any, any>
   | Fresh<any, any, any>
   | FromManaged<any, any, any>
   | Defer<any, any, any>
@@ -169,16 +171,16 @@ export class Fold<R, E, A, R1, E1, A1, E2, A2> extends Layer<R & R1, E1 | E2, A1
   }
 }
 
-export class FMap<R, E, A, B> extends Layer<R, E, B> {
-  readonly _tag = LayerTag.FMap
+export class Map<R, E, A, B> extends Layer<R, E, B> {
+  readonly _tag = LayerTag.Map
 
   constructor(readonly layer: Layer<R, E, A>, readonly f: (a: A) => B) {
     super()
   }
 }
 
-export class Bind<R, E, A, R1, E1, B> extends Layer<R & R1, E | E1, B> {
-  readonly _tag = LayerTag.Bind
+export class Chain<R, E, A, R1, E1, B> extends Layer<R & R1, E | E1, B> {
+  readonly _tag = LayerTag.Chain
 
   constructor(readonly layer: Layer<R, E, A>, readonly f: (a: A) => Layer<R1, E1, B>) {
     super()
@@ -259,39 +261,35 @@ export class AllSeq<Ls extends Layer<any, any, any>[]> extends Layer<MergeR<Ls>,
 
 export type RIO<R, A> = Layer<R, never, A>
 
-function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: MemoMap) => Managed<R, E, A>> {
-  concrete(layer)
+function scope<R, E, A>(l: Layer<R, E, A>): Managed<unknown, never, (_: MemoMap) => Managed<R, E, A>> {
+  concrete(l)
 
-  switch (layer._tag) {
+  switch (l._tag) {
     case LayerTag.Fresh: {
-      return M.succeed(() => build(layer.layer))
+      return M.succeed(() => build(l.layer))
     }
     case LayerTag.FromManaged: {
-      return M.succeed(() => layer.managed)
+      return M.succeed(() => l.managed)
     }
     case LayerTag.Defer: {
-      return M.succeed((memo) => memo.getOrElseMemoize(layer.factory()))
+      return M.succeed((memo) => memo.getOrElseMemoize(l.factory()))
     }
-    case LayerTag.FMap: {
-      return M.succeed((memo) => M.map_(memo.getOrElseMemoize(layer.layer), layer.f))
+    case LayerTag.Map: {
+      return M.succeed((memo) => M.map_(memo.getOrElseMemoize(l.layer), l.f))
     }
-    case LayerTag.Bind: {
-      return M.succeed((memo) => M.chain_(memo.getOrElseMemoize(layer.layer), (a) => memo.getOrElseMemoize(layer.f(a))))
+    case LayerTag.Chain: {
+      return M.succeed((memo) => M.chain_(memo.getOrElseMemoize(l.layer), (a) => memo.getOrElseMemoize(l.f(a))))
     }
     case LayerTag.CrossWithPar: {
-      return M.succeed((memo) =>
-        M.crossWithPar_(memo.getOrElseMemoize(layer.layer), memo.getOrElseMemoize(layer.that), layer.f)
-      )
+      return M.succeed((memo) => M.crossWithPar_(memo.getOrElseMemoize(l.layer), memo.getOrElseMemoize(l.that), l.f))
     }
     case LayerTag.CrossWithSeq: {
-      return M.succeed((memo) =>
-        M.crossWith_(memo.getOrElseMemoize(layer.layer), memo.getOrElseMemoize(layer.that), layer.f)
-      )
+      return M.succeed((memo) => M.crossWith_(memo.getOrElseMemoize(l.layer), memo.getOrElseMemoize(l.that), l.f))
     }
     case LayerTag.AllPar: {
       return M.succeed((memo) => {
         return pipe(
-          M.foreachPar_(layer.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
+          M.foreachPar_(l.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
           M.map(Ch.foldl({} as any, (b, a) => ({ ...b, ...a })))
         )
       })
@@ -299,7 +297,7 @@ function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Memo
     case LayerTag.AllSeq: {
       return M.succeed((memo) => {
         return pipe(
-          M.foreach_(layer.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
+          M.foreach_(l.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
           M.map(Ch.foldl({} as any, (b, a) => ({ ...b, ...a })))
         )
       })
@@ -307,13 +305,13 @@ function scope<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, (_: Memo
     case LayerTag.Fold: {
       return M.succeed((memo) =>
         M.matchCauseManaged_(
-          memo.getOrElseMemoize(layer.layer),
+          memo.getOrElseMemoize(l.layer),
           (e) =>
             pipe(
               I.toManaged()(I.ask<any>()),
-              M.chain((r) => M.gives_(memo.getOrElseMemoize(layer.onFailure), () => tuple(r, e)))
+              M.chain((r) => M.gives_(memo.getOrElseMemoize(l.onFailure), () => tuple(r, e)))
             ),
-          (r) => M.giveAll_(memo.getOrElseMemoize(layer.onSuccess), r)
+          (r) => M.giveAll_(memo.getOrElseMemoize(l.onSuccess), r)
         )
       )
     }
@@ -698,7 +696,7 @@ export function mapError<E, E1>(f: (e: E) => E1): <R, A>(la: Layer<R, E, A>) => 
  * Returns a new layer whose output is mapped by the specified function.
  */
 export function map_<R, E, A, B>(fa: Layer<R, E, A>, f: (a: A) => B): Layer<R, E, B> {
-  return new FMap(fa, f)
+  return new Map(fa, f)
 }
 
 /**
@@ -718,7 +716,7 @@ export function chain_<R, E, A, R1, E1, B>(
   ma: Layer<R, E, A>,
   f: (a: A) => Layer<R1, E1, B>
 ): Layer<R & R1, E | E1, B> {
-  return new Bind(ma, f)
+  return new Chain(ma, f)
 }
 
 export function chain<A, R1, E1, B>(
@@ -1015,7 +1013,7 @@ export function update<T>(
  */
 
 export class MemoMap {
-  constructor(readonly ref: RefM.URefM<ReadonlyMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>>) {}
+  constructor(readonly ref: RefM.URefM<HM.HashMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>>) {}
 
   /**
    * Checks the memo map to see if a dependency exists. If it is, immediately
@@ -1028,10 +1026,10 @@ export class MemoMap {
       pipe(
         this.ref,
         RefM.modifyIO((m) => {
-          const inMap = m.get(layer.hash.get)
+          const inMap = HM.get_(m, layer.hash.get)
 
-          if (inMap) {
-            const [acquire, release] = inMap
+          if (O.isSome(inMap)) {
+            const [acquire, release] = inMap.value
 
             const cached = I.asksIO(([_, rm]: readonly [R, ReleaseMap]) =>
               pipe(
@@ -1115,7 +1113,7 @@ export class MemoMap {
 
               return tuple(
                 resource as I.IO<readonly [R, ReleaseMap], E, readonly [Finalizer, A]>,
-                insert(layer.hash.get, memoized)(m) as ReadonlyMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>
+                HM.set_(m, layer.hash.get, memoized) as HM.HashMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>
               )
             })
           }
@@ -1131,7 +1129,7 @@ export type HasMemoMap = H.HasTag<typeof HasMemoMap>
 
 export function makeMemoMap() {
   return pipe(
-    RefM.make<ReadonlyMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>>(new Map()),
+    RefM.make<HM.HashMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>>(HM.makeDefault()),
     I.chain((r) => I.succeedLazy(() => new MemoMap(r)))
   )
 }
