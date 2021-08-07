@@ -6,6 +6,7 @@ import type { Endomorphism } from '../prelude'
 import type { ReadonlyRecord } from '../Record'
 
 import * as Ev from '../Eval/core'
+import { Applicative as ApplicativeEval } from '../Eval/instances'
 import * as G from '../Guard'
 import * as _ from '../internal/Array'
 import * as Th from '../internal/These'
@@ -729,7 +730,7 @@ function comprehensionLoop<A, R>(
     return P.pipe(
       input[0],
       map((x) => comprehensionLoop(append_(scope, x), input.slice(1), f)),
-      sequence(Ev.Applicative),
+      sequence(ApplicativeEval),
       Ev.map(flatten)
     )
   }

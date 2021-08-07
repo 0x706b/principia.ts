@@ -18,8 +18,10 @@ import { flow, identity, pipe } from './function'
 import { genF, GenHKT } from './Gen'
 import * as HKT from './HKT'
 import * as _ from './internal/Either'
+import { mapTryCatch_ } from './IO'
 import * as O from './Option'
 import * as P from './prelude'
+import { tailRec, tailRec_ } from './TailRec'
 import * as T from './These'
 import { tuple } from './tuple'
 
@@ -903,6 +905,29 @@ export function getShow<E, A>(showE: P.Show<E>, showA: P.Show<A>): P.Show<Either
       (a) => `right(${showA.show(a)})`
     )
   }
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * TailRec
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function chainRec_<E, A, B>(a: A, f: (a: A) => Either<E, Either<A, B>>): Either<E, B> {
+  return tailRec_(
+    a,
+    flow(
+      f,
+      match(
+        (e) => right(left(e)),
+        match(left, (b) => right(right(b)))
+      )
+    )
+  )
+}
+
+export function chainRec<E, A, B>(f: (a: A) => Either<E, Either<A, B>>): (a: A) => Either<E, B> {
+  return (a) => chainRec_(a, f)
 }
 
 /*

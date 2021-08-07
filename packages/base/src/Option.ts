@@ -16,6 +16,7 @@ import * as E from './internal/Either'
 import * as O from './internal/Option'
 import * as T from './internal/These'
 import * as P from './prelude'
+import { tailRec_ } from './TailRec'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -744,6 +745,29 @@ export function getShow<A>(S: P.Show<A>): P.Show<Option<A>> {
       (a) => `Some(${S.show(a)})`
     )
   }
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * TailRec
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function chainRec_<A, B>(a: A, f: (a: A) => Option<Either<A, B>>): Option<B> {
+  return tailRec_(
+    a,
+    flow(
+      f,
+      match(
+        () => E.right(O.none()),
+        E.match(E.left, (b) => E.right(O.some(b)))
+      )
+    )
+  )
+}
+
+export function chainRec<A, B>(f: (a: A) => Option<Either<A, B>>): (a: A) => Option<B> {
+  return (a) => chainRec_(a, f)
 }
 
 /*

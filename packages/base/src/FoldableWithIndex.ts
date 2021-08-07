@@ -1,7 +1,13 @@
 import type { Eval } from './Eval'
+import type { Option } from './internal/Option'
+import type { Monad } from './Monad'
 import type { Monoid } from './Monoid'
+import type { TailRec } from './TailRec'
 
+import * as Ev from './Eval/core'
 import * as HKT from './HKT'
+import * as E from './internal/Either'
+import * as O from './internal/Option'
 
 export interface FoldableWithIndex<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
   readonly ifoldl_: FoldLeftWithIndexFn_<F, C>
@@ -185,4 +191,131 @@ export interface FoldMapWithIndexFnComposition_<F extends HKT.URIS, G extends HK
     fga: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, A>>,
     f: (a: A, k: [HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>, HKT.IndexFor<G, HKT.OrFix<'K', CG, KG>>]) => M
   ) => M
+}
+
+export interface FoldLeftMWithIndexFn_<F extends HKT.URIS, CF = HKT.Auto> {
+  <M extends HKT.URIS, CM = HKT.Auto>(M: Monad<M, CM>): <
+    KF,
+    QF,
+    WF,
+    XF,
+    IF,
+    SF,
+    RF,
+    EF,
+    AF,
+    B,
+    KM,
+    QM,
+    WM,
+    XM,
+    IM,
+    SM,
+    RM,
+    EM
+  >(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>,
+    b: B,
+    f: (b: B, a: AF, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, B>
+  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, B>
+}
+
+export interface FoldLeftMWithIndexFn<F extends HKT.URIS, CF = HKT.Auto> {
+  <M extends HKT.URIS, CM = HKT.Auto>(M: Monad<M, CM>): <KF, AF, B, KM, QM, WM, XM, IM, SM, RM, EM>(
+    b: B,
+    f: (b: B, a: AF, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, B>
+  ) => <QF, WF, XF, IF, SF, RF, EF>(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>
+  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, B>
+}
+
+export function getFoldlMWithIndex_<F extends HKT.URIS, CF = HKT.Auto>(
+  F: FoldableWithIndex<F, CF>
+): FoldLeftMWithIndexFn_<F, CF> {
+  return (M) => (fa, b, f) => F.ifoldl_(fa, M.pure(b), (mb, a, i) => M.chain_(mb, (b) => f(b, a, i)))
+}
+
+export function getFoldlMWithIndex<F extends HKT.URIS, CF = HKT.Auto>(
+  F: FoldableWithIndex<F, CF>
+): FoldLeftMWithIndexFn<F, CF> {
+  return (M) => (b, f) => (fa) => getFoldlMWithIndex_(F)(M)(fa, b, f)
+}
+
+export interface FoldRightMWithIndexFn_<F extends HKT.URIS, CF = HKT.Auto> {
+  <M extends HKT.URIS, CM = HKT.Auto>(M: Monad<M, CM> & TailRec<M, CM>): <
+    KF,
+    QF,
+    WF,
+    XF,
+    IF,
+    SF,
+    RF,
+    EF,
+    AF,
+    B,
+    KM,
+    QM,
+    WM,
+    XM,
+    IM,
+    SM,
+    RM,
+    EM
+  >(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>,
+    b: B,
+    f: (a: AF, b: B, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, B>
+  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, B>
+}
+
+export interface FoldRightMWithIndexFn<F extends HKT.URIS, CF = HKT.Auto> {
+  <M extends HKT.URIS, CM = HKT.Auto>(M: Monad<M, CM> & TailRec<M, CM>): <KF, AF, B, KM, QM, WM, XM, IM, SM, RM, EM>(
+    b: B,
+    f: (a: AF, b: B, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, B>
+  ) => <QF, WF, XF, IF, SF, RF, EF>(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>
+  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, B>
+}
+
+export function getFoldrMWithIndex_<F extends HKT.URIS, CF = HKT.Auto>(
+  F: FoldableWithIndex<F, CF>
+): FoldRightMWithIndexFn_<F, CF> {
+  return <M extends HKT.URIS, CM = HKT.Auto>(M: Monad<M, CM> & TailRec<M, CM>) =>
+    <KF, QF, WF, XF, IF, SF, RF, EF, AF, B, KM, QM, WM, XM, IM, SM, RM, EM>(
+      fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>,
+      b: B,
+      f: (a: AF, b: B, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, B>
+    ) => {
+      const source = fromFoldable(F)(fa)
+      return M.chainRec_([b, source] as const, ([z, src]) =>
+        O.match_(
+          src,
+          () => M.pure(E.right(z)),
+          ([a, i, src]) => M.map_(f(a, z, i), (b) => E.left([b, src.value]))
+        )
+      )
+    }
+}
+
+export function getFoldrMWithIndex<F extends HKT.URIS, CF = HKT.Auto>(
+  F: FoldableWithIndex<F, CF>
+): FoldRightMWithIndexFn<F, CF> {
+  return (M) => (b, f) => (fa) => getFoldrMWithIndex_(F)(M)(fa, b, f)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * internal
+ * -------------------------------------------------------------------------------------------------
+ */
+
+type Source<F extends HKT.URIS, C, K, A> = Option<
+  readonly [A, HKT.IndexFor<F, HKT.OrFix<'K', C, K>>, Eval<Source<F, C, K, A>>]
+>
+
+function fromFoldable<F extends HKT.URIS, C>(F: FoldableWithIndex<F, C>) {
+  return <K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>): Source<F, C, K, A> =>
+    F.ifoldr_(fa, Ev.now<Source<F, C, K, A>>(O.none()), (a, evalSrc, i) =>
+      Ev.later(() => O.some([a, i, evalSrc] as const))
+    ).value
 }

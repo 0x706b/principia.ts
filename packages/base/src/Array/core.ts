@@ -8,6 +8,7 @@ import type { These } from '../These'
 import type * as Z from '../util/Zipped'
 
 import * as Ev from '../Eval/core'
+import { Applicative as ApplicativeEval } from '../Eval/instances'
 import { identity, pipe, unsafeCoerce } from '../function'
 import { GenLazyHKT, genWithHistoryF } from '../Gen'
 import * as G from '../Guard'
@@ -1049,7 +1050,7 @@ function comprehensionLoop<A, R>(
     return pipe(
       input[0],
       map((x) => comprehensionLoop(append_(scope, x), input.slice(1), f, g)),
-      sequence(Ev.Applicative),
+      sequence(ApplicativeEval),
       Ev.map(flatten)
     )
   }

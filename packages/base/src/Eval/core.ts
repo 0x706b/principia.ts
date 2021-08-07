@@ -4,16 +4,13 @@
  * -------------------------------------------------------------------------------------------------
  */
 
-import type * as HKT from '../HKT'
-import type { EvalURI } from '../Modules'
 import type { Stack } from '../util/support/Stack'
 
+import { identity } from '../function'
+import { tuple } from '../internal/tuple'
 import * as O from '../Option'
-import * as P from '../prelude'
 import { AtomicReference } from '../util/support/AtomicReference'
 import { makeStack } from '../util/support/Stack'
-
-type URI = [HKT.URI<EvalURI>]
 
 export const EvalTypeId = Symbol()
 export type EvalTypeId = typeof EvalTypeId
@@ -226,7 +223,7 @@ export function crossWith<A, B, C>(mb: Eval<B>, f: (a: A, b: B) => C): (ma: Eval
 }
 
 export function cross_<A, B>(ma: Eval<A>, mb: Eval<B>): Eval<readonly [A, B]> {
-  return crossWith_(ma, mb, P.tuple)
+  return crossWith_(ma, mb, tuple)
 }
 
 export function cross<B>(mb: Eval<B>): <A>(ma: Eval<A>) => Eval<readonly [A, B]> {
@@ -270,7 +267,7 @@ export function chain<A, B>(f: (a: A) => Eval<B>): (ma: Eval<A>) => Eval<B> {
 }
 
 export function flatten<A>(mma: Eval<Eval<A>>): Eval<A> {
-  return chain_(mma, P.identity)
+  return chain_(mma, identity)
 }
 
 /*
@@ -375,85 +372,4 @@ export function evaluate<A>(e: Eval<A>): A {
     }
   }
   return result
-}
-
-/*
- * -------------------------------------------------------------------------------------------------
- * Instances
- * -------------------------------------------------------------------------------------------------
- */
-
-export const Functor = P.Functor<URI>({ map_ })
-
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({ map_, crossWith_, cross_ })
-
-export const crossFlat_ = P.crossFlatF_<URI>({ map_, cross_, crossWith_ })
-export const crossFlat  = P.crossFlatF<URI>({ map_, cross_, crossWith_ })
-
-export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
-export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
-export const mapN_     = P.mapNF_(SemimonoidalFunctor)
-export const mapN      = P.mapNF(SemimonoidalFunctor)
-
-export const Apply = P.Apply<URI>({
-  map_,
-  crossWith_,
-  cross_,
-  ap_
-})
-
-export const apS = P.apSF(Apply)
-export const apT = P.apTF(Apply)
-
-export const MonoidalFunctor = P.MonoidalFunctor<URI>({
-  map_,
-  crossWith_,
-  cross_,
-  unit
-})
-
-export const Applicative = P.Applicative<URI>({
-  map_,
-  crossWith_,
-  cross_,
-  unit,
-  pure
-})
-
-export const Monad = P.Monad<URI>({
-  map_,
-  crossWith_,
-  cross_,
-  unit,
-  pure,
-  chain_
-})
-
-export class GenEval<A> {
-  readonly _A!: () => A
-  constructor(readonly ma: Eval<A>) {}
-  *[Symbol.iterator](): Generator<GenEval<A>, A, any> {
-    return yield this
-  }
-}
-
-function _run<T extends GenEval<any>, A>(
-  state: IteratorYieldResult<T> | IteratorReturnResult<A>,
-  iterator: Generator<T, A, any>
-): Eval<A> {
-  if (state.done) {
-    return now(state.value)
-  }
-  return chain_(state.value.ma, (val) => {
-    const next = iterator.next(val)
-    return _run(next, iterator)
-  })
-}
-
-export function gen<T extends GenEval<any>, A>(f: (i: <A>(_: Eval<A>) => GenEval<A>) => Generator<T, A, any>): Eval<A> {
-  return defer(() => {
-    const iterator = f((_) => new GenEval(_))
-    const state    = iterator.next()
-    return _run(state, iterator)
-  })
 }
