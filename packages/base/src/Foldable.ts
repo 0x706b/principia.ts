@@ -252,6 +252,58 @@ export function getFoldrM<F extends HKT.URIS, CF = HKT.Auto>(F: Foldable<F, CF>)
   return (M) => (b, f) => (fa) => getFoldrM_(F)(M)(fa, b, f)
 }
 
+export interface FoldMapMFn_<F extends HKT.URIS, CF = HKT.Auto> {
+  <B, M extends HKT.URIS, CM = HKT.Auto>(M: Monad<M, CM> & TailRec<M, CM>, B: Monoid<B>): <
+    KF,
+    QF,
+    WF,
+    XF,
+    IF,
+    SF,
+    RF,
+    EF,
+    AF,
+    KM,
+    QM,
+    WM,
+    XM,
+    IM,
+    SM,
+    RM,
+    EM
+  >(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>,
+    f: (a: AF) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, B>
+  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, B>
+}
+
+export function getFoldMapM_<F extends HKT.URIS, CF = HKT.Auto>(F: Foldable<F, CF>): FoldMapMFn_<F, CF> {
+  const foldrM_ = getFoldrM_(F)
+  return (M, B) => (fa, f) => foldrM_(M)(fa, B.nat, (a, b) => M.map_(f(a), (b1) => B.combine_(b, b1)))
+}
+
+export interface FoldMapMFn<F extends HKT.URIS, CF = HKT.Auto> {
+  <B, M extends HKT.URIS, CM = HKT.Auto>(M: Monad<M, CM> & TailRec<M, CM>, B: Monoid<B>): <
+    AF,
+    KM,
+    QM,
+    WM,
+    XM,
+    IM,
+    SM,
+    RM,
+    EM
+  >(
+    f: (a: AF) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, B>
+  ) => <KF, QF, WF, XF, IF, SF, RF, EF>(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>
+  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, B>
+}
+
+export function getFoldMapM<F extends HKT.URIS, CF = HKT.Auto>(F: Foldable<F, CF>): FoldMapMFn<F, CF> {
+  return (M, B) => (f) => (fa) => getFoldMapM_(F)(M, B)(fa, f)
+}
+
 /*
  * -------------------------------------------------------------------------------------------------
  * internal
