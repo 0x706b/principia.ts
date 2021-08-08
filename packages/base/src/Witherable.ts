@@ -4,8 +4,12 @@ import type { Either } from './internal/Either'
 import type { Option } from './internal/Option'
 import type { TraversableMin } from './Traversable'
 
+import G from 'glob'
+
 import { Filterable } from './Filterable'
+import { F } from './function'
 import * as HKT from './HKT'
+import * as O from './internal/Option'
 import { Traversable } from './Traversable'
 
 export interface Witherable<F extends HKT.URIS, C = HKT.Auto> extends Filterable<F, C>, Traversable<F, C> {
@@ -207,4 +211,45 @@ export function implementPartitionMapA<F extends HKT.URIS, C = HKT.Auto>(): (
 ) => PartitionMapAFn<F, C>
 export function implementPartitionMapA() {
   return (i: any) => i()
+}
+
+export interface FilterAFn_<F extends HKT.URIS, CF = HKT.Auto> {
+  <G extends HKT.URIS, CG = HKT.Auto>(G: Applicative<G, CG>): <
+    KF,
+    QF,
+    WF,
+    XF,
+    IF,
+    SF,
+    RF,
+    EF,
+    AF,
+    KG,
+    QG,
+    WG,
+    XG,
+    IG,
+    SG,
+    RG,
+    EG
+  >(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>,
+    p: (a: AF) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, boolean>
+  ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>>
+}
+
+export function getFilterA_<F extends HKT.URIS, CF = HKT.Auto>(F: WitherableMin<F, CF>): FilterAFn_<F, CF> {
+  return (G) => (fa, p) => F.filterMapA_(G)(fa, (a) => G.map_(p(a), (bb) => (bb ? O.some(a) : O.none())))
+}
+
+export interface FilterAFn<F extends HKT.URIS, CF = HKT.Auto> {
+  <G extends HKT.URIS, CG = HKT.Auto>(G: Applicative<G, CG>): <AF, KG, QG, WG, XG, IG, SG, RG, EG>(
+    p: (a: AF) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, boolean>
+  ) => <KF, QF, WF, XF, IF, SF, RF, EF>(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>
+  ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>>
+}
+
+export function getFilterA<F extends HKT.URIS, CF = HKT.Auto>(F: WitherableMin<F, CF>): FilterAFn<F, CF> {
+  return (G) => (p) => (fa) => getFilterA_(F)(G)(fa, p)
 }

@@ -6,8 +6,6 @@ import type { Predicate } from './Predicate'
 import type { Refinement } from './prelude'
 import type { TailRec } from './TailRec'
 
-import { Key } from 'readline'
-
 import * as Ev from './Eval/core'
 import * as HKT from './HKT'
 import * as E from './internal/Either'

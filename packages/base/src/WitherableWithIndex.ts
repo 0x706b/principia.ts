@@ -6,6 +6,7 @@ import type { TraversableWithIndexMin } from './TraversableWithIndex'
 
 import { FilterableWithIndex } from './FilterableWithIndex'
 import * as HKT from './HKT'
+import * as O from './internal/Option'
 import { TraversableWithIndex } from './TraversableWithIndex'
 
 export interface WitherableWithIndex<F extends HKT.URIS, C = HKT.Auto>
@@ -245,4 +246,49 @@ export function implementPartitionMapWithIndexA_<F extends HKT.URIS, C = HKT.Aut
 ) => PartitionMapWithIndexAFn_<F, C>
 export function implementPartitionMapWithIndexA_() {
   return (i: any) => i()
+}
+
+export interface FilterWithIndexAFn_<F extends HKT.URIS, CF = HKT.Auto> {
+  <G extends HKT.URIS, CG = HKT.Auto>(G: Applicative<G, CG>): <
+    KF,
+    QF,
+    WF,
+    XF,
+    IF,
+    SF,
+    RF,
+    EF,
+    AF,
+    KG,
+    QG,
+    WG,
+    XG,
+    IG,
+    SG,
+    RG,
+    EG
+  >(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>,
+    p: (a: AF, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, boolean>
+  ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>>
+}
+
+export function getFilterA_<F extends HKT.URIS, CF = HKT.Auto>(
+  F: WitherableWithIndexMin<F, CF>
+): FilterWithIndexAFn_<F, CF> {
+  return (G) => (fa, p) => F.ifilterMapA_(G)(fa, (a, i) => G.map_(p(a, i), (bb) => (bb ? O.some(a) : O.none())))
+}
+
+export interface FilterWithIndexAFn<F extends HKT.URIS, CF = HKT.Auto> {
+  <G extends HKT.URIS, CG = HKT.Auto>(G: Applicative<G, CG>): <KF, AF, KG, QG, WG, XG, IG, SG, RG, EG>(
+    p: (a: AF, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, boolean>
+  ) => <QF, WF, XF, IF, SF, RF, EF>(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>
+  ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>>
+}
+
+export function getFilterA<F extends HKT.URIS, CF = HKT.Auto>(
+  F: WitherableWithIndexMin<F, CF>
+): FilterWithIndexAFn<F, CF> {
+  return (G) => (p) => (fa) => getFilterA_(F)(G)(fa, p)
 }
