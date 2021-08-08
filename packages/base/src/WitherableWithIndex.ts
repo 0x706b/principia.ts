@@ -273,7 +273,7 @@ export interface FilterWithIndexAFn_<F extends HKT.URIS, CF = HKT.Auto> {
   ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>>
 }
 
-export function getFilterA_<F extends HKT.URIS, CF = HKT.Auto>(
+export function getFilterWithIndexA_<F extends HKT.URIS, CF = HKT.Auto>(
   F: WitherableWithIndexMin<F, CF>
 ): FilterWithIndexAFn_<F, CF> {
   return (G) => (fa, p) => F.ifilterMapA_(G)(fa, (a, i) => G.map_(p(a, i), (bb) => (bb ? O.some(a) : O.none())))
@@ -287,8 +287,8 @@ export interface FilterWithIndexAFn<F extends HKT.URIS, CF = HKT.Auto> {
   ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>>
 }
 
-export function getFilterA<F extends HKT.URIS, CF = HKT.Auto>(
+export function getFilterWithIndexA<F extends HKT.URIS, CF = HKT.Auto>(
   F: WitherableWithIndexMin<F, CF>
 ): FilterWithIndexAFn<F, CF> {
-  return (G) => (p) => (fa) => getFilterA_(F)(G)(fa, p)
+  return (G) => (p) => (fa) => getFilterWithIndexA_(F)(G)(fa, p)
 }

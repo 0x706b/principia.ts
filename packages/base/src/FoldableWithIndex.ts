@@ -235,7 +235,7 @@ export function getFindWithIndex_<F extends HKT.URIS, C = HKT.Auto>(
   ): Option<A> => F.ifoldr_(fa, Ev.now(O.none<A>()), (a, b, i) => (predicate(a, i) ? Ev.now(O.some(a)) : b)).value
 }
 
-export interface FindFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface FindWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
   <K, A, B extends A>(refinement: RefinementWithIndex<HKT.IndexFor<F, HKT.OrFix<'K', C, K>>, A, B>): <
     Q,
     W,
@@ -252,7 +252,9 @@ export interface FindFn<F extends HKT.URIS, C = HKT.Auto> {
   ) => Option<A>
 }
 
-export function getFindWithIndex<F extends HKT.URIS, C = HKT.Auto>(F: FoldableWithIndexMin<F, C>): FindFn<F, C> {
+export function getFindWithIndex<F extends HKT.URIS, C = HKT.Auto>(
+  F: FoldableWithIndexMin<F, C>
+): FindWithIndexFn<F, C> {
   return <K, A>(predicate: PredicateWithIndex<HKT.IndexFor<F, HKT.OrFix<'K', C, K>>, A>) =>
     <Q, W, X, I, S, R, E>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>) =>
       getFindWithIndex_(F)(fa, predicate)
@@ -490,13 +492,15 @@ export function getExistsWithIndex_<F extends HKT.URIS, C = HKT.Auto>(
   return (fa, predicate) => F.ifoldr_(fa, Ev.now(false), (a, b, i) => (predicate(a, i) ? Ev.now(true) : b)).value
 }
 
-export interface ExistsFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface ExistsWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
   <K, A>(predicate: PredicateWithIndex<HKT.IndexFor<F, HKT.OrFix<'K', C, K>>, A>): <Q, W, X, I, S, R, E>(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
   ) => boolean
 }
 
-export function getExists<F extends HKT.URIS, C = HKT.Auto>(F: FoldableWithIndexMin<F, C>): ExistsFn<F, C> {
+export function getExistsWithIndex<F extends HKT.URIS, C = HKT.Auto>(
+  F: FoldableWithIndexMin<F, C>
+): ExistsWithIndexFn<F, C> {
   return (predicate) => (fa) => getExistsWithIndex_(F)(fa, predicate)
 }
 
