@@ -3,7 +3,7 @@ import type { Option } from './internal/Option'
 import type { Monad } from './Monad'
 import type { Monoid } from './Monoid'
 import type { PredicateWithIndex } from './Predicate'
-import type { RefinementWithIndex } from './prelude'
+import type { Foldable, FoldableComposition, RefinementWithIndex } from './prelude'
 import type { TailRec } from './TailRec'
 
 import * as Ev from './Eval/core'
@@ -11,7 +11,7 @@ import * as HKT from './HKT'
 import * as E from './internal/Either'
 import * as O from './internal/Option'
 
-export interface FoldableWithIndex<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
+export interface FoldableWithIndex<F extends HKT.URIS, C = HKT.Auto> extends Foldable<F, C> {
   readonly ifoldl_: FoldLeftWithIndexFn_<F, C>
   readonly ifoldl: FoldLeftWithIndexFn<F, C>
   readonly ifoldMap_: FoldMapWithIndexFn_<F, C>
@@ -29,18 +29,27 @@ export type FoldableWithIndexMin<F extends HKT.URIS, C = HKT.Auto> = {
 export function FoldableWithIndex<F extends HKT.URIS, C = HKT.Auto>(
   F: FoldableWithIndexMin<F, C>
 ): FoldableWithIndex<F, C> {
+  const ifoldl: FoldLeftWithIndexFn<F, C>  = (b, f) => (fa) => F.ifoldl_(fa, b, f)
+  const ifoldr: FoldRightWithIndexFn<F, C> = (b, f) => (fa) => F.ifoldr_(fa, b, f)
+  const ifoldMap: FoldMapWithIndexFn<F, C> = (M) => (f) => (fa) => F.ifoldMap_(M)(fa, f)
   return HKT.instance<FoldableWithIndex<F, C>>({
     ifoldl_: F.ifoldl_,
-    ifoldl: (b, f) => (fa) => F.ifoldl_(fa, b, f),
+    ifoldl,
+    foldl_: F.ifoldl_,
+    foldl: ifoldl,
     ifoldr_: F.ifoldr_,
-    ifoldr: (b, f) => (fa) => F.ifoldr_(fa, b, f),
+    ifoldr,
+    foldr_: F.ifoldr_,
+    foldr: ifoldr,
     ifoldMap_: F.ifoldMap_,
-    ifoldMap: (M) => (f) => (fa) => F.ifoldMap_(M)(fa, f)
+    ifoldMap,
+    foldMap_: F.ifoldMap_,
+    foldMap: ifoldMap
   })
 }
 
 export interface FoldableWithIndexComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
-  extends HKT.CompositionBase2<F, G, CF, CG> {
+  extends FoldableComposition<F, G, CF, CG> {
   readonly ifoldl_: FoldLeftWithIndexFnComposition_<F, G, CF, CG>
   readonly ifoldl: FoldLeftWithIndexFnComposition<F, G, CF, CG>
   readonly ifoldMap_: FoldMapWithIndexFnComposition_<F, G, CF, CG>
@@ -74,13 +83,24 @@ export function getFoldableWithIndexComposition<F, G>(
     b: Eval<B>,
     f: (a: A, b: Eval<B>, k: [KF, KG]) => Eval<B>
   ) => F.ifoldr_(fga, b, (ga: HKT.HKT<G, A>, b, fi: KF) => G.ifoldr_(ga, b, (a: A, b, gi: KG) => f(a, b, [fi, gi])))
+
+  const ifoldl: FoldLeftWithIndexFnComposition<HKT.UHKT<F>, HKT.UHKT<G>>  = (b, f) => (fga) => ifoldl_(fga, b, f)
+  const ifoldr: FoldRightWithIndexFnComposition<HKT.UHKT<F>, HKT.UHKT<G>> = (b, f) => (fga) => ifoldr_(fga, b, f)
+  const ifoldMap: FoldMapWithIndexFnComposition<HKT.UHKT<F>, HKT.UHKT<G>> = (M) => (f) => (fga) => ifoldMap_(M)(fga, f)
+
   return HKT.instance<FoldableWithIndexComposition<HKT.UHKT<F>, HKT.UHKT<G>>>({
     ifoldl_,
     ifoldMap_,
     ifoldr_,
-    ifoldl: (b, f) => (fga) => ifoldl_(fga, b, f),
-    ifoldMap: (M) => (f) => (fga) => ifoldMap_(M)(fga, f),
-    ifoldr: (b, f) => (fga) => ifoldr_(fga, b, f)
+    ifoldl,
+    ifoldMap,
+    ifoldr,
+    foldl_: ifoldl_,
+    foldr_: ifoldr_,
+    foldMap_: ifoldMap_,
+    foldl: ifoldl,
+    foldr: ifoldr,
+    foldMap: ifoldMap
   })
 }
 
@@ -626,7 +646,9 @@ export interface EveryWithIndexMFn<F extends HKT.URIS, CF = HKT.Auto> {
   ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
 }
 
-export function getEveryM<F extends HKT.URIS, CF = HKT.Auto>(F: FoldableWithIndexMin<F, CF>): EveryWithIndexMFn<F, CF> {
+export function getEveryWithIndexM<F extends HKT.URIS, CF = HKT.Auto>(
+  F: FoldableWithIndexMin<F, CF>
+): EveryWithIndexMFn<F, CF> {
   return (M) => (p) => (fa) => getEveryWithIndexM_(F)(M)(fa, p)
 }
 

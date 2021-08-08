@@ -6,10 +6,13 @@ import type { Predicate } from './Predicate'
 import type { Refinement } from './prelude'
 import type { TailRec } from './TailRec'
 
+import { Key } from 'readline'
+
 import * as Ev from './Eval/core'
 import * as HKT from './HKT'
 import * as E from './internal/Either'
 import * as O from './internal/Option'
+import * as It from './Iterable/core'
 
 export interface Foldable<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
   readonly foldl_: FoldLeftFn_<F, C>
@@ -523,6 +526,15 @@ export interface EveryMFn<F extends HKT.URIS, CF = HKT.Auto> {
 
 export function getEveryM<F extends HKT.URIS, CF = HKT.Auto>(F: FoldableMin<F, CF>): EveryMFn<F, CF> {
   return (M) => (p) => (fa) => getEveryM_(F)(M)(fa, p)
+}
+
+export interface ToIterableFn<F extends HKT.URIS, C = HKT.Auto> {
+  <K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>): Iterable<A>
+}
+
+export function getToIterable<F extends HKT.URIS, C = HKT.Auto>(F: FoldableMin<F, C>): ToIterableFn<F, C> {
+  return <K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>) =>
+    F.foldr_(fa, Ev.now(It.never as Iterable<A>), (a, b) => Ev.map_(b, It.append(a))).value
 }
 
 /*

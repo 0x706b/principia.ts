@@ -7,8 +7,6 @@ import * as Ev from '../Eval/core'
 import * as O from '../Option'
 import * as P from '../prelude'
 
-type URI = [HKT.URI<IterableURI>]
-
 /*
  * -------------------------------------------------------------------------------------------------
  * Constructors
@@ -514,90 +512,3 @@ export function every<A>(predicate: P.PredicateWithIndex<number, A>): (as: Itera
 export function every<A>(predicate: P.PredicateWithIndex<number, A>): (as: Iterable<A>) => boolean {
   return (as) => every_(as, predicate)
 }
-
-/*
- * -------------------------------------------------------------------------------------------------
- * Instances
- * -------------------------------------------------------------------------------------------------
- */
-
-export const Functor = P.Functor<URI>({
-  map_
-})
-
-export const FunctorWithIndex = P.FunctorWithIndex<URI>({
-  imap_: map_
-})
-
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
-  map_,
-  crossWith_,
-  cross_
-})
-
-export const crossFlat_ = P.crossFlatF_<URI>({ map_, cross_, crossWith_ })
-export const crossFlat  = P.crossFlatF<URI>({ map_, cross_, crossWith_ })
-
-export const Apply = P.Apply<URI>({
-  map_,
-  crossWith_,
-  cross_,
-  ap_
-})
-
-export const MonoidalFunctor = P.MonoidalFunctor<URI>({
-  map_,
-  crossWith_,
-  cross_,
-  unit
-})
-
-export const Applicative = P.Applicative<URI>({
-  map_,
-  crossWith_,
-  cross_,
-  ap_,
-  unit,
-  pure
-})
-
-export const Monad = P.Monad<URI>({
-  map_,
-  crossWith_,
-  cross_,
-  ap_,
-  unit,
-  pure,
-  chain_,
-  flatten
-})
-
-export const Filterable = P.Filterable<URI>({
-  map_,
-  filter_,
-  filterMap_,
-  partition_,
-  partitionMap_
-})
-
-export const FilterableWithIndex = P.FilterableWithIndex<URI>({
-  imap_: map_,
-  ifilter_: filter_,
-  ifilterMap_: filterMap_,
-  ipartition_: partition_,
-  ipartitionMap_: partitionMap_
-})
-
-export const Foldable = P.Foldable<URI>({
-  foldl_,
-  foldr_,
-  foldMap_
-})
-
-export const FoldableWithIndex = P.FoldableWithIndex<URI>({
-  ifoldl_: foldl_,
-  ifoldr_: foldr_,
-  ifoldMap_: foldMap_
-})
-
-export { IterableURI } from '../Modules'
