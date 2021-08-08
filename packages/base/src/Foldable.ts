@@ -446,6 +446,85 @@ export function getExistsM<F extends HKT.URIS, CF = HKT.Auto>(F: FoldableMin<F, 
   return (M) => (p) => (fa) => getExistsM_(F)(M)(fa, p)
 }
 
+export interface EveryFn_<F extends HKT.URIS, C = HKT.Auto> {
+  <K, Q, W, X, I, S, R, E, A, B extends A>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
+    refinement: Refinement<A, B>
+  ): fa is HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
+  <K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>, predicate: Predicate<A>): boolean
+}
+
+export function getEvery_<F extends HKT.URIS, C = HKT.Auto>(F: FoldableMin<F, C>): EveryFn_<F, C> {
+  return <K, Q, W, X, I, S, R, E, A>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
+    predicate: Predicate<A>
+  ): fa is HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A> =>
+    F.foldr_(fa, Ev.now(true), (a, b) => (predicate(a) ? b : Ev.now(false))).value
+}
+
+export interface EveryFn<F extends HKT.URIS, C = HKT.Auto> {
+  <A, B extends A>(refinement: Refinement<A, B>): <K, Q, W, X, I, S, R, E>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+  ) => fa is HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
+  <A>(predicate: Predicate<A>): <K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>) => boolean
+}
+
+export function getEvery<F extends HKT.URIS, C = HKT.Auto>(F: FoldableMin<F, C>): EveryFn<F, C> {
+  return <A>(predicate: Predicate<A>) =>
+    <K, Q, W, X, I, S, R, E>(
+      fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+    ): fa is HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A> =>
+      getEvery_(F)(fa, predicate)
+}
+
+export interface EveryMFn_<F extends HKT.URIS, CF = HKT.Auto> {
+  <M extends HKT.URIS, CM = HKT.Auto>(M: Monad<M, CM> & TailRec<M, CM>): <
+    KF,
+    QF,
+    WF,
+    XF,
+    IF,
+    SF,
+    RF,
+    EF,
+    AF,
+    KM,
+    QM,
+    WM,
+    XM,
+    IM,
+    SM,
+    RM,
+    EM
+  >(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>,
+    p: (a: AF) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
+  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
+}
+
+export function getEveryM_<F extends HKT.URIS, CF = HKT.Auto>(F: FoldableMin<F, CF>): EveryMFn_<F, CF> {
+  return (M) => (fa, p) =>
+    M.chainRec_(
+      fromFoldable(F)(fa),
+      O.match(
+        () => M.pure(E.right(true)),
+        ([a, src]) => M.map_(p(a), (bb) => (!bb ? E.right(false) : E.left(src.value)))
+      )
+    )
+}
+
+export interface EveryMFn<F extends HKT.URIS, CF = HKT.Auto> {
+  <M extends HKT.URIS, CM = HKT.Auto>(M: Monad<M, CM> & TailRec<M, CM>): <AF, KM, QM, WM, XM, IM, SM, RM, EM>(
+    p: (a: AF) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
+  ) => <KF, QF, WF, XF, IF, SF, RF, EF>(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>
+  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
+}
+
+export function getEveryM<F extends HKT.URIS, CF = HKT.Auto>(F: FoldableMin<F, CF>): EveryMFn<F, CF> {
+  return (M) => (p) => (fa) => getEveryM_(F)(M)(fa, p)
+}
+
 /*
  * -------------------------------------------------------------------------------------------------
  * internal

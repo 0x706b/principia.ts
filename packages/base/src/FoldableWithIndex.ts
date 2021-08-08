@@ -2,9 +2,8 @@ import type { Eval } from './Eval'
 import type { Option } from './internal/Option'
 import type { Monad } from './Monad'
 import type { Monoid } from './Monoid'
-import type { Predicate, PredicateWithIndex } from './Predicate'
+import type { PredicateWithIndex } from './Predicate'
 import type { RefinementWithIndex } from './prelude'
-import type { Refinement } from './Refinement'
 import type { TailRec } from './TailRec'
 
 import * as Ev from './Eval/core'
@@ -531,6 +530,104 @@ export function getExistsWithIndexM<F extends HKT.URIS, CF = HKT.Auto>(
   F: FoldableWithIndexMin<F, CF>
 ): ExistsWithIndexMFn<F, CF> {
   return (M) => (p) => (fa) => getExistsWithIndexM_(F)(M)(fa, p)
+}
+
+export interface EveryWithIndexFn_<F extends HKT.URIS, C = HKT.Auto> {
+  <K, Q, W, X, I, S, R, E, A, B extends A>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
+    refinement: RefinementWithIndex<HKT.IndexFor<F, HKT.OrFix<'K', C, K>>, A, B>
+  ): fa is HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
+  <K, Q, W, X, I, S, R, E, A>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
+    predicate: PredicateWithIndex<HKT.IndexFor<F, HKT.OrFix<'K', C, K>>, A>
+  ): boolean
+}
+
+export function getEveryWithIndex_<F extends HKT.URIS, C = HKT.Auto>(
+  F: FoldableWithIndexMin<F, C>
+): EveryWithIndexFn_<F, C> {
+  return <K, Q, W, X, I, S, R, E, A>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
+    predicate: PredicateWithIndex<HKT.IndexFor<F, HKT.OrFix<'K', C, K>>, A>
+  ): fa is HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A> =>
+    F.ifoldr_(fa, Ev.now(true), (a, b, i) => (predicate(a, i) ? b : Ev.now(false))).value
+}
+
+export interface EveryWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
+  <K, A, B extends A>(refinement: RefinementWithIndex<HKT.IndexFor<F, HKT.OrFix<'K', C, K>>, A, B>): <
+    Q,
+    W,
+    X,
+    I,
+    S,
+    R,
+    E
+  >(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+  ) => fa is HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
+  <K, A>(predicate: PredicateWithIndex<HKT.IndexFor<F, HKT.OrFix<'K', C, K>>, A>): <Q, W, X, I, S, R, E>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+  ) => boolean
+}
+
+export function getEveryWithIndex<F extends HKT.URIS, C = HKT.Auto>(
+  F: FoldableWithIndexMin<F, C>
+): EveryWithIndexFn<F, C> {
+  return <K, A>(predicate: PredicateWithIndex<HKT.IndexFor<F, HKT.OrFix<'K', C, K>>, A>) =>
+    <Q, W, X, I, S, R, E>(
+      fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+    ): fa is HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A> =>
+      getEveryWithIndex_(F)(fa, predicate)
+}
+
+export interface EveryWithIndexMFn_<F extends HKT.URIS, CF = HKT.Auto> {
+  <M extends HKT.URIS, CM = HKT.Auto>(M: Monad<M, CM> & TailRec<M, CM>): <
+    KF,
+    QF,
+    WF,
+    XF,
+    IF,
+    SF,
+    RF,
+    EF,
+    AF,
+    KM,
+    QM,
+    WM,
+    XM,
+    IM,
+    SM,
+    RM,
+    EM
+  >(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>,
+    p: (a: AF, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
+  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
+}
+
+export function getEveryWithIndexM_<F extends HKT.URIS, CF = HKT.Auto>(
+  F: FoldableWithIndexMin<F, CF>
+): EveryWithIndexMFn_<F, CF> {
+  return (M) => (fa, p) =>
+    M.chainRec_(
+      fromFoldableWithIndex(F)(fa),
+      O.match(
+        () => M.pure(E.right(true)),
+        ([a, i, src]) => M.map_(p(a, i), (bb) => (!bb ? E.right(false) : E.left(src.value)))
+      )
+    )
+}
+
+export interface EveryWithIndexMFn<F extends HKT.URIS, CF = HKT.Auto> {
+  <M extends HKT.URIS, CM = HKT.Auto>(M: Monad<M, CM> & TailRec<M, CM>): <KF, AF, KM, QM, WM, XM, IM, SM, RM, EM>(
+    p: (a: AF, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
+  ) => <QF, WF, XF, IF, SF, RF, EF>(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>
+  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
+}
+
+export function getEveryM<F extends HKT.URIS, CF = HKT.Auto>(F: FoldableWithIndexMin<F, CF>): EveryWithIndexMFn<F, CF> {
+  return (M) => (p) => (fa) => getEveryWithIndexM_(F)(M)(fa, p)
 }
 
 /*
