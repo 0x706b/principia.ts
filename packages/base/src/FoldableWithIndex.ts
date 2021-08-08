@@ -260,33 +260,35 @@ export interface FindWithIndexMFn_<F extends HKT.URIS, CF = HKT.Auto> {
     EM
   >(
     fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>,
-    f: (a: AF, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
+    p: (a: AF, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
   ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, Option<AF>>
 }
 
 export function getFindWithIndexM_<F extends HKT.URIS, CF = HKT.Auto>(
   F: FoldableWithIndexMin<F, CF>
 ): FindWithIndexMFn_<F, CF> {
-  return (M) => (fa, f) =>
+  return (M) => (fa, p) =>
     M.chainRec_(
       fromFoldableWithIndex(F)(fa),
       O.match(
         () => M.pure(E.right(O.none())),
-        ([a, i, src]) => M.map_(f(a, i), (b) => (b ? E.right(O.some(a)) : E.left(src.value)))
+        ([a, i, src]) => M.map_(p(a, i), (b) => (b ? E.right(O.some(a)) : E.left(src.value)))
       )
     )
 }
 
 export interface FindWithIndexMFn<F extends HKT.URIS, CF = HKT.Auto> {
   <M extends HKT.URIS, CM = HKT.Auto>(M: Monad<M, CM> & TailRec<M, CM>): <KF, AF, KM, QM, WM, XM, IM, SM, RM, EM>(
-    f: (a: AF, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
+    p: (a: AF, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
   ) => <QF, WF, XF, IF, SF, RF, EF>(
     fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>
   ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, Option<AF>>
 }
 
-export function getFindWithIndexM<F extends HKT.URIS, CF = HKT.Auto>(F: FoldableWithIndexMin<F, CF>): FindWithIndexMFn<F, CF> {
-  return (M) => (f) => (fa) => getFindWithIndexM_(F)(M)(fa, f)
+export function getFindWithIndexM<F extends HKT.URIS, CF = HKT.Auto>(
+  F: FoldableWithIndexMin<F, CF>
+): FindWithIndexMFn<F, CF> {
+  return (M) => (p) => (fa) => getFindWithIndexM_(F)(M)(fa, p)
 }
 
 export interface FoldLeftWithIndexMFn_<F extends HKT.URIS, CF = HKT.Auto> {
@@ -454,6 +456,81 @@ export function getFoldMapWithIndexM<F extends HKT.URIS, CF = HKT.Auto>(
   F: FoldableWithIndexMin<F, CF>
 ): FoldMapWithIndexMFn<F, CF> {
   return (M, B) => (f) => (fa) => getFoldMapWithIndexM_(F)(M, B)(fa, f)
+}
+
+export interface ExistsWithIndexFn_<F extends HKT.URIS, C = HKT.Auto> {
+  <K, Q, W, X, I, S, R, E, A>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
+    predicate: PredicateWithIndex<HKT.IndexFor<F, HKT.OrFix<'K', C, K>>, A>
+  ): boolean
+}
+
+export function getExistsWithIndex_<F extends HKT.URIS, C = HKT.Auto>(
+  F: FoldableWithIndexMin<F, C>
+): ExistsWithIndexFn_<F, C> {
+  return (fa, predicate) => F.ifoldr_(fa, Ev.now(false), (a, b, i) => (predicate(a, i) ? Ev.now(true) : b)).value
+}
+
+export interface ExistsFn<F extends HKT.URIS, C = HKT.Auto> {
+  <K, A>(predicate: PredicateWithIndex<HKT.IndexFor<F, HKT.OrFix<'K', C, K>>, A>): <Q, W, X, I, S, R, E>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+  ) => boolean
+}
+
+export function getExists<F extends HKT.URIS, C = HKT.Auto>(F: FoldableWithIndexMin<F, C>): ExistsFn<F, C> {
+  return (predicate) => (fa) => getExistsWithIndex_(F)(fa, predicate)
+}
+
+export interface ExistsWithIndexMFn_<F extends HKT.URIS, CF = HKT.Auto> {
+  <M extends HKT.URIS, CM = HKT.Auto>(M: Monad<M, CM> & TailRec<M, CM>): <
+    KF,
+    QF,
+    WF,
+    XF,
+    IF,
+    SF,
+    RF,
+    EF,
+    AF,
+    KM,
+    QM,
+    WM,
+    XM,
+    IM,
+    SM,
+    RM,
+    EM
+  >(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>,
+    p: (a: AF, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
+  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
+}
+
+export function getExistsWithIndexM_<F extends HKT.URIS, CF = HKT.Auto>(
+  F: FoldableWithIndexMin<F, CF>
+): ExistsWithIndexMFn_<F, CF> {
+  return (M) => (fa, p) =>
+    M.chainRec_(
+      fromFoldableWithIndex(F)(fa),
+      O.match(
+        () => M.pure(E.right(false)),
+        ([a, i, src]) => M.map_(p(a, i), (bb) => (bb ? E.right(true) : E.left(src.value)))
+      )
+    )
+}
+
+export interface ExistsWithIndexMFn<F extends HKT.URIS, CF = HKT.Auto> {
+  <M extends HKT.URIS, CM = HKT.Auto>(M: Monad<M, CM> & TailRec<M, CM>): <KF, AF, KM, QM, WM, XM, IM, SM, RM, EM>(
+    p: (a: AF, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
+  ) => <QF, WF, XF, IF, SF, RF, EF>(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>
+  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
+}
+
+export function getExistsWithIndexM<F extends HKT.URIS, CF = HKT.Auto>(
+  F: FoldableWithIndexMin<F, CF>
+): ExistsWithIndexMFn<F, CF> {
+  return (M) => (p) => (fa) => getExistsWithIndexM_(F)(M)(fa, p)
 }
 
 /*

@@ -201,31 +201,31 @@ export interface FindFnM_<F extends HKT.URIS, CF = HKT.Auto> {
     EM
   >(
     fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>,
-    f: (a: AF) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
+    p: (a: AF) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
   ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, Option<AF>>
 }
 
 export function getFindM_<F extends HKT.URIS, CF = HKT.Auto>(F: FoldableMin<F, CF>): FindFnM_<F, CF> {
-  return (M) => (fa, f) =>
+  return (M) => (fa, p) =>
     M.chainRec_(
       fromFoldable(F)(fa),
       O.match(
         () => M.pure(E.right(O.none())),
-        ([a, src]) => M.map_(f(a), (b) => (b ? E.right(O.some(a)) : E.left(src.value)))
+        ([a, src]) => M.map_(p(a), (b) => (b ? E.right(O.some(a)) : E.left(src.value)))
       )
     )
 }
 
 export interface FindMFn<F extends HKT.URIS, CF = HKT.Auto> {
   <M extends HKT.URIS, CM = HKT.Auto>(M: Monad<M, CM> & TailRec<M, CM>): <AF, KM, QM, WM, XM, IM, SM, RM, EM>(
-    f: (a: AF) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
+    p: (a: AF) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
   ) => <KF, QF, WF, XF, IF, SF, RF, EF>(
     fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>
   ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, Option<AF>>
 }
 
 export function getFindM<F extends HKT.URIS, CF = HKT.Auto>(F: FoldableMin<F, CF>): FindMFn<F, CF> {
-  return (M) => (f) => (fa) => getFindM_(F)(M)(fa, f)
+  return (M) => (p) => (fa) => getFindM_(F)(M)(fa, p)
 }
 
 export interface FoldLeftMFn_<F extends HKT.URIS, CF = HKT.Auto> {
@@ -380,6 +380,70 @@ export interface FoldMapMFn<F extends HKT.URIS, CF = HKT.Auto> {
 
 export function getFoldMapM<F extends HKT.URIS, CF = HKT.Auto>(F: FoldableMin<F, CF>): FoldMapMFn<F, CF> {
   return (M, B) => (f) => (fa) => getFoldMapM_(F)(M, B)(fa, f)
+}
+
+export interface ExistsFn_<F extends HKT.URIS, C = HKT.Auto> {
+  <K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>, predicate: Predicate<A>): boolean
+}
+
+export function getExists_<F extends HKT.URIS, C = HKT.Auto>(F: FoldableMin<F, C>): ExistsFn_<F, C> {
+  return (fa, predicate) => F.foldr_(fa, Ev.now(false), (a, b) => (predicate(a) ? Ev.now(true) : b)).value
+}
+
+export interface ExistsFn<F extends HKT.URIS, C = HKT.Auto> {
+  <A>(predicate: Predicate<A>): <K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>) => boolean
+}
+
+export function getExists<F extends HKT.URIS, C = HKT.Auto>(F: FoldableMin<F, C>): ExistsFn<F, C> {
+  return (predicate) => (fa) => getExists_(F)(fa, predicate)
+}
+
+export interface ExistsMFn_<F extends HKT.URIS, CF = HKT.Auto> {
+  <M extends HKT.URIS, CM = HKT.Auto>(M: Monad<M, CM> & TailRec<M, CM>): <
+    KF,
+    QF,
+    WF,
+    XF,
+    IF,
+    SF,
+    RF,
+    EF,
+    AF,
+    KM,
+    QM,
+    WM,
+    XM,
+    IM,
+    SM,
+    RM,
+    EM
+  >(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>,
+    p: (a: AF) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
+  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
+}
+
+export function getExistsM_<F extends HKT.URIS, CF = HKT.Auto>(F: FoldableMin<F, CF>): ExistsMFn_<F, CF> {
+  return (M) => (fa, p) =>
+    M.chainRec_(
+      fromFoldable(F)(fa),
+      O.match(
+        () => M.pure(E.right(false)),
+        ([a, src]) => M.map_(p(a), (bb) => (bb ? E.right(true) : E.left(src.value)))
+      )
+    )
+}
+
+export interface ExistsMFn<F extends HKT.URIS, CF = HKT.Auto> {
+  <M extends HKT.URIS, CM = HKT.Auto>(M: Monad<M, CM> & TailRec<M, CM>): <AF, KM, QM, WM, XM, IM, SM, RM, EM>(
+    p: (a: AF) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
+  ) => <KF, QF, WF, XF, IF, SF, RF, EF>(
+    fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>
+  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
+}
+
+export function getExistsM<F extends HKT.URIS, CF = HKT.Auto>(F: FoldableMin<F, CF>): ExistsMFn<F, CF> {
+  return (M) => (p) => (fa) => getExistsM_(F)(M)(fa, p)
 }
 
 /*
