@@ -4,10 +4,7 @@ import type { Either } from './internal/Either'
 import type { Option } from './internal/Option'
 import type { TraversableMin } from './Traversable'
 
-import G from 'glob'
-
 import { Filterable } from './Filterable'
-import { F } from './function'
 import * as HKT from './HKT'
 import * as O from './internal/Option'
 import { Traversable } from './Traversable'

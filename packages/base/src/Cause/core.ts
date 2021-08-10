@@ -18,7 +18,7 @@ import { flow, hole, identity, pipe } from '../function'
 import * as HS from '../HashSet'
 import * as L from '../List/core'
 import * as O from '../Option'
-import { isObject } from '../prelude'
+import { isObject, tailRec_ } from '../prelude'
 import * as St from '../Structural'
 import { tuple } from '../tuple'
 import { makeStack } from '../util/support/Stack'
@@ -841,6 +841,20 @@ export function chain<E, D>(f: (e: E) => Cause<D>): (ma: Cause<E>) => Cause<D> {
  */
 export function flatten<E>(mma: Cause<Cause<E>>): Cause<E> {
   return chain_(mma, identity)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Monad
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function chainRec_<A, B>(a: A, f: (a: A) => Cause<E.Either<A, B>>): Cause<B> {
+  return tailRec_(a, flow(f, map(E.swap), flipCauseEither, E.swap))
+}
+
+export function chainRec<A, B>(f: (a: A) => Cause<E.Either<A, B>>): (a: A) => Cause<B> {
+  return (a) => chainRec_(a, f)
 }
 
 /*

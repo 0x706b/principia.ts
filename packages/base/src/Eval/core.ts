@@ -7,6 +7,7 @@
 import type { Stack } from '../util/support/Stack'
 
 import { identity } from '../function'
+import * as E from '../internal/Either'
 import { tuple } from '../internal/tuple'
 import * as O from '../Option'
 import { AtomicReference } from '../util/support/AtomicReference'

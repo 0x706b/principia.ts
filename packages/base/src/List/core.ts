@@ -810,6 +810,60 @@ export function chain<A, B>(f: (a: A) => List<B>): (ma: List<A>) => List<B> {
 
 /*
  * -------------------------------------------------------------------------------------------------
+ * TailRec
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function chainRecDepthFirst_<A, B>(a: A, f: (a: A) => List<Either<A, B>>): List<B> {
+  let buffer = f(a)
+  let out    = emptyPushable<B>()
+
+  while (buffer.length > 0) {
+    const e = unsafeHead(buffer)!
+    buffer  = tail(buffer)
+    if (e._tag === 'Left') {
+      buffer = concat_(f(e.left), buffer)
+    } else {
+      out = push(e.right, out)
+    }
+  }
+
+  return out
+}
+
+export function chainRecDepthFirst<A, B>(f: (a: A) => List<Either<A, B>>): (a: A) => List<B> {
+  return (a) => chainRecDepthFirst_(a, f)
+}
+
+export function chainRecBreadthFirst_<A, B>(a: A, f: (a: A) => List<Either<A, B>>): List<B> {
+  const initial = f(a)
+  let buffer    = emptyPushable<Either<A, B>>()
+  let out       = emptyPushable<B>()
+
+  function go(e: Either<A, B>): void {
+    if (e._tag === 'Left') {
+      forEach_(f(e.left), (ab) => push(ab, buffer))
+    } else {
+      push(e.right, out)
+    }
+  }
+
+  forEach_(initial, go)
+  while (buffer.length > 0) {
+    const ab = unsafeHead(buffer)!
+    buffer   = tail(buffer) as MutableList<Either<A, B>>
+    go(ab)
+  }
+
+  return out
+}
+
+export function chainRecBreadthFirst<A, B>(f: (a: A) => List<Either<A, B>>): (a: A) => List<B> {
+  return (a) => chainRecBreadthFirst_(a, f)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
  * Traversable
  * -------------------------------------------------------------------------------------------------
  */

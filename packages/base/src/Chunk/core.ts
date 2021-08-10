@@ -1594,6 +1594,63 @@ export function getOrd<A>(O: P.Ord<A>): P.Ord<Chunk<A>> {
 
 /*
  * -------------------------------------------------------------------------------------------------
+ * TailRec
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function chainRecDepthFirst_<A, B>(a: A, f: (a: A) => Chunk<Either<A, B>>): Chunk<B> {
+  let buffer = f(a)
+  let out    = empty<B>()
+
+  while (buffer.length > 0) {
+    const e = unsafeHead(buffer)
+    buffer  = unsafeTail(buffer)
+    if (e._tag === 'Left') {
+      buffer = concat_(f(e.left), buffer)
+    } else {
+      out = append_(out, e.right)
+    }
+  }
+
+  return out
+}
+
+export function chainRecDepthFirst<A, B>(f: (a: A) => Chunk<Either<A, B>>): (a: A) => Chunk<B> {
+  return (a) => chainRecDepthFirst_(a, f)
+}
+
+export function chainRecBreadthFirst_<A, B>(a: A, f: (a: A) => Chunk<Either<A, B>>): Chunk<B> {
+  const initial = f(a)
+  let buffer    = empty<Either<A, B>>()
+  let out       = empty<B>()
+
+  function go(e: Either<A, B>): void {
+    if (e._tag === 'Left') {
+      foreach_(f(e.left), (ab) => ((buffer = append_(buffer, ab)), undefined))
+    } else {
+      out = append_(out, e.right)
+    }
+  }
+
+  for (const e of initial) {
+    go(e)
+  }
+
+  while (buffer.length > 0) {
+    const ab = unsafeHead(buffer)
+    buffer   = unsafeTail(buffer)
+    go(ab)
+  }
+
+  return out
+}
+
+export function chainRecBreadthFirst<A, B>(f: (a: A) => Chunk<Either<A, B>>): (a: A) => Chunk<B> {
+  return (a) => chainRecBreadthFirst_(a, f)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
  * Traversable
  * -------------------------------------------------------------------------------------------------
  */

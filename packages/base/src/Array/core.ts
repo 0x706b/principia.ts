@@ -812,6 +812,60 @@ export function getShow<A>(S: P.Show<A>): P.Show<ReadonlyArray<A>> {
 
 /*
  * -------------------------------------------------------------------------------------------------
+ * TailRec
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function chainRecDepthFirst_<A, B>(a: A, f: (a: A) => ReadonlyArray<E.Either<A, B>>): ReadonlyArray<B> {
+  const buffer   = f(a).slice()
+  const out: B[] = []
+
+  while (buffer.length > 0) {
+    const e = buffer.shift()!
+    if (e._tag === 'Left') {
+      buffer.unshift(...f(e.left))
+    } else {
+      out.push(e.right)
+    }
+  }
+
+  return out
+}
+
+export function chainRecDepthFirst<A, B>(f: (a: A) => ReadonlyArray<E.Either<A, B>>): (a: A) => ReadonlyArray<B> {
+  return (a) => chainRecDepthFirst_(a, f)
+}
+
+export function chainRecBreadthFirst_<A, B>(a: A, f: (a: A) => ReadonlyArray<E.Either<A, B>>): ReadonlyArray<B> {
+  const initial = f(a)
+  const buffer: Array<E.Either<A, B>> = []
+  const out: Array<B>                 = []
+
+  function go(e: E.Either<A, B>): void {
+    if (e._tag === 'Left') {
+      f(e.left).forEach((v) => buffer.push(v))
+    } else {
+      out.push(e.right)
+    }
+  }
+
+  for (const e of initial) {
+    go(e)
+  }
+
+  while (buffer.length > 0) {
+    go(buffer.shift()!)
+  }
+
+  return out
+}
+
+export function chainRecBreadthFirst<A, B>(f: (a: A) => ReadonlyArray<E.Either<A, B>>): (a: A) => ReadonlyArray<B> {
+  return (a) => chainRecBreadthFirst_(a, f)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
  * Traversable
  * -------------------------------------------------------------------------------------------------
  */

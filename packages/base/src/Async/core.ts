@@ -1186,6 +1186,11 @@ export const Monad = P.Monad<URI, V>({
   flatten
 })
 
+export const chainRec_: <A, R, E, B>(a: A, f: (a: A) => Async<R, E, E.Either<A, B>>) => Async<R, E, B> =
+  P.getChainRec_<URI, V>({ map_, crossWith_, cross_, ap_, unit, pure, chain_, flatten })
+export const chainRec: <A, R, E, B>(f: (a: A) => Async<R, E, E.Either<A, B>>) => (a: A) => Async<R, E, B> =
+  P.getChainRec<URI, V>({ map_, crossWith_, cross_, ap_, unit, pure, chain_, flatten })
+
 export const Do: P.Do<URI, V> = P.Do(Monad)
 
 export const pureS_ = P.pureSF_(Monad)

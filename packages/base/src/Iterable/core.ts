@@ -4,6 +4,7 @@ import type { IterableURI } from '../Modules'
 import type { Option } from '../Option'
 
 import * as Ev from '../Eval/core'
+import * as E from '../internal/Either'
 import * as O from '../Option'
 import * as P from '../prelude'
 
@@ -16,6 +17,10 @@ import * as P from '../prelude'
 export const never: Iterable<never> = {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   *[Symbol.iterator]() {}
+}
+
+export function empty<A>(): Iterable<A> {
+  return never
 }
 
 export function iterable<A>(iterator: () => Iterator<A>): Iterable<A> {
@@ -366,6 +371,64 @@ export function flatten<A>(mma: Iterable<Iterable<A>>): Iterable<A> {
 
 /*
  * -------------------------------------------------------------------------------------------------
+ * TailRec
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function chainRecDepthFirst_<A, B>(a: A, f: (a: A) => Iterable<Either<A, B>>): Iterable<B> {
+  return iterable(function* () {
+    for (const ab of f(a)) {
+      if (ab._tag === 'Left') {
+        yield* chainRecDepthFirst_(ab.left, f)
+      } else {
+        yield ab.right
+      }
+    }
+  })
+}
+
+export function chainRecDepthFirst<A, B>(f: (a: A) => Iterable<Either<A, B>>): (a: A) => Iterable<B> {
+  return (a) => chainRecDepthFirst_(a, f)
+}
+
+export function chainRecBreadthFirst_<A, B>(a: A, f: (a: A) => Iterable<Either<A, B>>): Iterable<B> {
+  return iterable(function* () {
+    const initial = f(a)
+    let buffer: Array<Iterable<Either<A, B>>> = []
+
+    function go(e: Either<A, B>): O.Option<B> {
+      if (e._tag === 'Left') {
+        buffer.push(f(e.left))
+        return O.none()
+      } else {
+        return O.some(e.right)
+      }
+    }
+
+    for (const e of initial) {
+      const ob = go(e)
+      if (O.isSome(ob)) {
+        yield ob.value
+      }
+    }
+
+    while (buffer.length) {
+      for (const e of buffer.shift()!) {
+        const ob = go(e)
+        if (O.isSome(ob)) {
+          yield ob.value
+        }
+      }
+    }
+  })
+}
+
+export function chainRecBreadthFirst<A, B>(f: (a: A) => Iterable<Either<A, B>>): (a: A) => Iterable<B> {
+  return (a) => chainRecBreadthFirst_(a, f)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
  * Traversable
  * -------------------------------------------------------------------------------------------------
  */
@@ -421,6 +484,10 @@ export function prepend_<A>(ia: Iterable<A>, element: A): Iterable<A> {
     yield element
     yield* ia
   })
+}
+
+export function prepend<A>(element: A): (ia: Iterable<A>) => Iterable<A> {
+  return (ia) => prepend_(ia, element)
 }
 
 export function findFirst_<A, B extends A>(ia: Iterable<A>, refinement: P.Refinement<A, B>): Option<B>

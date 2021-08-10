@@ -1,9 +1,10 @@
+import type * as E from '../Either'
 import type * as HKT from '../HKT'
 import type { EvalURI } from '../Modules'
 import type { Eval } from './core'
 
 import * as P from '../prelude'
-import { ap_, chain_, cross_, crossWith_, defer, map_, now,pure, unit } from './core'
+import { ap_, chain_, cross_, crossWith_, defer, map_, now, pure, unit } from './core'
 
 type URI = [HKT.URI<EvalURI>]
 
@@ -51,6 +52,24 @@ export const Applicative = P.Applicative<URI>({
 })
 
 export const Monad = P.Monad<URI>({
+  map_,
+  crossWith_,
+  cross_,
+  unit,
+  pure,
+  chain_
+})
+
+export const chainRec_: <A, B>(a: A, f: (a: A) => Eval<E.Either<A, B>>) => Eval<B> = P.getChainRec_<URI>({
+  map_,
+  crossWith_,
+  cross_,
+  unit,
+  pure,
+  chain_
+})
+
+export const chainRec: <A, B>(f: (a: A) => Eval<E.Either<A, B>>) => (a: A) => Eval<B> = P.getChainRec<URI>({
   map_,
   crossWith_,
   cross_,

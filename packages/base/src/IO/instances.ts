@@ -2,12 +2,29 @@
 
 import type * as HKT from '../HKT'
 import type { IOCategoryURI, IOURI } from '../Modules'
-import type { V } from './core'
+import type { IO, V } from './core'
 
+import * as E from '../Either'
 import { mapNF, sequenceSF } from '../prelude'
 import * as P from '../prelude'
 import { apPar_, crossPar_, crossWithPar_ } from './combinators'
-import { andThen_, ap_, bimap_, catchAll_, chain_, compose_,cross_, crossWith_, fail, flatten, id, map_, mapError_, pure, unit } from './core'
+import {
+  andThen_,
+  ap_,
+  bimap_,
+  catchAll_,
+  chain_,
+  compose_,
+  cross_,
+  crossWith_,
+  fail,
+  flatten,
+  id,
+  map_,
+  mapError_,
+  pure,
+  unit
+} from './core'
 
 export type URI = [HKT.URI<IOURI>]
 
@@ -114,6 +131,34 @@ export const Monad = P.Monad<URI, V>({
   flatten
 })
 
+export const chainRec_: <A, R, E, B>(a: A, f: (a: A) => IO<R, E, E.Either<A, B>>) => IO<R, E, B> = P.getChainRec_<
+  URI,
+  V
+>({
+  map_,
+  crossWith_,
+  cross_,
+  ap_,
+  unit,
+  pure,
+  chain_,
+  flatten
+})
+
+export const chainRec: <A, R, E, B>(f: (a: A) => IO<R, E, E.Either<A, B>>) => (a: A) => IO<R, E, B> = P.getChainRec<
+  URI,
+  V
+>({
+  map_,
+  crossWith_,
+  cross_,
+  ap_,
+  unit,
+  pure,
+  chain_,
+  flatten
+})
+
 export const MonadExcept = P.MonadExcept<URI, V>({
   map_,
   cross_,
@@ -132,3 +177,4 @@ export const Category = P.Category<CURI, CV>({
   andThen_,
   compose_
 })
+

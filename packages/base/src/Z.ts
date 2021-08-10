@@ -1711,6 +1711,22 @@ export const ApplicativeExcept = P.ApplicativeExcept<URI, V>({
 
 export const Monad = P.Monad<URI, V>({ map_, crossWith_, cross_, ap_, unit, pure, chain_, flatten })
 
+export const chainRec_: <A, W, S, R, E, B>(a: A, f: (a: A) => Z<W, S, S, R, E, E.Either<A, B>>) => Z<W, S, S, R, E, B> =
+  P.getChainRec_<URI, V>({ map_, crossWith_, cross_, ap_, unit, pure, chain_, flatten })
+
+export const chainRec: <A, W, S, R, E, B>(
+  f: (a: A) => Z<W, S, S, R, E, E.Either<A, B>>
+) => (a: A) => Z<W, S, S, R, E, B> = P.getChainRec<URI, V>({
+  map_,
+  crossWith_,
+  cross_,
+  ap_,
+  unit,
+  pure,
+  chain_,
+  flatten
+})
+
 export const MonadExcept = P.MonadExcept<URI, V>({
   map_,
   crossWith_,

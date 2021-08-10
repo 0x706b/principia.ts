@@ -8,7 +8,7 @@ import * as C from '../Cause'
 import * as E from '../Either'
 import { identity, pipe } from '../function'
 import * as O from '../Option'
-import { isObject } from '../prelude'
+import { flow, isObject, tailRec_ } from '../prelude'
 import * as St from '../Structural'
 import { tuple } from '../tuple'
 
@@ -369,6 +369,29 @@ export function tap_<E, A, G, B>(ma: Exit<E, A>, f: (a: A) => Exit<G, B>): Exit<
 
 export function tap<A, G, B>(f: (a: A) => Exit<G, B>): <E>(ma: Exit<E, A>) => Exit<G | E, A> {
   return (ma) => tap_(ma, f)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Unit
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function chainRec_<E, A, B>(a: A, f: (a: A) => Exit<E, E.Either<A, B>>): Exit<E, B> {
+  return tailRec_(
+    a,
+    flow(
+      f,
+      match(
+        (ce) => E.right(failCause(ce)),
+        E.match(E.left, (b) => E.right(succeed(b)))
+      )
+    )
+  )
+}
+
+export function chainRec<E, A, B>(f: (a: A) => Exit<E, E.Either<A, B>>): (a: A) => Exit<E, B> {
+  return (a) => chainRec_(a, f)
 }
 
 /*
