@@ -5,6 +5,7 @@ import type { Option } from '../Option'
 
 import * as Ev from '../Eval/core'
 import * as E from '../internal/Either'
+import * as It from '../internal/Iterable'
 import * as O from '../Option'
 import * as P from '../prelude'
 
@@ -14,22 +15,11 @@ import * as P from '../prelude'
  * -------------------------------------------------------------------------------------------------
  */
 
-export const never: Iterable<never> = {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  *[Symbol.iterator]() {}
-}
+export const never: Iterable<never> = It.never
 
-export function empty<A>(): Iterable<A> {
-  return never
-}
+export const empty: <A>() => Iterable<A> = It.empty
 
-export function iterable<A>(iterator: () => Iterator<A>): Iterable<A> {
-  return {
-    [Symbol.iterator]() {
-      return iterator()
-    }
-  }
-}
+export const iterable = It.iterable
 
 export function singleton<A>(a: A): Iterable<A> {
   return iterable(function* () {
@@ -468,16 +458,9 @@ export function concat<A>(ib: Iterable<A>): (ia: Iterable<A>) => Iterable<A> {
   return (ia) => concat_(ia, ib)
 }
 
-export function append_<A>(ia: Iterable<A>, element: A): Iterable<A> {
-  return iterable(function* () {
-    yield* ia
-    yield element
-  })
-}
+export const append_: <A>(ia: Iterable<A>, element: A) => Iterable<A> = It.append_
 
-export function append<A>(element: A): (ia: Iterable<A>) => Iterable<A> {
-  return (ia) => append_(ia, element)
-}
+export const append: <A>(element: A) => (ia: Iterable<A>) => Iterable<A> = It.append
 
 export function prepend_<A>(ia: Iterable<A>, element: A): Iterable<A> {
   return iterable(function* () {

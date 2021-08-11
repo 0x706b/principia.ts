@@ -9,8 +9,8 @@ import type { TailRec } from './TailRec'
 import * as Ev from './Eval/core'
 import * as HKT from './HKT'
 import * as E from './internal/Either'
+import * as It from './internal/Iterable'
 import * as O from './internal/Option'
-import * as It from './Iterable/core'
 
 export interface Foldable<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
   readonly foldl_: FoldLeftFn_<F, C>

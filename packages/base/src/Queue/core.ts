@@ -976,7 +976,7 @@ class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A>
     }
   })
 
-  take: I.IO<unknown, never, A> = I.descriptorWith((d) =>
+  take: I.IO<unknown, never, A> = I.deferWith((_, fiberId) =>
     I.defer(() => {
       if (this.shutdownFlag.get) {
         return I.interrupt
@@ -985,10 +985,10 @@ class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A>
       const item = this.queue.poll(undefined)
 
       if (item != null) {
-        this.strategy.unsafeOnQueueEmptySpace(this.queue)
+        this.strategy.unsafeOnQueueEmptySpace(this.queue, this.takers)
         return I.pure(item)
       } else {
-        const p = P.unsafeMake<never, A>(d.id)
+        const p = P.unsafeMake<never, A>(fiberId)
 
         return I.onInterrupt_(
           I.defer(() => {
@@ -1012,7 +1012,7 @@ class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A>
     } else {
       return I.succeedLazy(() => {
         const as = _unsafePollAll(this.queue)
-        this.strategy.unsafeOnQueueEmptySpace(this.queue)
+        this.strategy.unsafeOnQueueEmptySpace(this.queue, this.takers)
         return as
       })
     }
@@ -1025,7 +1025,7 @@ class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A>
       } else {
         return I.succeedLazy(() => {
           const as = _unsafePollN(this.queue, max)
-          this.strategy.unsafeOnQueueEmptySpace(this.queue)
+          this.strategy.unsafeOnQueueEmptySpace(this.queue, this.takers)
           return as
         })
       }
@@ -1104,7 +1104,7 @@ function _unsafeCompleteTakers<A>(
   strategy: Strategy<A>,
   queue: MutableQueue<A>,
   takers: MutableQueue<Promise<never, A>>
-) {
+): void {
   let keepPolling = true
 
   while (keepPolling && !queue.isEmpty) {
@@ -1115,7 +1115,7 @@ function _unsafeCompleteTakers<A>(
 
       if (element != null) {
         _unsafeCompletePromise(taker, element)
-        strategy.unsafeOnQueueEmptySpace(queue)
+        strategy.unsafeOnQueueEmptySpace(queue, takers)
       } else {
         _unsafeOfferAll(takers, C.prepend_(_unsafePollAll(takers), taker))
       }
@@ -1141,7 +1141,7 @@ export interface Strategy<A> {
     isShutdown: AtomicBoolean
   ) => I.UIO<boolean>
 
-  readonly unsafeOnQueueEmptySpace: (queue: MutableQueue<A>) => void
+  readonly unsafeOnQueueEmptySpace: (queue: MutableQueue<A>, takers: MutableQueue<Promise<never, A>>) => void
 
   readonly surplusSize: number
 
@@ -1164,7 +1164,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
         return I.onInterrupt_(
           I.defer(() => {
             this.unsafeOffer(as, p)
-            this.unsafeOnQueueEmptySpace(queue)
+            this.unsafeOnQueueEmptySpace(queue, takers)
             _unsafeCompleteTakers(this, queue, takers)
             if (isShutdown.get) {
               return I.interrupt
@@ -1201,7 +1201,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
     }
   }
 
-  unsafeOnQueueEmptySpace(queue: MutableQueue<A>) {
+  unsafeOnQueueEmptySpace(queue: MutableQueue<A>, takers: MutableQueue<Promise<never, A>>) {
     let keepPolling = true
 
     while (keepPolling && !queue.isFull) {
@@ -1215,6 +1215,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
         } else if (!offered) {
           _unsafeOfferAll(this.putters, C.prepend_(_unsafePollAll(this.putters), putter))
         }
+        _unsafeCompleteTakers(this, queue, takers)
       } else {
         keepPolling = false
       }
