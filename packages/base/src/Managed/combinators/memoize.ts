@@ -1,43 +1,53 @@
 // tracing: off
 
-import type { Managed, UManaged } from '../core'
+import { traceCall } from '@principia/compile/util'
 
-import { accessCallTrace, traceFrom } from '@principia/compile/util'
-
-import { pipe } from '../../function'
+import * as HM from '../../HashMap'
 import { fulfill } from '../../IO/combinators/fulfill'
-import { once } from '../../IO/combinators/once'
+import * as I from '../../IO/core'
+import * as O from '../../Option'
+import { pipe } from '../../prelude'
 import * as P from '../../Promise'
-import { fromIO, mapIO_ } from '../core'
-import * as I from '../internal/io'
-import { releaseMap } from './releaseMap'
+import * as Ref from '../../Ref/core'
+import * as M from '../core'
+import { scope as scopeManaged } from './scope'
 
 /**
- * Returns a memoized version of the specified Managed.
- *
- * @trace call
+ * @trace 0
  */
-export function memoize<R, E, A>(ma: Managed<R, E, A>): UManaged<Managed<R, E, A>> {
-  const trace = accessCallTrace()
-  return mapIO_(
-    releaseMap(),
-    traceFrom(trace, (finalizers) =>
-      I.gen(function* (_) {
-        const promise  = yield* _(P.make<E, A>())
-        const complete = yield* _(
-          once(
-            I.asksIO((r: R) =>
-              pipe(
-                ma.io,
-                I.giveAll([r, finalizers] as const),
-                I.map(([_, a]) => a),
-                (_) => P.fulfill_(promise, _)
-              )
+export function memoize<R, E, A, B>(
+  f: (a: A) => M.Managed<R, E, B>
+): M.Managed<unknown, never, (a: A) => I.IO<R, E, B>> {
+  return M.gen(function* (_) {
+    const fiberId = yield* _(I.fiberId())
+    const ref     = yield* _(Ref.make(HM.makeDefault<A, P.Promise<E, B>>()))
+    const scope   = yield* _(scopeManaged())
+
+    return (a: A) =>
+      pipe(
+        ref,
+        Ref.modify((map) =>
+          pipe(
+            map,
+            HM.get(a),
+            O.match(
+              () => {
+                const promise = P.unsafeMake<E, B>(fiberId)
+                return [
+                  pipe(
+                    traceCall(scope.apply, f['$trace'])(f(a)),
+                    I.map(([_, b]) => b),
+                    fulfill(promise),
+                    I.crossSecond(P.await(promise))
+                  ),
+                  HM.set_(map, a, promise)
+                ]
+              },
+              (promise) => [P.await(promise), map]
             )
           )
-        )
-        return pipe(complete, I.crossSecond(P.await(promise)), fromIO)
-      })
-    )
-  )
+        ),
+        I.flatten
+      )
+  })
 }

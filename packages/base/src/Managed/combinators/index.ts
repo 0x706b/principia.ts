@@ -1,4 +1,3 @@
-// codegen:start {preset: barrel, include: ./*.ts}
 export * from './apply-par'
 export * from './collectAllPar'
 export * from './collectAllParN'
@@ -20,6 +19,7 @@ export * from './makeManagedReleaseMap'
 export * from './memoize'
 export * from './mergeAllPar'
 export * from './mergeAllParN'
+export * from './once'
 export * from './preallocate'
 export * from './release'
 export * from './releaseAll'
@@ -32,4 +32,3 @@ export * from './timeout'
 export * from './use'
 export * from './withChildren'
 export * from './withEarlyReleaseExit'
-// codegen:end

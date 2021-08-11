@@ -922,7 +922,7 @@ export function compose<R, E, A>(from: Layer<R, E, A>): <E1, A1>(to: Layer<A, E1
  * computed result of this layer.
  */
 export function memoize<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, Layer<R, E, A>> {
-  return M.map_(M.memoize(build(layer)), (_) => fromRawManaged(_))
+  return M.map_(M.once(build(layer)), (_) => fromRawManaged(_))
 }
 
 /**

@@ -12,7 +12,12 @@ import * as I from '../internal/io'
 import { releaseMap } from './releaseMap'
 
 export class ManagedScope {
-  constructor(readonly apply: <R, E, A>(managed: Managed<R, E, A>) => I.IO<R, E, readonly [Finalizer, A]>) {}
+  constructor(
+    /**
+     * @trace call
+     */
+    readonly apply: <R, E, A>(managed: Managed<R, E, A>) => I.IO<R, E, readonly [Finalizer, A]>
+  ) {}
 }
 
 /**
