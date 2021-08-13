@@ -20,6 +20,7 @@ import type { Ord } from './Ord'
 import type { Predicate } from './Predicate'
 import type { Reader } from './Reader'
 import type { ReadonlyRecord } from './Record'
+import type { RemoteData } from './RemoteData'
 import type { RoseTree } from './RoseTree'
 import type { Show } from './Show'
 import type { State } from './State'
@@ -171,6 +172,9 @@ export type KleisliInCategoryURI = typeof KleisliInCategoryURI
 export const DictionaryURI = 'Dictionary'
 export type DictionaryURI = typeof DictionaryURI
 
+export const RemoteDataURI = 'RemoteData'
+export type RemoteDataURI = typeof RemoteDataURI
+
 declare module './HKT' {
   interface URItoKind<FC, TC, K, Q, W, X, I, S, R, E, A> {
     [ShowURI]: Show<A>
@@ -219,6 +223,7 @@ declare module './HKT' {
     [KleisliInURI]: (_: R) => A
     [KleisliInCategoryURI]: (_: I) => A
     [DictionaryURI]: Dictionary<A>
+    [RemoteDataURI]: RemoteData<E, A>
   }
   interface URItoIndex<K> {
     [ArrayURI]: number
