@@ -34,6 +34,10 @@ export abstract class Async<R, E, A> {
   readonly _R!: (_: R) => void
   readonly _E!: () => E
   readonly _A!: () => A
+
+  then<B>(this: Async<unknown, E, A>, f: (exit: Ex.AsyncExit<E, A>) => B | PromiseLike<B>): Promise<B> {
+    return runPromiseExit(this).then(f)
+  }
 }
 
 export const AsyncTag = {
@@ -1186,8 +1190,10 @@ export const Monad = P.Monad<URI, V>({
   flatten
 })
 
-export const chainRec_: <A, R, E, B>(a: A, f: (a: A) => Async<R, E, E.Either<A, B>>) => Async<R, E, B> =
-  P.getChainRec_<URI, V>({ map_, crossWith_, cross_, ap_, unit, pure, chain_, flatten })
+export const chainRec_: <A, R, E, B>(a: A, f: (a: A) => Async<R, E, E.Either<A, B>>) => Async<R, E, B> = P.getChainRec_<
+  URI,
+  V
+>({ map_, crossWith_, cross_, ap_, unit, pure, chain_, flatten })
 export const chainRec: <A, R, E, B>(f: (a: A) => Async<R, E, E.Either<A, B>>) => (a: A) => Async<R, E, B> =
   P.getChainRec<URI, V>({ map_, crossWith_, cross_, ap_, unit, pure, chain_, flatten })
 
