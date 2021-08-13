@@ -1,14 +1,15 @@
-import type { Endomorphism } from 'fp-ts/lib/function'
+import type { Endomorphism } from 'fp-ts/lib/Endomorphism'
 
 import chalk from 'chalk'
 import { sequenceT } from 'fp-ts/lib/Apply'
 import * as A from 'fp-ts/lib/Array'
 import * as E from 'fp-ts/lib/Either'
 import { flow, pipe, unsafeCoerce } from 'fp-ts/lib/function'
+import * as Json from 'fp-ts/lib/Json'
 import * as TE from 'fp-ts/lib/TaskEither'
 import { posix } from 'path'
 
-import { copy, glob, modifyGlob, onLeft, onRight } from './common'
+import { copy, modifyGlob, onLeft, onRight } from './common'
 
 const MAP_GLOB_PATTERN = 'dist/**/*.map'
 
@@ -27,21 +28,27 @@ const replaceString = (path: string): Endomorphism<string> => {
 
 const replaceSingleStage = (content: string, path: string): string =>
   pipe(
-    E.parseJSON(content, (reason) => new Error('could not parse json: ' + String(reason))),
-    E.map((x) => unsafeCoerce<E.Json, SourceMap>(x)),
-  E.map(
+    Json.parse(content),
+    E.mapLeft((reason) => new Error('could not parse json: ' + String(reason))),
+    E.map((x) => unsafeCoerce<Json.Json, SourceMap>(x)),
+    E.map(
       flow(
         Object.entries,
-        A.map(([k, v]) => (k === 'sources' ? [k, A.array.map(v as string[], replaceString(path))] : [k, v])),
+        A.map(([k, v]) => (k === 'sources' ? [k, A.Functor.map(v as string[], replaceString(path))] : [k, v])),
         A.reduce({}, (acc, [k, v]) => ({ ...acc, [k]: v }))
       ) as <A>(x: A) => A
     ),
-    E.chain((obj) => E.stringifyJSON(obj, (reason) => new Error('could not stringify json: ' + String(reason)))),
+    E.chain(
+      flow(
+        Json.stringify,
+        E.mapLeft((reason) => new Error('could not stringify json: ' + String(reason)))
+      )
+    ),
     E.getOrElse(() => content)
   )
 
 pipe(
-  sequenceT(TE.taskEither)(
+  sequenceT(TE.ApplySeq)(
     copy('src/**/*', 'dist/_src', { update: true }),
     modifyGlob(replaceSingleStage)(MAP_GLOB_PATTERN)
   ),

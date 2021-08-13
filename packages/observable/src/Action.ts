@@ -79,7 +79,7 @@ export class AsyncAction<A> extends Action<A> {
       this.work(state)
     } catch (e) {
       errored    = true
-      errorValue = (!!e && e) || new Error(e)
+      errorValue = (!!e && e) || new Error(String(e))
     }
     if (errored) {
       this.unsubscribe()

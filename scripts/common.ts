@@ -4,18 +4,21 @@ import type { FunctionN } from 'fp-ts/lib/function'
 import chalk from 'chalk'
 import { copy as copy_ } from 'cpx'
 import { log } from 'fp-ts/lib/Console'
+import { pipe } from 'fp-ts/lib/function'
 import * as IO from 'fp-ts/lib/IO'
-import { pipe } from 'fp-ts/lib/pipeable'
 import * as T from 'fp-ts/lib/Task'
 import * as TE from 'fp-ts/lib/TaskEither'
 import fs from 'fs'
 import glob_ from 'glob'
 
-export const readFile = TE.taskify<fs.PathLike, string, NodeJS.ErrnoException, string>(fs.readFile)
+export const readFile = TE.taskify<fs.PathLike, BufferEncoding, NodeJS.ErrnoException, string>(fs.readFile)
 
 export const writeFile = TE.taskify<fs.PathLike, string, NodeJS.ErrnoException, void>(fs.writeFile)
 
-const exit = (code: 0 | 1): IO.IO<void> => () => process.exit(code)
+const exit =
+  (code: 0 | 1): IO.IO<void> =>
+  () =>
+    process.exit(code)
 
 export const glob = (glob: string, opts: glob_.IOptions = {}): TE.TaskEither<Error, string[]> =>
   TE.tryCatch(
