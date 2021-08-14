@@ -24,8 +24,10 @@ export function defaultTeardown(status: number, id: Fiber.FiberId, onExit: (stat
   })
 }
 
-export const defaultHook = (cont: NodeJS.SignalsListener): ((signal: NodeJS.Signals) => void) => (signal) =>
-  cont(signal)
+export const defaultHook =
+  (cont: NodeJS.SignalsListener): ((signal: NodeJS.Signals) => void) =>
+  (signal) =>
+    cont(signal)
 
 export function prettyLocationNode(traceElement: TraceElement, adapt: (path: string, mod?: string) => string) {
   try {
@@ -101,6 +103,8 @@ export class NodeRuntime<R, A> {
     this.runMain = this.runMain.bind(this)
   }
 
+  private prettyPrintCause = Cause.makePrettyPrint(this.custom.platform.renderer)
+
   /**
    * Runs effect until completion listening for system level termination signals that
    * triggers cancellation of the process, in case errors are found process will
@@ -129,7 +133,7 @@ export class NodeRuntime<R, A> {
             customTeardown(0, context.id, onExit)
             break
           } else {
-            console.error(Cause.pretty(exit.cause, this.custom.platform.renderer))
+            console.error(this.prettyPrintCause(exit.cause))
             customTeardown(1, context.id, onExit)
             break
           }
@@ -162,6 +166,7 @@ export class NodeRuntime<R, A> {
 export const nodeRuntime = new NodeRuntime(
   defaultRuntime.traceRenderer({
     renderTrace: nodeTracer,
+    renderId: Cause.defaultRenderer.renderId,
     renderError: Cause.defaultRenderer.renderError,
     renderUnknown: Cause.defaultRenderer.renderUnknown,
     renderFailure: Cause.defaultRenderer.renderFailure

@@ -35,3 +35,5 @@ export function newFiberId(): FiberId {
 export function prettyFiberId(_: FiberId): string {
   return `#${_.seqNumber} (started at: ${new Date(_.startTime).toISOString()})`
 }
+
+export const showFiberId = P.Show<FiberId>(prettyFiberId)

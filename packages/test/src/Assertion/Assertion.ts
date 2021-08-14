@@ -160,7 +160,7 @@ export function contains<A>(element: A, custom?: Custom<A>): Assertion<ReadonlyA
 }
 
 export function containsCause<E>(cause: C.Cause<E>): Assertion<C.Cause<E>> {
-  return assertion('containsCause', [param(cause, S.Show<C.Cause<E>>(C.pretty))], C.contains(cause))
+  return assertion('containsCause', [param(cause, S.Show<C.Cause<E>>(C.defaultPrettyPrint))], C.contains(cause))
 }
 
 export function containsString(element: string): Assertion<string> {

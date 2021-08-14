@@ -2,6 +2,7 @@
 import * as A from '@principia/base/Array'
 import * as C from '@principia/base/Cause'
 import * as Ex from '@principia/base/Exit'
+import { showFiberId } from '@principia/base/Fiber'
 import { constVoid, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as O from '@principia/base/Option'
@@ -41,7 +42,7 @@ const program = pipe(
 I.run_(
   program,
   Ex.match(
-    C.squash((e) => {
+    C.squash(showFiberId)((e) => {
       if (e instanceof Error) {
         console.log(e)
       } else {

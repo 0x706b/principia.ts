@@ -31,6 +31,7 @@ import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
 import { RuntimeException } from '../Exception'
 import * as Ex from '../Exit/core'
+import { prettyFiberId, showFiberId } from '../Fiber/FiberId'
 import { constant, flow, identity, pipe } from '../function'
 import { isTag, mergeEnvironments } from '../Has'
 import * as I from '../Iterable'
@@ -1336,7 +1337,7 @@ export function pureS<K, N extends string, A>(name: Exclude<N, keyof K>, f: (_: 
  * @trace 1
  */
 export function absorbWith_<R, E, A>(ma: IO<R, E, A>, f: (e: E) => unknown) {
-  return pipe(ma, sandbox, matchIO(traceAs(f, flow(C.squash(f), fail)), pure))
+  return pipe(ma, sandbox, matchIO(traceAs(f, flow(C.squash(showFiberId)(f), fail)), pure))
 }
 
 /**

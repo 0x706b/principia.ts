@@ -1,4 +1,5 @@
 import type { Exit } from '../Exit'
+import type { FiberId } from '../Fiber'
 import type { Callback } from '../Fiber/core'
 import type { FailureReporter } from '../Fiber/internal/io'
 import type { IOEnv } from '../IOEnv'
@@ -6,11 +7,11 @@ import type { IOEnv } from '../IOEnv'
 import { isTracingEnabled } from '@principia/compile/util'
 
 import * as C from '../Cause/core'
-import { pretty } from '../Cause/core'
+import { defaultRenderer, makePrettyPrint } from '../Cause/core'
 import { ClockTag, LiveClock } from '../Clock'
 import { ConsoleTag, LiveConsole } from '../Console'
 import * as Ex from '../Exit/core'
-import { interruptible, newFiberId } from '../Fiber'
+import { interruptible, newFiberId, showFiberId } from '../Fiber'
 import { constVoid, flow, identity } from '../function'
 import { FiberContext } from '../internal/FiberContext'
 import { Platform } from '../internal/Platform'
@@ -27,7 +28,7 @@ export const defaultEnv: IOEnv = {
 } as any
 
 export const prettyReporter: FailureReporter = (e) => {
-  console.error(pretty(e))
+  console.error(C.defaultPrettyPrint(e))
 }
 
 /**
@@ -159,7 +160,7 @@ export class CustomRuntime<R, A> {
     context.evaluateLater(I.concrete(_))
 
     return new Promise((res, rej) => {
-      context.runAsync(Ex.match(flow(C.squash(identity), rej), res))
+      context.runAsync(Ex.match(flow(C.squash(showFiberId)(identity), rej), res))
     })
   }
 
@@ -193,7 +194,7 @@ export class CustomRuntime<R, A> {
     return new CustomRuntime(f(this.env), this.platform)
   }
 
-  traceRenderer(renderer: C.Renderer) {
+  traceRenderer(renderer: C.Renderer<FiberId>) {
     return new CustomRuntime(
       this.env,
       new Platform({

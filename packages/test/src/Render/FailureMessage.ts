@@ -173,7 +173,7 @@ function renderSatisfied(fragment: AssertionValue<any>): Fragment {
 export function renderCause(cause: Cause<any>, offset: number): Message {
   const printCause = () =>
     pipe(
-      C.pretty(cause).split('\n'),
+      C.defaultPrettyPrint(cause).split('\n'),
       A.map((s) => withOffset(offset + tabSize)(Line.fromString(s))),
       (lines) => new Message(L.from(lines))
     )

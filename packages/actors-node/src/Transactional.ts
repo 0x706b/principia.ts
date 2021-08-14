@@ -8,7 +8,7 @@ import type { IOEnv } from '@principia/base/IOEnv'
 import { AbstractStateful, Actor } from '@principia/actors/Actor'
 import { withSystem } from '@principia/actors/ActorRef'
 import * as AS from '@principia/actors/ActorSystem'
-import { pretty } from '@principia/base/Cause'
+import { defaultPrettyPrint } from '@principia/base/Cause'
 import * as C from '@principia/base/Chunk'
 import { identity, pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
@@ -173,7 +173,7 @@ export const LiveStateStorageAdapter = L.fromManaged(StateStorageAdapter)(
       )['|>'](
         T.tapCause((c) =>
           T.succeedLazy(() => {
-            console.log(pretty(c))
+            console.log(defaultPrettyPrint(c))
           })
         )
       )
@@ -342,7 +342,7 @@ export class Transactional<R, S, Ev, F1 extends AM.AnyMessage> extends AbstractS
               )['|>'](
                 T.tapCause((c) =>
                   T.succeedLazy(() => {
-                    console.error(pretty(c))
+                    console.error(defaultPrettyPrint(c))
                   })
                 )
               )

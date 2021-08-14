@@ -1,4 +1,5 @@
 import type { Cause, Renderer } from '../Cause'
+import type { FiberId } from '../Fiber'
 import type { Supervisor } from '../Supervisor'
 
 export class Platform<A> {
@@ -11,7 +12,7 @@ export class Platform<A> {
   public ancestorExecutionTraceLength: number
   public ancestorStackTraceLength: number
   public ancestryLength: number
-  public renderer: Renderer
+  public renderer: Renderer<FiberId>
   public reportFailure: (e: Cause<unknown>) => void
   public maxOp: number
   public supervisor: Supervisor<A>
@@ -25,7 +26,7 @@ export class Platform<A> {
     ancestorExecutionTraceLength: number
     ancestorStackTraceLength: number
     ancestryLength: number
-    renderer: Renderer
+    renderer: Renderer<FiberId>
     reportFailure: (e: Cause<unknown>) => void
     maxOp: number
     supervisor: Supervisor<A>

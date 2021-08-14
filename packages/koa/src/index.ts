@@ -220,7 +220,7 @@ export function defaultExitHandler(
   return (cause) =>
     I.gen(function* (_) {
       if (Ca.halted(cause)) {
-        yield* _(putStrLnErr(Ca.pretty(cause)))
+        yield* _(putStrLnErr(Ca.defaultPrettyPrint(cause)))
       }
       yield* _(ctx.connection.res.status(Status.InternalServerError))
       yield* _(ctx.connection.res.end())

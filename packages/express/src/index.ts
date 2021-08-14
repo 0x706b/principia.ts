@@ -10,7 +10,7 @@ import type { Server } from 'http'
 
 import '@principia/base/Operators'
 
-import { halted, pretty } from '@principia/base/Cause'
+import { defaultPrettyPrint,halted } from '@principia/base/Cause'
 import * as F from '@principia/base/Fiber'
 import { tag } from '@principia/base/Has'
 import * as T from '@principia/base/IO'
@@ -293,7 +293,7 @@ export function defaultExitHandler(
   return (cause) =>
     T.succeedLazy(() => {
       if (halted(cause)) {
-        console.error(pretty(cause))
+        console.error(defaultPrettyPrint(cause))
       }
       _res.status(500).end()
     })
