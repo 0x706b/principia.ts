@@ -1,4 +1,4 @@
-import type { Cause, Halt, Renderer } from '@principia/base/Cause'
+import type { GenericCause, Halt, Renderer } from '@principia/base/Cause'
 import type { Either } from '@principia/base/Either'
 import type { FiberId } from '@principia/base/Fiber'
 import type { Trace } from '@principia/base/Fiber/trace'
@@ -9,73 +9,75 @@ export interface CauseOps {
   /**
    * @rewrite chain_ from "@principia/base/Cause"
    */
-  chain<A, B>(this: Cause<A>, f: (a: A) => Cause<B>): Cause<B>
+  chain<Id, A, Id1, B>(this: GenericCause<Id, A>, f: (a: A) => GenericCause<Id1, B>): GenericCause<Id | Id1, B>
 
   /**
    * @rewrite defects from "@principia/base/Cause"
    */
-  defects<E>(this: Cause<E>): ReadonlyArray<unknown>
+  defects<Id, E>(this: GenericCause<Id, E>): ReadonlyArray<unknown>
 
   /**
    * @rewrite halted from "@principia/base/Cause"
    */
-  halted<E>(this: Cause<E>): this is Halt
+  halted<Id, E>(this: GenericCause<Id, E>): this is Halt
 
   /**
    * @rewrite equals from "@principia/base/Cause"
    */
-  equals<E>(this: Cause<E>, that: Cause<E>): boolean
+  equals<Id, E>(this: GenericCause<Id, E>, that: GenericCause<Id, E>): boolean
 
   /**
    * @rewrite failed from "@principia/base/Cause"
    */
-  failed<E>(this: Cause<E>): boolean
+  failed<Id, E>(this: GenericCause<Id, E>): boolean
 
   /**
    * @rewrite failureOption from "@principia/base/Cause"
    */
-  failureOption<E>(this: Cause<E>): Option<E>
+  failureOption<Id, E>(this: GenericCause<Id, E>): Option<E>
 
   /**
    * @rewrite failureOrCause from "@principia/base/Cause"
    */
-  failureOrCause<E>(this: Cause<E>): Either<E, Cause<never>>
+  failureOrGenericCause<Id, E>(this: GenericCause<Id, E>): Either<E, GenericCause<Id, never>>
 
   /**
    * @rewrite failureTraceOption from "@principia/base/Cause"
    */
-  failureTraceOption<E>(this: Cause<E>): Option<readonly [E, Option<Trace>]>
+  failureTraceOption<Id, E>(this: GenericCause<Id, E>): Option<readonly [E, Option<Trace>]>
 
   /**
    * @rewrite failureTraceOrCause from "@principia/base/Cause"
    */
-  failureTraceOrCause<E>(this: Cause<E>): Either<readonly [E, Option<Trace>], Cause<never>>
+  failureTraceOrGenericCause<Id, E>(
+    this: GenericCause<Id, E>
+  ): Either<readonly [E, Option<Trace>], GenericCause<Id, never>>
 
   /**
    * @rewrite failures from "@principia/base/Cause"
    */
-  failures<E>(this: Cause<E>): ReadonlyArray<E>
+  failures<Id, E>(this: GenericCause<Id, E>): ReadonlyArray<E>
 
   /**
    * @rewrite find_ from "@principia/base/Cause"
    */
-  find<E, A>(this: Cause<E>, f: (cause: Cause<E>) => Option<A>): Option<A>
+  find<Id, E, A>(this: GenericCause<Id, E>, f: (cause: GenericCause<Id, E>) => Option<A>): Option<A>
 
   /**
    * @rewrite flipCauseEither from "@principia/base/Cause"
    */
-  flipCauseEither<E, A>(this: Cause<Either<E, A>>): Either<Cause<E>, A>
+  flipCauseEither<Id, E, A>(this: GenericCause<Id, Either<E, A>>): Either<GenericCause<Id, E>, A>
 
   /**
    * @rewrite flipCauseOption from "@principia/base/Cause"
    */
-  flipCauseOption<E>(this: Cause<Option<E>>): Option<Cause<E>>
+  flipCauseOption<Id, E>(this: GenericCause<Id, Option<E>>): Option<GenericCause<Id, E>>
 
   /**
    * @rewrite match_ from "@principia/base/Cause"
    */
-  fold<E, A>(
-    this: Cause<E>,
+  fold<Id, E, A>(
+    this: GenericCause<Id, E>,
     onEmpty: () => A,
     onFail: (e: E) => A,
     onHalt: (u: unknown) => A,
@@ -88,75 +90,75 @@ export interface CauseOps {
   /**
    * @rewrite foldl_ from "@principia/base/Cause"
    */
-  foldl<E, A>(this: Cause<E>, b: A, f: (b: A, a: Cause<E>) => Option<A>): A
+  foldl<Id, E, A>(this: GenericCause<Id, E>, b: A, f: (b: A, a: GenericCause<Id, E>) => Option<A>): A
 
   /**
    * @rewrite interruptOption from "@principia/base/Cause"
    */
-  interruptOption<E>(this: Cause<E>): Option<FiberId>
+  interruptOption<Id, E>(this: GenericCause<Id, E>): Option<FiberId>
 
   /**
    * @rewrite interrupted from "@principia/base/Cause"
    */
-  interrupted<E>(this: Cause<E>): boolean
+  interrupted<Id, E>(this: GenericCause<Id, E>): boolean
 
   /**
    * @rewrite interruptedOnly from "@principia/base/Cause"
    */
-  interruptedOnly<E>(this: Cause<E>): boolean
+  interruptedOnly<Id, E>(this: GenericCause<Id, E>): boolean
 
   /**
    * @rewrite interruptors from "@principia/base/Cause"
    */
-  interruptors<E>(this: Cause<E>): ReadonlySet<FiberId>
+  interruptors<Id, E>(this: GenericCause<Id, E>): ReadonlySet<FiberId>
 
   /**
    * @rewrite keepDefects from "@principia/base/Cause"
    */
-  keepDefects<E>(this: Cause<E>): Option<Cause<never>>
+  keepDefects<Id, E>(this: GenericCause<Id, E>): Option<GenericCause<Id, never>>
 
   /**
    * @rewrite map_ from "@principia/base/Cause"
    */
-  map<A, B>(this: Cause<A>, f: (a: A) => B): Cause<B>
+  map<Id, A, B>(this: GenericCause<Id, A>, f: (a: A) => B): GenericCause<Id, B>
 
   /**
    * @rewrite pretty from "@principia/base/Cause"
    */
-  pretty<E>(this: Cause<E>, renderer?: Renderer<E>): string
+  pretty<Id, E>(this: GenericCause<Id, E>, renderer?: Renderer<E>): string
 
   /**
    * @rewrite sequenceCauseEither from "@principia/base/Cause"
    */
-  sequenceCauseEither<E, A>(this: Cause<Either<E, A>>): Either<Cause<E>, A>
+  sequenceCauseEither<Id, E, A>(this: GenericCause<Id, Either<E, A>>): Either<GenericCause<Id, E>, A>
 
   /**
    * @rewrite sequenceCauseOption from "@principia/base/Cause"
    */
-  sequenceCauseOption<E>(this: Cause<Option<E>>): Option<Cause<E>>
+  sequenceCauseOption<Id, E>(this: GenericCause<Id, Option<E>>): Option<GenericCause<Id, E>>
 
   /**
    * @rewrite stripFailures from "@principia/base/Cause"
    */
-  stripFailures<E>(this: Cause<E>): Cause<never>
+  stripFailures<Id, E>(this: GenericCause<Id, E>): GenericCause<Id, never>
 
   /**
    * @rewrite stripInterrupts from "@principia/base/Cause"
    */
-  stripInterrupts<E>(this: Cause<E>): Cause<E>
+  stripInterrupts<Id, E>(this: GenericCause<Id, E>): GenericCause<Id, E>
 
   /**
    * @rewrite stripSomeDefects_ from "@principia/base/Cause"
    */
-  stripSomeDefects<E>(this: Cause<E>, predicate: Predicate<unknown>): Option<Cause<E>>
+  stripSomeDefects<Id, E>(this: GenericCause<Id, E>, predicate: Predicate<unknown>): Option<GenericCause<Id, E>>
 }
 
-declare module '@principia/base/Cause/core' {
+declare module '@principia/base/Cause/generic' {
   export interface Empty extends CauseOps {}
   export interface Fail<E> extends CauseOps {}
   export interface Halt extends CauseOps {}
-  export interface Interrupt extends CauseOps {}
-  export interface Then<E> extends CauseOps {}
-  export interface Both<E> extends CauseOps {}
-  export interface Traced<E> extends CauseOps {}
+  export interface Interrupt<Id> extends CauseOps {}
+  export interface Then<Id, E> extends CauseOps {}
+  export interface Both<Id, E> extends CauseOps {}
+  export interface Traced<Id, E> extends CauseOps {}
 }

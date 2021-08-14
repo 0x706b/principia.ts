@@ -3,26 +3,27 @@ import type { CauseURI } from '../Modules'
 
 import { mapNF, sequenceSF } from '../prelude'
 import * as P from '../prelude'
-import { ap_, chain_, cross_, crossWith_, flatten, map_, pure, unit } from './core'
+import { ap_, chain_, cross_, crossWith_, flatten, map_, pure, unit } from './generic'
 
 export type URI = [HKT.URI<CauseURI>]
+export type V = HKT.V<'X', '+'>
 
-export const Functor = P.Functor<URI>({
+export const Functor = P.Functor<URI, V>({
   map_
 })
 
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({
   map_,
   crossWith_,
   cross_
 })
 
-export const crossFlat_ = P.crossFlatF_<URI>({
+export const crossFlat_ = P.crossFlatF_<URI, V>({
   map_,
   cross_,
   crossWith_
 })
-export const crossFlat = P.crossFlatF<URI>({
+export const crossFlat = P.crossFlatF<URI, V>({
   map_,
   cross_,
   crossWith_
@@ -32,21 +33,21 @@ export const mapN = mapNF(SemimonoidalFunctor)
 
 export const sequenceS = sequenceSF(SemimonoidalFunctor)
 
-export const Apply = P.Apply<URI>({
+export const Apply = P.Apply<URI, V>({
   map_,
   crossWith_,
   cross_,
   ap_
 })
 
-export const MonoidalFunctor = P.MonoidalFunctor<URI>({
+export const MonoidalFunctor = P.MonoidalFunctor<URI, V>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const Applicative = P.Applicative<URI>({
+export const Applicative = P.Applicative<URI, V>({
   map_,
   crossWith_,
   cross_,
@@ -55,7 +56,7 @@ export const Applicative = P.Applicative<URI>({
   pure
 })
 
-export const Monad = P.Monad<URI>({
+export const Monad = P.Monad<URI, V>({
   map_,
   crossWith_,
   cross_,

@@ -1,21 +1,21 @@
-import type { Cause } from '@principia/base/Cause'
-import type { Clock } from '@principia/base/Clock'
 import type { Either } from '@principia/base/Either'
-import type { Exit } from '@principia/base/Exit'
-import type { Fiber, FiberContext, FiberId, InterruptStatus, RuntimeFiber } from '@principia/base/Fiber'
 import type { Has, Tag } from '@principia/base/Has'
 import type * as I from '@principia/base/IO'
-import type { IOEnv } from '@principia/base/IOEnv'
-import type * as L from '@principia/base/Layer'
-import type { Managed, Reservation } from '@principia/base/Managed'
+import type { Cause } from '@principia/base/IO/Cause'
+import type { Clock } from '@principia/base/IO/Clock'
+import type { Exit } from '@principia/base/IO/Exit'
+import type { Fiber, FiberContext, FiberId, InterruptStatus, RuntimeFiber } from '@principia/base/IO/Fiber'
+import type { IOEnv } from '@principia/base/IO/IOEnv'
+import type * as L from '@principia/base/IO/Layer'
+import type { Managed, Reservation } from '@principia/base/IO/Managed'
+import type { Promise } from '@principia/base/IO/Promise'
+import type { Schedule } from '@principia/base/IO/Schedule'
+import type { Scope } from '@principia/base/IO/Scope'
+import type { Supervisor } from '@principia/base/IO/Supervisor'
 import type { Option } from '@principia/base/Option'
 import type { Erase, Predicate, ServicesStruct, ServicesTuple, UnionToIntersection } from '@principia/base/prelude'
-import type { Promise } from '@principia/base/Promise'
-import type { Schedule } from '@principia/base/Schedule'
-import type { Scope } from '@principia/base/Scope'
-import type { Supervisor } from '@principia/base/Supervisor'
 
-declare module '@principia/base/IO/primitives' {
+declare module '@principia/base/IO/IO/primitives' {
   export interface IO<R, E, A> {
     /**
      * @rewrite as_ from "@principia/base/IO"
@@ -1056,25 +1056,25 @@ declare module '@principia/base/IO/primitives' {
     timeoutTo<R, E, A, B, B1>(this: I.IO<R, E, A>, ms: number, b: B, f: (a: A) => B1): I.IO<R & Has<Clock>, E, B | B1>
 
     /**
-     * @rewrite fromIO_ from "@principia/base/Layer"
+     * @rewrite fromIO_ from "@principia/base/IO/Layer"
      * @trace call
      */
     toLayer<R, E, A>(this: I.IO<R, E, A>, tag: Tag<A>): L.Layer<R, E, Has<A>>
 
     /**
-     * @rewrite fromRawIO from "@principia/base/Layer"
+     * @rewrite fromRawIO from "@principia/base/IO/Layer"
      * @trace call
      */
     toLayerRaw<R, E, A>(this: I.IO<R, E, A>): L.Layer<R, E, A>
 
     /**
-     * @rewrite fromIO from "@principia/base/Managed"
+     * @rewrite fromIO from "@principia/base/IO/Managed"
      * @trace call
      */
     toManaged<R, E, A>(this: I.IO<R, E, A>): Managed<R, E, A>
 
     /**
-     * @rewrite bracket_ from "@principia/base/Managed"
+     * @rewrite bracket_ from "@principia/base/IO/Managed"
      * @trace call
      */
     toManaged<R, E, A, R1>(this: I.IO<R, E, A>, release: (a: A) => I.IO<R1, never, any>): Managed<R & R1, E, A>

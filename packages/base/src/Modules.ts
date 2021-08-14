@@ -1,19 +1,19 @@
 import type { Async } from './Async'
-import type { Cause } from './Cause'
+import type { GenericCause } from './Cause'
 import type { Chunk } from './Chunk'
 import type { Const } from './Const'
 import type { Dictionary } from './Dictionary'
 import type { Either } from './Either'
 import type { Eq } from './Eq'
 import type { Eval } from './Eval'
-import type { Exit } from './Exit'
+import type { GenericExit } from './Exit'
 import type { FreeSemiring } from './FreeSemiring'
 import type { Guard } from './Guard'
 import type { HashMap } from './HashMap'
 import type { Identity } from './Identity'
 import type { IO } from './IO'
+import type { Managed } from './IO/Managed'
 import type { List } from './List/core'
-import type { Managed } from './Managed'
 import type { NonEmptyArray } from './NonEmptyArray'
 import type { Option } from './Option'
 import type { Ord } from './Ord'
@@ -216,8 +216,8 @@ declare module './HKT' {
     [StateInURI]: StateIn<S, A>
     [StateOutURI]: StateOut<S, A>
     [HashMapURI]: HashMap<K, A>
-    [CauseURI]: Cause<A>
-    [ExitURI]: Exit<E, A>
+    [CauseURI]: GenericCause<X, A>
+    [ExitURI]: GenericExit<X, E, A>
     [ManagedURI]: Managed<R, E, A>
     [ManagedCategoryURI]: Managed<I, E, A>
     [KleisliInURI]: (_: R) => A

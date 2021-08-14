@@ -1,7 +1,7 @@
 import type { Has } from '@principia/base/Has'
 
 import * as I from '@principia/base/IO'
-import { Random } from '@principia/base/Random'
+import { Random } from '@principia/base/IO/Random'
 
 /** @internal */
 export const MIN_VALUE_32 = 2 ** -126 * 2 ** -23

@@ -1,7 +1,7 @@
 // tracing: off
 
-import type { Cause } from '@principia/base/Cause'
 import type { Has } from '@principia/base/Has'
+import type { Cause } from '@principia/base/IO/Cause'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type { _A, _R } from '@principia/base/util/types'
 import type { NextHandleFunction } from 'connect'
@@ -10,13 +10,13 @@ import type { Server } from 'http'
 
 import '@principia/base/Operators'
 
-import { defaultPrettyPrint,halted } from '@principia/base/Cause'
-import * as F from '@principia/base/Fiber'
 import { tag } from '@principia/base/Has'
 import * as T from '@principia/base/IO'
-import * as L from '@principia/base/Layer'
-import * as M from '@principia/base/Managed'
-import * as Supervisor from '@principia/base/Supervisor'
+import { defaultPrettyPrint, halted } from '@principia/base/IO/Cause'
+import * as F from '@principia/base/IO/Fiber'
+import * as L from '@principia/base/IO/Layer'
+import * as M from '@principia/base/IO/Managed'
+import * as Supervisor from '@principia/base/IO/Supervisor'
 import { AtomicBoolean } from '@principia/base/util/support/AtomicBoolean'
 import express from 'express'
 

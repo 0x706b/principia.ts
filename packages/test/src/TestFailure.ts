@@ -1,7 +1,7 @@
 import type { TestResult } from './Render'
-import type { Cause } from '@principia/base/Cause'
+import type { Cause } from '@principia/base/IO/Cause'
 
-import * as C from '@principia/base/Cause'
+import * as C from '@principia/base/IO/Cause'
 
 export class AssertionFailure {
   readonly _tag = 'AssertionFailure'

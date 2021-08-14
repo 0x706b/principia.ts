@@ -2,10 +2,10 @@ import type * as HKT from '../HKT'
 import type { ExitURI } from '../Modules'
 
 import * as P from '../prelude'
-import { ap_, bimap_, chain_, cross_, crossWith_, flatten, map_, mapError_, pure, unit } from './core'
+import { ap_, bimap_, chain_, cross_, crossWith_, flatten, map_, mapError_, pure, unit } from './generic'
 
 export type URI = [HKT.URI<ExitURI>]
-export type V = HKT.V<'E', '+'>
+export type V = HKT.V<'E', '+'> & HKT.V<'X', '+'>
 
 export const Functor = P.Functor<URI, V>({
   map_

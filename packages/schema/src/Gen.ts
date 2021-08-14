@@ -1,7 +1,7 @@
 import type * as S from './Schemable'
 import type { Has } from '@principia/base/Has'
+import type { Random } from '@principia/base/IO/Random'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
-import type { Random } from '@principia/base/Random'
 import type { _A, _R, Primitive } from '@principia/base/util/types'
 import type { Sized } from '@principia/test/Sized'
 

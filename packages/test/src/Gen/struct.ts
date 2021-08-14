@@ -4,7 +4,7 @@ import type { _A, _R } from '@principia/base/util/types'
 import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
-import { Random } from '@principia/base/Random'
+import { Random } from '@principia/base/IO/Random'
 
 import * as G from './core'
 
@@ -25,10 +25,7 @@ export function partial<P extends Record<string, Gen<any, any>>>(
     pipe(
       Random.next,
       I.map((n) => n > 0.5),
-      I.ifIO(
-        I.succeed(G.crossWith_(b, genV, (r, v) => ({ ...r, [k]: v }))),
-        I.succeed(b)
-      ),
+      I.ifIO(I.succeed(G.crossWith_(b, genV, (r, v) => ({ ...r, [k]: v }))), I.succeed(b)),
       G.unwrap
     )
   )

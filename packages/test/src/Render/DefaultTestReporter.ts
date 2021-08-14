@@ -3,7 +3,7 @@ import type { ExecutedSpec } from '../ExecutedSpec'
 import type { FailureDetails } from './FailureDetails'
 import type { Fragment, Message } from './FailureMessage'
 import type { TestAnnotationRenderer } from './TestAnnotationRenderer'
-import type { Cause } from '@principia/base/Cause'
+import type { Cause } from '@principia/base/IO/Cause'
 import type { USync } from '@principia/base/Sync'
 
 import * as A from '@principia/base/Array'

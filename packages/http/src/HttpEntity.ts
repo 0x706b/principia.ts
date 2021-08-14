@@ -4,7 +4,7 @@ import type { Chunk } from '@principia/base/Chunk'
 import type { IO } from '@principia/base/IO'
 
 import * as I from '@principia/base/IO'
-import * as S from '@principia/base/Stream'
+import * as S from '@principia/base/IO/Stream'
 
 export abstract class HttpEntity<R, E, A> {
   readonly _R!: (_: R) => void

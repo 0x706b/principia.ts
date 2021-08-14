@@ -1,6 +1,6 @@
 import type { Gen } from './core'
 import type { Has } from '@principia/base/Has'
-import type { Random } from '@principia/base/Random'
+import type { Random } from '@principia/base/IO/Random'
 
 import * as O from '@principia/base/Option'
 

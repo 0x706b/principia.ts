@@ -1,5 +1,5 @@
-import type { FiberId } from '../Fiber/FiberId'
-import type { IO } from '../IO/core'
+import type { FiberId } from '../IO/Fiber/FiberId'
+import type { IO } from '../IO/IO/core'
 import type { Predicate } from '../prelude'
 import type { Equatable, Hashable } from '../Structural'
 

@@ -2,7 +2,7 @@ import type { Sized } from '../Sized'
 import type { EqConstraint, Gen, LengthConstraints } from './core'
 import type * as Eq from '@principia/base/Eq'
 import type { Has } from '@principia/base/Has'
-import type { Random } from '@principia/base/Random'
+import type { Random } from '@principia/base/IO/Random'
 
 import * as C from '@principia/base/Chunk'
 import { pipe } from '@principia/base/function'

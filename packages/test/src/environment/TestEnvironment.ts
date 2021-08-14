@@ -1,8 +1,8 @@
 import type { Has } from '@principia/base/Has'
-import type { IOEnv } from '@principia/base/IOEnv'
-import type { Layer } from '@principia/base/Layer'
+import type { IOEnv } from '@principia/base/IO/IOEnv'
+import type { Layer } from '@principia/base/IO/Layer'
 
-import { live as liveIOEnv } from '@principia/base/IOEnv'
+import { live as liveIOEnv } from '@principia/base/IO/IOEnv'
 
 import { Annotations } from '../Annotation'
 import { Sized } from '../Sized'

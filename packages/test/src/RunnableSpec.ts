@@ -1,8 +1,8 @@
 import type { XSpec } from './Spec'
 import type * as TA from './TestArgs'
-import type { Clock } from '@principia/base/Clock'
 import type { Has } from '@principia/base/Has'
 import type { URIO } from '@principia/base/IO'
+import type { Clock } from '@principia/base/IO/Clock'
 
 import * as E from '@principia/base/Either'
 import * as I from '@principia/base/IO'

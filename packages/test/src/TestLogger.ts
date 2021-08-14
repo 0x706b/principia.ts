@@ -1,12 +1,12 @@
-import type { Console } from '@principia/base/Console'
 import type { Has } from '@principia/base/Has'
 import type { UIO, URIO } from '@principia/base/IO'
-import type { Layer } from '@principia/base/Layer'
+import type { Console } from '@principia/base/IO/Console'
+import type { Layer } from '@principia/base/IO/Layer'
 
-import { ConsoleTag } from '@principia/base/Console'
 import { tag } from '@principia/base/Has'
 import * as I from '@principia/base/IO'
-import * as L from '@principia/base/Layer'
+import { ConsoleTag } from '@principia/base/IO/Console'
+import * as L from '@principia/base/IO/Layer'
 
 export abstract class TestLogger {
   abstract logLine(line: string): UIO<void>

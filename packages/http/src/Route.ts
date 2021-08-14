@@ -7,11 +7,11 @@ import type { URL } from 'url'
 
 import * as A from '@principia/base/Array'
 import * as Ev from '@principia/base/Eval'
-import * as FR from '@principia/base/FiberRef'
 import * as FL from '@principia/base/FreeList'
 import { flow, identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
-import * as Q from '@principia/base/Queue'
+import * as FR from '@principia/base/IO/FiberRef'
+import * as Q from '@principia/base/IO/Queue'
 import * as p2r from 'path-to-regexp'
 
 import { HttpConnectionTag } from './HttpConnection'

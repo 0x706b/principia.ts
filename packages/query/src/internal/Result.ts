@@ -2,10 +2,10 @@ import type { DataSourceAspect } from '../DataSourceAspect'
 import type { Described } from '../Described'
 import type { BlockedRequests } from './BlockedRequests'
 import type { Continue } from './Continue'
-import type { Cause } from '@principia/base/Cause'
+import type { Cause } from '@principia/base/IO/Cause'
 
-import * as Ca from '@principia/base/Cause'
 import * as E from '@principia/base/Either'
+import * as Ca from '@principia/base/IO/Cause'
 import { matchTag_ } from '@principia/base/util/match'
 
 import * as BRS from './BlockedRequests'

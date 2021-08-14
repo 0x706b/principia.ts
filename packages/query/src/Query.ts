@@ -9,19 +9,19 @@ import type { _A, _E } from '@principia/base/prelude'
 import type * as P from '@principia/base/prelude'
 
 import * as A from '@principia/base/Array'
-import * as Ca from '@principia/base/Cause'
 import * as E from '@principia/base/Either'
-import * as Ex from '@principia/base/Exit'
-import * as FR from '@principia/base/FiberRef'
 import { flow, identity, pipe } from '@principia/base/function'
 import { mergeEnvironments } from '@principia/base/Has'
 import * as I from '@principia/base/IO'
+import * as Ca from '@principia/base/IO/Cause'
+import * as Ex from '@principia/base/IO/Exit'
+import * as FR from '@principia/base/IO/FiberRef'
+import * as L from '@principia/base/IO/Layer'
+import * as M from '@principia/base/IO/Managed'
+import * as Ref from '@principia/base/IO/Ref'
 import * as It from '@principia/base/Iterable'
-import * as L from '@principia/base/Layer'
-import * as M from '@principia/base/Managed'
 import * as O from '@principia/base/Option'
 import { isObject } from '@principia/base/prelude'
-import * as Ref from '@principia/base/Ref'
 import { tuple } from '@principia/base/tuple'
 import { matchTag } from '@principia/base/util/match'
 
@@ -1097,10 +1097,7 @@ export function orHalt<R, E, A>(ma: Query<R, E, A>): Query<R, never, A> {
   return orHaltWith_(ma, identity)
 }
 
-export function refineOrHalt_<R, E, A, E1>(
-  ma: Query<R, E, A>,
-  pf: (e: E) => O.Option<E1>
-): Query<R, E1, A> {
+export function refineOrHalt_<R, E, A, E1>(ma: Query<R, E, A>, pf: (e: E) => O.Option<E1>): Query<R, E1, A> {
   return refineOrHaltWith_(ma, pf, identity)
 }
 

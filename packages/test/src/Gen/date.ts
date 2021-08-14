@@ -1,5 +1,5 @@
 import type { Has } from '@principia/base/Has'
-import type { Random } from '@principia/base/Random'
+import type { Random } from '@principia/base/IO/Random'
 
 import { pipe } from '@principia/base/prelude'
 

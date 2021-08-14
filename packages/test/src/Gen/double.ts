@@ -5,8 +5,8 @@ import type { ArrayInt64 } from '@principia/base/util/pure-rand/distribution/int
 import { IllegalArgumentError } from '@principia/base/Error'
 import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
-import { Random } from '@principia/base/Random'
-import * as S from '@principia/base/Stream'
+import { Random } from '@principia/base/IO/Random'
+import * as S from '@principia/base/IO/Stream'
 
 import * as Sa from '../Sample'
 import {

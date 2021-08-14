@@ -3,13 +3,13 @@ import type * as SCH from '@principia/schema'
 
 import { CaseClass } from '@principia/base/Case'
 import * as CH from '@principia/base/Chunk'
-import * as S from '@principia/base/experimental/Stream'
 import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as HM from '@principia/base/HashMap'
 import * as T from '@principia/base/IO'
+import * as S from '@principia/base/IO/experimental/Stream'
+import * as Ref from '@principia/base/IO/Ref'
 import * as O from '@principia/base/Option'
-import * as Ref from '@principia/base/Ref'
 import { tuple } from '@principia/base/tuple'
 
 export class PersistenceId extends CaseClass<{ id: string }> {}

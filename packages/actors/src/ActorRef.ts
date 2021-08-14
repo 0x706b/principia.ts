@@ -1,6 +1,6 @@
 import type * as A from './Actor'
 import type { ActorSystemException } from './exceptions'
-import type { IOEnv } from '@principia/base/IOEnv'
+import type { IOEnv } from '@principia/base/IO/IOEnv'
 
 import '@principia/base/Operators'
 

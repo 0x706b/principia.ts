@@ -1,8 +1,8 @@
-import type { Clock } from '@principia/base/Clock'
 import type { Has } from '@principia/base/Has'
+import type { Clock } from '@principia/base/IO/Clock'
 
 import * as T from '@principia/base/IO'
-import * as SCH from '@principia/base/Schedule'
+import * as SCH from '@principia/base/IO/Schedule'
 
 export class Supervisor<R, E> {
   readonly _R!: (r: R) => void
