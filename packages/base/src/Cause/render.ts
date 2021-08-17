@@ -1,12 +1,12 @@
 import type { Trace } from '../IO/Fiber/trace'
 import type { NonEmptyArray } from '../NonEmptyArray'
-import type { GenericCause } from './generic'
+import type { GenericCause } from './core'
 
 import * as A from '../Array/core'
 import * as Ev from '../Eval'
 import { pipe } from '../function'
 import * as O from '../Option'
-import { CauseTag } from './generic'
+import { CauseTag } from './core'
 
 /*
  * -------------------------------------------------------------------------------------------------

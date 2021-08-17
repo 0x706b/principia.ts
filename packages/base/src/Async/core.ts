@@ -6,15 +6,18 @@ import type { Stack } from '../util/support/Stack'
 import type * as Z from '../util/Zipped'
 
 import * as A from '../Array/core'
+import * as C from '../Cause/core'
 import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
+import * as Ex from '../Exit/core'
 import { genF, GenHKT } from '../Gen'
 import { isTag, mergeEnvironments } from '../Has'
+import * as L from '../List/core'
+import * as O from '../Option'
 import { isOption } from '../Option'
 import * as P from '../prelude'
 import * as R from '../Record'
 import { makeStack } from '../util/support/Stack'
-import * as Ex from './AsyncExit'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -24,6 +27,9 @@ import * as Ex from './AsyncExit'
 
 export const AsyncTypeId = Symbol('@principia/base/Async')
 export type AsyncTypeId = typeof AsyncTypeId
+
+export type Cause<E> = C.GenericCause<void, E>
+export type Exit<E, A> = Ex.GenericExit<void, E, A>
 
 /**
  * `Async` is a lightweight `IO` datatype for interruptible asynchronous computation.
@@ -111,7 +117,7 @@ export class Partial<E, A> extends Async<unknown, E, A> {
 export class Done<E, A> extends Async<unknown, E, A> {
   readonly _asyncTag = AsyncTag.Done
 
-  constructor(readonly exit: Ex.AsyncExit<E, A>) {
+  constructor(readonly exit: Exit<E, A>) {
     super()
   }
 }
@@ -119,7 +125,7 @@ export class Done<E, A> extends Async<unknown, E, A> {
 export class Fail<E> extends Async<unknown, E, never> {
   readonly _asyncTag = AsyncTag.Fail
 
-  constructor(readonly e: E) {
+  constructor(readonly e: Cause<E>) {
     super()
   }
 }
@@ -184,7 +190,7 @@ export class Fold<R, E, A, R1, E1, B, R2, E2, C> extends Async<R & R1 & R2, E1 |
 
   constructor(
     readonly async: Async<R, E, A>,
-    readonly f: (e: E) => Async<R1, E1, B>,
+    readonly f: (e: Cause<E>) => Async<R1, E1, B>,
     readonly g: (a: A) => Async<R2, E2, C>
   ) {
     super()
@@ -194,7 +200,7 @@ export class Fold<R, E, A, R1, E1, B, R2, E2, C> extends Async<R & R1 & R2, E1 |
 export class Finalize<R, E, A, R1, B> extends Async<R & R1, E, A> {
   readonly _asyncTag = AsyncTag.Finalize
 
-  constructor(readonly async: Async<R, E, A>, readonly f: () => Async<R1, never, B>) {
+  constructor(readonly async: Async<R, E, A>, readonly finalizer: Async<R1, never, B>) {
     super()
   }
 }
@@ -209,11 +215,19 @@ export function succeed<A>(a: A): Async<unknown, never, A> {
   return new Succeed(a)
 }
 
-export function fail<E>(e: E): Async<unknown, E, never> {
-  return new Fail(e)
+export function failCause<E>(cause: Cause<E>): Async<unknown, E, never> {
+  return new Fail(cause)
 }
 
-export function done<E, A>(exit: Ex.AsyncExit<E, A>): Async<unknown, E, A> {
+export function fail<E>(e: E): Async<unknown, E, never> {
+  return failCause(C.fail(e))
+}
+
+export function halt(defect: unknown): Async<unknown, never, never> {
+  return failCause(C.halt(defect))
+}
+
+export function done<E, A>(exit: Exit<E, A>): Async<unknown, E, A> {
   return new Done(exit)
 }
 
@@ -240,16 +254,29 @@ export function promise<E>(
   return (promise) => new LiftPromise(promise, onError)
 }
 
-export function effectTotal<A>(thunk: () => A): Async<unknown, never, A> {
+export function async<E, A>(
+  register: (resolve: (value: A) => void, reject: (error: E) => void) => (() => void) | void
+): Async<unknown, E, A> {
+  return new LiftPromise(
+    (onInterrupt) =>
+      new Promise((resolve, reject) => {
+        const maybeOnInterrupt = register(resolve, reject)
+        maybeOnInterrupt && onInterrupt(maybeOnInterrupt)
+      }),
+    (error) => P.unsafeCoerce(error)
+  )
+}
+
+export function succeedLazy<A>(thunk: () => A): Async<unknown, never, A> {
   return new Total(thunk)
 }
 
-export function effectCatch_<E, A>(thunk: () => A, onThrow: (error: unknown) => E): Async<unknown, E, A> {
+export function tryCatch_<E, A>(thunk: () => A, onThrow: (error: unknown) => E): Async<unknown, E, A> {
   return new Partial(thunk, onThrow)
 }
 
-export function effectCatch<E>(onThrow: (error: unknown) => E): <A>(thunk: () => A) => Async<unknown, E, A> {
-  return (thunk) => effectCatch_(thunk, onThrow)
+export function tryCatch<E>(onThrow: (error: unknown) => E): <A>(thunk: () => A) => Async<unknown, E, A> {
+  return (thunk) => tryCatch_(thunk, onThrow)
 }
 
 export function interrupt(): Async<unknown, never, never> {
@@ -262,23 +289,38 @@ export function interrupt(): Async<unknown, never, never> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function matchM_<R, E, A, R1, E1, A1, R2, E2, A2>(
+export function matchCauseAsync_<R, E, A, R1, E1, A1, R2, E2, A2>(
+  ma: Async<R, E, A>,
+  onFailure: (cause: Cause<E>) => Async<R1, E1, A1>,
+  onSuccess: (a: A) => Async<R2, E2, A2>
+): Async<R & R1 & R2, E1 | E2, A1 | A2> {
+  return new Fold(ma, onFailure, onSuccess)
+}
+
+export function matchCauseAsync<E, A, R1, E1, A1, R2, E2, A2>(
+  f: (e: Cause<E>) => Async<R1, E1, A1>,
+  g: (a: A) => Async<R2, E2, A2>
+): <R>(async: Async<R, E, A>) => Async<R & R1 & R2, E1 | E2, A1 | A2> {
+  return (async) => matchCauseAsync_(async, f, g)
+}
+
+export function matchAsync_<R, E, A, R1, E1, A1, R2, E2, A2>(
   async: Async<R, E, A>,
   f: (e: E) => Async<R1, E1, A1>,
   g: (a: A) => Async<R2, E2, A2>
 ): Async<R & R1 & R2, E1 | E2, A1 | A2> {
-  return new Fold(async, f, g)
+  return matchCauseAsync_(async, (cause) => E.match_(C.failureOrCause(cause), f, failCause), g)
 }
 
-export function matchM<E, A, R1, E1, A1, R2, E2, A2>(
+export function matchAsync<E, A, R1, E1, A1, R2, E2, A2>(
   f: (e: E) => Async<R1, E1, A1>,
   g: (a: A) => Async<R2, E2, A2>
 ): <R>(async: Async<R, E, A>) => Async<R & R1 & R2, E1 | E2, A1 | A2> {
-  return (async) => matchM_(async, f, g)
+  return (async) => matchAsync_(async, f, g)
 }
 
 export function match_<R, E, A, B, C>(async: Async<R, E, A>, f: (e: E) => B, g: (a: A) => C): Async<R, never, B | C> {
-  return matchM_(async, P.flow(f, succeed), P.flow(g, succeed))
+  return matchAsync_(async, P.flow(f, succeed), P.flow(g, succeed))
 }
 
 export function match<E, A, B, C>(
@@ -288,11 +330,24 @@ export function match<E, A, B, C>(
   return (async) => match_(async, f, g)
 }
 
+export function catchAllCause_<R, E, A, R1, E1, A1>(
+  ma: Async<R, E, A>,
+  f: (cause: Cause<E>) => Async<R1, E1, A1>
+): Async<R & R1, E1, A | A1> {
+  return matchCauseAsync_(ma, f, succeed)
+}
+
+export function catchAllCause<E, R1, E1, A1>(
+  f: (cause: Cause<E>) => Async<R1, E1, A1>
+): <R, A>(ma: Async<R, E, A>) => Async<R & R1, E1, A | A1> {
+  return (ma) => catchAllCause_(ma, f)
+}
+
 export function catchAll_<R, E, A, R1, E1, A1>(
   async: Async<R, E, A>,
   f: (e: E) => Async<R1, E1, A1>
 ): Async<R & R1, E1, A | A1> {
-  return matchM_(async, f, succeed)
+  return matchAsync_(async, f, succeed)
 }
 
 export function catchAll<E, R1, E1, A1>(
@@ -480,7 +535,7 @@ export function crossSecond<R1, E1, A1>(
  */
 
 export function mapError_<R, E, A, B>(pab: Async<R, E, A>, f: (e: E) => B): Async<R, B, A> {
-  return matchM_(pab, P.flow(f, fail), succeed)
+  return matchAsync_(pab, P.flow(f, fail), succeed)
 }
 
 export function mapError<E, B>(f: (e: E) => B): <R, A>(pab: Async<R, E, A>) => Async<R, B, A> {
@@ -488,7 +543,7 @@ export function mapError<E, B>(f: (e: E) => B): <R, A>(pab: Async<R, E, A>) => A
 }
 
 export function bimap_<R, E, A, B, C>(pab: Async<R, E, A>, f: (e: E) => B, g: (a: A) => C): Async<R, B, C> {
-  return matchM_(pab, P.flow(f, fail), P.flow(g, succeed))
+  return matchAsync_(pab, P.flow(f, fail), P.flow(g, succeed))
 }
 
 export function bimap<E, A, B, C>(f: (e: E) => B, g: (a: A) => C): <R>(pab: Async<R, E, A>) => Async<R, B, C> {
@@ -502,7 +557,7 @@ export function bimap<E, A, B, C>(f: (e: E) => B, g: (a: A) => C): <R>(pab: Asyn
  */
 
 export function subsumeEither<R, E, E1, A>(async: Async<R, E, E.Either<E1, A>>): Async<R, E | E1, A> {
-  return matchM_(async, fail, E.match(fail, succeed))
+  return matchAsync_(async, fail, E.match(fail, succeed))
 }
 
 export function either<R, E, A>(async: Async<R, E, A>): Async<R, never, E.Either<E, A>> {
@@ -800,6 +855,54 @@ export function unit(): Async<unknown, never, void> {
 
 /*
  * -------------------------------------------------------------------------------------------------
+ * combinators
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function bracket_<R, E, A, R1, E1, A1, R2, E2>(
+  acquire: Async<R, E, A>,
+  use: (a: A) => Async<R1, E1, A1>,
+  release: (a: A, exit: Exit<E1, A1>) => Async<R2, E2, any>
+): Async<R & R1 & R2, E | E1 | E2, A1> {
+  return chain_(acquire, (a) =>
+    chain_(result(defer(() => use(a))), (ex) =>
+      matchCauseAsync_(
+        defer(() => release(a, ex)),
+        (cause2) =>
+          failCause(
+            Ex.match_(
+              ex,
+              (cause1) => C.then(cause1, cause2),
+              () => cause2
+            )
+          ),
+        () => done(ex)
+      )
+    )
+  )
+}
+
+export function bracket<A, R1, E1, A1, R2, E2>(
+  use: (a: A) => Async<R1, E1, A1>,
+  release: (a: A, exit: Exit<E1, A1>) => Async<R2, E2, any>
+): <R, E>(acquire: Async<R, E, A>) => Async<R & R1 & R2, E | E1 | E2, A1> {
+  return (acquire) => bracket_(acquire, use, release)
+}
+
+export function ensuring_<R, E, A, R1>(ma: Async<R, E, A>, finalizer: Async<R1, never, void>): Async<R & R1, E, A> {
+  return new Finalize(ma, finalizer)
+}
+
+export function ensuring<R1>(finalizer: Async<R1, never, void>): <R, E, A>(ma: Async<R, E, A>) => Async<R & R1, E, A> {
+  return (ma) => ensuring_(ma, finalizer)
+}
+
+export function result<R, E, A>(ma: Async<R, E, A>): Async<R, never, Exit<E, A>> {
+  return matchCauseAsync_(ma, P.flow(Ex.failCause, succeed), P.flow(Ex.succeed, succeed))
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
  * Run
  * -------------------------------------------------------------------------------------------------
  */
@@ -820,7 +923,7 @@ export function runPromiseExitEnv_<R, E, A>(
   async: Async<R, E, A>,
   r: R,
   interruptionState = new InterruptionState()
-): Promise<Ex.AsyncExit<E, A>> {
+): Promise<Exit<E, A>> {
   return defaultPromiseTracingContext.traced(async () => {
     let frames: Stack<Frame> | undefined = undefined
     let result = null
@@ -829,6 +932,18 @@ export function runPromiseExitEnv_<R, E, A>(
     let current: Async<any, any, any> | undefined = async
     let instructionCount = 0
     let interrupted      = false
+    let finalizers: L.List<Async<any, any, any>> = L.empty()
+
+    async function runAllFinalizers(): Promise<Exit<any, any>> {
+      const exits: Array<Exit<any, any>> = []
+      for (const f of finalizers) {
+        await runPromiseExitEnv_(f, env?.value).then((ex) => {
+          exits.push(ex)
+        })
+      }
+      finalizers = null!
+      return O.getOrElse_(Ex.collectAll(...exits), () => Ex.unit())
+    }
 
     function isInterrupted() {
       return interrupted || interruptionState.interrupted
@@ -867,201 +982,206 @@ export function runPromiseExitEnv_<R, E, A>(
       }
     }
 
-    while (current != null && !isInterrupted()) {
-      if (instructionCount > 10000) {
-        await new Promise((resolve) => {
-          setTimeout(() => {
-            resolve(undefined)
-          }, 0)
-        })
-        instructionCount = 0
-      }
-      instructionCount += 1
+    try {
+      while (current != null && !isInterrupted()) {
+        if (instructionCount > 10000) {
+          await new Promise((resolve) => {
+            setTimeout(() => {
+              resolve(undefined)
+            }, 0)
+          })
+          instructionCount = 0
+        }
+        instructionCount += 1
 
-      const I = asConcrete(current)
-      switch (I._asyncTag) {
-        case AsyncTag.Chain: {
-          const nested: Concrete = asConcrete(I.async)
-          const continuation     = I.f
-          switch (nested._asyncTag) {
-            case AsyncTag.Succeed: {
-              current = continuation(nested.value)
-              break
-            }
-            case AsyncTag.Total: {
-              current = continuation(nested.thunk())
-              break
-            }
-            case AsyncTag.Partial: {
-              try {
+        const I = asConcrete(current)
+        switch (I._asyncTag) {
+          case AsyncTag.Chain: {
+            const nested: Concrete = asConcrete(I.async)
+            const continuation     = I.f
+            switch (nested._asyncTag) {
+              case AsyncTag.Succeed: {
+                current = continuation(nested.value)
+                break
+              }
+              case AsyncTag.Total: {
                 current = continuation(nested.thunk())
-              } catch (e) {
-                current = fail(nested.onThrow(e))
+                break
               }
-              break
+              case AsyncTag.Partial: {
+                try {
+                  current = continuation(nested.thunk())
+                } catch (e) {
+                  current = fail(nested.onThrow(e))
+                }
+                break
+              }
+              default: {
+                current = nested
+                pushContinuation(new ApplyFrame(continuation))
+              }
             }
-            default: {
-              current = nested
-              pushContinuation(new ApplyFrame(continuation))
+            break
+          }
+          case AsyncTag.Defer: {
+            current = I.async()
+            break
+          }
+          case AsyncTag.Succeed: {
+            result     = I.value
+            const next = popContinuation()
+            if (next) {
+              current = next.apply(result)
+            } else {
+              current = undefined
             }
+            break
           }
-          break
-        }
-        case AsyncTag.Defer: {
-          current = I.async()
-          break
-        }
-        case AsyncTag.Succeed: {
-          result     = I.value
-          const next = popContinuation()
-          if (next) {
-            current = next.apply(result)
-          } else {
-            current = undefined
-          }
-          break
-        }
-        case AsyncTag.Total: {
-          current = succeed(I.thunk())
-          break
-        }
-        case AsyncTag.Partial: {
-          try {
+          case AsyncTag.Total: {
             current = succeed(I.thunk())
-          } catch (e) {
-            current = fail(I.onThrow(e))
+            break
           }
-          break
-        }
-        case AsyncTag.Fail: {
-          unwindStack()
-          const next = popContinuation()
-          if (next) {
-            current = next.apply(I.e)
-          } else {
-            failed  = true
-            result  = I.e
-            current = undefined
+          case AsyncTag.Partial: {
+            try {
+              current = succeed(I.thunk())
+            } catch (e) {
+              current = fail(I.onThrow(e))
+            }
+            break
           }
-          break
-        }
-        case AsyncTag.Done: {
-          switch (I.exit._tag) {
-            case 'Failure': {
-              current = fail(I.exit.error)
-              break
+          case AsyncTag.Fail: {
+            unwindStack()
+            const next = popContinuation()
+            if (next) {
+              current = next.apply(I.e)
+            } else {
+              failed  = true
+              result  = I.e
+              current = undefined
             }
-            case 'Interrupt': {
-              interrupted = true
-              current     = undefined
-              break
-            }
-            case 'Success': {
-              current = succeed(I.exit.value)
-              break
-            }
+            break
           }
-          break
-        }
-        case AsyncTag.Interrupt: {
-          interrupted = true
-          interruptionState.interrupt()
-          current = undefined
-          break
-        }
-        case AsyncTag.Asks: {
-          current = I.f(env.value || {})
-          break
-        }
-        case AsyncTag.Give: {
-          current = P.pipe(
-            effectTotal(() => {
-              pushEnv(I.env)
-            }),
-            chain(() => I.async),
-            tap(() =>
-              effectTotal(() => {
-                popEnv()
-              })
-            )
-          )
-          break
-        }
-        case AsyncTag.All: {
-          const exits: ReadonlyArray<Ex.AsyncExit<any, any>> = await Promise.all(
-            A.map_(I.asyncs, (a) => runPromiseExitEnv_(a, env?.value || {}, interruptionState))
-          )
-          const results = []
-          let errored   = false
-          for (let i = 0; i < exits.length && !errored; i++) {
-            const e = exits[i]
-            switch (e._tag) {
+          case AsyncTag.Done: {
+            switch (I.exit._tag) {
+              case 'Failure': {
+                if (C.interrupted(I.exit.cause)) {
+                  interrupted = true
+                  current     = undefined
+                } else {
+                  current = failCause(I.exit.cause)
+                }
+                break
+              }
               case 'Success': {
-                results.push(e.value)
-                break
-              }
-              case 'Failure': {
-                errored = true
-                current = fail(e.error)
-                break
-              }
-              case 'Interrupt': {
-                errored     = true
-                interrupted = true
-                current     = undefined
+                current = succeed(I.exit.value)
                 break
               }
             }
+            break
           }
-          if (!errored) {
-            current = succeed(results)
+          case AsyncTag.Interrupt: {
+            interrupted = true
+            interruptionState.interrupt()
+            current = undefined
+            break
           }
-          break
-        }
-        case AsyncTag.Promise: {
-          try {
-            current = succeed(
-              await new CancellablePromise(
-                (s) => I.promise(s).catch((e) => Promise.reject(Ex.fail(e))),
-                interruptionState
-              ).promise()
+          case AsyncTag.Asks: {
+            current = I.f(env.value || {})
+            break
+          }
+          case AsyncTag.Give: {
+            current = P.pipe(
+              succeedLazy(() => {
+                pushEnv(I.env)
+              }),
+              chain(() => I.async),
+              tap(() =>
+                succeedLazy(() => {
+                  popEnv()
+                })
+              )
             )
-          } catch (e) {
-            const _e = e as Ex.Rejection<E>
-            switch (_e._tag) {
-              case 'Failure': {
-                current = fail(_e.error)
-                break
-              }
-              case 'Interrupt': {
-                interrupted = true
-                current     = undefined
-                break
+            break
+          }
+          case AsyncTag.All: {
+            const exits: ReadonlyArray<Exit<any, any>> = await Promise.all(
+              A.map_(I.asyncs, (a) => runPromiseExitEnv_(a, env?.value || {}, interruptionState))
+            )
+            const results = []
+            let errored   = false
+            for (let i = 0; i < exits.length && !errored; i++) {
+              const e = exits[i]
+              switch (e._tag) {
+                case 'Success': {
+                  results.push(e.value)
+                  break
+                }
+                case 'Failure': {
+                  if (C.interrupted(e.cause)) {
+                    errored     = true
+                    interrupted = true
+                    current     = undefined
+                  } else {
+                    errored = true
+                    current = failCause(e.cause)
+                  }
+                  break
+                }
               }
             }
+            if (!errored) {
+              current = succeed(results)
+            }
+            break
           }
-          break
+          case AsyncTag.Promise: {
+            try {
+              current = succeed(
+                await new CancellablePromise(
+                  (s) => I.promise(s).catch((ex) => Promise.reject(Ex.fail(ex))),
+                  interruptionState
+                ).promise()
+              )
+            } catch (e) {
+              const _e = e as Ex.Failure<void, E>
+              if (C.interrupted(_e.cause)) {
+                interrupted = true
+                current     = undefined
+              } else {
+                current = failCause(_e.cause)
+              }
+            }
+            break
+          }
+          case 'Finalize': {
+            finalizers = L.append_(finalizers, I.finalizer)
+            current    = I.async
+          }
         }
       }
+      await runAllFinalizers()
+      if (interruptionState.interrupted) {
+        return Ex.interrupt(void 0)
+      }
+      if (failed) {
+        return Ex.failCause<void, never, any>(result)
+      }
+      return Ex.succeed(result)
+    } catch (e) {
+      await runAllFinalizers()
+      return Ex.halt(e)
     }
-    if (interruptionState.interrupted) {
-      return Ex.interrupt()
-    }
-    if (failed) {
-      return Ex.fail(result)
-    }
-    return Ex.succeed(result)
   })()
 }
 
 export function runPromiseExit<E, A>(
   async: Async<unknown, E, A>,
   interruptionState = new InterruptionState()
-): Promise<Ex.AsyncExit<E, A>> {
+): Promise<Exit<E, A>> {
   return runPromiseExitEnv_(async, {}, interruptionState)
 }
 
-export function runPromiseExitInterrupt<E, A>(async: Async<unknown, E, A>): [Promise<Ex.AsyncExit<E, A>>, () => void] {
+export function runPromiseExitInterrupt<E, A>(async: Async<unknown, E, A>): [Promise<Exit<E, A>>, () => void] {
   const interruptionState = new InterruptionState()
   const p                 = runPromiseExitEnv_(async, {}, interruptionState)
   const i                 = () => {
@@ -1070,7 +1190,7 @@ export function runPromiseExitInterrupt<E, A>(async: Async<unknown, E, A>): [Pro
   return [p, i]
 }
 
-export function runAsync<E, A>(async: Async<unknown, E, A>, onExit?: (exit: Ex.AsyncExit<E, A>) => void): () => void {
+export function runAsync<E, A>(async: Async<unknown, E, A>, onExit?: (exit: Exit<E, A>) => void): () => void {
   const interruptionState = new InterruptionState()
   runPromiseExit(async, interruptionState).then(onExit)
   return () => {
@@ -1078,11 +1198,7 @@ export function runAsync<E, A>(async: Async<unknown, E, A>, onExit?: (exit: Ex.A
   }
 }
 
-export function runAsyncEnv<R, E, A>(
-  async: Async<R, E, A>,
-  env: R,
-  onExit?: (exit: Ex.AsyncExit<E, A>) => void
-): () => void {
+export function runAsyncEnv<R, E, A>(async: Async<R, E, A>, env: R, onExit?: (exit: Exit<E, A>) => void): () => void {
   const interruptionState = new InterruptionState()
   runPromiseExitEnv_(async, env, interruptionState).then(onExit)
   return () => {
@@ -1186,8 +1302,10 @@ export const Monad = P.Monad<URI, V>({
   flatten
 })
 
-export const chainRec_: <A, R, E, B>(a: A, f: (a: A) => Async<R, E, E.Either<A, B>>) => Async<R, E, B> =
-  P.getChainRec_<URI, V>({ map_, crossWith_, cross_, ap_, unit, pure, chain_, flatten })
+export const chainRec_: <A, R, E, B>(a: A, f: (a: A) => Async<R, E, E.Either<A, B>>) => Async<R, E, B> = P.getChainRec_<
+  URI,
+  V
+>({ map_, crossWith_, cross_, ap_, unit, pure, chain_, flatten })
 export const chainRec: <A, R, E, B>(f: (a: A) => Async<R, E, E.Either<A, B>>) => (a: A) => Async<R, E, B> =
   P.getChainRec<URI, V>({ map_, crossWith_, cross_, ap_, unit, pure, chain_, flatten })
 
@@ -1262,7 +1380,7 @@ class InterruptionState {
 class CancellablePromise<E, A> {
   readonly _E!: () => E
 
-  private reject: ((e: Ex.Rejection<any>) => void) | undefined = undefined
+  private reject: ((e: Exit<any, never>) => void) | undefined = undefined
 
   private current: Promise<A> | undefined = undefined
 
@@ -1310,7 +1428,7 @@ class CancellablePromise<E, A> {
   }
 
   interrupt() {
-    this.reject?.(Ex.interrupt())
+    this.reject?.(Ex.interrupt<void>(void 0))
   }
 }
 
@@ -1339,7 +1457,7 @@ class PromiseTracingContext {
     }
   }
 
-  async wait(): Promise<Ex.AsyncExit<any, any>[]> {
+  async wait(): Promise<Exit<any, any>[]> {
     const t = await Promise.all(
       Array.from(this.running).map((p) => p.then((a) => Ex.succeed(a)).catch((e) => Promise.resolve(e)))
     )

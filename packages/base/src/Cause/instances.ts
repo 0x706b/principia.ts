@@ -3,7 +3,7 @@ import type { CauseURI } from '../Modules'
 
 import { mapNF, sequenceSF } from '../prelude'
 import * as P from '../prelude'
-import { ap_, chain_, cross_, crossWith_, flatten, map_, pure, unit } from './generic'
+import { ap_, chain_, cross_, crossWith_, flatten, map_, pure, unit } from './core'
 
 export type URI = [HKT.URI<CauseURI>]
 export type V = HKT.V<'X', '+'>

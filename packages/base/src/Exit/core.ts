@@ -94,7 +94,7 @@ export function failCause<Id, E = never, A = never>(cause: C.GenericCause<Id, E>
   return new Failure(cause)
 }
 
-export function interrupt(id: FiberId) {
+export function interrupt<Id>(id: Id) {
   return failCause(C.interrupt(id))
 }
 
