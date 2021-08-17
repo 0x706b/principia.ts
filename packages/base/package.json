@@ -66,61 +66,61 @@
       "import": "./dist/dist/esm/Exit/index.js",
       "require": "./dist/dist/cjs/Exit/index.js"
     },
-    "./experimental/Channel": {
+    "./IO/Exit": {
       "traced": {
-        "import": "./dist/dist-traced/esm/experimental/Channel/index.js",
-        "require": "./dist/dist-traced/cjs/experimental/Channel/index.js"
+        "import": "./dist/dist-traced/esm/IO/Exit/index.js",
+        "require": "./dist/dist-traced/cjs/IO/Exit/index.js"
       },
-      "import": "./dist/dist/esm/experimental/Channel/index.js",
-      "require": "./dist/dist/cjs/experimental/Channel/index.js"
+      "import": "./dist/dist/esm/IO/Exit/index.js",
+      "require": "./dist/dist/cjs/IO/Exit/index.js"
     },
-    "./experimental/Sink": {
+    "./IO/experimental/Channel": {
       "traced": {
-        "import": "./dist/dist-traced/esm/experimental/Sink/index.js",
-        "require": "./dist/dist-traced/cjs/experimental/Sink/index.js"
+        "import": "./dist/dist-traced/esm/IO/experimental/Channel/index.js",
+        "require": "./dist/dist-traced/cjs/IO/experimental/Channel/index.js"
       },
-      "import": "./dist/dist/esm/experimental/Sink/index.js",
-      "require": "./dist/dist/cjs/experimental/Sink/index.js"
+      "import": "./dist/dist/esm/IO/experimental/Channel/index.js",
+      "require": "./dist/dist/cjs/IO/experimental/Channel/index.js"
     },
-    "./experimental/Stream": {
+    "./IO/experimental/Sink": {
       "traced": {
-        "import": "./dist/dist-traced/esm/experimental/Stream/index.js",
-        "require": "./dist/dist-traced/cjs/experimental/Stream/index.js"
+        "import": "./dist/dist-traced/esm/IO/experimental/Sink/index.js",
+        "require": "./dist/dist-traced/cjs/IO/experimental/Sink/index.js"
       },
-      "import": "./dist/dist/esm/experimental/Stream/index.js",
-      "require": "./dist/dist/cjs/experimental/Stream/index.js"
+      "import": "./dist/dist/esm/IO/experimental/Sink/index.js",
+      "require": "./dist/dist/cjs/IO/experimental/Sink/index.js"
     },
-    "./Fiber/combinators": {
+    "./IO/experimental/Stream": {
       "traced": {
-        "import": "./dist/dist-traced/esm/Fiber/combinators/index.js",
-        "require": "./dist/dist-traced/cjs/Fiber/combinators/index.js"
+        "import": "./dist/dist-traced/esm/IO/experimental/Stream/index.js",
+        "require": "./dist/dist-traced/cjs/IO/experimental/Stream/index.js"
       },
-      "import": "./dist/dist/esm/Fiber/combinators/index.js",
-      "require": "./dist/dist/cjs/Fiber/combinators/index.js"
+      "import": "./dist/dist/esm/IO/experimental/Stream/index.js",
+      "require": "./dist/dist/cjs/IO/experimental/Stream/index.js"
     },
-    "./Fiber": {
+    "./IO/Fiber/combinators": {
       "traced": {
-        "import": "./dist/dist-traced/esm/Fiber/index.js",
-        "require": "./dist/dist-traced/cjs/Fiber/index.js"
+        "import": "./dist/dist-traced/esm/IO/Fiber/combinators/index.js",
+        "require": "./dist/dist-traced/cjs/IO/Fiber/combinators/index.js"
       },
-      "import": "./dist/dist/esm/Fiber/index.js",
-      "require": "./dist/dist/cjs/Fiber/index.js"
+      "import": "./dist/dist/esm/IO/Fiber/combinators/index.js",
+      "require": "./dist/dist/cjs/IO/Fiber/combinators/index.js"
     },
-    "./FiberRef": {
+    "./IO/Fiber": {
       "traced": {
-        "import": "./dist/dist-traced/esm/FiberRef/index.js",
-        "require": "./dist/dist-traced/cjs/FiberRef/index.js"
+        "import": "./dist/dist-traced/esm/IO/Fiber/index.js",
+        "require": "./dist/dist-traced/cjs/IO/Fiber/index.js"
       },
-      "import": "./dist/dist/esm/FiberRef/index.js",
-      "require": "./dist/dist/cjs/FiberRef/index.js"
+      "import": "./dist/dist/esm/IO/Fiber/index.js",
+      "require": "./dist/dist/cjs/IO/Fiber/index.js"
     },
-    "./IO/combinators": {
+    "./IO/FiberRef": {
       "traced": {
-        "import": "./dist/dist-traced/esm/IO/combinators/index.js",
-        "require": "./dist/dist-traced/cjs/IO/combinators/index.js"
+        "import": "./dist/dist-traced/esm/IO/FiberRef/index.js",
+        "require": "./dist/dist-traced/cjs/IO/FiberRef/index.js"
       },
-      "import": "./dist/dist/esm/IO/combinators/index.js",
-      "require": "./dist/dist/cjs/IO/combinators/index.js"
+      "import": "./dist/dist/esm/IO/FiberRef/index.js",
+      "require": "./dist/dist/cjs/IO/FiberRef/index.js"
     },
     "./IO": {
       "traced": {
@@ -130,6 +130,94 @@
       "import": "./dist/dist/esm/IO/index.js",
       "require": "./dist/dist/cjs/IO/index.js"
     },
+    "./IO/IO/combinators": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/IO/IO/combinators/index.js",
+        "require": "./dist/dist-traced/cjs/IO/IO/combinators/index.js"
+      },
+      "import": "./dist/dist/esm/IO/IO/combinators/index.js",
+      "require": "./dist/dist/cjs/IO/IO/combinators/index.js"
+    },
+    "./IO/IO": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/IO/IO/index.js",
+        "require": "./dist/dist-traced/cjs/IO/IO/index.js"
+      },
+      "import": "./dist/dist/esm/IO/IO/index.js",
+      "require": "./dist/dist/cjs/IO/IO/index.js"
+    },
+    "./IO/Layer/combinators": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/IO/Layer/combinators/index.js",
+        "require": "./dist/dist-traced/cjs/IO/Layer/combinators/index.js"
+      },
+      "import": "./dist/dist/esm/IO/Layer/combinators/index.js",
+      "require": "./dist/dist/cjs/IO/Layer/combinators/index.js"
+    },
+    "./IO/Layer": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/IO/Layer/index.js",
+        "require": "./dist/dist-traced/cjs/IO/Layer/index.js"
+      },
+      "import": "./dist/dist/esm/IO/Layer/index.js",
+      "require": "./dist/dist/cjs/IO/Layer/index.js"
+    },
+    "./IO/Managed/combinators": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/IO/Managed/combinators/index.js",
+        "require": "./dist/dist-traced/cjs/IO/Managed/combinators/index.js"
+      },
+      "import": "./dist/dist/esm/IO/Managed/combinators/index.js",
+      "require": "./dist/dist/cjs/IO/Managed/combinators/index.js"
+    },
+    "./IO/Managed": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/IO/Managed/index.js",
+        "require": "./dist/dist-traced/cjs/IO/Managed/index.js"
+      },
+      "import": "./dist/dist/esm/IO/Managed/index.js",
+      "require": "./dist/dist/cjs/IO/Managed/index.js"
+    },
+    "./IO/Queue": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/IO/Queue/index.js",
+        "require": "./dist/dist-traced/cjs/IO/Queue/index.js"
+      },
+      "import": "./dist/dist/esm/IO/Queue/index.js",
+      "require": "./dist/dist/cjs/IO/Queue/index.js"
+    },
+    "./IO/Ref": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/IO/Ref/index.js",
+        "require": "./dist/dist-traced/cjs/IO/Ref/index.js"
+      },
+      "import": "./dist/dist/esm/IO/Ref/index.js",
+      "require": "./dist/dist/cjs/IO/Ref/index.js"
+    },
+    "./IO/Schedule": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/IO/Schedule/index.js",
+        "require": "./dist/dist-traced/cjs/IO/Schedule/index.js"
+      },
+      "import": "./dist/dist/esm/IO/Schedule/index.js",
+      "require": "./dist/dist/cjs/IO/Schedule/index.js"
+    },
+    "./IO/stm/STM": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/IO/stm/STM/index.js",
+        "require": "./dist/dist-traced/cjs/IO/stm/STM/index.js"
+      },
+      "import": "./dist/dist/esm/IO/stm/STM/index.js",
+      "require": "./dist/dist/cjs/IO/stm/STM/index.js"
+    },
+    "./IO/Stream": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/IO/Stream/index.js",
+        "require": "./dist/dist-traced/cjs/IO/Stream/index.js"
+      },
+      "import": "./dist/dist/esm/IO/Stream/index.js",
+      "require": "./dist/dist/cjs/IO/Stream/index.js"
+    },
     "./Iterable": {
       "traced": {
         "import": "./dist/dist-traced/esm/Iterable/index.js",
@@ -138,22 +226,6 @@
       "import": "./dist/dist/esm/Iterable/index.js",
       "require": "./dist/dist/cjs/Iterable/index.js"
     },
-    "./Layer/combinators": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/Layer/combinators/index.js",
-        "require": "./dist/dist-traced/cjs/Layer/combinators/index.js"
-      },
-      "import": "./dist/dist/esm/Layer/combinators/index.js",
-      "require": "./dist/dist/cjs/Layer/combinators/index.js"
-    },
-    "./Layer": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/Layer/index.js",
-        "require": "./dist/dist-traced/cjs/Layer/index.js"
-      },
-      "import": "./dist/dist/esm/Layer/index.js",
-      "require": "./dist/dist/cjs/Layer/index.js"
-    },
     "./List": {
       "traced": {
         "import": "./dist/dist-traced/esm/List/index.js",
@@ -161,22 +233,6 @@
       },
       "import": "./dist/dist/esm/List/index.js",
       "require": "./dist/dist/cjs/List/index.js"
-    },
-    "./Managed/combinators": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/Managed/combinators/index.js",
-        "require": "./dist/dist-traced/cjs/Managed/combinators/index.js"
-      },
-      "import": "./dist/dist/esm/Managed/combinators/index.js",
-      "require": "./dist/dist/cjs/Managed/combinators/index.js"
-    },
-    "./Managed": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/Managed/index.js",
-        "require": "./dist/dist-traced/cjs/Managed/index.js"
-      },
-      "import": "./dist/dist/esm/Managed/index.js",
-      "require": "./dist/dist/cjs/Managed/index.js"
     },
     "./NonEmptyArray": {
       "traced": {
@@ -193,46 +249,6 @@
       },
       "import": "./dist/dist/esm/prelude/index.js",
       "require": "./dist/dist/cjs/prelude/index.js"
-    },
-    "./Queue": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/Queue/index.js",
-        "require": "./dist/dist-traced/cjs/Queue/index.js"
-      },
-      "import": "./dist/dist/esm/Queue/index.js",
-      "require": "./dist/dist/cjs/Queue/index.js"
-    },
-    "./Ref": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/Ref/index.js",
-        "require": "./dist/dist-traced/cjs/Ref/index.js"
-      },
-      "import": "./dist/dist/esm/Ref/index.js",
-      "require": "./dist/dist/cjs/Ref/index.js"
-    },
-    "./Schedule": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/Schedule/index.js",
-        "require": "./dist/dist-traced/cjs/Schedule/index.js"
-      },
-      "import": "./dist/dist/esm/Schedule/index.js",
-      "require": "./dist/dist/cjs/Schedule/index.js"
-    },
-    "./stm/STM": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/stm/STM/index.js",
-        "require": "./dist/dist-traced/cjs/stm/STM/index.js"
-      },
-      "import": "./dist/dist/esm/stm/STM/index.js",
-      "require": "./dist/dist/cjs/stm/STM/index.js"
-    },
-    "./Stream": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/Stream/index.js",
-        "require": "./dist/dist-traced/cjs/Stream/index.js"
-      },
-      "import": "./dist/dist/esm/Stream/index.js",
-      "require": "./dist/dist/cjs/Stream/index.js"
     },
     "./Structural/Equatable": {
       "traced": {

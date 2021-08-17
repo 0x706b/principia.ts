@@ -10,23 +10,23 @@ class CauseSpec extends DefaultRunnableSpec {
         ['&&'](assert(C.then(C.empty, C.both(C.empty, C.empty)), equalTo(C.empty)))
         ['&&'](assert(C.then(C.fail('ok'), C.both(C.empty, C.empty)), equalTo(C.fail('ok'))))
         ['&&'](assert(St.hash(C.then(C.fail('ok'), C.both(C.empty, C.empty))), equalTo(St.hash(C.fail('ok')))))
-        ['&&'](assert(C.then(C.fail('ok'), C.both(C.empty, C.die('ok'))), equalTo(C.then(C.fail('ok'), C.die('ok')))))
+        ['&&'](assert(C.then(C.fail('ok'), C.both(C.empty, C.halt('ok'))), equalTo(C.then(C.fail('ok'), C.halt('ok')))))
         ['&&'](
           assert(
-            St.hash(C.then(C.fail('ok'), C.both(C.empty, C.die('ok')))),
-            equalTo(St.hash(C.then(C.fail('ok'), C.die('ok'))))
+            St.hash(C.then(C.fail('ok'), C.both(C.empty, C.halt('ok')))),
+            equalTo(St.hash(C.then(C.fail('ok'), C.halt('ok'))))
           )
         )
         ['&&'](
           assert(
-            C.then(C.fail('ok'), C.both(C.fail('ok'), C.die('ok'))),
-            equalTo(C.then(C.fail('ok'), C.both(C.fail('ok'), C.die('ok'))))
+            C.then(C.fail('ok'), C.both(C.fail('ok'), C.halt('ok'))),
+            equalTo(C.then(C.fail('ok'), C.both(C.fail('ok'), C.halt('ok'))))
           )
         )
         ['&&'](
           assert(
-            St.hash(C.then(C.fail('ok'), C.both(C.fail('ok'), C.die('ok')))),
-            equalTo(St.hash(C.then(C.fail('ok'), C.both(C.fail('ok'), C.die('ok')))))
+            St.hash(C.then(C.fail('ok'), C.both(C.fail('ok'), C.halt('ok')))),
+            equalTo(St.hash(C.then(C.fail('ok'), C.both(C.fail('ok'), C.halt('ok')))))
           )
         ))
   )

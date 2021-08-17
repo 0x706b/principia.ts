@@ -1,8 +1,8 @@
 import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
-import * as M from '@principia/base/Managed'
-import * as P from '@principia/base/Promise'
-import * as S from '@principia/base/Stream'
+import * as M from '@principia/base/IO/Managed'
+import * as P from '@principia/base/IO/Promise'
+import * as S from '@principia/base/IO/Stream'
 import { assertCompletes, DefaultRunnableSpec, suite, testM } from '@principia/test'
 
 class StreamSpec extends DefaultRunnableSpec {
@@ -24,7 +24,12 @@ class StreamSpec extends DefaultRunnableSpec {
               P.make<never, void>(),
               I.chain((onEnd) =>
                 pipe(subscribe, S.ensuring(P.succeed_(onEnd, undefined)), S.runDrain, I.fork, (_) =>
-                  _['*>'](P.await(onEnd))['*>'](S.runDrain(subscribe))['*>'](I.succeed(assertCompletes))
+                  pipe(
+                    _,
+                    I.crossSecond(P.await(onEnd)),
+                    I.crossSecond(S.runDrain(subscribe)),
+                    I.crossSecond(I.succeed(assertCompletes))
+                  )
                 )
               )
             )

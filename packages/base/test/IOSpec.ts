@@ -4,8 +4,8 @@ import { RuntimeException } from '@principia/base/Exception'
 import * as Ex from '@principia/base/Exit'
 import { identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
+import * as Ref from '@principia/base/IO/Ref'
 import * as O from '@principia/base/Option'
-import * as Ref from '@principia/base/Ref'
 import {
   assert,
   assertM,
@@ -99,7 +99,7 @@ class IOSpec extends DefaultRunnableSpec {
               I.succeed(42),
               I.bracketExit(
                 () => I.fail('use failed'),
-                () => I.die(releaseDied)
+                () => I.halt(releaseDied)
               ),
               I.result
             )
@@ -158,7 +158,7 @@ class IOSpec extends DefaultRunnableSpec {
               I.succeed(42),
               I.bracketExit(
                 () => I.fail('use failed'),
-                () => I.die(releaseDied)
+                () => I.halt(releaseDied)
               ),
               I.disconnect,
               I.result
@@ -275,16 +275,22 @@ class IOSpec extends DefaultRunnableSpec {
           I.map((b) => assert(b, isTrue))
         )
       ),
-      testM("fails if cause doesn't match", () => pipe(
-        I.fiberId(),
-        I.chain((fiberId) => pipe(
-          I.interrupt,
-          I.catchSomeCause((c): O.Option<I.IO<unknown, never, boolean>> => Ca.interrupted(c) ? O.none() : O.some(I.succeed(true))),
-          I.sandbox,
-          I.either,
-          I.map((e) => assert(e, isLeft(deepStrictEqualTo(Ca.interrupt(fiberId)))))
-        ))
-      ))
+      testM("fails if cause doesn't match", () =>
+        pipe(
+          I.fiberId(),
+          I.chain((fiberId) =>
+            pipe(
+              I.interrupt,
+              I.catchSomeCause(
+                (c): O.Option<I.IO<unknown, never, boolean>> => (Ca.interrupted(c) ? O.none() : O.some(I.succeed(true)))
+              ),
+              I.sandbox,
+              I.either,
+              I.map((e) => assert(e, isLeft(deepStrictEqualTo(Ca.interrupt(fiberId)))))
+            )
+          )
+        )
+      )
     )
   )
 }
