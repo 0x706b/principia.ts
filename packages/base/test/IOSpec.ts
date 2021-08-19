@@ -7,8 +7,8 @@ import * as I from '@principia/base/IO'
 import * as Ref from '@principia/base/IO/Ref'
 import * as O from '@principia/base/Option'
 import {
-  assert,
-  assertM,
+  assert_,
+  assertIO_,
   deepStrictEqualTo,
   DefaultRunnableSpec,
   equalTo,
@@ -33,13 +33,13 @@ class IOSpec extends DefaultRunnableSpec {
     suite(
       'absorbWith',
       testM('on fail', () =>
-        assertM(pipe(IOExampleError, I.absorbWith(identity), I.result), fails(equalTo(ExampleError as unknown)))
+        assertIO_(pipe(IOExampleError, I.absorbWith(identity), I.result), fails(equalTo(ExampleError as unknown)))
       ),
       testM('on die', () =>
-        assertM(pipe(IOExampleDie, I.absorbWith(identity), I.result), fails(equalTo(ExampleError as unknown)))
+        assertIO_(pipe(IOExampleDie, I.absorbWith(identity), I.result), fails(equalTo(ExampleError as unknown)))
       ),
       testM('on success', () =>
-        assertM(
+        assertIO_(
           pipe(
             I.succeed(1),
             I.absorbWith(() => ExampleError)
@@ -49,7 +49,7 @@ class IOSpec extends DefaultRunnableSpec {
       )
     ),
     testM('map', () =>
-      assertM(
+      assertIO_(
         pipe(
           I.succeed('Hello'),
           I.map((s) => s.length)
@@ -72,7 +72,7 @@ class IOSpec extends DefaultRunnableSpec {
             )
           )
           const released = yield* _(release.get)
-          return assert(result, equalTo(43))['&&'](assert(released, equalTo(true)))
+          return assert_(result, equalTo(43))['&&'](assert_(released, equalTo(true)))
         })
       ),
       testM('bracketExit happy path', () =>
@@ -88,7 +88,7 @@ class IOSpec extends DefaultRunnableSpec {
             )
           )
           const released = yield* _(Ref.get(release))
-          return assert(result, equalTo(0))['&&'](assert(released, isTrue))
+          return assert_(result, equalTo(0))['&&'](assert_(released, isTrue))
         })
       ),
       testM('bracketExit error handling', () => {
@@ -110,7 +110,7 @@ class IOSpec extends DefaultRunnableSpec {
               Ex.matchIO(I.succeed, () => I.fail('effect should have died'))
             )
           )
-          return assert(Ca.failures(cause), deepStrictEqualTo(['use failed']))
+          return assert_(Ca.failures(cause), deepStrictEqualTo(['use failed']))
         })
       })
     ),
@@ -130,7 +130,7 @@ class IOSpec extends DefaultRunnableSpec {
             )
           )
           const released = yield* _(Ref.get(release))
-          return assert(result, equalTo(43))['&&'](assert(released, isTrue))
+          return assert_(result, equalTo(43))['&&'](assert_(released, isTrue))
         })
       ),
       testM('bracketExit happy path', () =>
@@ -147,7 +147,7 @@ class IOSpec extends DefaultRunnableSpec {
             )
           )
           const released = yield* _(Ref.get(release))
-          return assert(result, equalTo(0))['&&'](assert(released, isTrue))
+          return assert_(result, equalTo(0))['&&'](assert_(released, isTrue))
         })
       ),
       testM('bracketExit error handling', () => {
@@ -173,8 +173,8 @@ class IOSpec extends DefaultRunnableSpec {
               )
             )
           )
-          return assert(Ca.failures(cause), deepStrictEqualTo(['use failed']))['&&'](
-            assert(Ca.defects(cause), deepStrictEqualTo([releaseDied]))
+          return assert_(Ca.failures(cause), deepStrictEqualTo(['use failed']))['&&'](
+            assert_(Ca.defects(cause), deepStrictEqualTo([releaseDied]))
           )
         })
       }),
@@ -205,7 +205,7 @@ class IOSpec extends DefaultRunnableSpec {
             )
           )
           const isReleased = yield* _(Ref.get(released))
-          return assert(Ca.defects(cause), deepStrictEqualTo([releaseDied]))['&&'](assert(isReleased, isTrue))
+          return assert_(Ca.defects(cause), deepStrictEqualTo([releaseDied]))['&&'](assert_(isReleased, isTrue))
         })
       })
     ),
@@ -223,9 +223,9 @@ class IOSpec extends DefaultRunnableSpec {
           const c = yield* _(cache)
           yield* _(TestClock.adjust(1000 * 60 * 59))
           const d = yield* _(cache)
-          return assert(a, equalTo(b))
-            ['&&'](assert(b, not(equalTo(c))))
-            ['&&'](assert(c, equalTo(d)))
+          return assert_(a, equalTo(b))
+            ['&&'](assert_(b, not(equalTo(c))))
+            ['&&'](assert_(c, equalTo(d)))
         })
       }),
       testM('correctly handles an infinite duration time to live', () =>
@@ -236,7 +236,7 @@ class IOSpec extends DefaultRunnableSpec {
           const a               = yield* _(cached)
           const b               = yield* _(cached)
           const c               = yield* _(cached)
-          return assert([a, b, c], deepStrictEqualTo([0, 0, 0]))
+          return assert_([a, b, c], deepStrictEqualTo([0, 0, 0]))
         })
       )
     ),
@@ -256,10 +256,10 @@ class IOSpec extends DefaultRunnableSpec {
           const d = yield* _(cached)
           yield* _(TestClock.adjust(1000 * 60 * 59))
           const e = yield* _(cached)
-          return assert(a, equalTo(b))
-            ['&&'](assert(b, not(equalTo(c))))
-            ['&&'](assert(c, equalTo(d)))
-            ['&&'](assert(d, not(equalTo(e))))
+          return assert_(a, equalTo(b))
+            ['&&'](assert_(b, not(equalTo(c))))
+            ['&&'](assert_(c, equalTo(d)))
+            ['&&'](assert_(d, not(equalTo(e))))
         })
       })
     ),
@@ -272,7 +272,7 @@ class IOSpec extends DefaultRunnableSpec {
             (c): O.Option<I.IO<unknown, never, boolean>> => (Ca.interrupted(c) ? O.some(I.succeed(true)) : O.none())
           ),
           I.sandbox,
-          I.map((b) => assert(b, isTrue))
+          I.map((b) => assert_(b, isTrue))
         )
       ),
       testM("fails if cause doesn't match", () =>
@@ -286,7 +286,7 @@ class IOSpec extends DefaultRunnableSpec {
               ),
               I.sandbox,
               I.either,
-              I.map((e) => assert(e, isLeft(deepStrictEqualTo(Ca.interrupt(fiberId)))))
+              I.map((e) => assert_(e, isLeft(deepStrictEqualTo(Ca.interrupt(fiberId)))))
             )
           )
         )

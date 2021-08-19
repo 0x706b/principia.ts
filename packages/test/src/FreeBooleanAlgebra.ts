@@ -8,6 +8,7 @@ import * as Ev from '@principia/base/Eval'
 import { flow, identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as O from '@principia/base/Option'
+import { Semigroup } from '@principia/base/Semigroup'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -433,4 +434,12 @@ export function failureM<A>(a: A): FreeBooleanAlgebraM<unknown, never, A> {
 
 export function fromIO<R, E, A>(io: IO<R, E, A>): FreeBooleanAlgebraM<R, E, A> {
   return I.map_(io, success)
+}
+
+export function SemigroupAll<A>(): Semigroup<FreeBooleanAlgebra<A>> {
+  return Semigroup(and_)
+}
+
+export function SemigroupAllIO<R, E, A>(): Semigroup<FreeBooleanAlgebraM<R, E, A>> {
+  return Semigroup(andM_)
 }

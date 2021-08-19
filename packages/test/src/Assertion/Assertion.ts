@@ -167,7 +167,7 @@ export function containsString(element: string): Assertion<string> {
   return assertion('containsString', [param(element)], Str.contains(element), Str.Show)
 }
 
-export function deepStrictEqualTo(expected: any, show?: S.Show<any>): Assertion<any> {
+export function deepStrictEqualTo(expected: unknown, show?: S.Show<unknown>): Assertion<unknown> {
   return assertion('deepStrictEquals', [param(expected, show)], (actual) =>
     pipe(
       O.tryCatch(() => assert.deepStrictEqual(actual, expected)),

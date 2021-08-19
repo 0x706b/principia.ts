@@ -10,8 +10,9 @@ import type { Either } from '@principia/base/Either'
 import type { Has } from '@principia/base/Has'
 import type { IO, URIO } from '@principia/base/IO'
 import type { Stream } from '@principia/base/IO/Stream'
+import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type { Show } from '@principia/base/Show'
-import type { UnionToIntersection } from '@principia/base/util/types'
+import type { _E, _R,UnionToIntersection } from '@principia/base/util/types'
 
 import * as C from '@principia/base/Chunk'
 import * as E from '@principia/base/Either'
@@ -65,22 +66,45 @@ export function traverseResult<A>(
   )
 }
 
-export function assert<A>(
+export function assert_<A extends string | number | boolean>(
   value: WidenLiteral<A>,
   assertion: Assertion<WidenLiteral<A>>,
-  showA?: Show<WidenLiteral<A>>
-): TestResult {
-  return traverseResult(value, assertion.run(value), assertion, showA)
+  SA?: Show<WidenLiteral<A>>
+): TestResult
+export function assert_<A>(value: A, assertion: Assertion<A>, SA?: Show<A>): TestResult
+export function assert_<A>(value: A, assertion: Assertion<A>, SA?: Show<A>): TestResult {
+  return traverseResult(value, assertion.run(value), assertion, SA)
 }
 
-export const assertCompletes = assert(true, isTrue)
+export function assert<A>(assertion: Assertion<A>, SA?: Show<A>): (value: A) => TestResult {
+  return (value) => assert_(value, assertion, SA)
+}
 
-export function assertM<R, E, A>(io: IO<R, E, A>, assertion: AssertionIO<A>, showA?: Show<A>): IO<R, E, TestResult> {
+export function all(...results: NA.NonEmptyArray<TestResult>): TestResult {
+  return NA.fold(BA.SemigroupAll<FailureDetails>())(results)
+}
+
+export const assertCompletes = assert_(true, isTrue)
+
+export function assertIO_<R, E, A>(io: IO<R, E, A>, assertion: AssertionIO<A>, showA?: Show<A>): IO<R, E, TestResult> {
   return I.gen(function* (_) {
     const value        = yield* _(io)
     const assertResult = yield* _(assertion.runIO(value))
     return traverseResult(value, assertResult, assertion, showA)
   })
+}
+
+export function assertIO<A>(
+  assertion: AssertionIO<A>,
+  showA?: Show<A>
+): <R, E>(io: IO<R, E, A>) => IO<R, E, TestResult> {
+  return (io) => assertIO_(io, assertion, showA)
+}
+
+export function allIO<A extends NonEmptyArray<BA.FreeBooleanAlgebraM<any, any, any>>>(
+  ...results: A
+): IO<_R<A[number]>, _E<A[number]>, TestResult> {
+  return NA.fold(BA.SemigroupAllIO<_R<A[number]>, _E<A[number]>, FailureDetails>())(results)
 }
 
 type MergeR<Specs extends ReadonlyArray<Spec.XSpec<any, any>>> = UnionToIntersection<

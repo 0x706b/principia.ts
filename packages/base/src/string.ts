@@ -436,6 +436,6 @@ export const Ord: P.Ord<string> = P.Ord({
   equals_: (x, y) => x === y
 })
 
-export const Show: P.Show<string> = P.Show(identity)
+export const Show: P.Show<string> = P.Show(surround('"'))
 
 export const Guard: G.Guard<unknown, string> = G.Guard((u: unknown): u is string => typeof u === 'string')
