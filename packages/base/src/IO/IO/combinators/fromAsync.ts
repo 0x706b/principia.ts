@@ -3,7 +3,10 @@ import type { Async } from '../../../Async'
 import { accessCallTrace, traceAs } from '@principia/compile/util'
 
 import { runAsyncEnv } from '../../../Async'
+import { flow } from '../../../function'
 import * as C from '../../Cause'
+import * as Ex from '../../Exit'
+import { FiberId } from '../../Fiber'
 import * as I from '../core'
 import { asyncInterrupt } from './interrupt'
 
@@ -14,28 +17,33 @@ import { asyncInterrupt } from './interrupt'
  */
 export function fromAsync<R, E, A>(effect: Async<R, E, A>): I.IO<R, E, A> {
   const trace = accessCallTrace()
-  return I.asksIO(
-    traceAs(trace, (_: R) =>
-      asyncInterrupt<unknown, E, A>((k) => {
-        const canceller = runAsyncEnv(effect, _, (ex) => {
-          switch (ex._tag) {
-            case 'Success': {
-              k(I.succeed(ex.value))
-              break
-            }
-            case 'Failure': {
-              k(I.fail(ex.error))
-              break
-            }
-            case 'Interrupt': {
-              k(I.descriptorWith((d) => I.failCause(C.interrupt(d.id))))
-              break
-            }
-          }
-        })
+  return I.deferWith((_, id) =>
+    I.asksIO(
+      traceAs(trace, (env: R) =>
+        asyncInterrupt<unknown, E, A>((k) => {
+          const canceller = runAsyncEnv(
+            effect,
+            env,
+            flow(
+              Ex.mapErrorCause(
+                C.fold<void, E, C.Cause<E>>(
+                  (): C.Cause<E> => C.empty,
+                  C.fail,
+                  C.halt,
+                  () => C.interrupt(id),
+                  C.then,
+                  C.both,
+                  C.traced
+                )
+              ),
+              I.fromExit,
+              k
+            )
+          )
 
-        return I.succeedLazy(canceller)
-      })
+          return I.succeedLazy(canceller)
+        })
+      )
     )
   )
 }

@@ -363,16 +363,16 @@ export function mapError<E, G>(f: (e: E) => G): <Id, A>(pab: GenericExit<Id, E, 
   return (pab) => mapError_(pab, f)
 }
 
-export function mapErrorCause_<Id, E, A, G>(
+export function mapErrorCause_<Id, E, A, Id1, G>(
   pab: GenericExit<Id, E, A>,
-  f: (e: C.GenericCause<Id, E>) => C.GenericCause<Id, G>
-): GenericExit<Id, G, A> {
+  f: (e: C.GenericCause<Id, E>) => C.GenericCause<Id1, G>
+): GenericExit<Id1, G, A> {
   return isFailure(pab) ? failCause(f(pab.cause)) : pab
 }
 
-export function mapErrorCause<Id, E, G>(
-  f: (e: C.GenericCause<Id, E>) => C.GenericCause<Id, G>
-): <A>(pab: GenericExit<Id, E, A>) => GenericExit<Id, G, A> {
+export function mapErrorCause<Id, E, Id1, G>(
+  f: (e: C.GenericCause<Id, E>) => C.GenericCause<Id1, G>
+): <A>(pab: GenericExit<Id, E, A>) => GenericExit<Id1, G, A> {
   return (pab) => mapErrorCause_(pab, f)
 }
 
