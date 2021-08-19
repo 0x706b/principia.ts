@@ -17,7 +17,8 @@ import {
   partition_,
   partitionMap_,
   pure,
-  unit } from './core'
+  unit
+} from './core'
 
 type URI = [HKT.URI<IterableURI>]
 
@@ -40,9 +41,6 @@ export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
   crossWith_,
   cross_
 })
-
-export const crossFlat_ = P.crossFlatF_<URI>({ map_, cross_, crossWith_ })
-export const crossFlat  = P.crossFlatF<URI>({ map_, cross_, crossWith_ })
 
 export const Apply = P.Apply<URI>({
   map_,

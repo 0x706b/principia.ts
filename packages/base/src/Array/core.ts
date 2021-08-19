@@ -2263,32 +2263,6 @@ export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
   crossWith_
 })
 
-/**
- * The cartesian product of two arrays
- *
- * @category SemimonoidalFunctor
- * @since 1.0.0
- */
-export const crossFlat_: <A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>) => ReadonlyArray<Z.Zip<A, B>> =
-  P.crossFlatF_<URI>({
-    map_,
-    cross_,
-    crossWith_
-  })
-
-/**
- * The cartesian product of two arrays
- *
- * @category SemimonoidalFunctor
- * @since 1.0.0
- */
-export const crossFlat: <B>(fb: ReadonlyArray<B>) => <A>(fa: ReadonlyArray<A>) => ReadonlyArray<Z.Zip<A, B>> =
-  P.crossFlatF<URI>({
-    map_,
-    cross_,
-    crossWith_
-  })
-
 export const Apply = P.Apply<URI>({
   map_,
   cross_,

@@ -215,9 +215,6 @@ export const Functor: P.Functor<[HKT.URI<StateURI>], V> = P.Functor({
 
 export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({ map_, crossWith_, cross_ })
 
-export const crossFlat_ = P.crossFlatF_<URI>({ map_, cross_, crossWith_ })
-export const crossFlat  = P.crossFlatF<URI>({ map_, cross_, crossWith_ })
-
 export const Apply: P.Apply<[HKT.URI<StateURI>], V> = P.Apply({
   map_,
   crossWith_,

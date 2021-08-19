@@ -224,9 +224,6 @@ export const Semimonoidal = P.SemimonoidalFunctor<URI>({
   cross_
 })
 
-export const crossFlat_ = P.crossFlatF_<URI>({ map_, cross_, crossWith_ })
-export const crossFlat  = P.crossFlatF<URI>({ map_, cross_, crossWith_ })
-
 export const Apply = P.Apply<URI>({
   map_,
   crossWith_,

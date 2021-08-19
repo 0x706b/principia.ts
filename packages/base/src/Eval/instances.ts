@@ -18,9 +18,6 @@ export const Functor = P.Functor<URI>({ map_ })
 
 export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({ map_, crossWith_, cross_ })
 
-export const crossFlat_ = P.crossFlatF_<URI>({ map_, cross_, crossWith_ })
-export const crossFlat  = P.crossFlatF<URI>({ map_, cross_, crossWith_ })
-
 export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
 export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
 export const mapN_     = P.mapNF_(SemimonoidalFunctor)

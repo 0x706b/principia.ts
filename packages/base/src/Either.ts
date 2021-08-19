@@ -1074,9 +1074,6 @@ export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
 export const crossS    = P.crossSF(SemimonoidalFunctor)
 export const crossT    = P.crossTF(SemimonoidalFunctor)
 
-export const crossFlat_ = P.crossFlatF_<URI, V>({ map_, cross_, crossWith_ })
-export const crossFlat  = P.crossFlatF<URI, V>({ map_, cross_, crossWith_ })
-
 export const Apply = P.Apply<URI, V>({
   map_,
   crossWith_,

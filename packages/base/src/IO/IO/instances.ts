@@ -54,20 +54,6 @@ export const SemimonoidalFunctorPar = P.SemimonoidalFunctor<URI, V>({
   cross_: crossPar_
 })
 
-export const crossFlat_ = P.crossFlatF_<URI, V>({
-  map_,
-  cross_,
-  crossWith_
-})
-export const crossFlat = P.crossFlatF<URI, V>({
-  map_,
-  cross_,
-  crossWith_
-})
-
-export const crossFlatPar_ = P.crossFlatF_<URI, V>({ map_, cross_: crossPar_, crossWith_: crossWithPar_ })
-export const crossFlatPar  = P.crossFlatF<URI, V>({ map_, cross_: crossPar_, crossWith_: crossWithPar_ })
-
 export const mapN    = mapNF(SemimonoidalFunctor)
 export const mapNPar = mapNF(SemimonoidalFunctorPar)
 
