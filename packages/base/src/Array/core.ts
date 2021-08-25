@@ -5,7 +5,6 @@ import type { NonEmptyArray } from '../NonEmptyArray'
 import type { Option } from '../Option'
 import type { ReadonlyRecord } from '../Record'
 import type { These } from '../These'
-import type * as Z from '../util/Zipped'
 
 import * as Ev from '../Eval/core'
 import { Applicative as ApplicativeEval } from '../Eval/instances'
