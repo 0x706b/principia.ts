@@ -612,13 +612,13 @@ export function map<A, B>(f: (a: A, i: number) => B): (fa: ReadonlyArray<A>) => 
  * -------------------------------------------------------------------------------------------------
  */
 
-export function ichain_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => ReadonlyArray<B>): ReadonlyArray<B> {
+export function chain_<A, B>(fa: ReadonlyArray<A>, f: (a: A, i: number) => ReadonlyArray<B>): ReadonlyArray<B> {
   let outLen = 0
   const len  = fa.length
   const temp = Array(len)
   for (let i = 0; i < len; i++) {
     const e   = fa[i]
-    const arr = f(i, e)
+    const arr = f(e, i)
     outLen   += arr.length
     temp[i]   = arr
   }
@@ -635,27 +635,7 @@ export function ichain_<A, B>(fa: ReadonlyArray<A>, f: (i: number, a: A) => Read
   return out
 }
 
-export function ichain<A, B>(f: (i: number, a: A) => ReadonlyArray<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
-  return (fa) => ichain_(fa, f)
-}
-
-/**
- * Composes computations in sequence, using the return value of one computation as input for the next
- *
- * @category Monad
- * @since 1.0.0
- */
-export function chain_<A, B>(fa: ReadonlyArray<A>, f: (a: A) => ReadonlyArray<B>): ReadonlyArray<B> {
-  return ichain_(fa, (_, a) => f(a))
-}
-
-/**
- * Composes computations in sequence, using the return value of one computation as input for the next
- *
- * @category Monad
- * @since 1.0.0
- */
-export function chain<A, B>(f: (a: A) => ReadonlyArray<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
+export function chain<A, B>(f: (a: A, i: number) => ReadonlyArray<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
   return (fa) => chain_(fa, f)
 }
 
