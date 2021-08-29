@@ -260,7 +260,7 @@ export function zipWith_<A, B, C>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>, f:
 export function zipWith<A, B, C>(
   fb: ReadonlyArray<B>,
   f: (a: A, b: B) => C
-): (fa: NonEmptyArray<A>) => ReadonlyArray<C> {
+): (fa: ReadonlyArray<A>) => ReadonlyArray<C> {
   return (fa) => zipWith_(fa, fb, f)
 }
 
@@ -1682,7 +1682,7 @@ export function mapAccum_<A, S, B>(
   const bs  = new Array(as.length)
   let state = s
   for (let i = 0; i < as.length; i++) {
-    const result = f(s, as[i])
+    const result = f(state, as[i])
     bs[i]        = result[0]
     state        = result[1]
   }
@@ -1899,7 +1899,7 @@ export function slice(start?: number, end?: number): <A>(as: ReadonlyArray<A>) =
  * @since 1.0.0
  */
 export function sort<B>(O: P.Ord<B>): <A extends B>(as: ReadonlyArray<A>) => ReadonlyArray<A> {
-  return (as) => (isEmpty(as) ? empty() : as.length === 1 ? as : mutableClone(as).sort((a, b) => O.compare(a)(b)))
+  return (as) => (isEmpty(as) ? empty() : as.length === 1 ? as : mutableClone(as).sort((a, b) => O.compare_(a, b)))
 }
 
 /**
@@ -1912,7 +1912,7 @@ export function sort<B>(O: P.Ord<B>): <A extends B>(as: ReadonlyArray<A>) => Rea
 export function sortBy<B>(ords: ReadonlyArray<P.Ord<B>>): <A extends B>(as: ReadonlyArray<A>) => ReadonlyArray<B> {
   return (as) => {
     const M = Ord.getMonoid<B>()
-    return sort(foldl_(ords, M.nat, (b, a) => M.combine_(a, b)))(as)
+    return sort(foldl_(ords, M.nat, (b, a) => M.combine_(b, a)))(as)
   }
 }
 
