@@ -1,4 +1,4 @@
-import { identity } from './function'
+import { identity, unsafeCoerce } from './function'
 
 export interface Newtype<URI, A> {
   readonly _URI: URI
@@ -9,36 +9,66 @@ export type AnyNewtype = Newtype<any, any>
 
 export interface Constructor<T, URI> {
   URI: URI
-  wrap: (_: T) => Newtype<URI, T>
-  unwrap: (_: Newtype<URI, T>) => T
+  wrap: {
+    /**
+     * @optimize identity
+     */
+    (_: T): Newtype<URI, T>
+  }
+  unwrap: {
+    /**
+     * @optimize identity
+     */
+    (_: Newtype<URI, T>): T
+  }
 }
 
 export interface GenericConstructor<URI> {
   URI: URI
-  wrap: <T>(_: T) => Newtype<URI, T>
-  unwrap: <T>(_: Newtype<URI, T>) => T
+  wrap: {
+    /**
+     * @optimize identity
+     */
+    <T>(_: T): Newtype<URI, T>
+  }
+  unwrap: {
+    /**
+     * @optimize identity
+     */
+    <T>(_: Newtype<URI, T>): T
+  }
   of: <T>() => Constructor<T, URI>
 }
 
 export interface ConstructorK<T, URI, K extends Newtype<URI, T>> {
-  wrap: (_: T) => K
-  unwrap: (_: K) => T
+  wrap: {
+    /**
+     * @optimize identity
+     */
+    (_: T): K
+  }
+  unwrap: {
+    /**
+     * @optimize identity
+     */
+    (_: K): T
+  }
 }
 
 export const typeDef = <T>() => <URI extends string>(URI: URI): Constructor<T, URI> => ({
   URI,
-  wrap: identity as any,
-  unwrap: identity as any
+  wrap: unsafeCoerce,
+  unwrap: unsafeCoerce
 })
 
 export const genericDef = <URI extends string>(URI: URI): GenericConstructor<URI> => ({
   URI,
-  wrap: identity as any,
-  unwrap: identity as any,
+  wrap: unsafeCoerce,
+  unwrap: unsafeCoerce,
   of: () => ({
     URI,
-    wrap: identity as any,
-    unwrap: identity as any
+    wrap: unsafeCoerce,
+    unwrap: unsafeCoerce
   })
 })
 
