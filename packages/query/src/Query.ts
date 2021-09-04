@@ -1078,7 +1078,7 @@ export function optional<R, E, A>(ma: Query<R, E, A>): Query<R, E, O.Option<A>> 
   return matchCauseQuery_(
     ma,
     flow(
-      Ca.stripSomeDefects((_) => !(_ instanceof QueryFailure)),
+      Ca.filterDefects((_) => !(_ instanceof QueryFailure)),
       O.match(() => none(), failCause)
     ),
     some
