@@ -39,7 +39,7 @@ export function runner<R, E, R2, E2, F1 extends Msg.AnyMessage>(
     ref: Ref.URef<
       HM.HashMap<
         string,
-        TRef.TRef<{
+        TRef.UTRef<{
           listeners: number
           closing: boolean
         }>
@@ -61,7 +61,7 @@ export function runner<R, E, R2, E2, F1 extends Msg.AnyMessage>(
       )
     )
 
-    const gatesRef = yield* _(Ref.make(HM.makeDefault<string, TRef.TRef<{ listeners: number, closing: boolean }>>()))
+    const gatesRef = yield* _(Ref.make(HM.makeDefault<string, TRef.UTRef<{ listeners: number, closing: boolean }>>()))
 
     const statsRef = yield* _(Ref.make(HM.makeDefault<string, { inFlight: number, last: number }>()))
 
