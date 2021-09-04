@@ -18,7 +18,7 @@ import { tuple } from '../tuple'
  * -------------------------------------------------------------------------------------------------
  */
 
-export const ExitTypeId = Symbol()
+export const ExitTypeId = Symbol.for('@principia/base/Exit')
 export type ExitTypeId = typeof ExitTypeId
 
 export type GenericExit<Id, E, A> = Success<A> | Failure<Id, E>

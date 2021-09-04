@@ -3,7 +3,7 @@ import { isObject } from '../../util/predicates'
 
 export type TExit<E, A> = Fail<E> | Succeed<A> | Retry | Halt
 
-export const FailTypeId = Symbol('@principia/base/stm/TExit/Fail')
+export const FailTypeId = Symbol.for('@principia/base/IO/stm/TExit/Fail')
 export type FailTypeId = typeof FailTypeId
 
 export class Fail<E> {
@@ -23,7 +23,7 @@ export function isFail(u: unknown): u is Fail<unknown> {
   return isObject(u) && u['_tag'] === FailTypeId
 }
 
-export const SucceedTypeId = Symbol('@principia/base/stm/TExit/Succeed')
+export const SucceedTypeId = Symbol.for('@principia/base/IO/stm/TExit/Succeed')
 export type SucceedTypeId = typeof SucceedTypeId
 
 export class Succeed<A> {
@@ -43,7 +43,7 @@ export function isSucceed(u: unknown): u is Succeed<unknown> {
   return isObject(u) && u['_tag'] === SucceedTypeId
 }
 
-export const HaltTypeId = Symbol('@principia/base/stm/TExit/Halt')
+export const HaltTypeId = Symbol.for('@principia/base/IO/stm/TExit/Halt')
 export type HaltTypeId = typeof HaltTypeId
 
 export class Halt {
@@ -63,9 +63,9 @@ export function isHalt(u: unknown): u is Halt {
   return isObject(u) && u['_tag'] === HaltTypeId
 }
 
-const _retryHash = St.hashString('@principia/base/stm/TExit/Retry')
+const _retryHash = St.hashString('@principia/base/IO/stm/TExit/Retry')
 
-export const RetryTypeId = Symbol('@principia/base/stm/TExit/Retry')
+export const RetryTypeId = Symbol.for('@principia/base/IO/stm/TExit/Retry')
 export type RetryTypeId = typeof RetryTypeId
 
 export class Retry {

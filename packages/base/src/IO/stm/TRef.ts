@@ -14,25 +14,25 @@ import * as STM from './STM/core'
 import * as _ from './STM/primitives'
 import { Versioned } from './Versioned'
 
-export const TRefTypeId = Symbol()
+export const TRefTypeId = Symbol.for('@principia/base/IO/stm/TRef')
 export type TRefTypeId = typeof TRefTypeId
 
 /**
- * A `XTRef<EA, EB, A, B>` is a polymorphic, purely functional description of a
+ * A `TRef<EA, EB, A, B>` is a polymorphic, purely functional description of a
  * mutable reference that can be modified as part of a transactional effect. The
- * fundamental operations of a `XTRef` are `set` and `get`. `set` takes a value
+ * fundamental operations of a `TRef` are `set` and `get`. `set` takes a value
  * of type `A` and transactionally sets the reference to a new value, potentially
  * failing with an error of type `EA`. `get` gets the current value of the reference
  * and returns a value of type `B`, potentially failing with an error of type `EB`.
  *
- * When the error and value types of the `XTRef` are unified, that is, it is a
- * `XTRef<E, E, A, A>`, the `ZTRef` also supports atomic `modify` and `update`
+ * When the error and value types of the `TRef` are unified, that is, it is a
+ * `TRef<E, E, A, A>`, the `TRef` also supports atomic `modify` and `update`
  * operations. All operations are guaranteed to be executed transactionally.
  *
- * NOTE: While `XTRef` provides the transactional equivalent of a mutable reference,
- * the value inside the `XTRef` should be immutable.
+ * NOTE: While `TRef` provides the transactional equivalent of a mutable reference,
+ * the value inside the `TRef` should be immutable.
  */
-export interface XTRef<EA, EB, A, B> {
+export interface TRef<EA, EB, A, B> {
   readonly _typeId: TRefTypeId
   readonly _EA: () => EA
   readonly _EB: () => EB
@@ -44,7 +44,7 @@ export interface XTRef<EA, EB, A, B> {
     eb: (ea: EB) => ED,
     ca: (c: C) => E.Either<EC, A>,
     bd: (b: B) => E.Either<ED, D>
-  ): XTRef<EC, ED, C, D>
+  ): TRef<EC, ED, C, D>
 
   foldAll<EC, ED, C, D>(
     ea: (ea: EA) => EC,
@@ -52,15 +52,15 @@ export interface XTRef<EA, EB, A, B> {
     ec: (ea: EB) => EC,
     ca: (c: C) => (b: B) => E.Either<EC, A>,
     bd: (b: B) => E.Either<ED, D>
-  ): XTRef<EC, ED, C, D>
+  ): TRef<EC, ED, C, D>
 
   readonly atomic: Atomic<unknown>
 }
 
-export interface TRef<A> extends XTRef<never, never, A, A> {}
-export interface ETRef<E, A> extends XTRef<E, E, A, A> {}
+export interface UTRef<A> extends TRef<never, never, A, A> {}
+export interface ETRef<E, A> extends TRef<E, E, A, A> {}
 
-export class Atomic<A> implements XTRef<never, never, A, A> {
+export class Atomic<A> implements TRef<never, never, A, A> {
   readonly _typeId: TRefTypeId = TRefTypeId
   readonly _tag                = 'Atomic'
   readonly _EA!: () => never
@@ -76,7 +76,7 @@ export class Atomic<A> implements XTRef<never, never, A, A> {
     _eb: (ea: never) => ED,
     ca: (c: C) => E.Either<EC, A>,
     bd: (b: A) => E.Either<ED, D>
-  ): XTRef<EC, ED, C, D> {
+  ): TRef<EC, ED, C, D> {
     return new Derived(bd, ca, this, this.atomic)
   }
 
@@ -86,12 +86,12 @@ export class Atomic<A> implements XTRef<never, never, A, A> {
     _ec: (ea: never) => EC,
     ca: (c: C) => (b: A) => E.Either<EC, A>,
     bd: (b: A) => E.Either<ED, D>
-  ): XTRef<EC, ED, C, D> {
+  ): TRef<EC, ED, C, D> {
     return new DerivedAll(bd, ca, this, this.atomic)
   }
 }
 
-export class Derived<S, EA, EB, A, B> implements XTRef<EA, EB, A, B> {
+export class Derived<S, EA, EB, A, B> implements TRef<EA, EB, A, B> {
   readonly _typeId: TRefTypeId = TRefTypeId
   readonly _tag                = 'Derived'
   readonly _EA!: () => EA
@@ -111,7 +111,7 @@ export class Derived<S, EA, EB, A, B> implements XTRef<EA, EB, A, B> {
     eb: (ea: EB) => ED,
     ca: (c: C) => E.Either<EC, A>,
     bd: (b: B) => E.Either<ED, D>
-  ): XTRef<EC, ED, C, D> {
+  ): TRef<EC, ED, C, D> {
     return new Derived(
       (s) => E.match_(this.getEither(s), (e) => E.left(eb(e)), bd),
       (c) => E.chain_(ca(c), (a) => E.match_(this.setEither(a), (e) => E.left(ea(e)), E.right)),
@@ -126,7 +126,7 @@ export class Derived<S, EA, EB, A, B> implements XTRef<EA, EB, A, B> {
     ec: (ea: EB) => EC,
     ca: (c: C) => (b: B) => E.Either<EC, A>,
     bd: (b: B) => E.Either<ED, D>
-  ): XTRef<EC, ED, C, D> {
+  ): TRef<EC, ED, C, D> {
     return new DerivedAll(
       (s) => E.match_(this.getEither(s), (e) => E.left(eb(e)), bd),
       (c) => (s) =>
@@ -140,7 +140,7 @@ export class Derived<S, EA, EB, A, B> implements XTRef<EA, EB, A, B> {
   }
 }
 
-export class DerivedAll<S, EA, EB, A, B> implements XTRef<EA, EB, A, B> {
+export class DerivedAll<S, EA, EB, A, B> implements TRef<EA, EB, A, B> {
   readonly _typeId: TRefTypeId = TRefTypeId
   readonly _tag                = 'DerivedAll'
   readonly _EA!: () => EA
@@ -160,7 +160,7 @@ export class DerivedAll<S, EA, EB, A, B> implements XTRef<EA, EB, A, B> {
     eb: (ea: EB) => ED,
     ca: (c: C) => E.Either<EC, A>,
     bd: (b: B) => E.Either<ED, D>
-  ): XTRef<EC, ED, C, D> {
+  ): TRef<EC, ED, C, D> {
     return new DerivedAll(
       (s) => E.match_(this.getEither(s), (e) => E.left(eb(e)), bd),
       (c) => (s) => E.chain_(ca(c), (a) => E.match_(this.setEither(a)(s), (e) => E.left(ea(e)), E.right)),
@@ -175,7 +175,7 @@ export class DerivedAll<S, EA, EB, A, B> implements XTRef<EA, EB, A, B> {
     ec: (ea: EB) => EC,
     ca: (c: C) => (b: B) => E.Either<EC, A>,
     bd: (b: B) => E.Either<ED, D>
-  ): XTRef<EC, ED, C, D> {
+  ): TRef<EC, ED, C, D> {
     return new DerivedAll(
       (s) => E.match_(this.getEither(s), (e) => E.left(eb(e)), bd),
       (c) => (s) =>
@@ -199,9 +199,9 @@ function getOrMakeEntry<A>(self: Atomic<A>, journal: Journal): Entry {
 }
 
 /**
- * Retrieves the value of the `XTRef`.
+ * Retrieves the value of the `TRef`.
  */
-export function get<EA, EB, A, B>(self: XTRef<EA, EB, A, B>): _.STM<unknown, EB, B> {
+export function get<EA, EB, A, B>(self: TRef<EA, EB, A, B>): _.STM<unknown, EB, B> {
   concrete(self)
   switch (self._tag) {
     case 'Atomic': {
@@ -220,16 +220,16 @@ export function get<EA, EB, A, B>(self: XTRef<EA, EB, A, B>): _.STM<unknown, EB,
 }
 
 /**
- * Unsafely retrieves the value of the `XTRef`.
+ * Unsafely retrieves the value of the `TRef`.
  */
-export function unsafeGet_<EA, EB, A, B>(self: XTRef<EA, EB, A, B>, journal: Journal): A {
+export function unsafeGet_<EA, EB, A, B>(self: TRef<EA, EB, A, B>, journal: Journal): A {
   return getOrMakeEntry(self.atomic, journal).use((_) => _.unsafeGet<A>())
 }
 
 /**
- * Sets the value of the `XTRef`.
+ * Sets the value of the `TRef`.
  */
-export function set_<EA, EB, A, B>(self: XTRef<EA, EB, A, B>, a: A): _.STM<unknown, EA, void> {
+export function set_<EA, EB, A, B>(self: TRef<EA, EB, A, B>, a: A): _.STM<unknown, EA, void> {
   concrete(self)
   switch (self._tag) {
     case 'Atomic': {
@@ -346,7 +346,7 @@ export function modifySome<A, B>(
 }
 
 /**
- * Sets the value of the `XTRef` and returns the old value.
+ * Sets the value of the `TRef` and returns the old value.
  */
 export function getAndSet_<EA, A>(self: ETRef<EA, A>, a: A): _.STM<unknown, EA, A> {
   concrete(self)
@@ -366,7 +366,7 @@ export function getAndSet_<EA, A>(self: ETRef<EA, A>, a: A): _.STM<unknown, EA, 
 }
 
 /**
- * Sets the value of the `XTRef` and returns the old value.
+ * Sets the value of the `TRef` and returns the old value.
  *
  * @dataFirst getAndSet_
  */
@@ -444,11 +444,11 @@ export function getAndUpdateSome<A>(f: (a: A) => O.Option<A>): <EA>(self: ETRef<
 }
 
 /**
- * Sets the value of the `XTRef`.
+ * Sets the value of the `TRef`.
  *
  * @dataFirst set_
  */
-export function set<A>(a: A): <EA, EB, B>(self: XTRef<EA, EB, A, B>) => _.STM<unknown, EA, void> {
+export function set<A>(a: A): <EA, EB, B>(self: TRef<EA, EB, A, B>) => _.STM<unknown, EA, void> {
   return (self) => set_(self, a)
 }
 
@@ -548,16 +548,16 @@ export function updateAndGet<A>(f: (a: A) => A): <EA>(self: ETRef<EA, A>) => _.S
  * @optimize remove
  */
 export function concrete<EA, EB, A, B>(
-  _: XTRef<EA, EB, A, B>
+  _: TRef<EA, EB, A, B>
   // @ts-expect-error
 ): asserts _ is (Atomic<A> & Atomic<B>) | Derived<unknown, EA, EB, A, B> | DerivedAll<unknown, EA, EB, A, B> {
   //
 }
 
 /**
- * Makes a new `XTRef` that is initialized to the specified value.
+ * Makes a new `TRef` that is initialized to the specified value.
  */
-export function makeWith<A>(a: () => A): _.STM<unknown, never, TRef<A>> {
+export function makeWith<A>(a: () => A): _.STM<unknown, never, UTRef<A>> {
   return new _.Effect((journal) => {
     const value     = a()
     const versioned = new Versioned(value)
@@ -569,9 +569,9 @@ export function makeWith<A>(a: () => A): _.STM<unknown, never, TRef<A>> {
 }
 
 /**
- * Makes a new `XTRef` that is initialized to the specified value.
+ * Makes a new `TRef` that is initialized to the specified value.
  */
-export function make<A>(a: A): _.STM<unknown, never, TRef<A>> {
+export function make<A>(a: A): _.STM<unknown, never, UTRef<A>> {
   return new _.Effect((journal) => {
     const value     = a
     const versioned = new Versioned(value)
@@ -583,9 +583,9 @@ export function make<A>(a: A): _.STM<unknown, never, TRef<A>> {
 }
 
 /**
- * Unsafely makes a new `XTRef` that is initialized to the specified value.
+ * Unsafely makes a new `TRef` that is initialized to the specified value.
  */
-export function unsafeMake<A>(a: A): TRef<A> {
+export function unsafeMake<A>(a: A): UTRef<A> {
   const value     = a
   const versioned = new Versioned(value)
   const todo      = new AtomicReference(emptyTodoMap)
@@ -593,40 +593,40 @@ export function unsafeMake<A>(a: A): TRef<A> {
 }
 
 /**
- * Makes a new `XTRef` that is initialized to the specified value.
+ * Makes a new `TRef` that is initialized to the specified value.
  */
-export function makeCommitWith<A>(a: () => A): T.UIO<TRef<A>> {
+export function makeCommitWith<A>(a: () => A): T.UIO<UTRef<A>> {
   return STM.commit(makeWith(a))
 }
 
 /**
- * Makes a new `XTRef` that is initialized to the specified value.
+ * Makes a new `TRef` that is initialized to the specified value.
  */
-export function makeCommit<A>(a: A): T.UIO<TRef<A>> {
+export function makeCommit<A>(a: A): T.UIO<UTRef<A>> {
   return STM.commit(make(a))
 }
 
 /**
- * Folds over the error and value types of the `XTRef`. This is a highly
+ * Folds over the error and value types of the `TRef`. This is a highly
  * polymorphic method that is capable of arbitrarily transforming the error
- * and value types of the `XTRef`. For most use cases one of the more
+ * and value types of the `TRef`. For most use cases one of the more
  * specific combinators implemented in terms of `fold` will be more ergonomic
  * but this method is extremely useful for implementing new combinators.
  */
 export function fold_<EA, EB, A, B, EC, ED, C, D>(
-  self: XTRef<EA, EB, A, B>,
+  self: TRef<EA, EB, A, B>,
   ea: (ea: EA) => EC,
   eb: (ea: EB) => ED,
   ca: (c: C) => E.Either<EC, A>,
   bd: (b: B) => E.Either<ED, D>
-): XTRef<EC, ED, C, D> {
+): TRef<EC, ED, C, D> {
   return self.fold(ea, eb, ca, bd)
 }
 
 /**
- * Folds over the error and value types of the `XTRef`. This is a highly
+ * Folds over the error and value types of the `TRef`. This is a highly
  * polymorphic method that is capable of arbitrarily transforming the error
- * and value types of the `XTRef`. For most use cases one of the more
+ * and value types of the `TRef`. For most use cases one of the more
  * specific combinators implemented in terms of `fold` will be more ergonomic
  * but this method is extremely useful for implementing new combinators.
  *
@@ -637,28 +637,28 @@ export function fold<EA, EB, A, B, EC, ED, C, D>(
   eb: (ea: EB) => ED,
   ca: (c: C) => E.Either<EC, A>,
   bd: (b: B) => E.Either<ED, D>
-): (self: XTRef<EA, EB, A, B>) => XTRef<EC, ED, C, D> {
+): (self: TRef<EA, EB, A, B>) => TRef<EC, ED, C, D> {
   return (self) => fold_(self, ea, eb, ca, bd)
 }
 
 /**
- * Folds over the error and value types of the `XTRef`, allowing access to
+ * Folds over the error and value types of the `TRef`, allowing access to
  * the state in transforming the `set` value. This is a more powerful version
  * of `fold` but requires unifying the error types.
  */
 export function foldAll_<EA, EB, A, B, EC, ED, C, D>(
-  self: XTRef<EA, EB, A, B>,
+  self: TRef<EA, EB, A, B>,
   ea: (ea: EA) => EC,
   eb: (ea: EB) => ED,
   ec: (ea: EB) => EC,
   ca: (c: C) => (b: B) => E.Either<EC, A>,
   bd: (b: B) => E.Either<ED, D>
-): XTRef<EC, ED, C, D> {
+): TRef<EC, ED, C, D> {
   return self.foldAll(ea, eb, ec, ca, bd)
 }
 
 /**
- * Folds over the error and value types of the `XTRef`, allowing access to
+ * Folds over the error and value types of the `TRef`, allowing access to
  * the state in transforming the `set` value. This is a more powerful version
  * of `fold` but requires unifying the error types.
  *
@@ -670,6 +670,6 @@ export function foldAll<EA, EB, A, B, EC, ED, C, D>(
   ec: (ea: EB) => EC,
   ca: (c: C) => (b: B) => E.Either<EC, A>,
   bd: (b: B) => E.Either<ED, D>
-): (self: XTRef<EA, EB, A, B>) => XTRef<EC, ED, C, D> {
+): (self: TRef<EA, EB, A, B>) => TRef<EC, ED, C, D> {
   return (self) => self.foldAll(ea, eb, ec, ca, bd)
 }

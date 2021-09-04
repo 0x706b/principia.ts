@@ -6,7 +6,7 @@ export const MergeDecisionTag = {
   Await: 'Await'
 } as const
 
-export const MergeDecisionTypeId = Symbol()
+export const MergeDecisionTypeId = Symbol.for('@principia/base/IO/Channel/MergeDecision')
 export type MergeDecisionTypeId = typeof MergeDecisionTypeId
 export abstract class MergeDecision<R, E0, Z0, E, Z> {
   readonly [MergeDecisionTypeId]: MergeDecisionTypeId = MergeDecisionTypeId

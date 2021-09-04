@@ -1,6 +1,6 @@
 import { isObject } from './predicates'
 
-export const ZippedTypeId = Symbol()
+export const ZippedTypeId = Symbol.for('@principia/base/Zipped')
 export type ZippedTypeId = typeof ZippedTypeId
 
 export class Zipped<A extends ReadonlyArray<unknown>> implements Iterable<A[number]> {

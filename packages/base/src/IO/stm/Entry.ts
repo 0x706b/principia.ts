@@ -2,7 +2,7 @@ import type { Atomic } from './TRef'
 
 import { Versioned } from './Versioned'
 
-export const EntryTypeId = Symbol()
+export const EntryTypeId = Symbol.for('@principia/base/IO/stm/Entry')
 export type EntryTypeId = typeof EntryTypeId
 
 export class Entry {
@@ -17,7 +17,7 @@ export function makeEntry<A0>(tref0: Atomic<A0>, isNew0: boolean): Entry {
   return new Entry((f) => f(ops))
 }
 
-export const EntryOpsTypeId = Symbol()
+export const EntryOpsTypeId = Symbol.for('@principia/base/IO/stm/EntryOps')
 export type EntryOpsTypeId = typeof EntryOpsTypeId
 
 export class EntryOps<S> {

@@ -26,7 +26,7 @@ type URI = [HKT.URI<ChunkURI>]
 
 const BUFFER_SIZE = 64
 
-export const ChunkTypeId = Symbol()
+export const ChunkTypeId = Symbol.for('@principia/base/Chunk')
 export type ChunkTypeId = typeof ChunkTypeId
 
 export const ChunkTag = {

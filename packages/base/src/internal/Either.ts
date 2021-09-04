@@ -2,7 +2,7 @@ import { $equals, equals } from '../Structural/Equatable'
 import { $hash, combineHash, hash, hashString } from '../Structural/Hashable'
 import { isObject } from '../util/predicates'
 
-export const EitherTypeId = Symbol('@principia/base/Either')
+export const EitherTypeId = Symbol.for('@principia/base/Either')
 export type EitherTypeId = typeof EitherTypeId
 
 const _leftHash  = hashString('@principia/base/Either/Left')

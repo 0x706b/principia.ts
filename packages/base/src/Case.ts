@@ -6,11 +6,11 @@ import { isObject } from './prelude'
 import { $equals, equals } from './Structural/Equatable'
 import { _combineHash, $hash, hash, hashString } from './Structural/Hashable'
 
-export const CaseTypeId = Symbol('@principia/base/Case')
+export const CaseTypeId = Symbol.for('@principia/base/Case')
 export type CaseTypeId = typeof CaseTypeId
 
-const $keys = Symbol('@principia/base/Case/$keys')
-const $args = Symbol('@principia/base/Case/$args')
+const $keys = Symbol.for('@principia/base/Case/$keys')
+const $args = Symbol.for('@principia/base/Case/$args')
 
 export interface CaseArgs {
   readonly [CaseTypeId]: ReadonlyArray<string>

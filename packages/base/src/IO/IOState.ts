@@ -6,7 +6,7 @@ import * as FR from './FiberRef'
 import { toLayer } from './IO/combinators/toLayer'
 import * as I from './IO/core'
 
-export const IOStateTypeId = Symbol('@principia/base/IOState')
+export const IOStateTypeId = Symbol.for('@principia/base/IO/IOState')
 export type IOStateTypeId = typeof IOStateTypeId
 
 export interface IOState<S> {

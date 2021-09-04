@@ -1,4 +1,4 @@
-export const VersionedTypeId = Symbol()
+export const VersionedTypeId = Symbol.for('@principia/base/IO/stm/Versioned')
 export type VersionedTypeId = typeof VersionedTypeId
 
 export class Versioned<A> {

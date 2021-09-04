@@ -3,7 +3,7 @@ import * as O from './Option'
 import * as St from './Structural'
 import { AtomicNumber } from './util/support/AtomicNumber'
 
-export const HashMapTypeId = Symbol()
+export const HashMapTypeId = Symbol.for('@principia/base/MutableHashMap')
 export type HashMapTypeId = typeof HashMapTypeId
 
 class Node<K, V> implements Iterable<readonly [K, V]> {

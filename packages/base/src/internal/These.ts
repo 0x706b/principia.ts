@@ -2,7 +2,7 @@ import { $equals, equals } from '../Structural/Equatable'
 import { $hash, combineHash, hash, hashString } from '../Structural/Hashable'
 import { isObject } from '../util/predicates'
 
-export const TheseTypeId = Symbol('@principia/base/These')
+export const TheseTypeId = Symbol.for('@principia/base/These')
 export type TheseTypeId = typeof TheseTypeId
 
 const _bothHash  = hashString('@principia/base/These/Both')

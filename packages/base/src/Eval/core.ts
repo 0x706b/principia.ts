@@ -13,7 +13,7 @@ import { tuple } from '../internal/tuple'
 import { AtomicReference } from '../util/support/AtomicReference'
 import { makeStack } from '../util/support/Stack'
 
-export const EvalTypeId = Symbol()
+export const EvalTypeId = Symbol.for('@principia/base/Eval')
 export type EvalTypeId = typeof EvalTypeId
 
 export const EvalTag = {

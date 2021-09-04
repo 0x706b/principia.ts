@@ -23,7 +23,7 @@ import * as Equ from '../Structural/Equatable'
 import * as Ha from '../Structural/Hashable'
 import * as Th from '../These'
 
-export const ListTypeId = Symbol()
+export const ListTypeId = Symbol.for('@principia/base/List')
 export type ListTypeId = typeof ListTypeId
 
 /**

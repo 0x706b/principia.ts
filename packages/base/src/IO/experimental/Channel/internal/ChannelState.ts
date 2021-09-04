@@ -10,7 +10,7 @@ export const ChannelStateTag = {
   Effect: 'Effect'
 } as const
 
-export const ChannelStateTypeId = Symbol()
+export const ChannelStateTypeId = Symbol.for('@principia/base/ChannelState')
 export type ChannelStateTypeId = typeof ChannelStateTypeId
 
 export abstract class ChannelState<R, E> {

@@ -14,7 +14,7 @@ export const STMTag = {
   Gives: 'Gives'
 } as const
 
-export const STMTypeId = Symbol('@principia/base/stm/STM')
+export const STMTypeId = Symbol.for('@principia/base/stm/STM')
 export type STMTypeId = typeof STMTypeId
 
 export abstract class STM<R, E, A> {
@@ -92,7 +92,7 @@ export function concrete<R, E, A>(
   //
 }
 
-export const FailExceptionTypeId = Symbol()
+export const FailExceptionTypeId = Symbol.for('@principia/base/IO/stm/FailException')
 export type FailExceptionTypeId = typeof FailExceptionTypeId
 
 export class FailException<E> {
@@ -104,7 +104,7 @@ export function isFailException(u: unknown): u is FailException<unknown> {
   return isObject(u) && FailExceptionTypeId in u
 }
 
-export const HaltExceptionTypeId = Symbol()
+export const HaltExceptionTypeId = Symbol.for('@principia/base/IO/stm/HaltException')
 export type HaltExceptionTypeId = typeof HaltExceptionTypeId
 
 export class HaltException<E> {
@@ -116,7 +116,7 @@ export function isHaltException(u: unknown): u is HaltException<unknown> {
   return isObject(u) && HaltExceptionTypeId in u
 }
 
-export const RetryExceptionTypeId = Symbol()
+export const RetryExceptionTypeId = Symbol.for('@principia/base/IO/stm/RetryException')
 export type RetryExceptionTypeId = typeof RetryExceptionTypeId
 
 export class RetryException {

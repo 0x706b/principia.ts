@@ -27,7 +27,7 @@ import { LinkedList, LinkedListNode } from './util/support/LinkedList'
 
 export { FreeSemiringURI }
 
-export const FreeSemiringTypeId = Symbol()
+export const FreeSemiringTypeId = Symbol.for('@principia/base/FreeSemiring')
 export type FreeSemiringTypeId = typeof FreeSemiringTypeId
 
 export const FreeSemiringTag = {

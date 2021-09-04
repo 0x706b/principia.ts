@@ -60,7 +60,7 @@ export const IOTag = {
   GetPlatform: 'GetPlatform'
 } as const
 
-export const IOTypeId = Symbol('@principia/base/IO')
+export const IOTypeId = Symbol.for('@principia/base/IO')
 export type IOTypeId = typeof IOTypeId
 
 export abstract class IO<R, E, A> {

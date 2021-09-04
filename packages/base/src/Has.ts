@@ -39,7 +39,7 @@ export type ConstructorType<K extends Constructor<any>> = K extends {
 
 export type Constructor<T> = Function & { prototype: T }
 
-export const TagTypeId = Symbol('@principia/base/Has/Tag')
+export const TagTypeId = Symbol.for('@principia/base/Has/Tag')
 export type TagTypeId = typeof TagTypeId
 
 /**

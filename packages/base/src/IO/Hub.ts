@@ -2,7 +2,6 @@ import type { MutableQueue } from '../util/support/MutableQueue'
 
 import * as C from '../Chunk'
 import { parallel } from '../ExecutionStrategy'
-import * as Ex from './Exit'
 import { identity, pipe } from '../function'
 import * as HS from '../MutableHashSet'
 import * as St from '../Structural'
@@ -10,12 +9,13 @@ import { AtomicBoolean } from '../util/support/AtomicBoolean'
 import { Unbounded } from '../util/support/MutableQueue'
 import * as MQ from '../util/support/MutableQueue'
 import * as I from '.'
+import * as Ex from './Exit'
 import * as F from './Fiber'
 import * as M from './Managed'
 import * as RM from './Managed/ReleaseMap'
 import * as P from './Promise'
 import * as Q from './Queue'
-import { Queue, QueueInternal } from './Queue'
+import { QueueInternal } from './Queue'
 import * as Ref from './Ref'
 
 export type HubDequeue<R, E, A> = Q.Queue<never, R, unknown, E, never, A>
@@ -24,7 +24,7 @@ export type HubEnqueue<R, E, A> = Q.Queue<R, never, E, unknown, A, never>
 
 export type UHub<A> = Hub<unknown, unknown, never, never, A, A>
 
-export const HubTypeId = Symbol()
+export const HubTypeId = Symbol.for('@principia/base/IO/Hub')
 export type HubTypeId = typeof HubTypeId
 
 export interface Hub<RA, RB, EA, EB, A, B> {

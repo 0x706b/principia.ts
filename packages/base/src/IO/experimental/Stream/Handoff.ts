@@ -1,13 +1,13 @@
-import type * as Ca from '../../Cause'
 import type * as C from '../../../Chunk'
+import type * as Ca from '../../Cause'
 import type * as SER from './SinkEndReason'
 
 import { pipe } from '../../../function'
 import * as O from '../../../Option'
-import * as P from '../../Promise'
-import * as Ref from '../../Ref'
 import { tuple } from '../../../tuple'
 import * as I from '../..'
+import * as P from '../../Promise'
+import * as Ref from '../../Ref'
 
 export class Handoff<A> {
   constructor(readonly ref: Ref.URef<State<A>>) {}
@@ -21,20 +21,20 @@ export function make<A>() {
   )
 }
 
-export const StateTypeId = Symbol()
+export const StateTypeId = Symbol.for('@principia/base/IO/Stream/Handoff/State')
 
-export const EmptyTypeId = Symbol()
+export const EmptyTypeId = Symbol.for('@principia/base/IO/Stream/Handoff/Empty')
 export class Empty {
-  readonly _stateTypeId: typeof StateTypeId = StateTypeId
-  readonly _typeId: typeof EmptyTypeId      = EmptyTypeId
+  readonly [StateTypeId]: typeof StateTypeId = StateTypeId
+  readonly _typeId: typeof EmptyTypeId       = EmptyTypeId
 
   constructor(readonly notifyConsumer: P.Promise<never, void>) {}
 }
 
-export const FullTypeId = Symbol()
+export const FullTypeId = Symbol.for('@principia/base/IO/Stream/Handoff/Full')
 export class Full<A> {
-  readonly _stateTypeId: typeof StateTypeId = StateTypeId
-  readonly _typeId: typeof FullTypeId       = FullTypeId
+  readonly [StateTypeId]: typeof StateTypeId = StateTypeId
+  readonly _typeId: typeof FullTypeId        = FullTypeId
 
   constructor(readonly a: A, readonly notifyConsumer: P.Promise<never, void>) {}
 }
@@ -89,9 +89,9 @@ export function poll<A>(handoff: Handoff<A>): I.UIO<O.Option<A>> {
   })
 }
 
-export const HandoffSignalTypeId = Symbol()
+export const HandoffSignalTypeId = Symbol.for('@principia/base/IO/Stream/HandoffSignal')
 
-export const EmitTypeId = Symbol()
+export const EmitTypeId = Symbol.for('@principia/base/IO/Stream/HandoffSignal/Emit')
 export type EmitTypeId = typeof EmitTypeId
 export class Emit<A> {
   readonly _handoffSignalTypeId: typeof HandoffSignalTypeId = HandoffSignalTypeId
@@ -100,7 +100,7 @@ export class Emit<A> {
   constructor(readonly els: C.Chunk<A>) {}
 }
 
-export const HaltTypeId = Symbol()
+export const HaltTypeId = Symbol.for('@principia/base/IO/Stream/HandoffSignal/Halt')
 export type HaltTypeId = typeof HaltTypeId
 export class Halt<E> {
   readonly _handoffSignalTypeId: typeof HandoffSignalTypeId = HandoffSignalTypeId
@@ -109,7 +109,7 @@ export class Halt<E> {
   constructor(readonly error: Ca.Cause<E>) {}
 }
 
-export const EndTypeId = Symbol()
+export const EndTypeId = Symbol('@principia/base/IO/Stream/HandoffSignal/End')
 export type EndTypeId = typeof EndTypeId
 export class End<C> {
   readonly _handoffSignalTypeId: typeof HandoffSignalTypeId = HandoffSignalTypeId

@@ -19,7 +19,7 @@ import * as St from '../Structural'
 import { tuple } from '../tuple'
 import { makeStack } from '../util/support/Stack'
 
-export const CauseTypeId = Symbol()
+export const CauseTypeId = Symbol.for('@principia/base/Cause')
 export type CauseTypeId = typeof CauseTypeId
 
 export type GenericCause<Id, E> = Empty | Halt | Interrupt<Id> | Fail<E> | Then<Id, E> | Both<Id, E> | Traced<Id, E>
@@ -1574,38 +1574,36 @@ export function untraced<Id, E>(cause: GenericCause<Id, E>): GenericCause<Id, E>
  * -------------------------------------------------------------------------------------------------
  */
 
-const FCEStackFrameDoneTypeId = Symbol()
 class FCEStackFrameDone {
-  readonly _typeId: typeof FCEStackFrameDoneTypeId = FCEStackFrameDoneTypeId
+  readonly _tag = 'FCEStackFrameDone'
 }
-const FCEStackFrameTracedTypeId = Symbol()
+
 class FCEStackFrameTraced<Id, E, A> {
-  readonly _typeId: typeof FCEStackFrameTracedTypeId = FCEStackFrameTracedTypeId
+  readonly _tag = 'FCEStackFrameTraced'
 
   constructor(readonly cause: Traced<Id, E.Either<E, A>>) {}
 }
 
-const FCEStackFrameThenLeftTypeId = Symbol()
 class FCEStackFrameThenLeft<Id, E, A> {
-  readonly _typeId: typeof FCEStackFrameThenLeftTypeId = FCEStackFrameThenLeftTypeId
+  readonly _tag = 'FCEStackFrameThenLeft'
 
   constructor(readonly cause: Then<Id, E.Either<E, A>>) {}
 }
-const FCEStackFrameThenRightTypeId = Symbol()
+
 class FCEStackFrameThenRight<Id, E, A> {
-  readonly _typeId: typeof FCEStackFrameThenRightTypeId = FCEStackFrameThenRightTypeId
+  readonly _tag = 'FCEStackFrameThenRight'
 
   constructor(readonly cause: Then<Id, E.Either<E, A>>, readonly leftResult: E.Either<GenericCause<Id, E>, A>) {}
 }
-const FCEStackFrameBothLeftTypeId = Symbol()
+
 class FCEStackFrameBothLeft<Id, E, A> {
-  readonly _typeId: typeof FCEStackFrameBothLeftTypeId = FCEStackFrameBothLeftTypeId
+  readonly _tag = 'FCEStackFrameBothLeft'
 
   constructor(readonly cause: Both<Id, E.Either<E, A>>) {}
 }
-const FCEStackFrameBothRightTypeId = Symbol()
+
 class FCEStackFrameBothRight<Id, E, A> {
-  readonly _typeId: typeof FCEStackFrameBothRightTypeId = FCEStackFrameBothRightTypeId
+  readonly _tag = 'FCEStackFrameBothRight'
 
   constructor(readonly cause: Both<Id, E.Either<E, A>>, readonly leftResult: E.Either<GenericCause<Id, E>, A>) {}
 }
@@ -1668,17 +1666,17 @@ export function flipCauseEither<Id, E, A>(cause: GenericCause<Id, E.Either<E, A>
 
       stack = stack.previous!
 
-      switch (top._typeId) {
-        case FCEStackFrameDoneTypeId:
+      switch (top._tag) {
+        case 'FCEStackFrameDone':
           return result
-        case FCEStackFrameTracedTypeId:
+        case 'FCEStackFrameTraced':
           result = E.mapLeft_(result, (_) => traced(_, top.cause.trace))
           continue popping
-        case FCEStackFrameThenLeftTypeId:
+        case 'FCEStackFrameThenLeft':
           c     = top.cause.right
           stack = makeStack(new FCEStackFrameThenRight(top.cause, result), stack)
           continue recursion
-        case FCEStackFrameThenRightTypeId: {
+        case 'FCEStackFrameThenRight': {
           const l = top.leftResult
 
           if (E.isLeft(l) && E.isLeft(result)) {
@@ -1695,11 +1693,11 @@ export function flipCauseEither<Id, E, A>(cause: GenericCause<Id, E.Either<E, A>
 
           continue popping
         }
-        case FCEStackFrameBothLeftTypeId:
+        case 'FCEStackFrameBothLeft':
           c     = top.cause.right
           stack = makeStack(new FCEStackFrameBothRight(top.cause, result), stack)
           continue recursion
-        case FCEStackFrameBothRightTypeId: {
+        case 'FCEStackFrameBothRight': {
           const l = top.leftResult
 
           if (E.isLeft(l) && E.isLeft(result)) {
@@ -1723,38 +1721,36 @@ export function flipCauseEither<Id, E, A>(cause: GenericCause<Id, E.Either<E, A>
   throw new Error('Bug')
 }
 
-const FCOStackFrameDoneTypeId = Symbol()
 class FCOStackFrameDone {
-  readonly _typeId: typeof FCOStackFrameDoneTypeId = FCOStackFrameDoneTypeId
+  readonly _tag = 'FCOStackFrameDone'
 }
-const FCOStackFrameTracedTypeId = Symbol()
+
 class FCOStackFrameTraced<Id, E> {
-  readonly _typeId: typeof FCOStackFrameTracedTypeId = FCOStackFrameTracedTypeId
+  readonly _tag = 'FCOStackFrameTraced'
 
   constructor(readonly cause: Traced<Id, O.Option<E>>) {}
 }
 
-const FCOStackFrameThenLeftTypeId = Symbol()
 class FCOStackFrameThenLeft<Id, E> {
-  readonly _typeId: typeof FCOStackFrameThenLeftTypeId = FCOStackFrameThenLeftTypeId
+  readonly _tag = 'FCOStackFrameThenLeft'
 
   constructor(readonly cause: Then<Id, O.Option<E>>) {}
 }
-const FCOStackFrameThenRightTypeId = Symbol()
+
 class FCOStackFrameThenRight<Id, E> {
-  readonly _typeId: typeof FCOStackFrameThenRightTypeId = FCOStackFrameThenRightTypeId
+  readonly _tag = 'FCOStackFrameThenRight'
 
   constructor(readonly cause: Then<Id, O.Option<E>>, readonly leftResult: O.Option<GenericCause<Id, E>>) {}
 }
-const FCOStackFrameBothLeftTypeId = Symbol()
+
 class FCOStackFrameBothLeft<Id, E> {
-  readonly _typeId: typeof FCOStackFrameBothLeftTypeId = FCOStackFrameBothLeftTypeId
+  readonly _tag = 'FCOStackFrameBothLeft'
 
   constructor(readonly cause: Both<Id, O.Option<E>>) {}
 }
-const FCOStackFrameBothRightTypeId = Symbol()
+
 class FCOStackFrameBothRight<Id, E> {
-  readonly _typeId: typeof FCOStackFrameBothRightTypeId = FCOStackFrameBothRightTypeId
+  readonly _tag = 'FCOStackFrameBothRight'
 
   constructor(readonly cause: Both<Id, O.Option<E>>, readonly leftResult: O.Option<GenericCause<Id, E>>) {}
 }
@@ -1817,17 +1813,17 @@ export function flipCauseOption<Id, E>(cause: GenericCause<Id, O.Option<E>>): O.
 
       stack = stack.previous!
 
-      switch (top._typeId) {
-        case FCOStackFrameDoneTypeId:
+      switch (top._tag) {
+        case 'FCOStackFrameDone':
           return result
-        case FCOStackFrameTracedTypeId:
+        case 'FCOStackFrameTraced':
           result = O.map_(result, (_) => traced(_, top.cause.trace))
           continue popping
-        case FCOStackFrameThenLeftTypeId:
+        case 'FCOStackFrameThenLeft':
           c     = top.cause.right
           stack = makeStack(new FCOStackFrameThenRight(top.cause, result), stack)
           continue recursion
-        case FCOStackFrameThenRightTypeId: {
+        case 'FCOStackFrameThenRight': {
           const l = top.leftResult
 
           if (O.isSome(l) && O.isSome(result)) {
@@ -1846,11 +1842,11 @@ export function flipCauseOption<Id, E>(cause: GenericCause<Id, O.Option<E>>): O.
 
           continue popping
         }
-        case FCOStackFrameBothLeftTypeId:
+        case 'FCOStackFrameBothLeft':
           c     = top.cause.right
           stack = makeStack(new FCOStackFrameBothRight(top.cause, result), stack)
           continue recursion
-        case FCOStackFrameBothRightTypeId: {
+        case 'FCOStackFrameBothRight': {
           const l = top.leftResult
 
           if (O.isSome(l) && O.isSome(result)) {

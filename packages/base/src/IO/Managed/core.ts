@@ -34,7 +34,7 @@ import { add, addIfOpen, noopFinalizer, release, updateAll } from './ReleaseMap'
  * -------------------------------------------------------------------------------------------------
  */
 
-export const ManagedTypeId = Symbol('@principia/base/IO/Managed')
+export const ManagedTypeId = Symbol.for('@principia/base/IO/Managed')
 export type ManagedTypeId = typeof ManagedTypeId
 
 export class Managed<R, E, A> {

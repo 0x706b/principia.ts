@@ -26,7 +26,7 @@ import { makeStack } from './util/support/Stack'
  * -------------------------------------------------------------------------------------------------
  */
 
-export const ZTypeId = Symbol()
+export const ZTypeId = Symbol.for('@principia/base/Z')
 export type ZTypeId = typeof ZTypeId
 
 export type Cause<E> = FreeSemiring<never, E>

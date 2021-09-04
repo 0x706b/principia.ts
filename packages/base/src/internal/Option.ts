@@ -6,7 +6,7 @@ import { $equals, equals } from '../Structural/Equatable'
 import { $hash, combineHash, hash, hashString } from '../Structural/Hashable'
 import { isObject } from '../util/predicates'
 
-export const OptionTypeId = Symbol('@principia/base/Option')
+export const OptionTypeId = Symbol.for('@principia/base/Option')
 export type OptionTypeId = typeof OptionTypeId
 
 const _noneHash = hashString('@principia/base/Option/None')

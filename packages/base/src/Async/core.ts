@@ -25,7 +25,7 @@ import { makeStack } from '../util/support/Stack'
  * -------------------------------------------------------------------------------------------------
  */
 
-export const AsyncTypeId = Symbol('@principia/base/Async')
+export const AsyncTypeId = Symbol.for('@principia/base/Async')
 export type AsyncTypeId = typeof AsyncTypeId
 
 export type Cause<E> = C.GenericCause<void, E>
