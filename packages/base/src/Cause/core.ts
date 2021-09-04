@@ -264,14 +264,32 @@ export class Traced<Id, E> {
  * -------------------------------------------------------------------------------------------------
  */
 
+/**
+ * The empty `Cause`
+ *
+ * @category constructors
+ * @since 1.0.0
+ */
 export const empty: GenericCause<never, never> = new Empty()
 
 /**
+ * Constructs a `Cause` from a single value, representing a typed failure
+ *
+ * @category constructors
+ * @since 1.0.0
  */
 export function fail<E>(value: E): GenericCause<never, E> {
   return new Fail(value)
 }
 
+/**
+ * Constructs a `Cause` from a `Cause` and a stack trace.
+ *
+ * @note If the stack trace is empty, the original `Cause` is returned.
+ *
+ * @category constructors
+ * @since 1.0.0
+ */
 export function traced<Id, E>(cause: GenericCause<Id, E>, trace: Trace): GenericCause<Id, E> {
   if (L.isEmpty(trace.executionTrace) && L.isEmpty(trace.stackTrace) && O.isNone(trace.parentTrace)) {
     return cause
@@ -280,18 +298,32 @@ export function traced<Id, E>(cause: GenericCause<Id, E>, trace: Trace): Generic
 }
 
 /**
+ * Constructs a `Cause` from a single `unknown`, representing an untyped failure
+ *
+ * @category constructors
+ * @since 1.0.0
  */
 export function halt(value: unknown): GenericCause<never, never> {
   return new Halt(value)
 }
 
 /**
+ * Constructs a `Cause` from an `Id`, representing an interruption of asynchronous computation
+ *
+ * @category constructors
+ * @since 1.0.0
  */
 export function interrupt<Id>(id: Id): GenericCause<Id, never> {
   return new Interrupt(id)
 }
 
 /**
+ * Constructs a `Cause` from two `Cause`s, representing sequential failures.
+ *
+ * @note If one of the `Cause`s is `Empty`, the non-empty `Cause` is returned
+ *
+ * @category constructors
+ * @since 1.0.0
  */
 export function then<Id, E, Id1, E1>(
   left: GenericCause<Id, E>,
@@ -301,6 +333,12 @@ export function then<Id, E, Id1, E1>(
 }
 
 /**
+ * Constructs a `Cause` from two `Cause`s, representing parallel failures.
+ *
+ * @note If one of the `Cause`s is `Empty`, the non-empty `Cause` is returned
+ *
+ * @category constructors
+ * @since 1.0.0
  */
 export function both<Id, E, Id1, E1>(
   left: GenericCause<Id, E>,
@@ -315,7 +353,11 @@ export function both<Id, E, Id1, E1>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function contains_<Id1, E, E1 extends E = E>(
+/**
+ * @category guards
+ * @since 1.0.0
+ */
+export function containsEval<Id1, E, E1 extends E = E>(
   that: GenericCause<Id1, E1>
 ): <Id>(cause: GenericCause<Id, E>) => Ev.Eval<boolean> {
   return (cause) =>
@@ -333,15 +375,22 @@ export function contains_<Id1, E, E1 extends E = E>(
 }
 
 /**
- * Determines if this cause contains or is equal to the specified cause.
+ * Determines whether a `Cause` contains or is equal to the specified cause.
+ *
+ * @category guards
+ * @since 1.0.0
  */
 export function contains<Id1, E, E1 extends E = E>(
   that: GenericCause<Id1, E1>
 ): <Id>(cause: GenericCause<Id, E>) => boolean {
-  return flow(contains_(that), Ev.evaluate)
+  return flow(containsEval(that), Ev.evaluate)
 }
+
 /**
- * Returns if a cause contains a defect
+ * Determines whether a `Cause` contains a defect
+ *
+ * @category guards
+ * @since 1.0.0
  */
 export function halted<Id, E>(cause: GenericCause<Id, E>): cause is Halt {
   return pipe(
@@ -353,7 +402,10 @@ export function halted<Id, E>(cause: GenericCause<Id, E>): cause is Halt {
 }
 
 /**
- * Returns if the cause has a failure in it
+ * Determines whether a `Cause` contains a failure
+ *
+ * @category guards
+ * @since 1.0.0
  */
 export const failed: <Id, E>(cause: GenericCause<Id, E>) => boolean = flow(
   failureOption,
@@ -361,27 +413,51 @@ export const failed: <Id, E>(cause: GenericCause<Id, E>) => boolean = flow(
   O.getOrElse(() => false)
 )
 
+/**
+ * A type-guard matching `Fail`
+ *
+ * @category guards
+ * @since 1.0.0
+ */
 export function isFail<Id, E>(cause: GenericCause<Id, E>): cause is Fail<E> {
   return cause._tag === CauseTag.Fail
 }
 
 /**
+ * A type-guard matching `Then`
+ *
+ * @category guards
+ * @since 1.0.0
  */
 export function isThen<Id, E>(cause: GenericCause<Id, E>): cause is Then<Id, E> {
   return cause._tag === CauseTag.Then
 }
 
 /**
+ * A type-guard matching `Both`
+ *
+ * @category guards
+ * @since 1.0.0
  */
 export function isBoth<Id, E>(cause: GenericCause<Id, E>): cause is Both<Id, E> {
   return cause._tag === CauseTag.Both
 }
 
+/**
+ * A type-guard matching `Traced`
+ *
+ * @category guards
+ * @since 1.0.0
+ */
 export function isTraced<Id, E>(cause: GenericCause<Id, E>): cause is Traced<Id, E> {
   return cause._tag === CauseTag.Traced
 }
 
 /**
+ * Determines whether the `Cause` is `Empty` by recursively traversing the `Cause`
+ *
+ * @category guards
+ * @since 1.0.0
  */
 export function isEmpty<Id, E>(cause: GenericCause<Id, E>): boolean {
   if (cause._tag === CauseTag.Empty || (cause._tag === CauseTag.Traced && cause.cause._tag === CauseTag.Empty)) {
@@ -428,7 +504,10 @@ export function isEmpty<Id, E>(cause: GenericCause<Id, E>): boolean {
 }
 
 /**
- * Returns if the cause contains an interruption in it
+ * Determines whether the `Cause` contains an interruption
+ *
+ * @category guards
+ * @since 1.0.0
  */
 export function interrupted<Id, E>(cause: GenericCause<Id, E>): boolean {
   return pipe(
@@ -446,16 +525,14 @@ export function interrupted<Id, E>(cause: GenericCause<Id, E>): boolean {
  */
 
 /**
- * Returns the `Error` associated with the first `Halt` in this `Cause` if
- * one exists.
+ * Returns the `unknown` associated with the first `Halt` in this `Cause` if one exists.
  */
 export function haltOption<Id, E>(cause: GenericCause<Id, E>): O.Option<unknown> {
   return find_(cause, (c) => (c._tag === CauseTag.Halt ? O.some(c.value) : O.none()))
 }
 
 /**
- * Returns the `E` associated with the first `Fail` in this `Cause` if one
- * exists.
+ * Returns the `E` associated with the first `Fail` in this `Cause` if one exists.
  */
 export function failureOption<Id, E>(cause: GenericCause<Id, E>): O.Option<E> {
   return find_(cause, (c) => (c._tag === CauseTag.Fail ? O.some(c.value) : O.none()))
@@ -506,6 +583,12 @@ export function findEval<Id, E, A>(
   }
 }
 
+/**
+ * Finds the first result matching `f`
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
 export function find_<Id, E, A>(
   cause: GenericCause<Id, E>,
   f: (cause: GenericCause<Id, E>) => O.Option<A>
@@ -514,10 +597,12 @@ export function find_<Id, E, A>(
 }
 
 /**
- * Finds the first result matching f
+ * Finds the first result matching `f`
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @dataFirst find_
  */
 export function find<Id, A, E>(
   f: (cause: GenericCause<Id, E>) => O.Option<A>
@@ -526,7 +611,7 @@ export function find<Id, A, E>(
 }
 
 /**
- * Accumulates a state over a Cause
+ * Accumulates a state over a `Cause`
  *
  * @category Destructors
  * @since 1.0.0
@@ -570,10 +655,12 @@ export function foldl_<Id, E, A>(
 }
 
 /**
- * Accumulates a state over a Cause
+ * Accumulates a state over a `Cause`
  *
  * @category Destructors
  * @since 1.0.0
+ *
+ * @dataFirst foldl_
  */
 export function foldl<Id, E, A>(
   a: A,
@@ -583,8 +670,7 @@ export function foldl<Id, E, A>(
 }
 
 /**
- * Returns the `FiberID` associated with the first `Interrupt` in this `Cause` if one
- * exists.
+ * Returns the `FiberId` associated with the first `Interrupt` in this `Cause` if one exists.
  */
 export function interruptOption<Id, E>(cause: GenericCause<Id, E>): O.Option<Id> {
   return find_(cause, (c) => (c._tag === CauseTag.Interrupt ? O.some(c.id) : O.none()))
@@ -656,6 +742,8 @@ export function fold_<Id, E, A>(
  *
  * @category Destructors
  * @since 1.0.0
+ *
+ * @dataFirst fold_
  */
 export function fold<Id, E, A>(
   onEmpty: () => A,
@@ -686,6 +774,8 @@ export function alt_<Id, E>(fa: GenericCause<Id, E>, that: () => GenericCause<Id
 /**
  * @category Alt
  * @since 1.0.0
+ *
+ * @dataFirst alt_
  */
 export function alt<Id, E>(that: () => GenericCause<Id, E>): (fa: GenericCause<Id, E>) => GenericCause<Id, E> {
   return (fa) => alt_(fa, that)
@@ -713,6 +803,12 @@ export function pure<Id, E>(e: E): GenericCause<Id, E> {
  * -------------------------------------------------------------------------------------------------
  */
 
+/**
+ * Combines the inner values of two `Cause`s with function `f`
+ *
+ * @category SemimonoidalFunctor
+ * @since 1.0.0
+ */
 export function crossWith_<Id, A, Id1, B, C>(
   fa: GenericCause<Id, A>,
   fb: GenericCause<Id1, B>,
@@ -721,6 +817,14 @@ export function crossWith_<Id, A, Id1, B, C>(
   return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
+/**
+ * Combines the inner values of two `Cause`s with function `f`
+ *
+ * @category SemimonoidalFunctor
+ * @since 1.0.0
+ *
+ * @dataFirst crossWith_
+ */
 export function crossWith<Id1, A, B, C>(
   fb: GenericCause<Id1, B>,
   f: (a: A, b: B) => C
@@ -728,6 +832,12 @@ export function crossWith<Id1, A, B, C>(
   return (fa) => crossWith_(fa, fb, f)
 }
 
+/**
+ * Combines the inner values of two `Cause`s into a tuple
+ *
+ * @category SemimonoidalFunctor
+ * @since 1.0.0
+ */
 export function cross_<Id, A, Id1, B>(
   fa: GenericCause<Id, A>,
   fb: GenericCause<Id1, B>
@@ -735,6 +845,14 @@ export function cross_<Id, A, Id1, B>(
   return crossWith_(fa, fb, tuple)
 }
 
+/**
+ * Combines the inner values of two `Cause`s into a tuple
+ *
+ * @category SemimonoidalFunctor
+ * @since 1.0.0
+ * 
+ * @dataFirst cross_
+ */
 export function cross<Id1, B>(
   fb: GenericCause<Id1, B>
 ): <Id, A>(fa: GenericCause<Id, A>) => GenericCause<Id | Id1, readonly [A, B]> {
@@ -765,6 +883,8 @@ export function ap_<Id, E, Id1, D>(
  *
  * @category Apply
  * @since 1.0.0
+ *
+ * @dataFirst ap_
  */
 export function ap<Id1, E>(
   fa: GenericCause<Id1, E>
@@ -810,6 +930,8 @@ export function map_<Id, E, D>(fa: GenericCause<Id, E>, f: (e: E) => D) {
  *
  * @category Functor
  * @since 1.0.0
+ *
+ * @dataFirst map_
  */
 export function map<Id, E, D>(f: (e: E) => D): (fa: GenericCause<Id, E>) => GenericCause<Id, D> {
   return (fa) => map_(fa, f)
@@ -824,7 +946,7 @@ export function map<Id, E, D>(f: (e: E) => D): (fa: GenericCause<Id, E>) => Gene
 /**
  * @internal
  */
-function bindEval<Id, E, Id1, D>(
+function chainEval<Id, E, Id1, D>(
   ma: GenericCause<Id, E>,
   f: (e: E) => GenericCause<Id1, D>
 ): Ev.Eval<GenericCause<Id | Id1, D>> {
@@ -839,18 +961,18 @@ function bindEval<Id, E, Id1, D>(
       return Ev.now(ma)
     case CauseTag.Then:
       return Ev.crossWith_(
-        Ev.defer(() => bindEval(ma.left, f)),
-        Ev.defer(() => bindEval(ma.right, f)),
+        Ev.defer(() => chainEval(ma.left, f)),
+        Ev.defer(() => chainEval(ma.right, f)),
         then
       )
     case CauseTag.Both:
       return Ev.crossWith_(
-        Ev.defer(() => bindEval(ma.left, f)),
-        Ev.defer(() => bindEval(ma.right, f)),
+        Ev.defer(() => chainEval(ma.left, f)),
+        Ev.defer(() => chainEval(ma.right, f)),
         both
       )
     case CauseTag.Traced:
-      return Ev.map_(bindEval(ma.cause, f), (cause) => traced(cause, ma.trace))
+      return Ev.map_(chainEval(ma.cause, f), (cause) => traced(cause, ma.trace))
   }
 }
 
@@ -864,7 +986,7 @@ export function chain_<Id, E, Id1, D>(
   ma: GenericCause<Id, E>,
   f: (e: E) => GenericCause<Id1, D>
 ): GenericCause<Id | Id1, D> {
-  return bindEval(ma, f).value
+  return chainEval(ma, f).value
 }
 
 /**
@@ -872,6 +994,8 @@ export function chain_<Id, E, Id1, D>(
  *
  * @category Monad
  * @since 1.0.0
+ *
+ * @dataFirst chain_
  */
 export function chain<E, Id1, D>(
   f: (e: E) => GenericCause<Id1, D>
@@ -895,10 +1019,24 @@ export function flatten<Id, Id1, E>(mma: GenericCause<Id, GenericCause<Id1, E>>)
  * -------------------------------------------------------------------------------------------------
  */
 
+/**
+ * Recursively applies `f` while the inner `Either` is `Left<A>`
+ *
+ * @since 1.0.0
+ * @category TailRec
+ */
 export function chainRec_<Id, A, B>(a: A, f: (a: A) => GenericCause<Id, E.Either<A, B>>): GenericCause<Id, B> {
   return tailRec_(a, flow(f, map(E.swap), flipCauseEither, E.swap))
 }
 
+/**
+ * Recursively applies `f` while the inner `Either` is `Left<A>`
+ *
+ * @category TailRec
+ * @since 1.0.0
+ * 
+ * @dataFirst chainRec_
+ */
 export function chainRec<Id, A, B>(f: (a: A) => GenericCause<Id, E.Either<A, B>>): (a: A) => GenericCause<Id, B> {
   return (a) => chainRec_(a, f)
 }
@@ -909,6 +1047,12 @@ export function chainRec<Id, A, B>(f: (a: A) => GenericCause<Id, E.Either<A, B>>
  * -------------------------------------------------------------------------------------------------
  */
 
+/**
+ * Constructs the `unit` `Cause`
+ *
+ * @category MonoidalFunctor
+ * @since 1.0.0
+ */
 export function unit(): GenericCause<never, void> {
   return fail(undefined)
 }
@@ -1127,7 +1271,7 @@ export function stripInterrupts<Id, E>(cause: GenericCause<Id, E>): GenericCause
   return stripInterruptsEval(cause).value
 }
 
-function stripSomeDefectsEval<Id, E>(
+function filterDefectsEval<Id, E>(
   cause: GenericCause<Id, E>,
   pf: Predicate<unknown>
 ): Ev.Eval<O.Option<GenericCause<Id, E>>> {
@@ -1146,8 +1290,8 @@ function stripSomeDefectsEval<Id, E>(
     }
     case CauseTag.Both: {
       return Ev.crossWith_(
-        Ev.defer(() => stripSomeDefectsEval(cause.left, pf)),
-        Ev.defer(() => stripSomeDefectsEval(cause.right, pf)),
+        Ev.defer(() => filterDefectsEval(cause.left, pf)),
+        Ev.defer(() => filterDefectsEval(cause.right, pf)),
         (left, right) => {
           return left._tag === 'Some'
             ? right._tag === 'Some'
@@ -1161,8 +1305,8 @@ function stripSomeDefectsEval<Id, E>(
     }
     case CauseTag.Then: {
       return Ev.crossWith_(
-        Ev.defer(() => stripSomeDefectsEval(cause.left, pf)),
-        Ev.defer(() => stripSomeDefectsEval(cause.right, pf)),
+        Ev.defer(() => filterDefectsEval(cause.left, pf)),
+        Ev.defer(() => filterDefectsEval(cause.right, pf)),
         (left, right) => {
           return left._tag === 'Some'
             ? right._tag === 'Some'
@@ -1176,24 +1320,36 @@ function stripSomeDefectsEval<Id, E>(
     }
     case CauseTag.Traced: {
       return Ev.map_(
-        Ev.defer(() => stripSomeDefectsEval(cause.cause, pf)),
+        Ev.defer(() => filterDefectsEval(cause.cause, pf)),
         O.map((c) => traced(c, cause.trace))
       )
     }
   }
 }
 
-export function stripSomeDefects_<Id, E>(
+/**
+ * Remove all `Halt` causes that the specified partial function is defined at,
+ * returning `Some` with the remaining causes or `None` if there are no
+ * remaining causes.
+ */
+export function filterDefects_<Id, E>(
   cause: GenericCause<Id, E>,
   pf: Predicate<unknown>
 ): O.Option<GenericCause<Id, E>> {
-  return stripSomeDefectsEval(cause, pf).value
+  return filterDefectsEval(cause, pf).value
 }
 
-export function stripSomeDefects(
+/**
+ * Remove all `Halt` causes that the specified partial function is defined at,
+ * returning `Some` with the remaining causes or `None` if there are no
+ * remaining causes.
+ *
+ * @dataFirst filterDefects_
+ */
+export function filterDefects(
   pf: Predicate<unknown>
 ): <Id, E>(cause: GenericCause<Id, E>) => O.Option<GenericCause<Id, E>> {
-  return (cause) => stripSomeDefectsEval(cause, pf).value
+  return (cause) => filterDefectsEval(cause, pf).value
 }
 
 function sequenceCauseEitherEval<Id, E, A>(
@@ -1405,6 +1561,9 @@ export function untracedEval<Id, E>(cause: GenericCause<Id, E>): Ev.Eval<Generic
   }
 }
 
+/**
+ * Returns a `Cause` that has been stripped of all tracing information.
+ */
 export function untraced<Id, E>(cause: GenericCause<Id, E>): GenericCause<Id, E> {
   return untracedEval(cause).value
 }
