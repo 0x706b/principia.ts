@@ -426,7 +426,7 @@ export function separate<A, B>(fa: Option<Either<A, B>>): readonly [Option<A>, O
   return pipe(
     fa,
     map((eb) => P.tuple(getLeft(eb), getRight(eb))),
-    match(() => [none(), none()], identity)
+    getOrElse(() => P.tuple(none(), none()))
   )
 }
 
@@ -846,7 +846,7 @@ export const partitionMapA: P.PartitionMapAFn<URI> = (A) => (f) => (wa) => parti
  * @category Combinators
  * @since 1.0.0
  */
-export function bindNullableK_<A, B>(fa: Option<A>, f: (a: A) => B | null | undefined): Option<B> {
+export function chainNullableK_<A, B>(fa: Option<A>, f: (a: A) => B | null | undefined): Option<B> {
   return match_(fa, none, flow(f, fromNullable))
 }
 
@@ -856,8 +856,8 @@ export function bindNullableK_<A, B>(fa: Option<A>, f: (a: A) => B | null | unde
  * @category Combinators
  * @since 1.0.0
  */
-export function bindNullableK<A, B>(f: (a: A) => B | null | undefined): (fa: Option<A>) => Option<B> {
-  return (fa) => bindNullableK_(fa, f)
+export function chainNullableK<A, B>(f: (a: A) => B | null | undefined): (fa: Option<A>) => Option<B> {
+  return (fa) => chainNullableK_(fa, f)
 }
 
 /**

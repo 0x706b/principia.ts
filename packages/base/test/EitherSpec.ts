@@ -1,11 +1,7 @@
-import type { FailureDetails } from '@principia/test/Render'
-
 import { apTF } from '@principia/base/Apply'
 import * as E from '@principia/base/Either'
-import * as Eq from '@principia/base/Eq'
 import { identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
-import * as NA from '@principia/base/NonEmptyArray'
 import * as N from '@principia/base/number'
 import * as O from '@principia/base/Option'
 import { gt } from '@principia/base/Ord'

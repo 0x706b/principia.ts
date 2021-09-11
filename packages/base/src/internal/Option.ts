@@ -76,7 +76,7 @@ export function none<A = never>(): Option<A> {
 export function fromPredicate_<A, B extends A>(a: A, refinement: Refinement<A, B>): Option<A>
 export function fromPredicate_<A>(a: A, predicate: Predicate<A>): Option<A>
 export function fromPredicate_<A>(a: A, predicate: Predicate<A>): Option<A> {
-  return predicate(a) ? none() : some(a)
+  return predicate(a) ? some(a) : none()
 }
 
 /**
