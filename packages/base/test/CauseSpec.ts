@@ -1,7 +1,7 @@
 import * as C from '@principia/base/Cause'
 import { pipe } from '@principia/base/function'
 import * as St from '@principia/base/Structural'
-import { assert, assert_, check, DefaultRunnableSpec, equalTo, suite, test, testM } from '@principia/test'
+import { assert, assert_, check, DefaultRunnableSpec, equalTo, suite, test, testIO } from '@principia/test'
 import * as Gen from '@principia/test/Gen'
 
 const causes = Gen.cause(Gen.string(Gen.alphaNumericString()), Gen.alphaNumericString(), Gen.alphaNumericString())
@@ -11,8 +11,8 @@ class CauseSpec extends DefaultRunnableSpec {
     'Cause',
     suite(
       'Monad Laws',
-      testM('LeftIdentity', () => check(causes, (c) => pipe(c, C.chain(C.fail), assert(equalTo(c))))),
-      testM('RightIdentity', () =>
+      testIO('LeftIdentity', () => check(causes, (c) => pipe(c, C.chain(C.fail), assert(equalTo(c))))),
+      testIO('RightIdentity', () =>
         check(causes, (c) =>
           pipe(
             c,
@@ -22,7 +22,7 @@ class CauseSpec extends DefaultRunnableSpec {
           )
         )
       ),
-      testM('Associativity', () => {
+      testIO('Associativity', () => {
         const afb = (s: string): C.GenericCause<string, number> => C.fail(s.length + 1)
         const bfc = (n: number): C.GenericCause<string, string> => C.fail(n.toString())
         return check(causes, (c) =>

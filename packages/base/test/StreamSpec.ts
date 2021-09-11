@@ -3,14 +3,14 @@ import * as I from '@principia/base/IO'
 import * as M from '@principia/base/IO/Managed'
 import * as P from '@principia/base/IO/Promise'
 import * as S from '@principia/base/IO/Stream'
-import { assertCompletes, DefaultRunnableSpec, suite, testM } from '@principia/test'
+import { assertCompletes, DefaultRunnableSpec, suite, testIO } from '@principia/test'
 
 class StreamSpec extends DefaultRunnableSpec {
   spec = suite(
     'StreamSpec',
     suite(
       'distributedWithDynamic',
-      testM('ensures no race between subscription and stream end', () =>
+      testIO('ensures no race between subscription and stream end', () =>
         pipe(
           S.empty,
           S.distributedWithDynamic(1, () => I.succeed(() => true)),

@@ -23,7 +23,7 @@ import {
   isTrue,
   not,
   suite,
-  testM } from '@principia/test'
+  testIO } from '@principia/test'
 import { TestClock } from '@principia/test/environment/TestClock'
 import * as Gen from '@principia/test/Gen'
 
@@ -38,13 +38,13 @@ class IOSpec extends DefaultRunnableSpec {
     'IOSpec',
     suite(
       'absorbWith',
-      testM('on fail', () =>
+      testIO('on fail', () =>
         assertIO_(pipe(IOExampleError, I.absorbWith(identity), I.result), fails(equalTo(ExampleError as unknown)))
       ),
-      testM('on die', () =>
+      testIO('on die', () =>
         assertIO_(pipe(IOExampleDie, I.absorbWith(identity), I.result), fails(equalTo(ExampleError as unknown)))
       ),
-      testM('on success', () =>
+      testIO('on success', () =>
         assertIO_(
           pipe(
             I.succeed(1),
@@ -54,7 +54,7 @@ class IOSpec extends DefaultRunnableSpec {
         )
       )
     ),
-    testM('map', () =>
+    testIO('map', () =>
       assertIO_(
         pipe(
           I.succeed('Hello'),
@@ -65,7 +65,7 @@ class IOSpec extends DefaultRunnableSpec {
     ),
     suite(
       'bracket',
-      testM('bracket happy path', () =>
+      testIO('bracket happy path', () =>
         I.gen(function* (_) {
           const release = yield* _(Ref.make(false))
           const result  = yield* _(
@@ -81,7 +81,7 @@ class IOSpec extends DefaultRunnableSpec {
           return assert_(result, equalTo(43))['&&'](assert_(released, equalTo(true)))
         })
       ),
-      testM('bracketExit happy path', () =>
+      testIO('bracketExit happy path', () =>
         I.gen(function* (_) {
           const release = yield* _(Ref.make(false))
           const result  = yield* _(
@@ -97,7 +97,7 @@ class IOSpec extends DefaultRunnableSpec {
           return assert_(result, equalTo(0))['&&'](assert_(released, isTrue))
         })
       ),
-      testM('bracketExit error handling', () => {
+      testIO('bracketExit error handling', () => {
         const releaseDied = new RuntimeException('release died')
         return I.gen(function* (_) {
           const exit = yield* _(
@@ -122,7 +122,7 @@ class IOSpec extends DefaultRunnableSpec {
     ),
     suite(
       'bracket + disconnect',
-      testM('bracket happy path', () =>
+      testIO('bracket happy path', () =>
         I.gen(function* (_) {
           const release = yield* _(Ref.make(false))
           const result  = yield* _(
@@ -139,7 +139,7 @@ class IOSpec extends DefaultRunnableSpec {
           return assert_(result, equalTo(43))['&&'](assert_(released, isTrue))
         })
       ),
-      testM('bracketExit happy path', () =>
+      testIO('bracketExit happy path', () =>
         I.gen(function* (_) {
           const release = yield* _(Ref.make(false))
           const result  = yield* _(
@@ -156,7 +156,7 @@ class IOSpec extends DefaultRunnableSpec {
           return assert_(result, equalTo(0))['&&'](assert_(released, isTrue))
         })
       ),
-      testM('bracketExit error handling', () => {
+      testIO('bracketExit error handling', () => {
         const releaseDied = new RuntimeException('release died')
         return I.gen(function* (_) {
           const exit = yield* _(
@@ -184,7 +184,7 @@ class IOSpec extends DefaultRunnableSpec {
           )
         })
       }),
-      testM('bracketExit "beast mode" error handling', () => {
+      testIO('bracketExit "beast mode" error handling', () => {
         const releaseDied = new RuntimeException('release died')
         return I.gen(function* (_) {
           const released = yield* _(Ref.make(false))
@@ -217,7 +217,7 @@ class IOSpec extends DefaultRunnableSpec {
     ),
     suite(
       'cached',
-      testM('returns new instances after duration', () => {
+      testIO('returns new instances after duration', () => {
         const incrementAndGet = Ref.updateAndGet((n: number) => n + 1)
         return I.gen(function* (_) {
           const ref   = yield* _(Ref.make(0))
@@ -234,7 +234,7 @@ class IOSpec extends DefaultRunnableSpec {
             ['&&'](assert_(c, equalTo(d)))
         })
       }),
-      testM('correctly handles an infinite duration time to live', () =>
+      testIO('correctly handles an infinite duration time to live', () =>
         I.gen(function* (_) {
           const ref             = yield* _(Ref.make(0))
           const getAndIncrement = Ref.modify_(ref, (n) => [n, n + 1])
@@ -248,7 +248,7 @@ class IOSpec extends DefaultRunnableSpec {
     ),
     suite(
       'cachedInvalidate',
-      testM('returns new instances after duration', () => {
+      testIO('returns new instances after duration', () => {
         const incrementAndGet = Ref.updateAndGet((n: number) => n + 1)
         return I.gen(function* (_) {
           const ref                  = yield* _(Ref.make(0))
@@ -271,7 +271,7 @@ class IOSpec extends DefaultRunnableSpec {
     ),
     suite(
       'catchSomeCause',
-      testM('catches matching cause', () =>
+      testIO('catches matching cause', () =>
         pipe(
           I.interrupt,
           I.catchSomeCause(
@@ -281,7 +281,7 @@ class IOSpec extends DefaultRunnableSpec {
           I.map((b) => assert_(b, isTrue))
         )
       ),
-      testM("fails if cause doesn't match", () =>
+      testIO("fails if cause doesn't match", () =>
         pipe(
           I.fiberId(),
           I.chain((fiberId) =>
@@ -300,7 +300,7 @@ class IOSpec extends DefaultRunnableSpec {
     ),
     suite(
       'catchSomeDefect',
-      testM('recovers from some defects', () => {
+      testIO('recovers from some defects', () => {
         const s  = 'division by zero'
         const io = I.halt(new IllegalArgumentError(s, '#'))
         return pipe(
@@ -311,7 +311,7 @@ class IOSpec extends DefaultRunnableSpec {
           I.map(assert(equalTo(s)))
         )
       }),
-      testM('leaves the rest', () => {
+      testIO('leaves the rest', () => {
         const t  = new IllegalArgumentError('division by zero', '#')
         const io = I.halt(t)
         return pipe(
@@ -323,7 +323,7 @@ class IOSpec extends DefaultRunnableSpec {
           I.map(assert(halts(deepStrictEqualTo(t))))
         )
       }),
-      testM('leaves errors', () => {
+      testIO('leaves errors', () => {
         const t  = new IllegalArgumentError('division by zero', '#')
         const io = I.fail(t)
         return pipe(
@@ -335,7 +335,7 @@ class IOSpec extends DefaultRunnableSpec {
           I.map(assert(fails(deepStrictEqualTo(t))))
         )
       }),
-      testM('leaves values', () => {
+      testIO('leaves values', () => {
         const t  = new IllegalArgumentError('division by zero', '#')
         const io = I.succeed(t)
         return pipe(
@@ -349,12 +349,12 @@ class IOSpec extends DefaultRunnableSpec {
     ),
     suite(
       'collectAllPar',
-      testM('returns the list in the same order', () => {
+      testIO('returns the list in the same order', () => {
         const list = [1, 2, 3].map(I.succeed)
         const res  = I.collectAllPar(list)
         return assertIO_(res, equalTo(Ch.make(1, 2, 3)))
       }),
-      testM('is referentially transparent', () =>
+      testIO('is referentially transparent', () =>
         I.gen(function* (_) {
           const counter      = yield* _(Ref.make(0))
           const op           = Ref.getAndUpdate_(counter, (n) => n + 1)
@@ -367,13 +367,13 @@ class IOSpec extends DefaultRunnableSpec {
     ),
     suite(
       'collectAllParN',
-      testM('returns results in the same order', () => {
+      testIO('returns results in the same order', () => {
         const list = [1, 2, 3].map(I.succeed)
         const res  = I.collectAllParN(2)(list)
         return assertIO_(res, equalTo(Ch.make(1, 2, 3)))
       })
     ),
-    testM('subsumeEither', () =>
+    testIO('subsumeEither', () =>
       checkM(Gen.alphaNumericString(), (str) => {
         const ioEither = I.succeed(E.right(str))
         const res      = I.subsumeEither(ioEither)
@@ -382,22 +382,22 @@ class IOSpec extends DefaultRunnableSpec {
     ),
     suite(
       'foreachPar',
-      testM('runs single task', () => {
+      testIO('runs single task', () => {
         const as      = [2]
         const results = I.foreachPar_(as, (n) => I.succeed(2 * n))
         return assertIO_(results, equalTo(Ch.single(4)))
       }),
-      testM('runs two tasks', () => {
+      testIO('runs two tasks', () => {
         const as      = [2, 3]
         const results = I.foreachPar_(as, (n) => I.succeed(2 * n))
         return assertIO_(results, equalTo(Ch.make(4, 6)))
       }),
-      testM('runs many tasks', () => {
+      testIO('runs many tasks', () => {
         const as      = Ch.range(1, 1000)
         const results = I.foreachPar_(as, (n) => I.succeed(2 * n))
         return assertIO_(results, equalTo(Ch.map_(as, (n) => 2 * n)))
       }),
-      testM('runs a task that fails', () => {
+      testIO('runs a task that fails', () => {
         const as      = Ch.range(1, 10)
         const results = pipe(
           as,
@@ -406,7 +406,7 @@ class IOSpec extends DefaultRunnableSpec {
         )
         return assertIO_(results, equalTo('boom!'))
       }),
-      testM('runs two failed tasks', () => {
+      testIO('runs two failed tasks', () => {
         const as      = Ch.range(1, 10)
         const results = pipe(
           as,
@@ -415,7 +415,7 @@ class IOSpec extends DefaultRunnableSpec {
         )
         return assertIO_(results, equalTo('boom1!')['||'](equalTo('boom2!')))
       }),
-      testM('runs a task that is interrupted', () => {
+      testIO('runs a task that is interrupted', () => {
         const as      = Ch.range(1, 10)
         const results = pipe(
           as,
@@ -424,7 +424,7 @@ class IOSpec extends DefaultRunnableSpec {
         )
         return assertIO_(results, isInterrupted)
       }),
-      testM('runs a task that halts', () => {
+      testIO('runs a task that halts', () => {
         const as      = Ch.range(1, 10)
         const results = pipe(
           as,

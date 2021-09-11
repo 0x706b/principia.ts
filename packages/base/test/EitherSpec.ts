@@ -17,7 +17,7 @@ import {
   equalTo,
   suite,
   test,
-  testM
+  testIO
 } from '@principia/test'
 import * as BA from '@principia/test/FreeBooleanAlgebra'
 
@@ -262,7 +262,7 @@ class EitherSpec extends DefaultRunnableSpec {
 
     suite(
       'getWitherable',
-      testM('filterMapA', () => {
+      testIO('filterMapA', () => {
         const filterMapA = E.getWitherable(S.Monoid).filterMapA(I.ApplicativePar)
         const p          = (n: number) => n > 2
         const f          = (n: number) => I.succeed(p(n) ? O.some(n + 1) : O.none())
@@ -272,7 +272,7 @@ class EitherSpec extends DefaultRunnableSpec {
           pipe(E.right(3), filterMapA(f), assertIO(deepStrictEqualTo(E.right(4))))
         )
       }),
-      testM('partitionMapA', () => {
+      testIO('partitionMapA', () => {
         const partitionMapA = E.getWitherable(S.Monoid).partitionMapA(I.ApplicativePar)
         const p             = (n: number) => n > 2
         const f             = (n: number) => I.succeed(p(n) ? E.right(n + 1) : E.left(n - 1))

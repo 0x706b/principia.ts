@@ -12,8 +12,9 @@ import type { IO, URIO } from '@principia/base/IO'
 import type { Stream } from '@principia/base/IO/Stream'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type { Show } from '@principia/base/Show'
-import type { _E, _R,UnionToIntersection } from '@principia/base/util/types'
+import type { _E, _R, UnionToIntersection } from '@principia/base/util/types'
 
+import * as As from '@principia/base/Async'
 import * as C from '@principia/base/Chunk'
 import * as E from '@principia/base/Either'
 import * as Ev from '@principia/base/Eval'
@@ -124,7 +125,7 @@ export function suite<Specs extends ReadonlyArray<Spec.XSpec<any, any>>>(
   return Spec.suite(label, M.succeed(specs), O.none())
 }
 
-export function testM<R, E>(label: string, assertion: () => IO<R, E, TestResult>): Spec.XSpec<R, E> {
+export function testIO<R, E>(label: string, assertion: () => IO<R, E, TestResult>): Spec.XSpec<R, E> {
   return Spec.test(
     label,
     I.matchCauseIO_(
@@ -142,8 +143,12 @@ export function testM<R, E>(label: string, assertion: () => IO<R, E, TestResult>
   )
 }
 
+export function testAsync<R, E>(label: string, assertion: () => As.Async<R, E, TestResult>): Spec.XSpec<R, E> {
+  return testIO(label, () => I.fromAsync(As.defer(assertion)))
+}
+
 export function test(label: string, assertion: () => TestResult): Spec.XSpec<unknown, never> {
-  return testM(label, () => I.succeedLazy(assertion))
+  return testIO(label, () => I.succeedLazy(assertion))
 }
 
 export function check<R, A>(rv: Gen<R, A>, test: (a: A) => TestResult): URIO<R & Has<TestConfig>, TestResult> {
