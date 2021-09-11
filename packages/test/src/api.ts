@@ -108,6 +108,15 @@ export function allIO<A extends NonEmptyArray<BA.FreeBooleanAlgebraM<any, any, a
   return NA.fold(BA.SemigroupAllIO<_R<A[number]>, _E<A[number]>, FailureDetails>())(results)
 }
 
+export function allAsync<A extends NonEmptyArray<As.Async<any, any, TestResult>>>(
+  ...results: A
+): As.Async<_R<A[number]>, _E<A[number]>, TestResult> {
+  return pipe(
+    As.sequenceTPar(...results) as As.Async<any, any, NonEmptyArray<TestResult>>,
+    As.map(NA.fold(BA.SemigroupAll<FailureDetails>()))
+  )
+}
+
 type MergeR<Specs extends ReadonlyArray<Spec.XSpec<any, any>>> = UnionToIntersection<
   {
     [K in keyof Specs]: [Specs[K]] extends [Spec.XSpec<infer R, any>] ? (unknown extends R ? never : R) : never
@@ -144,7 +153,7 @@ export function testIO<R, E>(label: string, assertion: () => IO<R, E, TestResult
 }
 
 export function testAsync<R, E>(label: string, assertion: () => As.Async<R, E, TestResult>): Spec.XSpec<R, E> {
-  return testIO(label, () => I.fromAsync(As.defer(assertion)))
+  return testIO(label, () => I.fromAsync(assertion()))
 }
 
 export function test(label: string, assertion: () => TestResult): Spec.XSpec<unknown, never> {

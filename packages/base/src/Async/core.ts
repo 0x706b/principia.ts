@@ -49,7 +49,7 @@ export const AsyncTag = {
   Defer: 'Defer',
   Promise: 'Promise',
   Chain: 'Chain',
-  Fold: 'Fold',
+  Match: 'Match',
   Asks: 'Asks',
   Done: 'Done',
   Give: 'Give',
@@ -72,7 +72,7 @@ export type Concrete =
   | Defer<any, any, any>
   | LiftPromise<any, any>
   | Chain<any, any, any, any, any, any>
-  | Fold<any, any, any, any, any, any, any, any, any>
+  | Match<any, any, any, any, any, any, any, any, any>
   | Asks<any, any, any, any>
   | Done<any, any>
   | Give<any, any, any>
@@ -185,8 +185,8 @@ export class Chain<R, E, A, Q, D, B> extends Async<Q & R, D | E, B> {
   }
 }
 
-export class Fold<R, E, A, R1, E1, B, R2, E2, C> extends Async<R & R1 & R2, E1 | E2, B | C> {
-  readonly _asyncTag = AsyncTag.Fold
+export class Match<R, E, A, R1, E1, B, R2, E2, C> extends Async<R & R1 & R2, E1 | E2, B | C> {
+  readonly _asyncTag = AsyncTag.Match
 
   constructor(
     readonly async: Async<R, E, A>,
@@ -294,7 +294,7 @@ export function matchCauseAsync_<R, E, A, R1, E1, A1, R2, E2, A2>(
   onFailure: (cause: Cause<E>) => Async<R1, E1, A1>,
   onSuccess: (a: A) => Async<R2, E2, A2>
 ): Async<R & R1 & R2, E1 | E2, A1 | A2> {
-  return new Fold(ma, onFailure, onSuccess)
+  return new Match(ma, onFailure, onSuccess)
 }
 
 export function matchCauseAsync<E, A, R1, E1, A1, R2, E2, A2>(
@@ -1021,6 +1021,11 @@ export function runPromiseExitEnv_<R, E, A>(
                 pushContinuation(new ApplyFrame(continuation))
               }
             }
+            break
+          }
+          case AsyncTag.Match: {
+            current = I.async
+            pushContinuation(new FoldFrame(I.f, I.g))
             break
           }
           case AsyncTag.Defer: {
