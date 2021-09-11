@@ -293,3 +293,9 @@ export function succeeds<A>(assertion: Assertion<A>): Assertion<Exit<any, A>> {
     Ex.match(() => O.none(), O.some)
   )
 }
+
+export const isInterrupted: Assertion<Exit<any, any>> = assertion(
+  'isInterrupted',
+  [],
+  Ex.match(C.interrupted, () => false)
+)
