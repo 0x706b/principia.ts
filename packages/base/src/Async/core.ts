@@ -1190,7 +1190,7 @@ export function runPromiseExitInterrupt<E, A>(async: Async<unknown, E, A>): [Pro
   return [p, i]
 }
 
-export function runAsync<E, A>(async: Async<unknown, E, A>, onExit?: (exit: Exit<E, A>) => void): () => void {
+export function runAsync_<E, A>(async: Async<unknown, E, A>, onExit?: (exit: Exit<E, A>) => void): () => void {
   const interruptionState = new InterruptionState()
   runPromiseExit(async, interruptionState).then(onExit)
   return () => {
@@ -1198,12 +1198,23 @@ export function runAsync<E, A>(async: Async<unknown, E, A>, onExit?: (exit: Exit
   }
 }
 
-export function runAsyncEnv<R, E, A>(async: Async<R, E, A>, env: R, onExit?: (exit: Exit<E, A>) => void): () => void {
+export function runAsync<E, A>(onExit?: (exit: Exit<E, A>) => void): (async: Async<unknown, E, A>) => () => void {
+  return (async) => runAsync_(async, onExit)
+}
+
+export function runAsyncEnv_<R, E, A>(async: Async<R, E, A>, env: R, onExit?: (exit: Exit<E, A>) => void): () => void {
   const interruptionState = new InterruptionState()
   runPromiseExitEnv_(async, env, interruptionState).then(onExit)
   return () => {
     interruptionState.interrupt()
   }
+}
+
+export function runAsyncEnv<R, E, A>(
+  env: R,
+  onExit?: (exit: Exit<E, A>) => void
+): (async: Async<R, E, A>) => () => void {
+  return (async) => runAsyncEnv_(async, env, onExit)
 }
 
 /*

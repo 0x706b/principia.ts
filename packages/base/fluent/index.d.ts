@@ -1,4 +1,5 @@
 export {} from './Array'
+export {} from './Async'
 export {} from './Cause'
 export {} from './Chunk'
 export {} from './Dictionary'
