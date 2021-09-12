@@ -1,6 +1,6 @@
 import type { Trace } from '../IO/Fiber/trace'
 import type { NonEmptyArray } from '../NonEmptyArray'
-import type { GenericCause } from './core'
+import type { PCause } from './core'
 
 import * as A from '../Array/core'
 import * as Ev from '../Eval'
@@ -91,7 +91,7 @@ const renderToString = (u: unknown): string => {
   return JSON.stringify(u, null, 2)
 }
 
-const causeToSequential = <Id, E>(cause: GenericCause<Id, E>, renderer: Renderer<Id, E>): Ev.Eval<Sequential> =>
+const causeToSequential = <Id, E>(cause: PCause<Id, E>, renderer: Renderer<Id, E>): Ev.Eval<Sequential> =>
   Ev.gen(function* (_) {
     switch (cause._tag) {
       case CauseTag.Empty: {
@@ -141,7 +141,7 @@ const causeToSequential = <Id, E>(cause: GenericCause<Id, E>, renderer: Renderer
     }
   })
 
-const linearSegments = <Id, E>(cause: GenericCause<Id, E>, renderer: Renderer<Id, E>): Ev.Eval<Step[]> =>
+const linearSegments = <Id, E>(cause: PCause<Id, E>, renderer: Renderer<Id, E>): Ev.Eval<Step[]> =>
   Ev.gen(function* (_) {
     switch (cause._tag) {
       case CauseTag.Then: {
@@ -156,7 +156,7 @@ const linearSegments = <Id, E>(cause: GenericCause<Id, E>, renderer: Renderer<Id
     }
   })
 
-const parallelSegments = <Id, E>(cause: GenericCause<Id, E>, renderer: Renderer<Id, E>): Ev.Eval<Sequential[]> =>
+const parallelSegments = <Id, E>(cause: PCause<Id, E>, renderer: Renderer<Id, E>): Ev.Eval<Sequential[]> =>
   Ev.gen(function* (_) {
     switch (cause._tag) {
       case CauseTag.Both: {
@@ -201,7 +201,7 @@ const format = (segment: Segment): readonly string[] => {
   }
 }
 
-const prettyLines = <Id, E>(cause: GenericCause<Id, E>, renderer: Renderer<Id, E>): Ev.Eval<readonly string[]> =>
+const prettyLines = <Id, E>(cause: PCause<Id, E>, renderer: Renderer<Id, E>): Ev.Eval<readonly string[]> =>
   Ev.gen(function* (_) {
     const s = yield* _(causeToSequential(cause, renderer))
 
@@ -216,7 +216,7 @@ function renderTrace(o: O.Option<Trace>, renderTrace: TraceRenderer) {
   return o._tag === 'None' ? [] : lines(renderTrace(o.value))
 }
 
-export function prettySafe<Id, E>(cause: GenericCause<Id, E>, renderer: Renderer<Id, E>): Ev.Eval<string> {
+export function prettySafe<Id, E>(cause: PCause<Id, E>, renderer: Renderer<Id, E>): Ev.Eval<string> {
   return Ev.gen(function* (_) {
     const lines = yield* _(prettyLines(cause, renderer))
     return lines.join('\n')
@@ -226,7 +226,7 @@ export function prettySafe<Id, E>(cause: GenericCause<Id, E>, renderer: Renderer
 export const defaultErrorToLines = (error: unknown) =>
   error instanceof Error ? renderError(error) : lines(renderToString(error))
 
-export function makePrettyPrint<Id, E>(renderer: Renderer<Id, E>): (cause: GenericCause<Id, E>) => string {
+export function makePrettyPrint<Id, E>(renderer: Renderer<Id, E>): (cause: PCause<Id, E>) => string {
   return (cause) => prettySafe(cause, renderer).value
 }
 

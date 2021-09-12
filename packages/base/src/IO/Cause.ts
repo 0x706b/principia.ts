@@ -5,7 +5,7 @@ import { prettyTrace } from '../IO/Fiber/trace'
 
 export * from '../Cause'
 
-export type Cause<E> = C.GenericCause<FiberId, E>
+export type Cause<E> = C.PCause<FiberId, E>
 
 export const defaultRenderer: C.Renderer<FiberId> = {
   renderError: C.renderError,
@@ -21,7 +21,7 @@ export class FiberFailure<E> extends Error {
   readonly _tag   = 'FiberFailure'
   readonly pretty = defaultPrettyPrint(this.cause)
 
-  constructor(readonly cause: C.GenericCause<FiberId, E>) {
+  constructor(readonly cause: C.PCause<FiberId, E>) {
     super()
 
     this.name  = this._tag

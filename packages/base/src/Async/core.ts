@@ -28,8 +28,8 @@ import { makeStack } from '../util/support/Stack'
 export const AsyncTypeId = Symbol.for('@principia/base/Async')
 export type AsyncTypeId = typeof AsyncTypeId
 
-export type Cause<E> = C.GenericCause<void, E>
-export type Exit<E, A> = Ex.GenericExit<void, E, A>
+export type Cause<E> = C.PCause<void, E>
+export type Exit<E, A> = Ex.PExit<void, E, A>
 
 /**
  * `Async` is a lightweight `IO` datatype for interruptible asynchronous computation.

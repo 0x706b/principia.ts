@@ -1,12 +1,12 @@
 import type { Async } from './Async'
-import type { GenericCause } from './Cause'
+import type { PCause } from './Cause'
 import type { Chunk } from './Chunk'
 import type { Const } from './Const'
 import type { Dictionary } from './Dictionary'
 import type { Either } from './Either'
 import type { Eq } from './Eq'
 import type { Eval } from './Eval'
-import type { GenericExit } from './Exit'
+import type { PExit } from './Exit'
 import type { FreeSemiring } from './FreeSemiring'
 import type { Guard } from './Guard'
 import type { HashMap } from './HashMap'
@@ -216,8 +216,8 @@ declare module './HKT' {
     [StateInURI]: StateIn<S, A>
     [StateOutURI]: StateOut<S, A>
     [HashMapURI]: HashMap<K, A>
-    [CauseURI]: GenericCause<X, A>
-    [ExitURI]: GenericExit<X, E, A>
+    [CauseURI]: PCause<X, A>
+    [ExitURI]: PExit<X, E, A>
     [ManagedURI]: Managed<R, E, A>
     [ManagedCategoryURI]: Managed<I, E, A>
     [KleisliInURI]: (_: R) => A
