@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.16.0](https://github.com/0x706b/principia.ts/compare/@principia/logger@0.15.0...@principia/logger@0.16.0) (2021-09-12)
+
+
+### Features
+
+* **compile:** add `tag` transformer ([2f1d618](https://github.com/0x706b/principia.ts/commit/2f1d6186a69804b169d7dc2eb96346d612fd3582))
+
+
+
+
+
 # 0.15.0 (2021-07-08)
 
 
