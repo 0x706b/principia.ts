@@ -15,12 +15,12 @@ export function cause<R, Id, R1, E, R2>(
   id: G.Gen<R, Id>,
   error: G.Gen<R, E>,
   defect: G.Gen<R1, unknown>
-): G.Gen<R & R1 & R2 & Has<Random> & Has<Sized>, C.GenericCause<Id, E>> {
+): G.Gen<R & R1 & R2 & Has<Random> & Has<Sized>, C.PCause<Id, E>> {
   const failure   = G.map_(error, C.fail)
   const halt      = G.map_(defect, C.halt)
   const empty     = G.constant(C.empty)
   const interrupt = G.map_(id, C.interrupt)
-  const traced    = (n: number): G.Gen<R & R1 & R2 & Has<Random>, C.GenericCause<Id, E>> =>
+  const traced    = (n: number): G.Gen<R & R1 & R2 & Has<Random>, C.PCause<Id, E>> =>
     G.defer(() =>
       pipe(
         causesN(n - 1),
@@ -28,7 +28,7 @@ export function cause<R, Id, R1, E, R2>(
       )
     )
 
-  const sequential = (n: number): G.Gen<R & R1 & R2 & Has<Random>, C.GenericCause<Id, E>> =>
+  const sequential = (n: number): G.Gen<R & R1 & R2 & Has<Random>, C.PCause<Id, E>> =>
     G.defer(() =>
       pipe(
         G.int({ min: 1, max: n - 1 }),
@@ -36,7 +36,7 @@ export function cause<R, Id, R1, E, R2>(
       )
     )
 
-  const parallel = (n: number): G.Gen<R & R1 & R2 & Has<Random>, C.GenericCause<Id, E>> =>
+  const parallel = (n: number): G.Gen<R & R1 & R2 & Has<Random>, C.PCause<Id, E>> =>
     G.defer(() =>
       pipe(
         G.int({ min: 1, max: n - 1 }),
@@ -44,7 +44,7 @@ export function cause<R, Id, R1, E, R2>(
       )
     )
 
-  const causesN = (n: number): G.Gen<R & R1 & R2 & Has<Random>, C.GenericCause<Id, E>> =>
+  const causesN = (n: number): G.Gen<R & R1 & R2 & Has<Random>, C.PCause<Id, E>> =>
     G.defer(() => {
       if (n === 1) {
         return G.oneOf(empty, failure, halt, interrupt)

@@ -278,7 +278,7 @@ export const empty: PCause<never, never> = new Empty()
  * @category constructors
  * @since 1.0.0
  */
-export function fail<E>(value: E): PCause<never, E> {
+export function fail<Id = never, E = never>(value: E): PCause<Id, E> {
   return new Fail(value)
 }
 
@@ -303,7 +303,7 @@ export function traced<Id, E>(cause: PCause<Id, E>, trace: Trace): PCause<Id, E>
  * @category constructors
  * @since 1.0.0
  */
-export function halt(value: unknown): PCause<never, never> {
+export function halt<Id = never>(value: unknown): PCause<Id, never> {
   return new Halt(value)
 }
 

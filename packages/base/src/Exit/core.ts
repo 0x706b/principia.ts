@@ -69,15 +69,15 @@ export function isExit(u: unknown): u is PExit<unknown, unknown, unknown> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function halt(defect: unknown): PExit<never, never, never> {
+export function halt<Id = never>(defect: unknown): PExit<Id, never, never> {
   return failCause(C.halt(defect))
 }
 
-export function fail<E = never, A = never>(e: E): PExit<never, E, A> {
+export function fail<Id = never, E = never, A = never>(e: E): PExit<Id, E, A> {
   return failCause(C.fail(e))
 }
 
-export function fromEither<E, A>(e: E.Either<E, A>): PExit<never, E, A> {
+export function fromEither<Id = never, E = never, A = never>(e: E.Either<E, A>): PExit<Id, E, A> {
   return e._tag === 'Left' ? fail(e.left) : succeed(e.right)
 }
 
@@ -89,7 +89,7 @@ export function fromOption<E>(onNone: () => E): <A>(fa: O.Option<A>) => PExit<ne
   return (fa) => fromOption_(fa, onNone)
 }
 
-export function failCause<Id, E = never, A = never>(cause: C.PCause<Id, E>): PExit<Id, E, A> {
+export function failCause<Id = never, E = never, A = never>(cause: C.PCause<Id, E>): PExit<Id, E, A> {
   return new Failure(cause)
 }
 

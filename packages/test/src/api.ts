@@ -102,6 +102,21 @@ export function assertIO<A>(
   return (io) => assertIO_(io, assertion, showA)
 }
 
+export function assertAsync_<R, E, A>(
+  async: As.Async<R, E, A>,
+  assertion: Assertion<A>,
+  showA?: Show<A>
+): As.Async<R, E, TestResult> {
+  return As.map_(async, (value) => traverseResult(value, assertion.run(value), assertion, showA))
+}
+
+export function assertAsync<A>(
+  assertion: Assertion<A>,
+  showA?: Show<A>
+): <R, E>(async: As.Async<R, E, A>) => As.Async<R, E, TestResult> {
+  return (async) => assertAsync_(async, assertion, showA)
+}
+
 export function allIO<A extends NonEmptyArray<BA.FreeBooleanAlgebraM<any, any, any>>>(
   ...results: A
 ): IO<_R<A[number]>, _E<A[number]>, TestResult> {
