@@ -1,8 +1,8 @@
 import path from 'path'
 import ts from 'typescript'
 
+import { checkRegionAt, getTrace, normalize, traceChild } from './transformer-util'
 import { optimizePipe } from './unpipe'
-import { checkRegionAt, getTrace, normalize, traceChild } from './util'
 
 export default function rewrite(
   program: ts.Program,

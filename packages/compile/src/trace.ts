@@ -1,7 +1,7 @@
 import * as path from 'path'
 import ts from 'typescript'
 
-import { checkRegionAt, getTrace, normalize, traceChild } from './util'
+import { checkRegionAt, getTrace, normalize, traceChild } from './transformer-util'
 
 function findExisting(
   sourceFile: ts.SourceFile,

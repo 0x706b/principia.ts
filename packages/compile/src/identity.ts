@@ -1,6 +1,6 @@
 import ts from 'typescript'
 
-import { getOptimizeTags } from './util'
+import { getOptimizeTags } from './transformer-util'
 
 export default function identity(program: ts.Program, opts?: { identity?: boolean }) {
   const identityOn = !(opts?.identity === false)

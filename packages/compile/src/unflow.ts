@@ -1,6 +1,6 @@
 import ts from 'typescript'
 
-import { getOptimizeTags } from './util'
+import { getOptimizeTags } from './transformer-util'
 
 export default function unflow(
   program: ts.Program,
