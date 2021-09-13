@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.16.4](https://github.com/0x706b/principia.ts/compare/@principia/base@0.16.3...@principia/base@0.16.4) (2021-09-13)
+
+
+### Bug Fixes
+
+* **base/array:** fluent `last` should be `rewrite` ([c3f12bf](https://github.com/0x706b/principia.ts/commit/c3f12bf7117002087b9b815170e5c3b0de7b8857))
+* **base/async:** fluent definitions should rewrite to data-first variants ([2c2dc33](https://github.com/0x706b/principia.ts/commit/2c2dc33d17262144f32cba9f37b6d645e2ea5888))
+
+
+
+
+
 ## [0.16.3](https://github.com/0x706b/principia.ts/compare/@principia/base@0.16.2...@principia/base@0.16.3) (2021-09-13)
 
 **Note:** Version bump only for package @principia/base
