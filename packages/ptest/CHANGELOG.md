@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.16.2](https://github.com/0x706b/principia.ts/compare/@principia/ptest@0.16.1...@principia/ptest@0.16.2) (2021-09-13)
+
+
+### Reverts
+
+* Revert "chore(release): publish" ([e74414e](https://github.com/0x706b/principia.ts/commit/e74414effa51392092770ecd542b55608dbb1201))
+
+
+
+
+
 ## [0.16.1](https://github.com/0x706b/principia.ts/compare/@principia/ptest@0.16.1...@principia/ptest@0.16.1) (2021-09-13)
 
 

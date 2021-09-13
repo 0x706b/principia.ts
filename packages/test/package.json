@@ -1,6 +1,6 @@
 {
   "name": "@principia/test",
-  "version": "0.16.1",
+  "version": "0.16.2",
   "description": "Abstractions for IO tests",
   "repository": {
     "type": "git",
@@ -88,8 +88,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@principia/base": "^0.16.1",
-    "@principia/compile": "^0.16.1"
+    "@principia/base": "^0.16.2",
+    "@principia/compile": "^0.16.2"
   },
   "publishConfig": {
     "access": "public",
