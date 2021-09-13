@@ -4,6 +4,7 @@
     "packages/*"
   ],
   "scripts": {
+    "prepare": "ts-patch install -s",
     "build": "ultra -r --build buildAll",
     "clean": "ultra -r clean",
     "lint": "ultra -r lint",
