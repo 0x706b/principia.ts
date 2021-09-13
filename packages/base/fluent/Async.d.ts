@@ -248,12 +248,12 @@ declare module '@principia/base/Async' {
     runPromiseExit<E, A>(this: As.Async<unknown, E, A>): [Promise<As.Exit<E, A>>, () => void]
 
     /**
-     * @rewrite runAsync from "@principia/base/Async"
+     * @rewrite runAsync_ from "@principia/base/Async"
      */
     runAsync<E, A>(this: As.Async<unknown, E, A>, onExit?: (exit: As.Exit<E, A>) => void): () => void
 
     /**
-     * @rewrite runAsyncEnv from "@principia/base/Async"
+     * @rewrite runAsyncEnv_ from "@principia/base/Async"
      */
     runAsyncEnv<R, E, A>(this: As.Async<R, E, A>, env: R, onExit?: (exit: As.Exit<E, A>) => void): () => void
   }
