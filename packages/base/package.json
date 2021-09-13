@@ -1,6 +1,6 @@
 {
   "name": "@principia/base",
-  "version": "0.16.1",
+  "version": "0.16.0",
   "description": "Base datatypes",
   "repository": {
     "type": "git",
@@ -333,7 +333,7 @@
     ]
   },
   "dependencies": {
-    "@principia/compile": "^0.16.1"
+    "@principia/compile": "^0.16.0"
   },
   "publishConfig": {
     "access": "public",

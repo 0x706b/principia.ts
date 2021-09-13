@@ -1,6 +1,6 @@
 {
   "name": "@principia/observable",
-  "version": "0.16.1",
+  "version": "0.16.0",
   "description": "Observable",
   "repository": {
     "type": "git",
@@ -73,8 +73,8 @@
   },
   "config": {},
   "dependencies": {
-    "@principia/base": "^0.16.1",
-    "@principia/compile": "^0.16.1"
+    "@principia/base": "^0.16.0",
+    "@principia/compile": "^0.16.0"
   },
   "publishConfig": {
     "access": "public",

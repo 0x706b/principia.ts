@@ -3,14 +3,6 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
-## [0.16.1](https://github.com/0x706b/principia.ts/compare/@principia/test@0.16.0...@principia/test@0.16.1) (2021-09-13)
-
-**Note:** Version bump only for package @principia/test
-
-
-
-
-
 # [0.16.0](https://github.com/0x706b/principia.ts/compare/@principia/test@0.15.0...@principia/test@0.16.0) (2021-09-12)
 
 
