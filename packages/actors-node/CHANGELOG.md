@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.16.3](https://github.com/0x706b/principia.ts/compare/@principia/actors-node@0.16.2...@principia/actors-node@0.16.3) (2021-09-13)
+
+**Note:** Version bump only for package @principia/actors-node
+
+
+
+
+
 ## [0.16.2](https://github.com/0x706b/principia.ts/compare/@principia/actors-node@0.16.1...@principia/actors-node@0.16.2) (2021-09-13)
 
 
