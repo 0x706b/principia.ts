@@ -376,12 +376,12 @@ export interface ArrayOps {
   intersperse<T>(this: ReadonlyArray<T>, a: T): ReadonlyArray<T>
 
   /**
-   * @rewriteGetter last from "@principia/base/NonEmptyArray"
+   * @rewrite last from "@principia/base/NonEmptyArray"
    */
   last<T>(this: NonEmptyArray<T>): T
 
   /**
-   * @rewriteGetter last from "@principia/base/Array"
+   * @rewrite last from "@principia/base/Array"
    */
   last<T>(this: ReadonlyArray<T>): Option<T>
 
