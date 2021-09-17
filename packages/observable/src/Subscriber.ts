@@ -30,9 +30,9 @@ export class Subscriber<E, A> extends Subscription implements Observer<E, A> {
       this.destination!.next(value)
     }
   }
-  fail(err: E) {
+  error(err: E) {
     if (!this.isStopped) {
-      this.destination!.fail(err)
+      this.destination!.error(err)
     }
   }
   defect(err: unknown) {
@@ -69,27 +69,27 @@ export class SafeSubscriber<E, A> extends Subscriber<E, A> {
   constructor(destination?: Partial<Observer<E, A>>) {
     super()
     let next: ((value: A) => void) | undefined       = undefined
-    let fail: ((err: E) => void) | undefined         = undefined
+    let error: ((err: E) => void) | undefined        = undefined
     let complete: (() => void) | undefined           = undefined
     let defect: ((err: unknown) => void) | undefined = undefined
     if (destination) {
-      ({ next, fail, complete, defect } = destination)
+      ({ next, error, complete, defect } = destination)
     }
     next     = next?.bind(destination)
-    fail     = fail?.bind(destination)
+    error    = error?.bind(destination)
     complete = complete?.bind(destination)
     defect   = defect?.bind(destination)
     if (defect) {
       this.destination = {
         next: next ? wrapDefectHandler(next, defect) : noop,
-        fail: fail ? wrapDefectHandler(fail, defect) : noop,
+        error: error ? wrapDefectHandler(error, defect) : noop,
         complete: complete ? wrapDefectHandler(complete, defect) : noop,
         defect: wrapThrowHandler(defect)
       }
     } else {
       this.destination = {
         next: next ? wrapThrowHandler(next) : noop,
-        fail: wrapThrowHandler(fail ?? defaultErrorHandler),
+        error: wrapThrowHandler(error ?? defaultErrorHandler),
         complete: complete ? wrapThrowHandler(complete) : noop,
         defect: wrapThrowHandler(defaultErrorHandler)
       }
@@ -124,7 +124,7 @@ function defaultErrorHandler(error: any) {
 export const EMPTY_OBSERVER: Readonly<Observer<any, any>> & { closed: true } = {
   closed: true,
   next: noop,
-  fail: defaultErrorHandler,
+  error: defaultErrorHandler,
   complete: noop,
   defect: defaultErrorHandler
 }

@@ -34,13 +34,12 @@ import {
 } from '../util'
 
 export interface Subscribable<E, A> {
-  readonly _E: () => E
-  readonly _A: () => A
   subscribe(observer: Partial<Observer<E, A>>): Unsubscribable
 }
 
 export type ObservableInput<E = never, A = never> =
   | Observable<E, A>
+  | Subscribable<E, A>
   | AsyncIterable<A>
   | PromiseLike<A>
   | ArrayLike<A>
@@ -132,7 +131,7 @@ export function empty<A>(): Observable<never, A> {
 }
 
 export function fail<E>(e: E): Observable<E, never> {
-  return new Observable((s) => s.fail(e))
+  return new Observable((s) => s.error(e))
 }
 
 export function from<E = never, A = never>(input: ObservableInput<E, A>): Observable<E, A> {
@@ -153,6 +152,9 @@ export function from<E = never, A = never>(input: ObservableInput<E, A>): Observ
   }
   if (isReadableStream(input)) {
     return fromReadableStreamLike(input)
+  }
+  if ('subscribe' in input) {
+    return fromSubscribable(input)
   }
   throw new TypeError('Invalid Observable input')
 }
@@ -205,6 +207,16 @@ export function fromReadableStreamLike<A>(readableStream: ReadableStreamLike<A>)
 }
 
 export function fromSubscribable<E, A>(subscribable: Subscribable<E, A>): Observable<E, A> {
+  return new Observable((subscriber) => subscribable.subscribe(subscriber))
+}
+
+export function fromInterop<A>(subscribable: {
+  subscribe: (observer: {
+    next: (value: A) => void
+    error: (err: unknown) => void
+    complete: () => void
+  }) => Unsubscribable
+}): Observable<unknown, A> {
   return new Observable((subscriber) => subscribable.subscribe(subscriber))
 }
 
@@ -294,7 +306,7 @@ export function scheduled<E, A>(input: ObservableInput<E, A>, scheduler: Schedul
   if (isReadableStream(input)) {
     return scheduleReadableStreamLike(input, scheduler)
   }
-  return scheduleObservable(input, scheduler)
+  return scheduleObservable(from(input), scheduler)
 }
 
 export function scheduleArray<A>(input: ArrayLike<A>, scheduler: SchedulerLike): Observable<never, A> {
@@ -369,8 +381,8 @@ export function scheduleObservable<E, A>(input: Observable<E, A>, scheduler: Sch
             next: (value) => {
               sub.add(scheduler.schedule(() => subscriber.next(value)))
             },
-            fail: (err) => {
-              sub.add(scheduler.schedule(() => subscriber.fail(err)))
+            error: (err) => {
+              sub.add(scheduler.schedule(() => subscriber.error(err)))
             },
             defect: (err) => {
               sub.add(scheduler.schedule(() => subscriber.defect(err)))
@@ -1250,7 +1262,7 @@ export function either<E, A>(fa: Observable<E, A>): Observable<never, Either<E, 
         next: (value) => {
           subscriber.next(E.right(value))
         },
-        fail: (error) => {
+        error: (error) => {
           subscriber.next(E.left(error))
         }
       })
@@ -1515,7 +1527,7 @@ export function materialize<E, A>(fa: Observable<E, A>): Observable<never, Notif
         next: (value) => {
           subscriber.next(N.next(value))
         },
-        fail: (error) => {
+        error: (error) => {
           subscriber.next(N.error(error))
         },
         complete: () => {
@@ -1589,7 +1601,7 @@ export function onDefectResumeNext_<E, A, O extends ReadonlyArray<ObservableInpu
             subscribeNext()
             return
           }
-          const innerSub = operatorSubscriber(subscriber, { fail: noop, defect: noop, complete: noop })
+          const innerSub = operatorSubscriber(subscriber, { error: noop, defect: noop, complete: noop })
           subscriber.add(nextSource.subscribe(innerSub))
           innerSub.add(subscribeNext)
         } else {
@@ -2102,9 +2114,9 @@ export function tap_<E, A>(fa: Observable<E, A>, observer: Partial<Observer<E, A
           observer.next?.(value)
           subscriber.next(value)
         },
-        fail: (err) => {
-          observer.fail?.(err)
-          subscriber.fail(err)
+        error: (err) => {
+          observer.error?.(err)
+          subscriber.error(err)
         },
         complete: () => {
           observer.complete?.()

@@ -87,7 +87,7 @@ export function observe_<E, A>(notification: Notification<E, A>, observer: Parti
   return match_(
     notification,
     (a) => observer.next?.(a),
-    (e) => observer.fail?.(e),
+    (e) => observer.error?.(e),
     (err) => observer.defect?.(err),
     () => observer.complete?.()
   )

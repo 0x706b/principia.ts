@@ -20,15 +20,15 @@ export class OperatorSubscriber<E, A> extends Subscriber<E, A> {
           }
         }
       : super.next
-    this.fail = observer.fail
+    this.error = observer.error
       ? function (this: OperatorSubscriber<E, A>, error: E) {
           try {
-            observer.fail!(error)
+            observer.error!(error)
           } catch (err) {
             destination.defect(err)
           }
         }
-      : super.fail
+      : super.error
     this.complete = observer.complete
       ? function (this: OperatorSubscriber<E, A>) {
           try {

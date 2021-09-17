@@ -31,7 +31,7 @@ function fromCallbackInternal(isNodeStyle: boolean, callbackFunc: any): (...args
             if (isNodeStyle) {
               const err = results.shift()
               if (err != null) {
-                subject.fail(err)
+                subject.error(err)
                 return
               }
             }

@@ -37,11 +37,11 @@ export class Subject<E, A> extends Observable<E, A> implements SubscriptionLike 
     }
   }
 
-  fail(err: E) {
+  error(err: E) {
     if (!this.isStopped) {
       const copy = this.observers.slice()
       for (const observer of copy) {
-        observer.fail(err)
+        observer.error(err)
       }
     }
   }
@@ -108,8 +108,8 @@ export class AnonymousSubject<E, A> extends Subject<E, A> {
   next(value: A) {
     this.destination?.next?.(value)
   }
-  fail(err: E) {
-    this.destination?.fail?.(err)
+  error(err: E) {
+    this.destination?.error?.(err)
   }
   defect(err: unknown) {
     this.destination?.defect?.(err)
@@ -135,7 +135,7 @@ export class AsyncSubject<E, A> extends Subject<E, A> {
       hasValue &&
         E.match_(
           value!,
-          (e) => subscriber.fail(e),
+          (e) => subscriber.error(e),
           (a) => subscriber.next(a)
         )
       subscriber.complete()
@@ -149,7 +149,7 @@ export class AsyncSubject<E, A> extends Subject<E, A> {
     }
   }
 
-  fail(err: E) {
+  error(err: E) {
     if (!this.isStopped) {
       this.value    = E.left(err)
       this.hasValue = true
@@ -163,7 +163,7 @@ export class AsyncSubject<E, A> extends Subject<E, A> {
       hasValue &&
         E.match_(
           value!,
-          (e) => super.fail(e),
+          (e) => super.error(e),
           (a) => super.next(a)
         )
       super.complete()

@@ -20,7 +20,7 @@ export function window_<E, A, E1>(
     source.subscribe(
       operatorSubscriber(subscriber, {
         next: (value) => windowSubject.next(value),
-        fail: (err) => windowSubject.fail(err),
+        error: (err) => windowSubject.error(err),
         complete: () => {
           windowSubject.complete()
           subscriber.complete()

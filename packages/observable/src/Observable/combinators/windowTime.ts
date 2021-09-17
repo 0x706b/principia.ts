@@ -95,9 +95,9 @@ export function windowTime_<E, A>(
             maxWindowSize <= ++record.seen && closeWindow(record)
           })
         },
-        fail: (err) => {
+        error: (err) => {
           loop((record) => {
-            record.window.fail(err)
+            record.window.error(err)
             maxWindowSize <= ++record.seen && closeWindow(record)
           })
         },

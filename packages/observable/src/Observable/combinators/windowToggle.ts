@@ -49,7 +49,7 @@ export function windowToggle_<E, A, E1, B, E2>(
               operatorSubscriber(subscriber, {
                 next: closeWindow,
                 complete: noop,
-                fail: closeWindow,
+                error: closeWindow,
                 defect: handleError
               })
             )
@@ -69,10 +69,10 @@ export function windowToggle_<E, A, E1, B, E2>(
               window.next(value)
             }
           },
-          fail: (err) => {
+          error: (err) => {
             const windowsCopy = windows.slice()
             for (const window of windowsCopy) {
-              window.fail(err)
+              window.error(err)
             }
           },
           complete: () => {

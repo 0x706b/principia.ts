@@ -47,7 +47,7 @@ export function windowWhen_<E, A, E1>(
         subscriber,
         {
           next: (value) => window!.next(value),
-          fail: (err) => window!.fail(err),
+          error: (err) => window!.error(err),
           complete: () => {
             window!.complete()
             subscriber.complete()

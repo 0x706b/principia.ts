@@ -43,9 +43,9 @@ export function windowCount_<E, A>(
             }
             subscriber.complete()
           },
-          fail: (err) => {
+          error: (err) => {
             for (const window of windows) {
-              window.fail(err)
+              window.error(err)
             }
 
             const c = count - windowSize + 1

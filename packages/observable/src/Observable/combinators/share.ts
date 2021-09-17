@@ -69,7 +69,7 @@ export function share_<E, A, E1 = never, E2 = never, E3 = never>(
     if (!connection) {
       connection = new SafeSubscriber({
         next: (value) => dest.next(value),
-        fail: (err) => dest.fail(err),
+        error: (err) => dest.error(err),
         defect: (defect) => {
           hasErrored = true
           cancelReset()
