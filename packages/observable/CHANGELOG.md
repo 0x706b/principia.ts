@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.16.7](https://github.com/0x706b/principia.ts/compare/@principia/observable@0.16.4...@principia/observable@0.16.7) (2021-09-17)
+
+
+### Bug Fixes
+
+* **observable:** move `Scheduler` to the `Scheduler` folder ([f5c584f](https://github.com/0x706b/principia.ts/commit/f5c584f4f603043c8abd1601ac9c22f53f213337))
+
+
+
+
+
 ## [0.16.6](https://github.com/0x706b/principia.ts/compare/@principia/observable@0.16.4...@principia/observable@0.16.6) (2021-09-17)
 
 
