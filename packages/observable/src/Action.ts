@@ -1,6 +1,6 @@
-import type { AsyncScheduler, Scheduler, SchedulerAction } from './Scheduler'
+import type { AsyncScheduler, Scheduler, SchedulerAction } from './Scheduler/core'
 
-import { intervalProvider } from './scheduler/intervalProvider'
+import { intervalProvider } from './Scheduler/intervalProvider'
 import { Subscription } from './Subscription'
 import { arrayRemove } from './util'
 

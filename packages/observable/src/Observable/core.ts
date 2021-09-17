@@ -1,7 +1,7 @@
 import type { Notification } from '../Notification'
 import type { Observer } from '../Observer'
 import type { Operator } from '../Operator'
-import type { SchedulerAction, SchedulerLike } from '../Scheduler'
+import type { SchedulerAction, SchedulerLike } from '../Scheduler/core'
 import type { Subscriber } from '../Subscriber'
 import type { Finalizer, Unsubscribable } from '../Subscription'
 import type { ReadableStreamLike } from '../util'
@@ -17,7 +17,7 @@ import { identity, isFunction, isIterable, isObject, pipe, tuple } from '@princi
 import { popNumber } from '../args'
 import * as N from '../Notification'
 import { operate_, OperatorSubscriber, operatorSubscriber } from '../Operator'
-import { asyncScheduler, caughtSchedule, isScheduler } from '../Scheduler'
+import { asyncScheduler, caughtSchedule, isScheduler } from '../Scheduler/core'
 import { isSubscriber, SafeSubscriber } from '../Subscriber'
 import { Subscription } from '../Subscription'
 import {

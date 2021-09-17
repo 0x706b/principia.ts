@@ -42,6 +42,14 @@
       "import": "./dist/dist/esm/Observable/index.js",
       "require": "./dist/dist/cjs/Observable/index.js"
     },
+    "./Scheduler": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/Scheduler/index.js",
+        "require": "./dist/dist-traced/cjs/Scheduler/index.js"
+      },
+      "import": "./dist/dist/esm/Scheduler/index.js",
+      "require": "./dist/dist/cjs/Scheduler/index.js"
+    },
     "./*": {
       "traced": {
         "import": "./dist/dist-traced/esm/*",

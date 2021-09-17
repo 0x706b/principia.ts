@@ -1,10 +1,10 @@
-import type { Action } from './Action'
-import type { Subscriber } from './Subscriber'
-import type { Subscription } from './Subscription'
+import type { Action } from '../Action'
+import type { Subscriber } from '../Subscriber'
+import type { Subscription } from '../Subscription'
 
 import { isObject } from '@principia/base/prelude'
 
-import { AsyncAction } from './Action'
+import { AsyncAction } from '../Action'
 
 export interface SchedulerLike extends TimestampProvider {
   schedule<T>(work: (this: SchedulerAction<T>, state?: T) => void, delay?: number, state?: T): Subscription

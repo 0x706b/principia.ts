@@ -15,14 +15,12 @@ interface IntervalProvider {
 export const intervalProvider: IntervalProvider = {
   // When accessing the delegate, use the variable rather than `this` so that
   // the functions can be called without being bound to the provider.
-  // @ts-expect-error
   setInterval(...args) {
     const { delegate } = intervalProvider
     return (delegate?.setInterval || setInterval)(...args)
   },
   clearInterval(handle) {
     const { delegate } = intervalProvider
-    // @ts-expect-error
     return (delegate?.clearInterval || clearInterval)(handle)
   },
   delegate: undefined

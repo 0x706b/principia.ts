@@ -1,6 +1,6 @@
-import type { SchedulerLike } from './Scheduler'
+import type { SchedulerLike } from './Scheduler/core'
 
-import { isScheduler } from './Scheduler'
+import { isScheduler } from './Scheduler/core'
 
 function last<A>(arr: A[]): A | undefined {
   return arr[arr.length - 1]
