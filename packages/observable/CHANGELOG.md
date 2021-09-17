@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.2](https://github.com/0x706b/principia.ts/compare/@principia/observable@0.17.1...@principia/observable@0.17.2) (2021-09-17)
+
+
+### Bug Fixes
+
+* **observable:** bind `Subscriber` methods ([5cd89c2](https://github.com/0x706b/principia.ts/commit/5cd89c2e83038464e4a6a9af3ae591431f49d806))
+
+
+
+
+
 ## [0.17.1](https://github.com/0x706b/principia.ts/compare/@principia/observable@0.17.0...@principia/observable@0.17.1) (2021-09-17)
 
 **Note:** Version bump only for package @principia/observable
