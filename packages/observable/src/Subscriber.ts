@@ -24,43 +24,59 @@ export class Subscriber<E, A> extends Subscription implements Observer<E, A> {
     } else {
       this.destination = EMPTY_OBSERVER
     }
+    this.next     = this.next.bind(this)
+    this.error    = this.error.bind(this)
+    this.defect   = this.defect.bind(this)
+    this.complete = this.complete.bind(this)
   }
   next(value: A) {
     if (!this.isStopped) {
-      this.destination!.next(value)
+      this._next(value)
     }
   }
   error(err: E) {
     if (!this.isStopped) {
-      this.destination!.error(err)
+      this._error(err)
     }
   }
   defect(err: unknown) {
     if (!this.isStopped) {
       this.isStopped = true
-      try {
-        this.destination!.defect(err)
-      } finally {
-        this.unsubscribe()
-      }
+      this._defect(err)
     }
   }
   complete() {
     if (!this.isStopped) {
       this.isStopped = true
-      try {
-        this.destination!.complete()
-      } finally {
-        this.unsubscribe()
-      }
+      this._complete()
     }
   }
-
   unsubscribe(): void {
     if (!this.closed) {
       this.isStopped = true
       super.unsubscribe()
       this.destination = null
+    }
+  }
+
+  _next(value: A) {
+    this.destination!.next(value)
+  }
+  _error(err: E) {
+    this.destination!.error(err)
+  }
+  _defect(err: unknown) {
+    try {
+      this.destination!.defect(err)
+    } finally {
+      this.unsubscribe()
+    }
+  }
+  _complete() {
+    try {
+      this.destination!.complete()
+    } finally {
+      this.unsubscribe()
     }
   }
 }
