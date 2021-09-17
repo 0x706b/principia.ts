@@ -1,6 +1,6 @@
 {
   "name": "@principia/observable",
-  "version": "0.16.4",
+  "version": "0.16.5",
   "description": "Observable",
   "repository": {
     "type": "git",
@@ -88,5 +88,5 @@
     "access": "public",
     "directory": "dist"
   },
-  "gitHead": "f607260821713229ed2214de26c81f3b3f172760"
+  "gitHead": "3233e02069a5612de61709faadad672b5f50bd12"
 }
