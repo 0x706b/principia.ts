@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.17.0](https://github.com/0x706b/principia.ts/compare/@principia/observable@0.16.7...@principia/observable@0.17.0) (2021-09-17)
+
+
+### Features
+
+* **observable:** improve interop ([a025840](https://github.com/0x706b/principia.ts/commit/a025840106521ba14691e3e29443350cd4d995b6))
+
+
+
+
+
 ## [0.16.7](https://github.com/0x706b/principia.ts/compare/@principia/observable@0.16.4...@principia/observable@0.16.7) (2021-09-17)
 
 
