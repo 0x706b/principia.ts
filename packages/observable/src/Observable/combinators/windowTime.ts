@@ -1,10 +1,10 @@
 import type { Observer } from '../../Observer'
-import type { SchedulerLike } from '../../Scheduler'
+import type { SchedulerLike } from '../../Scheduler/core'
 import type { Observable } from '../core'
 
 import { popScheduler } from '../../args'
 import { operate_, operatorSubscriber } from '../../Operator'
-import { asyncScheduler } from '../../Scheduler'
+import { asyncScheduler } from '../../Scheduler/core'
 import { Subject } from '../../Subject'
 import { Subscription } from '../../Subscription'
 import { arrayRemove } from '../../util'

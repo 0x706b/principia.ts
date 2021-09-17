@@ -1,6 +1,6 @@
 {
   "name": "@principia/observable",
-  "version": "0.16.4",
+  "version": "0.16.6",
   "description": "Observable",
   "repository": {
     "type": "git",
@@ -42,6 +42,14 @@
       "import": "./dist/dist/esm/Observable/index.js",
       "require": "./dist/dist/cjs/Observable/index.js"
     },
+    "./Scheduler": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/Scheduler/index.js",
+        "require": "./dist/dist-traced/cjs/Scheduler/index.js"
+      },
+      "import": "./dist/dist/esm/Scheduler/index.js",
+      "require": "./dist/dist/cjs/Scheduler/index.js"
+    },
     "./*": {
       "traced": {
         "import": "./dist/dist-traced/esm/*",
@@ -80,5 +88,5 @@
     "access": "public",
     "directory": "dist"
   },
-  "gitHead": "f607260821713229ed2214de26c81f3b3f172760"
+  "gitHead": "e41ff93cb1d2a09ef3996aea456303fa2798461e"
 }
