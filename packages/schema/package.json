@@ -1,6 +1,6 @@
 {
   "name": "@principia/schema",
-  "version": "0.16.4",
+  "version": "0.16.5",
   "description": "Runtime type-checking",
   "repository": {
     "type": "git",
@@ -56,9 +56,9 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@principia/base": "^0.16.4",
-    "@principia/optics": "^0.16.4",
-    "@principia/test": "^0.16.4",
+    "@principia/base": "^0.16.5",
+    "@principia/optics": "^0.16.5",
+    "@principia/test": "^0.16.5",
     "fast-check": "^2.17.0"
   },
   "publishConfig": {

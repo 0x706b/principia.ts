@@ -1,6 +1,6 @@
 {
   "name": "@principia/optics",
-  "version": "0.16.4",
+  "version": "0.16.5",
   "description": "Optics",
   "repository": {
     "type": "git",
@@ -48,7 +48,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@principia/base": "^0.16.4"
+    "@principia/base": "^0.16.5"
   },
   "publishConfig": {
     "access": "public",
