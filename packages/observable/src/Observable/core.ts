@@ -58,15 +58,18 @@ export class Observable<E, A> implements Subscribable<E, A> {
 
   readonly [ObservableTypeId]: ObservableTypeId = ObservableTypeId
 
+  /** @internal */
   protected source: Observable<any, any> | undefined
+  /** @internal */
   protected operator: Operator<E, A> | undefined
 
   constructor(subscribe?: (this: Observable<E, A>, subscriber: Subscriber<E, A>) => Finalizer) {
     if (subscribe) {
-      this.subscribeInternal = subscribe
+      this._subscribe = subscribe
     }
   }
 
+  /** @internal */
   lift<E1, A1>(operator: Operator<E1, A1>): Observable<E1, A1> {
     const observable    = new Observable<E1, A1>()
     observable.source   = this
@@ -85,23 +88,25 @@ export class Observable<E, A> implements Subscribable<E, A> {
       operator
         ? operator.call(subscriber, source)
         : source
-        ? this.subscribeInternal(subscriber)
+        ? this._subscribe(subscriber)
         : this.trySubscribe(subscriber)
     )
 
     return subscriber
   }
 
+  /** @internal */
   protected trySubscribe(sink: Subscriber<E, A>): Finalizer {
     try {
-      return this.subscribeInternal(sink)
+      return this._subscribe(sink)
     } catch (err) {
       sink.defect(err)
       return noop
     }
   }
 
-  protected subscribeInternal(subscriber: Subscriber<E, A>): Finalizer {
+  /** @internal */
+  protected _subscribe(subscriber: Subscriber<E, A>): Finalizer {
     this.source?.subscribe(subscriber)
   }
 }

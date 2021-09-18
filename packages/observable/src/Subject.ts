@@ -14,14 +14,20 @@ export interface SubjectLike<E, A> extends Observer<E, A>, Subscribable<E, A> {}
 
 export class Subject<E, A> extends Observable<E, A> implements SubscriptionLike {
   closed = false
+  /** @internal */
   protected observers: Array<Observer<E, A>> = []
-  protected isStopped        = false
-  protected hasError         = false
+  /** @internal */
+  protected isStopped = false
+  /** @internal */
+  protected hasError = false
+  /** @internal */
   protected thrownError: any = null
+
   constructor() {
     super()
   }
 
+  /** @internal */
   lift<E1, B>(operator: Operator<E1, B>): Observable<E1, B> {
     const subject    = new AnonymousSubject(this, this)
     subject.operator = operator as any
@@ -76,15 +82,22 @@ export class Subject<E, A> extends Observable<E, A> implements SubscriptionLike 
     return this.observers?.length > 0
   }
 
-  protected subscribeInternal(subscriber: Subscriber<E, A>) {
-    this.checkFinalizedStatuses(subscriber)
+  /** @internal */
+  protected _subscribe(subscriber: Subscriber<E, A>) {
+    this._checkFinalizedStatuses(subscriber)
+    this._innerSubscribe(subscriber)
+  }
+
+  /** @internal */
+  protected _innerSubscribe(subscriber: Subscriber<E, A>) {
     const { hasError, isStopped, observers } = this
     return hasError || isStopped
       ? EMPTY_SUBSCRIPTION
       : (observers.push(subscriber), new Subscription(() => arrayRemove(observers, subscriber)))
   }
 
-  protected checkFinalizedStatuses(subscriber: Subscriber<any, any>) {
+  /** @internal */
+  protected _checkFinalizedStatuses(subscriber: Subscriber<any, any>) {
     const { hasError, thrownError, isStopped } = this
     if (hasError) {
       subscriber.defect(thrownError)
@@ -118,7 +131,8 @@ export class AnonymousSubject<E, A> extends Subject<E, A> {
     this.destination?.complete?.()
   }
 
-  protected subscribeInternal<E, A>(subscriber: Subscriber<E, A>) {
+  /** @internal */
+  protected _subscribe<E, A>(subscriber: Subscriber<E, A>) {
     return this.source?.subscribe(subscriber) ?? EMPTY_SUBSCRIPTION
   }
 }
@@ -127,7 +141,9 @@ export class AsyncSubject<E, A> extends Subject<E, A> {
   private value: E.Either<E, A> | null = null
   private hasValue                     = false
   private isComplete                   = false
-  protected checkFinalizedStatuses(subscriber: Subscriber<E, A>) {
+
+  /** @internal */
+  protected _checkFinalizedStatuses(subscriber: Subscriber<E, A>) {
     const { hasError, hasValue, value, thrownError, isStopped, isComplete } = this
     if (hasError) {
       subscriber.defect(thrownError)

@@ -5,7 +5,7 @@ import { isFunction, isObject } from '@principia/base/prelude'
 import { isSubscription, Subscription } from './Subscription'
 import { noop, reportUnhandledError } from './util'
 
-export const SubscriberTypeId = Symbol()
+export const SubscriberTypeId = Symbol.for('@principia/observable/Subscriber')
 export type SubscriberTypeId = typeof SubscriberTypeId
 
 export class Subscriber<E, A> extends Subscription implements Observer<E, A> {

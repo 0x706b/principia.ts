@@ -73,6 +73,10 @@ export function operate_<E, A, E1, A1>(
   f: (source: Observable<E, A>, subscriber: Subscriber<E1, A1>) => (() => void) | void
 ): Observable<E1, A1> {
   return source.lift(function (this: Subscriber<E1, A1>, liftedSource: Observable<E, A>) {
-    f(liftedSource, this)
+    try {
+      f(liftedSource, this)
+    } catch (err) {
+      this.defect(err)
+    }
   })
 }
