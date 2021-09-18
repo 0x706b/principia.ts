@@ -74,7 +74,9 @@ export class Observable<E, A> implements Subscribable<E, A> {
     return observable
   }
 
-  subscribe(observer?: Partial<Observer<E, A>>): Subscription {
+  subscribe(observer?: Partial<Observer<E, A>>): Subscription
+  subscribe(observer?: (value: A) => void): Subscription
+  subscribe(observer?: Partial<Observer<E, A>> | ((value: A) => void)): Subscription {
     const subscriber: Subscriber<E, A> = isSubscriber(observer) ? observer : new SafeSubscriber(observer)
 
     const { operator, source } = this
@@ -217,7 +219,13 @@ export function fromInterop<A>(subscribable: {
     complete: () => void
   }) => Unsubscribable
 }): Observable<unknown, A> {
-  return new Observable((subscriber) => subscribable.subscribe(subscriber))
+  return new Observable((subscriber) =>
+    subscribable.subscribe({
+      next: (value) => subscriber.next(value),
+      error: (err) => subscriber.defect(err),
+      complete: () => subscriber.complete()
+    })
+  )
 }
 
 function _if<E, A, E1, B>(

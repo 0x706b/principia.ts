@@ -1,6 +1,6 @@
 import type { Observer } from './Observer'
 
-import { isObject } from '@principia/base/prelude'
+import { isFunction, isObject } from '@principia/base/prelude'
 
 import { isSubscription, Subscription } from './Subscription'
 import { noop, reportUnhandledError } from './util'
@@ -24,10 +24,6 @@ export class Subscriber<E, A> extends Subscription implements Observer<E, A> {
     } else {
       this.destination = EMPTY_OBSERVER
     }
-    this.next     = this.next.bind(this)
-    this.error    = this.error.bind(this)
-    this.defect   = this.defect.bind(this)
-    this.complete = this.complete.bind(this)
   }
   next(value: A) {
     if (!this.isStopped) {
@@ -82,19 +78,21 @@ export class Subscriber<E, A> extends Subscription implements Observer<E, A> {
 }
 
 export class SafeSubscriber<E, A> extends Subscriber<E, A> {
-  constructor(destination?: Partial<Observer<E, A>>) {
+  constructor(destination?: Partial<Observer<E, A>> | ((value: A) => void)) {
     super()
     let next: ((value: A) => void) | undefined       = undefined
     let error: ((err: E) => void) | undefined        = undefined
     let complete: (() => void) | undefined           = undefined
     let defect: ((err: unknown) => void) | undefined = undefined
-    if (destination) {
+    if(isFunction(destination)) {
+      next = destination
+    } else if (destination) {
       ({ next, error, complete, defect } = destination)
+      next     = next?.bind(destination)
+      error    = error?.bind(destination)
+      complete = complete?.bind(destination)
+      defect   = defect?.bind(destination)
     }
-    next     = next?.bind(destination)
-    error    = error?.bind(destination)
-    complete = complete?.bind(destination)
-    defect   = defect?.bind(destination)
     if (defect) {
       this.destination = {
         next: next ? wrapDefectHandler(next, defect) : noop,
