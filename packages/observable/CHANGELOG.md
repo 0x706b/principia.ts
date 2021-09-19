@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.22.0](https://github.com/0x706b/principia.ts/compare/@principia/observable@0.21.0...@principia/observable@0.22.0) (2021-09-19)
+
+
+### Features
+
+* **observable:** add `BehaviorSubject` ([da9c8ff](https://github.com/0x706b/principia.ts/commit/da9c8ffc8bf8ea052fea185ad3d418512aab9dd4))
+
+
+
+
+
 # [0.21.0](https://github.com/0x706b/principia.ts/compare/@principia/observable@0.20.0...@principia/observable@0.21.0) (2021-09-19)
 
 
