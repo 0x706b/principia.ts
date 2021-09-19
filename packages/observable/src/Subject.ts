@@ -35,6 +35,7 @@ export class Subject<E, A> extends Observable<E, A> implements SubscriptionLike 
   }
 
   next(value: A) {
+    this._throwIfClosed()
     if (!this.isStopped) {
       const copy = this.observers.slice()
       for (const observer of copy) {
@@ -44,6 +45,7 @@ export class Subject<E, A> extends Observable<E, A> implements SubscriptionLike 
   }
 
   error(err: E) {
+    this._throwIfClosed()
     if (!this.isStopped) {
       const copy = this.observers.slice()
       for (const observer of copy) {
@@ -53,6 +55,7 @@ export class Subject<E, A> extends Observable<E, A> implements SubscriptionLike 
   }
 
   defect(err: unknown) {
+    this._throwIfClosed()
     if (!this.isStopped) {
       this.hasError       = this.isStopped = true
       this.thrownError    = err
@@ -64,6 +67,7 @@ export class Subject<E, A> extends Observable<E, A> implements SubscriptionLike 
   }
 
   complete() {
+    this._throwIfClosed()
     if (!this.isStopped) {
       this.isStopped      = true
       const { observers } = this
@@ -80,6 +84,12 @@ export class Subject<E, A> extends Observable<E, A> implements SubscriptionLike 
 
   get observed() {
     return this.observers?.length > 0
+  }
+
+  protected _throwIfClosed() {
+    if(this.closed) {
+      throw new Error('Object Unsubscribed')
+    }
   }
 
   /** @internal */
