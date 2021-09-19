@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.22.2](https://github.com/0x706b/principia.ts/compare/@principia/observable@0.22.1...@principia/observable@0.22.2) (2021-09-19)
+
+
+### Bug Fixes
+
+* **observable:** fix `AsyncAction` calls to `requestAsyncId` and `recycleAsyncId` ([9562120](https://github.com/0x706b/principia.ts/commit/95621204764416ff4c7181d8ed015e5b4fa91d30))
+
+
+
+
+
 ## [0.22.1](https://github.com/0x706b/principia.ts/compare/@principia/observable@0.22.0...@principia/observable@0.22.1) (2021-09-19)
 
 
