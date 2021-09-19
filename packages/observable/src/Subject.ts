@@ -2,7 +2,7 @@ import type { Subscribable } from './Observable/core'
 import type { Observer } from './Observer'
 import type { Operator } from './Operator'
 import type { Subscriber } from './Subscriber'
-import type { SubscriptionLike } from './Subscription'
+import type { Finalizer, SubscriptionLike } from './Subscription'
 
 import * as E from '@principia/base/Either'
 
@@ -86,6 +86,7 @@ export class Subject<E, A> extends Observable<E, A> implements SubscriptionLike 
     return this.observers?.length > 0
   }
 
+  /** @internal */
   protected throwIfClosed() {
     if (this.closed) {
       throw new Error('Object Unsubscribed')
@@ -93,13 +94,20 @@ export class Subject<E, A> extends Observable<E, A> implements SubscriptionLike 
   }
 
   /** @internal */
-  protected subscribeInternal(subscriber: Subscriber<E, A>) {
-    this.checkFinalizedStatuses(subscriber)
-    this.innerSubscribe(subscriber)
+  protected trySubscribe(subscriber: Subscriber<E, A>): Finalizer {
+    this.throwIfClosed()
+    return super.trySubscribe(subscriber)
   }
 
   /** @internal */
-  protected innerSubscribe(subscriber: Subscriber<E, A>) {
+  protected subscribeInternal(subscriber: Subscriber<E, A>): Subscription {
+    this.throwIfClosed()
+    this.checkFinalizedStatuses(subscriber)
+    return this.innerSubscribe(subscriber)
+  }
+
+  /** @internal */
+  protected innerSubscribe(subscriber: Subscriber<E, A>): Subscription {
     const { hasError, isStopped, observers } = this
     return hasError || isStopped
       ? EMPTY_SUBSCRIPTION
