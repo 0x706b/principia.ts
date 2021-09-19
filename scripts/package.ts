@@ -5,7 +5,7 @@ import * as R from 'fp-ts/lib/ReadonlyRecord'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as Path from 'path'
 
-import { onLeft, onRight, readFile, writeFile } from './common'
+import { copy, glob, onLeft, onRight, readFile, writeFile } from './common'
 
 const esmJSON = (sideEffects: string[]) =>
   JSON.stringify({ type: 'module', sideEffects: sideEffects.length === 0 ? false : sideEffects })
@@ -19,6 +19,14 @@ const getSideEffects = flow(
 const loadPackageJson: TE.TaskEither<Error, any> = pipe(
   readFile(Path.resolve(process.cwd(), 'package.json'), 'utf8'),
   TE.chainEitherK((content) => parseJSON(content, (err) => err as Error))
+)
+
+const copyLicenses: TE.TaskEither<Error, void> = pipe(
+  glob('LICENSE*'),
+  TE.chain((globs) =>
+    TE.sequenceArray(globs.map((glob) => copy(Path.resolve(process.cwd(), glob), Path.resolve(process.cwd(), 'dist'))))
+  ),
+  TE.map(() => void 0)
 )
 
 pipe(
@@ -41,12 +49,12 @@ pipe(
             mut_ex['require'] = cjs.join('/')
 
             if (ex['traced']) {
-              let esm                    = (ex['traced']['import'] as string).split('/')
-              esm                        = [...esm.slice(0, 1), ...esm.slice(2)]
+              let esm = (ex['traced']['import'] as string).split('/')
+              esm     = [...esm.slice(0, 1), ...esm.slice(2)]
               mut_ex['traced']['import'] = esm.join('/')
 
-              let cjs                     = (ex['traced']['require'] as string).split('/')
-              cjs                         = [...cjs.slice(0, 1), ...cjs.slice(2)]
+              let cjs = (ex['traced']['require'] as string).split('/')
+              cjs     = [...cjs.slice(0, 1), ...cjs.slice(2)]
               mut_ex['traced']['require'] = cjs.join('/')
             }
 
@@ -96,5 +104,6 @@ pipe(
       ? writeFile(Path.resolve(process.cwd(), 'dist/dist-traced/esm/package.json'), esmJSON(sideEffects))
       : TE.of(undefined)
   ),
+  TE.chainFirst(() => copyLicenses),
   TE.fold(onLeft, onRight('Package copy succeeded!'))
 )().catch((e) => console.log(chalk.red.bold(`unexpected error ${e}`)))
