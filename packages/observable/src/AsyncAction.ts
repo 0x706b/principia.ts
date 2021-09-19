@@ -28,7 +28,7 @@ export class AsyncAction<A> extends Action<A> {
     const scheduler = this.scheduler
 
     if (id != null) {
-      this.id = this.recycleAsyncId(scheduler, id, delay)
+      this.id = this.recycleAsyncId(id, delay)
     }
 
     this.pending = true
@@ -38,7 +38,7 @@ export class AsyncAction<A> extends Action<A> {
     return this
   }
 
-  protected requestAsyncId(scheduler: AsyncScheduler, id?: any, delay = 0): any {
+  protected requestAsyncId(scheduler: AsyncScheduler, _id: any, delay = 0): any {
     return intervalProvider.setInterval(scheduler.flush.bind(scheduler, this), delay)
   }
 
@@ -56,15 +56,15 @@ export class AsyncAction<A> extends Action<A> {
     }
 
     this.pending = false
-    const error  = this._execute(state, delay)
+    const error  = this.executeInternal(state, delay)
     if (error) {
       return error
     } else if (this.pending === false && this.id != null) {
-      this.id = this.recycleAsyncId(this.scheduler, this.id, null)
+      this.id = this.recycleAsyncId(this.id, null)
     }
   }
 
-  protected _execute(state: A, _delay: number): unknown {
+  protected executeInternal(state: A, _delay: number): unknown {
     let errored = false
     let errorValue: unknown
     try {
@@ -89,7 +89,7 @@ export class AsyncAction<A> extends Action<A> {
 
       arrayRemove(actions, this)
       if (id != null) {
-        this.id = this.recycleAsyncId(scheduler, id, null)
+        this.id = this.recycleAsyncId(id, null)
       }
 
       this.delay = null!

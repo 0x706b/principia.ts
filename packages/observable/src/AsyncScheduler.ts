@@ -7,9 +7,9 @@ export class AsyncScheduler extends Scheduler {
   public actions: Array<AsyncAction<any>> = []
 
   /** @internal */
-  _active = false
+  active = false
   /** @internal */
-  _scheduled: any = undefined
+  scheduled: any = undefined
 
   constructor(actionConstructor: typeof Action, now: () => number = Scheduler.now) {
     super(actionConstructor, now)
@@ -18,13 +18,13 @@ export class AsyncScheduler extends Scheduler {
   flush(action: AsyncAction<any>) {
     const { actions } = this
 
-    if (this._active) {
+    if (this.active) {
       actions.push(action)
       return
     }
 
     let error: unknown
-    this._active = true
+    this.active = true
 
     do {
       if ((error = action.execute(action.state, action.delay))) {
@@ -33,7 +33,7 @@ export class AsyncScheduler extends Scheduler {
       // eslint-disable-next-line no-param-reassign
     } while ((action = actions.shift()!))
 
-    this._active = false
+    this.active = false
 
     if (error) {
       // eslint-disable-next-line no-param-reassign

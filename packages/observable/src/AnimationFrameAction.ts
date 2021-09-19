@@ -12,24 +12,21 @@ export class AnimationFrameAction<A> extends AsyncAction<A> {
     super(scheduler, work)
   }
 
-  protected requestAsyncId(scheduler: AnimationFrameScheduler, id?: any, delay = 0): any {
-    if (delay !== null && delay > 0) {
-      return super.requestAsyncId(scheduler, id, delay)
+  protected requestAsyncId(scheduler: AnimationFrameScheduler, delay = 0): any {
+    if (delay != null && delay > 0) {
+      return super.requestAsyncId(scheduler, delay)
     }
     scheduler.actions.push(this)
-    return (
-      scheduler._scheduled ||
-      (scheduler._scheduled = animationFrameProvider.requestAnimationFrame(() => scheduler.flush(undefined)))
-    )
+    return (scheduler.scheduled ||= animationFrameProvider.requestAnimationFrame(() => scheduler.flush(undefined)))
   }
 
   protected recycleAsyncId(scheduler: AnimationFrameScheduler, id?: any, delay = 0): any {
     if ((delay != null && delay > 0) || (delay == null && this.delay > 0)) {
-      super.recycleAsyncId(scheduler, id, delay)
+      super.recycleAsyncId(scheduler, delay)
     }
     if (scheduler.actions.length === 0) {
       animationFrameProvider.cancelAnimationFrame(id)
-      scheduler._scheduled = undefined
+      scheduler.scheduled = undefined
     }
     return undefined
   }

@@ -55,7 +55,7 @@ export function share_<E, A, E1 = never, E2 = never, E3 = never>(
       cancelReset()
     }
 
-    const dest = (subject = subject ?? connector())
+    const dest = (subject ||= connector())
 
     subscriber.add(() => {
       refCount--
@@ -101,7 +101,6 @@ function handleReset<T extends unknown[] = never[]>(
 ): Subscription | null {
   if (on === true) {
     reset()
-
     return null
   }
 

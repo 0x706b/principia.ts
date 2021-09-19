@@ -1,7 +1,5 @@
 import { isObject } from '@principia/base/prelude'
 
-import { arrayRemove } from './internal/util'
-
 export interface Unsubscribable {
   readonly unsubscribe: () => void
 }
@@ -18,9 +16,9 @@ export type SubscriptionTypeId = typeof SubscriptionTypeId
 export class Subscription implements SubscriptionLike {
   readonly [SubscriptionTypeId]: SubscriptionTypeId = SubscriptionTypeId
 
-  closed = false
-  private finalizers: Set<Finalizer> | null   = null
-  private parents: Array<Subscription> | null = null
+  public closed = false
+  private finalizers: Set<Finalizer> | null = null
+  private parents: Set<Subscription> | null = null
 
   constructor(private initialFinalizer?: () => void) {}
 
@@ -43,7 +41,7 @@ export class Subscription implements SubscriptionLike {
         try {
           initialFinalizer()
         } catch (e) {
-          errors = e instanceof UnsubscribeError ? e.errors : [e]
+          errors = isUnsubscribeError(e) ? e.errors : [e]
         }
       }
 
@@ -53,9 +51,9 @@ export class Subscription implements SubscriptionLike {
           try {
             executeFinalizer(finalizer)
           } catch (e) {
-            errors = errors ?? []
-            if (e instanceof UnsubscribeError) {
-              errors = [...errors, ...e.errors]
+            errors ||= []
+            if (isUnsubscribeError(e)) {
+              errors.push(...e.errors)
             } else {
               errors.push(e)
             }
@@ -74,30 +72,34 @@ export class Subscription implements SubscriptionLike {
       if (this.closed) {
         executeFinalizer(finalizer)
       } else {
-        if (finalizer instanceof Subscription) {
+        if (isSubscription(finalizer)) {
           if (finalizer.closed || finalizer.hasParent(this)) {
             return
           }
           finalizer.addParent(this)
         }
-        (this.finalizers = this.finalizers ?? new Set()).add(finalizer)
+        if (!this.finalizers) {
+          this.finalizers = new Set()
+        }
+        this.finalizers.add(finalizer)
       }
     }
   }
 
   private hasParent(parent: Subscription) {
     const parentage = this.parents
-    return parentage ? parentage.includes(parent) : false
+    return parentage ? parentage.has(parent) : false
   }
 
   private addParent(parent: Subscription) {
-    const parentage = this.parents
-    this.parents    = parentage ? (parentage.push(parent), parentage) : [parent]
+    if (!this.parents) {
+      this.parents = new Set()
+    }
+    this.parents.add(parent)
   }
 
   private removeParent(parent: Subscription) {
-    const parentage = this.parents
-    parentage && arrayRemove(parentage, parent)
+    this.parents?.delete(parent)
   }
 
   remove(finalizer: Finalizer): void {
@@ -117,12 +119,20 @@ function executeFinalizer(finalizer: Finalizer): void {
   return finalizer && ('unsubscribe' in finalizer ? finalizer.unsubscribe() : finalizer())
 }
 
-export class UnsubscribeError {
-  constructor(readonly errors: unknown[]) {}
-}
-
 export const EMPTY_SUBSCRIPTION = (() => {
   const empty  = new Subscription()
   empty.closed = true
   return empty
 })()
+
+export const UnsubscribeErrorTypeId = Symbol.for('@principia/observable/UnsubscribeError')
+export type UnsubscribeErrorTypeId = typeof UnsubscribeErrorTypeId
+
+export class UnsubscribeError {
+  readonly [UnsubscribeErrorTypeId]: UnsubscribeErrorTypeId = UnsubscribeErrorTypeId
+  constructor(readonly errors: unknown[]) {}
+}
+
+export function isUnsubscribeError(u: unknown): u is UnsubscribeError {
+  return isObject(u) && UnsubscribeErrorTypeId in u
+}

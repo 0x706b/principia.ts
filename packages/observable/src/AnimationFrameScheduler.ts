@@ -6,8 +6,8 @@ import { AsyncScheduler } from './AsyncScheduler'
 
 export class AnimationFrameScheduler extends AsyncScheduler {
   public flush(action?: AsyncAction<any>): void {
-    this._active    = true
-    this._scheduled = undefined
+    this.active    = true
+    this.scheduled = undefined
 
     const { actions } = this
     let error: any
@@ -21,7 +21,7 @@ export class AnimationFrameScheduler extends AsyncScheduler {
       }
     } while (++index < count && (action = actions.shift()))
 
-    this._active = false
+    this.active = false
 
     if (error) {
       while (++index < count && (action = actions.shift())) {

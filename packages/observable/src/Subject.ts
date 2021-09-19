@@ -35,7 +35,7 @@ export class Subject<E, A> extends Observable<E, A> implements SubscriptionLike 
   }
 
   next(value: A) {
-    this._throwIfClosed()
+    this.throwIfClosed()
     if (!this.isStopped) {
       const copy = this.observers.slice()
       for (const observer of copy) {
@@ -45,7 +45,7 @@ export class Subject<E, A> extends Observable<E, A> implements SubscriptionLike 
   }
 
   error(err: E) {
-    this._throwIfClosed()
+    this.throwIfClosed()
     if (!this.isStopped) {
       const copy = this.observers.slice()
       for (const observer of copy) {
@@ -55,7 +55,7 @@ export class Subject<E, A> extends Observable<E, A> implements SubscriptionLike 
   }
 
   defect(err: unknown) {
-    this._throwIfClosed()
+    this.throwIfClosed()
     if (!this.isStopped) {
       this.hasError       = this.isStopped = true
       this.thrownError    = err
@@ -67,7 +67,7 @@ export class Subject<E, A> extends Observable<E, A> implements SubscriptionLike 
   }
 
   complete() {
-    this._throwIfClosed()
+    this.throwIfClosed()
     if (!this.isStopped) {
       this.isStopped      = true
       const { observers } = this
@@ -86,20 +86,20 @@ export class Subject<E, A> extends Observable<E, A> implements SubscriptionLike 
     return this.observers?.length > 0
   }
 
-  protected _throwIfClosed() {
-    if(this.closed) {
+  protected throwIfClosed() {
+    if (this.closed) {
       throw new Error('Object Unsubscribed')
     }
   }
 
   /** @internal */
-  protected _subscribe(subscriber: Subscriber<E, A>) {
-    this._checkFinalizedStatuses(subscriber)
-    this._innerSubscribe(subscriber)
+  protected subscribeInternal(subscriber: Subscriber<E, A>) {
+    this.checkFinalizedStatuses(subscriber)
+    this.innerSubscribe(subscriber)
   }
 
   /** @internal */
-  protected _innerSubscribe(subscriber: Subscriber<E, A>) {
+  protected innerSubscribe(subscriber: Subscriber<E, A>) {
     const { hasError, isStopped, observers } = this
     return hasError || isStopped
       ? EMPTY_SUBSCRIPTION
@@ -107,7 +107,7 @@ export class Subject<E, A> extends Observable<E, A> implements SubscriptionLike 
   }
 
   /** @internal */
-  protected _checkFinalizedStatuses(subscriber: Subscriber<any, any>) {
+  protected checkFinalizedStatuses(subscriber: Subscriber<any, any>) {
     const { hasError, thrownError, isStopped } = this
     if (hasError) {
       subscriber.defect(thrownError)
@@ -142,7 +142,7 @@ export class AnonymousSubject<E, A> extends Subject<E, A> {
   }
 
   /** @internal */
-  protected _subscribe<E, A>(subscriber: Subscriber<E, A>) {
+  protected subscribeInternal<E, A>(subscriber: Subscriber<E, A>) {
     return this.source?.subscribe(subscriber) ?? EMPTY_SUBSCRIPTION
   }
 }
@@ -153,7 +153,7 @@ export class AsyncSubject<E, A> extends Subject<E, A> {
   private isComplete                   = false
 
   /** @internal */
-  protected _checkFinalizedStatuses(subscriber: Subscriber<E, A>) {
+  protected checkFinalizedStatuses(subscriber: Subscriber<E, A>) {
     const { hasError, hasValue, value, thrownError, isStopped, isComplete } = this
     if (hasError) {
       subscriber.defect(thrownError)

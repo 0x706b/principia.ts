@@ -11,9 +11,8 @@ export function windowCount_<E, A>(
   const startEvery = startWindowEvery > 0 ? startWindowEvery : windowSize
 
   return operate_(fa, (source, subscriber) => {
-    let windows          = [new Subject<E, A>()]
-    let starts: number[] = []
-    let count            = 0
+    let windows = [new Subject<E, A>()]
+    let count   = 0
 
     subscriber.next(windows[0].asObservable())
 
@@ -67,7 +66,6 @@ export function windowCount_<E, A>(
           }
         },
         () => {
-          starts  = null!
           windows = null!
         }
       )

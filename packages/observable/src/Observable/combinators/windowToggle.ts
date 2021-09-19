@@ -1,9 +1,9 @@
 import type { Observable, ObservableInput } from '../core'
 
+import { arrayRemove, noop } from '../../internal/util'
 import { operate_, operatorSubscriber } from '../../Operator'
 import { Subject } from '../../Subject'
 import { Subscription } from '../../Subscription'
-import { arrayRemove, noop } from '../../internal/util'
 import { from } from '../core'
 
 export function windowToggle_<E, A, E1, B, E2>(

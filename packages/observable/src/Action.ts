@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { Scheduler, SchedulerAction } from './Scheduler'
 
 import { Subscription } from './Subscription'

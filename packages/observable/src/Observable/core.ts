@@ -66,7 +66,7 @@ export class Observable<E, A> implements Subscribable<E, A> {
 
   constructor(subscribe?: (this: Observable<E, A>, subscriber: Subscriber<E, A>) => Finalizer) {
     if (subscribe) {
-      this._subscribe = subscribe
+      this.subscribeInternal = subscribe
     }
   }
 
@@ -83,13 +83,11 @@ export class Observable<E, A> implements Subscribable<E, A> {
   subscribe(observer?: Partial<Observer<E, A>> | ((value: A) => void)): Subscription {
     const subscriber: Subscriber<E, A> = isSubscriber(observer) ? observer : new SafeSubscriber(observer)
 
-    const { operator, source } = this
-
     subscriber.add(
-      operator
-        ? operator.call(subscriber, source)
-        : source
-        ? this._subscribe(subscriber)
+      this.operator
+        ? this.operator.call(subscriber, this.source)
+        : this.source
+        ? this.subscribeInternal(subscriber)
         : this.trySubscribe(subscriber)
     )
 
@@ -97,17 +95,17 @@ export class Observable<E, A> implements Subscribable<E, A> {
   }
 
   /** @internal */
-  protected trySubscribe(sink: Subscriber<E, A>): Finalizer {
+  protected trySubscribe(subscriber: Subscriber<E, A>): Finalizer {
     try {
-      return this._subscribe(sink)
+      return this.subscribeInternal(subscriber)
     } catch (err) {
-      sink.defect(err)
+      subscriber.defect(err)
       return noop
     }
   }
 
   /** @internal */
-  protected _subscribe(subscriber: Subscriber<E, A>): Finalizer {
+  protected subscribeInternal(subscriber: Subscriber<E, A>): Finalizer {
     this.source?.subscribe(subscriber)
   }
 }

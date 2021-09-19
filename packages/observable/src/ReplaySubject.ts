@@ -29,11 +29,11 @@ export class ReplaySubject<E, A> extends Subject<E, A> {
     super.next(value)
   }
 
-  protected _subscribe(subscriber: Subscriber<E, A>): Subscription {
-    this._throwIfClosed()
+  protected subscribeInternal(subscriber: Subscriber<E, A>): Subscription {
+    this.throwIfClosed()
     this._trimBuffer()
 
-    const subscription = this._innerSubscribe(subscriber)
+    const subscription = this.innerSubscribe(subscriber)
 
     const { _infiniteTimeWindow, _buffer } = this
 
@@ -43,7 +43,7 @@ export class ReplaySubject<E, A> extends Subject<E, A> {
       subscriber.next(copy[i] as A)
     }
 
-    this._checkFinalizedStatuses(subscriber)
+    this.checkFinalizedStatuses(subscriber)
 
     return subscription
   }

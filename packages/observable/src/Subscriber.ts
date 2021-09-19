@@ -12,17 +12,17 @@ export class Subscriber<E, A> extends Subscription implements Observer<E, A> {
   readonly [SubscriberTypeId]: SubscriberTypeId = SubscriberTypeId
 
   private isStopped = false
-  protected destination: Subscriber<E, A> | Observer<E, A> | null
+  protected observer: Subscriber<E, A> | Observer<E, A> | null
 
-  constructor(destination?: Subscriber<E, A> | Observer<E, A>) {
+  constructor(observer?: Subscriber<E, A> | Observer<E, A>) {
     super()
-    if (destination) {
-      this.destination = destination
-      if (isSubscription(destination)) {
-        destination.add(this)
+    if (observer) {
+      this.observer = observer
+      if (isSubscription(observer)) {
+        observer.add(this)
       }
     } else {
-      this.destination = EMPTY_OBSERVER
+      this.observer = EMPTY_OBSERVER
     }
   }
   next(value: A) {
@@ -51,26 +51,26 @@ export class Subscriber<E, A> extends Subscription implements Observer<E, A> {
     if (!this.closed) {
       this.isStopped = true
       super.unsubscribe()
-      this.destination = null
+      this.observer = null
     }
   }
 
   _next(value: A) {
-    this.destination!.next(value)
+    this.observer!.next(value)
   }
   _error(err: E) {
-    this.destination!.error(err)
+    this.observer!.error(err)
   }
   _defect(err: unknown) {
     try {
-      this.destination!.defect(err)
+      this.observer!.defect(err)
     } finally {
       this.unsubscribe()
     }
   }
   _complete() {
     try {
-      this.destination!.complete()
+      this.observer!.complete()
     } finally {
       this.unsubscribe()
     }
@@ -78,30 +78,30 @@ export class Subscriber<E, A> extends Subscription implements Observer<E, A> {
 }
 
 export class SafeSubscriber<E, A> extends Subscriber<E, A> {
-  constructor(destination?: Partial<Observer<E, A>> | ((value: A) => void)) {
+  constructor(observer?: Partial<Observer<E, A>> | ((value: A) => void)) {
     super()
     let next: ((value: A) => void) | undefined       = undefined
     let error: ((err: E) => void) | undefined        = undefined
     let complete: (() => void) | undefined           = undefined
     let defect: ((err: unknown) => void) | undefined = undefined
-    if (isFunction(destination)) {
-      next = destination
-    } else if (destination) {
-      ({ next, error, complete, defect } = destination)
-      next     = next?.bind(destination)
-      error    = error?.bind(destination)
-      complete = complete?.bind(destination)
-      defect   = defect?.bind(destination)
+    if (isFunction(observer)) {
+      next = observer
+    } else if (observer) {
+      ({ next, error, complete, defect } = observer)
+      next     = next?.bind(observer)
+      error    = error?.bind(observer)
+      complete = complete?.bind(observer)
+      defect   = defect?.bind(observer)
     }
     if (defect) {
-      this.destination = {
+      this.observer = {
         next: next ? wrapDefectHandler(next, defect) : noop,
         error: error ? wrapDefectHandler(error, defect) : noop,
         complete: complete ? wrapDefectHandler(complete, defect) : noop,
         defect: wrapThrowHandler(defect)
       }
     } else {
-      this.destination = {
+      this.observer = {
         next: next ? wrapThrowHandler(next) : noop,
         error: wrapThrowHandler(error ?? defaultErrorHandler),
         complete: complete ? wrapThrowHandler(complete) : noop,
