@@ -1,6 +1,6 @@
 import { isObject } from '@principia/base/prelude'
 
-import { arrayRemove } from './util'
+import { arrayRemove } from './internal/util'
 
 export interface Unsubscribable {
   readonly unsubscribe: () => void
@@ -12,7 +12,7 @@ export interface SubscriptionLike extends Unsubscribable {
 
 export type Finalizer = Unsubscribable | (() => void) | void
 
-export const SubscriptionTypeId = Symbol('@principia/observable/Subscription')
+export const SubscriptionTypeId = Symbol.for('@principia/observable/Subscription')
 export type SubscriptionTypeId = typeof SubscriptionTypeId
 
 export class Subscription implements SubscriptionLike {

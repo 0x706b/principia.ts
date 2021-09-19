@@ -1,6 +1,6 @@
 import type { Observer } from './Observer'
 
-export const NextTypeId = Symbol('@principia/observable/Notification/Next')
+export const NextTypeId = Symbol.for('@principia/observable/Notification/Next')
 export type NextTypeId = typeof NextTypeId
 
 export class Next<A> {
@@ -9,7 +9,7 @@ export class Next<A> {
   constructor(readonly value: A) {}
 }
 
-export const FailTypeId = Symbol('@principia/observable/Notification/Fail')
+export const FailTypeId = Symbol.for('@principia/observable/Notification/Fail')
 export type FailTypeId = typeof FailTypeId
 
 export class Fail<E> {
@@ -18,7 +18,7 @@ export class Fail<E> {
   constructor(readonly error: E) {}
 }
 
-export const DefectTypeId = Symbol('@principia/observable/Notification/Defect')
+export const DefectTypeId = Symbol.for('@principia/observable/Notification/Defect')
 export type DefectTypeId = typeof DefectTypeId
 
 export class Defect {
@@ -27,7 +27,7 @@ export class Defect {
   constructor(readonly defect: unknown) {}
 }
 
-export const CompleteTypeId = Symbol('@principia/observable/Notification/Complete')
+export const CompleteTypeId = Symbol.for('@principia/observable/Notification/Complete')
 export type CompleteTypeId = typeof CompleteTypeId
 
 export class Complete {

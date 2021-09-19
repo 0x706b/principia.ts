@@ -1,6 +1,6 @@
 import { isDate, isFunction, isPlain } from '@principia/base/prelude'
 
-import { timeoutProvider } from './Scheduler/timeoutProvider'
+import { timeoutProvider } from './timeoutProvider'
 
 export function arrayRemove<T>(arr: T[] | undefined | null, item: T) {
   if (arr) {

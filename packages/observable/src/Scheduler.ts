@@ -1,10 +1,11 @@
-import type { Action } from '../Action'
-import type { Subscriber } from '../Subscriber'
-import type { Subscription } from '../Subscription'
+import type { Action } from './Action'
+import type { TimestampProvider } from './internal/timestampProvider'
+import type { Subscriber } from './Subscriber'
+import type { Subscription } from './Subscription'
 
 import { isObject } from '@principia/base/prelude'
 
-import { AsyncAction } from '../Action'
+import { dateTimestampProvider } from './internal/timestampProvider'
 
 export interface SchedulerLike extends TimestampProvider {
   schedule<T>(work: (this: SchedulerAction<T>, state?: T) => void, delay?: number, state?: T): Subscription
@@ -12,16 +13,6 @@ export interface SchedulerLike extends TimestampProvider {
 
 export interface SchedulerAction<T> extends Subscription {
   schedule(state?: T, delay?: number): Subscription
-}
-
-export interface TimestampProvider {
-  now(): number
-}
-
-export const dateTimestampProvider: TimestampProvider = {
-  now() {
-    return Date.now()
-  }
 }
 
 /*
@@ -49,54 +40,6 @@ export class Scheduler implements SchedulerLike {
 export function isScheduler(u: unknown): u is Scheduler {
   return isObject(u) && SchedulerTypeId in u
 }
-
-/*
- * -------------------------------------------------------------------------------------------------
- * AsyncScheduler
- * -------------------------------------------------------------------------------------------------
- */
-
-export class AsyncScheduler extends Scheduler {
-  public actions: Array<AsyncAction<any>> = []
-
-  private active         = false
-  private scheduled: any = undefined
-
-  constructor(actionConstructor: typeof Action, now: () => number = Scheduler.now) {
-    super(actionConstructor, now)
-  }
-
-  flush(action: AsyncAction<any>) {
-    const { actions } = this
-
-    if (this.active) {
-      actions.push(action)
-      return
-    }
-
-    let error: unknown
-    this.active = true
-
-    do {
-      if ((error = action.execute(action.state))) {
-        break
-      }
-      // eslint-disable-next-line no-param-reassign
-    } while ((action = actions.shift()!))
-
-    this.active = false
-
-    if (error) {
-      // eslint-disable-next-line no-param-reassign
-      while ((action = actions.shift()!)) {
-        action.unsubscribe()
-      }
-      throw error
-    }
-  }
-}
-
-export const asyncScheduler = new AsyncScheduler(AsyncAction)
 
 export function caughtSchedule<E, A>(
   subscriber: Subscriber<E, A>,

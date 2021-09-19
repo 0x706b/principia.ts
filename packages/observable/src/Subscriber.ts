@@ -2,8 +2,8 @@ import type { Observer } from './Observer'
 
 import { isFunction, isObject } from '@principia/base/prelude'
 
+import { noop, reportUnhandledError } from './internal/util'
 import { isSubscription, Subscription } from './Subscription'
-import { noop, reportUnhandledError } from './util'
 
 export const SubscriberTypeId = Symbol.for('@principia/observable/Subscriber')
 export type SubscriberTypeId = typeof SubscriberTypeId
@@ -84,7 +84,7 @@ export class SafeSubscriber<E, A> extends Subscriber<E, A> {
     let error: ((err: E) => void) | undefined        = undefined
     let complete: (() => void) | undefined           = undefined
     let defect: ((err: unknown) => void) | undefined = undefined
-    if(isFunction(destination)) {
+    if (isFunction(destination)) {
       next = destination
     } else if (destination) {
       ({ next, error, complete, defect } = destination)

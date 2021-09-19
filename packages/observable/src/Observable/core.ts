@@ -1,10 +1,10 @@
+import type { ReadableStreamLike } from '../internal/util'
 import type { Notification } from '../Notification'
 import type { Observer } from '../Observer'
 import type { Operator } from '../Operator'
-import type { SchedulerAction, SchedulerLike } from '../Scheduler/core'
+import type { SchedulerAction, SchedulerLike } from '../Scheduler'
 import type { Subscriber } from '../Subscriber'
 import type { Finalizer, Unsubscribable } from '../Subscription'
-import type { ReadableStreamLike } from '../util'
 import type { Either } from '@principia/base/Either'
 import type { Eq, PredicateWithIndex, RefinementWithIndex } from '@principia/base/prelude'
 
@@ -14,12 +14,8 @@ import * as HS from '@principia/base/MutableHashSet'
 import * as O from '@principia/base/Option'
 import { identity, isFunction, isIterable, isObject, pipe, tuple } from '@principia/base/prelude'
 
-import { popNumber } from '../args'
-import * as N from '../Notification'
-import { operate_, OperatorSubscriber, operatorSubscriber } from '../Operator'
-import { asyncScheduler, caughtSchedule, isScheduler } from '../Scheduler/core'
-import { isSubscriber, SafeSubscriber } from '../Subscriber'
-import { Subscription } from '../Subscription'
+import { asyncScheduler } from '../AsyncScheduler'
+import { popNumber } from '../internal/args'
 import {
   arrayOrObject,
   arrayRemove,
@@ -31,7 +27,12 @@ import {
   noop,
   readableStreamToAsyncGenerator,
   reportUnhandledError
-} from '../util'
+} from '../internal/util'
+import * as N from '../Notification'
+import { operate_, OperatorSubscriber, operatorSubscriber } from '../Operator'
+import { caughtSchedule, isScheduler } from '../Scheduler'
+import { isSubscriber, SafeSubscriber } from '../Subscriber'
+import { Subscription } from '../Subscription'
 
 export interface Subscribable<E, A> {
   subscribe(observer: Partial<Observer<E, A>>): Unsubscribable

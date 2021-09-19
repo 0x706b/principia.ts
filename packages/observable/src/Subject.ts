@@ -6,9 +6,9 @@ import type { SubscriptionLike } from './Subscription'
 
 import * as E from '@principia/base/Either'
 
+import { arrayRemove } from './internal/util'
 import { Observable } from './Observable/core'
 import { EMPTY_SUBSCRIPTION, Subscription } from './Subscription'
-import { arrayRemove } from './util'
 
 export interface SubjectLike<E, A> extends Observer<E, A>, Subscribable<E, A> {}
 

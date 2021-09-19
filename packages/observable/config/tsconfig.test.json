@@ -3,6 +3,7 @@
     "outDir": "../build",
     "rootDir": "../",
     "target": "es2018",
+    "lib": ["es2018", "DOM"],
     "module": "commonjs",
     "sourceMap": true,
     "plugins": [

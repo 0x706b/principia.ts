@@ -6,6 +6,7 @@
     "sourceMap": true,
     "module": "esnext",
     "target": "es2018",
+    "lib": ["es2018", "DOM"],
     "rootDir": "../src",
     "outDir": "../dist/dist/esm",
     "tsBuildInfoFile": "../tsbuildinfo/esm.tsbuildinfo",

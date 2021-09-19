@@ -15,14 +15,12 @@ interface TimeoutProvider {
 export const timeoutProvider: TimeoutProvider = {
   // When accessing the delegate, use the variable rather than `this` so that
   // the functions can be called without being bound to the provider.
-  // @ts-expect-error
   setTimeout(...args) {
     const { delegate } = timeoutProvider
     return (delegate?.setTimeout || setTimeout)(...args)
   },
   clearTimeout(handle) {
     const { delegate } = timeoutProvider
-    // @ts-expect-error
     return (delegate?.clearTimeout || clearTimeout)(handle)
   },
   delegate: undefined
