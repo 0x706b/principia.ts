@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.17.0](https://github.com/0x706b/principia.ts/compare/@principia/query@0.16.7...@principia/query@0.17.0) (2021-09-19)
+
+**Note:** Version bump only for package @principia/query
+
+
+
+
+
 ## [0.16.7](https://github.com/0x706b/principia.ts/compare/@principia/query@0.16.6...@principia/query@0.16.7) (2021-09-19)
 
 **Note:** Version bump only for package @principia/query
