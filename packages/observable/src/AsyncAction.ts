@@ -28,7 +28,7 @@ export class AsyncAction<A> extends Action<A> {
     const scheduler = this.scheduler
 
     if (id != null) {
-      this.id = this.recycleAsyncId(this.scheduler, id, delay)
+      this.id = this.recycleAsyncId(scheduler, id, delay)
     }
 
     this.pending = true
@@ -52,7 +52,7 @@ export class AsyncAction<A> extends Action<A> {
 
   public execute(state: A, delay: number): unknown {
     if (this.closed) {
-      new Error('executing a cancelled action')
+      throw new Error('executing a cancelled action')
     }
 
     this.pending = false
@@ -60,7 +60,7 @@ export class AsyncAction<A> extends Action<A> {
     if (error) {
       return error
     } else if (this.pending === false && this.id != null) {
-      this.id = this.recycleAsyncId(this.id, null)
+      this.id = this.recycleAsyncId(this.scheduler, this.id, null)
     }
   }
 
@@ -71,7 +71,7 @@ export class AsyncAction<A> extends Action<A> {
       this.work(state)
     } catch (e) {
       errored    = true
-      errorValue = (!!e && e) || new Error(String(e))
+      errorValue = e ? e : new Error('Scheduled action threw falsy error')
     }
     if (errored) {
       this.unsubscribe()
@@ -89,7 +89,7 @@ export class AsyncAction<A> extends Action<A> {
 
       arrayRemove(actions, this)
       if (id != null) {
-        this.id = this.recycleAsyncId(id, null)
+        this.id = this.recycleAsyncId(scheduler, id, null)
       }
 
       this.delay = null!
