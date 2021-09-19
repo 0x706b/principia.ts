@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.21.0](https://github.com/0x706b/principia.ts/compare/@principia/observable@0.20.0...@principia/observable@0.21.0) (2021-09-19)
+
+
+### Features
+
+* **observable:** add `animationFrames` constructor ([69a2b34](https://github.com/0x706b/principia.ts/commit/69a2b34a8d5461ff5953a5ffbb7f0844983633e3))
+
+
+
+
+
 # [0.20.0](https://github.com/0x706b/principia.ts/compare/@principia/observable@0.19.0...@principia/observable@0.20.0) (2021-09-19)
 
 **Note:** Version bump only for package @principia/observable

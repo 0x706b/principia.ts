@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.1](https://github.com/0x706b/principia.ts/compare/@principia/express@0.17.0...@principia/express@0.17.1) (2021-09-19)
+
+**Note:** Version bump only for package @principia/express
+
+
+
+
+
 # [0.17.0](https://github.com/0x706b/principia.ts/compare/@principia/express@0.16.7...@principia/express@0.17.0) (2021-09-19)
 
 **Note:** Version bump only for package @principia/express

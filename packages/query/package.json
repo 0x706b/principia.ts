@@ -1,6 +1,6 @@
 {
   "name": "@principia/query",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "description": "A port of ZIO Query. Adds efficient pipelining, batching, and caching to any data source",
   "repository": {
     "type": "git",
@@ -48,7 +48,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@principia/base": "^0.17.0"
+    "@principia/base": "^0.17.1"
   },
   "publishConfig": {
     "access": "public",
