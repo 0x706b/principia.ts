@@ -28,12 +28,12 @@ export class AsyncAction<A> extends Action<A> {
     const scheduler = this.scheduler
 
     if (id != null) {
-      this.id = this.recycleAsyncId(id, delay)
+      this.id = this.recycleAsyncId(this.scheduler, id, delay)
     }
 
     this.pending = true
     this.delay   = delay
-    this.id      = this.id || this.requestAsyncId(scheduler, delay)
+    this.id      = this.id || this.requestAsyncId(scheduler, this.id, delay)
 
     return this
   }
