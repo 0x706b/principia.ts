@@ -1,3 +1,6 @@
+import type { Eq } from './Eq'
+import type { Hash } from './Hash'
+
 import * as I from './Iterable'
 import * as MHM from './MutableHashMap'
 import * as O from './Option'
@@ -5,8 +8,8 @@ import * as O from './Option'
 export class HashSet<A> {
   private hashMap: MHM.HashMap<A, boolean>
 
-  constructor() {
-    this.hashMap = MHM.hashMap()
+  constructor(hashEqA?: Hash<A> & Eq<A>) {
+    this.hashMap = MHM.hashMap(hashEqA)
   }
 
   size(): number {
@@ -41,8 +44,8 @@ export class HashSet<A> {
 /**
  * Creates a new set
  */
-export function hashSet<A>(): HashSet<A> {
-  return new HashSet()
+export function hashSet<A>(hashEqA?: Hash<A> & Eq<A>): HashSet<A> {
+  return new HashSet(hashEqA)
 }
 
 /**

@@ -1,6 +1,9 @@
+import type { Eq } from './Eq'
+import type { Hash } from './Hash'
+
 import * as I from './Iterable'
 import * as O from './Option'
-import * as St from './Structural'
+import { DefaultEq, DefaultHash } from './Structural'
 import { AtomicNumber } from './util/support/AtomicNumber'
 
 export const HashMapTypeId = Symbol.for('@principia/base/MutableHashMap')
@@ -41,9 +44,14 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
   readonly _typeId: HashMapTypeId = HashMapTypeId
   readonly backingMap             = new Map<number, Node<K, V>>()
   readonly length                 = new AtomicNumber(0)
+  private hashEqK: Hash<K> & Eq<K>
+
+  constructor(hashEqK?: Hash<K> & Eq<K>) {
+    this.hashEqK = hashEqK ?? { ...DefaultHash, ...DefaultEq }
+  }
 
   get(k: K): O.Option<V> {
-    const hash = St.hash(k)
+    const hash = this.hashEqK.hash(k)
     const arr  = this.backingMap.get(hash)
 
     if (typeof arr === 'undefined') {
@@ -53,7 +61,7 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
     let c: Node<K, V> | undefined = arr
 
     while (c) {
-      if (St.equals(k, c.k)) {
+      if (this.hashEqK.equals_(k, c.k)) {
         return O.some(c.v)
       }
       c = c.next
@@ -63,14 +71,14 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
   }
 
   remove(k: K): HashMap<K, V> {
-    const hash = St.hash(k)
+    const hash = this.hashEqK.hash(k)
     const arr  = this.backingMap.get(hash)
 
     if (typeof arr === 'undefined') {
       return this
     }
 
-    if (St.equals(k, arr.k)) {
+    if (this.hashEqK.equals_(k, arr.k)) {
       if (typeof arr.next !== 'undefined') {
         this.backingMap.set(hash, arr.next)
       } else {
@@ -84,7 +92,7 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
     let curr = arr
 
     while (next) {
-      if (St.equals(k, next.k)) {
+      if (this.hashEqK.equals_(k, next.k)) {
         curr.next = next.next
         this.length.decrementAndGet()
         return this
@@ -97,7 +105,7 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
   }
 
   set(k: K, v: V): HashMap<K, V> {
-    const hash = St.hash(k)
+    const hash = this.hashEqK.hash(k)
     const arr  = this.backingMap.get(hash)
 
     if (typeof arr === 'undefined') {
@@ -110,7 +118,7 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
     let l = arr
 
     while (c) {
-      if (St.equals(k, c.k)) {
+      if (this.hashEqK.equals_(k, c.k)) {
         c.v = v
         return this
       }
@@ -124,7 +132,7 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
   }
 
   update(k: K, f: (v: V) => V): HashMap<K, V> {
-    const hash = St.hash(k)
+    const hash = this.hashEqK.hash(k)
     const arr  = this.backingMap.get(hash)
 
     if (typeof arr === 'undefined') {
@@ -134,7 +142,7 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
     let c: Node<K, V> | undefined = arr
 
     while (c) {
-      if (St.equals(k, c.k)) {
+      if (this.hashEqK.equals_(k, c.k)) {
         c.v = f(c.v)
         return this
       }
@@ -152,8 +160,8 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
 /**
  * Creates a new map
  */
-export function hashMap<K, V>() {
-  return new HashMap<K, V>()
+export function hashMap<K, V>(hashEqK?: Hash<K> & Eq<K>) {
+  return new HashMap<K, V>(hashEqK)
 }
 
 /**
