@@ -55,11 +55,11 @@
     "@principia/keeper": "^0.17.1",
     "@principia/pg": "^0.17.1",
     "@principia/schema": "^0.17.1",
-    "@types/node-fetch": "^2.5.11",
-    "node-fetch": "^2.6.1"
+    "@types/node-fetch": "^3.0.3",
+    "node-fetch": "^3.0.0"
   },
   "devDependencies": {
-    "testcontainers": "^7.12.1"
+    "testcontainers": "^7.20.5"
   },
   "publishConfig": {
     "access": "public",

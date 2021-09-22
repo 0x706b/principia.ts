@@ -50,10 +50,10 @@
   "dependencies": {
     "@principia/base": "^0.17.1",
     "@principia/schema": "^0.17.1",
-    "node-zookeeper-client": "^1.1.0"
+    "node-zookeeper-client": "^1.1.1"
   },
   "devDependencies": {
-    "@types/node-zookeeper-client": "^0.2.7"
+    "@types/node-zookeeper-client": "^0.2.8"
   },
   "publishConfig": {
     "access": "public",
