@@ -14,7 +14,7 @@ import * as Parser from '@principia/schema/Decoder'
 import * as Encoder from '@principia/schema/Encoder'
 import * as G from '@principia/schema/Guard'
 import * as PE from '@principia/schema/ParseError'
-import fetch from 'node-fetch'
+import fetch from 'isomorphic-fetch'
 
 import { ActorSystem, resolvePath } from './ActorSystem'
 import * as Envelope from './Envelope'
@@ -130,7 +130,7 @@ export class ActorRefRemote<F1 extends AM.AnyMessage> implements ActorRef<F1> {
 
       // TODO: PROPER CLIENT
       const response = yield* _(
-        T.fromPromiseCatch(
+        T.fromPromiseCatch<PostOperationException, any>(
           () =>
             fetch(`http://${host}:${port}/cmd`, {
               method: 'POST',

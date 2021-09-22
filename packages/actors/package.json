@@ -50,11 +50,15 @@
   },
   "dependencies": {
     "@principia/base": "^0.17.1",
-    "@principia/schema": "^0.17.1"
+    "@principia/schema": "^0.17.1",
+    "isomorphic-fetch": "^3.0.0"
   },
   "publishConfig": {
     "access": "public",
     "directory": "dist"
   },
-  "gitHead": "f607260821713229ed2214de26c81f3b3f172760"
+  "gitHead": "f607260821713229ed2214de26c81f3b3f172760",
+  "devDependencies": {
+    "@types/isomorphic-fetch": "^0.0.35"
+  }
 }

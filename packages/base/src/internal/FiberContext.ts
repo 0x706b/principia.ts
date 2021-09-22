@@ -359,10 +359,13 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   get await(): UIO<Exit<E, A>> {
-    return asyncInterruptEither((k): E.Either<UIO<void>, UIO<Exit<E, A>>> => {
-      const cb: Callback<never, Exit<E, A>> = (x) => k(fromExit(x))
-      return O.match_(this.observe(cb), () => E.left(succeedLazy(() => this.interruptObserver(cb))), E.right)
-    })
+    return asyncInterruptEither(
+      (k): E.Either<UIO<void>, UIO<Exit<E, A>>> => {
+        const cb: Callback<never, Exit<E, A>> = (x) => k(fromExit(x))
+        return O.match_(this.observe(cb), () => E.left(succeedLazy(() => this.interruptObserver(cb))), E.right)
+      },
+      [this.fiberId]
+    )
   }
 
   private interruptObserver(k: Callback<never, Exit<E, A>>) {

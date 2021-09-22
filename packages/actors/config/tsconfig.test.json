@@ -3,6 +3,7 @@
     "outDir": "../build",
     "rootDir": "../",
     "target": "es2018",
+    "lib": ["dom", "es2020"],
     "module": "commonjs",
     "sourceMap": true
   },

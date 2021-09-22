@@ -212,7 +212,7 @@ export class LocalScope<A> extends CommonScope<A> {
       case 'Global':
         return true
       case 'Local':
-        if (this.unsafeClosed && that.unsafeClosed) {
+        if (!this.unsafeClosed && !that.unsafeClosed) {
           that.unsafeAddRef()
           this.unsafeEnsure((_) => that.release)
           return true
@@ -226,10 +226,10 @@ export class LocalScope<A> extends CommonScope<A> {
     return I.defer(() => {
       const result = this.unsafeRelease()
 
-      if (result != null) {
-        return result
-      } else {
+      if (result == null) {
         return I.pure(false)
+      } else {
+        return I.as_(result, true)
       }
     })
   }
@@ -330,10 +330,10 @@ export function unsafeMakeScope<A>(): Open<A> {
     return I.defer(() => {
       const result = scope.unsafeClose(a)
 
-      if (result != null) {
-        return I.map_(result, () => true)
-      } else {
+      if (result == null) {
         return I.pure(false)
+      } else {
+        return I.as_(result, true)
       }
     })
   }, scope)

@@ -59,6 +59,7 @@
     "node-fetch": "^3.0.0"
   },
   "devDependencies": {
+    "@types/node-fetch": "^3.0.3",
     "testcontainers": "^7.20.5"
   },
   "publishConfig": {
