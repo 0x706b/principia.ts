@@ -55,11 +55,10 @@
     "@principia/keeper": "^0.17.1",
     "@principia/pg": "^0.17.1",
     "@principia/schema": "^0.17.1",
-    "@types/node-fetch": "^3.0.3",
-    "node-fetch": "^3.0.0"
+    "isomorphic-fetch": "^3.0.0"
   },
   "devDependencies": {
-    "@types/node-fetch": "^3.0.3",
+    "@types/isomorphic-fetch": "^0.0.35",
     "testcontainers": "^7.20.5"
   },
   "publishConfig": {
