@@ -7,14 +7,16 @@ import type { ReadonlyRecord } from '../Record'
 
 import * as Ev from '../Eval/core'
 import { Applicative as ApplicativeEval } from '../Eval/instances'
+import { identity, pipe } from '../function'
 import * as G from '../Guard'
 import * as _ from '../internal/Array'
 import * as Th from '../internal/These'
+import { tuple } from '../internal/tuple'
 import * as O from '../Option'
 import * as Ord from '../Ord'
 import * as P from '../prelude'
-import { isArray } from '../prelude'
 import * as S from '../Semigroup'
+import { isArray } from '../util/predicates'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -288,7 +290,7 @@ export function alignWith<A, B, C>(
  * @since 1.0.0
  */
 export function align_<A, B>(fa: NonEmptyArray<A>, fb: NonEmptyArray<B>): NonEmptyArray<These<A, B>> {
-  return alignWith_(fa, fb, P.identity)
+  return alignWith_(fa, fb, identity)
 }
 
 /**
@@ -349,7 +351,7 @@ export function pure<A>(a: A): NonEmptyArray<A> {
  */
 
 export function zip_<A, B>(fa: NonEmptyArray<A>, fb: NonEmptyArray<B>): NonEmptyArray<readonly [A, B]> {
-  return zipWith_(fa, fb, P.tuple)
+  return zipWith_(fa, fb, tuple)
 }
 
 export function zip<B>(fb: NonEmptyArray<B>): <A>(fa: NonEmptyArray<A>) => NonEmptyArray<readonly [A, B]> {
@@ -373,7 +375,7 @@ export function zipWith<A, B, C>(
 }
 
 export function cross_<A, B>(fa: NonEmptyArray<A>, fb: NonEmptyArray<B>): NonEmptyArray<readonly [A, B]> {
-  return crossWith_(fa, fb, P.tuple)
+  return crossWith_(fa, fb, tuple)
 }
 
 export function cross<B>(fb: NonEmptyArray<B>): <A>(fa: NonEmptyArray<A>) => NonEmptyArray<readonly [A, B]> {
@@ -460,7 +462,7 @@ export function extend<A, B>(f: (wa: NonEmptyArray<A>) => B): (wa: NonEmptyArray
  * @since 1.0.0
  */
 export function duplicate<A>(wa: NonEmptyArray<A>): NonEmptyArray<NonEmptyArray<A>> {
-  return extend_(wa, P.identity)
+  return extend_(wa, identity)
 }
 
 /*
@@ -625,7 +627,7 @@ export const mapAccumM: P.MapAccumWithIndexMFn<[HKT.URI<NonEmptyArrayURI>]> = (M
  * @category Traversable
  * @since 1.0.0
  */
-export const sequence: P.SequenceFn<[HKT.URI<NonEmptyArrayURI>]> = (AG) => mapA(AG)(P.identity)
+export const sequence: P.SequenceFn<[HKT.URI<NonEmptyArrayURI>]> = (AG) => mapA(AG)(identity)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -727,7 +729,7 @@ function comprehensionLoop<A, R>(
   if (input.length === 0) {
     return Ev.now([f(...scope)])
   } else {
-    return P.pipe(
+    return pipe(
       input[0],
       map((x) => comprehensionLoop(append_(scope, x), input.slice(1), f)),
       sequence(ApplicativeEval),
@@ -953,7 +955,7 @@ export function insertAt<A>(i: number, a: A): (as: NonEmptyArray<A>) => O.Option
  */
 export function intersperse_<A>(as: NonEmptyArray<A>, a: A): NonEmptyArray<A> {
   const rest = tail(as)
-  return isNonEmpty(rest) ? P.pipe(rest, prependAll(a), prepend(head(as))) : as
+  return isNonEmpty(rest) ? pipe(rest, prependAll(a), prepend(head(as))) : as
 }
 
 /**
@@ -1062,7 +1064,7 @@ export function sortBy<B>(...ords: ReadonlyArray<P.Ord<B>>): <A extends B>(as: N
     const M = Ord.getMonoid<B>()
     return sort(_.foldl_(ords, M.nat, (b, a) => M.combine_(b, a)))
   } else {
-    return P.identity
+    return identity
   }
 }
 

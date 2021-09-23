@@ -1,6 +1,6 @@
 import type { Observer } from './Observer'
 
-import { isFunction, isObject } from '@principia/base/prelude'
+import { isFunction, isObject } from '@principia/base/util/predicates'
 
 import { noop, reportUnhandledError } from './internal/util'
 import { isSubscription, Subscription } from './Subscription'

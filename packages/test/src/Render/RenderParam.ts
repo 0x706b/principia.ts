@@ -1,8 +1,8 @@
 import type { AssertionIO } from '../Assertion/AssertionM'
 import type * as S from '@principia/base/Show'
 
-import { isObject } from '@principia/base/prelude'
 import * as Sh from '@principia/base/Structural/Showable'
+import { isObject } from '@principia/base/util/predicates'
 
 import { isAssertionIO } from '../Assertion/AssertionM'
 

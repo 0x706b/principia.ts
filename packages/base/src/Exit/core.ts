@@ -5,11 +5,12 @@ import type { Equatable, Hashable } from '../Structural'
 import * as A from '../Array/core'
 import * as C from '../Cause'
 import * as E from '../Either'
-import { identity, pipe } from '../function'
+import { flow, identity, pipe } from '../function'
 import * as O from '../Option'
-import { flow, isObject, tailRec_ } from '../prelude'
+import { tailRec_ } from '../prelude'
 import * as St from '../Structural'
 import { tuple } from '../tuple'
+import { isObject } from '../util/predicates'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -201,10 +202,7 @@ export function ap<Id, E, A>(
   return (fab) => ap_(fab, fa)
 }
 
-export function crossFirst_<Id, E, Id1, G, A, B>(
-  fa: PExit<Id, E, A>,
-  fb: PExit<Id1, G, B>
-): PExit<Id | Id1, E | G, A> {
+export function crossFirst_<Id, E, Id1, G, A, B>(fa: PExit<Id, E, A>, fb: PExit<Id1, G, B>): PExit<Id | Id1, E | G, A> {
   return crossWithCause_(fa, fb, (a, _) => a, C.then)
 }
 
@@ -339,18 +337,11 @@ export function crossWith<A, Id1, G, B, C>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function bimap_<Id, E, A, G, B>(
-  pab: PExit<Id, E, A>,
-  f: (e: E) => G,
-  g: (a: A) => B
-): PExit<Id, G, B> {
+export function bimap_<Id, E, A, G, B>(pab: PExit<Id, E, A>, f: (e: E) => G, g: (a: A) => B): PExit<Id, G, B> {
   return isFailure(pab) ? mapError_(pab, f) : map_(pab, g)
 }
 
-export function bimap<E, A, G, B>(
-  f: (e: E) => G,
-  g: (a: A) => B
-): <Id>(pab: PExit<Id, E, A>) => PExit<Id, G, B> {
+export function bimap<E, A, G, B>(f: (e: E) => G, g: (a: A) => B): <Id>(pab: PExit<Id, E, A>) => PExit<Id, G, B> {
   return (pab) => bimap_(pab, f, g)
 }
 
@@ -416,9 +407,7 @@ export function chain<A, Id1, G, B>(
   return (fa) => chain_(fa, f)
 }
 
-export function flatten<Id, E, Id1, G, A>(
-  mma: PExit<Id, E, PExit<Id1, G, A>>
-): PExit<Id | Id1, E | G, A> {
+export function flatten<Id, E, Id1, G, A>(mma: PExit<Id, E, PExit<Id1, G, A>>): PExit<Id | Id1, E | G, A> {
   return chain_(mma, identity)
 }
 
@@ -459,9 +448,7 @@ export function chainRec_<Id, E, A, B>(a: A, f: (a: A) => PExit<Id, E, E.Either<
   )
 }
 
-export function chainRec<Id, E, A, B>(
-  f: (a: A) => PExit<Id, E, E.Either<A, B>>
-): (a: A) => PExit<Id, E, B> {
+export function chainRec<Id, E, A, B>(f: (a: A) => PExit<Id, E, E.Either<A, B>>): (a: A) => PExit<Id, E, B> {
   return (a) => chainRec_(a, f)
 }
 

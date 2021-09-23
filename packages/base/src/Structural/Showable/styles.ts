@@ -1,6 +1,6 @@
 import type { Endomorphism } from '../../Endomorphism'
 
-import * as _ from '../../util/AnsiFormat'
+import * as Ansi from '../../util/AnsiFormat'
 
 export type Style =
   | 'red'
@@ -32,18 +32,18 @@ export type ShowGroup =
 export type ShowStyle = Record<ShowGroup, Endomorphism<string>>
 
 export const defaultShowStyle: ShowStyle = {
-  string: _.green,
-  number: _.yellow,
-  boolean: _.yellow,
-  bigint: _.yellow,
-  special: _.cyan,
-  undefined: _.brightBlack,
-  null: _.bold,
-  symbol: _.green,
-  date: _.magenta,
-  regexp: _.red,
-  module: _.underline,
-  dim: _.dim
+  string: Ansi.green,
+  number: Ansi.yellow,
+  boolean: Ansi.yellow,
+  bigint: Ansi.yellow,
+  special: Ansi.cyan,
+  undefined: Ansi.brightBlack,
+  null: Ansi.bold,
+  symbol: Ansi.green,
+  date: Ansi.magenta,
+  regexp: Ansi.red,
+  module: Ansi.underline,
+  dim: Ansi.dim
 }
 
 export type StyleFunction = (str: string, group: ShowGroup) => string

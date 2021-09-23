@@ -8,8 +8,8 @@ import * as E from '@principia/base/Either'
 import { absurd } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as Set from '@principia/base/HashSet'
-import { isObject } from '@principia/base/prelude'
 import * as St from '@principia/base/Structural'
+import { isObject } from '@principia/base/util/predicates'
 
 export const TestAnnotationTypeId = Symbol()
 export type TestAnnotationTypeId = typeof TestAnnotationTypeId

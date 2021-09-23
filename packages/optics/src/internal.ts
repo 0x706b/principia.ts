@@ -12,6 +12,7 @@ import type { Either } from '@principia/base/Either'
 import type * as HKT from '@principia/base/HKT'
 import type { Option } from '@principia/base/Option'
 import type { Predicate } from '@principia/base/Predicate'
+import type * as P from '@principia/base/prelude'
 
 import * as A from '@principia/base/Array'
 import * as C from '@principia/base/Const'
@@ -19,7 +20,6 @@ import * as E from '@principia/base/Either'
 import { flow, identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/Identity'
 import * as O from '@principia/base/Option'
-import * as P from '@principia/base/prelude'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -137,7 +137,7 @@ export function makePIso<S, T, A, B>(_: PIsoMin<S, T, A, B>): PIso<S, T, A, B> {
 
 export function lensId<S, T>(): PLens<S, T, S, T> {
   return makePLens({
-    get: P.identity,
+    get: identity,
     replace_: (_, t) => t
   })
 }

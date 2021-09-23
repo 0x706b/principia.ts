@@ -11,11 +11,11 @@ import { flow, pipe } from '@principia/base/function'
 import * as F from '@principia/base/function'
 import * as NA from '@principia/base/NonEmptyArray'
 import * as O from '@principia/base/Option'
-import { isObject } from '@principia/base/prelude'
 import * as RT from '@principia/base/RoseTree'
 import * as Str from '@principia/base/string'
 import { show } from '@principia/base/Structural'
 import * as Th from '@principia/base/These'
+import { isObject } from '@principia/base/util/predicates'
 
 /*
  * -------------------------------------------

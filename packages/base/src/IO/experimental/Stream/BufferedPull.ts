@@ -1,9 +1,9 @@
 import * as C from '../../../Chunk'
 import { pipe } from '../../../function'
 import * as O from '../../../Option'
-import { tuple } from '../../../prelude'
-import * as Ref from '../../Ref'
+import { tuple } from '../../../tuple'
 import * as I from '../..'
+import * as Ref from '../../Ref'
 import * as Pull from './Pull'
 
 export class BufferedPull<R, E, A> {

@@ -14,9 +14,10 @@ import { flow, hole, identity, pipe } from '../function'
 import * as HS from '../HashSet'
 import * as L from '../List/core'
 import * as O from '../Option'
-import { isObject, tailRec_ } from '../prelude'
+import { tailRec_ } from '../prelude'
 import * as St from '../Structural'
 import { tuple } from '../tuple'
+import { isObject } from '../util/predicates'
 import { makeStack } from '../util/support/Stack'
 
 export const CauseTypeId = Symbol.for('@principia/base/Cause')
@@ -325,10 +326,7 @@ export function interrupt<Id>(id: Id): PCause<Id, never> {
  * @category constructors
  * @since 1.0.0
  */
-export function then<Id, E, Id1, E1>(
-  left: PCause<Id, E>,
-  right: PCause<Id1, E1>
-): PCause<Id | Id1, E | E1> {
+export function then<Id, E, Id1, E1>(left: PCause<Id, E>, right: PCause<Id1, E1>): PCause<Id | Id1, E | E1> {
   return isEmpty(left) ? right : isEmpty(right) ? left : new Then<Id | Id1, E | E1>(left, right)
 }
 
@@ -340,10 +338,7 @@ export function then<Id, E, Id1, E1>(
  * @category constructors
  * @since 1.0.0
  */
-export function both<Id, E, Id1, E1>(
-  left: PCause<Id, E>,
-  right: PCause<Id1, E1>
-): PCause<Id | Id1, E | E1> {
+export function both<Id, E, Id1, E1>(left: PCause<Id, E>, right: PCause<Id1, E1>): PCause<Id | Id1, E | E1> {
   return isEmpty(left) ? right : isEmpty(right) ? left : new Both<Id | Id1, E | E1>(left, right)
 }
 
@@ -380,9 +375,7 @@ export function containsEval<Id1, E, E1 extends E = E>(
  * @category guards
  * @since 1.0.0
  */
-export function contains<Id1, E, E1 extends E = E>(
-  that: PCause<Id1, E1>
-): <Id>(cause: PCause<Id, E>) => boolean {
+export function contains<Id1, E, E1 extends E = E>(that: PCause<Id1, E1>): <Id>(cause: PCause<Id, E>) => boolean {
   return flow(containsEval(that), Ev.evaluate)
 }
 
@@ -589,10 +582,7 @@ export function findEval<Id, E, A>(
  * @category Combinators
  * @since 1.0.0
  */
-export function find_<Id, E, A>(
-  cause: PCause<Id, E>,
-  f: (cause: PCause<Id, E>) => O.Option<A>
-): O.Option<A> {
+export function find_<Id, E, A>(cause: PCause<Id, E>, f: (cause: PCause<Id, E>) => O.Option<A>): O.Option<A> {
   return findEval(cause, f).value
 }
 
@@ -604,9 +594,7 @@ export function find_<Id, E, A>(
  *
  * @dataFirst find_
  */
-export function find<Id, A, E>(
-  f: (cause: PCause<Id, E>) => O.Option<A>
-): (cause: PCause<Id, E>) => O.Option<A> {
+export function find<Id, A, E>(f: (cause: PCause<Id, E>) => O.Option<A>): (cause: PCause<Id, E>) => O.Option<A> {
   return (cause) => find_(cause, f)
 }
 
@@ -616,11 +604,7 @@ export function find<Id, A, E>(
  * @category Destructors
  * @since 1.0.0
  */
-export function foldl_<Id, E, A>(
-  cause: PCause<Id, E>,
-  a: A,
-  f: (a: A, cause: PCause<Id, E>) => O.Option<A>
-): A {
+export function foldl_<Id, E, A>(cause: PCause<Id, E>, a: A, f: (a: A, cause: PCause<Id, E>) => O.Option<A>): A {
   let causes: Stack<PCause<Id, E>> | undefined = undefined
   let current: PCause<Id, E> | undefined       = cause
   let acc = a
@@ -662,10 +646,7 @@ export function foldl_<Id, E, A>(
  *
  * @dataFirst foldl_
  */
-export function foldl<Id, E, A>(
-  a: A,
-  f: (a: A, cause: PCause<Id, E>) => O.Option<A>
-): (cause: PCause<Id, E>) => A {
+export function foldl<Id, E, A>(a: A, f: (a: A, cause: PCause<Id, E>) => O.Option<A>): (cause: PCause<Id, E>) => A {
   return (cause) => foldl_(cause, a, f)
 }
 
@@ -838,10 +819,7 @@ export function crossWith<Id1, A, B, C>(
  * @category SemimonoidalFunctor
  * @since 1.0.0
  */
-export function cross_<Id, A, Id1, B>(
-  fa: PCause<Id, A>,
-  fb: PCause<Id1, B>
-): PCause<Id | Id1, readonly [A, B]> {
+export function cross_<Id, A, Id1, B>(fa: PCause<Id, A>, fb: PCause<Id1, B>): PCause<Id | Id1, readonly [A, B]> {
   return crossWith_(fa, fb, tuple)
 }
 
@@ -850,12 +828,10 @@ export function cross_<Id, A, Id1, B>(
  *
  * @category SemimonoidalFunctor
  * @since 1.0.0
- * 
+ *
  * @dataFirst cross_
  */
-export function cross<Id1, B>(
-  fb: PCause<Id1, B>
-): <Id, A>(fa: PCause<Id, A>) => PCause<Id | Id1, readonly [A, B]> {
+export function cross<Id1, B>(fb: PCause<Id1, B>): <Id, A>(fa: PCause<Id, A>) => PCause<Id | Id1, readonly [A, B]> {
   return (fa) => cross_(fa, fb)
 }
 
@@ -871,10 +847,7 @@ export function cross<Id1, B>(
  * @category Apply
  * @since 1.0.0
  */
-export function ap_<Id, E, Id1, D>(
-  fab: PCause<Id, (a: E) => D>,
-  fa: PCause<Id1, E>
-): PCause<Id | Id1, D> {
+export function ap_<Id, E, Id1, D>(fab: PCause<Id, (a: E) => D>, fa: PCause<Id1, E>): PCause<Id | Id1, D> {
   return chain_(fab, (f) => map_(fa, f))
 }
 
@@ -886,9 +859,7 @@ export function ap_<Id, E, Id1, D>(
  *
  * @dataFirst ap_
  */
-export function ap<Id1, E>(
-  fa: PCause<Id1, E>
-): <Id, D>(fab: PCause<Id, (a: E) => D>) => PCause<Id | Id1, D> {
+export function ap<Id1, E>(fa: PCause<Id1, E>): <Id, D>(fab: PCause<Id, (a: E) => D>) => PCause<Id | Id1, D> {
   return (fab) => ap_(fab, fa)
 }
 
@@ -946,10 +917,7 @@ export function map<Id, E, D>(f: (e: E) => D): (fa: PCause<Id, E>) => PCause<Id,
 /**
  * @internal
  */
-function chainEval<Id, E, Id1, D>(
-  ma: PCause<Id, E>,
-  f: (e: E) => PCause<Id1, D>
-): Ev.Eval<PCause<Id | Id1, D>> {
+function chainEval<Id, E, Id1, D>(ma: PCause<Id, E>, f: (e: E) => PCause<Id1, D>): Ev.Eval<PCause<Id | Id1, D>> {
   switch (ma._tag) {
     case CauseTag.Empty:
       return Ev.now(empty)
@@ -982,10 +950,7 @@ function chainEval<Id, E, Id1, D>(
  * @category Monad
  * @since 1.0.0
  */
-export function chain_<Id, E, Id1, D>(
-  ma: PCause<Id, E>,
-  f: (e: E) => PCause<Id1, D>
-): PCause<Id | Id1, D> {
+export function chain_<Id, E, Id1, D>(ma: PCause<Id, E>, f: (e: E) => PCause<Id1, D>): PCause<Id | Id1, D> {
   return chainEval(ma, f).value
 }
 
@@ -997,9 +962,7 @@ export function chain_<Id, E, Id1, D>(
  *
  * @dataFirst chain_
  */
-export function chain<E, Id1, D>(
-  f: (e: E) => PCause<Id1, D>
-): <Id>(ma: PCause<Id, E>) => PCause<Id | Id1, D> {
+export function chain<E, Id1, D>(f: (e: E) => PCause<Id1, D>): <Id>(ma: PCause<Id, E>) => PCause<Id | Id1, D> {
   return (ma) => chain_(ma, f)
 }
 
@@ -1034,7 +997,7 @@ export function chainRec_<Id, A, B>(a: A, f: (a: A) => PCause<Id, E.Either<A, B>
  *
  * @category TailRec
  * @since 1.0.0
- * 
+ *
  * @dataFirst chainRec_
  */
 export function chainRec<Id, A, B>(f: (a: A) => PCause<Id, E.Either<A, B>>): (a: A) => PCause<Id, B> {
@@ -1271,10 +1234,7 @@ export function stripInterrupts<Id, E>(cause: PCause<Id, E>): PCause<Id, E> {
   return stripInterruptsEval(cause).value
 }
 
-function filterDefectsEval<Id, E>(
-  cause: PCause<Id, E>,
-  pf: Predicate<unknown>
-): Ev.Eval<O.Option<PCause<Id, E>>> {
+function filterDefectsEval<Id, E>(cause: PCause<Id, E>, pf: Predicate<unknown>): Ev.Eval<O.Option<PCause<Id, E>>> {
   switch (cause._tag) {
     case CauseTag.Empty: {
       return Ev.now(O.none())
@@ -1332,10 +1292,7 @@ function filterDefectsEval<Id, E>(
  * returning `Some` with the remaining causes or `None` if there are no
  * remaining causes.
  */
-export function filterDefects_<Id, E>(
-  cause: PCause<Id, E>,
-  pf: Predicate<unknown>
-): O.Option<PCause<Id, E>> {
+export function filterDefects_<Id, E>(cause: PCause<Id, E>, pf: Predicate<unknown>): O.Option<PCause<Id, E>> {
   return filterDefectsEval(cause, pf).value
 }
 
@@ -1346,15 +1303,11 @@ export function filterDefects_<Id, E>(
  *
  * @dataFirst filterDefects_
  */
-export function filterDefects(
-  pf: Predicate<unknown>
-): <Id, E>(cause: PCause<Id, E>) => O.Option<PCause<Id, E>> {
+export function filterDefects(pf: Predicate<unknown>): <Id, E>(cause: PCause<Id, E>) => O.Option<PCause<Id, E>> {
   return (cause) => filterDefectsEval(cause, pf).value
 }
 
-function sequenceCauseEitherEval<Id, E, A>(
-  cause: PCause<Id, E.Either<E, A>>
-): Ev.Eval<E.Either<PCause<Id, E>, A>> {
+function sequenceCauseEitherEval<Id, E, A>(cause: PCause<Id, E.Either<E, A>>): Ev.Eval<E.Either<PCause<Id, E>, A>> {
   switch (cause._tag) {
     case CauseTag.Empty: {
       return Ev.now(E.left(empty))
@@ -1406,9 +1359,7 @@ function sequenceCauseEitherEval<Id, E, A>(
 /**
  * Converts the specified `Cause<Either<E, A>>` to an `Either<Cause<E>, A>`.
  */
-export function sequenceCauseEither<Id, E, A>(
-  cause: PCause<Id, E.Either<E, A>>
-): E.Either<PCause<Id, E>, A> {
+export function sequenceCauseEither<Id, E, A>(cause: PCause<Id, E.Either<E, A>>): E.Either<PCause<Id, E>, A> {
   return sequenceCauseEitherEval(cause).value
 }
 
@@ -2209,10 +2160,7 @@ function _equalHalt<Id, A>(EId: P.Eq<Id>, E: P.Eq<A>): (l: Halt, r: PCause<Id, A
   }
 }
 
-function _equalInterrupt<Id, A>(
-  EId: P.Eq<Id>,
-  E: P.Eq<A>
-): (l: Interrupt<Id>, r: PCause<Id, A>) => Ev.Eval<boolean> {
+function _equalInterrupt<Id, A>(EId: P.Eq<Id>, E: P.Eq<A>): (l: Interrupt<Id>, r: PCause<Id, A>) => Ev.Eval<boolean> {
   return (l, r) => {
     switch (r._tag) {
       case CauseTag.Interrupt:
@@ -2258,18 +2206,12 @@ function _equalBoth<Id, A>(EId: P.Eq<Id>, E: P.Eq<A>): (l: Both<Id, A>, r: PCaus
     })
 }
 
-function _equalTraced<Id, A>(
-  EId: P.Eq<Id>,
-  E: P.Eq<A>
-): (l: Traced<Id, A>, r: PCause<Id, A>) => Ev.Eval<boolean> {
+function _equalTraced<Id, A>(EId: P.Eq<Id>, E: P.Eq<A>): (l: Traced<Id, A>, r: PCause<Id, A>) => Ev.Eval<boolean> {
   return (l, r) =>
     Ev.defer(() => (r._tag === CauseTag.Traced ? equals_(EId, E)(l.cause, r.cause) : equals_(EId, E)(l.cause, r)))
 }
 
-function equals_<Id, A>(
-  EId: P.Eq<Id>,
-  E: P.Eq<A>
-): (l: PCause<Id, A>, r: PCause<Id, A>) => Ev.Eval<boolean> {
+function equals_<Id, A>(EId: P.Eq<Id>, E: P.Eq<A>): (l: PCause<Id, A>, r: PCause<Id, A>) => Ev.Eval<boolean> {
   return (l, r) => {
     switch (l._tag) {
       case CauseTag.Empty:
@@ -2296,12 +2238,7 @@ function symmetric<Id, A>(
   return (EId, E, x, y) => Ev.crossWith_(f(EId, E, x, y), f(EId, E, y, x), B.or_)
 }
 
-function bothAssociate<Id, A>(
-  EId: P.Eq<Id>,
-  E: P.Eq<A>,
-  l: PCause<Id, A>,
-  r: PCause<Id, A>
-): Ev.Eval<boolean> {
+function bothAssociate<Id, A>(EId: P.Eq<Id>, E: P.Eq<A>, l: PCause<Id, A>, r: PCause<Id, A>): Ev.Eval<boolean> {
   const equalsE = equals_(EId, E)
   if (
     l._tag === CauseTag.Both &&
@@ -2318,12 +2255,7 @@ function bothAssociate<Id, A>(
   }
 }
 
-function bothDistribute<Id, A>(
-  EId: P.Eq<Id>,
-  E: P.Eq<A>,
-  l: PCause<Id, A>,
-  r: PCause<Id, A>
-): Ev.Eval<boolean> {
+function bothDistribute<Id, A>(EId: P.Eq<Id>, E: P.Eq<A>, l: PCause<Id, A>, r: PCause<Id, A>): Ev.Eval<boolean> {
   const equalsE = equals_(EId, E)
   if (
     l._tag === CauseTag.Both &&
@@ -2362,12 +2294,7 @@ function bothDistribute<Id, A>(
   }
 }
 
-function thenAssociate<Id, A>(
-  EId: P.Eq<Id>,
-  E: P.Eq<A>,
-  l: PCause<Id, A>,
-  r: PCause<Id, A>
-): Ev.Eval<boolean> {
+function thenAssociate<Id, A>(EId: P.Eq<Id>, E: P.Eq<A>, l: PCause<Id, A>, r: PCause<Id, A>): Ev.Eval<boolean> {
   const equalsE = equals_(EId, E)
   if (
     l._tag === CauseTag.Then &&
@@ -2384,12 +2311,7 @@ function thenAssociate<Id, A>(
   }
 }
 
-function thenDistribute<Id, A>(
-  EId: P.Eq<Id>,
-  E: P.Eq<A>,
-  l: PCause<Id, A>,
-  r: PCause<Id, A>
-): Ev.Eval<boolean> {
+function thenDistribute<Id, A>(EId: P.Eq<Id>, E: P.Eq<A>, l: PCause<Id, A>, r: PCause<Id, A>): Ev.Eval<boolean> {
   const equalsE = equals_(EId, E)
   if (
     l._tag === CauseTag.Then &&
@@ -2446,12 +2368,7 @@ function equalThen<Id, A>(EId: P.Eq<Id>, E: P.Eq<A>, l: PCause<Id, A>, r: PCause
   }
 }
 
-function equalEmpty<Id, A>(
-  EId: P.Eq<Id>,
-  E: P.Eq<A>,
-  l: PCause<Id, A>,
-  r: PCause<Id, A>
-): Ev.Eval<boolean> {
+function equalEmpty<Id, A>(EId: P.Eq<Id>, E: P.Eq<A>, l: PCause<Id, A>, r: PCause<Id, A>): Ev.Eval<boolean> {
   const equalsE = equals_(EId, E)
   if (l._tag === CauseTag.Then || l._tag === CauseTag.Both) {
     if (l.left._tag === CauseTag.Empty) {

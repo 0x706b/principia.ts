@@ -1,12 +1,12 @@
+import type { Option } from '../Option'
 import type { Cause } from './Cause'
 import type { Exit } from './Exit'
-import type { Option } from '../Option'
 import type { FiberId } from './Fiber/FiberId'
 import type { FIO } from './IO/core'
 
 import * as E from '../Either'
+import { pipe } from '../function'
 import * as O from '../Option'
-import * as P from '../prelude'
 import { AtomicReference } from '../util/support/AtomicReference'
 import { asyncInterruptEither, interruptAs as interruptAsIO, uninterruptibleMask } from './IO/combinators/interrupt'
 import * as I from './IO/core'
@@ -182,7 +182,7 @@ export function failCause<E>(cause: Cause<E>): <A>(promise: Promise<E, A>) => I.
  * waiting on the value of the promise as by the fiber calling this method.
  */
 export function interrupt<E, A>(promise: Promise<E, A>): I.UIO<boolean> {
-  return P.pipe(
+  return pipe(
     I.fiberId(),
     I.chain((id) => fulfillWith_(promise, interruptAsIO(id)))
   )

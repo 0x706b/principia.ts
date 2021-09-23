@@ -1,4 +1,4 @@
-import { isDate, isFunction, isPlain } from '@principia/base/prelude'
+import { isDate, isFunction, isPlain } from '@principia/base/util/predicates'
 
 import { timeoutProvider } from './timeoutProvider'
 

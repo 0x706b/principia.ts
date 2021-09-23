@@ -1,6 +1,7 @@
 import type * as HKT from './HKT'
 import type { Tuple2URI } from './Modules'
 
+import { identity } from './function'
 import * as P from './prelude'
 
 /*
@@ -145,7 +146,7 @@ export function extend<A, I, B>(f: (wa: Tuple2<A, I>) => B): (wa: Tuple2<A, I>) 
 
 export const extract: <A, I>(wa: Tuple2<A, I>) => A = fst
 
-export const duplicate: <A, I>(wa: Tuple2<A, I>) => Tuple2<Tuple2<A, I>, I> = extend(P.identity)
+export const duplicate: <A, I>(wa: Tuple2<A, I>) => Tuple2<Tuple2<A, I>, I> = extend(identity)
 
 /*
  * -------------------------------------------------------------------------------------------------

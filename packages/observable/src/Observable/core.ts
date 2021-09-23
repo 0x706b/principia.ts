@@ -10,9 +10,11 @@ import type { Eq, PredicateWithIndex, RefinementWithIndex } from '@principia/bas
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
+import { identity, pipe } from '@principia/base/function'
 import * as HS from '@principia/base/MutableHashSet'
 import * as O from '@principia/base/Option'
-import { identity, isFunction, isIterable, isObject, pipe, tuple } from '@principia/base/prelude'
+import { tuple } from '@principia/base/tuple'
+import { isFunction, isIterable, isObject } from '@principia/base/util/predicates'
 
 import { asyncScheduler } from '../AsyncScheduler'
 import { popNumber } from '../internal/args'

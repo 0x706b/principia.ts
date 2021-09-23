@@ -25,10 +25,10 @@ import {
   isSymbol,
   isTypedArray,
   isWeakMap,
-  isWeakSet,
-  tuple
+  isWeakSet
 } from '../../prelude'
 import * as str from '../../string'
+import { tuple } from '../../tuple'
 import * as Z from '../../Z'
 import { $show, isShowable } from './core'
 import { stylizeNoColor, stylizeWithColor } from './styles'

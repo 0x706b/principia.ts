@@ -2,6 +2,7 @@ import type * as HKT from './HKT'
 import type { MapURI } from './Modules'
 
 import * as E from './Either'
+import { pipe } from './function'
 import * as O from './Option'
 import * as P from './prelude'
 
@@ -127,7 +128,7 @@ export function toMutable<K, A>(m: ReadonlyMap<K, A>): Map<K, A> {
 export function lookupAt_<K>(E: P.Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => O.Option<A> {
   const lookupWithKeyE_ = lookupWithKey_(E)
   return (m, k) =>
-    P.pipe(
+    pipe(
       lookupWithKeyE_(m, k),
       O.map(([_, a]) => a)
     )
@@ -222,7 +223,7 @@ export function pop_<K>(E: P.Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => O.Option
   const lookupE_   = lookupAt_(E)
   const deleteAtE_ = deleteAt_(E)
   return (m, k) =>
-    P.pipe(
+    pipe(
       lookupE_(m, k),
       O.map((a) => [a, deleteAtE_(m, k)])
     )
@@ -678,11 +679,11 @@ export function getWitherableWithIndex<K>(O: P.Ord<K>) {
   const TraversableWithIndex = getTraversableWithindex(O)
 
   const icompactA_ = P.implementWitherWithIndex_<URI, CK>()(
-    (_) => (G) => (wa, f) => P.pipe(TraversableWithIndex.imapA_(G)(wa, f), G.map(compact))
+    (_) => (G) => (wa, f) => pipe(TraversableWithIndex.imapA_(G)(wa, f), G.map(compact))
   )
 
   const iseparateA_ = P.implementPartitionMapWithIndexA_<URI, CK>()(
-    (_) => (G) => (wa, f) => P.pipe(TraversableWithIndex.imapA_(G)(wa, f), G.map(separate))
+    (_) => (G) => (wa, f) => pipe(TraversableWithIndex.imapA_(G)(wa, f), G.map(separate))
   )
 
   return P.WitherableWithIndex<URI, CK>({

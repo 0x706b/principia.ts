@@ -3,15 +3,15 @@ import type { Chunk } from '@principia/base/Chunk'
 import type * as HKT from '@principia/base/HKT'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type * as O from '@principia/base/Option'
+import type * as P from '@principia/base/prelude'
 import type { UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
-import { flow, identity, pipe } from '@principia/base/function'
+import { flow, identity, pipe, unsafeCoerce } from '@principia/base/function'
 import * as HS from '@principia/base/HashSet'
 import * as HR from '@principia/base/HeterogeneousRecord'
 import * as NA from '@principia/base/NonEmptyArray'
-import * as P from '@principia/base/prelude'
 import * as R from '@principia/base/Record'
 import * as Set from '@principia/base/Set'
 
@@ -213,7 +213,7 @@ export function tuple<C extends ReadonlyArray<Encoder<any, any>>>(
     for (let i = 0; i < components.length; i++) {
       r.push(components[i].encode(as[i]))
     }
-    return P.unsafeCoerce(r)
+    return unsafeCoerce(r)
   })
 }
 
@@ -226,7 +226,7 @@ export function tuple<C extends ReadonlyArray<Encoder<any, any>>>(
 export function intersectAll<M extends NonEmptyArray<Encoder<any, Record<string, any>>>>(
   members: M
 ): Encoder<UnionToIntersection<InputOf<M[keyof M]>>, UnionToIntersection<OutputOf<M[keyof M]>>> {
-  return Encoder((a) => P.unsafeCoerce(HR.intersect(...A.map_(members, (E) => E.encode(a)))))
+  return Encoder((a) => unsafeCoerce(HR.intersect(...A.map_(members, (E) => E.encode(a)))))
 }
 
 export function intersect<M extends NonEmptyArray<Encoder<any, Record<string, any>>>>(

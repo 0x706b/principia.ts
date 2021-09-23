@@ -1,25 +1,24 @@
 import type { Byte, ByteArray } from '../Byte'
 import type { Either } from '../Either'
 import type { Eq } from '../Eq'
-import type * as Ev from '../Eval/core'
 import type { ChunkURI } from '../Modules'
 import type { Predicate } from '../Predicate'
-import type { Refinement } from '../Refinement'
 import type { These } from '../These'
 
 import * as A from '../Array/core'
 import * as E from '../Either'
-import { pipe, unsafeCoerce } from '../function'
+import { identity, pipe, unsafeCoerce } from '../function'
 import * as HKT from '../HKT'
 import * as It from '../Iterable/core'
 import * as N from '../number'
 import * as O from '../Option'
 import { EQ } from '../Ordering'
-import { isByte } from '../prelude'
 import * as P from '../prelude'
 import * as Equ from '../Structural/Equatable'
 import * as Ha from '../Structural/Hashable'
 import * as Th from '../These'
+import { tuple } from '../tuple'
+import { isByte } from '../util/predicates'
 import { AtomicNumber } from '../util/support/AtomicNumber'
 
 type URI = [HKT.URI<ChunkURI>]
@@ -1138,7 +1137,7 @@ export function alignWith<A, B, C>(fb: Chunk<B>, f: (_: These<A, B>) => C): (fa:
 }
 
 export function align_<A, B>(fa: Chunk<A>, fb: Chunk<B>): Chunk<These<A, B>> {
-  return alignWith_(fa, fb, P.identity)
+  return alignWith_(fa, fb, identity)
 }
 
 export function align<B>(fb: Chunk<B>): <A>(fa: Chunk<A>) => Chunk<These<A, B>> {
@@ -1171,7 +1170,7 @@ export function ap<A>(fa: Chunk<A>): <B>(fab: Chunk<(a: A) => B>) => Chunk<B> {
 }
 
 export function cross_<A, B>(as: Chunk<A>, bs: Chunk<B>): Chunk<readonly [A, B]> {
-  return crossWith_(as, bs, P.tuple)
+  return crossWith_(as, bs, tuple)
 }
 
 export function cross<B>(bs: Chunk<B>): <A>(as: Chunk<A>) => Chunk<readonly [A, B]> {
@@ -1252,7 +1251,7 @@ export function chain<A, B>(f: (a: A) => Chunk<B>): (ma: Chunk<A>) => Chunk<B> {
 }
 
 export function flatten<A>(mma: Chunk<Chunk<A>>): Chunk<A> {
-  return chain_(mma, P.identity)
+  return chain_(mma, identity)
 }
 
 /*
@@ -1318,7 +1317,7 @@ export function zipWith<A, B, C>(bs: Chunk<B>, f: (a: A, b: B) => C): (as: Chunk
 }
 
 export function zip_<A, B>(as: Chunk<A>, bs: Chunk<B>): Chunk<readonly [A, B]> {
-  return zipWith_(as, bs, P.tuple)
+  return zipWith_(as, bs, tuple)
 }
 
 export function zip<B>(bs: Chunk<B>): <A>(as: Chunk<A>) => Chunk<readonly [A, B]> {
@@ -1512,7 +1511,7 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A, i: number) => M) => (f
  */
 
 export function compact<A>(as: Chunk<O.Option<A>>): Chunk<A> {
-  return filterMap_(as, P.identity)
+  return filterMap_(as, identity)
 }
 
 export function separate<E, A>(as: Chunk<Either<E, A>>): readonly [Chunk<E>, Chunk<A>] {
@@ -1665,7 +1664,7 @@ export const mapA: P.MapWithIndexAFn<URI> = (G) => {
 
 export const sequence: P.SequenceFn<URI> = (G) => {
   const traverseG_ = mapA_(G)
-  return (ta) => traverseG_(ta, P.identity)
+  return (ta) => traverseG_(ta, identity)
 }
 
 /*
@@ -1972,7 +1971,7 @@ export function mapAccum_<A, S, B>(as: Chunk<A>, s: S, f: (s: S, a: A) => readon
       state = tup[1]
     }
   }
-  return P.tuple(out.result(), s)
+  return tuple(out.result(), s)
 }
 
 /**

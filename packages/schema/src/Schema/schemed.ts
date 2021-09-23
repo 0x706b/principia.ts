@@ -1,8 +1,9 @@
 import type { CoreURIS } from '../Modules'
 
-import { isFunction, pipe } from '@principia/base/prelude'
+import { pipe } from '@principia/base/function'
 import * as St from '@principia/base/Structural'
 import * as Th from '@principia/base/These'
+import { isFunction } from '@principia/base/util/predicates'
 
 import * as Ct from '../Constructor'
 import * as D from '../Decoder'

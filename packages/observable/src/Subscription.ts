@@ -1,4 +1,4 @@
-import { isObject } from '@principia/base/prelude'
+import { isObject } from '@principia/base/util/predicates'
 
 export interface Unsubscribable {
   readonly unsubscribe: () => void

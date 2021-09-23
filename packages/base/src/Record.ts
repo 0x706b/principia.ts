@@ -1,15 +1,16 @@
 import type { Eq } from './Eq'
 import type * as HKT from './HKT'
 import type { RecordURI } from './Modules'
-import type { Predicate, PredicateWithIndex } from './Predicate'
-import type { Refinement, RefinementWithIndex } from './Refinement'
+import type { PredicateWithIndex } from './Predicate'
+import type { RefinementWithIndex } from './Refinement'
 import type { Show } from './Show'
 
 import * as E from './Either'
-import { pipe } from './function'
+import { identity, pipe } from './function'
 import * as G from './Guard'
 import * as O from './Option'
 import * as P from './prelude'
+import { tuple } from './tuple'
 
 const _hasOwnProperty = Object.prototype.hasOwnProperty
 
@@ -373,7 +374,7 @@ export function partition_<A>(fa: ReadonlyRecord<string, A>, predicate: Predicat
       left[key] = a
     }
   }
-  return P.tuple(left, right)
+  return tuple(left, right)
 }
 
 /**
@@ -493,7 +494,7 @@ export function fromFoldableMap<B, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigr
     fa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>,
     f: (a: A) => readonly [N, B]
   ): ReadonlyRecord<N, B> =>
-    P.pipe(
+    pipe(
       fa,
       F.foldl<A, Record<N, B>>({} as any, (r, a) => {
         const [k, b] = f(a)
@@ -507,7 +508,7 @@ export function fromFoldable<A, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigroup
   const fromFoldableMapS = fromFoldableMap(S, F)
   return <KF, QF, WF, XF, IF, SF, RF, EF, N extends string>(
     fa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, readonly [N, A]>
-  ): ReadonlyRecord<N, A> => fromFoldableMapS(fa, P.identity)
+  ): ReadonlyRecord<N, A> => fromFoldableMapS(fa, identity)
 }
 
 /*
@@ -784,7 +785,7 @@ export const UnknownRecordGuard: G.Guard<unknown, ReadonlyRecord<string, unknown
 )
 
 export function getGuard<A>(codomain: G.Guard<unknown, A>): G.Guard<unknown, ReadonlyRecord<string, A>> {
-  return P.pipe(
+  return pipe(
     UnknownRecordGuard,
     G.refine((r): r is ReadonlyRecord<string, A> => {
       for (const k in r) {

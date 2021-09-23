@@ -3,19 +3,19 @@ import type * as S from './Schemable'
 import type { InputOfPrism } from './util'
 import type * as HKT from '@principia/base/HKT'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
+import type * as P from '@principia/base/prelude'
 
 import * as A from '@principia/base/Array'
 import { Either } from '@principia/base/Either'
 import * as E from '@principia/base/Either'
-import { pipe } from '@principia/base/function'
+import { flow, pipe } from '@principia/base/function'
 import * as HS from '@principia/base/HashSet'
 import * as O from '@principia/base/Option'
-import * as P from '@principia/base/prelude'
-import { isBoolean, isNumber, isObject } from '@principia/base/prelude'
 import * as R from '@principia/base/Record'
 import * as Set from '@principia/base/Set'
 import { isString } from '@principia/base/string'
 import * as Th from '@principia/base/These'
+import { isBoolean, isNumber, isObject } from '@principia/base/util/predicates'
 
 import * as Pa from './internal/Parse'
 import { DecoderSURI } from './Modules'
@@ -528,7 +528,7 @@ export const Schemable: S.Schemable<DecoderSURI> = {
 
 export const getFor = to(Schemable)
 
-const _for = P.flow(to(Schemable), (_) => _.parse)
+const _for = flow(to(Schemable), (_) => _.parse)
 export { _for as for }
 
 export { DecoderSURI }

@@ -1,6 +1,7 @@
 import type * as HKT from './HKT'
 import type { IdentityURI } from './Modules'
 
+import { identity, pipe } from './function'
 import * as P from './prelude'
 import { tuple } from './tuple'
 
@@ -23,7 +24,7 @@ type URI = [HKT.URI<IdentityURI>]
 /**
  * @optimize identity
  */
-export const alt_: <A>(fa: A, that: () => A) => A = P.identity
+export const alt_: <A>(fa: A, that: () => A) => A = identity
 
 /**
  * @optimize identity
@@ -112,9 +113,9 @@ export function extend<A, B>(f: (wa: A) => B): (wa: A) => B {
 /**
  * @optimize identity
  */
-export const extract: <A>(wa: A) => A = P.identity
+export const extract: <A>(wa: A) => A = identity
 
-export const duplicate: <A>(wa: Identity<A>) => Identity<Identity<A>> = extend(P.identity)
+export const duplicate: <A>(wa: Identity<A>) => Identity<Identity<A>> = extend(identity)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -183,7 +184,7 @@ export function tap<A, B>(f: (a: A) => B): (ma: A) => A {
 }
 
 export function flatten<A>(mma: A): A {
-  return chain_(mma, P.identity)
+  return chain_(mma, identity)
 }
 
 /*
@@ -192,11 +193,11 @@ export function flatten<A>(mma: A): A {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const mapA_: P.MapAFn_<URI> = (AG) => (ta, f) => P.pipe(f(ta), AG.map(P.identity))
+export const mapA_: P.MapAFn_<URI> = (AG) => (ta, f) => pipe(f(ta), AG.map(identity))
 
 export const mapA: P.MapAFn<URI> = (AG) => (f) => (ta) => mapA_(AG)(ta, f)
 
-export const sequence: P.SequenceFn<URI> = (AG) => (ta) => P.pipe(ta, AG.map(P.identity))
+export const sequence: P.SequenceFn<URI> = (AG) => (ta) => pipe(ta, AG.map(identity))
 
 /*
  * -------------------------------------------------------------------------------------------------

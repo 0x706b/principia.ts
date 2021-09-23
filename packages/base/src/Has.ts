@@ -12,7 +12,7 @@
 import type { Option } from './internal/Option'
 
 import { fromNullable, none } from './internal/Option'
-import { isObject } from './prelude'
+import { isObject } from './util/predicates'
 
 /**
  * URI used in Has

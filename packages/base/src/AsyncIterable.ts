@@ -3,7 +3,9 @@ import type * as HKT from './HKT'
 import type { AsyncIterableURI } from './Modules'
 import type { Option } from './Option'
 
+import { identity } from './function'
 import * as P from './prelude'
+import { tuple } from './tuple'
 
 type URI = [HKT.URI<AsyncIterableURI>]
 
@@ -71,7 +73,7 @@ export function zipWith<A, B, C>(
 }
 
 export function zip_<A, B>(fa: AsyncIterable<A>, fb: AsyncIterable<B>): AsyncIterable<readonly [A, B]> {
-  return zipWith_(fa, fb, P.tuple)
+  return zipWith_(fa, fb, tuple)
 }
 
 export function zip<B>(fb: AsyncIterable<B>): <A>(fa: AsyncIterable<A>) => AsyncIterable<readonly [A, B]> {
@@ -147,7 +149,7 @@ export function crossWithPromise_<A, B, C>(
 }
 
 export function cross_<A, B>(fa: AsyncIterable<A>, fb: AsyncIterable<B>): AsyncIterable<readonly [A, B]> {
-  return crossWith_(fa, fb, P.tuple)
+  return crossWith_(fa, fb, tuple)
 }
 
 export function cross<B>(fb: AsyncIterable<B>): <A>(fa: AsyncIterable<A>) => AsyncIterable<readonly [A, B]> {
@@ -247,7 +249,7 @@ export function partition_<A>(
   fa: AsyncIterable<A>,
   predicate: P.PredicateWithIndex<number, A>
 ): readonly [AsyncIterable<A>, AsyncIterable<A>] {
-  return P.tuple(
+  return tuple(
     asyncIterable(async function* () {
       let n = -1
       for await (const a of fa) {
@@ -285,7 +287,7 @@ export function partitionMap_<A, B, C>(
   fa: AsyncIterable<A>,
   f: (a: A, i: number) => Either<B, C>
 ): readonly [AsyncIterable<B>, AsyncIterable<C>] {
-  return P.tuple(
+  return tuple(
     asyncIterable(async function* () {
       const mapped = map_(fa, f)
       for await (const ea of mapped) {
@@ -400,7 +402,7 @@ export function chain<A, B>(f: (a: A) => AsyncIterable<B>): (ma: AsyncIterable<A
 }
 
 export function flatten<A>(mma: AsyncIterable<AsyncIterable<A>>): AsyncIterable<A> {
-  return chain_(mma, P.identity)
+  return chain_(mma, identity)
 }
 
 /*

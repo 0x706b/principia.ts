@@ -2,12 +2,12 @@
 
 import { traceCall } from '@principia/compile/util'
 
+import { pipe } from '../../../function'
 import * as HM from '../../../HashMap'
 import * as O from '../../../Option'
-import { pipe } from '../../../prelude'
-import * as P from '../../Promise'
 import { fulfill } from '../../IO/combinators/fulfill'
 import * as I from '../../IO/core'
+import * as P from '../../Promise'
 import * as Ref from '../../Ref/core'
 import * as M from '../core'
 import { scope as scopeManaged } from './scope'

@@ -9,7 +9,7 @@ import type { Predicate } from '@principia/base/Predicate'
 import type { Refinement } from '@principia/base/Refinement'
 
 import * as E from '@principia/base/Either'
-import { flow, pipe } from '@principia/base/function'
+import { flow, identity, pipe } from '@principia/base/function'
 import * as HKT from '@principia/base/HKT'
 import * as P from '@principia/base/prelude'
 
@@ -112,7 +112,7 @@ export function andThenTraversal<A, B, C, D>(
 
 export function id<S, T>(): PLens<S, T, S, T> {
   return PLens({
-    get: P.identity,
+    get: identity,
     replace_: (_, t) => t
   })
 }

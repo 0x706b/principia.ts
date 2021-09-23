@@ -9,8 +9,8 @@ import type { ReadonlyRecord } from './Record'
 import * as A from './Array/core'
 import * as Eq from './Eq'
 import * as Ev from './Eval'
+import { pipe } from './function'
 import * as G from './Guard'
-import { pipe } from './prelude'
 import * as P from './prelude'
 import * as R from './Record'
 import * as S from './Show'
@@ -456,7 +456,7 @@ export function getGuard<P extends Record<string, G.AnyUGuard>>(
   properties: P
 ): G.Guard<unknown, { [K in keyof P]: G.TypeOf<P[K]> }>
 export function getGuard(properties: Record<string, G.AnyUGuard>): G.Guard<unknown, Record<string, any>> {
-  return P.pipe(R.UnknownRecordGuard, G.compose(getKeysGuard(properties)), G.compose(getStrictGuard(properties)))
+  return pipe(R.UnknownRecordGuard, G.compose(getKeysGuard(properties)), G.compose(getStrictGuard(properties)))
 }
 
 export function getStrictPartialGuard<P extends Record<string, G.AnyGuard>>(
@@ -480,7 +480,7 @@ export function getPartialGuard<P extends Record<string, G.Guard<unknown, any>>>
   properties: P
 ): G.Guard<unknown, Partial<{ [K in keyof P]: G.TypeOf<P[K]> }>>
 export function getPartialGuard(properties: Record<string, G.AnyUGuard>): G.Guard<unknown, any> {
-  return P.pipe(R.UnknownRecordGuard, G.compose(getStrictPartialGuard(properties)))
+  return pipe(R.UnknownRecordGuard, G.compose(getStrictPartialGuard(properties)))
 }
 
 export function getIntersectionGuard<M extends NonEmptyArray<G.Guard<any, Record<string, any>>>>(

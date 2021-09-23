@@ -15,6 +15,7 @@ import * as G from './Guard'
 import * as E from './internal/Either'
 import * as O from './internal/Option'
 import * as T from './internal/These'
+import { tuple } from './internal/tuple'
 import * as P from './prelude'
 import { tailRec_ } from './TailRec'
 
@@ -217,7 +218,7 @@ export function alignWith<A, B, C>(fb: Option<B>, f: (_: These<A, B>) => C): (fa
 }
 
 export function align_<A, B>(fa: Option<A>, fb: Option<B>): Option<These<A, B>> {
-  return alignWith_(fa, fb, P.identity)
+  return alignWith_(fa, fb, identity)
 }
 
 export function align<B>(fb: Option<B>): <A>(fa: Option<A>) => Option<These<A, B>> {
@@ -287,7 +288,7 @@ export function catchAll<B>(f: () => Option<B>): <A>(fa: Option<A>) => Option<A 
 export function catchSome_<A, B>(fa: Option<A>, f: () => Option<Option<B>>): Option<A | B> {
   return catchAll_(
     fa,
-    P.flow(
+    flow(
       f,
       getOrElse((): Option<A | B> => fa)
     )
@@ -326,7 +327,7 @@ export function either<A>(fa: Option<A>): Option<Either<void, A>> {
  * @since 1.0.0
  */
 export function cross_<A, B>(fa: Option<A>, fb: Option<B>): Option<readonly [A, B]> {
-  return crossWith_(fa, fb, P.tuple)
+  return crossWith_(fa, fb, tuple)
 }
 
 /**
@@ -425,8 +426,8 @@ export function liftA2<A, B, C>(f: (a: A) => (b: B) => C): (fa: Option<A>) => (f
 export function separate<A, B>(fa: Option<Either<A, B>>): readonly [Option<A>, Option<B>] {
   return pipe(
     fa,
-    map((eb) => P.tuple(getLeft(eb), getRight(eb))),
-    getOrElse(() => P.tuple(none(), none()))
+    map((eb) => tuple(getLeft(eb), getRight(eb))),
+    getOrElse(() => tuple(none(), none()))
   )
 }
 
@@ -473,7 +474,7 @@ export function extend<A, B>(f: (wa: Option<A>) => B): (wa: Option<A>) => Option
 /**
  */
 export function duplicate<A>(wa: Option<A>): Option<Option<A>> {
-  return extend_(wa, P.identity)
+  return extend_(wa, identity)
 }
 
 /*
@@ -636,7 +637,7 @@ export function chain<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<B
  */
 export function tap_<A, B>(ma: Option<A>, f: (a: A) => Option<B>): Option<A> {
   return chain_(ma, (a) =>
-    P.pipe(
+    pipe(
       f(a),
       map(() => a)
     )
@@ -661,7 +662,7 @@ export function tap<A, B>(f: (a: A) => Option<B>): (ma: Option<A>) => Option<A> 
  * @since 1.0.0
  */
 export function flatten<A>(mma: Option<Option<A>>): Option<A> {
-  return chain_(mma, P.identity)
+  return chain_(mma, identity)
 }
 
 /*
@@ -826,10 +827,10 @@ export const partitionMapA_: P.PartitionMapAFn_<URI> = (A) => (wa, f) =>
     map(
       flow(
         f,
-        A.map((e) => P.tuple(getLeft(e), getRight(e)))
+        A.map((e) => tuple(getLeft(e), getRight(e)))
       )
     ),
-    getOrElse(() => A.pure(P.tuple(none(), none())))
+    getOrElse(() => A.pure(tuple(none(), none())))
   )
 
 export const partitionMapA: P.PartitionMapAFn<URI> = (A) => (f) => (wa) => partitionMapA_(A)(wa, f)

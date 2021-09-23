@@ -3,13 +3,13 @@ import type * as HKT from '../HKT'
 import type { AsyncURI } from '../Modules'
 import type { Option } from '../Option'
 import type { Stack } from '../util/support/Stack'
-import type * as Z from '../util/Zipped'
 
 import * as A from '../Array/core'
 import * as C from '../Cause/core'
 import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
 import * as Ex from '../Exit/core'
+import { flow, identity, pipe, unsafeCoerce } from '../function'
 import { genF, GenHKT } from '../Gen'
 import { isTag, mergeEnvironments } from '../Has'
 import * as L from '../List/core'
@@ -17,6 +17,7 @@ import * as O from '../Option'
 import { isOption } from '../Option'
 import * as P from '../prelude'
 import * as R from '../Record'
+import { tuple } from '../tuple'
 import { makeStack } from '../util/support/Stack'
 
 /*
@@ -263,7 +264,7 @@ export function async<E, A>(
         const maybeOnInterrupt = register(resolve, reject)
         maybeOnInterrupt && onInterrupt(maybeOnInterrupt)
       }),
-    (error) => P.unsafeCoerce(error)
+    (error) => unsafeCoerce(error)
   )
 }
 
@@ -320,7 +321,7 @@ export function matchAsync<E, A, R1, E1, A1, R2, E2, A2>(
 }
 
 export function match_<R, E, A, B, C>(async: Async<R, E, A>, f: (e: E) => B, g: (a: A) => C): Async<R, never, B | C> {
-  return matchAsync_(async, P.flow(f, succeed), P.flow(g, succeed))
+  return matchAsync_(async, flow(f, succeed), flow(g, succeed))
 }
 
 export function match<E, A, B, C>(
@@ -388,7 +389,7 @@ export function crossPar_<R, E, A, R1, E1, A1>(
   fa: Async<R, E, A>,
   fb: Async<R1, E1, A1>
 ): Async<R & R1, E | E1, readonly [A, A1]> {
-  return crossWithPar_(fa, fb, P.tuple)
+  return crossWithPar_(fa, fb, tuple)
 }
 
 export function crossPar<R1, E1, A1>(
@@ -471,7 +472,7 @@ export function cross_<R, E, A, R1, E1, A1>(
   fa: Async<R, E, A>,
   fb: Async<R1, E1, A1>
 ): Async<R & R1, E | E1, readonly [A, A1]> {
-  return crossWith_(fa, fb, P.tuple)
+  return crossWith_(fa, fb, tuple)
 }
 
 export function cross<R1, E1, A1>(
@@ -535,7 +536,7 @@ export function crossSecond<R1, E1, A1>(
  */
 
 export function mapError_<R, E, A, B>(pab: Async<R, E, A>, f: (e: E) => B): Async<R, B, A> {
-  return matchAsync_(pab, P.flow(f, fail), succeed)
+  return matchAsync_(pab, flow(f, fail), succeed)
 }
 
 export function mapError<E, B>(f: (e: E) => B): <R, A>(pab: Async<R, E, A>) => Async<R, B, A> {
@@ -543,7 +544,7 @@ export function mapError<E, B>(f: (e: E) => B): <R, A>(pab: Async<R, E, A>) => A
 }
 
 export function bimap_<R, E, A, B, C>(pab: Async<R, E, A>, f: (e: E) => B, g: (a: A) => C): Async<R, B, C> {
-  return matchAsync_(pab, P.flow(f, fail), P.flow(g, succeed))
+  return matchAsync_(pab, flow(f, fail), flow(g, succeed))
 }
 
 export function bimap<E, A, B, C>(f: (e: E) => B, g: (a: A) => C): <R>(pab: Async<R, E, A>) => Async<R, B, C> {
@@ -593,7 +594,7 @@ export function chain<A, Q, D, B>(f: (a: A) => Async<Q, D, B>): <R, E>(ma: Async
 }
 
 export function flatten<R, E, R1, E1, A>(mma: Async<R, E, Async<R1, E1, A>>): Async<R & R1, E | E1, A> {
-  return chain_(mma, P.identity)
+  return chain_(mma, identity)
 }
 
 export function tap_<R, E, A, Q, D, B>(ma: Async<R, E, A>, f: (a: A) => Async<Q, D, B>): Async<Q & R, D | E, A> {
@@ -632,7 +633,7 @@ export function asks<R, A>(f: (_: R) => A): Async<R, never, A> {
 }
 
 export function ask<R>(): Async<R, never, R> {
-  return asks(P.identity)
+  return asks(identity)
 }
 
 export function giveAll_<R, E, A>(ra: Async<R, E, A>, env: R): Async<unknown, E, A> {
@@ -898,7 +899,7 @@ export function ensuring<R1>(finalizer: Async<R1, never, void>): <R, E, A>(ma: A
 }
 
 export function result<R, E, A>(ma: Async<R, E, A>): Async<R, never, Exit<E, A>> {
-  return matchCauseAsync_(ma, P.flow(Ex.failCause, succeed), P.flow(Ex.succeed, succeed))
+  return matchCauseAsync_(ma, flow(Ex.failCause, succeed), flow(Ex.succeed, succeed))
 }
 
 /*
@@ -1095,7 +1096,7 @@ export function runPromiseExitEnv_<R, E, A>(
             break
           }
           case AsyncTag.Give: {
-            current = P.pipe(
+            current = pipe(
               succeedLazy(() => {
                 pushEnv(I.env)
               }),
@@ -1330,7 +1331,7 @@ const adapter: {
   <R, E, A>(_: Async<R, E, A>): GenHKT<Async<R, E, A>, A>
 } = (_: any, __?: any) => {
   if (isTag(_)) {
-    return new GenHKT(asksService(_)(P.identity))
+    return new GenHKT(asksService(_)(identity))
   }
   if (E.isEither(_)) {
     return new GenHKT(_._tag === 'Left' ? fail(_.left) : succeed(_.right))

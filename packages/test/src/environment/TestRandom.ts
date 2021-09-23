@@ -9,6 +9,7 @@ import type { ArrayInt } from '@principia/base/util/pure-rand/distribution/inter
 
 import { Byte } from '@principia/base/Byte'
 import { IllegalArgumentError } from '@principia/base/Error'
+import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import { intersect } from '@principia/base/HeterogeneousRecord'
 import * as I from '@principia/base/IO'
@@ -18,7 +19,6 @@ import { RandomTag } from '@principia/base/IO/Random'
 import * as Ref from '@principia/base/IO/Ref'
 import * as Li from '@principia/base/List'
 import * as O from '@principia/base/Option'
-import { pipe } from '@principia/base/prelude'
 import { Mash } from '@principia/base/util/Mash'
 import { ImmutableQueue } from '@principia/base/util/support/ImmutableQueue'
 

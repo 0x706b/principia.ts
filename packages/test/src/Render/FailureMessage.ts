@@ -8,10 +8,10 @@ import type { Option } from '@principia/base/Option'
 
 import * as A from '@principia/base/Array'
 import * as Ev from '@principia/base/Eval'
+import { pipe } from '@principia/base/function'
 import * as C from '@principia/base/IO/Cause'
 import * as L from '@principia/base/List'
 import * as O from '@principia/base/Option'
-import { pipe } from '@principia/base/prelude'
 import { BLUE, CYAN, RED, YELLOW } from '@principia/base/util/AnsiFormat'
 
 import * as BA from '../FreeBooleanAlgebra'

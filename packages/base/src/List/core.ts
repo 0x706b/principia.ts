@@ -15,8 +15,9 @@ import type { Predicate } from '../Predicate'
 import type { Refinement } from '../Refinement'
 import type { These } from '../These'
 
-import { identity } from '../function'
+import { identity, unsafeCoerce } from '../function'
 import * as HKT from '../HKT'
+import { tuple } from '../internal/tuple'
 import * as O from '../Option'
 import * as P from '../prelude'
 import * as Equ from '../Structural/Equatable'
@@ -399,7 +400,7 @@ export function alignWith<A, B, C>(fb: List<B>, f: (_: These<A, B>) => C): (fa: 
  * @since 1.0.0
  */
 export function align_<A, B>(fa: List<A>, fb: List<B>): List<These<A, B>> {
-  return alignWith_(fa, fb, P.identity)
+  return alignWith_(fa, fb, identity)
 }
 
 /**
@@ -477,7 +478,7 @@ export function crossWith<A, B, C>(fb: List<B>, f: (a: A, b: B) => C): (fa: List
 }
 
 export function cross_<A, B>(fa: List<A>, fb: List<B>): List<readonly [A, B]> {
-  return crossWith_(fa, fb, P.tuple)
+  return crossWith_(fa, fb, tuple)
 }
 
 export function cross<B>(fb: List<B>): <A>(fa: List<A>) => List<readonly [A, B]> {
@@ -1076,7 +1077,7 @@ export function concat<A>(xs: List<A>): (ys: List<A>) => List<A> {
  * @complexity O(log(n))
  */
 export function concatW_<A, B>(as: List<A>, bs: List<B>): List<A | B> {
-  return concat_(as, P.unsafeCoerce(bs))
+  return concat_(as, unsafeCoerce(bs))
 }
 
 /**

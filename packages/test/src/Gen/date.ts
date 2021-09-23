@@ -1,7 +1,7 @@
 import type { Has } from '@principia/base/Has'
 import type { Random } from '@principia/base/IO/Random'
 
-import { pipe } from '@principia/base/prelude'
+import { pipe } from '@principia/base/function'
 
 import * as G from './core'
 

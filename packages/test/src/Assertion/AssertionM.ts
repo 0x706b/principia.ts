@@ -1,7 +1,7 @@
 import type { Render } from '../Render'
 import type { AssertionValue } from './AssertionValue'
 
-import { isObject } from '@principia/base/prelude'
+import { isObject } from '@principia/base/util/predicates'
 
 import * as BA from '../FreeBooleanAlgebra'
 import { infix, param, quoted } from '../Render'

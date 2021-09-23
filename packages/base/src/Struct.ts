@@ -8,7 +8,7 @@ import type { ReadonlyRecord } from './Record'
 
 import * as A from './Array/core'
 import * as HR from './HeterogeneousRecord'
-import { isObject } from './prelude'
+import { isObject } from './util/predicates'
 
 export const StructTypeId = Symbol.for('@principia/base/Struct')
 export type StructTypeId = typeof StructTypeId

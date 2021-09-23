@@ -2,12 +2,14 @@ import type { Either } from '../Either'
 import type * as HKT from '../HKT'
 import type { IterableURI } from '../Modules'
 import type { Option } from '../Option'
+import type * as P from '../prelude'
 
 import * as Ev from '../Eval/core'
+import { identity } from '../function'
 import * as E from '../internal/Either'
 import * as It from '../internal/Iterable'
 import * as O from '../Option'
-import * as P from '../prelude'
+import { tuple } from '../tuple'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -54,7 +56,7 @@ export function crossWith<A, B, C>(fb: Iterable<B>, f: (a: A, b: B) => C): (fa: 
 }
 
 export function cross_<A, B>(fa: Iterable<A>, fb: Iterable<B>): Iterable<readonly [A, B]> {
-  return crossWith_(fa, fb, P.tuple)
+  return crossWith_(fa, fb, tuple)
 }
 
 export function cross<B>(fb: Iterable<B>): <A>(fa: Iterable<A>) => Iterable<readonly [A, B]> {
@@ -188,7 +190,7 @@ export function partition_<A>(
   fa: Iterable<A>,
   predicate: P.PredicateWithIndex<number, A>
 ): readonly [Iterable<A>, Iterable<A>] {
-  return P.tuple(
+  return tuple(
     iterable(function* () {
       let i = 0
       for (const value of fa) {
@@ -226,7 +228,7 @@ export function partitionMap_<A, B, C>(
   fa: Iterable<A>,
   f: (a: A, i: number) => Either<B, C>
 ): readonly [Iterable<B>, Iterable<C>] {
-  return P.tuple(
+  return tuple(
     iterable(function* () {
       const mapped   = map_(fa, f)
       const iterator = mapped[Symbol.iterator]()
@@ -356,7 +358,7 @@ export function chain_<A, B>(ma: Iterable<A>, f: (a: A) => Iterable<B>): Iterabl
 }
 
 export function flatten<A>(mma: Iterable<Iterable<A>>): Iterable<A> {
-  return chain_(mma, P.identity)
+  return chain_(mma, identity)
 }
 
 /*

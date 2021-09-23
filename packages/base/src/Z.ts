@@ -13,11 +13,13 @@ import * as A from './Array/core'
 import * as C from './Chunk/core'
 import * as E from './Either'
 import * as FS from './FreeSemiring'
+import { flow, identity, pipe } from './function'
 import * as I from './Iterable/core'
 import * as L from './List/core'
 import * as O from './Option'
-import { flow, isObject } from './prelude'
 import * as P from './prelude'
+import { tuple } from './tuple'
+import { isObject } from './util/predicates'
 import { makeStack } from './util/support/Stack'
 
 /*
@@ -218,7 +220,7 @@ type Concrete =
  */
 
 export function deferTry<W, S1, S2, R, E, A>(ma: () => Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, unknown, A> {
-  return new DeferPartial(ma, P.identity)
+  return new DeferPartial(ma, identity)
 }
 
 export function deferTryCatch_<W, S1, S2, R, E, A, E1>(
@@ -239,7 +241,7 @@ export function defer<W, S1, S2, R, E, A>(ma: () => Z<W, S1, S2, R, E, A>): Z<W,
 }
 
 function _try<A>(effect: () => A): Z<never, unknown, never, unknown, unknown, A> {
-  return new EffectPartial(effect, P.identity)
+  return new EffectPartial(effect, identity)
 }
 
 export { _try as try }
@@ -316,12 +318,12 @@ export function modify<S1, S2, A>(f: (s: S1) => readonly [A, S2]): Z<never, S1, 
 export function modifyEither<S1, S2, E, A>(
   f: (s: S1) => E.Either<E, readonly [A, S2]>
 ): Z<never, S1, S2, unknown, E, A> {
-  return P.pipe(
+  return pipe(
     get<S1>(),
     map(f),
     chain(
       E.match(fail, ([a, s2]) =>
-        P.pipe(
+        pipe(
           succeed(a),
           mapState(() => s2)
         )
@@ -361,7 +363,7 @@ export function gets<S, A>(f: (s: S) => A): Z<never, S, S, unknown, never, A> {
 }
 
 export function getsZ<S, W, R, E, A>(f: (s: S) => Z<W, S, S, R, E, A>): Z<W, S, S, R, E, A> {
-  return P.pipe(get<S>(), chain(f))
+  return pipe(get<S>(), chain(f))
 }
 
 /**
@@ -483,12 +485,12 @@ export function matchCauseZ_<W, S1, S2, R, E, A, W1, S0, S3, R1, E1, B, W2, S4, 
   return matchLogCauseZ_(
     fa,
     (ws, e) =>
-      P.pipe(
+      pipe(
         onFailure(e),
         censor((w1s) => C.concatW_(ws, w1s))
       ),
     (ws, a) =>
-      P.pipe(
+      pipe(
         onSuccess(a),
         censor((w2s) => C.concatW_(ws, w2s))
       )
@@ -529,7 +531,7 @@ export function matchZ_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E
   onFailure: (e: E) => Z<W1, S5, S3, R1, E1, B>,
   onSuccess: (a: A) => Z<W2, S2, S4, R2, E2, C>
 ): Z<W | W1 | W2, S1 & S5, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
-  return matchCauseZ_(fa, P.flow(FS.first, onFailure), onSuccess)
+  return matchCauseZ_(fa, flow(FS.first, onFailure), onSuccess)
 }
 
 /**
@@ -620,7 +622,7 @@ export function cross_<W, S, R, E, A, R1, E1, B>(
   fa: Z<W, S, S, R, E, A>,
   fb: Z<W, S, S, R1, E1, B>
 ): Z<W, S, S, R & R1, E | E1, readonly [A, B]> {
-  return crossWith_(fa, fb, P.tuple)
+  return crossWith_(fa, fb, tuple)
 }
 
 export function cross<W, S, R1, E1, B>(
@@ -633,7 +635,7 @@ export function crossPar_<W, S, R, E, A, R1, E1, B>(
   fa: Z<W, S, S, R, E, A>,
   fb: Z<W, S, S, R1, E1, B>
 ): Z<W, S, S, R & R1, E | E1, readonly [A, B]> {
-  return crossWithPar_(fa, fb, P.tuple)
+  return crossWithPar_(fa, fb, tuple)
 }
 
 export function crossPar<W, S, R1, E1, B>(
@@ -662,11 +664,11 @@ export function crossWithPar_<W, S, R, E, A, R1, E1, B, C>(
   fb: Z<W, S, S, R1, E1, B>,
   f: (a: A, b: B) => C
 ): Z<W, S, S, R & R1, E | E1, C> {
-  return P.pipe(
+  return pipe(
     fa,
     matchCauseZ(
       (c1) =>
-        P.pipe(
+        pipe(
           fb,
           matchCauseZ(
             (c2) => failCause(FS.both(c1, c2)),
@@ -766,7 +768,7 @@ export function zip_<W, S1, S2, R, E, A, W1, S3, Q, D, B>(
   fa: Z<W, S1, S2, R, E, A>,
   fb: Z<W1, S2, S3, Q, D, B>
 ): Z<W | W1, S1, S3, Q & R, D | E, readonly [A, B]> {
-  return zipWith_(fa, fb, P.tuple)
+  return zipWith_(fa, fb, tuple)
 }
 
 export function zip<W1, S2, S3, Q, D, B>(
@@ -923,7 +925,7 @@ export function tap<S2, A, W1, S3, R1, E1, B>(
 export function flatten<W, S1, S2, R, E, A, W1, S3, R1, E1>(
   mma: Z<W, S1, S2, R, E, Z<W1, S2, S3, R1, E1, A>>
 ): Z<W | W1, S1, S3, R1 & R, E1 | E, A> {
-  return chain_(mma, P.identity)
+  return chain_(mma, identity)
 }
 
 /*
@@ -1054,7 +1056,7 @@ export function listens_<W, S1, S2, R, E, A, B>(
   wa: Z<W, S1, S2, R, E, A>,
   f: (l: C.Chunk<W>) => B
 ): Z<W, S1, S2, R, E, readonly [A, B]> {
-  return P.pipe(
+  return pipe(
     wa,
     listen,
     map(([a, ws]) => [a, f(ws)])
@@ -1648,7 +1650,7 @@ export function runStateResult<S1>(s: S1): <W, S2, A>(ma: Z<W, S1, S2, unknown, 
  * Runs this computation returning either the result or error
  */
 export function runEither<E, A>(ma: Z<never, unknown, unknown, unknown, E, A>): E.Either<E, A> {
-  return P.pipe(
+  return pipe(
     runAll_(ma, {} as never)[1],
     E.map(([, x]) => x),
     E.mapLeft(FS.first)
@@ -1766,7 +1768,7 @@ export const MonadState = P.MonadState<URI, V>({
 })
 
 export const ReaderCategory = P.Category<RCURI, V>({
-  id: () => asks(P.identity),
+  id: () => asks(identity),
   andThen_,
   compose_
 })

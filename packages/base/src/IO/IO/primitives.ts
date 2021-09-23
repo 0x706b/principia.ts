@@ -13,7 +13,7 @@ import type { FiberRef } from '../FiberRef'
 import type { Scope } from '../Scope'
 import type { Supervisor } from '../Supervisor'
 
-import { isObject } from '../../prelude'
+import { isObject } from '../../util/predicates'
 import { Halt } from '../Cause'
 
 /*

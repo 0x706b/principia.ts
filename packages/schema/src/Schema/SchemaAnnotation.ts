@@ -1,7 +1,7 @@
 import type { Equatable, Hashable } from '@principia/base/Structural'
 
-import { isObject } from '@principia/base/prelude'
 import * as St from '@principia/base/Structural'
+import { isObject } from '@principia/base/util/predicates'
 
 export const SchemaAnnotationTypeId = Symbol()
 export type SchemaAnnotationTypeId = typeof SchemaAnnotationTypeId

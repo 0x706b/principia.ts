@@ -1,7 +1,9 @@
 import type * as HKT from './HKT'
 import type { ReaderCategoryURI, ReaderURI } from './Modules'
 
+import { flow, identity } from './function'
 import * as P from './prelude'
+import { tuple } from './tuple'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -28,7 +30,7 @@ export type CV = HKT.V<'I', '-'>
  */
 
 export function ask<R>(): Reader<R, R> {
-  return P.identity
+  return identity
 }
 
 export function asks<R, A>(f: (r: R) => A): Reader<R, A> {
@@ -108,7 +110,7 @@ export function crossSecond<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) 
 }
 
 export function cross_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, readonly [A, B]> {
-  return crossWith_(fa, fb, P.tuple)
+  return crossWith_(fa, fb, tuple)
 }
 
 export function cross<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, readonly [A, B]> {
@@ -136,7 +138,7 @@ export function crossWith<A, R1, B, C>(
  */
 
 export function andThen_<A, B, C>(ab: Reader<A, B>, bc: Reader<B, C>): Reader<A, C> {
-  return P.flow(ab, bc)
+  return flow(ab, bc)
 }
 
 export function andThen<B, C>(bc: Reader<B, C>): <A>(ab: Reader<A, B>) => Reader<A, C> {
@@ -152,7 +154,7 @@ export function compose<A, B>(ab: Reader<A, B>): <C>(bc: Reader<B, C>) => Reader
 }
 
 export function id<R>(): Reader<R, R> {
-  return P.identity
+  return identity
 }
 
 /*
@@ -162,7 +164,7 @@ export function id<R>(): Reader<R, R> {
  */
 
 export function map_<R, A, B>(fa: Reader<R, A>, f: (a: A) => B): Reader<R, B> {
-  return P.flow(fa, f)
+  return flow(fa, f)
 }
 
 export function map<A, B>(f: (a: A) => B): <R>(fa: Reader<R, A>) => Reader<R, B> {
@@ -206,7 +208,7 @@ export function tap<A, R1, B>(f: (a: A) => Reader<R1, B>): <R>(ma: Reader<R, A>)
  */
 
 export function dimap_<R, A, Q, B>(pa: Reader<R, A>, f: (q: Q) => R, g: (a: A) => B): Reader<Q, B> {
-  return P.flow(f, pa, g)
+  return flow(f, pa, g)
 }
 
 export function dimap<R, A, Q, B>(f: (q: Q) => R, g: (a: A) => B): (pa: Reader<R, A>) => Reader<Q, B> {

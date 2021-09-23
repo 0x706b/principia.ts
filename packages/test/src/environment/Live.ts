@@ -2,12 +2,13 @@ import type { Has } from '@principia/base/Has'
 import type { IO } from '@principia/base/IO'
 import type { IOEnv } from '@principia/base/IO/IOEnv'
 import type { Layer } from '@principia/base/IO/Layer'
+import type * as P from '@principia/base/prelude'
 
+import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as I from '@principia/base/IO'
 import * as L from '@principia/base/IO/Layer'
 import * as M from '@principia/base/IO/Managed'
-import * as P from '@principia/base/prelude'
 
 export const LiveTag = tag<Live>()
 
@@ -33,7 +34,7 @@ export function withLive_<R, E, A, E1, B>(
   io: IO<R, E, A>,
   f: (_: IO<unknown, E, A>) => IO<IOEnv, E1, B>
 ): IO<P.Erase<R, Has<Live>>, E | E1, B> {
-  return P.pipe(
+  return pipe(
     I.ask<R & Has<Live>>(),
     I.chain((r) => Live.live(f(I.giveAll_(io, r))))
   ) as any

@@ -2,7 +2,7 @@ import type { Gen, NumberConstraints } from './core'
 import type { Has } from '@principia/base/Has'
 import type { Random } from '@principia/base/IO/Random'
 
-import { flow, identity, pipe } from '@principia/base/prelude'
+import { flow, identity, pipe } from '@principia/base/function'
 
 import * as G from './core'
 

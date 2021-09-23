@@ -4,6 +4,7 @@ import type { TheseURI } from './Modules'
 import type * as O from './Option'
 import type { Show } from './Show'
 
+import { flow, identity, pipe } from './function'
 import * as HKT from './HKT'
 import * as E from './internal/Either'
 import { none, some } from './internal/Option'
@@ -391,10 +392,10 @@ export function getTailRec<E>(SE: P.Semigroup<E>): P.TailRec<URI, HKT.Fix<'E', E
           (b) => E.right(right(b))
         ),
         (e, ab) =>
-          P.pipe(
+          pipe(
             ab,
             E.match(
-              P.flow(
+              flow(
                 f,
                 match(
                   (e1) => E.right(left(SE.combine_(e, e1))),
@@ -431,7 +432,7 @@ export const mapA: P.MapAFn<URI, V> = (AG) => {
   return (f) => (ta) => mapA__(ta, f)
 }
 
-export const sequence: P.SequenceFn<URI, V> = (AG) => mapA(AG)(P.identity)
+export const sequence: P.SequenceFn<URI, V> = (AG) => mapA(AG)(identity)
 
 /*
  * -------------------------------------------------------------------------------------------------

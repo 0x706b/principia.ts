@@ -4,8 +4,10 @@ import type { URef } from './Ref'
 import type { Semaphore } from './Semaphore'
 
 import * as E from '../Either'
+import { flow, identity, pipe } from '../function'
 import * as O from '../Option'
 import * as P from '../prelude'
+import { tuple } from '../tuple'
 import * as I from './IO/core'
 import * as M from './Managed/core'
 import * as Q from './Queue'
@@ -98,7 +100,7 @@ export class DerivedAllIO<RA, RB, EA, EB, A, B> implements RefM<RA, RB, EA, EB, 
         new DerivedAllIO<RA & RC, RB & RD, EC, ED, C, D>((f) =>
           f(
             value,
-            P.flow(getEither, I.matchIO(P.flow(eb, I.fail), bd)),
+            flow(getEither, I.matchIO(flow(eb, I.fail), bd)),
             (a) => (s) => I.chain_(ca(a), (a) => I.mapError_(setEither(a)(s), ea))
           )
         )
@@ -117,7 +119,7 @@ export class DerivedAllIO<RA, RB, EA, EB, A, B> implements RefM<RA, RB, EA, EB, 
         new DerivedAllIO<RB & RA & RC, RB & RD, EC, ED, C, D>((f) =>
           f(
             value,
-            P.flow(getEither, I.matchIO(P.flow(eb, I.fail), bd)),
+            flow(getEither, I.matchIO(flow(eb, I.fail), bd)),
             (c) => (s) =>
               I.chain_(
                 I.matchIO_(getEither(s), (e) => I.fail(ec(e)), ca(c)),
@@ -134,7 +136,7 @@ export class DerivedAllIO<RA, RB, EA, EB, A, B> implements RefM<RA, RB, EA, EB, 
 
   set(a: A): I.IO<RA, EA, void> {
     return this.use((value, _, setEither) =>
-      S.withPermit(value.semaphore)(P.pipe(value.get, I.chain(setEither(a)), I.chain(value.set)))
+      S.withPermit(value.semaphore)(pipe(value.get, I.chain(setEither(a)), I.chain(value.set)))
     )
   }
 }
@@ -161,11 +163,7 @@ export class DerivedIO<RA, RB, EA, EB, A, B> implements RefM<RA, RB, EA, EB, A, 
     return this.use(
       (value, getEither, setEither) =>
         new DerivedIO<RA & RC, RB & RD, EC, ED, C, D>((f) =>
-          f(
-            value,
-            P.flow(getEither, I.matchIO(P.flow(eb, I.fail), bd)),
-            P.flow(ca, I.chain(P.flow(setEither, I.mapError(ea))))
-          )
+          f(value, flow(getEither, I.matchIO(flow(eb, I.fail), bd)), flow(ca, I.chain(flow(setEither, I.mapError(ea)))))
         )
     )
   }
@@ -182,9 +180,9 @@ export class DerivedIO<RA, RB, EA, EB, A, B> implements RefM<RA, RB, EA, EB, A, 
         new DerivedAllIO<RB & RA & RC, RB & RD, EC, ED, C, D>((f) =>
           f(
             value,
-            P.flow(getEither, I.matchIO(P.flow(eb, I.fail), bd)),
+            flow(getEither, I.matchIO(flow(eb, I.fail), bd)),
             (c) => (s) =>
-              P.pipe(getEither(s), I.matchIO(P.flow(ec, I.fail), ca(c)), I.chain(P.flow(setEither, I.mapError(ea))))
+              pipe(getEither(s), I.matchIO(flow(ec, I.fail), ca(c)), I.chain(flow(setEither, I.mapError(ea))))
           )
         )
     )
@@ -276,7 +274,7 @@ export function unsafeMake<A>(a: A): URefM<A> {
  * `Managed.`
  */
 export function makeManaged<A>(a: A): UManaged<URefM<A>> {
-  return P.pipe(make(a), M.fromIO)
+  return pipe(make(a), M.fromIO)
 }
 
 /**
@@ -287,8 +285,8 @@ export function dequeue<A>(a: A): UIO<readonly [URefM<A>, Q.Dequeue<A>]> {
   return I.gen(function* (_) {
     const ref   = yield* _(make(a))
     const queue = yield* _(Q.makeUnbounded<A>())
-    return P.tuple(
-      P.pipe(
+    return tuple(
+      pipe(
         ref,
         tapInput((a) => Q.offer_(queue, a))
       ),
@@ -358,11 +356,11 @@ export function filterInputIO_<RA, RB, EA, EB, B, A, RC, EC, A1 extends A = A>(
   ref: RefM<RA, RB, EA, EB, A, B>,
   f: (a: A1) => I.IO<RC, EC, boolean>
 ): RefM<RA & RC, RB, O.Option<EC | EA>, EB, A1, B> {
-  return P.pipe(
+  return pipe(
     ref,
     matchIO(
       (ea) => O.some<EA | EC>(ea),
-      P.identity,
+      identity,
       (a: A1) =>
         I.ifIOLazy_(
           I.asSomeError(f(a)),
@@ -581,7 +579,7 @@ export function mapIO_<RA, RB, EA, EB, A, B, RC, EC, C>(
   ref: RefM<RA, RB, EA, EB, A, B>,
   f: (b: B) => I.IO<RC, EC, C>
 ): RefM<RA, RB & RC, EA, EB | EC, A, C> {
-  return P.pipe(ref, dimapIO(I.succeed, f))
+  return pipe(ref, dimapIO(I.succeed, f))
 }
 
 /**
@@ -627,9 +625,9 @@ export function tapInput_<RA, RB, EA, EB, B, A, RC, EC, A1 extends A = A>(
   ref: RefM<RA, RB, EA, EB, A, B>,
   f: (a: A1) => I.IO<RC, EC, any>
 ): RefM<RA & RC, RB, EA | EC, EB, A1, B> {
-  return P.pipe(
+  return pipe(
     ref,
-    contramapIO((c: A1) => P.pipe(f(c), I.as(c)))
+    contramapIO((c: A1) => pipe(f(c), I.as(c)))
   )
 }
 
@@ -651,9 +649,9 @@ export function tapOutput_<RA, RB, EA, EB, A, B, RC, EC>(
   ref: RefM<RA, RB, EA, EB, A, B>,
   f: (b: B) => I.IO<RC, EC, any>
 ): RefM<RA, RB & RC, EA, EB | EC, A, B> {
-  return P.pipe(
+  return pipe(
     ref,
-    mapIO((b) => P.pipe(f(b), I.as(b)))
+    mapIO((b) => pipe(f(b), I.as(b)))
   )
 }
 
@@ -710,7 +708,7 @@ export function dimapError_<RA, RB, A, B, EA, EB, EC, ED>(
   f: (ea: EA) => EC,
   g: (eb: EB) => ED
 ): RefM<RA, RB, EC, ED, A, B> {
-  return P.pipe(
+  return pipe(
     ref,
     match(
       (ea) => f(ea),
@@ -741,27 +739,27 @@ export function modifyIO_<RA, RB, EA, EB, R1, E1, B, A>(
   ref: RefM<RA, RB, EA, EB, A, A>,
   f: (a: A) => I.IO<R1, E1, readonly [B, A]>
 ): I.IO<RA & RB & R1, EA | EB | E1, B> {
-  return P.pipe(
+  return pipe(
     ref,
     concrete,
     P.matchTag({
       Atomic: (atomic) =>
-        P.pipe(
+        pipe(
           atomic.ref.get,
           I.chain(f),
-          I.chain(([b, a]) => P.pipe(atomic.ref.set(a), I.as(b))),
+          I.chain(([b, a]) => pipe(atomic.ref.set(a), I.as(b))),
           S.withPermit(atomic.semaphore)
         ),
       Derived: (derived) =>
         derived.use((value, getEither, setEither) =>
-          P.pipe(
+          pipe(
             value.ref.get,
             I.chain((a) =>
-              P.pipe(
+              pipe(
                 getEither(a),
                 I.chain(f),
                 I.chain(([b, a]) =>
-                  P.pipe(
+                  pipe(
                     setEither(a),
                     I.chain((a) => value.ref.set(a)),
                     I.as(b)
@@ -774,14 +772,14 @@ export function modifyIO_<RA, RB, EA, EB, R1, E1, B, A>(
         ),
       DerivedAll: (derivedAll) =>
         derivedAll.use((value, getEither, setEither) =>
-          P.pipe(
+          pipe(
             value.ref.get,
             I.chain((s) =>
-              P.pipe(
+              pipe(
                 getEither(s),
                 I.chain(f),
                 I.chain(([b, a]) =>
-                  P.pipe(
+                  pipe(
                     setEither(a)(s),
                     I.chain((a) => value.ref.set(a)),
                     I.as(b)
@@ -812,7 +810,7 @@ export function modifyIO<R1, E1, B, A>(
  * modification.
  */
 export function getAndSet_<RA, RB, EA, EB, A>(ref: RefM<RA, RB, EA, EB, A, A>, a: A): I.IO<RA & RB, EA | EB, A> {
-  return P.pipe(
+  return pipe(
     ref,
     modifyIO((v) => I.pure([v, a]))
   )
@@ -834,10 +832,10 @@ export function getAndUpdate_<RA, RB, EA, EB, R1, E1, A>(
   ref: RefM<RA, RB, EA, EB, A, A>,
   f: (a: A) => I.IO<R1, E1, A>
 ): I.IO<RA & RB & R1, EA | EB | E1, A> {
-  return P.pipe(
+  return pipe(
     ref,
     modifyIO((v) =>
-      P.pipe(
+      pipe(
         f(v),
         I.map((r) => [v, r])
       )
@@ -863,10 +861,10 @@ export function getAndUpdateSomeIO_<RA, RB, EA, EB, R1, E1, A>(
   ref: RefM<RA, RB, EA, EB, A, A>,
   f: (a: A) => O.Option<I.IO<R1, E1, A>>
 ): I.IO<RA & RB & R1, EA | EB | E1, A> {
-  return P.pipe(
+  return pipe(
     ref,
     modifyIO((v) =>
-      P.pipe(
+      pipe(
         f(v),
         O.getOrElse(() => I.pure(v)),
         I.map((r) => [v, r])
@@ -896,12 +894,12 @@ export function modifySomeIO_<RA, RB, EA, EB, R1, E1, A, B>(
   def: B,
   f: (a: A) => O.Option<I.IO<R1, E1, readonly [B, A]>>
 ): I.IO<RA & RB & R1, EA | EB | E1, B> {
-  return P.pipe(
+  return pipe(
     ref,
     modifyIO((v) =>
-      P.pipe(
+      pipe(
         f(v),
-        O.getOrElse(() => I.pure(P.tuple(def, v)))
+        O.getOrElse(() => I.pure(tuple(def, v)))
       )
     )
   )
@@ -928,10 +926,10 @@ export function updateIO_<RA, RB, EA, EB, R1, E1, A>(
   ref: RefM<RA, RB, EA, EB, A, A>,
   f: (a: A) => I.IO<R1, E1, A>
 ): I.IO<RA & RB & R1, E1 | EA | EB, void> {
-  return P.pipe(
+  return pipe(
     ref,
     modifyIO((v) =>
-      P.pipe(
+      pipe(
         f(v),
         I.map((r) => [undefined, r])
       )
@@ -955,10 +953,10 @@ export function updateAndGetIO_<RA, RB, EA, EB, R1, E1, A>(
   ref: RefM<RA, RB, EA, EB, A, A>,
   f: (a: A) => I.IO<R1, E1, A>
 ): I.IO<RA & RB & R1, E1 | EA | EB, void> {
-  return P.pipe(
+  return pipe(
     ref,
     modifyIO((v) =>
-      P.pipe(
+      pipe(
         f(v),
         I.map((r) => [r, r])
       )
@@ -983,10 +981,10 @@ export function updateSomeIO_<RA, RB, EA, EB, R1, E1, A>(
   ref: RefM<RA, RB, EA, EB, A, A>,
   f: (a: A) => O.Option<I.IO<R1, E1, A>>
 ): I.IO<RA & RB & R1, E1 | EA | EB, void> {
-  return P.pipe(
+  return pipe(
     ref,
     modifyIO((v) =>
-      P.pipe(
+      pipe(
         f(v),
         O.getOrElse(() => I.pure(v)),
         I.map((r) => [undefined, r])
@@ -1011,10 +1009,10 @@ export function updateSomeAndGetIO_<RA, RB, EA, EB, R1, E1, A>(
   ref: RefM<RA, RB, EA, EB, A, A>,
   f: (a: A) => O.Option<I.IO<R1, E1, A>>
 ): I.IO<RA & RB & R1, E1 | EA | EB, A> {
-  return P.pipe(
+  return pipe(
     ref,
     modifyIO((v) =>
-      P.pipe(
+      pipe(
         f(v),
         O.getOrElse(() => I.pure(v)),
         I.map((r) => [r, r])
@@ -1043,11 +1041,11 @@ export function collectIO_<RA, RB, EA, EB, A, B, RC, EC, C>(
   f: (b: B) => O.Option<I.IO<RC, EC, C>>
 ): RefM<RA, RB & RC, EA, O.Option<EB | EC>, A, C> {
   return ref.matchIO(
-    P.identity,
+    identity,
     (_) => O.some<EB | EC>(_),
     (_) => I.pure(_),
     (b) =>
-      P.pipe(
+      pipe(
         f(b),
         O.map((a) => I.asSomeError(a)),
         O.getOrElse(() => I.fail(O.none()))
@@ -1076,9 +1074,9 @@ export function collect_<RA, RB, EA, EB, A, B, C>(
   ref: RefM<RA, RB, EA, EB, A, B>,
   f: (b: B) => O.Option<C>
 ): RefM<RA, RB, EA, O.Option<EB>, A, C> {
-  return P.pipe(
+  return pipe(
     ref,
-    collectIO((b) => P.pipe(f(b), O.map(I.pure)))
+    collectIO((b) => pipe(f(b), O.map(I.pure)))
   )
 }
 
@@ -1104,10 +1102,10 @@ export function readOnly<RA, RB, EA, EB, A, B>(ref: RefM<RA, RB, EA, EB, A, B>):
  * Returns a read only view of the `RefM`.
  */
 export function writeOnly<RA, RB, EA, EB, A, B>(ref: RefM<RA, RB, EA, EB, A, B>): RefM<RA, RB, EA, void, A, never> {
-  return P.pipe(
+  return pipe(
     ref,
     match(
-      P.identity,
+      identity,
       (): void => undefined,
       E.right,
       () => E.left<void>(undefined)

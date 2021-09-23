@@ -5,10 +5,12 @@ import type { Option } from './Option'
 import type { Monoid, Predicate, Refinement } from './prelude'
 
 import * as E from './Either'
+import { flow, identity, pipe } from './function'
 import * as N from './number'
 import * as O from './Option'
 import * as P from './prelude'
-import { flow, isObject, pipe, tuple } from './prelude'
+import { tuple } from './tuple'
+import { isObject } from './util/predicates'
 
 type URI = [HKT.URI<RemoteDataURI>]
 
@@ -422,7 +424,7 @@ export function chain<A, E1, B>(f: (a: A) => RemoteData<E1, B>): <E>(ma: RemoteD
 }
 
 export function flatten<E, E1, A>(mma: RemoteData<E, RemoteData<E1, A>>): RemoteData<E | E1, A> {
-  return chain_(mma, P.identity)
+  return chain_(mma, identity)
 }
 
 /*
@@ -539,7 +541,7 @@ export const mapA: P.MapAFn<URI, V> = (A) => {
 
 export const sequence: P.SequenceFn<URI, V> = (A) => {
   const mapAA_ = mapA_(A)
-  return (ta) => mapAA_(ta, P.identity)
+  return (ta) => mapAA_(ta, identity)
 }
 
 /*

@@ -3,7 +3,7 @@ import type { TimestampProvider } from './internal/timestampProvider'
 import type { Subscriber } from './Subscriber'
 import type { Subscription } from './Subscription'
 
-import { isObject } from '@principia/base/prelude'
+import { isObject } from '@principia/base/util/predicates'
 
 import { dateTimestampProvider } from './internal/timestampProvider'
 

@@ -3,11 +3,11 @@ import type { Has } from '@principia/base/Has'
 import type { Random } from '@principia/base/IO/Random'
 
 import * as C from '@principia/base/Cause'
+import { pipe } from '@principia/base/function'
 import { emptyFiberId } from '@principia/base/IO/Fiber'
 import { Trace } from '@principia/base/IO/Fiber/trace'
 import * as L from '@principia/base/List'
 import * as O from '@principia/base/Option'
-import { pipe } from '@principia/base/prelude'
 
 import * as G from './core'
 

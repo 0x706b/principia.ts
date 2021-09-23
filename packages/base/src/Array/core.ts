@@ -15,6 +15,7 @@ import * as HKT from '../HKT'
 import * as _ from '../internal/Array'
 import * as E from '../internal/Either'
 import * as Th from '../internal/These'
+import { tuple } from '../internal/tuple'
 import * as NEA from '../NonEmptyArray/core'
 import * as N from '../number'
 import * as O from '../Option'
@@ -221,7 +222,7 @@ export function crossWith<A, B, C>(
  * @since 1.0.0
  */
 export function cross_<A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>): ReadonlyArray<readonly [A, B]> {
-  return crossWith_(fa, fb, P.tuple)
+  return crossWith_(fa, fb, tuple)
 }
 
 /**

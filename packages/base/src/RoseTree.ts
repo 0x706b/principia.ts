@@ -4,6 +4,7 @@ import type { RoseTreeURI } from './Modules'
 import type { Show } from './Show'
 
 import * as A from './Array/core'
+import { identity } from './function'
 import * as It from './Iterable/core'
 import * as P from './prelude'
 
@@ -166,7 +167,7 @@ export function extend<A, B>(f: (wa: RoseTree<A>) => B): (wa: RoseTree<A>) => Ro
   return (wa) => extend_(wa, f)
 }
 
-export const duplicate: <A>(wa: RoseTree<A>) => RoseTree<RoseTree<A>> = extend(P.identity)
+export const duplicate: <A>(wa: RoseTree<A>) => RoseTree<RoseTree<A>> = extend(identity)
 
 export function extract<A>(wa: RoseTree<A>): A {
   return wa.value
@@ -247,7 +248,7 @@ export function chain<A, B>(f: (a: A) => RoseTree<B>): (ma: RoseTree<A>) => Rose
   return (ma) => chain_(ma, f)
 }
 
-export const flatten: <A>(mma: RoseTree<RoseTree<A>>) => RoseTree<A> = chain(P.identity)
+export const flatten: <A>(mma: RoseTree<RoseTree<A>>) => RoseTree<A> = chain(identity)
 
 export function tap_<A, B>(ma: RoseTree<A>, f: (a: A) => RoseTree<B>): RoseTree<A> {
   return chain_(ma, (a) => map_(f(a), () => a))
@@ -312,7 +313,7 @@ export const mapA_: P.MapAFn_<URI, V> = P.implementMapA_<URI, V>()((_) => (AG) =
 
 export const mapA: P.MapAFn<URI, V> = (AG) => (f) => (ta) => mapA_(AG)(ta, f)
 
-export const sequence: P.SequenceFn<URI, V> = (AG) => (ta) => mapA_(AG)(ta, P.identity)
+export const sequence: P.SequenceFn<URI, V> = (AG) => (ta) => mapA_(AG)(ta, identity)
 
 /*
  * -------------------------------------------------------------------------------------------------

@@ -2,8 +2,10 @@ import type * as E from './Either'
 import type * as O from './Option'
 
 import * as A from './Array/core'
+import { identity } from './function'
 import { not } from './Predicate'
 import * as P from './prelude'
+import { tuple } from './tuple'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -181,7 +183,7 @@ export function isNonEmpty<A>(set: ReadonlySet<A>): boolean {
  */
 
 export function compact<A>(E: P.Eq<A>): (fa: ReadonlySet<O.Option<A>>) => ReadonlySet<A> {
-  return filterMap(E)(P.identity)
+  return filterMap(E)(identity)
 }
 
 export function separate<E, A>(
@@ -267,7 +269,7 @@ export function partition_<A>(fa: ReadonlySet<A>, predicate: P.Predicate<A>) {
       left.add(value)
     }
   }
-  return P.tuple(left, right)
+  return tuple(left, right)
 }
 
 /**
@@ -428,7 +430,7 @@ export function chain<B>(E: P.Eq<B>): <A>(f: (a: A) => ReadonlySet<B>) => (set: 
 
 export function flatten<A>(E: P.Eq<A>): (ma: ReadonlySet<ReadonlySet<A>>) => ReadonlySet<A> {
   const bindE = chain(E)
-  return bindE(P.identity)
+  return bindE(identity)
 }
 
 /*
