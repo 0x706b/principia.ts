@@ -668,7 +668,7 @@ export function fold<E, B>(
  * -------------------------------------------
  */
 
-type ContrainDecodeError<E> = E extends ParseError<any> ? E : never
+type ConstrainDecodeError<E> = E extends ParseError<any> ? E : never
 type InnerErrorOf<E> = E extends ParseError<infer U> ? U : never
 
 const vowels = ['a', 'e', 'i', 'o', 'u', 'y']
@@ -681,7 +681,7 @@ const startsWithVowel = (s: string): boolean => {
 }
 
 export function toTreeWith_<E>(
-  de: ContrainDecodeError<E>,
+  de: ConstrainDecodeError<E>,
   toTree: (e: InnerErrorOf<E>) => RoseTree<string>
 ): RoseTree<string> {
   return fold_(de, toTree, {
@@ -710,7 +710,7 @@ export function toTreeWith_<E>(
 
 export function toTreeWith<E>(
   toTree: (e: InnerErrorOf<E>) => RoseTree<string>
-): (de: ContrainDecodeError<E>) => RoseTree<string> {
+): (de: ConstrainDecodeError<E>) => RoseTree<string> {
   return (de) => toTreeWith_(de, toTree)
 }
 
