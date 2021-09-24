@@ -1,7 +1,7 @@
 import path from 'path'
 import ts from 'typescript'
 
-import { checkRegionAt, getTrace, normalize, traceChild } from './transformer-util'
+import { checkRegionAt, getTagsAndEntries, getTrace, normalize, traceChild } from './transformer-util'
 import { optimizePipe } from './unpipe'
 
 export default function rewrite(
@@ -104,26 +104,16 @@ export default function rewrite(
                 )
 
                 if (isTracing) {
-                  const entries: (readonly [string, string | undefined])[] =
-                    symbol.getJsDocTags().map((t) => [t.name, t.text?.[0].text] as const) || []
-                  const tags: Record<string, (string | undefined)[]> = {}
-
-                  for (const entry of entries) {
-                    if (!tags[entry[0]]) {
-                      tags[entry[0]] = []
-                    }
-                    tags[entry[0]].push(entry[1])
-                  }
+                  const { entries, tags } = getTagsAndEntries(symbol)
 
                   if (tags['trace'] && tags['trace'].includes('getter')) {
                     return factory.createCallExpression(tracedIdentifier, undefined, [
                       rewritten,
                       getTrace_(node.name, fileVar, 'start')
                     ])
-                  } else {
-                    return rewritten
                   }
                 }
+                return rewritten
               }
             }
           }
@@ -156,16 +146,8 @@ export default function rewrite(
                 }
 
                 if (isTracing) {
-                  const entries: (readonly [string, string | undefined])[] =
-                    signature?.getJsDocTags().map((t) => [t.name, t.text?.[0].text] as const) || []
-                  const tags: Record<string, (string | undefined)[]> = {}
+                  const { tags, entries } = getTagsAndEntries(signature)
 
-                  for (const entry of entries) {
-                    if (!tags[entry[0]]) {
-                      tags[entry[0]] = []
-                    }
-                    tags[entry[0]].push(entry[1])
-                  }
                   // x.y(z)((a) => a.b) ==> mod.y_(z)((a) => a.b)
                   const rewritten = ts.visitEachChild(
                     factory.createCallExpression(
@@ -217,6 +199,7 @@ export default function rewrite(
             (ts.isPropertyAccessExpression(node.expression) || ts.isElementAccessExpression(node.expression))
           ) {
             const signature = checker.getResolvedSignature(node)
+            const symbol    = checker.getSymbolAtLocation(node.expression)
             let isTracing   = false
             try {
               const nodeStart = sourceFile.getLineAndCharacterOfPosition(node.expression.getEnd())
@@ -226,10 +209,54 @@ export default function rewrite(
             }
 
             if (signature) {
-              const rewrite = signature
-                .getJsDocTags()
-                .map((_) => `${_.name} ${_.text?.map((_) => _.text).join(' ')}`)
-                .filter((_) => _.startsWith('rewrite'))[0]
+              const sigTags  = signature.getJsDocTags().map((_) => `${_.name} ${_.text?.map((_) => _.text).join(' ')}`)
+              const exprTags =
+                symbol?.getJsDocTags().map((_) => `${_.name} ${_.text?.map((_) => _.text).join(' ')}`) || []
+
+              const rewriteStatic = [...sigTags, ...exprTags].filter((_) => _.startsWith('rewriteStatic'))[0]
+              const rewrite       = !rewriteStatic && sigTags.filter((_) => _.startsWith('rewrite'))[0]
+
+              if (rewriteStatic) {
+                const [fn, mod] = rewriteStatic.match(/rewriteStatic (.*) from "(.*)"/)!.splice(1)
+                if (!mods.has(mod!)) {
+                  mods.set(mod!, factory.createUniqueName('module'))
+                }
+
+                if (isTracing) {
+                  const { tags, entries } = getTagsAndEntries(signature)
+
+                  const rewritten = ts.visitEachChild(
+                    factory.updateCallExpression(
+                      node,
+                      factory.createPropertyAccessExpression(mods.get(mod!)!, factory.createIdentifier(fn!)),
+                      undefined,
+                      node.arguments.map((argNode, i) => traceChild_(argNode, i, tags, traceFromIdentifier, getTrace_))
+                    ),
+                    visitor,
+                    ctx
+                  )
+
+                  if (tags['trace'] && tags['trace'].includes('call')) {
+                    return factory.createCallExpression(tracedIdentifier, undefined, [
+                      rewritten,
+                      getTrace_(node.expression, fileVar, 'end')
+                    ])
+                  } else {
+                    return rewritten
+                  }
+                } else {
+                  return ts.visitEachChild(
+                    factory.updateCallExpression(
+                      node,
+                      factory.createPropertyAccessExpression(mods.get(mod!)!, factory.createIdentifier(fn!)),
+                      undefined,
+                      node.arguments
+                    ),
+                    visitor,
+                    ctx
+                  )
+                }
+              }
 
               if (rewrite) {
                 const [fn, mod] = rewrite.match(/rewrite (.*) from "(.*)"/)!.splice(1)
@@ -250,16 +277,7 @@ export default function rewrite(
                 }
 
                 if (isTracing) {
-                  const entries: (readonly [string, string | undefined])[] =
-                    signature?.getJsDocTags().map((t) => [t.name, t.text?.[0].text] as const) || []
-                  const tags: Record<string, (string | undefined)[]> = {}
-
-                  for (const entry of entries) {
-                    if (!tags[entry[0]]) {
-                      tags[entry[0]] = []
-                    }
-                    tags[entry[0]].push(entry[1])
-                  }
+                  const { tags, entries } = getTagsAndEntries(signature)
 
                   const rewritten = ts.visitEachChild(
                     factory.createCallExpression(

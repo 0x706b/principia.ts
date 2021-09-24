@@ -69,7 +69,7 @@ export const traceChild =
   (
     argNode: ts.Expression,
     argIndex: number,
-    tags: Record<string, (string | undefined)[]>,
+    tags: Record<string, ReadonlyArray<string | undefined>>,
     traceFromIdentifier: ts.PropertyAccessExpression,
     getTrace: (node: ts.Node, fileVar: ts.Identifier, pos: 'start' | 'end') => ts.BinaryExpression
   ): ts.Expression => {
@@ -136,4 +136,21 @@ export function getOptimizeTags(checker: ts.TypeChecker, node: ts.CallExpression
       .reduce((flatten, entry) => flatten.concat(entry), []) || []
 
   return new Set([...optimizeTagsMain, ...(optimizeTagsOverload || [])])
+}
+
+export function getTagsAndEntries(signature: ts.Signature | ts.Symbol | undefined): {
+  entries: ReadonlyArray<readonly [string, string | undefined]>
+  tags: Record<string, ReadonlyArray<string | undefined>>
+} {
+  const entries: (readonly [string, string | undefined])[] =
+    signature?.getJsDocTags().map((t) => [t.name, t.text?.[0].text] as const) || []
+  const tags: Record<string, (string | undefined)[]> = {}
+
+  for (const entry of entries) {
+    if (!tags[entry[0]]) {
+      tags[entry[0]] = []
+    }
+    tags[entry[0]].push(entry[1])
+  }
+  return { entries, tags }
 }
