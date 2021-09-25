@@ -27,6 +27,8 @@ import type {
 } from '@principia/base/prelude'
 import type { Sync } from '@principia/base/Sync'
 
+/* eslint typescript-sort-keys/interface: "error" */
+
 declare global {
   export const IO: IOStaticOps
   export interface IO<R, E, A> extends I.IO<R, E, A> {}
@@ -1061,6 +1063,16 @@ declare module '@principia/base/IO/IO/primitives' {
     chainError<R, E, A, R1, E1>(this: I.IO<R, E, A>, f: (e: E) => I.IO<R1, never, E1>): I.IO<R & R1, E1, A>
 
     /**
+     * @rewrite chainS_ from "@principia/base/IO"
+     * @trace 2
+     */
+    chainS<R, E, A, N extends string, R1, E1, A1>(
+      this: I.IO<R, E, A>,
+      name: Exclude<N, keyof A>,
+      f: (_: A) => I.IO<R1, E1, A1>
+    ): I.IO<R & R1, E | E1, { [K in keyof A | N]: K extends keyof A ? A[K] : A1 }>
+
+    /**
      * @rewrite compose_ from "@principia/base/IO"
      * @trace call
      */
@@ -1212,16 +1224,16 @@ declare module '@principia/base/IO/IO/primitives' {
     get<R, E, A>(this: IO<R, E, Option<A>>): IO<R, Option<E>, A>
 
     /**
-     * @rewrite give_ from "@principia/base/IO"
-     * @trace call
-     */
-    give<R0, E, A, R>(this: I.IO<R0, E, A>, r: R): I.IO<Erase<R0, R>, E, A>
-
-    /**
      * @rewrite giveLayer_ from "@principia/base/IO"
      * @trace call
      */
     give<R, E, A, R1, E1, A1>(this: I.IO<R, E, A>, layer: L.Layer<R1, E1, A1>): I.IO<Erase<R, A1> & R1, E | E1, A>
+
+    /**
+     * @rewrite give_ from "@principia/base/IO"
+     * @trace call
+     */
+    give<R0, E, A, R>(this: I.IO<R0, E, A>, r: R): I.IO<Erase<R0, R>, E, A>
 
     /**
      * @rewrite giveAll_ from "@principia/base/IO"
@@ -1534,6 +1546,16 @@ declare module '@principia/base/IO/IO/primitives' {
      * @trace getter
      */
     parallelErrors: I.IO<R, ReadonlyArray<E>, A>
+
+    /**
+     * @rewrite pureS_ from "@principia/base/IO"
+     * @trace 2
+     */
+    pureS<R, E, A, N extends string, A1>(
+      this: I.IO<R, E, A>,
+      name: Exclude<N, keyof A>,
+      f: (_: A) => A1
+    ): I.IO<R, E, { [K in keyof A | N]: K extends keyof A ? A[K] : A1 }>
 
     /**
      * @rewrite race_ from "@principia/base/IO"
@@ -1857,6 +1879,12 @@ declare module '@principia/base/IO/IO/primitives' {
     toManaged<R, E, A, R1>(this: I.IO<R, E, A>, release: (a: A) => I.IO<R1, never, any>): Managed<R & R1, E, A>
 
     /**
+     * @rewrite toS_ from "@principia/base/IO"
+     * @trace call
+     */
+    toS<R, E, A, N extends string>(this: I.IO<R, E, A>, name: N): I.IO<R, E, { [K in N]: A }>
+
+    /**
      * @rewrite tryOrElse_ from "@principia/base/IO"
      * @trace 0
      * @trace 1
@@ -1898,8 +1926,8 @@ declare module '@principia/base/IO/IO/primitives' {
      */
     unrefineWith<R, E, A, E1, E2>(
       this: I.IO<R, E, A>,
-      pf: (u: unknown) => Option<E1>,
-      f: (e: E) => E2
+      f: (_: unknown) => Option<E1>,
+      g: (e: E) => E2
     ): I.IO<R, E1 | E2, A>
 
     /**
@@ -1909,8 +1937,8 @@ declare module '@principia/base/IO/IO/primitives' {
      */
     unrefineWith<R, E, A, E1, E2>(
       this: I.IO<R, E, A>,
-      f: (_: unknown) => Option<E1>,
-      g: (e: E) => E2
+      pf: (u: unknown) => Option<E1>,
+      f: (e: E) => E2
     ): I.IO<R, E1 | E2, A>
 
     /**
@@ -1949,13 +1977,11 @@ declare module '@principia/base/IO/IO/primitives' {
      * @trace getter
      */
     zipEnvFirst: I.IO<R, E, readonly [R, A]>
-
     /**
      * @rewriteGetter zipEnvSecond from "@principia/base/IO"
      * @trace getter
      */
     zipEnvSecond: I.IO<R, E, readonly [A, R]>
-
     /**
      * @rewrite join_ from "@principia/base/IO"
      * @trace call

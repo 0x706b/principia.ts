@@ -1,4 +1,5 @@
 import type { Byte } from '@principia/base/Byte'
+import type * as C from '@principia/base/Chunk'
 import type { Either } from '@principia/base/Either'
 import type * as HKT from '@principia/base/HKT'
 import type { IO } from '@principia/base/IO'
@@ -8,6 +9,134 @@ import type { Refinement, RefinementWithIndex } from '@principia/base/Refinement
 import type { These } from '@principia/base/These'
 
 /* eslint typescript-sort-keys/interface: "error" */
+
+declare global {
+  export const Chunk: ChunkStaticOps
+  export interface Chunk<A> extends C.Chunk<A> {}
+}
+
+interface ChunkStaticOps {
+  /**
+   * @rewriteStatic Align from "@principia/base/Chunk"
+   */
+  Align: typeof C.Align
+  /**
+   * @rewriteStatic Alt from "@principia/base/Chunk"
+   */
+  Alt: typeof C.Alt
+  /**
+   * @rewriteStatic Alternative from "@principia/base/Chunk"
+   */
+  Alternative: typeof C.Alternative
+  /**
+   * @rewriteStatic Applicative from "@principia/base/Chunk"
+   */
+  Applicative: typeof C.Applicative
+  /**
+   * @rewriteStatic Apply from "@principia/base/Chunk"
+   */
+  Apply: typeof C.Apply
+  /**
+   * @rewriteStatic Compactable from "@principia/base/Chunk"
+   */
+  Compactable: typeof C.Compactable
+  /**
+   * @rewriteStatic Filterable from "@principia/base/Chunk"
+   */
+  Filterable: typeof C.Filterable
+  /**
+   * @rewriteStatic FilterableWithIndex from "@principia/base/Chunk"
+   */
+  FilterableWithIndex: typeof C.FilterableWithIndex
+  /**
+   * @rewriteStatic Foldable from "@principia/base/Chunk"
+   */
+  Foldable: typeof C.Foldable
+  /**
+   * @rewriteStatic FoldableWithIndex from "@principia/base/Chunk"
+   */
+  FoldableWithIndex: typeof C.FoldableWithIndex
+  /**
+   * @rewriteStatic Functor from "@principia/base/Chunk"
+   */
+  Functor: typeof C.Functor
+  /**
+   * @rewriteStatic FunctorWithIndex from "@principia/base/Chunk"
+   */
+  FunctorWithIndex: typeof C.FunctorWithIndex
+  /**
+   * @rewriteStatic Monad from "@principia/base/Chunk"
+   */
+  Monad: typeof C.Monad
+  /**
+   * @rewriteStatic MonoidalFunctor from "@principia/base/Chunk"
+   */
+  MonoidalFunctor: typeof C.MonoidalFunctor
+  /**
+   * @rewriteStatic SemimonoidalFunctor from "@principia/base/Chunk"
+   */
+  SemimonoidalFunctor: typeof C.SemimonoidalFunctor
+  /**
+   * @rewriteStatic Traversable from "@principia/base/Chunk"
+   */
+  Traversable: typeof C.Traversable
+  /**
+   * @rewriteStatic TraversableWithIndex from "@principia/base/Chunk"
+   */
+  TraversableWithIndex: typeof C.TraversableWithIndex
+  /**
+   * @rewriteStatic Unfoldable from "@principia/base/Chunk"
+   */
+  Unfoldable: typeof C.Unfoldable
+  /**
+   * @rewriteStatic Witherable from "@principia/base/Chunk"
+   */
+  Witherable: typeof C.Witherable
+  /**
+   * @rewriteStatic WitherableWithIndex from "@principia/base/Chunk"
+   */
+  WitherableWithIndex: typeof C.WitherableWithIndex
+  /**
+   * @rewriteStatic Zip from "@principia/base/Chunk"
+   */
+  Zip: typeof C.Zip
+  /**
+   * @rewriteStatic builder from "@principia/base/Chunk"
+   */
+  builder: typeof C.builder
+  /**
+   * @rewriteStatic empty from "@principia/base/Chunk"
+   */
+  empty: typeof C.empty
+  /**
+   * @rewriteStatic fromBuffer from "@principia/base/Chunk"
+   */
+  from(bytes: Uint8Array): C.Chunk<Byte>
+  /**
+   * @rewriteStatic from from "@principia/base/Chunk"
+   */
+  from<A>(as: Iterable<A>): C.Chunk<A>
+  /**
+   * @rewriteStatic make from "@principia/base/Chunk"
+   */
+  of: typeof C.make
+  /**
+   * @rewriteStatic range from "@principia/base/Chunk"
+   */
+  range: typeof C.range
+  /**
+   * @rewriteStatic replicate from "@principia/base/Chunk"
+   */
+  replicate: typeof C.replicate
+  /**
+   * @rewriteStatic single from "@principia/base/Chunk"
+   */
+  single: typeof C.single
+  /**
+   * @rewriteStatic unfold from "@principia/base/Chunk"
+   */
+  unfold: typeof C.unfold
+}
 
 declare module '@principia/base/Chunk/core' {
   export interface Chunk<A> {
