@@ -1,7 +1,32 @@
 import type { Either } from '@principia/base/Either'
 import type { IO } from '@principia/base/IO'
+import type * as RM from '@principia/base/IO/RefM'
 import type { Option } from '@principia/base/Option'
 import type { Predicate } from '@principia/base/prelude'
+
+declare global {
+  export const RefM: RefMStaticOps
+  export interface RefM<RA, RB, EA, EB, A, B> extends RM.RefM<RA, RB, EA, EB, A, B> {}
+  export interface RRefM<R, E, A> extends RM.RefM<R, R, E, E, A, A> {}
+  export interface FRefM<E, A> extends RM.RefM<unknown, unknown, E, E, A, A> {}
+  export interface URRefM<R, A> extends RM.RefM<R, R, never, never, A, A> {}
+  export interface URefM<A> extends RM.RefM<unknown, unknown, never, never, A, A> {}
+}
+
+export interface RefMStaticOps {
+  /**
+   * @rewriteStatic make from "@principia/base/IO/RefM"
+   */
+  make: typeof RM.make
+  /**
+   * @rewriteStatic makeManaged from "@principia/base/IO/RefM"
+   */
+  makeManaged: typeof RM.makeManaged
+  /**
+   * @rewriteStatic unsafeMake from "@principia/base/IO/RefM"
+   */
+  unsafeMake: typeof RM.unsafeMake
+}
 
 declare module '@principia/base/IO/RefM' {
   export interface RefM<RA, RB, EA, EB, A, B> {

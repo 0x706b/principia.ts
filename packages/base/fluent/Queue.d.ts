@@ -1,7 +1,35 @@
 import type { Chunk } from '@principia/base/Chunk'
 import type { IO } from '@principia/base/IO'
+import type * as Q from '@principia/base/IO/Queue'
 import type { Option } from '@principia/base/Option'
 import type { Predicate } from '@principia/base/prelude'
+
+declare global {
+  export const Queue: QueueStaticOps
+  export interface Queue<RA, RB, EA, EB, A, B> extends Q.Queue<RA, RB, EA, EB, A, B> {}
+  export interface UQueue<A> extends Q.Queue<unknown, unknown, never, never, A, A> {}
+  export interface Dequeue<A> extends Q.Queue<never, unknown, unknown, never, never, A> {}
+  export interface Enqueue<A> extends Q.Queue<unknown, never, never, unknown, A, any> {}
+}
+
+interface QueueStaticOps {
+  /**
+   * @rewriteStatic makeSliding from "@principia/base/IO/Queue"
+   */
+  makeSliding: typeof Q.makeSliding
+  /**
+   * @rewriteStatic makeBounded from "@principia/base/IO/Queue"
+   */
+  makeBounded: typeof Q.makeBounded
+  /**
+   * @rewriteStatic makeUnbounded from "@principia/base/IO/Queue"
+   */
+  makeUnbounded: typeof Q.makeUnbounded
+  /**
+   * @rewriteStatic makeDropping from "@principia/base/IO/Queue"
+   */
+  makeDropping: typeof Q.makeDropping
+}
 
 declare module '@principia/base/Queue' {
   export interface Queue<RA, RB, EA, EB, A, B> {

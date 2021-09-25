@@ -18,6 +18,7 @@ import type {
 
 declare global {
   export const Dictionary: DictionaryStaticOps
+  export interface Dictionary<A> extends Dict.Dictionary<A> {}
 }
 
 interface DictionaryStaticOps {
