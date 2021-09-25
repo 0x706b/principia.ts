@@ -224,12 +224,24 @@ export function fail<E>(e: E): Async<unknown, E, never> {
   return failCause(C.fail(e))
 }
 
+export function failLazy<E>(e: () => E): Async<unknown, E, never> {
+  return defer(() => fail(e()))
+}
+
 export function halt(defect: unknown): Async<unknown, never, never> {
   return failCause(C.halt(defect))
 }
 
+export function haltLazy(defect: () => unknown): Async<unknown, never, never> {
+  return defer(() => halt(defect()))
+}
+
 export function done<E, A>(exit: Exit<E, A>): Async<unknown, E, A> {
   return new Done(exit)
+}
+
+export function doneLazy<E, A>(exit: () => Exit<E, A>): Async<unknown, E, A> {
+  return defer(() => done(exit()))
 }
 
 export function defer<R, E, A>(factory: () => Async<R, E, A>): Async<R, E, A> {
@@ -251,7 +263,7 @@ export function promise_<E, A>(
 
 export function promise<E>(
   onError: (u: unknown) => E
-): <A>(promise: (onInterrupt: (f: () => void) => void) => Promise<A>) => LiftPromise<E, A> {
+): <A>(promise: (onInterrupt: (f: () => void) => void) => Promise<A>) => Async<unknown, E, A> {
   return (promise) => new LiftPromise(promise, onError)
 }
 
