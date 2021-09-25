@@ -1,4 +1,5 @@
 import type { Applicative } from '@principia/base/Applicative'
+import type * as A from '@principia/base/Array'
 import type { Byte } from '@principia/base/Byte'
 import type { Either } from '@principia/base/Either'
 import type * as HKT from '@principia/base/HKT'
@@ -14,6 +15,146 @@ import type { These } from '@principia/base/These'
 import * as I from '@principia/base/IO'
 
 /* eslint typescript-sort-keys/interface: "error" */
+
+declare global {
+  interface ArrayConstructor extends ArrayStaticOps {}
+}
+
+interface ArrayStaticOps {
+  /**
+   * @rewriteStatic Align from "@principia/base/Array"
+   */
+  Align: typeof A.Align
+  /**
+   * @rewriteStatic Alt from "@principia/base/Array"
+   */
+  Alt: typeof A.Alt
+  /**
+   * @rewriteStatic Alternative from "@principia/base/Array"
+   */
+  Alternative: typeof A.Alternative
+  /**
+   * @rewriteStatic Applicative from "@principia/base/Array"
+   */
+  Applicative: typeof A.Applicative
+  /**
+   * @rewriteStatic Apply from "@principia/base/Array"
+   */
+  Apply: typeof A.Apply
+  /**
+   * @rewriteStatic Compactable from "@principia/base/Array"
+   */
+  Compactable: typeof A.Compactable
+  /**
+   * @rewriteStatic Filterable from "@principia/base/Array"
+   */
+  Filterable: typeof A.Filterable
+  /**
+   * @rewriteStatic FilterableWithIndex from "@principia/base/Array"
+   */
+  FilterableWithIndex: typeof A.FilterableWithIndex
+  /**
+   * @rewriteStatic Foldable from "@principia/base/Array"
+   */
+  Foldable: typeof A.Foldable
+  /**
+   * @rewriteStatic FoldableWithIndex from "@principia/base/Array"
+   */
+  FoldableWithIndex: typeof A.FoldableWithIndex
+  /**
+   * @rewriteStatic Functor from "@principia/base/Array"
+   */
+  Functor: typeof A.Functor
+  /**
+   * @rewriteStatic FunctorWithIndex from "@principia/base/Array"
+   */
+  FunctorWithIndex: typeof A.FunctorWithIndex
+  /**
+   * @rewriteStatic Monad from "@principia/base/Array"
+   */
+  Monad: typeof A.Monad
+  /**
+   * @rewriteStatic MonoidalFunctor from "@principia/base/Array"
+   */
+  MonoidalFunctor: typeof A.MonoidalFunctor
+  /**
+   * @rewriteStatic SemimonoidalFunctor from "@principia/base/Array"
+   */
+  SemimonoidalFunctor: typeof A.SemimonoidalFunctor
+  /**
+   * @rewriteStatic Traversable from "@principia/base/Array"
+   */
+  Traversable: typeof A.Traversable
+  /**
+   * @rewriteStatic TraversableWithIndex from "@principia/base/Array"
+   */
+  TraversableWithIndex: typeof A.TraversableWithIndex
+  /**
+   * @rewriteStatic Unfoldable from "@principia/base/Array"
+   */
+  Unfoldable: typeof A.Unfoldable
+  /**
+   * @rewriteStatic Witherable from "@principia/base/Array"
+   */
+  Witherable: typeof A.Witherable
+  /**
+   * @rewriteStatic WitherableWithIndex from "@principia/base/Array"
+   */
+  WitherableWithIndex: typeof A.WitherableWithIndex
+  /**
+   * @rewriteStatic Zip from "@principia/base/Array"
+   */
+  Zip: typeof A.Zip
+  /**
+   * @rewriteStatic empty from "@principia/base/Array"
+   */
+  empty: typeof A.empty
+  /**
+   * @rewriteStatic fromBuffer from "@principia/base/Array"
+   */
+  fromBuffer: typeof A.fromBuffer
+  /**
+   * @rewriteStatic getEq from "@principia/base/Array"
+   */
+  getEq: typeof A.getEq
+  /**
+   * @rewriteStatic getGuard from "@principia/base/Array"
+   */
+  getGuard: typeof A.getGuard
+  /**
+   * @rewriteStatic getMonoid from "@principia/base/Array"
+   */
+  getMonoid: typeof A.getMonoid
+  /**
+   * @rewriteStatic getOrd from "@principia/base/Array"
+   */
+  getOrd: typeof A.getOrd
+  /**
+   * @rewriteStatic getShow from "@principia/base/Array"
+   */
+  getShow: typeof A.getShow
+  /**
+   * @rewriteStatic makeBy from "@principia/base/Array"
+   */
+  makeBy: typeof A.makeBy
+  /**
+   * @rewriteStatic range from "@principia/base/Array"
+   */
+  range: typeof A.range
+  /**
+   * @rewriteStatic replicate from "@principia/base/Array"
+   */
+  replicate: typeof A.replicate
+  /**
+   * @rewriteStatic unfold from "@principia/base/Array"
+   */
+  unfold: typeof A.unfold
+  /**
+   * @rewriteStatic unit from "@principia/base/Array"
+   */
+  unit: typeof A.unit
+}
+
 export interface ArrayOps {
   /**
    * @rewrite align_ from "@principia/base/NonEmptyArray"
