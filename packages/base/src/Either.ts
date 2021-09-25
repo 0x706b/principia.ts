@@ -1071,7 +1071,9 @@ export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
 export const mapN      = P.mapNF(SemimonoidalFunctor)
 export const mapN_     = P.mapNF_(SemimonoidalFunctor)
 export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
+export const crossS_   = P.crossSF_(SemimonoidalFunctor)
 export const crossS    = P.crossSF(SemimonoidalFunctor)
+export const crossT_   = P.crossTF_(SemimonoidalFunctor)
 export const crossT    = P.crossTF(SemimonoidalFunctor)
 
 export const Apply = P.Apply<URI, V>({
