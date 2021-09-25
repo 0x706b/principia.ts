@@ -4,11 +4,14 @@ import type * as HKT from './HKT'
 import type { DictionaryURI } from './Modules'
 import type { Option } from './Option'
 import type { PredicateWithIndex, RefinementWithIndex } from './prelude'
-import type * as P from './prelude'
 import type { ReadonlyRecord } from './Record'
 
+import { identity } from './function'
 import * as O from './Option'
+import * as P from './prelude'
 import * as R from './Record'
+
+const _hasOwnProperty = Object.prototype.hasOwnProperty
 
 export const DictionaryTypeId = Symbol.for('@principia/base/Dictionary')
 export type DictionaryTypeId = typeof DictionaryTypeId
@@ -46,6 +49,8 @@ export class Dictionary<A> implements Iterable<readonly [string, A]> {
     return new Dictionary(f(this[DictionaryStore]))
   }
 }
+
+export const empty: Dictionary<never> = fromRecord({})
 
 export function fromRecord<A>(_: ReadonlyRecord<string, A>): Dictionary<A> {
   return new Dictionary(_)
@@ -102,6 +107,10 @@ export function has(k: string): <A>(dict: Dictionary<A>) => boolean {
   return (dict) => has_(dict, k)
 }
 
+export function isEmpty<A>(dict: Dictionary<A>): boolean {
+  return keys(dict).length === 0
+}
+
 export function isSubdictionary_<A>(E: P.Eq<A>): (me: Dictionary<A>, that: Dictionary<A>) => boolean {
   return (me, that) => R.isSubrecord_(E)(me[DictionaryStore], that[DictionaryStore])
 }
@@ -116,6 +125,17 @@ export function some_<A>(dict: Dictionary<A>, predicate: PredicateWithIndex<stri
 
 export function some<A>(predicate: PredicateWithIndex<string, A>): (dict: Dictionary<A>) => boolean {
   return (dict) => some_(dict, predicate)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Eq
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function getEq<A>(E: P.Eq<A>): P.Eq<Dictionary<A>> {
+  const isSubrecordE = isSubdictionary(E)
+  return P.Eq((x, y) => isSubrecordE(x)(y) && isSubrecordE(y)(x))
 }
 
 /*
@@ -232,6 +252,20 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A, k: string) => M) => (f
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
 
+export function fromFoldableMap<B, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigroup<B>, F: P.Foldable<F, C>) {
+  return <KF, QF, WF, XF, IF, SF, RF, EF, A>(
+    fa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>,
+    f: (a: A) => readonly [string, B]
+  ): Dictionary<B> => fromRecord(R.fromFoldableMap(S, F)(fa, f))
+}
+
+export function fromFoldable<A, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigroup<A>, F: P.Foldable<F, C>) {
+  const fromFoldableMapS = fromFoldableMap(S, F)
+  return <KF, QF, WF, XF, IF, SF, RF, EF>(
+    fa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, readonly [string, A]>
+  ): Dictionary<A> => fromFoldableMapS(fa, identity)
+}
+
 /*
  * -------------------------------------------------------------------------------------------------
  * Functor
@@ -244,6 +278,48 @@ export function map_<A, B>(fa: Dictionary<A>, f: (a: A, k: string) => B): Dictio
 
 export function map<A, B>(f: (a: A, k: string) => B): (fa: Dictionary<A>) => Dictionary<B> {
   return (fa) => map_(fa, f)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Monoid
+ * -------------------------------------------------------------------------------------------------
+ */
+export function getMonoid<A>(S: P.Semigroup<A>): P.Monoid<Dictionary<A>> {
+  return P.Monoid<Dictionary<A>>((x, y) => {
+    if (isEmpty(x)) {
+      return y
+    }
+    if (isEmpty(y)) {
+      return x
+    }
+    const recordKeys = keys(y)
+    const len        = recordKeys.length
+    if (len === 0) {
+      return x
+    }
+    const r = Object.assign({}, x[DictionaryStore]) as Record<string, A>
+    for (let i = 0; i < len; i++) {
+      const k = recordKeys[i]
+      r[k]    = _hasOwnProperty.call(x, k) ? S.combine_(x[k], y[k]) : y[k]
+    }
+    return fromRecord(r)
+  }, empty)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Show
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function getShow<A>(S: P.Show<A>): P.Show<Dictionary<A>> {
+  return {
+    show: (a) => {
+      const elements = collect_(a, (a, k) => `${JSON.stringify(k)}: ${S.show(a)}`).join(', ')
+      return elements === '' ? '{}' : `{ ${elements} }`
+    }
+  }
 }
 
 /*

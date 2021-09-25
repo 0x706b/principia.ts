@@ -1,4 +1,7 @@
+import type { Dictionary } from '@principia/base/Dictionary'
+import type * as Dict from '@principia/base/Dictionary'
 import type { Either } from '@principia/base/Either'
+import type { HashMap } from '@principia/base/HashMap'
 import type * as HKT from '@principia/base/HKT'
 import type { Option } from '@principia/base/Option'
 import type {
@@ -12,6 +15,41 @@ import type {
 } from '@principia/base/prelude'
 
 /* eslint typescript-sort-keys/interface: "error" */
+
+declare global {
+  export const Dictionary: DictionaryStaticOps
+}
+
+interface DictionaryStaticOps {
+  /**
+   * @rewriteStatic fromHashMap from "@principia/base/Dictionary"
+   */
+  from<A>(hashMap: HashMap<string, A>): Dictionary<A>
+  /**
+   * @rewriteStatic fromRecord from "@principia/base/Dictionary"
+   */
+  from<A>(record: Record<string, A>): Dictionary<A>
+  /**
+   * @rewriteStatic fromFoldable from "@principia/base/Dictionary"
+   */
+  fromFoldable: typeof Dict.fromFoldable
+  /**
+   * @rewriteStatic fromFoldableMap from "@principia/base/Dictionary"
+   */
+  fromFoldableMap: typeof Dict.fromFoldableMap
+  /**
+   * @rewriteStatic getEq from "@principia/base/Dictionary"
+   */
+  getEq: typeof Dict.getEq
+  /**
+   * @rewriteStatic getMonoid from "@principia/base/Dictionary"
+   */
+  getMonoid: typeof Dict.getMonoid
+  /**
+   * @rewriteStatic getShow from "@principia/base/Dictionary"
+   */
+  getShow: typeof Dict.getShow
+}
 
 declare module '@principia/base/Dictionary' {
   interface Dictionary<A> {

@@ -2,9 +2,16 @@ import type * as HKT from '@principia/base/HKT'
 import type * as P from '@principia/base/prelude'
 import type { UnionToIntersection } from '@principia/base/prelude'
 import type { ReadonlyRecord } from '@principia/base/Record'
-import type {} from '@principia/base/Struct'
+import type { Struct } from '@principia/base/Struct'
 
 /* eslint typescript-sort-keys/interface: "error" */
+
+declare global {
+  /**
+   * @rewrite identity from "smart:identity"
+   */
+  function Struct<A extends Record<string, any>>(struct: A): Struct<A>
+}
 
 declare module '@principia/base/Struct' {
   interface Struct<A> {
