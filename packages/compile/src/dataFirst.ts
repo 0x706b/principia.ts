@@ -1,5 +1,9 @@
 import ts from 'typescript'
 
+function isInternal(n: ts.Node): n is ts.Node & { __sig_tags: string[] } {
+  return '__sig_tags' in n
+}
+
 export default function dataFirst(program: ts.Program) {
   const checker = program.getTypeChecker()
 
@@ -12,25 +16,106 @@ export default function dataFirst(program: ts.Program) {
           if (
             ts.isCallExpression(node) &&
             ts.isCallExpression(node.expression) &&
+            ts.isCallExpression(node.expression.expression) &&
+            node.expression.expression.arguments.length === 1 &&
+            ts.isPropertyAccessExpression(node.expression.expression.expression)
+          ) {
+            let dataFirstTag: string | undefined
+            const symbol = checker.getTypeAtLocation(node.expression.expression.expression).getSymbol()
+            if (isInternal(node.expression)) {
+              dataFirstTag = node.expression.__sig_tags
+                .filter((x) => x.includes('dataFirst'))
+                .map((x) => x.replace('dataFirst ', ''))?.[0]
+            } else {
+              dataFirstTag = symbol
+                ?.getDeclarations()
+                ?.map((e) => {
+                  try {
+                    return ts
+                      .getAllJSDocTags(e, (t): t is ts.JSDocTag => t.tagName?.getText() === 'dataFirst')
+                      .map((e) => e.comment)
+                      .filter((e): e is string => typeof e === 'string')
+                  } catch {
+                    return []
+                  }
+                })
+                .reduce((flatten, entry) => flatten.concat(entry), [])[0]
+            }
+            if (dataFirstTag) {
+              return ts.visitEachChild(
+                factory.createCallExpression(
+                  factory.createCallExpression(
+                    dataFirstTag === 'self'
+                      ? node.expression.expression.expression
+                      : factory.createPropertyAccessExpression(
+                          node.expression.expression.expression.expression,
+                          factory.createIdentifier(dataFirstTag)
+                        ),
+                    undefined,
+                    [node.expression.expression.arguments[0]]
+                  ),
+                  undefined,
+                  [...node.arguments, ...node.expression.arguments]
+                ),
+                visitor,
+                ctx
+              )
+            }
+          }
+          if (
+            ts.isCallExpression(node) &&
+            ts.isCallExpression(node.expression) &&
+            ts.isPropertyAccessExpression(node.expression.expression) &&
+            isInternal(node.expression)
+          ) {
+            const dataFirstTag = node.expression.__sig_tags
+              .filter((x) => x.includes('dataFirst'))
+              .map((x) => x.replace('dataFirst ', ''))?.[0]
+
+            return ts.visitEachChild(
+              factory.createCallExpression(
+                dataFirstTag === 'self'
+                  ? node.expression.expression
+                  : factory.createPropertyAccessExpression(
+                      node.expression.expression.expression,
+                      factory.createIdentifier(dataFirstTag)
+                    ),
+                undefined,
+                [node.arguments[0]!, ...node.expression.arguments]
+              ),
+              visitor,
+              ctx
+            )
+          } else if (
+            ts.isCallExpression(node) &&
+            ts.isCallExpression(node.expression) &&
             ts.isPropertyAccessExpression(node.expression.expression) &&
             node.arguments.length === 1 &&
             !ts.isSpreadElement(node.arguments[0]!)
           ) {
             const symbol = checker.getTypeAtLocation(node.expression.expression).getSymbol()
 
-            const dataFirstTag = symbol
-              ?.getDeclarations()
-              ?.map((e) => {
-                try {
-                  return ts
-                    .getAllJSDocTags(e, (t): t is ts.JSDocTag => t.tagName?.getText() === 'dataFirst')
-                    .map((e) => e.comment)
-                    .filter((e): e is string => typeof e === 'string')
-                } catch {
-                  return []
-                }
-              })
-              .reduce((flatten, entry) => flatten.concat(entry), [])[0]
+            let dataFirstTag: string | undefined
+
+            if (isInternal(node)) {
+              dataFirstTag = node.__sig_tags
+                .filter((x) => x.includes('dataFirst'))
+                .map((x) => x.replace('dataFirst ', ''))?.[0]
+            } else {
+              dataFirstTag = symbol
+                ?.getDeclarations()
+                ?.map((e) => {
+                  try {
+                    return ts
+                      .getAllJSDocTags(e, (t): t is ts.JSDocTag => t.tagName?.getText() === 'dataFirst')
+                      .map((e) => e.comment)
+                      .filter((e): e is string => typeof e === 'string')
+                  } catch {
+                    return []
+                  }
+                })
+                .reduce((flatten, entry) => flatten.concat(entry), [])[0]
+            }
 
             if (dataFirstTag) {
               return ts.visitEachChild(
@@ -47,24 +132,24 @@ export default function dataFirst(program: ts.Program) {
                 visitor,
                 ctx
               )
-            } else if (
-              ts.isCallExpression(node) &&
-              ts.isCallExpression(node.expression) &&
-              node.arguments.length === 1 &&
-              !ts.isSpreadElement(node.arguments[0]!)
-            ) {
-              const tags = signatureTags(checker.getResolvedSignature(node.expression))
+            }
+          } else if (
+            ts.isCallExpression(node) &&
+            ts.isCallExpression(node.expression) &&
+            node.arguments.length === 1 &&
+            !ts.isSpreadElement(node.arguments[0]!)
+          ) {
+            const tags = signatureTags(checker.getResolvedSignature(node.expression))
 
-              if (tags['dataFirst'] && tags['dataFirst'].includes('self')) {
-                return ts.visitEachChild(
-                  factory.createCallExpression(node.expression.expression, undefined, [
-                    node.arguments[0]!,
-                    ...node.expression.arguments
-                  ]),
-                  visitor,
-                  ctx
-                )
-              }
+            if (tags['dataFirst'] && tags['dataFirst'].includes('self')) {
+              return ts.visitEachChild(
+                factory.createCallExpression(node.expression.expression, undefined, [
+                  node.arguments[0]!,
+                  ...node.expression.arguments
+                ]),
+                visitor,
+                ctx
+              )
             }
           }
 

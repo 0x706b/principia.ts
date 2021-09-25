@@ -79,13 +79,18 @@ export default function rewrite(
             }
 
             if (symbol) {
-              const rewrite = symbol
+              const rewriteGetter = symbol
                 .getJsDocTags()
                 .map((_) => `${_.name} ${_.text?.map((_) => _.text).join(' ')}`)
                 .filter((_) => _.startsWith('rewriteGetter'))[0]
 
-              if (rewrite) {
-                const [fn, mod] = rewrite.match(/rewriteGetter (.*) from "(.*)"/)!.splice(1)
+              const rewriteStatic = symbol
+                .getJsDocTags()
+                .map((_) => `${_.name} ${_.text?.map((_) => _.text).join(' ')}`)
+                .filter((_) => _.startsWith('rewriteStatic'))[0]
+
+              if (rewriteGetter) {
+                const [fn, mod] = rewriteGetter.match(/rewriteGetter (.*) from "(.*)"/)!.splice(1)
 
                 if (!mods.has(mod!)) {
                   mods.set(mod!, factory.createUniqueName('module'))
@@ -115,6 +120,22 @@ export default function rewrite(
                 }
                 return rewritten
               }
+              if (rewriteStatic) {
+                const [fn, mod] = rewriteStatic.match(/rewriteStatic (.*) from "(.*)"/)!.splice(1)
+
+                if (!mods.has(mod!)) {
+                  mods.set(mod!, factory.createUniqueName('module'))
+                }
+
+                const id = mods.get(mod!)!
+
+                const rewritten = ts.visitEachChild(
+                  factory.createPropertyAccessExpression(id, factory.createIdentifier(fn!)),
+                  visitor,
+                  ctx
+                )
+                return rewritten
+              }
             }
           }
           if (
@@ -133,13 +154,14 @@ export default function rewrite(
             }
 
             if (signature) {
-              const rewrite = signature
-                .getJsDocTags()
-                .map((_) => `${_.name} ${_.text?.map((_) => _.text).join(' ')}`)
-                .filter((_) => _.startsWith('rewrite'))[0]
+              const sigTags = signature.getJsDocTags().map((_) => `${_.name} ${_.text?.map((_) => _.text).join(' ')}`)
 
-              if (rewrite) {
-                const [fn, mod] = rewrite.match(/rewriteConstraint (.*) from "(.*)"/)!.splice(1)
+              const rewriteConstraint = sigTags.filter((_) => _.startsWith('rewriteConstraint'))[0]
+
+              const rewriteStatic = sigTags.filter((_) => _.startsWith('rewriteStatic'))[0]
+
+              if (rewriteConstraint) {
+                const [fn, mod] = rewriteConstraint.match(/rewriteConstraint (.*) from "(.*)"/)!.splice(1)
 
                 if (!mods.has(mod!)) {
                   mods.set(mod!, factory.createUniqueName('module'))
@@ -191,6 +213,56 @@ export default function rewrite(
                     ctx
                   )
                 }
+              } else if (rewriteStatic) {
+                const [fn, mod] = rewriteStatic.match(/rewriteStatic (.*) from "(.*)"/)!.splice(1)
+
+                if (!mods.has(mod!)) {
+                  mods.set(mod!, factory.createUniqueName('module'))
+                }
+                if (isTracing) {
+                  const exprSignature     = checker.getResolvedSignature(node.expression)
+                  const { tags, entries } = getTagsAndEntries(signature)
+
+                  let newNode = ts.visitEachChild(
+                    factory.createCallExpression(
+                      factory.createCallExpression(
+                        factory.createPropertyAccessExpression(mods.get(mod!)!, factory.createIdentifier(fn!)),
+                        undefined,
+                        node.expression.arguments.map((argNode, i) =>
+                          traceChild_(argNode, i, tags, traceFromIdentifier, getTrace_)
+                        )
+                      ),
+                      undefined,
+                      node.arguments.map((x, i) => traceChild_(x, i, tags, traceFromIdentifier, getTrace_))
+                    ),
+                    visitor,
+                    ctx
+                  )
+                  if (tags['trace'] && tags['trace'].includes('call')) {
+                    newNode = factory.createCallExpression(tracedIdentifier, undefined, [
+                      newNode,
+                      getTrace_(node.expression, fileVar, 'end')
+                    ])
+                  }
+                  sigTags.length && (newNode['__sig_tags'] = sigTags)
+                  return newNode
+                } else {
+                  let newNode = ts.visitEachChild(
+                    factory.createCallExpression(
+                      factory.createCallExpression(
+                        factory.createPropertyAccessExpression(mods.get(mod!)!, factory.createIdentifier(fn!)),
+                        undefined,
+                        [...node.expression.arguments]
+                      ),
+                      undefined,
+                      node.arguments
+                    ),
+                    visitor,
+                    ctx
+                  )
+                  sigTags.length && (newNode['__sig_tags'] = sigTags)
+                  return newNode
+                }
               }
             }
           }
@@ -225,7 +297,7 @@ export default function rewrite(
                 if (isTracing) {
                   const { tags, entries } = getTagsAndEntries(signature)
 
-                  const rewritten = ts.visitEachChild(
+                  let newNode = ts.visitEachChild(
                     factory.updateCallExpression(
                       node,
                       factory.createPropertyAccessExpression(mods.get(mod!)!, factory.createIdentifier(fn!)),
@@ -237,15 +309,15 @@ export default function rewrite(
                   )
 
                   if (tags['trace'] && tags['trace'].includes('call')) {
-                    return factory.createCallExpression(tracedIdentifier, undefined, [
-                      rewritten,
+                    newNode = factory.createCallExpression(tracedIdentifier, undefined, [
+                      newNode,
                       getTrace_(node.expression, fileVar, 'end')
                     ])
-                  } else {
-                    return rewritten
                   }
+                  sigTags.length && (newNode['__sig_tags'] = sigTags)
+                  return newNode
                 } else {
-                  return ts.visitEachChild(
+                  const newNode = ts.visitEachChild(
                     factory.updateCallExpression(
                       node,
                       factory.createPropertyAccessExpression(mods.get(mod!)!, factory.createIdentifier(fn!)),
@@ -255,6 +327,8 @@ export default function rewrite(
                     visitor,
                     ctx
                   )
+                  sigTags.length && (newNode['__sig_tags'] = sigTags)
+                  return newNode
                 }
               }
 

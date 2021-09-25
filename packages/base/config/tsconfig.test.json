@@ -10,7 +10,7 @@
       {
         "transform": "@principia/compile",
         "relativeProjectRoot": "../../",
-        "tracing": false
+        "tracing": true
       }
     ]
   },

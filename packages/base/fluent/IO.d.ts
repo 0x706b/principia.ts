@@ -1,4 +1,6 @@
+import type { Chunk } from '@principia/base/Chunk'
 import type { Either } from '@principia/base/Either'
+import type { NoSuchElementError } from '@principia/base/Error'
 import type { Has, Tag } from '@principia/base/Has'
 import type * as I from '@principia/base/IO'
 import type { Cause } from '@principia/base/IO/Cause'
@@ -13,7 +15,661 @@ import type { Schedule } from '@principia/base/IO/Schedule'
 import type { Scope } from '@principia/base/IO/Scope'
 import type { Supervisor } from '@principia/base/IO/Supervisor'
 import type { Option } from '@principia/base/Option'
-import type { Erase, Predicate, ServicesStruct, ServicesTuple, UnionToIntersection } from '@principia/base/prelude'
+import type {
+  Erase,
+  Monoid,
+  Predicate,
+  ServicesStruct,
+  ServicesTuple,
+  UnionToIntersection
+} from '@principia/base/prelude'
+
+declare global {
+  export const IO: IOStaticOps
+}
+
+export interface IOStaticOps {
+  /**
+   * @rewriteStatic async from "@principia/base/IO"
+   */
+  async: typeof I.async
+  /**
+   * @rewriteStatic asyncIO from "@principia/base/IO"
+   */
+  asyncIO: typeof I.asyncIO
+  /**
+   * @rewriteStatic asyncInterrupt from "@principia/base/IO"
+   */
+  asyncInterrupt: typeof I.asyncInterrupt
+  /**
+   * @rewriteStatic asyncInterruptEither from "@principia/base/IO"
+   */
+  asyncInterruptEither: typeof I.asyncInterruptEither
+  /**
+   * @rewriteStatic asyncInterruptPromise from "@principia/base/IO"
+   */
+  asyncInterruptPromise: typeof I.asyncInterruptPromise
+  /**
+   * @rewriteStatic asyncOption from "@principia/base/IO"
+   */
+  asyncOption: typeof I.asyncOption
+  /**
+   * @rewriteStatic checkInterruptible from "@principia/base/IO"
+   */
+  checkInterruptible: typeof I.checkInterruptible
+  /**
+   * @rewriteStatic collectAll from "@principia/base/IO"
+   */
+  collectAll: typeof I.collectAll
+  /**
+   * @rewriteStatic collectAllPar from "@principia/base/IO"
+   */
+  collectAllPar: typeof I.collectAllPar
+  /**
+   * @rewriteStatic collectAllUnit from "@principia/base/IO"
+   */
+  collectAllUnit: typeof I.collectAllUnit
+  /**
+   * @rewriteStatic collectAllUnitPar from "@principia/base/IO"
+   */
+  collectAllUnitPar: typeof I.collectAllUnitPar
+  /**
+   * @rewriteStatic defer from "@principia/base/IO"
+   */
+  defer: typeof I.defer
+  /**
+   * @rewriteStatic deferMaybeWith from "@principia/base/IO"
+   */
+  deferMaybeWith: typeof I.deferMaybeWith
+  /**
+   * @rewriteStatic deferTry from "@principia/base/IO"
+   */
+  deferTry: typeof I.deferTry
+  /**
+   * @rewriteStatic deferTryCatch from "@principia/base/IO"
+   */
+  deferTryCatch: typeof I.deferTryCatch
+  /**
+   * @rewriteStatic deferTryCatchWith from "@principia/base/IO"
+   */
+  deferTryCatchWith: typeof I.deferTryCatchWith
+  /**
+   * @rewriteStatic deferTryWith from "@principia/base/IO"
+   */
+  deferTryWith: typeof I.deferTryWith
+  /**
+   * @rewriteStatic deferWith from "@principia/base/IO"
+   */
+  deferWith: typeof I.deferWith
+  /**
+   * @rewriteStatic descriptor from "@principia/base/IO"
+   */
+  descriptor: typeof I.descriptor
+  /**
+   * @rewriteStatic descriptorWith from "@principia/base/IO"
+   */
+  descriptorWith: typeof I.descriptorWith
+  /**
+   * @rewriteStatic fail from "@principia/base/IO"
+   */
+  fail: typeof I.fail
+  /**
+   * @rewriteStatic failCause from "@principia/base/IO"
+   */
+  failCause: typeof I.failCause
+  /**
+   * @rewriteStatic failCauseLazy from "@principia/base/IO"
+   */
+  failCauseLazy: typeof I.failCauseLazy
+  /**
+   * @rewriteStatic failCauseWithTrace from "@principia/base/IO"
+   */
+  failCauseWithTrace: typeof I.failCauseWithTrace
+  /**
+   * @rewriteStatic failLazy from "@principia/base/IO"
+   */
+  failLazy: typeof I.failLazy
+  /**
+   * @rewriteStatic fiberId from "@principia/base/IO"
+   */
+  fiberId: typeof I.fiberId
+  /**
+   * @rewriteStatic filter_ from "@principia/base/IO"
+   * @trace 1
+   */
+  filter<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>>
+  /**
+   * @rewriteStatic filter from "@principia/base/IO"
+   * @dataFirst filter_
+   * @trace 0
+   */
+  filter<R, E, A>(f: (a: A) => I.IO<R, E, boolean>): (as: Iterable<A>) => I.IO<R, E, Chunk<A>>
+  /**
+   * @rewriteStatic filterNot_ from "@principia/base/IO"
+   * @trace 1
+   */
+  filterNot<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>>
+  /**
+   * @rewriteStatic filterNot from "@principia/base/IO"
+   * @dataFirst filterNot_
+   * @trace 0
+   */
+  filterNot<R, E, A>(f: (a: A) => I.IO<R, E, boolean>): (as: Iterable<A>) => I.IO<R, E, Chunk<A>>
+  /**
+   * @rewriteStatic filterNotPar_ from "@principia/base/IO"
+   * @trace 1
+   */
+  filterNotPar<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>>
+  /**
+   * @rewriteStatic filterNotPar from "@principia/base/IO"
+   * @dataFirst filterNotPar_
+   * @trace 0
+   */
+  filterNotPar<R, E, A>(f: (a: A) => I.IO<R, E, boolean>): (as: Iterable<A>) => I.IO<R, E, Chunk<A>>
+  /**
+   * @rewriteStatic filterNotParN_ from "@principia/base/IO"
+   * @trace 2
+   */
+  filterNotParN<R, E, A>(as: Iterable<A>, n: number, f: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>>
+  /**
+   * @rewriteStatic filterNotParN from "@principia/base/IO"
+   * @dataFirst filterNotParN_
+   * @trace 1
+   */
+  filterNotParN<R, E, A>(n: number, f: (a: A) => I.IO<R, E, boolean>): (as: Iterable<A>) => I.IO<R, E, Chunk<A>>
+  /**
+   * @rewriteStatic filterPar_ from "@principia/base/IO"
+   * @trace 1
+   */
+  filterPar<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>>
+  /**
+   * @rewriteStatic filterPar from "@principia/base/IO"
+   * @dataFirst filterPar_
+   * @trace 0
+   */
+  filterPar<R, E, A>(f: (a: A) => I.IO<R, E, boolean>): (as: Iterable<A>) => I.IO<R, E, Chunk<A>>
+  /**
+   * @rewriteStatic filterParN_ from "@principia/base/IO"
+   * @trace 2
+   */
+  filterParN<R, E, A>(as: Iterable<A>, n: number, f: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>>
+  /**
+   * @rewriteStatic filterParN from "@principia/base/IO"
+   * @dataFirst filterParN_
+   * @trace 1
+   */
+  filterParN<R, E, A>(n: number, f: (a: A) => I.IO<R, E, boolean>): (as: Iterable<A>) => I.IO<R, E, Chunk<A>>
+  /**
+   * @rewriteStatic firstSuccess from "@principia/base/IO"
+   */
+  firstSuccess: typeof I.firstSuccess
+  /**
+   * @rewriteStatic foldMap_ from "@principia/base/IO"
+   * @dataFirst foldMap_
+   */
+  foldMap<M>(M: Monoid<M>): {
+    /**
+     * @trace 0
+     */
+    <A>(f: (a: A) => M): <R, E>(as: Iterable<I.IO<R, E, A>>) => I.IO<R, E, M>
+    /**
+     * @trace 1
+     */
+    <R, E, A>(as: Iterable<I.IO<R, E, A>>, f: (a: A) => M): I.IO<R, E, M>
+  }
+  /**
+   * @rewriteStatic foldMapPar_ from "@principia/base/IO"
+   * @dataFirst foldMapPar_
+   */
+  foldMapPar<M>(M: Monoid<M>): {
+    /**
+     * @trace 0
+     */
+    <A>(f: (a: A) => M): <R, E>(as: Iterable<I.IO<R, E, A>>) => I.IO<R, E, M>
+    /**
+     * @trace 1
+     */
+    <R, E, A>(as: Iterable<I.IO<R, E, A>>, f: (a: A) => M): I.IO<R, E, M>
+  }
+  /**
+   * @rewriteStatic foldMapParN_ from "@principia/base/IO"
+   * @dataFirst foldMapParN_
+   */
+  foldMapParN<M>(M: Monoid<M>): {
+    /**
+     * @trace 0
+     */
+    <A>(n: number, f: (a: A) => M): <R, E>(as: Iterable<I.IO<R, E, A>>) => I.IO<R, E, M>
+    /**
+     * @trace 1
+     */
+    <R, E, A>(as: Iterable<I.IO<R, E, A>>, n: number, f: (a: A) => M): I.IO<R, E, M>
+  }
+  /**
+   * @rewriteStatic foldl_ from "@principia/base/IO"
+   * @trace 2
+   */
+  foldl<R, E, A, B>(as: Iterable<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B>
+  /**
+   * @rewriteStatic foldl from "@principia/base/IO"
+   * @dataFirst foldl_
+   * @trace 1
+   */
+  foldl<R, E, A, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: Iterable<A>) => I.IO<R, E, B>
+  /**
+   * @rewriteStatic foldr_ from "@principia/base/IO"
+   * @trace 2
+   */
+  foldr<R, E, A, B>(as: Iterable<A>, b: I.UIO<B>, f: (a: A, b: I.IO<R, E, B>) => I.IO<R, E, B>): I.IO<R, E, B>
+  /**
+   * @rewriteStatic foldr from "@principia/base/IO"
+   * @dataFirst foldr_
+   * @trace 1
+   */
+  foldr<R, E, A, B>(b: I.UIO<B>, f: (a: A, b: I.IO<R, E, B>) => I.IO<R, E, B>): (as: Iterable<A>) => I.IO<R, E, B>
+  /**
+   * @rewriteStatic foreach_ from "@principia/base/IO"
+   * @trace 1
+   */
+  foreach<R, E, A, A1>(as: Iterable<A>, f: (a: A) => I.IO<R, E, A1>): I.IO<R, E, Chunk<A1>>
+  /**
+   * @rewriteStatic foreach from "@principia/base/IO"
+   * @dataFirst foreach_
+   * @trace 0
+   */
+  foreach<R, E, A, A1>(f: (a: A) => I.IO<R, E, A1>): (as: Iterable<A>) => I.IO<R, E, Chunk<A1>>
+  /**
+   * @rewriteStatic foreachPar_ from "@principia/base/IO"
+   * @trace 1
+   */
+  foreachPar<R, E, A, A1>(as: Iterable<A>, f: (a: A) => I.IO<R, E, A1>): I.IO<R, E, Chunk<A1>>
+  /**
+   * @rewriteStatic foreachPar from "@principia/base/IO"
+   * @dataFirst foreachPar_
+   * @trace 0
+   */
+  foreachPar<R, E, A, A1>(f: (a: A) => I.IO<R, E, A1>): (as: Iterable<A>) => I.IO<R, E, Chunk<A1>>
+  /**
+   * @rewriteStatic foreachParN_ from "@principia/base/IO"
+   * @trace 2
+   */
+  foreachParN<R, E, A, A1>(as: Iterable<A>, n: number, f: (a: A) => I.IO<R, E, A1>): I.IO<R, E, Chunk<A1>>
+  /**
+   * @rewriteStatic foreachParN from "@principia/base/IO"
+   * @dataFirst foreachParN_
+   * @trace 1
+   */
+  foreachParN<R, E, A, A1>(n: number, f: (a: A) => I.IO<R, E, A1>): (as: Iterable<A>) => I.IO<R, E, Chunk<A1>>
+  /**
+   * @rewriteStatic foreachUnit from "@principia/base/IO"
+   * @dataFirst foreachUnit_
+   * @trace 0
+   */
+  foreachUnit<R, E, A, A1>(f: (a: A) => I.IO<R, E, A1>): (as: Iterable<A>) => I.IO<R, E, void>
+  /**
+   * @rewriteStatic foreachUnit_ from "@principia/base/IO"
+   * @trace 1
+   */
+  foreachUnit<R, E, A, A1>(as: Iterable<A>, f: (a: A) => I.IO<R, E, A1>): I.IO<R, E, void>
+  /**
+   * @rewriteStatic foreachUnitPar_ from "@principia/base/IO"
+   * @trace 1
+   */
+  foreachUnitPar<R, E, A, A1>(as: Iterable<A>, f: (a: A) => I.IO<R, E, A1>): I.IO<R, E, void>
+  /**
+   * @rewriteStatic foreachUnitPar from "@principia/base/IO"
+   * @dataFirst foreachUnitPar_
+   * @trace 0
+   */
+  foreachUnitPar<R, E, A, A1>(f: (a: A) => I.IO<R, E, A1>): (as: Iterable<A>) => I.IO<R, E, void>
+  /**
+   * @rewriteStatic foreachUnitParN_ from "@principia/base/IO"
+   * @trace 2
+   */
+  foreachUnitParN<R, E, A, A1>(as: Iterable<A>, n: number, f: (a: A) => I.IO<R, E, A1>): I.IO<R, E, void>
+  /**
+   * @rewriteStatic foreachUnitParN from "@principia/base/IO"
+   * @dataFirst foreachUnitParN_
+   * @trace 1
+   */
+  foreachUnitParN<R, E, A, A1>(n: number, f: (a: A) => I.IO<R, E, A1>): (as: Iterable<A>) => I.IO<R, E, void>
+  /**
+   * @rewriteStatic forkAll from "@principia/base/IO"
+   */
+  forkAll: typeof I.forkAll
+  /**
+   * @rewriteStatic forkAllUnit from "@principia/base/IO"
+   */
+  forkAllUnit: typeof I.forkAllUnit
+  /**
+   * @rewriteStatic forkScope from "@principia/base/IO"
+   */
+  forkScope: typeof I.forkScope
+  /**
+   * @rewriteStatic forkScopeMask from "@principia/base/IO"
+   */
+  forkScopeMask: typeof I.forkScopeMask_
+  /**
+   * @rewriteStatic forkScopeWith from "@principia/base/IO"
+   */
+  forkScopeWith: typeof I.forkScopeWith
+  /**
+   * @rewriteStatic fromAsync from "@principia/base/IO"
+   */
+  fromAsync: typeof I.fromAsync
+  /**
+   * @rewriteStatic fromEither from "@principia/base/IO"
+   */
+  fromEither: typeof I.fromEither
+  /**
+   * @rewriteStatic fromEitherLazy from "@principia/base/IO"
+   */
+  fromEitherLazy: typeof I.fromEitherLazy
+  /**
+   * @rewriteStatic fromEval from "@principia/base/IO"
+   */
+  fromEval: typeof I.fromEval
+  /**
+   * @rewriteStatic fromExit from "@principia/base/IO"
+   */
+  fromExit: typeof I.fromExit
+  /**
+   * @rewriteStatic fromExitLazy from "@principia/base/IO"
+   */
+  fromExitLazy: typeof I.fromExitLazy
+  /**
+   * @rewriteStatic fromOption from "@principia/base/IO"
+   */
+  fromOption: typeof I.fromOption
+  /**
+   * @rewriteStatic fromOptionLazy from "@principia/base/IO"
+   */
+  fromOptionLazy: typeof I.fromOptionLazy
+  /**
+   * @rewriteStatic fromPromise from "@principia/base/IO"
+   */
+  fromPromise: typeof I.fromPromise
+
+  /**
+   * @rewriteStatic fromPromiseCatch from "@principia/base/IO"
+   */
+  fromPromiseCatch: typeof I.fromPromiseCatch
+
+  /**
+   * @rewriteStatic fromPromiseHalt from "@principia/base/IO"
+   */
+  fromPromiseHalt: typeof I.fromPromiseHalt
+
+  /**
+   * @rewriteStatic fromSync from "@principia/base/IO"
+   */
+  fromSync: typeof I.fromSync
+
+  /**
+   * @rewriteStatic getOrFail from "@principia/base/IO"
+   * @trace call
+   */
+  getOrFail<A>(option: Option<A>): I.FIO<NoSuchElementError, A>
+  /**
+   * @rewriteStatic getOrFailUnit from "@principia/base/IO"
+   * @trace call
+   */
+  getOrFailUnit<A>(option: Option<A>): I.FIO<void, A>
+
+  /**
+   * @rewriteStatic getOrFailWith from "@principia/base/IO"
+   * @dataFirst getOrFailWith_
+   * @trace 0
+   */
+  getOrFailWith<E>(onNone: () => E): <A>(option: Option<A>) => I.FIO<E, A>
+
+  /**
+   * @rewriteStatic getOrFailWith_ from "@principia/base/IO"
+   * @trace call
+   * @trace 1
+   */
+  getOrFailWith<E, A>(option: Option<A>, onNone: () => E): I.FIO<E, A>
+
+  /**
+   * @rewriteStatic getState from "@principia/base/IO"
+   */
+  getState: typeof I.getState
+
+  /**
+   * @rewriteStatic getStateWith from "@principia/base/IO"
+   */
+  getStateWith: typeof I.getStateWith
+
+  /**
+   * @rewriteStatic halt from "@principia/base/IO"
+   */
+  halt: typeof I.halt
+
+  /**
+   * @rewriteStatic haltLazy from "@principia/base/IO"
+   */
+  haltLazy: typeof I.haltLazy
+
+  /**
+   * @rewriteStatic haltMessage from "@principia/base/IO"
+   */
+  haltMessage: typeof I.haltMessage
+
+  /**
+   * @rewriteStatic id from "@principia/base/IO"
+   */
+  id: typeof I.id
+
+  /**
+   * @rewriteStatic interrupt from "@principia/base/IO"
+   */
+  interrupt: typeof I.interrupt
+
+  /**
+   * @rewriteStatic interruptAs from "@principia/base/IO"
+   */
+  interruptAs: typeof I.interruptAs
+
+  /**
+   * @rewriteStatic iterate_ from "@principia/base/IO"
+   */
+  iterate: typeof I.iterate_
+
+  /**
+   * @rewriteStatic loop_ from "@principia/base/IO"
+   */
+  loop: typeof I.loop_
+
+  /**
+   * @rewriteStatic loopUnit_ from "@principia/base/IO"
+   */
+  loopUnit: typeof I.loopUnit_
+
+  /**
+   * @rewriteStatic memoize from "@principia/base/IO"
+   */
+  memoize: typeof I.memoize
+
+  /**
+   * @rewriteStatic memoizeEq from "@principia/base/IO"
+   */
+  memoizeEq: typeof I.memoizeEq
+
+  /**
+   * @rewriteStatic mergeAll_ from "@principia/base/IO"
+   */
+  mergeAll<R, E, A, B>(fas: Iterable<I.IO<R, E, A>>, b: B, f: (b: B, a: A) => B): I.IO<R, E, B>
+
+  /**
+   * @rewriteStatic mergeAll from "@principia/base/IO"
+   * @dataFirst mergeAll_
+   */
+  mergeAll<A, B>(b: B, f: (b: B, a: A) => B): <R, E>(fas: Iterable<I.IO<R, E, A>>) => I.IO<R, E, B>
+
+  /**
+   * @rewriteStatic mergeAllPar_ from "@principia/base/IO"
+   */
+  mergeAllPar<R, E, A, B>(fas: Iterable<I.IO<R, E, A>>, b: B, f: (b: B, a: A) => B): I.IO<R, E, B>
+  /**
+   * @rewriteStatic mergeAllPar from "@principia/base/IO"
+   * @dataFirst mergeAllPar_
+   */
+  mergeAllPar<A, B>(b: B, f: (b: B, a: A) => B): <R, E>(fas: Iterable<I.IO<R, E, A>>) => I.IO<R, E, B>
+  /**
+   * @rewriteStatic mergeAllParN_ from "@principia/base/IO"
+   */
+  mergeAllParN<R, E, A, B>(fas: Iterable<I.IO<R, E, A>>, n: number, b: B, f: (b: B, a: A) => B): I.IO<R, E, B>
+  /**
+   * @rewriteStatic mergeAllParN from "@principia/base/IO"
+   * @dataFirst mergeAllParN_
+   */
+  mergeAllParN<A, B>(n: number, b: B, f: (b: B, a: A) => B): <R, E>(fas: Iterable<I.IO<R, E, A>>) => I.IO<R, E, B>
+  /**
+   * @rewriteStatic never from "@principia/base/IO"
+   */
+  never: typeof I.never
+  /**
+   * @rewriteStatic partition_ from "@principia/base/IO"
+   */
+  partition<R, E, A, B>(
+    as: Iterable<A>,
+    f: (a: A) => I.IO<R, E, B>
+  ): I.IO<R, never, readonly [Iterable<E>, Iterable<B>]>
+  /**
+   * @rewriteStatic partition from "@principia/base/IO"
+   * @dataFirst partition_
+   */
+  partition<R, E, A, B>(
+    f: (a: A) => I.IO<R, E, B>
+  ): (as: Iterable<A>) => I.IO<R, never, readonly [Iterable<E>, Iterable<B>]>
+
+  /**
+   * @rewriteStatic partitionPar_ from "@principia/base/IO"
+   */
+  partitionPar<R, E, A, B>(
+    as: Iterable<A>,
+    f: (a: A) => I.IO<R, E, B>
+  ): I.IO<R, never, readonly [Iterable<E>, Iterable<B>]>
+
+  /**
+   * @rewriteStatic partitionPar from "@principia/base/IO"
+   * @dataFirst partitionPar_
+   */
+  partitionPar<R, E, A, B>(
+    f: (a: A) => I.IO<R, E, B>
+  ): (as: Iterable<A>) => I.IO<R, never, readonly [Iterable<E>, Iterable<B>]>
+
+  /**
+   * @rewriteStatic partitionParN_ from "@principia/base/IO"
+   */
+  partitionParN<R, E, A, B>(
+    as: Iterable<A>,
+    n: number,
+    f: (a: A) => I.IO<R, E, B>
+  ): I.IO<R, never, readonly [Iterable<E>, Iterable<B>]>
+
+  /**
+   * @rewriteStatic partitionParN from "@principia/base/IO"
+   * @dataFirst partitionParN_
+   */
+  partitionParN<R, E, A, B>(
+    n: number,
+    f: (a: A) => I.IO<R, E, B>
+  ): (as: Iterable<A>) => I.IO<R, never, readonly [Iterable<E>, Iterable<B>]>
+
+  /**
+   * @rewriteStatic platform from "@principia/base/IO"
+   */
+  platform: typeof I.platform
+
+  /**
+   * @rewriteStatic pure from "@principia/base/IO"
+   */
+  pure: typeof I.pure
+
+  /**
+   * @rewriteStatic sequenceT from "@principia/base/IO"
+   */
+  sequenceT: typeof I.sequenceT
+
+  /**
+   * @rewriteStatic sequenceTPar from "@principia/base/IO"
+   */
+  sequenceTPar: typeof I.sequenceTPar
+  /**
+   * @rewriteStatic sequenceTParN from "@principia/base/IO"
+   */
+  sequenceTParN: typeof I.sequenceTParN
+  /**
+   * @rewriteStatic setState from "@principia/base/IO"
+   */
+  setState: typeof I.setState
+  /**
+   * @rewriteStatic sleep from "@principia/base/IO"
+   */
+  sleep: typeof I.sleep
+  /**
+   * @rewriteStatic succeed from "@principia/base/IO"
+   */
+  succeed: typeof I.succeed
+  /**
+   * @rewriteStatic succeedLazy from "@principia/base/IO"
+   */
+  succeedLazy: typeof I.succeedLazy
+  /**
+   * @rewriteStatic try from "@principia/base/IO"
+   */
+  try: typeof I.try
+  /**
+   * @rewriteStatic tryCatch from "@principia/base/IO"
+   */
+  tryCatch: typeof I.tryCatch
+  /**
+   * @rewriteStatic updateState from "@principia/base/IO"
+   */
+  updateState: typeof I.updateState
+  /**
+   * @rewriteStatic validate_ from "@principia/base/IO"
+   * @trace 1
+   */
+  validate<A, R, E, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, Chunk<E>, Chunk<B>>
+  /**
+   * @rewriteStatic validate from "@principia/base/IO"
+   * @dataFirst validate_
+   * @trace 0
+   */
+  validate<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: Iterable<A>) => I.IO<R, Chunk<E>, Chunk<B>>
+  /**
+   * @rewriteStatic validatePar_ from "@principia/base/IO"
+   * @trace 1
+   */
+  validatePar<A, R, E, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, Chunk<E>, Chunk<B>>
+  /**
+   * @rewriteStatic validatePar from "@principia/base/IO"
+   * @dataFirst validatePar_
+   * @trace 0
+   */
+  validatePar<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: Iterable<A>) => I.IO<R, Chunk<E>, Chunk<B>>
+  /**
+   * @rewriteStatic validateParN_ from "@principia/base/IO"
+   * @trace 2
+   */
+  validateParN<A, R, E, B>(as: Iterable<A>, n: number, f: (a: A) => I.IO<R, E, B>): I.IO<R, Chunk<E>, Chunk<B>>
+  /**
+   * @rewriteStatic validateParN from "@principia/base/IO"
+   * @dataFirst validateParN_
+   * @trace 1
+   */
+  validateParN<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: Iterable<A>) => I.IO<R, Chunk<E>, Chunk<B>>
+  /**
+   * @rewriteStatic withChildren from "@principia/base/IO"
+   */
+  withChildren: typeof I.withChildren
+  /**
+   * @rewriteStatic yieldNow from "@principia/base/IO"
+   */
+  yieldNow: typeof I.yieldNow
+}
 
 declare module '@principia/base/IO/IO/primitives' {
   export interface IO<R, E, A> {
@@ -699,24 +1355,6 @@ declare module '@principia/base/IO/IO/primitives' {
     or<R, E, R1, E1>(this: I.IO<R, E, boolean>, that: I.IO<R1, E1, boolean>): I.IO<R & R1, E | E1, boolean>
 
     /**
-     * @rewriteGetter orHalt from "@principia/base/IO"
-     * @trace getter
-     */
-    orHalt: I.IO<R, never, A>
-
-    /**
-     * @rewriteGetter orHaltKeep from "@principia/base/IO"
-     * @trace getter
-     */
-    orHaltKeep: I.IO<R, unknown, A>
-
-    /**
-     * @rewrite orHaltWith_ from "@principia/base/IO"
-     * @trace 0
-     */
-    orHaltWith<R, E, A>(this: I.IO<R, E, A>, f: (e: E) => unknown): I.IO<R, never, A>
-
-    /**
      * @rewrite orElse_ from "@principia/base/IO"
      * @trace 0
      */
@@ -751,6 +1389,24 @@ declare module '@principia/base/IO/IO/primitives' {
      * @trace 0
      */
     orElseSucceed<R, E, A, A1>(this: I.IO<R, E, A>, a: () => A1): I.IO<R, E, A | A1>
+
+    /**
+     * @rewriteGetter orHalt from "@principia/base/IO"
+     * @trace getter
+     */
+    orHalt: I.IO<R, never, A>
+
+    /**
+     * @rewriteGetter orHaltKeep from "@principia/base/IO"
+     * @trace getter
+     */
+    orHaltKeep: I.IO<R, unknown, A>
+
+    /**
+     * @rewrite orHaltWith_ from "@principia/base/IO"
+     * @trace 0
+     */
+    orHaltWith<R, E, A>(this: I.IO<R, E, A>, f: (e: E) => unknown): I.IO<R, never, A>
 
     /**
      * @rewriteGetter parallelErrors from "@principia/base/IO"

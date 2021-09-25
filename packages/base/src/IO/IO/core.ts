@@ -2343,7 +2343,7 @@ export function foldMap_<M>(M: Monoid<M>) {
     /**
      * @trace 1
      */
-    <R, E, A>(as: ReadonlyArray<IO<R, E, A>>, f: (a: A) => M): IO<R, E, M> =>
+    <R, E, A>(as: Iterable<IO<R, E, A>>, f: (a: A) => M): IO<R, E, M> =>
       foldl_(as, M.nat, (x, a) =>
         pipe(
           a,
@@ -2372,7 +2372,7 @@ export function foldMap<M>(M: Monoid<M>) {
      * @trace 0
      */
     <A>(f: (a: A) => M) =>
-      <R, E>(as: ReadonlyArray<IO<R, E, A>>): IO<R, E, M> =>
+      <R, E>(as: Iterable<IO<R, E, A>>): IO<R, E, M> =>
         foldMap_(M)(as, f)
   )
 }
@@ -2559,42 +2559,41 @@ export function getOrElseIO<R1, E1, B>(
 /**
  * Lifts an Option into an IO, if the option is `None` it fails with NoSuchElementError.
  *
- * @trace 0
+ * @trace call
  */
 export function getOrFail<A>(option: Option<A>): FIO<NoSuchElementError, A> {
+  const trace = accessCallTrace()
   return getOrFailWith_(
     option,
-    traceAs(option, () => new NoSuchElementError('IO.getOrFail'))
+    traceFrom(trace, () => new NoSuchElementError('IO.getOrFail'))
   )
 }
 
 /**
  * Lifts an Option into an IO. If the option is `None`, fail with `onNone`.
  *
- * @trace 0
+ * @trace call
+ * @trace 1
  */
 export function getOrFailWith_<E, A>(option: Option<A>, onNone: () => E): FIO<E, A> {
-  return defer(traceAs(option, () => O.match_(option, () => fail(onNone()), succeed)))
+  const trace = accessCallTrace()
+  return defer(traceFrom(trace, () => O.match_(option, () => failLazy(onNone), succeed)))
 }
 
 /**
  * Lifts an Option into an IO. If the option is `None`, fail with `onNone`.
  *
  * @dataFirst getOrFailWith_
+ * @trace 0
  */
 export function getOrFailWith<E>(onNone: () => E) {
-  return (
-    /**
-     * @trace 0
-     */
-    <A>(option: Option<A>): FIO<E, A> => getOrFailWith_(option, onNone)
-  )
+  return <A>(option: Option<A>): FIO<E, A> => getOrFailWith_(option, onNone)
 }
 
 /**
  * Lifts an Option into a IO, if the option is `None` it fails with Unit.
  *
- * @trace 0
+ * @trace call
  */
 export function getOrFailUnit<A>(option: Option<A>): FIO<void, A> {
   return getOrFailWith_(option, () => undefined)
@@ -2972,7 +2971,6 @@ export function loop_<A, R, E, B>(
  * }
  * ```
  *
- * @dataFirst loop_
  * @trace 3
  */
 export function loopUnit_<A, R, E>(
@@ -4517,13 +4515,11 @@ export type DerivedLifted<
   [k in Fns]: T[k] extends (...args: infer ARGS) => IO<infer R, infer E, infer A>
     ? (...args: ARGS) => IO<R & Has<T>, E, A>
     : never
-} &
-  {
-    [k in Cns]: T[k] extends IO<infer R, infer E, infer A> ? IO<R & Has<T>, E, A> : never
-  } &
-  {
-    [k in Values]: IO<Has<T>, never, T[k]>
-  }
+} & {
+  [k in Cns]: T[k] extends IO<infer R, infer E, infer A> ? IO<R & Has<T>, E, A> : never
+} & {
+  [k in Values]: IO<Has<T>, never, T[k]>
+}
 
 export function deriveLifted<T>(
   H: Tag<T>
