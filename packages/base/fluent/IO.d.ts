@@ -29,6 +29,10 @@ import type { Sync } from '@principia/base/Sync'
 
 declare global {
   export const IO: IOStaticOps
+  export interface IO<R, E, A> extends I.IO<R, E, A> {}
+  export interface UIO<A> extends I.IO<unknown, never, A> {}
+  export interface FIO<E, A> extends I.IO<unknown, E, A> {}
+  export interface RIO<R, A> extends I.IO<R, never, A> {}
 }
 
 export interface IOStaticOps {

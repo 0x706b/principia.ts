@@ -4,6 +4,24 @@ import type * as R from '@principia/base/IO/Ref'
 import type { Option } from '@principia/base/Option'
 import type { Predicate } from '@principia/base/prelude'
 
+declare global {
+  export const Ref: RefStaticOps
+  export interface Ref<EA, EB, A, B> extends R.Ref<EA, EB, A, B> {}
+  export interface FRef<E, A> extends R.Ref<E, E, A, A> {}
+  export interface URef<A> extends R.Ref<never, never, A, A> {}
+}
+
+export interface RefStaticOps {
+  /**
+   * @rewriteStatic make from "@principia/base/IO/Ref"
+   */
+  make: typeof R.make
+  /**
+   * @rewriteStatic unsafeMake from "@principia/base/IO/Ref"
+   */
+  unsafeMake: typeof R.unsafeMake
+}
+
 declare module '@principia/base/IO/Ref' {
   export interface Ref<EA, EB, A, B> {
     /**
