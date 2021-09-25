@@ -1,6 +1,8 @@
+import type { Async } from '@principia/base/Async'
 import type { Chunk } from '@principia/base/Chunk'
 import type { Either } from '@principia/base/Either'
 import type { NoSuchElementError } from '@principia/base/Error'
+import type { Eval } from '@principia/base/Eval'
 import type { Has, Tag } from '@principia/base/Has'
 import type * as I from '@principia/base/IO'
 import type { Cause } from '@principia/base/IO/Cause'
@@ -23,6 +25,7 @@ import type {
   ServicesTuple,
   UnionToIntersection
 } from '@principia/base/prelude'
+import type { Sync } from '@principia/base/Sync'
 
 declare global {
   export const IO: IOStaticOps
@@ -356,6 +359,50 @@ export interface IOStaticOps {
   /**
    * @rewriteStatic fromAsync from "@principia/base/IO"
    */
+  from<R, E, A>(async: Async<R, E, A>): I.IO<R, E, A>
+  /**
+   * @rewriteStatic fromSync from "@principia/base/IO"
+   */
+  from<R, E, A>(sync: Sync<R, E, A>): I.IO<R, E, A>
+  /**
+   * @rewriteStatic fromEither from "@principia/base/IO"
+   */
+  from<E, A>(either: Either<E, A>): I.IO<unknown, E, A>
+  /**
+   * @rewriteStatic fromEitherLazy from "@principia/base/IO"
+   */
+  from<E, A>(either: () => Either<E, A>): I.IO<unknown, E, A>
+  /**
+   * @rewriteStatic fromEval from "@principia/base/IO"
+   */
+  from<A>(eval: Eval<A>): I.IO<unknown, never, A>
+  /**
+   * @rewriteStatic fromExit from "@principia/base/IO"
+   */
+  from<E, A>(exit: Exit<E, A>): I.IO<unknown, E, A>
+  /**
+   * @rewriteStatic fromExitLazy from "@principia/base/IO"
+   */
+  from<E, A>(exit: () => Exit<E, A>): I.IO<unknown, E, A>
+  /**
+   * @rewriteStatic fromOption from "@principia/base/IO"
+   */
+  from<A>(option: Option<A>): I.IO<unknown, Option<never>, A>
+  /**
+   * @rewriteStatic fromOptionLazy from "@principia/base/IO"
+   */
+  from<A>(option: () => Option<A>): I.IO<unknown, Option<never>, A>
+  /**
+   * @rewriteStatic fromPromise from "@principia/base/IO"
+   */
+  from<A>(promise: () => globalThis.Promise<A>): I.IO<unknown, unknown, A>
+  /**
+   * @rewriteStatic fromPromiseCatch from "@principia/base/IO"
+   */
+  from<E, A>(promise: () => globalThis.Promise<A>, onReject: (reason: unknown) => E): I.IO<unknown, E, A>
+  /**
+   * @rewriteStatic fromAsync from "@principia/base/IO"
+   */
   fromAsync: typeof I.fromAsync
   /**
    * @rewriteStatic fromEither from "@principia/base/IO"
@@ -389,7 +436,6 @@ export interface IOStaticOps {
    * @rewriteStatic fromPromise from "@principia/base/IO"
    */
   fromPromise: typeof I.fromPromise
-
   /**
    * @rewriteStatic fromPromiseCatch from "@principia/base/IO"
    */
@@ -404,6 +450,11 @@ export interface IOStaticOps {
    * @rewriteStatic fromSync from "@principia/base/IO"
    */
   fromSync: typeof I.fromSync
+
+  /**
+   * @rewriteStatic gen from "@principia/base/IO"
+   */
+  gen: typeof I.gen
 
   /**
    * @rewriteStatic getOrFail from "@principia/base/IO"
