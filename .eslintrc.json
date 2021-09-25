@@ -22,7 +22,6 @@
     "@typescript-eslint"
   ],
   "rules": {
-    "typescript-sort-keys/interface": "error",
     "@0x706b/align-assignments/align-assignments": "error",
     "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/ban-ts-ignore": "off",
