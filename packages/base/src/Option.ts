@@ -941,7 +941,9 @@ export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
 export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
 export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
 export const mapN      = P.mapNF(SemimonoidalFunctor)
+export const crossT_   = P.crossTF_(SemimonoidalFunctor)
 export const crossT    = P.crossTF(SemimonoidalFunctor)
+export const crossS_   = P.crossSF_(SemimonoidalFunctor)
 export const crossS    = P.crossSF(SemimonoidalFunctor)
 
 export const Apply = P.Apply<URI>({
@@ -960,11 +962,9 @@ export const Apply = P.Apply<URI>({
 export const apS: <N extends string, A, B>(
   name: Exclude<N, keyof A>,
   fb: Option<B>
-) => (fa: Option<A>) => Option<
-  {
-    [K in keyof A | N]: K extends keyof A ? A[K] : B
-  }
-> = P.apSF(Apply)
+) => (fa: Option<A>) => Option<{
+  [K in keyof A | N]: K extends keyof A ? A[K] : B
+}> = P.apSF(Apply)
 
 export const apT = P.apTF(Apply)
 
