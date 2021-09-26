@@ -1,5 +1,15 @@
 import type { IO, UIO } from '@principia/base/IO'
+import type * as FR from '@principia/base/IO/FiberRef'
 import type { Option } from '@principia/base/Option'
+
+declare global {
+  export const FiberRef: FiberRefStaticOps
+  export interface FiberRef<A> extends FR.FiberRef<A> {}
+}
+
+interface FiberRefStaticOps {
+  make: typeof FR.make
+}
 
 declare module '@principia/base/IO/FiberRef/core' {
   export interface FiberRef<A> {
