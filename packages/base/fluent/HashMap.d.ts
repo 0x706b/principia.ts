@@ -1,8 +1,21 @@
 import type { Either } from '@principia/base/Either'
+import type * as HM from '@principia/base/HashMap'
 import type { HashSet } from '@principia/base/HashSet'
 import type * as HKT from '@principia/base/HKT'
 import type { Option } from '@principia/base/Option'
 import type { Applicative, PredicateWithIndex, RefinementWithIndex } from '@principia/base/prelude'
+
+/* eslint typescript-sort-keys/interface: "error" */
+
+declare global {
+  export const HashMap: HashMapStaticOps
+  export interface HashMap<K, V> extends HM.HashMap<K, V> {}
+}
+
+interface HashMapStaticOps {
+  make: typeof HM.make
+  makeDefault: typeof HM.makeDefault
+}
 
 declare module '@principia/base/HashMap' {
   export interface HashMap<K, V> {

@@ -1,5 +1,18 @@
 import type { Config } from '@principia/base/HashMap'
+import type * as HS from '@principia/base/HashSet'
 import type { Ord, Predicate, Refinement } from '@principia/base/prelude'
+
+/* eslint typescript-sort-keys/interface: "error" */
+
+declare global {
+  export const HashSet: HashSetStaticOps
+  export interface HashSet<V> extends HS.HashSet<V> {}
+}
+
+interface HashSetStaticOps {
+  make: typeof HS.make
+  makeDefault: typeof HS.makeDefault
+}
 
 declare module '@principia/base/HashSet' {
   export interface HashSet<V> {
