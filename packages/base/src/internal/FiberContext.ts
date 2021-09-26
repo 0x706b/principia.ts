@@ -51,6 +51,7 @@ import * as L from '../List/core'
 import * as O from '../Option'
 import { AtomicReference } from '../util/support/AtomicReference'
 import { RingBuffer } from '../util/support/RingBuffer'
+import { defaultScheduler } from '../util/support/Scheduler'
 import { makeStack } from '../util/support/Stack'
 
 export type FiberRefLocals = Map<FiberRef<any>, any>
@@ -393,7 +394,10 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
         this.state.set(
           new FiberStateExecuting(Status.withInterrupting(true)(oldState.status), oldState.observers, newCause)
         )
-        this.evaluateLater(concrete(interruptAs(fiberId)))
+
+        setTimeout(() => {
+          this.evaluateNow(concrete(interruptAs(fiberId)))
+        }, 0)
       } else if (oldState._tag === 'Executing') {
         const newCause = C.then(oldState.interrupted, interruptedCause)
         this.state.set(new FiberStateExecuting(oldState.status, oldState.observers, newCause))
@@ -518,7 +522,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   evaluateLater(i0: Instruction) {
-    Promise.resolve(i0).then(this.evaluateNow)
+    defaultScheduler.schedule(() => this.evaluateNow(i0))
   }
 
   get scope(): Scope.Scope<Exit<E, A>> {
