@@ -2,7 +2,94 @@ import type { Either } from '@principia/base/Either'
 import type { Has } from '@principia/base/Has'
 import type * as I from '@principia/base/IO'
 import type { Random } from '@principia/base/IO/Random'
+import type * as Sc from '@principia/base/IO/Schedule'
 import type { Decision } from '@principia/base/IO/Schedule/Decision'
+
+/* eslint typescript-sort-keys/interface: "error" */
+
+declare global {
+  export const Schedule: ScheduleStaticOps
+  export interface Schedule<R, I, O> extends Sc.Schedule<R, I, O> {}
+}
+
+interface ScheduleStaticOps {
+  /**
+   * @rewriteStatic exponential from "@principia/base/IO/Schedule"
+   */
+  exponential: typeof Sc.exponential
+  /**
+   * @rewriteStatic fixed from "@principia/base/IO/Schedule"
+   */
+  fixed: typeof Sc.fixed
+  /**
+   * @rewriteStatic forever from "@principia/base/IO/Schedule"
+   */
+  forever: typeof Sc.forever
+  /**
+   * @rewriteStatic fromFunction from "@principia/base/IO/Schedule"
+   */
+  fromFunction: typeof Sc.fromFunction
+  /**
+   * @rewriteStatic identity from "@principia/base/IO/Schedule"
+   */
+  identity: typeof Sc.identity
+  /**
+   * @rewriteStatic linear from "@principia/base/IO/Schedule"
+   */
+  linear: typeof Sc.linear
+  /**
+   * @rewriteStatic once from "@principia/base/IO/Schedule"
+   */
+  once: typeof Sc.once
+  /**
+   * @rewriteStatic recur from "@principia/base/IO/Schedule"
+   */
+  recur: typeof Sc.recur
+  /**
+   * @rewriteStatic recurUntil from "@principia/base/IO/Schedule"
+   */
+  recurUntil: typeof Sc.recurUntil
+  /**
+   * @rewriteStatic recurUntilEqual from "@principia/base/IO/Schedule"
+   */
+  recurUntilEqual: typeof Sc.recurUntilEqual
+  /**
+   * @rewriteStatic recurUntilIO from "@principia/base/IO/Schedule"
+   */
+  recurUntilIO: typeof Sc.recurUntilIO
+  /**
+   * @rewriteStatic recurWhile from "@principia/base/IO/Schedule"
+   */
+  recurWhile: typeof Sc.recurWhile
+  /**
+   * @rewriteStatic recurWhileEqual from "@principia/base/IO/Schedule"
+   */
+  recurWhileEqual: typeof Sc.recurWhileEqual
+  /**
+   * @rewriteStatic recurWhileIO from "@principia/base/IO/Schedule"
+   */
+  recurWhileIO: typeof Sc.recurWhileIO
+  /**
+   * @rewriteStatic spaced from "@principia/base/IO/Schedule"
+   */
+  spaced: typeof Sc.spaced
+  /**
+   * @rewriteStatic stop from "@principia/base/IO/Schedule"
+   */
+  stop: typeof Sc.stop
+  /**
+   * @rewriteStatic unfold from "@principia/base/IO/Schedule"
+   */
+  unfold: typeof Sc.unfold
+  /**
+   * @rewriteStatic unfoldIO from "@principia/base/IO/Schedule"
+   */
+  unfoldIO: typeof Sc.unfoldIO
+  /**
+   * @rewriteStatic windowed from "@principia/base/IO/Schedule"
+   */
+  windowed: typeof Sc.windowed
+}
 
 declare module '@principia/base/IO/Schedule/core' {
   export interface Schedule<R, I, O> {
