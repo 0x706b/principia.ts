@@ -10,10 +10,10 @@ import { Unbounded } from '../util/support/MutableQueue'
 import * as MQ from '../util/support/MutableQueue'
 import * as I from '.'
 import * as Ex from './Exit'
-import * as F from './Fiber'
+import * as Fi from './Fiber'
+import * as F from './Future'
 import * as M from './Managed'
 import * as RM from './Managed/ReleaseMap'
-import * as P from './Promise'
 import * as Q from './Queue'
 import { QueueInternal } from './Queue'
 import * as Ref from './Ref'
@@ -143,7 +143,7 @@ export function unsafeMakeBounded<A>(requestedCapacity: number): UHub<A> {
     _makeBounded<A>(requestedCapacity),
     subscribersHashSet<A>(),
     releaseMap,
-    P.unsafeMake<never, void>(F.emptyFiberId),
+    F.unsafeMake<never, void>(Fi.emptyFiberId),
     new AtomicBoolean(false),
     new BackPressure()
   )
@@ -177,7 +177,7 @@ export function unsafeMakeDropping<A>(requestedCapacity: number): UHub<A> {
     _makeBounded<A>(requestedCapacity),
     subscribersHashSet<A>(),
     releaseMap,
-    P.unsafeMake<never, void>(F.emptyFiberId),
+    F.unsafeMake<never, void>(Fi.emptyFiberId),
     new AtomicBoolean(false),
     new Dropping()
   )
@@ -211,7 +211,7 @@ export function unsafeMakeSliding<A>(requestedCapacity: number): UHub<A> {
     _makeBounded<A>(requestedCapacity),
     subscribersHashSet<A>(),
     releaseMap,
-    P.unsafeMake<never, void>(F.emptyFiberId),
+    F.unsafeMake<never, void>(Fi.emptyFiberId),
     new AtomicBoolean(false),
     new Sliding()
   )
@@ -239,7 +239,7 @@ export function unsafeMakeUnbounded<A>(): UHub<A> {
     _makeUnbounded<A>(),
     subscribersHashSet<A>(),
     releaseMap,
-    P.unsafeMake<never, void>(F.emptyFiberId),
+    F.unsafeMake<never, void>(Fi.emptyFiberId),
     new AtomicBoolean(false),
     new Dropping()
   )
@@ -247,7 +247,7 @@ export function unsafeMakeUnbounded<A>(): UHub<A> {
 
 function _make<A>(hub: UHubInternal<A>, strategy: Strategy<A>): I.UIO<UHub<A>> {
   return I.chain_(RM.make, (releaseMap) => {
-    return I.map_(P.make<never, void>(), (promise) => {
+    return I.map_(F.make<never, void>(), (promise) => {
       return _unsafeMake(hub, subscribersHashSet<A>(), releaseMap, promise, new AtomicBoolean(false), strategy)
     })
   })
@@ -256,16 +256,16 @@ function _make<A>(hub: UHubInternal<A>, strategy: Strategy<A>): I.UIO<UHub<A>> {
 export class UnsafeHub<A> extends HubInternal<unknown, unknown, never, never, A, A> {
   constructor(
     readonly hub: UHubInternal<A>,
-    readonly subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<P.Promise<never, A>>>>,
+    readonly subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<F.Future<never, A>>>>,
     readonly releaseMap: RM.ReleaseMap,
-    readonly shutdownHook: P.Promise<never, void>,
+    readonly shutdownHook: F.Future<never, void>,
     readonly shutdownFlag: AtomicBoolean,
     readonly strategy: Strategy<A>
   ) {
     super()
   }
 
-  awaitShutdown = P.await(this.shutdownHook)
+  awaitShutdown = F.await(this.shutdownHook)
   capacity      = this.hub.capacity
   isShutdown    = I.succeedLazy(() => this.shutdownFlag.get)
   shutdown      = pipe(
@@ -276,7 +276,7 @@ export class UnsafeHub<A> extends HubInternal<unknown, unknown, never, never, A,
         return pipe(
           M.releaseAll_(this.releaseMap, Ex.interrupt(fiberId), parallel),
           I.crossSecond(this.strategy.shutdown),
-          I.whenIO(P.succeed_(this.shutdownHook, undefined))
+          I.whenIO(F.succeed_(this.shutdownHook, undefined))
         )
       })
     ),
@@ -340,9 +340,9 @@ export class UnsafeHub<A> extends HubInternal<unknown, unknown, never, never, A,
  */
 function _unsafeMake<A>(
   hub: UHubInternal<A>,
-  subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<P.Promise<never, A>>>>,
+  subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<F.Future<never, A>>>>,
   releaseMap: RM.ReleaseMap,
-  shutdownHook: P.Promise<never, void>,
+  shutdownHook: F.Future<never, void>,
   shutdownFlag: AtomicBoolean,
   strategy: Strategy<A>
 ): UHub<A> {
@@ -384,15 +384,15 @@ export function toQueue<RA, RB, EA, EB, A, B>(source: Hub<RA, RB, EA, EB, A, B>)
  */
 function subscription<A>(
   hub: UHubInternal<A>,
-  subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<P.Promise<never, A>>>>,
+  subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<F.Future<never, A>>>>,
   strategy: Strategy<A>
 ): I.UIO<Q.Dequeue<A>> {
-  return I.map_(P.make<never, void>(), (promise) => {
+  return I.map_(F.make<never, void>(), (promise) => {
     return unsafeSubscription(
       hub,
       subscribers,
       hub.subscribe(),
-      new Unbounded<P.Promise<never, A>>(),
+      new Unbounded<F.Future<never, A>>(),
       promise,
       new AtomicBoolean(false),
       strategy
@@ -403,17 +403,17 @@ function subscription<A>(
 class UnsafeSubscription<A> extends Q.QueueInternal<never, unknown, unknown, never, never, A> {
   constructor(
     readonly hub: UHubInternal<A>,
-    readonly subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<P.Promise<never, A>>>>,
+    readonly subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<F.Future<never, A>>>>,
     readonly subscription: SubscriptionInternal<A>,
-    readonly pollers: MutableQueue<P.Promise<never, A>>,
-    readonly shutdownHook: P.Promise<never, void>,
+    readonly pollers: MutableQueue<F.Future<never, A>>,
+    readonly shutdownHook: F.Future<never, void>,
     readonly shutdownFlag: AtomicBoolean,
     readonly strategy: Strategy<A>
   ) {
     super()
   }
 
-  awaitShutdown: I.UIO<void> = P.await(this.shutdownHook)
+  awaitShutdown: I.UIO<void> = F.await(this.shutdownHook)
 
   capacity: number = this.hub.capacity
 
@@ -425,9 +425,9 @@ class UnsafeSubscription<A> extends Q.QueueInternal<never, unknown, unknown, nev
       I.defer(() => {
         this.shutdownFlag.set(true)
         return pipe(
-          I.foreachPar_(_unsafePollAllQueue(this.pollers), P.interruptAs(fiberId)),
+          I.foreachPar_(_unsafePollAllQueue(this.pollers), F.interruptAs(fiberId)),
           I.crossSecond(I.succeedLazy(() => this.subscription.unsubscribe())),
-          I.whenIO(P.succeed_(this.shutdownHook, undefined))
+          I.whenIO(F.succeed_(this.shutdownHook, undefined))
         )
       })
     )
@@ -457,7 +457,7 @@ class UnsafeSubscription<A> extends Q.QueueInternal<never, unknown, unknown, nev
         const message = this.pollers.isEmpty ? this.subscription.poll(empty) : empty
 
         if (message === null) {
-          const promise = P.unsafeMake<never, A>(fiberId)
+          const promise = F.unsafeMake<never, A>(fiberId)
 
           return I.onInterrupt_(
             I.defer(() => {
@@ -467,7 +467,7 @@ class UnsafeSubscription<A> extends Q.QueueInternal<never, unknown, unknown, nev
               if (this.shutdownFlag.get) {
                 return I.interrupt
               } else {
-                return P.await(promise)
+                return F.await(promise)
               }
             }),
             () =>
@@ -514,18 +514,18 @@ class UnsafeSubscription<A> extends Q.QueueInternal<never, unknown, unknown, nev
  */
 function unsafeSubscription<A>(
   hub: UHubInternal<A>,
-  subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<P.Promise<never, A>>>>,
+  subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<F.Future<never, A>>>>,
   subscription: SubscriptionInternal<A>,
-  pollers: MutableQueue<P.Promise<never, A>>,
-  shutdownHook: P.Promise<never, void>,
+  pollers: MutableQueue<F.Future<never, A>>,
+  shutdownHook: F.Future<never, void>,
   shutdownFlag: AtomicBoolean,
   strategy: Strategy<A>
 ): Q.Dequeue<A> {
   return new UnsafeSubscription(hub, subscribers, subscription, pollers, shutdownHook, shutdownFlag, strategy)
 }
 
-function subscribersHashSet<A>(): HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<P.Promise<never, A>>>> {
-  return HS.hashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<P.Promise<never, A>>>>()
+function subscribersHashSet<A>(): HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<F.Future<never, A>>>> {
+  return HS.hashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<F.Future<never, A>>>>()
 }
 
 /*
@@ -911,7 +911,7 @@ export abstract class Strategy<A> {
    */
   abstract handleSurplus(
     hub: UHubInternal<A>,
-    subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<P.Promise<never, A>>>>,
+    subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<F.Future<never, A>>>>,
     as: Iterable<A>,
     isShutdown: AtomicBoolean
   ): I.UIO<boolean>
@@ -927,7 +927,7 @@ export abstract class Strategy<A> {
    */
   abstract unsafeOnHubEmptySpace(
     hub: UHubInternal<A>,
-    subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<P.Promise<never, A>>>>
+    subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<F.Future<never, A>>>>
   ): void
 
   /**
@@ -937,12 +937,12 @@ export abstract class Strategy<A> {
    */
   unsafeCompletePollers(
     hub: UHubInternal<A>,
-    subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<P.Promise<never, A>>>>,
+    subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<F.Future<never, A>>>>,
     subscription: SubscriptionInternal<A>,
-    pollers: MQ.MutableQueue<P.Promise<never, A>>
+    pollers: MQ.MutableQueue<F.Future<never, A>>
   ): void {
     let keepPolling  = true
-    const nullPoller = null as unknown as P.Promise<never, A>
+    const nullPoller = null as unknown as F.Future<never, A>
     const empty      = null as unknown as A
 
     while (keepPolling && !subscription.isEmpty()) {
@@ -976,7 +976,7 @@ export abstract class Strategy<A> {
    */
   unsafeCompleteSubscribers(
     hub: UHubInternal<A>,
-    subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<P.Promise<never, A>>>>
+    subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<F.Future<never, A>>>>
   ): void {
     for (const { first: subscription, second: pollers } of subscribers) {
       this.unsafeCompletePollers(hub, subscribers, subscription, pollers)
@@ -992,11 +992,11 @@ export abstract class Strategy<A> {
  * are published and received by other subscribers.
  */
 export class BackPressure<A> extends Strategy<A> {
-  publishers: MQ.MutableQueue<readonly [A, P.Promise<never, boolean>, boolean]> = new MQ.Unbounded()
+  publishers: MQ.MutableQueue<readonly [A, F.Future<never, boolean>, boolean]> = new MQ.Unbounded()
 
   handleSurplus(
     hub: UHubInternal<A>,
-    subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<P.Promise<never, A>>>>,
+    subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<F.Future<never, A>>>>,
     as: Iterable<A>,
     isShutdown: AtomicBoolean
   ): I.UIO<boolean> {
@@ -1004,7 +1004,7 @@ export class BackPressure<A> extends Strategy<A> {
       I.fiberId(),
       I.chain((fiberId) =>
         I.defer(() => {
-          const promise = P.unsafeMake<never, boolean>(fiberId)
+          const promise = F.unsafeMake<never, boolean>(fiberId)
 
           return pipe(
             I.defer(() => {
@@ -1012,7 +1012,7 @@ export class BackPressure<A> extends Strategy<A> {
               this.unsafeOnHubEmptySpace(hub, subscribers)
               this.unsafeCompleteSubscribers(hub, subscribers)
 
-              return isShutdown.get ? I.interrupt : P.await(promise)
+              return isShutdown.get ? I.interrupt : F.await(promise)
             }),
             I.onInterrupt(() => I.succeedLazy(() => this.unsafeRemove(promise)))
           )
@@ -1028,7 +1028,7 @@ export class BackPressure<A> extends Strategy<A> {
       I.chainS('publishers', () => I.succeedLazy(() => _unsafePollAllQueue(this.publishers))),
       I.tap(({ fiberId, publishers }) =>
         I.foreachPar_(publishers, ([_, promise, last]) =>
-          last ? I.asUnit(P.interruptAs_(promise, fiberId)) : I.unit()
+          last ? I.asUnit(F.interruptAs_(promise, fiberId)) : I.unit()
         )
       ),
       I.asUnit
@@ -1037,9 +1037,9 @@ export class BackPressure<A> extends Strategy<A> {
 
   unsafeOnHubEmptySpace(
     hub: UHubInternal<A>,
-    subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<P.Promise<never, A>>>>
+    subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<F.Future<never, A>>>>
   ): void {
-    const empty     = null as unknown as readonly [A, P.Promise<never, boolean>, boolean]
+    const empty     = null as unknown as readonly [A, F.Future<never, boolean>, boolean]
     let keepPolling = true
 
     while (keepPolling && !hub.isFull()) {
@@ -1060,7 +1060,7 @@ export class BackPressure<A> extends Strategy<A> {
     }
   }
 
-  private unsafeOffer(as: Iterable<A>, promise: P.Promise<never, boolean>): void {
+  private unsafeOffer(as: Iterable<A>, promise: F.Future<never, boolean>): void {
     const it = as[Symbol.iterator]()
     let curr = it.next()
 
@@ -1074,7 +1074,7 @@ export class BackPressure<A> extends Strategy<A> {
     }
   }
 
-  private unsafeRemove(promise: P.Promise<never, boolean>): void {
+  private unsafeRemove(promise: F.Future<never, boolean>): void {
     _unsafeOfferAll(
       this.publishers,
       C.filter_(_unsafePollAllQueue(this.publishers), ([_, a]) => a !== promise)
@@ -1093,7 +1093,7 @@ export class BackPressure<A> extends Strategy<A> {
 export class Dropping<A> extends Strategy<A> {
   handleSurplus(
     _hub: UHubInternal<A>,
-    _subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<P.Promise<never, A>>>>,
+    _subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<F.Future<never, A>>>>,
     _as: Iterable<A>,
     _isShutdown: AtomicBoolean
   ): I.UIO<boolean> {
@@ -1104,7 +1104,7 @@ export class Dropping<A> extends Strategy<A> {
 
   unsafeOnHubEmptySpace(
     _hub: UHubInternal<A>,
-    _subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<P.Promise<never, A>>>>
+    _subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<F.Future<never, A>>>>
   ): void {
     //
   }
@@ -1139,7 +1139,7 @@ export class Sliding<A> extends Strategy<A> {
 
   handleSurplus(
     hub: UHubInternal<A>,
-    subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<P.Promise<never, A>>>>,
+    subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<F.Future<never, A>>>>,
     as: Iterable<A>,
     _isShutdown: AtomicBoolean
   ): I.UIO<boolean> {
@@ -1154,7 +1154,7 @@ export class Sliding<A> extends Strategy<A> {
 
   unsafeOnHubEmptySpace(
     _hub: UHubInternal<A>,
-    _subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<P.Promise<never, A>>>>
+    _subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MQ.MutableQueue<F.Future<never, A>>>>
   ): void {
     //
   }
@@ -1914,8 +1914,8 @@ function _makeUnbounded<A>(): UHubInternal<A> {
 /**
  * Unsafely completes a promise with the specified value.
  */
-function _unsafeCompletePromise<A>(promise: P.Promise<never, A>, a: A): void {
-  P.unsafeDone(I.succeed(a))(promise)
+function _unsafeCompletePromise<A>(promise: F.Future<never, A>, a: A): void {
+  F.unsafeDone(I.succeed(a))(promise)
 }
 
 /**

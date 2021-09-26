@@ -13,9 +13,9 @@ import { identity, pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as T from '@principia/base/IO'
 import { defaultPrettyPrint } from '@principia/base/IO/Cause'
+import * as F from '@principia/base/IO/Future'
 import * as L from '@principia/base/IO/Layer'
 import * as M from '@principia/base/IO/Managed'
-import * as P from '@principia/base/IO/Promise'
 import * as Q from '@principia/base/IO/Queue'
 import * as Ref from '@principia/base/IO/Ref'
 import * as O from '@principia/base/Option'
@@ -324,7 +324,7 @@ export class Transactional<R, S, Ev, F1 extends AM.AnyMessage> extends AbstractS
                           )
                         )
                       ),
-                      T.crossSecond(P.succeed_(_.promise, a)),
+                      T.crossSecond(F.succeed_(_.promise, a)),
                       T.as(T.unit)
                     )
                 ),
@@ -334,7 +334,7 @@ export class Transactional<R, S, Ev, F1 extends AM.AnyMessage> extends AbstractS
                     (e) =>
                       pipe(
                         supervisor.supervise(_.receiver, e),
-                        T.matchIO((__) => P.fail_(_.promise, e), _.completer)
+                        T.matchIO((__) => F.fail_(_.promise, e), _.completer)
                       ),
                     _.completer
                   )

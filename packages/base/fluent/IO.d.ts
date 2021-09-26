@@ -9,10 +9,10 @@ import type { Cause } from '@principia/base/IO/Cause'
 import type { Clock } from '@principia/base/IO/Clock'
 import type { Exit } from '@principia/base/IO/Exit'
 import type { Fiber, FiberContext, FiberId, InterruptStatus, RuntimeFiber } from '@principia/base/IO/Fiber'
+import type { Future } from '@principia/base/IO/Future'
 import type { IOEnv } from '@principia/base/IO/IOEnv'
 import type * as L from '@principia/base/IO/Layer'
 import type { Managed, Reservation } from '@principia/base/IO/Managed'
-import type { Promise } from '@principia/base/IO/Promise'
 import type { Schedule } from '@principia/base/IO/Schedule'
 import type { Scope } from '@principia/base/IO/Scope'
 import type { Supervisor } from '@principia/base/IO/Supervisor'
@@ -1215,7 +1215,7 @@ declare module '@principia/base/IO/IO/primitives' {
      * @rewrite fulfill_ from "@principia/base/IO"
      * @trace call
      */
-    fulfill<R, E, A>(this: I.IO<R, E, A>, promise: Promise<E, A>): I.IO<R, never, boolean>
+    fulfill<R, E, A>(this: I.IO<R, E, A>, promise: Future<E, A>): I.IO<R, never, boolean>
 
     /**
      * @rewrite get from "@principia/base/IO"

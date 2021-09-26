@@ -1,31 +1,31 @@
-import type { Cause } from '../../Cause'
 import type { Chunk } from '../../../Chunk'
-import type { Exit } from '../../Exit'
 import type { Predicate } from '../../../Predicate'
 import type { IO, URIO } from '../..'
+import type { Cause } from '../../Cause'
+import type { Exit } from '../../Exit'
 import type { Channel } from './core'
 import type { ChannelState } from './internal/ChannelState'
 import type { AsyncInputConsumer, AsyncInputProducer } from './internal/producer'
 
 import * as AR from '../../../Array'
-import * as Ca from '../../Cause'
 import * as A from '../../../Chunk'
 import * as E from '../../../Either'
 import * as Ev from '../../../Eval'
 import { sequential } from '../../../ExecutionStrategy'
-import * as Ex from '../../Exit'
 import { flow, identity, pipe } from '../../../function'
 import * as O from '../../../Option'
-import * as PR from '../../Promise'
-import * as Sem from '../../Semaphore'
 import { tuple } from '../../../tuple'
 import * as I from '../..'
+import * as Ca from '../../Cause'
+import * as Ex from '../../Exit'
 import * as F from '../../Fiber'
+import * as PR from '../../Future'
 import * as H from '../../Hub'
 import * as M from '../../Managed'
 import * as RM from '../../Managed/ReleaseMap'
 import * as Q from '../../Queue'
 import * as Ref from '../../Ref'
+import * as Sem from '../../Semaphore'
 import {
   BracketOut,
   Bridge,
@@ -1093,7 +1093,7 @@ export function interruptWhen<Env1, OutErr1, OutDone1>(io: IO<Env1, OutErr1, Out
  */
 export function interruptWhenP_<Env, InErr, InElem, InDone, OutErr, OutErr1, OutElem, OutDone, OutDone1>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
-  promise: PR.Promise<OutErr1, OutDone1>
+  promise: PR.Future<OutErr1, OutDone1>
 ): Channel<Env, InErr, InElem, InDone, OutErr | OutErr1, OutElem, OutDone | OutDone1> {
   return interruptWhen_(self, PR.await(promise))
 }
@@ -1107,7 +1107,7 @@ export function interruptWhenP_<Env, InErr, InElem, InDone, OutErr, OutErr1, Out
  *
  * @dataFirst interruptWhenP_
  */
-export function interruptWhenP<OutErr1, OutDone1>(promise: PR.Promise<OutErr1, OutDone1>) {
+export function interruptWhenP<OutErr1, OutDone1>(promise: PR.Future<OutErr1, OutDone1>) {
   return <Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
     self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
   ) => interruptWhenP_(self, promise)
@@ -1411,7 +1411,7 @@ export function mergeAllWith_<
         const queue = yield* _(
           M.bracket_(Q.makeBounded<I.IO<Env, E.Either<OutErr | OutErr1, OutDone>, OutElem>>(bufferSize), Q.shutdown)
         )
-        const cancelers   = yield* _(M.bracket_(Q.makeBounded<PR.Promise<never, void>>(n), Q.shutdown))
+        const cancelers   = yield* _(M.bracket_(Q.makeBounded<PR.Future<never, void>>(n), Q.shutdown))
         const lastDone    = yield* _(Ref.make<O.Option<OutDone>>(O.none()))
         const errorSignal = yield* _(PR.make<never, void>())
         const permits     = yield* _(Sem.make(n))

@@ -2,21 +2,21 @@ import type { Option } from '../../Option'
 
 import { pipe } from '../../function'
 import { none, some } from '../../Option'
-import * as P from '../Promise'
 import { matchTag } from '../../util/match'
 import * as I from '..'
+import * as F from '../Future'
 import * as Ref from '../Ref'
 
 type State<A> = Empty | Full<A>
 
 class Empty {
   readonly _tag = 'Empty'
-  constructor(readonly notifyConsumer: P.Promise<never, void>) {}
+  constructor(readonly notifyConsumer: F.Future<never, void>) {}
 }
 
 class Full<A> {
   readonly _tag = 'Full'
-  constructor(readonly a: A, readonly notifyProducer: P.Promise<never, void>) {}
+  constructor(readonly a: A, readonly notifyProducer: F.Future<never, void>) {}
 }
 
 /**
@@ -31,7 +31,7 @@ class Handoff<A> {
 
 export function make<A>(): I.UIO<Handoff<A>> {
   return pipe(
-    P.make<never, void>(),
+    F.make<never, void>(),
     I.chain((p) => Ref.make<State<A>>(new Empty(p))),
     I.map((ref) => new Handoff(ref))
   )
@@ -40,18 +40,18 @@ export function make<A>(): I.UIO<Handoff<A>> {
 export function offer<A>(a: A) {
   return (h: Handoff<A>): I.UIO<void> =>
     pipe(
-      P.make<never, void>(),
+      F.make<never, void>(),
       I.chain((p) =>
         pipe(
           h.ref,
           Ref.modify<I.UIO<void>, State<A>>(
             matchTag({
               Empty: ({ notifyConsumer }) =>
-                [pipe(P.succeed_(notifyConsumer, undefined), I.crossSecond(P.await(p))), new Full(a, p)] as const,
+                [pipe(F.succeed_(notifyConsumer, undefined), I.crossSecond(F.await(p))), new Full(a, p)] as const,
               Full: (s) =>
                 [
                   pipe(
-                    P.await(s.notifyProducer),
+                    F.await(s.notifyProducer),
                     I.chain(() => offer(a)(h))
                   ),
                   s
@@ -66,7 +66,7 @@ export function offer<A>(a: A) {
 
 export function take<A>(h: Handoff<A>): I.UIO<A> {
   return pipe(
-    P.make<never, void>(),
+    F.make<never, void>(),
     I.chain((p) =>
       pipe(
         h.ref,
@@ -75,13 +75,13 @@ export function take<A>(h: Handoff<A>): I.UIO<A> {
             Empty: (s) =>
               [
                 pipe(
-                  P.await(s.notifyConsumer),
+                  F.await(s.notifyConsumer),
                   I.chain(() => take(h))
                 ),
                 s
               ] as const,
             Full: ({ a, notifyProducer }) =>
-              [pipe(P.succeed_(notifyProducer, undefined), I.as(a)), new Empty(p)] as const
+              [pipe(F.succeed_(notifyProducer, undefined), I.as(a)), new Empty(p)] as const
           })
         ),
         I.flatten
@@ -92,7 +92,7 @@ export function take<A>(h: Handoff<A>): I.UIO<A> {
 
 export function poll<A>(h: Handoff<A>): I.UIO<Option<A>> {
   return pipe(
-    P.make<never, void>(),
+    F.make<never, void>(),
     I.chain((p) =>
       pipe(
         h.ref,
@@ -100,7 +100,7 @@ export function poll<A>(h: Handoff<A>): I.UIO<Option<A>> {
           matchTag({
             Empty: (s) => [I.succeed(none()), s] as const,
             Full: ({ a, notifyProducer }) =>
-              [pipe(P.succeed_(notifyProducer, undefined), I.as(some(a))), new Empty(p)] as const
+              [pipe(F.succeed_(notifyProducer, undefined), I.as(some(a))), new Empty(p)] as const
           })
         ),
         I.flatten

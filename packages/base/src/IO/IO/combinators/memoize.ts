@@ -9,7 +9,7 @@ import { pipe } from '../../../function'
 import * as HM from '../../../HashMap'
 import * as O from '../../../Option'
 import { tuple } from '../../../tuple'
-import * as P from '../../Promise'
+import * as F from '../../Future'
 import * as RefM from '../../RefM'
 import * as I from '../core'
 
@@ -20,7 +20,7 @@ import * as I from '../core'
  */
 export function memoize<R, E, A, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<R, E, B>> {
   return pipe(
-    RefM.make(HM.makeDefault<A, P.Promise<E, B>>()),
+    RefM.make(HM.makeDefault<A, F.Future<E, B>>()),
     I.map(
       traceAs(
         f,
@@ -34,15 +34,15 @@ export function memoize<R, E, A, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<
                     return I.succeed(tuple(memo.value, m))
                   } else {
                     return I.gen(function* (_) {
-                      const p = yield* _(P.make<E, B>())
-                      yield* _(I.fork(P.fulfill_(p, f(a))))
+                      const p = yield* _(F.make<E, B>())
+                      yield* _(I.fork(F.fulfill_(p, f(a))))
                       return tuple(p, HM.set_(m, a, p))
                     })
                   }
                 })
               )
             )
-            return yield* _(P.await(promise))
+            return yield* _(F.await(promise))
           })
       )
     )
@@ -61,7 +61,7 @@ export function memoizeEq<A>(eq: Eq<A>) {
      */
     <R, E, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<R, E, B>> =>
       pipe(
-        RefM.make(HM.makeDefault<A, P.Promise<E, B>>()),
+        RefM.make(HM.makeDefault<A, F.Future<E, B>>()),
         I.map(
           traceAs(
             f,
@@ -76,14 +76,14 @@ export function memoizeEq<A>(eq: Eq<A>) {
                         }
                       }
                       return I.gen(function* (_) {
-                        const p = yield* _(P.make<E, B>())
-                        yield* _(I.fork(P.fulfill_(p, f(a))))
+                        const p = yield* _(F.make<E, B>())
+                        yield* _(I.fork(F.fulfill_(p, f(a))))
                         return tuple(p, HM.set_(m, a, p))
                       })
                     })
                   )
                 )
-                return yield* _(P.await(promise))
+                return yield* _(F.await(promise))
               })
           )
         )

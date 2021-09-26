@@ -1,5 +1,5 @@
 import type { Either } from '../Either'
-import type { Promise } from './Promise'
+import type { Future } from './Future'
 import type { URef } from './Ref/core'
 
 import * as E from '../Either'
@@ -7,13 +7,13 @@ import { IllegalArgumentError } from '../Error'
 import { pipe } from '../function'
 import * as O from '../Option'
 import { ImmutableQueue } from '../util/support/ImmutableQueue'
+import * as F from './Future'
 import { bracket_ } from './IO/combinators/bracket'
 import * as I from './IO/core'
 import * as M from './Managed/core'
-import * as P from './Promise'
 import * as Ref from './Ref/core'
 
-export type Entry = [Promise<never, void>, number]
+export type Entry = [Future<never, void>, number]
 export type State = Either<ImmutableQueue<Entry>, number>
 
 export class Acquisition {
@@ -53,9 +53,9 @@ export class Semaphore {
           (): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [acc, E.right(n)],
           ([[p, m], q]): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => {
             if (n > m) {
-              return this.loop(n - m, E.left(q), I.crossFirst_(acc, P.succeed_(p, undefined)))
+              return this.loop(n - m, E.left(q), I.crossFirst_(acc, F.succeed_(p, undefined)))
             } else if (n === m) {
-              return [I.crossFirst_(acc, P.succeed_(p, undefined)), E.left(q)]
+              return [I.crossFirst_(acc, F.succeed_(p, undefined)), E.left(q)]
             } else {
               return [acc, E.left(q.prepend([p, m - n]))]
             }
@@ -76,7 +76,7 @@ export class Semaphore {
     )
   }
 
-  private restore(p: Promise<never, void>, n: number): I.UIO<void> {
+  private restore(p: Future<never, void>, n: number): I.UIO<void> {
     return I.flatten(
       pipe(
         this.state,
@@ -102,20 +102,20 @@ export class Semaphore {
     if (n === 0) {
       return I.pure(new Acquisition(I.unit(), I.unit()))
     } else {
-      return I.chain_(P.make<never, void>(), (p) =>
+      return I.chain_(F.make<never, void>(), (p) =>
         pipe(
           this.state,
           Ref.modify(
             E.match(
               (q): [Acquisition, E.Either<ImmutableQueue<Entry>, number>] => [
-                new Acquisition(P.await(p), this.restore(p, n)),
+                new Acquisition(F.await(p), this.restore(p, n)),
                 E.left(q.push([p, n]))
               ],
               (m): [Acquisition, E.Either<ImmutableQueue<Entry>, number>] => {
                 if (m >= n) {
                   return [new Acquisition(I.unit(), this.releaseN(n)), E.right(m - n)]
                 }
-                return [new Acquisition(P.await(p), this.restore(p, n)), E.left(new ImmutableQueue([[p, n - m]]))]
+                return [new Acquisition(F.await(p), this.restore(p, n)), E.left(new ImmutableQueue([[p, n - m]]))]
               }
             )
           )

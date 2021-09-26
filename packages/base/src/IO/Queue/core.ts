@@ -1,15 +1,15 @@
 import type { Chunk } from '../../Chunk'
-import type { Promise } from '../Promise'
 import type { MutableQueue } from '../../util/support/MutableQueue'
 import type { IO, UIO } from '..'
+import type { Future } from '../Future'
 
 import * as C from '../../Chunk/core'
 import { flow, identity, pipe } from '../../function'
 import * as O from '../../Option'
-import * as P from '../Promise'
 import { tuple } from '../../tuple'
 import { AtomicBoolean } from '../../util/support/AtomicBoolean'
 import { Bounded, Unbounded } from '../../util/support/MutableQueue'
+import * as F from '../Future'
 import * as I from './internal/io'
 
 /**
@@ -886,15 +886,15 @@ export function poll<RA, RB, EA, EB, A, B>(queue: Queue<RA, RB, EA, EB, A, B>): 
 class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A> {
   constructor(
     readonly queue: MutableQueue<A>,
-    readonly takers: MutableQueue<Promise<never, A>>,
-    readonly shutdownHook: Promise<never, void>,
+    readonly takers: MutableQueue<Future<never, A>>,
+    readonly shutdownHook: Future<never, void>,
     readonly shutdownFlag: AtomicBoolean,
     readonly strategy: Strategy<A>
   ) {
     super()
   }
 
-  awaitShutdown: I.UIO<void> = P.await(this.shutdownHook)
+  awaitShutdown: I.UIO<void> = F.await(this.shutdownHook)
 
   capacity: number = this.queue.capacity
 
@@ -929,7 +929,7 @@ class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A>
       if (this.shutdownFlag.get) {
         return I.interrupt
       } else {
-        const pTakers                = this.queue.isEmpty ? _unsafePollN(this.takers, arr.length) : C.empty<Promise<never, A>>()
+        const pTakers                = this.queue.isEmpty ? _unsafePollN(this.takers, arr.length) : C.empty<Future<never, A>>()
         const [forTakers, remaining] = C.splitAt_(arr, pTakers.length)
         pipe(
           pTakers,
@@ -961,8 +961,8 @@ class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A>
       this.shutdownFlag.set(true)
 
       return I.uninterruptible(
-        I.whenIO(P.succeed_(this.shutdownHook, undefined))(
-          I.chain_(I.foreachPar_(_unsafePollAll(this.takers), P.interruptAs(d.id)), () => this.strategy.shutdown)
+        I.whenIO(F.succeed_(this.shutdownHook, undefined))(
+          I.chain_(I.foreachPar_(_unsafePollAll(this.takers), F.interruptAs(d.id)), () => this.strategy.shutdown)
         )
       )
     })
@@ -988,7 +988,7 @@ class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A>
         this.strategy.unsafeOnQueueEmptySpace(this.queue, this.takers)
         return I.pure(item)
       } else {
-        const p = P.unsafeMake<never, A>(fiberId)
+        const p = F.unsafeMake<never, A>(fiberId)
 
         return I.onInterrupt_(
           I.defer(() => {
@@ -997,7 +997,7 @@ class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A>
             if (this.shutdownFlag.get) {
               return I.interrupt
             } else {
-              return P.await(p)
+              return F.await(p)
             }
           }),
           () => I.succeedLazy(() => _unsafeRemove(this.takers, p))
@@ -1035,8 +1035,8 @@ class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A>
 
 function _unsafeQueue<A>(
   queue: MutableQueue<A>,
-  takers: MutableQueue<Promise<never, A>>,
-  shutdownHook: Promise<never, void>,
+  takers: MutableQueue<Future<never, A>>,
+  shutdownHook: Future<never, void>,
   shutdownFlag: AtomicBoolean,
   strategy: Strategy<A>
 ): UQueue<A> {
@@ -1045,7 +1045,7 @@ function _unsafeQueue<A>(
 
 function _makeQueue<A>(strategy: Strategy<A>): (queue: MutableQueue<A>) => I.IO<unknown, never, UQueue<A>> {
   return (queue) =>
-    I.map_(P.make<never, void>(), (p) => _unsafeQueue(queue, new Unbounded(), p, new AtomicBoolean(false), strategy))
+    I.map_(F.make<never, void>(), (p) => _unsafeQueue(queue, new Unbounded(), p, new AtomicBoolean(false), strategy))
 }
 
 function _unsafeOfferAll<A>(q: MutableQueue<A>, as: Chunk<A>): Chunk<A> {
@@ -1073,8 +1073,8 @@ function _unsafePollAll<A>(q: MutableQueue<A>): Chunk<A> {
   return as
 }
 
-function _unsafeCompletePromise<A>(p: Promise<never, A>, a: A) {
-  return P.unsafeDone_(p, I.pure(a))
+function _unsafeCompletePromise<A>(p: Future<never, A>, a: A) {
+  return F.unsafeDone_(p, I.pure(a))
 }
 
 function _unsafeRemove<A>(q: MutableQueue<A>, a: A) {
@@ -1103,7 +1103,7 @@ function _unsafePollN<A>(q: MutableQueue<A>, max: number): Chunk<A> {
 function _unsafeCompleteTakers<A>(
   strategy: Strategy<A>,
   queue: MutableQueue<A>,
-  takers: MutableQueue<Promise<never, A>>
+  takers: MutableQueue<Future<never, A>>
 ): void {
   let keepPolling = true
 
@@ -1137,11 +1137,11 @@ export interface Strategy<A> {
   readonly handleSurplus: (
     as: Chunk<A>,
     queue: MutableQueue<A>,
-    takers: MutableQueue<Promise<never, A>>,
+    takers: MutableQueue<Future<never, A>>,
     isShutdown: AtomicBoolean
   ) => I.UIO<boolean>
 
-  readonly unsafeOnQueueEmptySpace: (queue: MutableQueue<A>, takers: MutableQueue<Promise<never, A>>) => void
+  readonly unsafeOnQueueEmptySpace: (queue: MutableQueue<A>, takers: MutableQueue<Future<never, A>>) => void
 
   readonly surplusSize: number
 
@@ -1149,17 +1149,17 @@ export interface Strategy<A> {
 }
 
 export class BackPressureStrategy<A> implements Strategy<A> {
-  private putters = new Unbounded<[A, Promise<never, boolean>, boolean]>()
+  private putters = new Unbounded<[A, Future<never, boolean>, boolean]>()
 
   handleSurplus(
     as: Chunk<A>,
     queue: MutableQueue<A>,
-    takers: MutableQueue<Promise<never, A>>,
+    takers: MutableQueue<Future<never, A>>,
     isShutdown: AtomicBoolean
   ): I.UIO<boolean> {
     return I.descriptorWith((d) =>
       I.defer(() => {
-        const p = P.unsafeMake<never, boolean>(d.id)
+        const p = F.unsafeMake<never, boolean>(d.id)
 
         return I.onInterrupt_(
           I.defer(() => {
@@ -1169,7 +1169,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
             if (isShutdown.get) {
               return I.interrupt
             } else {
-              return P.await(p)
+              return F.await(p)
             }
           }),
           () => I.succeedLazy(() => this.unsafeRemove(p))
@@ -1178,14 +1178,14 @@ export class BackPressureStrategy<A> implements Strategy<A> {
     )
   }
 
-  unsafeRemove(p: Promise<never, boolean>) {
+  unsafeRemove(p: Future<never, boolean>) {
     _unsafeOfferAll(
       this.putters,
       C.filter_(_unsafePollAll(this.putters), ([_, __]) => __ !== p)
     )
   }
 
-  unsafeOffer(as: Chunk<A>, p: Promise<never, boolean>) {
+  unsafeOffer(as: Chunk<A>, p: Future<never, boolean>) {
     let bs = as
 
     while (bs.length > 0) {
@@ -1201,7 +1201,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
     }
   }
 
-  unsafeOnQueueEmptySpace(queue: MutableQueue<A>, takers: MutableQueue<Promise<never, A>>) {
+  unsafeOnQueueEmptySpace(queue: MutableQueue<A>, takers: MutableQueue<Future<never, A>>) {
     let keepPolling = true
 
     while (keepPolling && !queue.isFull) {
@@ -1228,7 +1228,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
       const fiberId = yield* _(I.fiberId())
       const putters = yield* _(I.succeedLazy(() => _unsafePollAll(self.putters)))
       yield* _(
-        I.foreachPar_(putters, ([, p, lastItem]) => (lastItem ? I.asUnit(P.interruptAs_(p, fiberId)) : I.unit()))
+        I.foreachPar_(putters, ([, p, lastItem]) => (lastItem ? I.asUnit(F.interruptAs_(p, fiberId)) : I.unit()))
       )
     })
   }
@@ -1242,7 +1242,7 @@ export class DroppingStrategy<A> implements Strategy<A> {
   handleSurplus(
     _as: Chunk<A>,
     _queue: MutableQueue<A>,
-    _takers: MutableQueue<Promise<never, A>>,
+    _takers: MutableQueue<Future<never, A>>,
     _isShutdown: AtomicBoolean
   ): I.UIO<boolean> {
     return I.pure(false)
@@ -1265,7 +1265,7 @@ export class SlidingStrategy<A> implements Strategy<A> {
   handleSurplus(
     as: Chunk<A>,
     queue: MutableQueue<A>,
-    takers: MutableQueue<Promise<never, A>>,
+    takers: MutableQueue<Future<never, A>>,
     _isShutdown: AtomicBoolean
   ): I.UIO<boolean> {
     return I.succeedLazy(() => {

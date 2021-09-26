@@ -22,9 +22,9 @@ import { ClockTag, ProxyClock } from '@principia/base/IO/Clock'
 import { Console } from '@principia/base/IO/Console'
 import { eqFiberId } from '@principia/base/IO/Fiber'
 import * as Fi from '@principia/base/IO/Fiber'
+import * as F from '@principia/base/IO/Future'
 import * as L from '@principia/base/IO/Layer'
 import * as M from '@principia/base/IO/Managed'
-import * as P from '@principia/base/IO/Promise'
 import * as Ref from '@principia/base/IO/Ref'
 import * as RefM from '@principia/base/IO/RefM'
 import * as Li from '@principia/base/List'
@@ -39,11 +39,11 @@ import { HashEqFiber, HashEqFiberId } from '../util'
 import { LiveTag } from './Live'
 
 export class Data {
-  constructor(readonly duration: number, readonly sleeps: List<readonly [number, P.Promise<never, void>]>) {}
+  constructor(readonly duration: number, readonly sleeps: List<readonly [number, F.Future<never, void>]>) {}
 }
 
 export class Sleep {
-  constructor(readonly duration: number, readonly promise: P.Promise<never, void>, readonly fiberId: FiberId) {}
+  constructor(readonly duration: number, readonly promise: F.Future<never, void>, readonly fiberId: FiberId) {}
 }
 
 interface Start {
@@ -84,7 +84,7 @@ export class TestClock implements Clock {
   sleep = (ms: number) => {
     const self = this
     return I.gen(function* (_) {
-      const promise = yield* _(P.make<never, void>())
+      const promise = yield* _(F.make<never, void>())
       const wait    = yield* _(
         Ref.modify_(self.clockState, (data) => {
           const end = data.duration + ms
@@ -98,9 +98,9 @@ export class TestClock implements Clock {
       yield* _(
         I.defer(() => {
           if (wait) {
-            return I.crossSecond_(self.warningStart, P.await(promise))
+            return I.crossSecond_(self.warningStart, F.await(promise))
           } else {
-            return I.crossSecond_(P.succeed_(promise, undefined), I.unit())
+            return I.crossSecond_(F.succeed_(promise, undefined), I.unit())
           }
         })
       )
@@ -200,7 +200,7 @@ export class TestClock implements Clock {
         O.match(
           () => I.unit(),
           ([end, promise]) =>
-            pipe(P.succeed_(promise, undefined), I.crossSecond(I.yieldNow), I.crossSecond(this.run((_) => end)))
+            pipe(F.succeed_(promise, undefined), I.crossSecond(I.yieldNow), I.crossSecond(this.run((_) => end)))
         )
       )
     )

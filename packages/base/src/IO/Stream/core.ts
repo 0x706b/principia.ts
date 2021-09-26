@@ -10,33 +10,33 @@ import type { Managed } from '../Managed'
 import type { Schedule } from '../Schedule'
 import type { Transducer } from './Transducer'
 
-import * as Ca from '../Cause'
 import * as C from '../../Chunk'
 import * as E from '../../Either'
 import { NoSuchElementError, PrematureGeneratorExitError } from '../../Error'
 import { RuntimeException } from '../../Exception'
 import { parallel, sequential } from '../../ExecutionStrategy'
-import * as Ex from '../Exit'
 import { constTrue, flow, identity, pipe } from '../../function'
 import { isTag } from '../../Has'
 import * as L from '../../List/core'
 import * as Map from '../../Map'
 import * as O from '../../Option'
 import { not } from '../../Predicate'
-import * as P from '../Promise'
-import * as RefM from '../RefM'
-import { globalScope } from '../Scope'
-import * as Semaphore from '../Semaphore'
 import { tuple } from '../../tuple'
 import { matchTag } from '../../util/match'
 import * as I from '..'
+import * as Ca from '../Cause'
 import { Clock } from '../Clock'
+import * as Ex from '../Exit'
 import * as Fi from '../Fiber'
+import * as F from '../Future'
 import * as M from '../Managed'
 import * as RM from '../Managed/ReleaseMap'
 import * as Q from '../Queue'
 import * as Ref from '../Ref'
+import * as RefM from '../RefM'
 import * as Sc from '../Schedule'
+import { globalScope } from '../Scope'
+import * as Semaphore from '../Semaphore'
 import * as BPull from './BufferedPull'
 import * as Ha from './Handoff'
 import * as Pull from './Pull'
@@ -1959,14 +1959,14 @@ export function distributedWith_<R, E, A>(
   decide: (_: A) => I.UIO<(_: number) => boolean>
 ): M.Managed<R, never, Chunk<Q.Dequeue<Ex.Exit<O.Option<E>, A>>>> {
   return pipe(
-    P.make<never, (_: A) => I.UIO<(_: symbol) => boolean>>(),
+    F.make<never, (_: A) => I.UIO<(_: symbol) => boolean>>(),
     M.fromIO,
     M.chain((prom) =>
       pipe(
         distributedWithDynamic_(
           ma,
           maximumLag,
-          (o) => I.chain_(P.await(prom), (_) => _(o)),
+          (o) => I.chain_(F.await(prom), (_) => _(o)),
           (_) => I.unit()
         ),
         M.chain((next) =>
@@ -1987,7 +1987,7 @@ export function distributedWith_<R, E, A>(
                 ]
               )
               return pipe(
-                P.succeed_(prom, (o: A) => I.map_(decide(o), (f) => (key: symbol) => f(mappings.get(key)!))),
+                F.succeed_(prom, (o: A) => I.map_(decide(o), (f) => (key: symbol) => f(mappings.get(key)!))),
                 I.as(queues)
               )
             }),
@@ -2198,12 +2198,12 @@ export function bufferUnbounded<R, E, A>(ma: Stream<R, E, A>): Stream<R, E, A> {
 
 function bufferSignal_<R, E, A>(
   ma: Stream<R, E, A>,
-  queue: Q.UQueue<[Take.Take<E, A>, P.Promise<never, void>]>
+  queue: Q.UQueue<[Take.Take<E, A>, F.Future<never, void>]>
 ): M.Managed<R, never, I.IO<R, O.Option<E>, Chunk<A>>> {
   return M.gen(function* (_) {
     const as    = yield* _(ma.proc)
-    const start = yield* _(P.make<never, void>())
-    yield* _(P.succeed_(start, undefined))
+    const start = yield* _(F.make<never, void>())
+    yield* _(F.succeed_(start, undefined))
     const ref     = yield* _(Ref.make(start))
     const doneRef = yield* _(Ref.make(false))
     const offer   = (take: Take.Take<E, A>): I.UIO<void> =>
@@ -2212,15 +2212,15 @@ function bufferSignal_<R, E, A>(
         (_) =>
           I.gen(function* ($) {
             const latch = yield* $(ref.get)
-            yield* $(P.await(latch))
-            const p = yield* $(P.make<never, void>())
+            yield* $(F.await(latch))
+            const p = yield* $(F.make<never, void>())
             yield* $(Q.offer_(queue, [take, p]))
             yield* $(ref.set(p))
-            yield* $(P.await(p))
+            yield* $(F.await(p))
           }),
         (_) =>
           I.gen(function* ($) {
-            const p     = yield* $(P.make<never, void>())
+            const p     = yield* $(F.make<never, void>())
             const added = yield* $(Q.offer_(queue, [take, p]))
             yield* $(I.when_(ref.set(p), () => added))
           })
@@ -2242,7 +2242,7 @@ function bufferSignal_<R, E, A>(
             Q.take(queue),
             I.chain(([take, p]) =>
               pipe(
-                P.succeed_(p, undefined),
+                F.succeed_(p, undefined),
                 I.crossSecond(I.when(() => take === Take.end)(doneRef.set(true))),
                 I.crossSecond(Take.done(take))
               )
@@ -2264,7 +2264,7 @@ export function bufferSliding_<R, E, A>(ma: Stream<R, E, A>, capacity = 2): Stre
   return new Stream(
     M.gen(function* (_) {
       const queue = yield* _(
-        I.toManaged_(Q.makeSliding<[Take.Take<E, A>, P.Promise<never, void>]>(capacity), Q.shutdown)
+        I.toManaged_(Q.makeSliding<[Take.Take<E, A>, F.Future<never, void>]>(capacity), Q.shutdown)
       )
       return yield* _(bufferSignal_(ma, queue))
     })
@@ -2291,7 +2291,7 @@ export function bufferDropping_<R, E, A>(ma: Stream<R, E, A>, capacity = 2): Str
   return new Stream(
     M.gen(function* (_) {
       const queue = yield* _(
-        I.toManaged_(Q.makeDropping<[Take.Take<E, A>, P.Promise<never, void>]>(capacity), Q.shutdown)
+        I.toManaged_(Q.makeDropping<[Take.Take<E, A>, F.Future<never, void>]>(capacity), Q.shutdown)
       )
       return yield* _(bufferSignal_(ma, queue))
     })
@@ -2498,7 +2498,7 @@ export function chainPar_<R, E, A, R1, E1, A1>(
           I.toManaged_(Q.makeBounded<I.IO<R1, O.Option<E | E1>, Chunk<A1>>>(outputBuffer), Q.shutdown)
         )
         const permits      = yield* _(Semaphore.make(n))
-        const innerFailure = yield* _(P.make<Ca.Cause<E1>, never>())
+        const innerFailure = yield* _(F.make<Ca.Cause<E1>, never>())
         // - The driver stream forks an inner fiber for each stream created
         //   by f, with an upper bound of n concurrent fibers, enforced by the semaphore.
         //   - On completion, the driver stream tries to acquire all permits to verify
@@ -2517,11 +2517,11 @@ export function chainPar_<R, E, A, R1, E1, A1>(
           pipe(
             foreachManaged_(ma, (o) =>
               I.gen(function* (_) {
-                const latch       = yield* _(P.make<never, void>())
+                const latch       = yield* _(F.make<never, void>())
                 const innerStream = pipe(
                   Semaphore.withPermitManaged(permits),
                   fromManaged,
-                  tap(() => P.succeed_(latch, undefined)),
+                  tap(() => F.succeed_(latch, undefined)),
                   chain(() => f(o)),
                   foreachChunk(flow(I.succeed, (_) => Q.offer_(outQueue, _), I.asUnit)),
                   I.matchCauseIO(
@@ -2530,14 +2530,14 @@ export function chainPar_<R, E, A, R1, E1, A1>(
                         cause,
                         Pull.halt,
                         (_) => Q.offer_(outQueue, _),
-                        I.crossSecond(P.fail_(innerFailure, cause)),
+                        I.crossSecond(F.fail_(innerFailure, cause)),
                         I.asUnit
                       ),
                     () => I.unit()
                   )
                 )
                 yield* _(I.fork(innerStream))
-                yield* _(P.await(latch))
+                yield* _(F.await(latch))
               })
             ),
             M.matchCauseManaged(
@@ -2550,7 +2550,7 @@ export function chainPar_<R, E, A, R1, E1, A1>(
                 ),
               () =>
                 pipe(
-                  P.await(innerFailure),
+                  F.await(innerFailure),
                   I.interruptible,
                   I.raceWith(
                     Semaphore.withPermits(permits, n)(I.interruptible(I.unit())),
@@ -2604,15 +2604,15 @@ export function chainParSwitch_(n: number, bufferSize = 16) {
             I.toManaged_(Q.makeBounded<I.IO<R1, O.Option<E | E1>, Chunk<B>>>(bufferSize), Q.shutdown)
           )
           const permits      = yield* _(Semaphore.make(n))
-          const innerFailure = yield* _(P.make<Ca.Cause<E1>, never>())
-          const cancelers    = yield* _(I.toManaged_(Q.makeBounded<P.Promise<never, void>>(n), Q.shutdown))
+          const innerFailure = yield* _(F.make<Ca.Cause<E1>, never>())
+          const cancelers    = yield* _(I.toManaged_(Q.makeBounded<F.Future<never, void>>(n), Q.shutdown))
           yield* _(
             pipe(
               ma,
               foreachManaged((o) =>
                 I.gen(function* (_) {
-                  const canceler = yield* _(P.make<never, void>())
-                  const latch    = yield* _(P.make<never, void>())
+                  const canceler = yield* _(F.make<never, void>())
+                  const latch    = yield* _(F.make<never, void>())
                   const size     = yield* _(Q.size(cancelers))
                   if (size < n) {
                     yield* _(I.unit())
@@ -2629,7 +2629,7 @@ export function chainParSwitch_(n: number, bufferSize = 16) {
                   const innerStream = pipe(
                     Semaphore.withPermitManaged(permits),
                     fromManaged,
-                    tap(() => P.succeed_(latch, undefined)),
+                    tap(() => F.succeed_(latch, undefined)),
                     chain(() => f(o)),
                     foreachChunk(flow(I.succeed, (_) => Q.offer_(outQueue, _), I.asUnit)),
                     I.matchCauseIO(
@@ -2638,14 +2638,14 @@ export function chainParSwitch_(n: number, bufferSize = 16) {
                           cause,
                           Pull.halt,
                           (_) => Q.offer_(outQueue, _),
-                          I.crossSecond(P.fail_(innerFailure, cause)),
+                          I.crossSecond(F.fail_(innerFailure, cause)),
                           I.asUnit
                         ),
                       () => I.unit()
                     )
                   )
-                  yield* _(I.fork(I.race_(innerStream, P.await(canceler))))
-                  yield* _(P.await(latch))
+                  yield* _(I.fork(I.race_(innerStream, F.await(canceler))))
+                  yield* _(F.await(latch))
                 })
               ),
               M.matchCauseManaged(
@@ -2658,7 +2658,7 @@ export function chainParSwitch_(n: number, bufferSize = 16) {
                   ),
                 () =>
                   pipe(
-                    P.await(innerFailure),
+                    F.await(innerFailure),
                     I.raceWith(
                       Semaphore.withPermits(permits, n)(I.unit()),
                       (_, permitsAcquisition) =>
@@ -3222,13 +3222,13 @@ export function drainFork_<R, E, A, R1, E1, A1>(
   mb: Stream<R1, E1, A1>
 ): Stream<R & R1, E | E1, A> {
   return pipe(
-    P.make<E | E1, never>(),
+    F.make<E | E1, never>(),
     fromIO,
     chain((bgHalted) =>
       pipe(
         mb,
         foreachManaged(() => I.unit()),
-        M.catchAllCause((_) => pipe(P.failCause_(bgHalted, _), I.toManaged())),
+        M.catchAllCause((_) => pipe(F.failCause_(bgHalted, _), I.toManaged())),
         M.fork,
         fromManaged,
         crossSecond(interruptOn_(ma, bgHalted))
@@ -3426,7 +3426,7 @@ export function groupBy_<R, E, A, R1, E1, K, V>(
 ): GroupBy<R & R1, E | E1, K, V> {
   const qstream = unwrapManaged(
     M.gen(function* (_) {
-      const decider = yield* _(P.make<never, (k: K, v: V) => I.UIO<(key: symbol) => boolean>>())
+      const decider = yield* _(F.make<never, (k: K, v: V) => I.UIO<(key: symbol) => boolean>>())
 
       const out = yield* _(
         pipe(
@@ -3443,7 +3443,7 @@ export function groupBy_<R, E, A, R1, E1, K, V>(
             buffer,
             ([k, v]) =>
               pipe(
-                P.await(decider),
+                F.await(decider),
                 I.chain((f) => f(k, v))
               ),
             (_) => Q.offer_(out, _)
@@ -3451,7 +3451,7 @@ export function groupBy_<R, E, A, R1, E1, K, V>(
         )
       )
       yield* _(
-        P.succeed_(decider, (k: K, __: V) =>
+        F.succeed_(decider, (k: K, __: V) =>
           pipe(
             ref.get,
             I.map(Map.lookup(k)),
@@ -3617,7 +3617,7 @@ export function endAfter(duration: number): <R, E, A>(ma: Stream<R, E, A>) => St
  *
  * If the promise completes with a failure, the stream will emit that failure.
  */
-export function endOn_<R, E, A, E1>(ma: Stream<R, E, A>, p: P.Promise<E1, any>): Stream<R, E | E1, A> {
+export function endOn_<R, E, A, E1>(ma: Stream<R, E, A>, p: F.Future<E1, any>): Stream<R, E | E1, A> {
   return new Stream(
     M.gen(function* (_) {
       const as      = yield* _(ma.proc)
@@ -3629,7 +3629,7 @@ export function endOn_<R, E, A, E1>(ma: Stream<R, E, A>, p: P.Promise<E1, any>):
             return Pull.end
           } else {
             return pipe(
-              P.poll(p),
+              F.poll(p),
               I.chain(
                 O.match(
                   (): I.IO<R, O.Option<E | E1>, Chunk<A>> => as,
@@ -3650,7 +3650,7 @@ export function endOn_<R, E, A, E1>(ma: Stream<R, E, A>, p: P.Promise<E1, any>):
  *
  * If the promise completes with a failure, the stream will emit that failure.
  */
-export function endOn<E1>(p: P.Promise<E1, any>): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E | E1, A> {
+export function endOn<E1>(p: F.Future<E1, any>): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E | E1, A> {
   return (ma) => endOn_(ma, p)
 }
 
@@ -3878,20 +3878,20 @@ export function interruptWhen<R1, E1>(
  *
  * If the promise completes with a failure, the stream will emit that failure.
  */
-export function interruptOn_<R, E, A, E1, A1>(ma: Stream<R, E, A>, p: P.Promise<E1, A1>): Stream<R, E | E1, A> {
+export function interruptOn_<R, E, A, E1, A1>(ma: Stream<R, E, A>, p: F.Future<E1, A1>): Stream<R, E | E1, A> {
   return new Stream(
     M.gen(function* (_) {
       const as      = yield* _(ma.proc)
       const doneRef = yield* _(Ref.make(false))
       const asPull  = pipe(
-        P.await(p),
+        F.await(p),
         I.asSomeError,
         I.crossSecond(doneRef.set(true)),
         I.crossSecond(Pull.end as I.IO<unknown, O.Option<E | E1>, any>)
       )
       const pull = pipe(
         doneRef.get,
-        I.cross(P.isDone(p)),
+        I.cross(F.isDone(p)),
         I.chain(([b1, b2]) => {
           if (b1) {
             return Pull.end
@@ -3913,7 +3913,7 @@ export function interruptOn_<R, E, A, E1, A1>(ma: Stream<R, E, A>, p: P.Promise<
  *
  * If the promise completes with a failure, the stream will emit that failure.
  */
-export function interruptOn<E1>(p: P.Promise<E1, any>): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E | E1, A> {
+export function interruptOn<E1>(p: F.Future<E1, any>): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E | E1, A> {
   return (ma) => interruptOn_(ma, p)
 }
 
@@ -4123,25 +4123,25 @@ export function mapIOPar_(n: number) {
     new Stream(
       M.gen(function* (_) {
         const out         = yield* _(Q.makeBounded<I.IO<R1, Option<E | E1>, B>>(n))
-        const errorSignal = yield* _(P.make<E1, never>())
+        const errorSignal = yield* _(F.make<E1, never>())
         const permits     = yield* _(Semaphore.make(n))
         yield* _(
           pipe(
             stream,
             foreachManaged((o) =>
               I.gen(function* (_) {
-                const p     = yield* _(P.make<E1, B>())
-                const latch = yield* _(P.make<never, void>())
-                yield* _(Q.offer_(out, pipe(P.await(p), I.mapError(O.some))))
+                const p     = yield* _(F.make<E1, B>())
+                const latch = yield* _(F.make<never, void>())
+                yield* _(Q.offer_(out, pipe(F.await(p), I.mapError(O.some))))
                 yield* _(
                   pipe(
                     latch,
-                    P.succeed<void>(undefined),
+                    F.succeed<void>(undefined),
                     I.crossSecond(
                       pipe(
-                        P.await(errorSignal),
+                        F.await(errorSignal),
                         I.raceFirst(f(o)),
-                        I.tapCause((_) => P.failCause_(errorSignal, _)),
+                        I.tapCause((_) => F.failCause_(errorSignal, _)),
                         I.fulfill(p)
                       )
                     ),
@@ -4149,7 +4149,7 @@ export function mapIOPar_(n: number) {
                     I.fork
                   )
                 )
-                yield* _(P.await(latch))
+                yield* _(F.await(latch))
               })
             ),
             M.matchCauseManaged(

@@ -20,10 +20,10 @@ import * as Ca from '../../Cause'
 import { Clock } from '../../Clock'
 import * as Ex from '../../Exit'
 import * as F from '../../Fiber'
+import * as Pr from '../../Future'
 import * as H from '../../Hub'
 import * as La from '../../Layer'
 import * as M from '../../Managed'
-import * as Pr from '../../Promise'
 import * as Q from '../../Queue'
 import * as Ref from '../../Ref'
 import * as SC from '../../Schedule'
@@ -1734,7 +1734,7 @@ export function buffer(capacity: number): <R, E, A>(stream: Stream<R, E, A>) => 
 }
 
 export function bufferDropping_<R, E, A>(stream: Stream<R, E, A>, capacity: number): Stream<R, E, A> {
-  const queue = M.bracket_(Q.makeDropping<readonly [Take.Take<E, A>, Pr.Promise<never, void>]>(capacity), Q.shutdown)
+  const queue = M.bracket_(Q.makeDropping<readonly [Take.Take<E, A>, Pr.Future<never, void>]>(capacity), Q.shutdown)
   return new Stream(bufferSignal(queue, chunkN_(stream, 1).channel))
 }
 
@@ -1743,7 +1743,7 @@ export function bufferDropping(capacity: number): <R, E, A>(stream: Stream<R, E,
 }
 
 export function bufferSliding_<R, E, A>(stream: Stream<R, E, A>, capacity: number): Stream<R, E, A> {
-  const queue = M.bracket_(Q.makeSliding<readonly [Take.Take<E, A>, Pr.Promise<never, void>]>(capacity), Q.shutdown)
+  const queue = M.bracket_(Q.makeSliding<readonly [Take.Take<E, A>, Pr.Future<never, void>]>(capacity), Q.shutdown)
   return new Stream(bufferSignal(queue, chunkN_(stream, 1).channel))
 }
 
@@ -1752,7 +1752,7 @@ export function bufferSliding(capacity: number): <R, E, A>(stream: Stream<R, E, 
 }
 
 export function bufferChunksDropping_<R, E, A>(stream: Stream<R, E, A>, capacity: number): Stream<R, E, A> {
-  const queue = M.bracket_(Q.makeDropping<readonly [Take.Take<E, A>, Pr.Promise<never, void>]>(capacity), Q.shutdown)
+  const queue = M.bracket_(Q.makeDropping<readonly [Take.Take<E, A>, Pr.Future<never, void>]>(capacity), Q.shutdown)
   return new Stream(bufferSignal(queue, stream.channel))
 }
 
@@ -1761,7 +1761,7 @@ export function bufferChunksDropping(capacity: number): <R, E, A>(stream: Stream
 }
 
 export function bufferChunksSliding_<R, E, A>(stream: Stream<R, E, A>, capacity: number): Stream<R, E, A> {
-  const queue = M.bracket_(Q.makeSliding<readonly [Take.Take<E, A>, Pr.Promise<never, void>]>(capacity), Q.shutdown)
+  const queue = M.bracket_(Q.makeSliding<readonly [Take.Take<E, A>, Pr.Future<never, void>]>(capacity), Q.shutdown)
   return new Stream(bufferSignal(queue, stream.channel))
 }
 
@@ -1770,8 +1770,8 @@ export function bufferChunksSliding(capacity: number): <R, E, A>(stream: Stream<
 }
 
 function bufferSignalProducer<R, E, A>(
-  queue: Q.UQueue<readonly [Take.Take<E, A>, Pr.Promise<never, void>]>,
-  ref: Ref.URef<Pr.Promise<never, void>>
+  queue: Q.UQueue<readonly [Take.Take<E, A>, Pr.Future<never, void>]>,
+  ref: Ref.URef<Pr.Future<never, void>>
 ): Ch.Channel<R, E, C.Chunk<A>, unknown, never, never, unknown> {
   const terminate = (take: Take.Take<E, A>): Ch.Channel<R, E, C.Chunk<A>, unknown, never, never, unknown> =>
     Ch.fromIO(
@@ -1802,7 +1802,7 @@ function bufferSignalProducer<R, E, A>(
 }
 
 function bufferSignalConsumer<R, E, A>(
-  queue: Q.UQueue<readonly [Take.Take<E, A>, Pr.Promise<never, void>]>
+  queue: Q.UQueue<readonly [Take.Take<E, A>, Pr.Future<never, void>]>
 ): Ch.Channel<R, unknown, unknown, unknown, E, C.Chunk<A>, void> {
   const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = Ch.chain_(
     Ch.fromIO(Q.take(queue)),
@@ -1816,7 +1816,7 @@ function bufferSignalConsumer<R, E, A>(
 }
 
 function bufferSignal<R, E, A>(
-  managed: M.UManaged<Q.UQueue<readonly [Take.Take<E, A>, Pr.Promise<never, void>]>>,
+  managed: M.UManaged<Q.UQueue<readonly [Take.Take<E, A>, Pr.Future<never, void>]>>,
   channel: Ch.Channel<R, unknown, unknown, unknown, E, C.Chunk<A>, unknown>
 ): Ch.Channel<R, unknown, unknown, unknown, E, C.Chunk<A>, void> {
   return Ch.managed_(

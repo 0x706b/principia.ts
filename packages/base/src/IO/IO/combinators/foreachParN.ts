@@ -6,11 +6,11 @@ import { traceAs } from '@principia/compile/util'
 
 import { pipe } from '../../../function'
 import * as L from '../../../List/core'
-import * as P from '../../Promise'
 import { tuple } from '../../../tuple'
-import * as I from '../core'
+import * as F from '../../Future'
 import * as Q from '../../Queue'
 import * as Ref from '../../Ref'
+import * as I from '../core'
 import { bracket } from './bracket'
 
 /**
@@ -18,8 +18,8 @@ import { bracket } from './bracket'
  */
 export function foreachParN_<A, R, E, B>(as: Iterable<A>, n: number, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Chunk<B>> {
   const worker = (
-    q: Q.UQueue<readonly [P.Promise<E, B>, A]>,
-    pairs: Iterable<readonly [P.Promise<E, B>, A]>,
+    q: Q.UQueue<readonly [F.Future<E, B>, A]>,
+    pairs: Iterable<readonly [F.Future<E, B>, A]>,
     ref: Ref.URef<number>
   ): I.URIO<R, void> =>
     pipe(
@@ -29,8 +29,8 @@ export function foreachParN_<A, R, E, B>(as: Iterable<A>, n: number, f: (a: A) =
           pipe(
             f(a),
             I.matchCauseIO(
-              (c) => I.foreach_(pairs, (_) => P.failCause_(_[0], c)),
-              (b) => P.succeed_(p, b)
+              (c) => I.foreach_(pairs, (_) => F.failCause_(_[0], c)),
+              (b) => F.succeed_(p, b)
             )
           )
         )
@@ -40,14 +40,14 @@ export function foreachParN_<A, R, E, B>(as: Iterable<A>, n: number, f: (a: A) =
     )
 
   return pipe(
-    Q.makeBounded<readonly [P.Promise<E, B>, A]>(n),
+    Q.makeBounded<readonly [F.Future<E, B>, A]>(n),
     bracket(
       (q) =>
         I.gen(function* (_) {
           const pairs = yield* _(
             I.foreach_(as, (a) =>
               pipe(
-                P.make<E, B>(),
+                F.make<E, B>(),
                 I.map((p) => tuple(p, a))
               )
             )
@@ -62,7 +62,7 @@ export function foreachParN_<A, R, E, B>(as: Iterable<A>, n: number, f: (a: A) =
               )
             )
           )
-          const res = yield* _(I.foreach_(pairs, (_) => P.await(_[0])))
+          const res = yield* _(I.foreach_(pairs, (_) => F.await(_[0])))
 
           return res
         }),

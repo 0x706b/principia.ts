@@ -6,7 +6,7 @@ import { pipe } from '../../../function'
 import * as O from '../../../Option'
 import { tuple } from '../../../tuple'
 import * as I from '../..'
-import * as P from '../../Promise'
+import * as F from '../../Future'
 import * as Ref from '../../Ref'
 
 export class Handoff<A> {
@@ -15,7 +15,7 @@ export class Handoff<A> {
 
 export function make<A>() {
   return pipe(
-    P.make<never, void>(),
+    F.make<never, void>(),
     I.chain((p) => Ref.make<State<A>>(new Empty(p))),
     I.map((_) => new Handoff(_))
   )
@@ -28,7 +28,7 @@ export class Empty {
   readonly [StateTypeId]: typeof StateTypeId = StateTypeId
   readonly _typeId: typeof EmptyTypeId       = EmptyTypeId
 
-  constructor(readonly notifyConsumer: P.Promise<never, void>) {}
+  constructor(readonly notifyConsumer: F.Future<never, void>) {}
 }
 
 export const FullTypeId = Symbol.for('@principia/base/IO/Stream/Handoff/Full')
@@ -36,20 +36,20 @@ export class Full<A> {
   readonly [StateTypeId]: typeof StateTypeId = StateTypeId
   readonly _typeId: typeof FullTypeId        = FullTypeId
 
-  constructor(readonly a: A, readonly notifyConsumer: P.Promise<never, void>) {}
+  constructor(readonly a: A, readonly notifyConsumer: F.Future<never, void>) {}
 }
 
 export type State<A> = Empty | Full<A>
 
 export function offer<A>(handoff: Handoff<A>, a: A): I.UIO<void> {
-  return I.chain_(P.make<never, void>(), (p) => {
+  return I.chain_(F.make<never, void>(), (p) => {
     return pipe(
       handoff.ref,
       Ref.modify((s) => {
         if (s._typeId === FullTypeId) {
-          return tuple(I.crossSecond_(P.await(s.notifyConsumer), offer(handoff, a)), s)
+          return tuple(I.crossSecond_(F.await(s.notifyConsumer), offer(handoff, a)), s)
         } else {
-          return tuple(I.crossSecond_(P.succeed_(s.notifyConsumer, undefined), P.await(p)), new Full(a, p))
+          return tuple(I.crossSecond_(F.succeed_(s.notifyConsumer, undefined), F.await(p)), new Full(a, p))
         }
       }),
       I.flatten
@@ -58,14 +58,14 @@ export function offer<A>(handoff: Handoff<A>, a: A): I.UIO<void> {
 }
 
 export function take<A>(handoff: Handoff<A>): I.UIO<A> {
-  return I.chain_(P.make<never, void>(), (p) => {
+  return I.chain_(F.make<never, void>(), (p) => {
     return pipe(
       handoff.ref,
       Ref.modify((s) => {
         if (s._typeId === FullTypeId) {
-          return tuple(I.as_(P.succeed_(s.notifyConsumer, undefined), s.a), new Empty(p))
+          return tuple(I.as_(F.succeed_(s.notifyConsumer, undefined), s.a), new Empty(p))
         } else {
-          return tuple(I.crossSecond_(P.await(s.notifyConsumer), take(handoff)), s)
+          return tuple(I.crossSecond_(F.await(s.notifyConsumer), take(handoff)), s)
         }
       }),
       I.flatten
@@ -74,12 +74,12 @@ export function take<A>(handoff: Handoff<A>): I.UIO<A> {
 }
 
 export function poll<A>(handoff: Handoff<A>): I.UIO<O.Option<A>> {
-  return I.chain_(P.make<never, void>(), (p) => {
+  return I.chain_(F.make<never, void>(), (p) => {
     return pipe(
       handoff.ref,
       Ref.modify((s) => {
         if (s._typeId === FullTypeId) {
-          return tuple(I.as_(P.succeed_(s.notifyConsumer, undefined), O.some(s.a)), new Empty(p))
+          return tuple(I.as_(F.succeed_(s.notifyConsumer, undefined), O.some(s.a)), new Empty(p))
         } else {
           return tuple(I.succeed(O.none()), s)
         }

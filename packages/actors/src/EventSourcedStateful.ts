@@ -12,7 +12,7 @@ import * as CH from '@principia/base/Chunk'
 import { pipe } from '@principia/base/function'
 import * as T from '@principia/base/IO'
 import * as S from '@principia/base/IO/experimental/Stream'
-import * as P from '@principia/base/IO/Promise'
+import * as F from '@principia/base/IO/Future'
 import * as Q from '@principia/base/IO/Queue'
 import * as Ref from '@principia/base/IO/Ref'
 import * as O from '@principia/base/Option'
@@ -108,9 +108,9 @@ export class EventSourcedStateful<R, S, F1 extends AM.AnyMessage, EV> extends A.
         const effectfulCompleter = (s: S, a: AM.ResponseOf<F1>) =>
           pipe(
             T.asUnit(Ref.set_(state, s)),
-            T.chain(() => P.succeed_(promise, a))
+            T.chain(() => F.succeed_(promise, a))
           )
-        const idempotentCompleter = (a: AM.ResponseOf<F1>) => T.asUnit(P.succeed_(promise, a))
+        const idempotentCompleter = (a: AM.ResponseOf<F1>) => T.asUnit(F.succeed_(promise, a))
         const fullCompleter       = ([ev, sa]: readonly [CH.Chunk<EV>, (s: S) => AM.ResponseOf<F1>]) =>
           ev.length === 0
             ? idempotentCompleter(sa(s))
@@ -127,7 +127,7 @@ export class EventSourcedStateful<R, S, F1 extends AM.AnyMessage, EV> extends A.
             (e) =>
               pipe(
                 supervisor.supervise(reciever, e),
-                T.matchIO(() => T.asUnit(P.fail_(promise, e)), fullCompleter)
+                T.matchIO(() => T.asUnit(F.fail_(promise, e)), fullCompleter)
               ),
             fullCompleter
           )

@@ -5,8 +5,8 @@ import type { Managed, UManaged } from '../core'
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
 import { pipe } from '../../../function'
+import * as F from '../../Future'
 import { once as onceIO } from '../../IO/combinators/once'
-import * as P from '../../Promise'
 import { fromIO, mapIO_ } from '../core'
 import * as I from '../internal/io'
 import { releaseMap } from './releaseMap'
@@ -22,7 +22,7 @@ export function once<R, E, A>(ma: Managed<R, E, A>): UManaged<Managed<R, E, A>> 
     releaseMap(),
     traceFrom(trace, (finalizers) =>
       I.gen(function* (_) {
-        const promise  = yield* _(P.make<E, A>())
+        const promise  = yield* _(F.make<E, A>())
         const complete = yield* _(
           onceIO(
             I.asksIO((r: R) =>
@@ -30,12 +30,12 @@ export function once<R, E, A>(ma: Managed<R, E, A>): UManaged<Managed<R, E, A>> 
                 ma.io,
                 I.giveAll([r, finalizers] as const),
                 I.map(([_, a]) => a),
-                (_) => P.fulfill_(promise, _)
+                (_) => F.fulfill_(promise, _)
               )
             )
           )
         )
-        return pipe(complete, I.crossSecond(P.await(promise)), fromIO)
+        return pipe(complete, I.crossSecond(F.await(promise)), fromIO)
       })
     )
   )

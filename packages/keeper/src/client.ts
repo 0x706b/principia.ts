@@ -7,9 +7,9 @@ import { Tagged } from '@principia/base/Case'
 import * as Chunk from '@principia/base/Chunk'
 import { tag } from '@principia/base/Has'
 import * as T from '@principia/base/IO'
+import * as F from '@principia/base/IO/Future'
 import * as L from '@principia/base/IO/Layer'
 import * as M from '@principia/base/IO/Managed'
-import * as P from '@principia/base/IO/Promise'
 import * as O from '@principia/base/Option'
 import * as Str from '@principia/base/string'
 import * as Z from 'node-zookeeper-client'
@@ -26,7 +26,7 @@ export const KeeperClientSym = Symbol()
 export const makeKeeperClient = M.gen(function* (_) {
   const { connectionString, options } = yield* _(KeeperConfig)
 
-  const monitor = yield* _(P.make<ZooError, never>())
+  const monitor = yield* _(F.make<ZooError, never>())
 
   const client = yield* _(
     T.async<unknown, ZooError, Z.Client>((cb) => {
@@ -43,7 +43,7 @@ export const makeKeeperClient = M.gen(function* (_) {
       cli.connect()
       cli.on('state', (s) => {
         if (s.code === Z.State.DISCONNECTED.code) {
-          T.run_(P.fail_(monitor, new ZooError({ op: 'DISCONNECTED', message: JSON.stringify(s) })))
+          T.run_(F.fail_(monitor, new ZooError({ op: 'DISCONNECTED', message: JSON.stringify(s) })))
         }
       })
     })['|>'](M.bracket((cli) => T.succeedLazy(() => cli.close())))
@@ -179,7 +179,7 @@ export const makeKeeperClient = M.gen(function* (_) {
     client,
     create,
     mkdir,
-    monitor: P.await(monitor),
+    monitor: F.await(monitor),
     waitDelete,
     remove,
     getData,

@@ -1,27 +1,27 @@
 // tracing: off
 
 import type { Chunk } from '../../../Chunk/core'
-import type { Exit } from '../../Exit'
 import type { NonEmptyArray } from '../../../NonEmptyArray'
+import type { Exit } from '../../Exit'
 import type { IO, UIO } from '../core'
 
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
 import * as C from '../../../Chunk/core'
-import * as Ex from '../../Exit'
 import { flow, pipe } from '../../../function'
-import * as P from '../../Promise'
 import { tuple } from '../../../tuple'
+import * as Ex from '../../Exit'
 import * as Fiber from '../../Fiber'
-import * as I from '../core'
+import * as F from '../../Future'
 import * as Ref from '../../Ref'
+import * as I from '../core'
 import { interruptible, onInterrupt, uninterruptibleMask } from './interrupt'
 
 const arbiter =
   <E, A>(
     fibers: Chunk<Fiber.Fiber<E, A>>,
     winner: Fiber.Fiber<E, A>,
-    promise: P.Promise<E, readonly [A, Fiber.Fiber<E, A>]>,
+    promise: F.Future<E, readonly [A, Fiber.Fiber<E, A>]>,
     fails: Ref.URef<number>
   ) =>
   (res: Exit<E, A>): UIO<void> =>
@@ -30,12 +30,12 @@ const arbiter =
       (e) =>
         pipe(
           fails,
-          Ref.modify((c) => tuple(c === 0 ? pipe(P.failCause_(promise, e), I.asUnit) : I.unit(), c - 1)),
+          Ref.modify((c) => tuple(c === 0 ? pipe(F.failCause_(promise, e), I.asUnit) : I.unit(), c - 1)),
           I.flatten
         ),
       (a) =>
         pipe(
-          P.succeed_(promise, tuple(a, winner)),
+          F.succeed_(promise, tuple(a, winner)),
           I.chain((set) =>
             set
               ? C.foldl_(fibers, I.unit(), (io, f) => (f === winner ? io : I.tap_(io, () => Fiber.interrupt(f))))
@@ -59,7 +59,7 @@ export function raceAll<R, E, A>(
 ): IO<R, E, A> {
   const trace = accessCallTrace()
   return I.gen(function* (_) {
-    const done    = yield* _(P.make<E, readonly [A, Fiber.Fiber<E, A>]>())
+    const done    = yield* _(F.make<E, readonly [A, Fiber.Fiber<E, A>]>())
     const fails   = yield* _(Ref.make(ios.length))
     const [c, fs] = yield* _(
       uninterruptibleMask(
@@ -74,7 +74,7 @@ export function raceAll<R, E, A>(
             const inheritRefs = (res: readonly [A, Fiber.Fiber<E, A>]) => pipe(res[1].inheritRefs, I.as(res[0]))
             const c           = yield* _(
               pipe(
-                P.await(done),
+                F.await(done),
                 I.chain(inheritRefs),
                 restore,
                 onInterrupt(() => C.foldl_(fs, I.unit(), (io, f) => I.tap_(io, () => Fiber.interrupt(f))))

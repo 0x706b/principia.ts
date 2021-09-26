@@ -1,23 +1,23 @@
 // tracing: off
 
 import type { Chunk } from '../../../Chunk/core'
-import type { Exit } from '../../Exit/core'
 import type { FiberContext } from '../../../internal/FiberContext'
+import type { Exit } from '../../Exit/core'
 import type { Fiber } from '../../Fiber/core'
 
 import { traceAs } from '@principia/compile/util'
 
-import * as C from '../../Cause'
 import * as Ch from '../../../Chunk/core'
-import * as Ex from '../../Exit'
 import { flow, pipe } from '../../../function'
 import * as It from '../../../Iterable'
 import * as O from '../../../Option'
 import { tuple } from '../../../tuple'
+import * as C from '../../Cause'
+import * as Ex from '../../Exit'
 import { interrupt as interruptFiber } from '../../Fiber/combinators/interrupt'
+import * as F from '../../Future'
 import { fromIO, Managed } from '../../Managed/core'
 import * as RM from '../../Managed/ReleaseMap'
-import * as P from '../../Promise'
 import * as Ref from '../../Ref/core'
 import * as I from '../core'
 import { bracketExit_ } from './bracketExit'
@@ -50,7 +50,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
   return I.gen(function* (_) {
     const parentId    = yield* _(I.fiberId())
     const causes      = yield* _(Ref.make<C.Cause<E>>(C.empty))
-    const result      = yield* _(P.make<void, void>())
+    const result      = yield* _(F.make<void, void>())
     const status      = yield* _(Ref.make<[number, number, boolean]>([0, 0, false]))
     const startEffect = pipe(
       status,
@@ -66,7 +66,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
     const startFailure = pipe(
       status,
       Ref.update(([started, done, _]): [number, number, boolean] => [started, done, true]),
-      I.crossFirst(P.fail_(result, undefined))
+      I.crossFirst(F.fail_(result, undefined))
     )
 
     const effect = (a: A) =>
@@ -82,7 +82,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
         ),
         ensuring(
           pipe(
-            P.succeed_(result, undefined),
+            F.succeed_(result, undefined),
             I.whenIO(
               Ref.modify_(status, ([started, done, failing]) => [
                 (failing ? started : size) === done + 1,
@@ -98,7 +98,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
     const fibers = yield* _(transplant((graft) => I.foreach_(arr, flow(effect, graft, I.fork))))
 
     const interruptor = pipe(
-      P.await(result),
+      F.await(result),
       I.catchAll(() =>
         pipe(
           fibers,
@@ -113,7 +113,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
     yield* _(
       useManaged_(interruptor, () =>
         pipe(
-          P.fail_(result, undefined),
+          F.fail_(result, undefined),
           I.crossSecond(I.chain_(causes.get, I.failCause)),
           I.whenIO(
             pipe(

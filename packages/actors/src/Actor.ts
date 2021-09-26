@@ -13,7 +13,7 @@ import '@principia/base/Operators'
 import * as C from '@principia/base/Chunk'
 import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
-import * as P from '@principia/base/IO/Promise'
+import * as F from '@principia/base/IO/Future'
 import * as Q from '@principia/base/IO/Queue'
 import * as Ref from '@principia/base/IO/Ref'
 import { tuple } from '@principia/base/tuple'
@@ -22,7 +22,7 @@ import * as AM from './Message'
 
 export type PendingMessage<A extends AM.AnyMessage> = readonly [
   A,
-  P.Promise<AM.ErrorOf<A> | ActorSystemException, AM.ResponseOf<A>>
+  F.Future<AM.ErrorOf<A> | ActorSystemException, AM.ResponseOf<A>>
 ]
 
 export class Actor<F1 extends AM.AnyMessage> {
@@ -47,9 +47,9 @@ export class Actor<F1 extends AM.AnyMessage> {
 
   ask<A extends F1>(fa: A) {
     return pipe(
-      P.make<AM.ErrorOf<A> | ActorSystemException, AM.ResponseOf<A>>(),
+      F.make<AM.ErrorOf<A> | ActorSystemException, AM.ResponseOf<A>>(),
       I.tap((promise) => Q.offer_(this.queue, tuple(fa, promise))),
-      I.chain(P.await)
+      I.chain(F.await)
     )
   }
 
@@ -59,7 +59,7 @@ export class Actor<F1 extends AM.AnyMessage> {
    */
   tell(fa: F1) {
     return pipe(
-      P.make<AM.ErrorOf<F1> | ActorSystemException, any>(),
+      F.make<AM.ErrorOf<F1> | ActorSystemException, any>(),
       I.chain((promise) => Q.offer_(this.queue, tuple(fa, promise))),
       I.crossSecond(I.unit())
     )
@@ -153,14 +153,14 @@ export class Stateful<R, S, F1 extends AM.AnyMessage> extends AbstractStateful<R
           payload: fa as any
         })
         const completer = (a: AM.ResponseOf<F1>) =>
-          pipe(Ref.get(s), I.chain(state.set), I.crossSecond(P.succeed_(promise, a)), I.asUnit)
+          pipe(Ref.get(s), I.chain(state.set), I.crossSecond(F.succeed_(promise, a)), I.asUnit)
         return yield* _(
           I.matchIO_(
             reciever,
             (e) =>
               pipe(
                 supervisor.supervise(reciever, e),
-                I.matchIO(() => I.asUnit(P.fail_(promise, e)), completer)
+                I.matchIO(() => I.asUnit(F.fail_(promise, e)), completer)
               ),
             completer
           )

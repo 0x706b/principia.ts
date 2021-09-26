@@ -1,11 +1,11 @@
 // tracing: off
 
-import type { Promise } from '../../Promise'
+import type { Future } from '../../Future'
 import type { IO } from '../core'
 
 import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
-import * as P from '../../Promise'
+import * as F from '../../Future'
 import { chain_, result } from '../core'
 import { uninterruptibleMask } from './interrupt'
 
@@ -16,9 +16,9 @@ import { uninterruptibleMask } from './interrupt'
  *
  * @trace call
  */
-export function fulfill_<R, E, A>(effect: IO<R, E, A>, p: Promise<E, A>): IO<R, never, boolean> {
+export function fulfill_<R, E, A>(effect: IO<R, E, A>, p: Future<E, A>): IO<R, never, boolean> {
   const trace = accessCallTrace()
-  return uninterruptibleMask(traceFrom(trace, ({ restore }) => chain_(result(restore(effect)), (ex) => P.done_(p, ex))))
+  return uninterruptibleMask(traceFrom(trace, ({ restore }) => chain_(result(restore(effect)), (ex) => F.done_(p, ex))))
 }
 
 /**
@@ -28,7 +28,7 @@ export function fulfill_<R, E, A>(effect: IO<R, E, A>, p: Promise<E, A>): IO<R, 
  *
  * @trace call
  */
-export function fulfill<E, A>(p: Promise<E, A>): <R>(effect: IO<R, E, A>) => IO<R, never, boolean> {
+export function fulfill<E, A>(p: Future<E, A>): <R>(effect: IO<R, E, A>) => IO<R, never, boolean> {
   const trace = accessCallTrace()
   return (effect) => traceCall(fulfill_, trace)(effect, p)
 }
