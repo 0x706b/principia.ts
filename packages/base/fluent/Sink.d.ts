@@ -2,6 +2,137 @@ import type * as C from '@principia/base/Chunk'
 import type { Has } from '@principia/base/Has'
 import type * as I from '@principia/base/IO'
 import type { Clock } from '@principia/base/IO/Clock'
+import type * as Si from '@principia/base/IO/experimental/Sink'
+
+/* eslint typescript-sort-keys/interface: "error" */
+
+declare global {
+  export const Sink: SinkStaticOps
+  export interface Sink<R, InErr, In, OutErr, L, Z> extends Si.Sink<R, InErr, In, OutErr, L, Z> {}
+}
+
+interface SinkStaticOps {
+  /**
+   * @rewriteStatic collectAll from "@principia/base/IO/experimental/Sink"
+   */
+  collectAll: typeof Si.collectAll
+  /**
+   * @rewriteStatic drain from "@principia/base/IO/experimental/Sink"
+   */
+  drain: typeof Si.drain
+  /**
+   * @rewriteStatic fail from "@principia/base/IO/experimental/Sink"
+   */
+  fail: typeof Si.fail
+  /**
+   * @rewriteStatic failLazy from "@principia/base/IO/experimental/Sink"
+   */
+  failLazy: typeof Si.failLazy
+  /**
+   * @rewriteStatic fold from "@principia/base/IO/experimental/Sink"
+   */
+  fold: typeof Si.fold
+  /**
+   * @rewriteStatic foldChunks from "@principia/base/IO/experimental/Sink"
+   */
+  foldChunks: typeof Si.foldChunks
+  /**
+   * @rewriteStatic foldChunksIO from "@principia/base/IO/experimental/Sink"
+   */
+  foldChunksIO: typeof Si.foldChunksIO
+  /**
+   * @rewriteStatic foldIO from "@principia/base/IO/experimental/Sink"
+   */
+  foldIO: typeof Si.foldIO
+  /**
+   * @rewriteStatic foldUntil from "@principia/base/IO/experimental/Sink"
+   */
+  foldUntil: typeof Si.foldUntil
+  /**
+   * @rewriteStatic foldUntilIO from "@principia/base/IO/experimental/Sink"
+   */
+  foldUntilIO: typeof Si.foldUntilIO
+  /**
+   * @rewriteStatic foldWeighted from "@principia/base/IO/experimental/Sink"
+   */
+  foldWeighted: typeof Si.foldWeighted
+  /**
+   * @rewriteStatic foldWeightedDecompose from "@principia/base/IO/experimental/Sink"
+   */
+  foldWeightedDecompose: typeof Si.foldWeightedDecompose
+  /**
+   * @rewriteStatic foldWeightedDecomposeIO from "@principia/base/IO/experimental/Sink"
+   */
+  foldWeightedDecomposeIO: typeof Si.foldWeightedDecomposeIO
+  /**
+   * @rewriteStatic foldWeightedIO from "@principia/base/IO/experimental/Sink"
+   */
+  foldWeightedIO: typeof Si.foldWeightedIO
+  /**
+   * @rewriteStatic foldl from "@principia/base/IO/experimental/Sink"
+   */
+  foldl: typeof Si.foldl
+  /**
+   * @rewriteStatic foldlChunks from "@principia/base/IO/experimental/Sink"
+   */
+  foldlChunks: typeof Si.foldlChunks
+  /**
+   * @rewriteStatic foldlChunksIO from "@principia/base/IO/experimental/Sink"
+   */
+  foldlChunksIO: typeof Si.foldlChunksIO
+  /**
+   * @rewriteStatic foldlIO from "@principia/base/IO/experimental/Sink"
+   */
+  foldlIO: typeof Si.foldlIO
+  /**
+   * @rewriteStatic foreach from "@principia/base/IO/experimental/Sink"
+   */
+  foreach: typeof Si.foreach
+  /**
+   * @rewriteStatic foreachChunk from "@principia/base/IO/experimental/Sink"
+   */
+  foreachChunk: typeof Si.foreachChunk
+  /**
+   * @rewriteStatic foreachChunkWhile from "@principia/base/IO/experimental/Sink"
+   */
+  foreachChunkWhile: typeof Si.foreachChunkWhile
+  /**
+   * @rewriteStatic foreachWhile from "@principia/base/IO/experimental/Sink"
+   */
+  foreachWhile: typeof Si.foreachWhile
+  /**
+   * @rewriteStatic fromIO from "@principia/base/IO/experimental/Sink"
+   */
+  fromIO: typeof Si.fromIO
+  /**
+   * @rewriteStatic head from "@principia/base/IO/experimental/Sink"
+   */
+  head: typeof Si.head
+  /**
+   * @rewriteStatic last from "@principia/base/IO/experimental/Sink"
+   */
+  last: typeof Si.last
+  /**
+   * @rewriteStatic leftover from "@principia/base/IO/experimental/Sink"
+   */
+  leftover: typeof Si.leftover
+  /**
+   * @rewriteStatic managed_ from "@principia/base/IO/experimental/Sink"
+   */
+  managed: typeof Si.managed_
+  /**
+   * @rewriteStatic succeed from "@principia/base/IO/experimental/Sink"
+   */
+  succeed: typeof Si.succeed
+  /**
+   * @rewriteStatic succeedLazy from "@principia/base/IO/experimental/Sink"
+   */
+  succeedLazy: typeof Si.succeedLazy
+  /**
+   * @rewriteStatic take from "@principia/base/IO/experimental/Sink"
+   */
+  take: typeof Si.take
+}
 
 declare module '@principia/base/IO/experimental/Sink' {
   export interface Sink<R, InErr, In, OutErr, L, Z> {

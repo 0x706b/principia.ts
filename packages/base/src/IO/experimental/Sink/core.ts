@@ -587,7 +587,7 @@ export function foldlChunks<Err, In, S>(s: S, f: (s: S, inp: C.Chunk<In>) => S):
  * A sink that effectfully folds its input chunks with the provided function and initial state.
  * `f` must preserve chunking-invariance.
  */
-export function foldlChunksM<R, Err, In, S>(
+export function foldlChunksIO<R, Err, In, S>(
   s: S,
   f: (s: S, inp: C.Chunk<In>) => I.IO<R, Err, S>
 ): Sink<R, Err, In, Err, never, S> {
@@ -597,7 +597,7 @@ export function foldlChunksM<R, Err, In, S>(
 /**
  * A sink that effectfully folds its inputs with the provided function and initial state.
  */
-export function foldlM<R, Err, In, S>(s: S, f: (s: S, inp: In) => I.IO<R, Err, S>): Sink<R, Err, In, Err, In, S> {
+export function foldlIO<R, Err, In, S>(s: S, f: (s: S, inp: In) => I.IO<R, Err, S>): Sink<R, Err, In, Err, In, S> {
   return foldIO(s, () => true, f)
 }
 
