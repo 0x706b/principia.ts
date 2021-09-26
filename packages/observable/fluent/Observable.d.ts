@@ -12,10 +12,116 @@ import type {
   ShareConfig,
   TypeOf
 } from '@principia/observable/Observable'
+import type * as O from '@principia/observable/Observable'
 import type { Observer } from '@principia/observable/Observer'
 import type { SchedulerLike } from '@principia/observable/Scheduler'
 
 /* eslint typescript-sort-keys/interface: "error" */
+
+declare global {
+  export const Observable: ObservableStaticOps
+  export interface Observable<E, A> extends O.Observable<E, A> {}
+}
+
+interface ObservableStaticOps {
+  /**
+   * @rewriteStatic animationFrames from "@principia/observable/Observable"
+   */
+  animationFrames: typeof O.animationFrames
+  /**
+   * @rewriteStatic combineLatest from "@principia/observable/Observable"
+   */
+  combineLatest: typeof O.combineLatest
+  /**
+   * @rewriteStatic connectable from "@principia/observable/Observable"
+   */
+  connectable: typeof O.connectable
+  /**
+   * @rewriteStatic defect from "@principia/observable/Observable"
+   */
+  defect: typeof O.defect
+  /**
+   * @rewriteStatic defer from "@principia/observable/Observable"
+   */
+  defer: typeof O.defer
+  /**
+   * @rewriteStatic empty from "@principia/observable/Observable"
+   */
+  empty: typeof O.empty
+  /**
+   * @rewriteStatic fail from "@principia/observable/Observable"
+   */
+  fail: typeof O.fail
+  /**
+   * @rewriteStatic forkJoin from "@principia/observable/Observable"
+   */
+  forkJoin: typeof O.forkJoin
+  /**
+   * @rewriteStatic from from "@principia/observable/Observable"
+   */
+  from: typeof O.from
+  /**
+   * @rewriteStatic fromCallback from "@principia/observable/Observable"
+   */
+  fromCallback: typeof O.fromCallback
+  /**
+   * @rewriteStatic fromEvent from "@principia/observable/Observable"
+   */
+  fromEvent: typeof O.fromEvent
+  /**
+   * @rewriteStatic fromInterop from "@principia/observable/Observable"
+   */
+  fromInterop: typeof O.fromInterop
+  /**
+   * @rewriteStatic fromNodeCallback from "@principia/observable/Observable"
+   */
+  fromNodeCallback: typeof O.fromNodeCallback
+  /**
+   * @rewriteStatic if from "@principia/observable/Observable"
+   */
+  if: typeof O.if
+  /**
+   * @rewriteStatic interval from "@principia/observable/Observable"
+   */
+  interval: typeof O.interval
+  /**
+   * @rewriteStatic iterate from "@principia/observable/Observable"
+   */
+  iterate: typeof O.iterate
+  /**
+   * @rewriteStatic merge from "@principia/observable/Observable"
+   */
+  merge: typeof O.merge
+  /**
+   * @rewriteStatic of from "@principia/observable/Observable"
+   */
+  of: typeof O.of
+  /**
+   * @rewriteStatic pure from "@principia/observable/Observable"
+   */
+  pure: typeof O.pure
+  /**
+   * @rewriteStatic race from "@principia/observable/Observable"
+   */
+  race: typeof O.race
+  /**
+   * @rewriteStatic scheduled from "@principia/observable/Observable"
+   */
+  scheduled: typeof O.scheduled
+  /**
+   * @rewriteStatic single from "@principia/observable/Observable"
+   */
+  single: typeof O.single
+  /**
+   * @rewriteStatic timer from "@principia/observable/Observable"
+   */
+  timer: typeof O.timer
+  /**
+   * @rewriteStatic zip from "@principia/observable/Observable"
+   */
+  zip: typeof O.zip
+}
+
 declare module '@principia/observable/Observable/core' {
   interface Observable<E, A> {
     /**
