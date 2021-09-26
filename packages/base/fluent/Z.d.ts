@@ -2,6 +2,211 @@ import type { Chunk } from '@principia/base/Chunk'
 import type { Either } from '@principia/base/Either'
 import type { Option } from '@principia/base/Option'
 import type { Eq, Erase, Predicate } from '@principia/base/prelude'
+import type * as Z from '@principia/base/Z'
+
+/* eslint typescript-sort-keys/interface: "error" */
+
+declare global {
+  export const Z: ZStaticOps
+  export interface Z<W, S1, S2, R, E, A> extends Z.Z<W, S1, S2, R, E, A> {}
+  export interface Sync<R, E, A> extends Z.Z<never, unknown, never, R, E, A> {}
+  export interface USync<A> extends Sync<unknown, never, A> {}
+  export interface FSync<E, A> extends Sync<unknown, E, A> {}
+  export interface URSync<R, A> extends Sync<R, never, A> {}
+}
+
+export interface ZStaticOps {
+  /**
+   * @rewriteStatic Applicative from "@principia/base/Z"
+   */
+  Applicative: typeof Z.Applicative
+  /**
+   * @rewriteStatic ApplicativeExcept from "@principia/base/Z"
+   */
+  ApplicativeExcept: typeof Z.ApplicativeExcept
+  /**
+   * @rewriteStatic Apply from "@principia/base/Z"
+   */
+  Apply: typeof Z.Apply
+  /**
+   * @rewriteStatic Functor from "@principia/base/Z"
+   */
+  Functor: typeof Z.Functor
+  /**
+   * @rewriteStatic Monad from "@principia/base/Z"
+   */
+  Monad: typeof Z.Monad
+  /**
+   * @rewriteStatic MonadEnv from "@principia/base/Z"
+   */
+  MonadEnv: typeof Z.MonadEnv
+  /**
+   * @rewriteStatic MonadExcept from "@principia/base/Z"
+   */
+  MonadExcept: typeof Z.MonadExcept
+  /**
+   * @rewriteStatic MonadState from "@principia/base/Z"
+   */
+  MonadState: typeof Z.MonadState
+  /**
+   * @rewriteStatic MonoidalFunctor from "@principia/base/Z"
+   */
+  MonoidalFunctor: typeof Z.MonoidalFunctor
+  /**
+   * @rewriteStatic ReaderCategory from "@principia/base/Z"
+   */
+  ReaderCategory: typeof Z.ReaderCategory
+  /**
+   * @rewriteStatic SemimonoidalFunctor from "@principia/base/Z"
+   */
+  SemimonoidalFunctor: typeof Z.SemimonoidalFunctor
+  /**
+   * @rewriteStatic StateCategory from "@principia/base/Z"
+   */
+  StateCategory: typeof Z.StateCategory
+  /**
+   * @rewriteStatic ask from "@principia/base/Z"
+   */
+  ask: typeof Z.ask
+  /**
+   * @rewriteStatic asks from "@principia/base/Z"
+   */
+  asks: typeof Z.asks
+  /**
+   * @rewriteStatic asksZ from "@principia/base/Z"
+   */
+  asksZ: typeof Z.asksZ
+  /**
+   * @rewriteStatic defer from "@principia/base/Z"
+   */
+  defer: typeof Z.defer
+  /**
+   * @rewriteStatic deferTry from "@principia/base/Z"
+   */
+  deferTry: typeof Z.deferTry
+  /**
+   * @rewriteStatic deferTryCatch_ from "@principia/base/Z"
+   */
+  deferTryCatch: typeof Z.deferTryCatch_
+  /**
+   * @rewriteStatic fail from "@principia/base/Z"
+   */
+  fail: typeof Z.fail
+  /**
+   * @rewriteStatic failCause from "@principia/base/Z"
+   */
+  failCause: typeof Z.failCause
+  /**
+   * @rewriteStatic failCause from "@principia/base/Z"
+   */
+  failCause: typeof Z.failCause
+  /**
+   * @rewriteStatic failCauseLazy from "@principia/base/Z"
+   */
+  failCauseLazy: typeof Z.failCauseLazy
+  /**
+   * @rewriteStatic failCauseLazy from "@principia/base/Z"
+   */
+  failCauseLazy: typeof Z.failCauseLazy
+  /**
+   * @rewriteStatic foreach_ from "@principia/base/Z"
+   */
+  foreach<W, S, R, E, A, B>(as: Iterable<A>, f: (a: A, i: number) => Z<W, S, S, R, E, B>): Z<W, S, S, R, E, C.Chunk<B>>
+  /**
+   * @rewriteStatic foreach from "@principia/base/Z"
+   * @dataFirst foreach_
+   */
+  foreach<A, W, S, R, E, B>(
+    f: (a: A, i: number) => Z<W, S, S, R, E, B>
+  ): (as: Iterable<A>) => Z<W, S, S, R, E, C.Chunk<B>>
+  /**
+   * @rewriteStatic foreachUnit_ from "@principia/base/Z"
+   */
+  foreachUnit<A, W, S, R, E>(as: Iterable<A>, f: (a: A, i: number) => Z<W, S, S, R, E, void>): Z<W, S, S, R, E, void>
+  /**
+   * @rewriteStatic foreachUnit from "@principia/base/Z"
+   * @dataFirst foreachUnit_
+   */
+  foreachUnit<A, W, S, R, E>(
+    f: (a: A, i: number) => Z<W, S, S, R, E, void>
+  ): (as: Iterable<A>) => Z<W, S, S, R, E, void>
+  /**
+   * @rewriteStatic fromEither from "@principia/base/Z"
+   */
+  fromEither: typeof Z.fromEither
+  /**
+   * @rewriteStatic fromEitherLazy from "@principia/base/Z"
+   */
+  fromEitherLazy: typeof Z.fromEitherLazy
+  /**
+   * @rewriteStatic fromOption from "@principia/base/Z"
+   */
+  fromOption: typeof Z.fromOption
+  /**
+   * @rewriteStatic fromOptionLazy from "@principia/base/Z"
+   */
+  fromOptionLazy: typeof Z.fromOptionLazy
+  /**
+   * @rewriteStatic gen from "@principia/base/Z"
+   */
+  gen: typeof Z.gen
+  /**
+   * @rewriteStatic get from "@principia/base/Z"
+   */
+  get: typeof Z.get
+  /**
+   * @rewriteStatic gets from "@principia/base/Z"
+   */
+  gets: typeof Z.gets
+  /**
+   * @rewriteStatic getsZ from "@principia/base/Z"
+   */
+  getsZ: typeof Z.getsZ
+  /**
+   * @rewriteStatic modify from "@principia/base/Z"
+   */
+  modify: typeof Z.modify
+  /**
+   * @rewriteStatic modifyEither from "@principia/base/Z"
+   */
+  modifyEither: typeof Z.modifyEither
+  /**
+   * @rewriteStatic pure from "@principia/base/Z"
+   */
+  pure: typeof Z.pure
+  /**
+   * @rewriteStatic put from "@principia/base/Z"
+   */
+  put: typeof Z.put
+  /**
+   * @rewriteStatic sequenceS from "@principia/base/Z"
+   */
+  sequenceS: typeof Z.sequenceS
+  /**
+   * @rewriteStatic sequenceT from "@principia/base/Z"
+   */
+  sequenceT: typeof Z.sequenceT
+  /**
+   * @rewriteStatic tell from "@principia/base/Z"
+   */
+  tell: typeof Z.tell
+  /**
+   * @rewriteStatic tellAll from "@principia/base/Z"
+   */
+  tellAll: typeof Z.tellAll
+  /**
+   * @rewriteStatic try from "@principia/base/Z"
+   */
+  try: typeof Z.try
+  /**
+   * @rewriteStatic tryCatch_ from "@principia/base/Z"
+   */
+  tryCatch: typeof Z.tryCatch_
+  /**
+   * @rewriteStatic unit from "@principia/base/Z"
+   */
+  unit: typeof Z.unit
+}
 
 declare module '@principia/base/Z' {
   export interface Z<W, S1, S2, R, E, A> {

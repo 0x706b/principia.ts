@@ -1690,6 +1690,10 @@ export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({ map_, crossWi
 
 export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
 export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
+export const crossS_   = P.crossSF_(SemimonoidalFunctor)
+export const crossS    = P.crossSF(SemimonoidalFunctor)
+export const crossT_   = P.crossTF_(SemimonoidalFunctor)
+export const crossT    = P.crossTF(SemimonoidalFunctor)
 
 export const Apply = P.Apply<URI, V>({ map_, crossWith_, cross_, ap_ })
 
@@ -1778,6 +1782,15 @@ export const StateCategory = P.Category<SCURI, V>({
   andThen_: (ab, bc) => chain_(ab, () => bc),
   compose_: (bc, ab) => chain_(ab, () => bc)
 })
+
+export const Do = P.Do(Monad)
+
+export const chainS_ = P.chainSF_(Monad)
+export const chainS  = P.chainSF(Monad)
+export const pureS_  = P.pureSF_(Monad)
+export const pureS   = P.pureSF(Monad)
+export const toS_    = P.toSF_(Monad)
+export const toS     = P.toSF(Monad)
 
 export class GenZ<W, S, R, E, A> {
   readonly _W!: () => W
