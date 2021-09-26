@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.2](https://github.com/0x706b/principia.ts/compare/@principia/schema@0.17.1...@principia/schema@0.17.2) (2021-09-26)
+
+
+### Bug Fixes
+
+* **schema:** typo ([83891a3](https://github.com/0x706b/principia.ts/commit/83891a35abdc4629b9e81a6edf58e9c097f7a422))
+
+
+
+
+
 ## [0.17.1](https://github.com/0x706b/principia.ts/compare/@principia/schema@0.17.0...@principia/schema@0.17.1) (2021-09-19)
 
 **Note:** Version bump only for package @principia/schema

@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.2](https://github.com/0x706b/principia.ts/compare/@principia/graphql@0.17.1...@principia/graphql@0.17.2) (2021-09-26)
+
+
+### Bug Fixes
+
+* **base/io:** fix some interruption inconsistency ([0259162](https://github.com/0x706b/principia.ts/commit/025916259ae1c2c687e5ccc564e6db57a337d75e))
+
+
+
+
+
 ## [0.17.1](https://github.com/0x706b/principia.ts/compare/@principia/graphql@0.17.0...@principia/graphql@0.17.1) (2021-09-19)
 
 **Note:** Version bump only for package @principia/graphql

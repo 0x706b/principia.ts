@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.19.0](https://github.com/0x706b/principia.ts/compare/@principia/compile@0.18.0...@principia/compile@0.19.0) (2021-09-26)
+
+
+### Features
+
+* **base/io:** add static definitions for fluent `IO` ([6fc18bb](https://github.com/0x706b/principia.ts/commit/6fc18bb0090cdb94f3b351e10171e30136bbdb90))
+* **compile:** add `rewriteStatic` support ([5a17715](https://github.com/0x706b/principia.ts/commit/5a177153444974818bf39d4e10d3067e8598440e))
+
+
+
+
+
 # [0.18.0](https://github.com/0x706b/principia.ts/compare/@principia/compile@0.17.3...@principia/compile@0.18.0) (2021-09-19)
 
 **Note:** Version bump only for package @principia/compile

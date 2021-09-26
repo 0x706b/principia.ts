@@ -3,6 +3,44 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.18.0](https://github.com/0x706b/principia.ts/compare/@principia/base@0.17.1...@principia/base@0.18.0) (2021-09-26)
+
+
+### Bug Fixes
+
+* **base/io:** fix some interruption inconsistency ([0259162](https://github.com/0x706b/principia.ts/commit/025916259ae1c2c687e5ccc564e6db57a337d75e))
+
+
+### Features
+
+* **base/array:** add fluent static definitions for `Array` ([3b07601](https://github.com/0x706b/principia.ts/commit/3b07601c2d4436a21d2ac44ebc947663a27ba94e))
+* **base/async:** add fluent static definitions for `Async` ([df08bd7](https://github.com/0x706b/principia.ts/commit/df08bd7465d6d0c5611104a26ab8a108ee7251fe))
+* **base/cause:** add fluent static definitions for `Cause` ([296a0b1](https://github.com/0x706b/principia.ts/commit/296a0b13a72147e3883a0f07ae23a4ccf7e172e4))
+* **base/chunk:** add fluent static definitions for `Chunk` ([1b09573](https://github.com/0x706b/principia.ts/commit/1b09573b41e4fcd6f1054850d07e9c7a1bd41cfa))
+* **base/either:** add fluent static definitions for `Either` ([95bcfed](https://github.com/0x706b/principia.ts/commit/95bcfed32e96b38a9d9e0b9f7799200c9de250f3))
+* **base/eval:** add fluent static definitions for `Eval` ([f0ee24e](https://github.com/0x706b/principia.ts/commit/f0ee24e78061ae6222f682b952075265b357ef0a))
+* **base/fiberref:** add `FiberRef` fluent static definitions ([f1e2c4e](https://github.com/0x706b/principia.ts/commit/f1e2c4e3e8672ab3b4f702244237f0b8ca229b2e))
+* **base/fluent:** add `HashMap` and `HashSet` fluent static definitions ([b2bcd80](https://github.com/0x706b/principia.ts/commit/b2bcd804f4b443bdcb1d340d45851f841ebde1ca))
+* **base/fluent:** add fluent static definitions for `Iterable`, `Dictionary`, and `Struct` ([4e9529a](https://github.com/0x706b/principia.ts/commit/4e9529a8269127661bf489f922c27ccc9c6dedca))
+* **base/future:** rename `Promise` -> `Future` and implement fluent static definitions ([177954e](https://github.com/0x706b/principia.ts/commit/177954e0690bbaca511aa71b38f7c6ea303b160c))
+* **base/io:** add `from` overloads to static fluent definitions ([df11b6c](https://github.com/0x706b/principia.ts/commit/df11b6c85dd40660d0525ca5990af2f3f9859937))
+* **base/io:** add instances to static fluent definitions ([0144f73](https://github.com/0x706b/principia.ts/commit/0144f734f37d3b9a1d4983564c4ee997bed90b83))
+* **base/io:** add static definitions for fluent `IO` ([6fc18bb](https://github.com/0x706b/principia.ts/commit/6fc18bb0090cdb94f3b351e10171e30136bbdb90))
+* **base/layer:** add `Layer` fluent static definitions ([d45b147](https://github.com/0x706b/principia.ts/commit/d45b147c451d68a48f88948350439e9d00e37609))
+* **base/managed:** add `Managed` fluent static definitions ([48cbc1c](https://github.com/0x706b/principia.ts/commit/48cbc1cd88ea890f95e9bb99d22f76127327f8d3))
+* **base/option:** add fluent static definitions for `Option` ([6a36474](https://github.com/0x706b/principia.ts/commit/6a36474d8a07f649094e3a957bee848f7fcaa5ad))
+* **base/queue:** add fluent static definitions for `Queue` ([f15f56b](https://github.com/0x706b/principia.ts/commit/f15f56b2f70c19bd84e7f780b71810219e93d046))
+* **base/ref:** add fluent static definitions for `Ref` ([d6c72f5](https://github.com/0x706b/principia.ts/commit/d6c72f597085ba18c2a8f089823fbc9ed3e79bdd))
+* **base/schedule:** add `Schedule` fluent static definitions ([a7a06d1](https://github.com/0x706b/principia.ts/commit/a7a06d1e73cceaa19cc5804038a54adf0835b59e))
+* **base/sink:** add `Sink` fluent static definitions ([5404947](https://github.com/0x706b/principia.ts/commit/54049476d4d8b6adb5bda3f3e4b73c815b48d494))
+* **base/stream:** add `Stream` fluent static definitions ([7696736](https://github.com/0x706b/principia.ts/commit/7696736cc5b4d6ad066402672cf07c00ff6151fe))
+* **base/z:** add `Z` fluent static definitions ([6345e4a](https://github.com/0x706b/principia.ts/commit/6345e4a39d7b8b67bce9e2edea452ed08b21c1c6))
+* **base:** add support for custom `Hash` and `Eq` to `MutableHashMap` ([185be27](https://github.com/0x706b/principia.ts/commit/185be27bdb57b1a3d0949cf56b6c194587dbd400))
+
+
+
+
+
 ## [0.17.1](https://github.com/0x706b/principia.ts/compare/@principia/base@0.17.0...@principia/base@0.17.1) (2021-09-19)
 
 **Note:** Version bump only for package @principia/base

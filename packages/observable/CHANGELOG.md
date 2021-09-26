@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.23.0](https://github.com/0x706b/principia.ts/compare/@principia/observable@0.22.2...@principia/observable@0.23.0) (2021-09-26)
+
+
+### Features
+
+* **observable:** add `Observable` fluent static definitions ([a8be6f2](https://github.com/0x706b/principia.ts/commit/a8be6f286729c371a9c4f92fcf870172be7d78d2))
+
+
+
+
+
 ## [0.22.2](https://github.com/0x706b/principia.ts/compare/@principia/observable@0.22.1...@principia/observable@0.22.2) (2021-09-19)
 
 
