@@ -7,6 +7,7 @@ import type { Clock } from '@principia/base/IO/Clock'
 import type * as Ex from '@principia/base/IO/Exit'
 import type * as Ch from '@principia/base/IO/experimental/Channel'
 import type { Sink } from '@principia/base/IO/experimental/Sink'
+import type * as S from '@principia/base/IO/experimental/Stream'
 import type { GroupBy } from '@principia/base/IO/experimental/Stream/core'
 import type { Take } from '@principia/base/IO/experimental/Stream/Take'
 import type { Layer } from '@principia/base/IO/Layer'
@@ -18,6 +19,159 @@ import type * as P from '@principia/base/prelude'
 import type { Erase } from '@principia/base/prelude'
 
 import * as E from '@principia/base/Either'
+
+/* eslint typescript-sort-keys/interface: "error" */
+
+declare global {
+  export const Stream: StreamStaticOps
+  export interface Stream<R, E, A> extends S.Stream<R, E, A> {}
+  export interface UStream<A> extends S.Stream<unknown, never, A> {}
+  export interface FStream<E, A> extends S.Stream<unknown, E, A> {}
+  export interface URStream<R, A> extends S.Stream<R, never, A> {}
+}
+
+interface StreamStaticOps {
+  /**
+   * @rewriteStatic ask from "@principia/base/IO/experimental/Stream"
+   */
+  ask: typeof S.ask
+  /**
+   * @rewriteStatic asks from "@principia/base/IO/experimental/Stream"
+   */
+  asks: typeof S.asks
+  /**
+   * @rewriteStatic asksIO from "@principia/base/IO/experimental/Stream"
+   */
+  asksIO: typeof S.asksIO
+  /**
+   * @rewriteStatic asksStream from "@principia/base/IO/experimental/Stream"
+   */
+  asksStream: typeof S.asksStream
+  /**
+   * @rewriteStatic async from "@principia/base/IO/experimental/Stream"
+   */
+  async: typeof S.async
+  /**
+   * @rewriteStatic asyncIO from "@principia/base/IO/experimental/Stream"
+   */
+  asyncIO: typeof S.asyncIO
+  /**
+   * @rewriteStatic asyncInterrupt from "@principia/base/IO/experimental/Stream"
+   */
+  asyncInterrupt: typeof S.asyncInterrupt
+  /**
+   * @rewriteStatic asyncOption from "@principia/base/IO/experimental/Stream"
+   */
+  asyncOption: typeof S.asyncOption
+  /**
+   * @rewriteStatic fail from "@principia/base/IO/experimental/Stream"
+   */
+  fail: typeof S.fail
+  /**
+   * @rewriteStatic failCause from "@principia/base/IO/experimental/Stream"
+   */
+  failCause: typeof S.failCause
+  /**
+   * @rewriteStatic failCauseLazy from "@principia/base/IO/experimental/Stream"
+   */
+  failCauseLazy: typeof S.failCauseLazy
+  /**
+   * @rewriteStatic failLazy from "@principia/base/IO/experimental/Stream"
+   */
+  failLazy: typeof S.failLazy
+  /**
+   * @rewriteStatic fromAsyncIterable from "@principia/base/IO/experimental/Stream"
+   */
+  fromAsyncIterable: typeof S.fromAsyncIterable
+  /**
+   * @rewriteStatic fromChunk from "@principia/base/IO/experimental/Stream"
+   */
+  fromChunk: typeof S.fromChunk
+  /**
+   * @rewriteStatic fromChunkLazy from "@principia/base/IO/experimental/Stream"
+   */
+  fromChunkLazy: typeof S.fromChunkLazy
+  /**
+   * @rewriteStatic fromHub from "@principia/base/IO/experimental/Stream"
+   */
+  fromHub: typeof S.fromHub
+  /**
+   * @rewriteStatic fromIO from "@principia/base/IO/experimental/Stream"
+   */
+  fromIO: typeof S.fromIO
+  /**
+   * @rewriteStatic fromIOOption from "@principia/base/IO/experimental/Stream"
+   */
+  fromIOOption: typeof S.fromIOOption
+  /**
+   * @rewriteStatic fromIterable from "@principia/base/IO/experimental/Stream"
+   */
+  fromIterable: typeof S.fromIterable
+  /**
+   * @rewriteStatic fromManaged from "@principia/base/IO/experimental/Stream"
+   */
+  fromManaged: typeof S.fromManaged
+  /**
+   * @rewriteStatic fromQueue from "@principia/base/IO/experimental/Stream"
+   */
+  fromQueue: typeof S.fromQueue_
+  /**
+   * @rewriteStatic fromQueueWithShutdown from "@principia/base/IO/experimental/Stream"
+   */
+  fromQueueWithShutdown: typeof S.fromQueueWithShutdown_
+  /**
+   * @rewriteStatic halt from "@principia/base/IO/experimental/Stream"
+   */
+  halt: typeof S.halt
+  /**
+   * @rewriteStatic haltLazy from "@principia/base/IO/experimental/Stream"
+   */
+  haltLazy: typeof S.haltLazy
+  /**
+   * @rewriteStatic repeatIO from "@principia/base/IO/experimental/Stream"
+   */
+  repeatIO: typeof S.repeatIO
+  /**
+   * @rewriteStatic repeatIOChunk from "@principia/base/IO/experimental/Stream"
+   */
+  repeatIOChunk: typeof S.repeatIOChunk
+  /**
+   * @rewriteStatic repeatIOChunkOption from "@principia/base/IO/experimental/Stream"
+   */
+  repeatIOChunkOption: typeof S.repeatIOChunkOption
+  /**
+   * @rewriteStatic repeatIOOption from "@principia/base/IO/experimental/Stream"
+   */
+  repeatIOOption: typeof S.repeatIOOption
+  /**
+   * @rewriteStatic repeatIOWith from "@principia/base/IO/experimental/Stream"
+   */
+  repeatIOWith: typeof S.repeatIOWith
+  /**
+   * @rewriteStatic repeatValue from "@principia/base/IO/experimental/Stream"
+   */
+  repeatValue: typeof S.repeatValue
+  /**
+   * @rewriteStatic repeatValueWith from "@principia/base/IO/experimental/Stream"
+   */
+  repeatValueWith: typeof S.repeatValueWith
+  /**
+   * @rewriteStatic succeed from "@principia/base/IO/experimental/Stream"
+   */
+  succeed: typeof S.succeed
+  /**
+   * @rewriteStatic succeedLazy from "@principia/base/IO/experimental/Stream"
+   */
+  succeedLazy: typeof S.succeedLazy
+  /**
+   * @rewriteStatic unfoldChunkIO from "@principia/base/IO/experimental/Stream"
+   */
+  unfoldChunkIO: typeof S.unfoldChunkIO
+  /**
+   * @rewriteStatic unfoldIO from "@principia/base/IO/experimental/Stream"
+   */
+  unfoldIO: typeof S.unfoldIO
+}
 
 declare module '@principia/base/IO/experimental/Stream/core' {
   export interface Stream<R, E, A> {
@@ -303,17 +457,21 @@ declare module '@principia/base/IO/experimental/Stream/core' {
      */
     either: Stream<R, never, E.Either<E, A>>
     /**
+     * @rewrite endWhen_ from "@principia/base/IO/experimental/Stream"
+     */
+    endWhen<R, E, A, R1, E1>(this: Stream<R, E, A>, io: I.IO<R1, E1, any>): Stream<R & R1, E | E1, A>
+    /**
      * @rewrite ensuring_ from "@principia/base/IO/experimental/Stream"
      */
     ensuring<R, E, A, R1>(this: Stream<R, E, A>, fin: I.IO<R1, never, any>): Stream<R & R1, E, A>
     /**
      * @rewrite filter_ from "@principia/base/IO/experimental/Stream"
      */
-    filter<R, E, A>(this: Stream<R, E, A>, predicate: P.Predicate<A>): Stream<R, E, A>
+    filter<R, E, A, B extends A>(this: Stream<R, E, A>, refinement: P.Refinement<A, B>): Stream<R, E, B>
     /**
      * @rewrite filter_ from "@principia/base/IO/experimental/Stream"
      */
-    filter<R, E, A, B extends A>(this: Stream<R, E, A>, refinement: P.Refinement<A, B>): Stream<R, E, B>
+    filter<R, E, A>(this: Stream<R, E, A>, predicate: P.Predicate<A>): Stream<R, E, A>
     /**
      * @rewrite filterIO_ from "@principia/base/IO/experimental/Stream"
      */
@@ -354,13 +512,13 @@ declare module '@principia/base/IO/experimental/Stream/core' {
      */
     forever: Stream<R, E, A>
     /**
-     * @rewrite give_ from "@principia/base/IO/experimental/Stream"
-     */
-    give<R, E, A, R0>(this: Stream<R, E, A>, r: R0): Stream<Erase<R, R0>, E, A>
-    /**
      * @rewrite giveLayer_ from "@principia/base/IO/experimental/Stream"
      */
     give<R, E, A, R0, E1, A1>(this: Stream<R, E, A>, layer: Layer<R0, E1, A1>): Stream<Erase<R, A1>, E | E1, A>
+    /**
+     * @rewrite give_ from "@principia/base/IO/experimental/Stream"
+     */
+    give<R, E, A, R0>(this: Stream<R, E, A>, r: R0): Stream<Erase<R, R0>, E, A>
     /**
      * @rewrite giveAll_ from "@principia/base/IO/experimental/Stream"
      */
@@ -377,10 +535,6 @@ declare module '@principia/base/IO/experimental/Stream/core' {
      * @rewrite groupByKey_ from "@principia/base/IO/experimental/Stream"
      */
     groupByKey<R, E, A, K>(this: Stream<R, E, A>, f: (a: A) => K, buffer?: number): GroupBy<R, E, K, A>
-    /**
-     * @rewrite endWhen_ from "@principia/base/IO/experimental/Stream"
-     */
-    endWhen<R, E, A, R1, E1>(this: Stream<R, E, A>, io: I.IO<R1, E1, any>): Stream<R & R1, E | E1, A>
     /**
      * @rewrite interleave_ from "@principia/base/IO/experimental/Stream"
      */
