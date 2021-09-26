@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.19.0](https://github.com/0x706b/principia.ts/compare/@principia/base@0.18.0...@principia/base@0.19.0) (2021-09-26)
+
+
+### Features
+
+* **base/io:** add `Scheduler` ([0b37bea](https://github.com/0x706b/principia.ts/commit/0b37beaa41cc37e8d6d7b33af754521a232d273d))
+
+
+
+
+
 # [0.18.0](https://github.com/0x706b/principia.ts/compare/@principia/base@0.17.1...@principia/base@0.18.0) (2021-09-26)
 
 
