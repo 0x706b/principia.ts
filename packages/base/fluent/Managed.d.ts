@@ -10,7 +10,354 @@ import type { Layer } from '@principia/base/IO/Layer'
 import type * as M from '@principia/base/IO/Managed'
 import type { Schedule } from '@principia/base/IO/Schedule'
 import type { Option } from '@principia/base/Option'
-import type { Erase } from '@principia/base/prelude'
+import type { Erase, Monoid } from '@principia/base/prelude'
+
+/* eslint typescript-sort-keys/interface: "error" */
+
+declare global {
+  export const Managed: ManagedStaticOps
+  export interface Managed<R, E, A> extends M.Managed<R, E, A> {}
+  export interface UManaged<A> extends M.UManaged<A> {}
+  export interface URManaged<R, A> extends M.URManaged<R, A> {}
+  export interface FManaged<E, A> extends M.FManaged<E, A> {}
+}
+
+interface ManagedStaticOps {
+  /**
+   * @rewriteStatic askService from "@principia/base/IO/Managed"
+   */
+  askService: typeof M.askService
+  /**
+   * @rewriteStatic asks from "@principia/base/IO/Managed"
+   */
+  asks: typeof M.asks
+  /**
+   * @rewriteStatic asksIO from "@principia/base/IO/Managed"
+   */
+  asksIO: typeof M.asksIO
+  /**
+   * @rewriteStatic asksManaged from "@principia/base/IO/Managed"
+   */
+  asksManaged: typeof M.asksManaged
+  /**
+   * @rewriteStatic asksService from "@principia/base/IO/Managed"
+   */
+  asksService: typeof M.asksService
+  /**
+   * @rewriteStatic asksServiceIO from "@principia/base/IO/Managed"
+   */
+  asksServiceIO: typeof M.asksServiceIO
+  /**
+   * @rewriteStatic asksServiceManaged from "@principia/base/IO/Managed"
+   */
+  asksServiceManaged: typeof M.asksServiceManaged
+  /**
+   * @rewriteStatic asksServices from "@principia/base/IO/Managed"
+   */
+  asksServices: typeof M.asksServices
+  /**
+   * @rewriteStatic asksServicesIO from "@principia/base/IO/Managed"
+   */
+  asksServicesIO: typeof M.asksServicesIO
+  /**
+   * @rewriteStatic asksServicesManaged from "@principia/base/IO/Managed"
+   */
+  asksServicesManaged: typeof M.asksServicesManaged
+  /**
+   * @rewriteStatic asksServicesT from "@principia/base/IO/Managed"
+   */
+  asksServicesT: typeof M.asksServicesT
+  /**
+   * @rewriteStatic asksServicesTIO from "@principia/base/IO/Managed"
+   */
+  asksServicesTIO: typeof M.asksServicesTIO
+  /**
+   * @rewriteStatic asksServicesTManaged from "@principia/base/IO/Managed"
+   */
+  asksServicesTManaged: typeof M.asksServicesTManaged
+  /**
+   * @rewriteStatic bracket_ from "@principia/base/IO/Managed"
+   */
+  bracket<R, E, A, R1>(acquire: I.IO<R, E, A>, release: (a: A) => I.IO<R1, never, unknown>): M.Managed<R & R1, E, A>
+  /**
+   * @rewriteStatic bracket from "@principia/base/IO/Managed"
+   * @dataFirst bracket_
+   */
+  bracket<A, R1>(
+    release: (a: A, exit: Exit<any, any>) => I.IO<R1, never, unknown>
+  ): <R, E>(acquire: I.IO<R, E, A>) => M.Managed<R & R1, E, A>
+  /**
+   * @rewriteStatic bracketExit_ from "@principia/base/IO/Managed"
+   */
+  bracketExit<R, E, A, R1>(
+    acquire: I.IO<R, E, A>,
+    release: (a: A, exit: Exit<any, any>) => I.IO<R1, never, unknown>
+  ): M.Managed<R & R1, E, A>
+  /**
+   * @rewriteStatic bracketExit from "@principia/base/IO/Managed"
+   * @dataFirst bracketExit_
+   */
+  bracketExit<A, R1>(
+    release: (a: A, exit: Exit<any, any>) => I.IO<R1, never, unknown>
+  ): <R, E>(acquire: I.IO<R, E, A>) => M.Managed<R & R1, E, A>
+  /**
+   * @rewriteStatic collectAll from "@principia/base/IO/Managed"
+   */
+  collectAll: typeof M.collectAll
+  /**
+   * @rewriteStatic collectAllPar from "@principia/base/IO/Managed"
+   */
+  collectAllPar: typeof M.collectAllPar
+  /**
+   * @rewriteStatic collectAllParN_ from "@principia/base/IO/Managed"
+   */
+  collectAllParN: typeof M.collectAllParN_
+  /**
+   * @rewriteStatic collectAllUnit from "@principia/base/IO/Managed"
+   */
+  collectAllUnit: typeof M.collectAllUnit
+  /**
+   * @rewriteStatic collectAllUnitPar from "@principia/base/IO/Managed"
+   */
+  collectAllUnitPar: typeof M.collectAllUnitPar
+  /**
+   * @rewriteStatic collectAllUnitParN_ from "@principia/base/IO/Managed"
+   */
+  collectAllUnitParN: typeof M.collectAllUnitParN_
+  /**
+   * @rewriteStatic defer from "@principia/base/IO/Managed"
+   */
+  defer: typeof M.defer
+  /**
+   * @rewriteStatic do from "@principia/base/IO/Managed"
+   */
+  do: typeof M.do
+  /**
+   * @rewriteStatic fail from "@principia/base/IO/Managed"
+   */
+  fail: typeof M.fail
+  /**
+   * @rewriteStatic failCause from "@principia/base/IO/Managed"
+   */
+  failCause: typeof M.failCause
+  /**
+   * @rewriteStatic failCauseLazy from "@principia/base/IO/Managed"
+   */
+  failCauseLazy: typeof M.failCauseLazy
+  /**
+   * @rewriteStatic failCauseWithTrace from "@principia/base/IO/Managed"
+   */
+  failCauseWithTrace: typeof M.failCauseWithTrace
+  /**
+   * @rewriteStatic failLazy from "@principia/base/IO/Managed"
+   */
+  failLazy: typeof M.failLazy
+  /**
+   * @rewriteStatic finalizer from "@principia/base/IO/Managed"
+   */
+  finalizer: typeof M.finalizer
+  /**
+   * @rewriteStatic finalizerExit from "@principia/base/IO/Managed"
+   */
+  finalizerExit: typeof M.finalizerExit
+  /**
+   * @rewriteStatic finalizerRef from "@principia/base/IO/Managed"
+   */
+  finalizerRef: typeof M.finalizerRef
+  /**
+   * @rewriteStatic foldMap_ from "@principia/base/IO/Managed"
+   * @dataFirst foldMap_
+   */
+  foldMap<M>(M: Monoid<M>): {
+    /**
+     * @trace 0
+     */
+    <A>(f: (a: A) => M): <R, E>(as: Iterable<M.Managed<R, E, A>>) => M.Managed<R, E, M>
+    /**
+     * @trace 1
+     */
+    <R, E, A>(as: Iterable<M.Managed<R, E, A>>, f: (a: A) => M): M.Managed<R, E, M>
+  }
+  /**
+   * @rewriteStatic foldMapPar_ from "@principia/base/IO/Managed"
+   * @dataFirst foldMapPar_
+   */
+  foldMapPar<M>(M: Monoid<M>): {
+    /**
+     * @trace 0
+     */
+    <A>(f: (a: A) => M): <R, E>(as: Iterable<M.Managed<R, E, A>>) => M.Managed<R, E, M>
+    /**
+     * @trace 1
+     */
+    <R, E, A>(as: Iterable<M.Managed<R, E, A>>, f: (a: A) => M): M.Managed<R, E, M>
+  }
+  /**
+   * @rewriteStatic foldMapParN_ from "@principia/base/IO/Managed"
+   * @dataFirst foldMapParN_
+   */
+  foldMapParN<M>(M: Monoid<M>): {
+    /**
+     * @trace 0
+     */
+    <A>(n: number, f: (a: A) => M): <R, E>(as: Iterable<I.IO<R, E, A>>) => I.IO<R, E, M>
+    /**
+     * @trace 1
+     */
+    <R, E, A>(as: Iterable<I.IO<R, E, A>>, n: number, f: (a: A) => M): I.IO<R, E, M>
+  }
+  /**
+   * @rewriteStatic foldl_ from "@principia/base/IO/Managed"
+   * @trace 2
+   */
+  foldl<R, E, A, B>(as: Iterable<A>, b: B, f: (b: B, a: A) => M.Managed<R, E, B>): M.Managed<R, E, B>
+  /**
+   * @rewriteStatic foldl from "@principia/base/IO/Managed"
+   * @dataFirst foldl_
+   * @trace 1
+   */
+  foldl<R, E, A, B>(b: B, f: (b: B, a: A) => M.Managed<R, E, B>): (as: Iterable<A>) => M.Managed<R, E, B>
+  /**
+   * @rewriteStatic foreach from "@principia/base/IO/Managed"
+   * @dataFirst foreach_
+   * @trace 0
+   */
+  foreach<R, E, A, A1>(f: (a: A) => M.Managed<R, E, A1>): (as: Iterable<A>) => M.Managed<R, E, Chunk<A1>>
+  /**
+   * @rewriteStatic foreach_ from "@principia/base/IO/Managed"
+   * @trace 1
+   */
+  foreach<R, E, A, A1>(as: Iterable<A>, f: (a: A) => M.Managed<R, E, A1>): M.Managed<R, E, Chunk<A1>>
+  /**
+   * @rewriteStatic foreachPar from "@principia/base/IO/Managed"
+   * @dataFirst foreachPar_
+   * @trace 0
+   */
+  foreachPar<R, E, A, A1>(f: (a: A) => M.Managed<R, E, A1>): (as: Iterable<A>) => M.Managed<R, E, Chunk<A1>>
+  /**
+   * @rewriteStatic foreachPar_ from "@principia/base/IO/Managed"
+   * @trace 1
+   */
+  foreachPar<R, E, A, A1>(as: Iterable<A>, f: (a: A) => M.Managed<R, E, A1>): M.Managed<R, E, Chunk<A1>>
+  /**
+   * @rewriteStatic foreachParN from "@principia/base/IO/Managed"
+   * @dataFirst foreachParN_
+   * @trace 1
+   */
+  foreachParN<R, E, A, A1>(n: number, f: (a: A) => M.Managed<R, E, A1>): (as: Iterable<A>) => M.Managed<R, E, Chunk<A1>>
+  /**
+   * @rewriteStatic foreachParN_ from "@principia/base/IO/Managed"
+   * @trace 2
+   */
+  foreachParN<R, E, A, A1>(as: Iterable<A>, n: number, f: (a: A) => M.Managed<R, E, A1>): M.Managed<R, E, Chunk<A1>>
+  /**
+   * @rewriteStatic foreachUnit_ from "@principia/base/IO/Managed"
+   * @trace 1
+   */
+  foreachUnit<R, E, A, A1>(as: Iterable<A>, f: (a: A) => M.Managed<R, E, A1>): M.Managed<R, E, void>
+  /**
+   * @rewriteStatic foreachUnit from "@principia/base/IO/Managed"
+   * @dataFirst foreachUnit_
+   * @trace 0
+   */
+  foreachUnit<R, E, A, A1>(f: (a: A) => M.Managed<R, E, A1>): (as: Iterable<A>) => M.Managed<R, E, void>
+  /**
+   * @rewriteStatic foreachUnitPar from "@principia/base/IO/Managed"
+   * @dataFirst foreachUnitPar_
+   * @trace 0
+   */
+  foreachUnitPar<R, E, A, A1>(f: (a: A) => M.Managed<R, E, A1>): (as: Iterable<A>) => M.Managed<R, E, void>
+  /**
+   * @rewriteStatic foreachUnitPar_ from "@principia/base/IO/Managed"
+   * @trace 1
+   */
+  foreachUnitPar<R, E, A, A1>(as: Iterable<A>, f: (a: A) => M.Managed<R, E, A1>): M.Managed<R, E, void>
+  /**
+   * @rewriteStatic foreachUnitParN_ from "@principia/base/IO/Managed"
+   * @trace 2
+   */
+  foreachUnitParN<R, E, A, A1>(as: Iterable<A>, n: number, f: (a: A) => M.Managed<R, E, A1>): M.Managed<R, E, void>
+  /**
+   * @rewriteStatic foreachUnitParN from "@principia/base/IO/Managed"
+   * @dataFirst foreachUnitParN_
+   * @trace 1
+   */
+  foreachUnitParN<R, E, A, A1>(n: number, f: (a: A) => M.Managed<R, E, A1>): (as: Iterable<A>) => M.Managed<R, E, void>
+  /**
+   * @rewriteStatic fromEitherLazy from "@principia/base/IO/Managed"
+   */
+  fromEitherLazy: typeof M.fromEitherLazy
+  /**
+   * @rewriteStatic fromIO from "@principia/base/IO/Managed"
+   */
+  fromIO: typeof M.fromIO
+  /**
+   * @rewriteStatic fromIOUninterruptible from "@principia/base/IO/Managed"
+   */
+  fromIOUninterruptible: typeof M.fromIOUninterruptible
+  /**
+   * @rewriteStatic gen from "@principia/base/IO/Managed"
+   */
+  gen: typeof M.gen
+  /**
+   * @rewriteStatic halt from "@principia/base/IO/Managed"
+   */
+  halt: typeof M.halt
+  /**
+   * @rewriteStatic haltLazy from "@principia/base/IO/Managed"
+   */
+  haltLazy: typeof M.haltLazy
+  /**
+   * @rewriteStatic makeReservation_ from "@principia/base/IO/Managed"
+   * @dataFirst makeReservation_
+   */
+  makeReservation<R1>(
+    release: (exit: Exit<any, any>) => I.IO<R1, never, A>
+  ): <R, E, A>(acquire: I.IO<R, E, A>) => M.Reservation<R & R1, E, A>
+  /**
+   * @rewriteStatic makeReservation_ from "@principia/base/IO/Managed"
+   */
+  makeReservation<R, E, A, R1>(
+    acquire: I.IO<R, E, A>,
+    release: (exit: Exit<any, any>) => I.IO<R1, never, any>
+  ): M.Reservation<R & R1, E, A>
+  /**
+   * @rewriteStatic makeReserve from "@principia/base/IO/Managed"
+   */
+  makeReserve: typeof M.makeReserve
+  /**
+   * @rewriteStatic pure from "@principia/base/IO/Managed"
+   */
+  pure: typeof M.pure
+  /**
+   * @rewriteStatic reserve from "@principia/base/IO/Managed"
+   */
+  reserve: typeof M.reserve
+  /**
+   * @rewriteStatic scope from "@principia/base/IO/Managed"
+   */
+  scope: typeof M.scope
+  /**
+   * @rewriteStatic succeed from "@principia/base/IO/Managed"
+   */
+  succeed: typeof M.succeed
+  /**
+   * @rewriteStatic succeedLazy from "@principia/base/IO/Managed"
+   */
+  succeedLazy: typeof M.succeedLazy
+  /**
+   * @rewriteStatic switchable from "@principia/base/IO/Managed"
+   */
+  switchable: typeof M.switchable
+  /**
+   * @rewriteStatic try from "@principia/base/IO/Managed"
+   */
+  try: typeof M.try
+  /**
+   * @rewriteStatic tryCatch_ from "@principia/base/IO/Managed"
+   */
+  tryCatch: typeof M.tryCatch_
+}
 
 declare module '@principia/base/IO/Managed/core' {
   export interface Managed<R, E, A> {
@@ -169,6 +516,16 @@ declare module '@principia/base/IO/Managed/core' {
     chainError<R, E, A, R1, E1>(this: M.Managed<R, E, A>, f: (e: E) => M.URManaged<R1, E1>): M.Managed<R & R1, E1, A>
 
     /**
+     * @rewrite chainS_ from "@principia/base/IO/Managed"
+     * @trace 1
+     */
+    chainS<R, E, K, N extends string, R1, E1, A1>(
+      this: Managed<R, E, K>,
+      name: Exclude<N, keyof K>,
+      f: (_: K) => Managed<R1, E1, A1>
+    ): Managed<R & R1, E | E1, { [k in N | keyof K]: k extends keyof K ? K[k] : A1 }>
+
+    /**
      * @rewrite collect_ from "@principia/base/IO/Managed"
      * @trace 1
      */
@@ -258,12 +615,12 @@ declare module '@principia/base/IO/Managed/core' {
       that: M.Managed<R1, E1, B>,
       f: (a: A, b: B) => C
     ): M.Managed<R & R1, E | E1, C>
-
     /**
      * @rewriteGetter either from "@principia/base/IO/Managed"
      * @trace getter
      */
     either: M.Managed<R, never, Either<E, A>>
+
     /**
      * @rewrite ensuring_ from "@principia/base/IO/Managed"
      * @trace call
@@ -295,16 +652,16 @@ declare module '@principia/base/IO/Managed/core' {
     get<R, A>(this: M.Managed<R, never, Option<A>>): M.Managed<R, Option<never>, A>
 
     /**
-     * @rewrite give_ from "@principia/base/IO/Managed"
-     * @trace call
-     */
-    give<R, E, A, R0>(this: M.Managed<R, E, A>, env: R0): M.Managed<Erase<R, R0>, E, A>
-
-    /**
      * @rewrite giveLayer_ from "@principia/base/IO/Managed"
      * @trace call
      */
     give<R, E, A, R1, E1, A1>(this: Managed<R, E, A>, layer: Layer<R1, E1, A1>): M.Managed<Erase<R & R1, A1>, E | E1, A>
+
+    /**
+     * @rewrite give_ from "@principia/base/IO/Managed"
+     * @trace call
+     */
+    give<R, E, A, R0>(this: M.Managed<R, E, A>, env: R0): M.Managed<Erase<R, R0>, E, A>
 
     /**
      * @rewrite giveAll_ from "@principia/base/IO/Managed"
@@ -546,6 +903,16 @@ declare module '@principia/base/IO/Managed/core' {
     preallocateManaged: M.Managed<R, E, M.Managed<unknown, never, A>>
 
     /**
+     * @rewrite pureS_ from "@principia/base/IO/Managed"
+     * @trace 1
+     */
+    pureS<R, E, K, N extends string, A>(
+      this: Managed<R, E, K>,
+      name: Exclude<N, keyof K>,
+      f: (_: K) => A
+    ): Managed<R, E, { [k in N | keyof K]: k extends keyof K ? K[k] : A }>
+
+    /**
      * @rewrite refineOrDie_ from "@principia/base/IO/Managed"
      * @trace 0
      */
@@ -716,6 +1083,12 @@ declare module '@principia/base/IO/Managed/core' {
      * @trace call
      */
     timeout<R, E, A>(this: M.Managed<R, E, A>, ms: number): M.Managed<R & Has<Clock>, E, Option<A>>
+
+    /**
+     * @rewrite toS_ from "@principia/base/IO/Managed"
+     * @trace call
+     */
+    toS<R, E, A, N extends string>(ma: Managed<R, E, A>, name: N): Managed<R, E, { [k in N]: A }>
 
     /**
      * @rewrite unlessManaged_ from "@principia/base/IO/Managed"

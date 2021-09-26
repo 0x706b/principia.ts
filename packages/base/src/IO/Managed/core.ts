@@ -990,7 +990,7 @@ export function flatten<R, E, R1, E1, A>(mma: Managed<R, E, Managed<R1, E1, A>>)
  *
  * @trace call
  */
-export function flattenM<R, E, R1, E1, A>(mma: Managed<R, E, I.IO<R1, E1, A>>): Managed<R & R1, E | E1, A> {
+export function flattenIO<R, E, R1, E1, A>(mma: Managed<R, E, I.IO<R1, E1, A>>): Managed<R & R1, E | E1, A> {
   const trace = accessCallTrace()
   return mapIO_(mma, traceFrom(trace, flow(identityFn)))
 }
