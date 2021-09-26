@@ -1,6 +1,96 @@
 import type { Cause } from '@principia/base/IO/Cause'
 import type * as I from '@principia/base/IO/IO'
+import type * as L from '@principia/base/IO/Layer'
 import type * as M from '@principia/base/IO/Managed'
+
+/* eslint typescript-sort-keys/interface: "error" */
+
+declare global {
+  export const Layer: LayerStaticOps
+  export interface Layer<R, E, A> extends L.Layer<R, E, A> {}
+  export interface ULayer<A> extends L.Layer<unknown, never, A> {}
+  export interface FLayer<E, A> extends L.Layer<unknown, E, A> {}
+  export interface URLayer<R, A> extends L.Layer<R, never, A> {}
+}
+
+interface LayerStaticOps {
+  /**
+   * @rewriteStatic bracketConstructor from "@principia/base/IO/Layer"
+   */
+  bracketConstructor: typeof L.bracketConstructor
+  /**
+   * @rewriteStatic bracketConstructorIO from "@principia/base/IO/Layer"
+   */
+  bracketConstructorIO: typeof L.bracketConstructorIO
+  /**
+   * @rewriteStatic defer from "@principia/base/IO/Layer"
+   */
+  defer: typeof L.defer
+  /**
+   * @rewriteStatic fail from "@principia/base/IO/Layer"
+   */
+  fail: typeof L.fail
+  /**
+   * @rewriteStatic fromConstructor from "@principia/base/IO/Layer"
+   */
+  fromConstructor: typeof L.fromConstructor
+  /**
+   * @rewriteStatic fromConstructorIO from "@principia/base/IO/Layer"
+   */
+  fromConstructorIO: typeof L.fromConstructorIO
+  /**
+   * @rewriteStatic fromConstructorManaged from "@principia/base/IO/Layer"
+   */
+  fromConstructorManaged: typeof L.fromConstructorManaged
+  /**
+   * @rewriteStatic fromFunctionIO from "@principia/base/IO/Layer"
+   */
+  fromFunctionIO: typeof L.fromFunctionIO
+  /**
+   * @rewriteStatic fromFunctionManaged from "@principia/base/IO/Layer"
+   */
+  fromFunctionManaged: typeof L.fromFunctionManaged
+  /**
+   * @rewriteStatic fromIO from "@principia/base/IO/Layer"
+   */
+  fromIO: typeof L.fromIO
+  /**
+   * @rewriteStatic fromManaged from "@principia/base/IO/Layer"
+   */
+  fromManaged: typeof L.fromManaged
+  /**
+   * @rewriteStatic fromRawFunction from "@principia/base/IO/Layer"
+   */
+  fromRawFunction: typeof L.fromRawFunction
+  /**
+   * @rewriteStatic fromRawFunctionIO from "@principia/base/IO/Layer"
+   */
+  fromRawFunctionIO: typeof L.fromRawFunctionIO
+  /**
+   * @rewriteStatic fromRawFunctionManaged from "@principia/base/IO/Layer"
+   */
+  fromRawFunctionManaged: typeof L.fromRawFunctionManaged
+  /**
+   * @rewriteStatic fromRawIO from "@principia/base/IO/Layer"
+   */
+  fromRawIO: typeof L.fromRawIO
+  /**
+   * @rewriteStatic fromRawManaged from "@principia/base/IO/Layer"
+   */
+  fromRawManaged: typeof L.fromRawManaged
+  /**
+   * @rewriteStatic identity from "@principia/base/IO/Layer"
+   */
+  identity: typeof L.identity
+  /**
+   * @rewriteStatic restrict from "@principia/base/IO/Layer"
+   */
+  restrict: typeof L.restrict
+  /**
+   * @rewriteStatic succeed from "@principia/base/IO/Layer"
+   */
+  succeed: typeof L.succeed
+}
 
 declare module '@principia/base/IO/Layer/core' {
   export interface Layer<R, E, A> {
