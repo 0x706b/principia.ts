@@ -1,5 +1,8 @@
 import { DoublyLinkedList } from './DoublyLinkedList'
 
+const microtask =
+  typeof queueMicrotask !== 'undefined' ? queueMicrotask : (callback: () => void) => Promise.resolve().then(callback)
+
 export class Scheduler {
   isRunning = false
   tasks     = new DoublyLinkedList<() => void>()
@@ -7,7 +10,7 @@ export class Scheduler {
     this.tasks.add(thunk)
     if (!this.isRunning) {
       this.isRunning = true
-      Promise.resolve().then(() => {
+      microtask(() => {
         while (this.tasks.length > 0) {
           this.tasks.shift()!()
         }
