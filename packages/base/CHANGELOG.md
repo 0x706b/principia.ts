@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.20.0](https://github.com/0x706b/principia.ts/compare/@principia/base@0.19.0...@principia/base@0.20.0) (2021-10-03)
+
+
+### Bug Fixes
+
+* **base/async:** fix `Async` fluent definitions ([20bf414](https://github.com/0x706b/principia.ts/commit/20bf41409d23a76a1204c3045951915c54bc5c04))
+
+
+### Features
+
+* **base/io:** use `queueMicrotask` in `Scheduler` ([6c100d9](https://github.com/0x706b/principia.ts/commit/6c100d98f55a2e6be03ebad752cc2b49a84f10d9))
+
+
+
+
+
 # [0.19.0](https://github.com/0x706b/principia.ts/compare/@principia/base@0.18.0...@principia/base@0.19.0) (2021-09-26)
 
 

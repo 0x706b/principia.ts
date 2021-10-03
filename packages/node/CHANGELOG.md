@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.4](https://github.com/0x706b/principia.ts/compare/@principia/node@0.17.3...@principia/node@0.17.4) (2021-10-03)
+
+**Note:** Version bump only for package @principia/node
+
+
+
+
+
 ## [0.17.3](https://github.com/0x706b/principia.ts/compare/@principia/node@0.17.2...@principia/node@0.17.3) (2021-09-26)
 
 **Note:** Version bump only for package @principia/node
