@@ -1201,11 +1201,31 @@ export function runPromiseExit<E, A>(
 
 export function runPromiseExitInterrupt<E, A>(async: Async<unknown, E, A>): [Promise<Exit<E, A>>, () => void] {
   const interruptionState = new InterruptionState()
-  const p                 = runPromiseExitEnv_(async, {}, interruptionState)
-  const i                 = () => {
+  const promise           = runPromiseExitEnv_(async, {}, interruptionState)
+  const interrupt         = () => {
     interruptionState.interrupt()
   }
-  return [p, i]
+  return [promise, interrupt]
+}
+
+export function runPromise<A>(
+  async: Async<unknown, never, A>,
+  interruptionState = new InterruptionState()
+): Promise<A> {
+  return runPromiseExit(async, interruptionState).then(
+    Ex.match((c) => {
+      throw C.squash<void>({ show: () => '' })(identity)(c)
+    }, identity)
+  )
+}
+
+export function runPromiseInterrupt<A>(async: Async<unknown, never, A>): [Promise<A>, () => void] {
+  const interruptionState = new InterruptionState()
+  const promise           = runPromise(async, interruptionState)
+  const interrupt         = () => {
+    interruptionState.interrupt()
+  }
+  return [promise, interrupt]
 }
 
 export function runAsync_<E, A>(async: Async<unknown, E, A>, onExit?: (exit: Exit<E, A>) => void): () => void {

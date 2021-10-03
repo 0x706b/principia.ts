@@ -358,14 +358,29 @@ declare module '@principia/base/Async' {
     runAsyncEnv<R, E, A>(this: As.Async<R, E, A>, env: R, onExit?: (exit: As.Exit<E, A>) => void): () => void
 
     /**
+     * @rewrite runPromise from "@principia/base/Async"
+     */
+    runPromise<A>(this: As.Async<unknown, never, A>): Promise<A>
+
+    /**
      * @rewrite runPromiseExit from "@principia/base/Async"
      */
-    runPromiseExit<E, A>(this: As.Async<unknown, E, A>): [Promise<As.Exit<E, A>>, () => void]
+    runPromiseExit<E, A>(this: As.Async<unknown, E, A>): Promise<As.Exit<E, A>>
 
     /**
      * @rewrite runPromiseExitEnv_ from "@principia/base/Async"
      */
     runPromiseExitEnv<R, E, A>(this: As.Async<R, E, A>, env: R): Promise<As.Exit<E, A>>
+
+    /**
+     * @rewrite runPromiseExitInterrupt from "@principia/base/Async"
+     */
+    runPromiseExitInterrupt<E, A>(this: As.Async<unknown, E, A>): [Promise<As.Exit<E, A>>, () => void]
+
+    /**
+     * @rewrite runPromiseInterrupt from "@principia/base/Async"
+     */
+    runPromiseInterrupt<A>(this: As.Async<unknown, never, A>): [Promise<A>, () => void]
 
     /**
      * @rewrite subsumeEither from "@principia/base/Async"
