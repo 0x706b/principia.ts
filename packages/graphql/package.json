@@ -1,6 +1,6 @@
 {
   "name": "@principia/graphql",
-  "version": "0.17.4",
+  "version": "0.17.5",
   "description": "GraphQL",
   "repository": {
     "type": "git",
@@ -56,10 +56,10 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@principia/base": "^0.20.0",
-    "@principia/http": "^0.17.4",
-    "@principia/koa": "^0.17.4",
-    "@principia/query": "^0.17.4",
+    "@principia/base": "^0.21.0",
+    "@principia/http": "^0.17.5",
+    "@principia/koa": "^0.17.5",
+    "@principia/query": "^0.17.5",
     "apollo-server-koa": "2.25.2",
     "graphql": "15.6.0",
     "graphql-tools": "7.0.5",

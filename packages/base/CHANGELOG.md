@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.21.0](https://github.com/0x706b/principia.ts/compare/@principia/base@0.20.0...@principia/base@0.21.0) (2021-10-04)
+
+
+### Features
+
+* **base/array:** add `index` to `findMap` ([8f1f325](https://github.com/0x706b/principia.ts/commit/8f1f3254f13a730c9eb79737ecfea3686cf063c2))
+
+
+
+
+
 # [0.20.0](https://github.com/0x706b/principia.ts/compare/@principia/base@0.19.0...@principia/base@0.20.0) (2021-10-03)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "@principia/actors",
-  "version": "0.18.2",
+  "version": "0.18.3",
   "description": "Actors",
   "repository": {
     "type": "git",
@@ -49,8 +49,8 @@
     "demo": "ts-node -r tsconfig-paths/register test/demo.ts"
   },
   "dependencies": {
-    "@principia/base": "^0.20.0",
-    "@principia/schema": "^0.17.4",
+    "@principia/base": "^0.21.0",
+    "@principia/schema": "^0.17.5",
     "isomorphic-fetch": "^3.0.0"
   },
   "publishConfig": {
