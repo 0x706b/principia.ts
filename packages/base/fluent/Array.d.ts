@@ -409,7 +409,7 @@ export interface ArrayOps {
   /**
    * @rewrite findMap_ from "@principia/base/Array"
    */
-  findMap<T, B>(this: ReadonlyArray<T>, f: (a: T) => Option<B>): Option<B>
+  findMap<T, B>(this: ReadonlyArray<T>, f: (a: T, i: number) => Option<B>): Option<B>
 
   /**
    * @rewrite flatten from "@principia/base/NonEmptyArray"

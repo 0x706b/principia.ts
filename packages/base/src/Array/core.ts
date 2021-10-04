@@ -1411,10 +1411,10 @@ export function find<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Op
  * @category combinators
  * @since 1.0.0
  */
-export function findMap_<A, B>(as: ReadonlyArray<A>, f: (a: A) => Option<B>): Option<B> {
+export function findMap_<A, B>(as: ReadonlyArray<A>, f: (a: A, index: number) => Option<B>): Option<B> {
   const len = as.length
   for (let i = 0; i < len; i++) {
-    const v = f(as[i])
+    const v = f(as[i], i)
     if (O.isSome(v)) {
       return v
     }
@@ -1427,7 +1427,7 @@ export function findMap_<A, B>(as: ReadonlyArray<A>, f: (a: A) => Option<B>): Op
  * @since 1.0.0
  * @dataFirst findMap_
  */
-export function findMap<A, B>(f: (a: A) => Option<B>): (as: ReadonlyArray<A>) => Option<B> {
+export function findMap<A, B>(f: (a: A, index: number) => Option<B>): (as: ReadonlyArray<A>) => Option<B> {
   return (as) => findMap_(as, f)
 }
 
