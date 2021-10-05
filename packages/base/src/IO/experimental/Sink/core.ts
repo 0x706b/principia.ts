@@ -1,5 +1,4 @@
 import type { Has } from '../../../Has'
-import type * as Ma from '../../Managed'
 
 import * as C from '../../../Chunk'
 import { flow, pipe } from '../../../function'
@@ -8,6 +7,7 @@ import { tuple } from '../../../tuple'
 import { AtomicReference } from '../../../util/support/AtomicReference'
 import * as I from '../..'
 import { Clock } from '../../Clock'
+import * as Ma from '../../Managed'
 import * as Ch from '../Channel'
 
 /**
@@ -378,6 +378,12 @@ export function dropLeftover<R, InErr, In, OutErr, L, Z>(
   sink: Sink<R, InErr, In, OutErr, L, Z>
 ): Sink<R, InErr, In, OutErr, never, Z> {
   return new Sink(Ch.drain(sink.channel))
+}
+
+export function unwrapManaged<R, OutErr, R1, InErr, In, OutErr1, L, Z>(
+  managed: Ma.Managed<R, OutErr, Sink<R1, InErr, In, OutErr1, L, Z>>
+): Sink<R & R1, InErr, In, OutErr | OutErr1, L, Z> {
+  return new Sink(Ch.unwrapManaged(Ma.map_(managed, (_) => _.channel)))
 }
 
 /*

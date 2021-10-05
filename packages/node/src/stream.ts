@@ -4,10 +4,10 @@ import type * as stream from 'stream'
 import * as C from '@principia/base/Chunk'
 import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
+import * as Ch from '@principia/base/IO/experimental/Channel'
+import * as Sink from '@principia/base/IO/experimental/Sink'
+import * as S from '@principia/base/IO/experimental/Stream'
 import * as Ma from '@principia/base/IO/Managed'
-import * as S from '@principia/base/IO/Stream'
-import * as Push from '@principia/base/IO/Stream/Push'
-import * as Sink from '@principia/base/IO/Stream/Sink'
 import * as M from '@principia/base/Maybe'
 import { tuple } from '@principia/base/tuple'
 
@@ -62,34 +62,52 @@ export class WritableError {
  * @category Node
  * @since 1.0.0
  */
-export function sinkFromWritable(w: () => stream.Writable): Sink.Sink<unknown, WritableError, Byte, never, void> {
+export function sinkFromWritable<InErr>(
+  w: () => stream.Writable
+): Sink.Sink<unknown, InErr, Byte, WritableError | InErr, never, void> {
   return new Sink.Sink(
-    pipe(
-      I.async<unknown, never, stream.Writable>((cb) => {
-        const onError = (err: Error) => {
-          clearImmediate(im)
-          cb(I.halt(err))
-        }
+    Ch.unwrapManaged(
+      pipe(
+        I.async<unknown, never, stream.Writable>((cb) => {
+          const onError = (err: Error) => {
+            clearImmediate(handle)
+            cb(I.halt(err))
+          }
 
-        const sw = w().once('error', onError)
-        const im = setImmediate(() => {
-          sw.removeListener('error', onError)
-          cb(I.succeed(sw))
+          const writable = w().once('error', onError)
+          const handle   = setImmediate(() => {
+            writable.removeListener('error', onError)
+            cb(I.succeed(writable))
+          })
+        }),
+        Ma.bracket((writable) =>
+          I.succeedLazy(() => {
+            writable.destroy()
+          })
+        ),
+        Ma.map((writable) => {
+          const reader: Ch.Channel<
+            unknown,
+            InErr,
+            C.Chunk<Byte>,
+            unknown,
+            WritableError | InErr,
+            never,
+            void
+          > = Ch.readWith(
+            (chunk: C.Chunk<Byte>) =>
+              Ch.unwrap(
+                I.async<unknown, WritableError, typeof reader>((cb) => {
+                  writable.write(C.toBuffer(chunk), (err) =>
+                    err ? cb(I.fail(new WritableError(err))) : cb(I.succeed(reader))
+                  )
+                })
+              ),
+            Ch.fail,
+            () => Ch.end(undefined)
+          )
+          return reader
         })
-      }),
-      Ma.bracket((sw) =>
-        I.succeedLazy(() => {
-          sw.destroy()
-        })
-      ),
-      Ma.map((sw) =>
-        M.match(
-          () => Push.emit(undefined, C.empty()),
-          (chunk) =>
-            I.async((cb) => {
-              sw.write(chunk, (err) => (err ? cb(Push.fail(new WritableError(err), C.empty())) : cb(Push.more)))
-            })
-        )
       )
     )
   )
@@ -106,33 +124,55 @@ export function transform(
   return <R, E>(stream: S.Stream<R, E, Byte>) => {
     const managedSink = pipe(
       I.succeedLazy(tr),
-      Ma.bracket((st) =>
+      Ma.bracket((transform) =>
         I.succeedLazy(() => {
-          st.destroy()
+          transform.destroy()
         })
       ),
-      Ma.map((st) =>
-        tuple(
-          st,
-          Sink.fromPush<unknown, TransformError, Byte, never, void>(
-            M.match(
-              () =>
-                I.chain_(
-                  I.succeedLazy(() => {
-                    st.end()
-                  }),
-                  () => Push.emit(undefined, C.empty())
-                ),
-              (chunk) =>
-                I.async((cb) => {
-                  st.write(C.toBuffer(chunk), (err) =>
-                    err ? cb(Push.fail(new TransformError(err), C.empty())) : cb(Push.more)
-                  )
-                })
-            )
-          )
+      Ma.map((transform) => {
+        const endTransform = pipe(
+          I.succeedLazy(() => {
+            transform.end()
+          })
         )
-      )
+        const reader: Ch.Channel<
+          unknown,
+          E,
+          C.Chunk<Byte>,
+          unknown,
+          E | TransformError,
+          C.Chunk<Byte>,
+          void
+        > = Ch.readWith(
+          (inp: C.Chunk<Byte>) =>
+            Ch.unwrap(
+              I.async<
+                unknown,
+                TransformError,
+                Ch.Channel<unknown, E, C.Chunk<Byte>, unknown, E | TransformError, C.Chunk<Byte>, void>
+              >((cb) => {
+                transform.write(C.toBuffer(inp), (err) =>
+                  err ? cb(I.fail(new TransformError(err))) : cb(I.succeed(reader))
+                )
+              })
+            ),
+          (err) =>
+            Ch.unwrap(
+              pipe(
+                endTransform,
+                I.map(() => Ch.fail(err))
+              )
+            ),
+          () =>
+            Ch.unwrap(
+              pipe(
+                endTransform,
+                I.map(() => Ch.end(undefined))
+              )
+            )
+        )
+        return tuple(transform, new Sink.Sink(reader))
+      })
     )
     return pipe(
       S.fromManaged(managedSink),
@@ -141,7 +181,7 @@ export function transform(
           I.crossSecond_(
             I.succeedLazy(() => {
               transform.on('data', (chunk) => {
-                cb(I.succeed(chunk))
+                cb(I.succeed(C.fromBuffer(chunk)))
               })
               transform.on('error', (err) => {
                 cb(I.fail(M.just(new TransformError(err))))

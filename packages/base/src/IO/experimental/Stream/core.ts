@@ -1038,6 +1038,48 @@ export function giveLayer<R0, E1, R1>(
  * -------------------------------------------------------------------------------------------------
  */
 
+/**
+ * Creates a stream from a single value that will get cleaned up after the
+ * stream is consumed
+ */
+export function bracket_<R, E, A, R1>(
+  acquire: I.IO<R, E, A>,
+  release: (a: A) => I.IO<R1, never, unknown>
+): Stream<R & R1, E, A> {
+  return fromManaged(Ma.bracket_(acquire, release))
+}
+
+/**
+ * Creates a stream from a single value that will get cleaned up after the
+ * stream is consumed
+ */
+export function bracket<A, R1>(
+  release: (a: A) => I.IO<R1, never, unknown>
+): <R, E>(acquire: I.IO<R, E, A>) => Stream<R & R1, E, A> {
+  return (acquire) => bracket_(acquire, release)
+}
+
+/**
+ * Creates a stream from a single value that will get cleaned up after the
+ * stream is consumed
+ */
+export function bracketExit_<R, E, A, R1>(
+  acquire: I.IO<R, E, A>,
+  release: (a: A, exit: Ex.Exit<any, any>) => I.IO<R1, never, unknown>
+): Stream<R & R1, E, A> {
+  return fromManaged(Ma.bracketExit_(acquire, release))
+}
+
+/**
+ * Creates a stream from a single value that will get cleaned up after the
+ * stream is consumed
+ */
+export function bracketExit<A, R1>(
+  release: (a: A, exit: Ex.Exit<any, any>) => I.IO<R1, never, unknown>
+): <R, E>(acquire: I.IO<R, E, A>) => Stream<R & R1, E, A> {
+  return (acquire) => bracketExit_(acquire, release)
+}
+
 function combineChunksProducer<Err, Elem>(
   handoff: HO.Handoff<Take.Take<Err, Elem>>,
   latch: HO.Handoff<void>

@@ -2,17 +2,20 @@ import type { Byte } from '@principia/base/Byte'
 import type { Chunk } from '@principia/base/Chunk'
 import type { IO } from '@principia/base/IO'
 
+import * as Ca from '@principia/base/Cause'
 import * as C from '@principia/base/Chunk'
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/function'
 import { Integer } from '@principia/base/Integer'
 import * as I from '@principia/base/IO'
+import * as Ch from '@principia/base/IO/experimental/Channel'
+import * as Sink from '@principia/base/IO/experimental/Sink'
+import * as S from '@principia/base/IO/experimental/Stream'
+import { chunk } from '@principia/base/IO/experimental/Stream/Take'
 import * as Ma from '@principia/base/IO/Managed'
 import * as Queue from '@principia/base/IO/Queue'
 import * as Ref from '@principia/base/IO/Ref'
-import * as S from '@principia/base/IO/Stream'
 import * as Push from '@principia/base/IO/Stream/Push'
-import * as Sink from '@principia/base/IO/Stream/Sink'
 import * as M from '@principia/base/Maybe'
 import * as N from '@principia/base/Newtype'
 import * as fs from 'fs'
@@ -95,7 +98,7 @@ export function createReadStream(
     ),
     S.bracket(([fd, _]) => I.orHalt(close(fd))),
     S.chain(([fd, state]) =>
-      S.repeatIOChunkMaybe(
+      S.repeatIOChunkOption(
         I.gen(function* (_) {
           const [pos, end]     = yield* _(state.get)
           const n              = Math.min(end - pos + 1, chunkSize)
@@ -122,47 +125,61 @@ interface CreateWriteSinkOptions {
   start?: Integer
 }
 
-export function createWriteSink(
+export function createWriteSink<InErr>(
   path: fs.PathLike,
   options?: CreateWriteSinkOptions
-): Sink.Sink<unknown, ErrnoException, Byte, never, void> {
+): Sink.Sink<unknown, InErr, Byte, InErr | ErrnoException, never, void> {
   return new Sink.Sink(
-    Ma.gen(function* (_) {
-      const errorRef = yield* _(Ref.make<M.Maybe<ErrnoException>>(M.nothing()))
-      const st       = yield* _(
-        Ma.catchAll_(
-          Ma.bracket_(
-            I.crossPar_(
-              open(path, options?.flags ?? fs.constants.O_CREAT | fs.constants.O_WRONLY, options?.mode),
-              Ref.make(options?.start ? Integer.unwrap(options.start) : undefined)
+    Ch.unwrapManaged(
+      Ma.gen(function* (_) {
+        const errorRef = yield* _(Ref.make<M.Maybe<ErrnoException>>(M.nothing()))
+        const st       = yield* _(
+          Ma.catchAll_(
+            Ma.bracket_(
+              I.crossPar_(
+                open(path, options?.flags ?? fs.constants.O_CREAT | fs.constants.O_WRONLY, options?.mode),
+                Ref.make(options?.start ? Integer.unwrap(options.start) : undefined)
+              ),
+              ([fd, _]) => I.orHalt(close(fd))
             ),
-            ([fd, _]) => I.orHalt(close(fd))
-          ),
-          (err) => I.toManaged_(errorRef.set(M.just(err)))
-        )
-      )
-
-      const maybeError = yield* _(errorRef.get)
-      if (!st && M.isJust(maybeError)) {
-        return (_: M.Maybe<Chunk<Byte>>) => Push.fail(maybeError.value, C.empty())
-      } else {
-        return (is: M.Maybe<Chunk<Byte>>) =>
-          M.match_(
-            is,
-            () => Push.emit(undefined, C.empty()),
-            (chunk) =>
-              pipe(
-                (st[1] as Ref.URef<number | undefined>).get,
-                I.chain((pos) => write(st[0], chunk, pos)),
-                I.chain((_) =>
-                  Ref.update_(st[1] as Ref.URef<number | undefined>, (n) => (n ? n + chunk.length : undefined))
-                ),
-                I.chain((_) => Push.more),
-                I.mapError((err) => [E.left(err), C.empty()])
-              )
+            (err) => I.toManaged_(errorRef.set(M.just(err)))
           )
-      }
-    })
+        )
+
+        const maybeError = yield* _(errorRef.get)
+        if (!st && M.isJust(maybeError)) {
+          const reader = Ch.readWith(
+            (_: C.Chunk<Byte>) => Ch.crossSecond_(Ch.fail(maybeError.value), Ch.end(undefined)),
+            (err: InErr) => Ch.failCause(Ca.then(Ca.fail(maybeError.value), Ca.fail(err))),
+            (_: unknown) => Ch.fail(maybeError.value)
+          )
+          return reader
+        } else {
+          const reader: Ch.Channel<
+            unknown,
+            InErr,
+            C.Chunk<Byte>,
+            unknown,
+            InErr | ErrnoException,
+            C.Chunk<never>,
+            void
+          > = Ch.readWith(
+            (inp: C.Chunk<Byte>) =>
+              Ch.unwrap(
+                pipe(
+                  st![1].get,
+                  I.chain((pos) => write(st[0], inp, pos)),
+                  I.chain(() => Ref.update_(st![1], (n) => (n ? n + inp.length : undefined))),
+                  I.map(() => reader)
+                )
+              ),
+            Ch.fail,
+            (_: unknown) => Ch.end(undefined)
+          )
+          return reader
+        }
+      })
+    )
   )
 }
 
@@ -495,7 +512,7 @@ export function watch(
     ),
     S.fromIO,
     S.chain((watcher) =>
-      S.repeatIOMaybe(
+      S.repeatIOOption(
         I.async<unknown, M.Maybe<Error>, { eventType: 'rename' | 'change', filename: string | Buffer }>((cb) => {
           watcher.once('change', (eventType, filename) => {
             watcher.removeAllListeners()
@@ -546,7 +563,7 @@ export function watchFile(
     }),
     S.bracket(Queue.shutdown),
     S.chain((q) =>
-      S.repeatIOMaybe<unknown, never, [fs.BigIntStats | fs.Stats, fs.BigIntStats | fs.Stats]>(Queue.take(q))
+      S.repeatIOOption<unknown, never, [fs.BigIntStats | fs.Stats, fs.BigIntStats | fs.Stats]>(Queue.take(q))
     )
   )
 }

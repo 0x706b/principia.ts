@@ -9,10 +9,11 @@ import * as C from '@principia/base/Chunk'
 import * as E from '@principia/base/Either'
 import { flow, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
+import * as Ch from '@principia/base/IO/experimental/Channel'
+import * as S from '@principia/base/IO/experimental/Stream'
 import * as Ma from '@principia/base/IO/Managed'
 import * as Q from '@principia/base/IO/Queue'
 import * as Ref from '@principia/base/IO/Ref'
-import * as S from '@principia/base/IO/Stream'
 import * as Pull from '@principia/base/IO/Stream/Pull'
 import * as Iter from '@principia/base/Iterable'
 import * as M from '@principia/base/Maybe'
@@ -64,7 +65,7 @@ export type RequestEvent = CloseEvent | DataEvent | EndEvent | ErrorEvent | Paus
 export class HttpRequest {
   private memoizedUrl: E.Either<HttpException, M.Maybe<Url.URL>> = E.right(M.nothing())
 
-  eventStream: Ma.Managed<unknown, never, I.UIO<S.Stream<unknown, never, RequestEvent>>>
+  eventStream: Ma.Managed<unknown, never, S.Stream<unknown, never, RequestEvent>>
 
   constructor(readonly ref: Ref.URef<http.IncomingMessage>) {
     this.eventStream = pipe(
@@ -73,46 +74,54 @@ export class HttpRequest {
       Ma.chain((req) =>
         S.broadcastDynamic_(
           new S.Stream(
-            Ma.gen(function* (_) {
-              const queue   = yield* _(Q.makeUnbounded<RequestEvent>())
-              const done    = yield* _(Ref.make(false))
-              const runtime = yield* _(I.runtime<unknown>())
-              yield* _(
-                I.succeedLazy(() => {
-                  req.on('close', () => {
-                    runtime.run_(Q.offer_(queue, { _tag: 'Close' }))
-                  })
-                  req.on('data', (chunk) => {
-                    runtime.run_(Q.offer_(queue, { _tag: 'Data', chunk }))
-                  })
-                  req.on('end', () => {
-                    runtime.run_(Q.offer_(queue, { _tag: 'End' }))
-                  })
-                  req.on('pause', () => {
-                    runtime.run_(Q.offer_(queue, { _tag: 'Pause' }))
-                  })
-                  req.on('error', (error) => {
-                    runtime.run_(Q.offer_(queue, { _tag: 'Error', error }))
-                  })
-                  req.on('readable', () => {
-                    runtime.run_(Q.offer_(queue, { _tag: 'Readble' }))
-                  })
-                  req.on('resume', () => {
-                    runtime.run_(Q.offer_(queue, { _tag: 'Resume' }))
-                  })
-                })
-              )
-              return I.chain_(done.get, (b) =>
-                b
-                  ? Pull.end
-                  : I.chain_(Q.take(queue), (event): I.UIO<Chunk<RequestEvent>> => {
-                      if (event._tag === 'Close') {
-                        return I.crossSecond_(done.set(true), Pull.emit(event))
-                      }
-                      return Pull.emit(event)
+            Ch.unwrapManaged(
+              Ma.gen(function* (_) {
+                const queue   = yield* _(Q.makeUnbounded<RequestEvent>())
+                const done    = yield* _(Ref.make(false))
+                const runtime = yield* _(I.runtime<unknown>())
+                yield* _(
+                  I.succeedLazy(() => {
+                    req.on('close', () => {
+                      runtime.run_(Q.offer_(queue, { _tag: 'Close' }))
                     })
-              )
-            })
+                    req.on('data', (chunk) => {
+                      runtime.run_(Q.offer_(queue, { _tag: 'Data', chunk }))
+                    })
+                    req.on('end', () => {
+                      runtime.run_(Q.offer_(queue, { _tag: 'End' }))
+                    })
+                    req.on('pause', () => {
+                      runtime.run_(Q.offer_(queue, { _tag: 'Pause' }))
+                    })
+                    req.on('error', (error) => {
+                      runtime.run_(Q.offer_(queue, { _tag: 'Error', error }))
+                    })
+                    req.on('readable', () => {
+                      runtime.run_(Q.offer_(queue, { _tag: 'Readble' }))
+                    })
+                    req.on('resume', () => {
+                      runtime.run_(Q.offer_(queue, { _tag: 'Resume' }))
+                    })
+                  })
+                )
+                const writer: Ch.Channel<unknown, unknown, unknown, unknown, never, C.Chunk<RequestEvent>, void> = pipe(
+                  Q.take(queue),
+                  I.chain((event) => {
+                    if (event._tag === 'Close') {
+                      return I.crossSecond_(done.set(true), I.succeed(Ch.end(undefined)))
+                    }
+                    return I.succeed(Ch.crossSecond_(Ch.write(C.single(event)), writer))
+                  }),
+                  Ch.unwrap
+                )
+                return Ch.unwrap(
+                  pipe(
+                    done.get,
+                    I.map((b) => (b ? Ch.end(undefined) : writer))
+                  )
+                )
+              })
+            )
           ),
           1
         )
