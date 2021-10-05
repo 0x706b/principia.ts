@@ -97,10 +97,9 @@ export class Unbounded<A> implements MutableQueue<A> {
   }
 
   pollUpTo(n: number): Chunk<A> {
-    let result  = C.empty<A>()
-    const count = 0
+    let result = C.empty<A>()
 
-    while (count < n) {
+    for (let count = 0; count < n; count++) {
       const elem = this.poll(undefined)
 
       if (elem === undefined) {

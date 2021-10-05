@@ -956,17 +956,15 @@ class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A>
     })
   }
 
-  shutdown: I.UIO<void> = I.descriptorWith((d) =>
-    I.defer(() => {
-      this.shutdownFlag.set(true)
+  shutdown: I.UIO<void> = I.deferWith((_, id) => {
+    this.shutdownFlag.set(true)
 
-      return I.uninterruptible(
-        I.whenIO(F.succeed_(this.shutdownHook, undefined))(
-          I.chain_(I.foreachPar_(_unsafePollAll(this.takers), F.interruptAs(d.id)), () => this.strategy.shutdown)
-        )
+    return I.uninterruptible(
+      I.whenIO(F.succeed_(this.shutdownHook, undefined))(
+        I.chain_(I.foreachPar_(_unsafePollAll(this.takers), F.interruptAs(id)), () => this.strategy.shutdown)
       )
-    })
-  )
+    )
+  })
 
   size: I.UIO<number> = I.defer(() => {
     if (this.shutdownFlag.get) {
