@@ -936,7 +936,7 @@ export function chain_<R, E, A, R1, E1, A1>(
         I.map_(f(a).io, ([releaseThat, b]) => [
           (e) =>
             I.chain_(I.result(releaseThat(e)), (e1) =>
-              I.chain_(I.result(releaseSelf(e1)), (e2) => I.fromExit(Ex.crossSecond_(e1, e2)))
+              I.chain_(I.result(releaseSelf(e)), (e2) => I.fromExit(Ex.crossSecond_(e1, e2)))
             ),
           b
         ])
