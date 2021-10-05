@@ -2406,7 +2406,7 @@ export function managed_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1, OutE
   m: Ma.Managed<Env, OutErr, A>,
   use: (a: A) => Channel<Env1, InErr, InElem, InDone, OutErr1, OutElem, OutDone>
 ): Channel<Env & Env1, InErr, InElem, InDone, OutErr | OutErr1, OutElem, OutDone> {
-  return bracket_(
+  return bracketExit_(
     RM.make,
     (releaseMap) => {
       return pipe(
@@ -2420,12 +2420,7 @@ export function managed_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1, OutE
         chain(use)
       )
     },
-    (_) =>
-      Ma.releaseAll_(
-        _,
-        Ex.unit(), // FIXME: BracketOut should be BracketOutExit (From ZIO)
-        sequential
-      )
+    (releaseMap, exit) => Ma.releaseAll_(releaseMap, exit, sequential)
   )
 }
 
