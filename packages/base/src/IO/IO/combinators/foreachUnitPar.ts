@@ -10,7 +10,7 @@ import { traceAs } from '@principia/compile/util'
 import * as Ch from '../../../Chunk/core'
 import { flow, pipe } from '../../../function'
 import * as It from '../../../Iterable'
-import * as O from '../../../Option'
+import * as M from '../../../Maybe'
 import { tuple } from '../../../tuple'
 import * as C from '../../Cause'
 import * as Ex from '../../Exit'
@@ -119,7 +119,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
             pipe(
               fibers,
               I.foreach((f) => f.await),
-              I.map(flow(Ch.find(Ex.isFailure), O.isSome))
+              I.map(flow(Ch.find(Ex.isFailure), M.isJust))
             )
           ),
           I.refailWithTrace
@@ -239,7 +239,7 @@ function releaseAllSeq_(_: RM.ReleaseMap, exit: Exit<any, any>): I.UIO<any> {
           return [
             I.chain_(
               I.foreach_(Array.from(RM.finalizers(s)).reverse(), ([_, f]) => I.result(s.update(f)(exit))),
-              (e) => I.fromExit(O.getOrElse_(Ex.collectAll(...e), () => Ex.succeed([])))
+              (e) => I.fromExit(M.getOrElse_(Ex.collectAll(...e), () => Ex.succeed([])))
             ),
             new RM.Exited(s.nextKey, exit, s.update)
           ]

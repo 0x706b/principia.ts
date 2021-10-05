@@ -1,6 +1,6 @@
 import type { Either } from '@principia/base/Either'
 import type { Eq } from '@principia/base/Eq'
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 import type { PredicateWithIndex } from '@principia/base/Predicate'
 import type { RefinementWithIndex } from '@principia/base/Refinement'
 import type { Notification } from '@principia/observable/Notification'
@@ -131,7 +131,7 @@ declare module '@principia/observable/Observable/core' {
     /**
      * @rewrite at_ from "@principia/observable/Observable"
      */
-    at<E, A>(this: Observable<E, A>, index: number): Observable<E, Option<A>>
+    at<E, A>(this: Observable<E, A>, index: number): Observable<E, Maybe<A>>
     /**
      * @rewrite audit_ from "@principia/observable/Observable"
      */
@@ -298,18 +298,18 @@ declare module '@principia/observable/Observable/core' {
     /**
      * @rewrite filterMap_ from "@principia/observable/Observable"
      */
-    filterMap<E, A, B>(this: Observable<E, A>, f: (value: A, index: number) => Option<B>): Observable<E, B>
+    filterMap<E, A, B>(this: Observable<E, A>, f: (value: A, index: number) => Maybe<B>): Observable<E, B>
     /**
      * @rewrite find_ from "@principia/observable/Observable"
      */
     find<E, A, B extends A>(
       this: Observable<E, A>,
       refinement: RefinementWithIndex<number, A, B>
-    ): Observable<E, Option<B>>
+    ): Observable<E, Maybe<B>>
     /**
      * @rewrite find_ from "@principia/observable/Observable"
      */
-    find<E, A>(this: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, Option<A>>
+    find<E, A>(this: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, Maybe<A>>
     /**
      * @rewrite findIndex_ from "@principia/observable/Observable"
      */

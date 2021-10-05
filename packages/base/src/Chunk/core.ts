@@ -10,8 +10,8 @@ import * as E from '../Either'
 import { identity, pipe, unsafeCoerce } from '../function'
 import * as HKT from '../HKT'
 import * as It from '../Iterable/core'
+import * as M from '../Maybe'
 import * as N from '../number'
-import * as O from '../Option'
 import { EQ } from '../Ordering'
 import * as P from '../prelude'
 import * as Equ from '../Structural/Equatable'
@@ -1005,35 +1005,35 @@ export function corresponds<A, B>(bs: Chunk<B>, f: (a: A, b: B) => boolean): (as
  * -------------------------------------------------------------------------------------------------
  */
 
-export function head<A>(chunk: Chunk<A>): O.Option<A> {
+export function head<A>(chunk: Chunk<A>): M.Maybe<A> {
   concrete(chunk)
   if (isEmpty(chunk)) {
-    return O.none()
+    return M.nothing()
   }
-  return O.some(chunk.get(0))
+  return M.just(chunk.get(0))
 }
 
-export function init<A>(chunk: Chunk<A>): O.Option<Chunk<A>> {
+export function init<A>(chunk: Chunk<A>): M.Maybe<Chunk<A>> {
   if (isEmpty(chunk)) {
-    return O.none()
+    return M.nothing()
   }
-  return O.some(take_(chunk, chunk.length - 1))
+  return M.just(take_(chunk, chunk.length - 1))
 }
 
-export function last<A>(chunk: Chunk<A>): O.Option<A> {
+export function last<A>(chunk: Chunk<A>): M.Maybe<A> {
   concrete(chunk)
   if (isEmpty(chunk)) {
-    return O.none()
+    return M.nothing()
   }
-  return O.some(chunk.get(chunk.length - 1))
+  return M.just(chunk.get(chunk.length - 1))
 }
 
-export function tail<A>(chunk: Chunk<A>): O.Option<Chunk<A>> {
+export function tail<A>(chunk: Chunk<A>): M.Maybe<Chunk<A>> {
   concrete(chunk)
   if (isEmpty(chunk)) {
-    return O.none()
+    return M.nothing()
   }
-  return O.some(drop_(chunk, 1))
+  return M.just(drop_(chunk, 1))
 }
 
 export function toArray<A>(chunk: Chunk<A>): ReadonlyArray<A> {
@@ -1357,7 +1357,7 @@ export function filter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: Chun
   return (fa) => filter_(fa, predicate)
 }
 
-export function filterMap_<A, B>(fa: Chunk<A>, f: (a: A, i: number) => O.Option<B>): Chunk<B> {
+export function filterMap_<A, B>(fa: Chunk<A>, f: (a: A, i: number) => M.Maybe<B>): Chunk<B> {
   concrete(fa)
   const iterator = fa.arrayIterator()
   const out      = builder<B>()
@@ -1367,7 +1367,7 @@ export function filterMap_<A, B>(fa: Chunk<A>, f: (a: A, i: number) => O.Option<
     const array = result.value
     for (let j = 0; j < array.length; j++) {
       const ob = f(array[j], i)
-      if (O.isSome(ob)) {
+      if (M.isJust(ob)) {
         out.append(ob.value)
       }
       i++
@@ -1376,7 +1376,7 @@ export function filterMap_<A, B>(fa: Chunk<A>, f: (a: A, i: number) => O.Option<
   return out.result()
 }
 
-export function filterMap<A, B>(f: (a: A, i: number) => O.Option<B>): (fa: Chunk<A>) => Chunk<B> {
+export function filterMap<A, B>(f: (a: A, i: number) => M.Maybe<B>): (fa: Chunk<A>) => Chunk<B> {
   return (self) => filterMap_(self, f)
 }
 
@@ -1510,7 +1510,7 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A, i: number) => M) => (f
  * -------------------------------------------------------------------------------------------------
  */
 
-export function compact<A>(as: Chunk<O.Option<A>>): Chunk<A> {
+export function compact<A>(as: Chunk<M.Maybe<A>>): Chunk<A> {
   return filterMap_(as, identity)
 }
 
@@ -1673,13 +1673,13 @@ export const sequence: P.SequenceFn<URI> = (G) => {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function unfold<A, B>(b: B, f: (b: B) => O.Option<readonly [A, B]>): Chunk<A> {
+export function unfold<A, B>(b: B, f: (b: B) => M.Maybe<readonly [A, B]>): Chunk<A> {
   const out = builder<A>()
   let bb    = b
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const mt = f(bb)
-    if (O.isSome(mt)) {
+    if (M.isJust(mt)) {
       const [a, b] = mt.value
       out.append(a)
       bb = b
@@ -1763,19 +1763,19 @@ export function chunksOf(n: number): <A>(as: Chunk<A>) => Chunk<Chunk<A>> {
 /**
  * Transforms all elements of the chunk for as long as the specified partial function is defined.
  */
-export function collectWhile_<A, B>(self: Chunk<A>, f: (a: A) => O.Option<B>): Chunk<B> {
+export function collectWhile_<A, B>(self: Chunk<A>, f: (a: A) => M.Maybe<B>): Chunk<B> {
   concrete(self)
 
   switch (self._chunkTag) {
     case ChunkTag.Singleton: {
-      return O.match_(f(self.value), () => empty(), single)
+      return M.match_(f(self.value), () => empty(), single)
     }
     case ChunkTag.Arr: {
       const array = self.arrayLike()
       let dest    = empty<B>()
       for (let i = 0; i < array.length; i++) {
         const rhs = f(array[i]!)
-        if (O.isSome(rhs)) {
+        if (M.isJust(rhs)) {
           dest = append_(dest, rhs.value)
         } else {
           return dest
@@ -1794,7 +1794,7 @@ export function collectWhile_<A, B>(self: Chunk<A>, f: (a: A) => O.Option<B>): C
  *
  * @dataFirst collectWhile_
  */
-export function collectWhile<A, B>(f: (a: A) => O.Option<B>): (self: Chunk<A>) => Chunk<B> {
+export function collectWhile<A, B>(f: (a: A) => M.Maybe<B>): (self: Chunk<A>) => Chunk<B> {
   return (self) => collectWhile_(self, f)
 }
 
@@ -1874,25 +1874,25 @@ export function fill<A>(n: number, f: (n: number) => A): Chunk<A> {
   return builder
 }
 
-export function find_<A>(as: Chunk<A>, f: (a: A) => boolean): O.Option<A> {
+export function find_<A>(as: Chunk<A>, f: (a: A) => boolean): M.Maybe<A> {
   concrete(as)
   const iterator = as.arrayIterator()
-  let out        = O.none<A>()
+  let out        = M.nothing<A>()
   let result: IteratorResult<ArrayLike<A>>
-  while (O.isNone(out) && !(result = iterator.next()).done) {
+  while (M.isNothing(out) && !(result = iterator.next()).done) {
     const array  = result.value
     const length = array.length
-    for (let i = 0; O.isNone(out) && i < length; i++) {
+    for (let i = 0; M.isNothing(out) && i < length; i++) {
       const a = array[i]
       if (f(a)) {
-        out = O.some(a)
+        out = M.just(a)
       }
     }
   }
   return out
 }
 
-export function find<A>(f: (a: A) => boolean): (as: Chunk<A>) => O.Option<A> {
+export function find<A>(f: (a: A) => boolean): (as: Chunk<A>) => M.Maybe<A> {
   return (as) => find_(as, f)
 }
 
@@ -1930,11 +1930,11 @@ export function foldlWhile<A, B>(b: B, predicate: Predicate<B>, f: (b: B, a: A) 
   return (as) => foldlWhile_(as, b, predicate, f)
 }
 
-export function get_<A>(as: Chunk<A>, n: number): O.Option<A> {
-  return O.tryCatch(() => unsafeGet_(as, n))
+export function get_<A>(as: Chunk<A>, n: number): M.Maybe<A> {
+  return M.tryCatch(() => unsafeGet_(as, n))
 }
 
-export function get(n: number): <A>(as: Chunk<A>) => O.Option<A> {
+export function get(n: number): <A>(as: Chunk<A>) => M.Maybe<A> {
   return (as) => get_(as, n)
 }
 

@@ -9,13 +9,13 @@ import * as C from '@principia/base/Chunk'
 import * as E from '@principia/base/Either'
 import { flow, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
-import * as M from '@principia/base/IO/Managed'
+import * as Ma from '@principia/base/IO/Managed'
 import * as Q from '@principia/base/IO/Queue'
 import * as Ref from '@principia/base/IO/Ref'
 import * as S from '@principia/base/IO/Stream'
 import * as Pull from '@principia/base/IO/Stream/Pull'
 import * as Iter from '@principia/base/Iterable'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import * as R from '@principia/base/Record'
 import { Semigroup } from '@principia/base/Semigroup'
 import * as Str from '@principia/base/string'
@@ -62,18 +62,18 @@ interface ResumeEvent {
 export type RequestEvent = CloseEvent | DataEvent | EndEvent | ErrorEvent | PauseEvent | ReadableEvent | ResumeEvent
 
 export class HttpRequest {
-  private memoizedUrl: E.Either<HttpException, O.Option<Url.URL>> = E.right(O.none())
+  private memoizedUrl: E.Either<HttpException, M.Maybe<Url.URL>> = E.right(M.nothing())
 
-  eventStream: M.Managed<unknown, never, I.UIO<S.Stream<unknown, never, RequestEvent>>>
+  eventStream: Ma.Managed<unknown, never, I.UIO<S.Stream<unknown, never, RequestEvent>>>
 
   constructor(readonly ref: Ref.URef<http.IncomingMessage>) {
     this.eventStream = pipe(
       ref.get,
-      M.fromIO,
-      M.chain((req) =>
+      Ma.fromIO,
+      Ma.chain((req) =>
         S.broadcastDynamic_(
           new S.Stream(
-            M.gen(function* (_) {
+            Ma.gen(function* (_) {
               const queue   = yield* _(Q.makeUnbounded<RequestEvent>())
               const done    = yield* _(Ref.make(false))
               const runtime = yield* _(I.runtime<unknown>())
@@ -144,7 +144,7 @@ export class HttpRequest {
       this.memoizedUrl,
       E.match(
         I.fail,
-        O.match(
+        M.match(
           () =>
             I.gen(function* (_) {
               const protocol = yield* _(self.protocol)
@@ -153,7 +153,7 @@ export class HttpRequest {
                 pipe(
                   self.getHeader('host'),
                   I.chain(
-                    O.match(
+                    M.match(
                       () =>
                         I.fail(
                           new HttpException('Defect: request sent without a host', {
@@ -177,7 +177,7 @@ export class HttpRequest {
                   ),
                   I.tap((url) =>
                     I.succeedLazy(() => {
-                      self.memoizedUrl = E.right(O.some(url))
+                      self.memoizedUrl = E.right(M.just(url))
                     })
                   ),
                   I.tapError((ex) =>
@@ -206,12 +206,12 @@ export class HttpRequest {
     )
   }
 
-  getHeader(name: 'set-cookie'): UIO<O.Option<ReadonlyArray<string>>>
-  getHeader(name: string): UIO<O.Option<string>>
-  getHeader(name: string): UIO<O.Option<string | ReadonlyArray<string>>> {
+  getHeader(name: 'set-cookie'): UIO<M.Maybe<ReadonlyArray<string>>>
+  getHeader(name: string): UIO<M.Maybe<string>>
+  getHeader(name: string): UIO<M.Maybe<string | ReadonlyArray<string>>> {
     return pipe(
       this.ref.get,
-      I.map((req) => O.fromNullable(req.headers[name]))
+      I.map((req) => M.fromNullable(req.headers[name]))
     )
   }
 
@@ -251,9 +251,9 @@ export class HttpRequest {
       const charset     = yield* _(
         pipe(
           contentType,
-          O.map(parseContentType),
-          O.chain((c) => O.fromNullable(c.parameters['charset']?.toLowerCase())),
-          O.getOrElse(() => 'utf-8'),
+          M.map(parseContentType),
+          M.chain((c) => M.fromNullable(c.parameters['charset']?.toLowerCase())),
+          M.getOrElse(() => 'utf-8'),
           decodeCharset.parse,
           Th.match(
             (_) => Sy.fail(new HttpException('Invalid charset', { status: Status.UnsupportedMediaType })),
@@ -288,9 +288,9 @@ export class HttpRequest {
       const charset     = yield* _(
         pipe(
           contentType,
-          O.map(parseContentType),
-          O.chain((c) => O.fromNullable(c.parameters['charset']?.toLowerCase())),
-          O.getOrElse(() => 'utf-8'),
+          M.map(parseContentType),
+          M.chain((c) => M.fromNullable(c.parameters['charset']?.toLowerCase())),
+          M.getOrElse(() => 'utf-8'),
           decodeCharset.parse,
           Th.match(
             (_) => Sy.fail(new HttpException('Invalid charset', { status: Status.UnsupportedMediaType })),

@@ -1,12 +1,12 @@
 import type { Applicative } from './Applicative'
 import type { FilterableWithIndexMin } from './FilterableWithIndex'
 import type { Either } from './internal/Either'
-import type { Option } from './internal/Option'
+import type { Maybe } from './internal/Maybe'
 import type { TraversableWithIndexMin } from './TraversableWithIndex'
 
 import { FilterableWithIndex } from './FilterableWithIndex'
 import * as HKT from './HKT'
-import * as O from './internal/Option'
+import * as Mb from './internal/Maybe'
 import { TraversableWithIndex } from './TraversableWithIndex'
 
 export interface WitherableWithIndex<F extends HKT.URIS, C = HKT.Auto>
@@ -45,7 +45,7 @@ export function WitherableWithIndex<F extends HKT.URIS, C = HKT.Auto>(
 
 export interface FilterMapWithIndexAFn<F extends HKT.URIS, C = HKT.Auto> {
   <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <KG, QG, WG, XG, IG, SG, RG, EG, A, B, KF>(
-    f: (a: A, k: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Option<B>>
+    f: (a: A, k: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Maybe<B>>
   ) => <QF, WF, XF, IF, SF, RF, EF>(
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>
   ) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>>
@@ -73,7 +73,7 @@ export interface FilterMapWithIndexAFn_<F extends HKT.URIS, C = HKT.Auto> {
     B
   >(
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>,
-    f: (a: A, k: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Option<B>>
+    f: (a: A, k: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Maybe<B>>
   ) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
@@ -93,7 +93,7 @@ export function implementFilterMapWithIndexA<F extends HKT.URIS, C = HKT.Auto>()
   }) => (
     G: Applicative<HKT.UHKT<G>>
   ) => (
-    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', F, KF>>) => HKT.HKT<G, Option<B>>
+    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', F, KF>>) => HKT.HKT<G, Maybe<B>>
   ) => (
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>
   ) => HKT.HKT<G, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>>
@@ -119,7 +119,7 @@ export function implementWitherWithIndex_<F extends HKT.URIS, C = HKT.Auto>(): (
     G: Applicative<HKT.UHKT<G>>
   ) => (
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>,
-    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>) => HKT.HKT<G, Option<B>>
+    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>) => HKT.HKT<G, Maybe<B>>
   ) => HKT.HKT<G, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 ) => FilterMapWithIndexAFn_<F, C>
 export function implementWitherWithIndex_() {
@@ -276,7 +276,7 @@ export interface FilterWithIndexAFn_<F extends HKT.URIS, CF = HKT.Auto> {
 export function getFilterWithIndexA_<F extends HKT.URIS, CF = HKT.Auto>(
   F: WitherableWithIndexMin<F, CF>
 ): FilterWithIndexAFn_<F, CF> {
-  return (G) => (fa, p) => F.ifilterMapA_(G)(fa, (a, i) => G.map_(p(a, i), (bb) => (bb ? O.some(a) : O.none())))
+  return (G) => (fa, p) => F.ifilterMapA_(G)(fa, (a, i) => G.map_(p(a, i), (bb) => (bb ? Mb.just(a) : Mb.nothing())))
 }
 
 export interface FilterWithIndexAFn<F extends HKT.URIS, CF = HKT.Auto> {

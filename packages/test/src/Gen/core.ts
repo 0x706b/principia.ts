@@ -14,8 +14,8 @@ import { identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import { Random } from '@principia/base/IO/Random'
 import * as S from '@principia/base/IO/Stream'
+import * as M from '@principia/base/Maybe'
 import * as N from '@principia/base/number'
-import * as O from '@principia/base/Option'
 import { OrderedMap } from '@principia/base/OrderedMap'
 import * as OM from '@principia/base/OrderedMap'
 import * as Th from '@principia/base/These'
@@ -360,7 +360,7 @@ export function weighted<R, A>(...gs: ReadonlyArray<readonly [Gen<R, A>, number]
       return pipe(
         map,
         OM.getGte(n),
-        O.getOrElse(() => {
+        M.getOrElse(() => {
           throw new NoSuchElementError('Gen.weighted')
         })
       )
@@ -387,16 +387,16 @@ export function zipWith_<R, A, R1, B, C>(fa: Gen<R, A>, fb: Gen<R1, B>, f: (a: A
       S.zipAllWithExec(right, sequential, Th.left, Th.right, Th.both),
       S.collectWhile(
         Th.match(
-          () => O.none(),
-          () => O.none(),
+          () => M.nothing(),
+          () => M.nothing(),
           (l, r) =>
             E.isRight(l) && E.isRight(r)
-              ? O.some(Sa.zipWith_(l.right, r.right, f))
+              ? M.just(Sa.zipWith_(l.right, r.right, f))
               : E.isRight(l) && E.isLeft(r)
-              ? O.some(Sa.zipWith_(l.right, r.left, f))
+              ? M.just(Sa.zipWith_(l.right, r.left, f))
               : E.isLeft(l) && E.isRight(r)
-              ? O.some(Sa.zipWith_(l.left, r.right, f))
-              : O.none()
+              ? M.just(Sa.zipWith_(l.left, r.right, f))
+              : M.nothing()
         )
       )
     )

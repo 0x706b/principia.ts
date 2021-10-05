@@ -1,8 +1,8 @@
 import type { Observable } from '../core'
 
+import { noop } from '../../internal/util'
 import { operate_, operatorSubscriber } from '../../Operator'
 import { Subject } from '../../Subject'
-import { noop } from '../../internal/util'
 
 export function window_<E, A, E1>(
   fa: Observable<E, A>,

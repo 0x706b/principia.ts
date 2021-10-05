@@ -1,19 +1,19 @@
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 
 import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/function'
 import * as L from '@principia/base/List'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import * as Str from '@principia/base/string'
 
 import * as TA from '../Annotation'
 
 export class LeafRenderer<V> {
   readonly _tag = 'LeafRenderer'
-  constructor(readonly annotation: TA.TestAnnotation<V>, readonly render: (_: L.List<V>) => Option<string>) {}
+  constructor(readonly annotation: TA.TestAnnotation<V>, readonly render: (_: L.List<V>) => Maybe<string>) {}
 
   run(ancestors: L.List<TA.TestAnnotationMap>, child: TA.TestAnnotationMap) {
-    return O.match_(
+    return M.match_(
       this.render(L.prepend(child.get(this.annotation))(L.map_(ancestors, (m) => m.get(this.annotation)))),
       () => L.empty<string>(),
       L.single
@@ -43,23 +43,25 @@ export function combine_(self: TestAnnotationRenderer, that: TestAnnotationRende
 }
 
 export const ignored: TestAnnotationRenderer = new LeafRenderer(TA.ignored, ([child, ..._]) =>
-  child === 0 ? O.none() : O.some(`ignored: ${child}`)
+  child === 0 ? M.nothing() : M.just(`ignored: ${child}`)
 )
 
 export const repeated: TestAnnotationRenderer = new LeafRenderer(TA.repeated, ([child, ..._]) =>
-  child === 0 ? O.none() : O.some(`repeated: ${child}`)
+  child === 0 ? M.nothing() : M.just(`repeated: ${child}`)
 )
 
 export const retried: TestAnnotationRenderer = new LeafRenderer(TA.retried, ([child, ..._]) =>
-  child === 0 ? O.none() : O.some(`retried: ${child}`)
+  child === 0 ? M.nothing() : M.just(`retried: ${child}`)
 )
 
 export const tagged: TestAnnotationRenderer = new LeafRenderer(TA.tagged, ([child, ..._]) =>
-  child.keyMap.size === 0 ? O.none() : O.some(`tagged: ${pipe(A.from(child), A.map(Str.surround('"')), A.join(', '))}`)
+  child.keyMap.size === 0
+    ? M.nothing()
+    : M.just(`tagged: ${pipe(A.from(child), A.map(Str.surround('"')), A.join(', '))}`)
 )
 
 export const timed: TestAnnotationRenderer = new LeafRenderer(TA.timing, ([child, ..._]) =>
-  child === 0 ? O.none() : O.some(`${child}ms`)
+  child === 0 ? M.nothing() : M.just(`${child}ms`)
 )
 
 export const silent: TestAnnotationRenderer = {

@@ -1,9 +1,9 @@
-import type { Option } from '../Option'
+import type { Maybe } from '../Maybe'
 
 import { constVoid, pipe } from '../function'
 import * as I from '../IO'
 import * as It from '../Iterable/core'
-import * as O from '../Option'
+import * as M from '../Maybe'
 import * as A from './core'
 
 /**
@@ -81,7 +81,7 @@ export function filterIO<A, R, E>(
  */
 export function filterMapIO_<A, R, E, B>(
   as: ReadonlyArray<A>,
-  f: (a: A) => I.IO<R, E, Option<B>>
+  f: (a: A) => I.IO<R, E, Maybe<B>>
 ): I.IO<R, E, ReadonlyArray<B>> {
   return I.defer(() => {
     const ret: Array<B>               = []
@@ -92,7 +92,7 @@ export function filterMapIO_<A, R, E, B>(
         computation,
         I.chain(() => f(a)),
         I.map(
-          O.match(constVoid, (b) => {
+          M.match(constVoid, (b) => {
             ret.push(b)
           })
         )
@@ -106,7 +106,7 @@ export function filterMapIO_<A, R, E, B>(
  * Filters and maps an Array with an effectful function
  */
 export function filterMapIO<A, R, E, B>(
-  f: (a: A) => I.IO<R, E, Option<B>>
+  f: (a: A) => I.IO<R, E, Maybe<B>>
 ): (as: ReadonlyArray<A>) => I.IO<R, E, ReadonlyArray<B>> {
   return (as) => filterMapIO_(as, f)
 }

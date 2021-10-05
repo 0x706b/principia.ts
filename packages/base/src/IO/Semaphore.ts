@@ -5,12 +5,12 @@ import type { URef } from './Ref/core'
 import * as E from '../Either'
 import { IllegalArgumentError } from '../Error'
 import { pipe } from '../function'
-import * as O from '../Option'
+import * as M from '../Maybe'
 import { ImmutableQueue } from '../util/support/ImmutableQueue'
 import * as F from './Future'
 import { bracket_ } from './IO/combinators/bracket'
 import * as I from './IO/core'
-import * as M from './Managed/core'
+import * as Ma from './Managed/core'
 import * as Ref from './Ref/core'
 
 export type Entry = [Future<never, void>, number]
@@ -48,7 +48,7 @@ export class Semaphore {
         return [acc, E.right(n + state.right)]
       }
       case 'Left': {
-        return O.match_(
+        return M.match_(
           state.left.dequeue(),
           (): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [acc, E.right(n)],
           ([[p, m], q]): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => {
@@ -83,7 +83,7 @@ export class Semaphore {
         Ref.modify(
           E.match(
             (q) =>
-              O.match_(
+              M.match_(
                 q.find(([a]) => a === p),
                 (): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [this.releaseN(n), E.left(q)],
                 (x): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [
@@ -166,21 +166,21 @@ export function withPermit(s: Semaphore): <R, E, A>(io: I.IO<R, E, A>) => I.IO<R
 /**
  * Acquires `n` permits in a `Managed` and releases the permits in the finalizer.
  */
-export function withPermitsManaged_(s: Semaphore, n: number): M.Managed<unknown, never, void> {
-  return M.makeReserve(I.map_(s.prepare(n), (a) => M.makeReservation_(a.waitAcquire, () => a.release)))
+export function withPermitsManaged_(s: Semaphore, n: number): Ma.Managed<unknown, never, void> {
+  return Ma.makeReserve(I.map_(s.prepare(n), (a) => Ma.makeReservation_(a.waitAcquire, () => a.release)))
 }
 
 /**
  * Acquires `n` permits in a `Managed` and releases the permits in the finalizer.
  */
-export function withPermitsManaged(n: number): (s: Semaphore) => M.Managed<unknown, never, void> {
-  return (s) => M.makeReserve(I.map_(s.prepare(n), (a) => M.makeReservation(() => a.release)(a.waitAcquire)))
+export function withPermitsManaged(n: number): (s: Semaphore) => Ma.Managed<unknown, never, void> {
+  return (s) => Ma.makeReserve(I.map_(s.prepare(n), (a) => Ma.makeReservation(() => a.release)(a.waitAcquire)))
 }
 
 /**
  * Acquires a permit in a `Managed` and releases the permit in the finalizer.
  */
-export function withPermitManaged(s: Semaphore): M.Managed<unknown, never, void> {
+export function withPermitManaged(s: Semaphore): Ma.Managed<unknown, never, void> {
   return withPermitsManaged(1)(s)
 }
 

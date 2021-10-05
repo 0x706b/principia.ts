@@ -9,8 +9,8 @@ import { CaseClass } from '@principia/base/Case'
 import * as Ev from '@principia/base/Eval'
 import { flow, pipe } from '@principia/base/function'
 import * as F from '@principia/base/function'
+import * as M from '@principia/base/Maybe'
 import * as NA from '@principia/base/NonEmptyArray'
-import * as O from '@principia/base/Option'
 import * as RT from '@principia/base/RoseTree'
 import * as Str from '@principia/base/string'
 import { show } from '@principia/base/Structural'
@@ -878,94 +878,94 @@ function collectPrunable<E>(de: ParseError<E>): Prunable {
 
 function make<E>(
   constructor: (error: NonEmptyArray<ParseError<E>>) => ParseError<E>
-): (pdes: ReadonlyArray<ParseError<E>>) => O.Option<ParseError<E>> {
-  return (pdes) => (A.isNonEmpty(pdes) ? O.some(constructor(pdes)) : O.none())
+): (pdes: ReadonlyArray<ParseError<E>>) => M.Maybe<ParseError<E>> {
+  return (pdes) => (A.isNonEmpty(pdes) ? M.just(constructor(pdes)) : M.nothing())
 }
 
-function prune(prunable: Prunable, anticollision: string): (de: AnyError) => O.Option<AnyError> {
-  const go = (de: AnyError): O.Option<AnyError> => {
+function prune(prunable: Prunable, anticollision: string): (de: AnyError) => M.Maybe<AnyError> {
+  const go = (de: AnyError): M.Maybe<AnyError> => {
     switch (de._tag) {
       case 'CompoundE':
         return pipe(de.errors, A.filterMap(prune(prunable, anticollision)), make(compoundE(de.name)))
       case 'CompositionE':
         return pipe(de.errors, A.filterMap(prune(prunable, anticollision)), make(compositionE))
       case 'SumE':
-        return pipe(de.error, prune(prunable, anticollision), O.map(sumE))
+        return pipe(de.error, prune(prunable, anticollision), M.map(sumE))
       case 'NullableE':
-        return pipe(de.error, prune(prunable, anticollision), O.map(nullableE))
+        return pipe(de.error, prune(prunable, anticollision), M.map(nullableE))
       case 'OptionalE':
-        return pipe(de.error, prune(prunable, anticollision), O.map(optionalE))
+        return pipe(de.error, prune(prunable, anticollision), M.map(optionalE))
       case 'ParserE':
-        return pipe(de.error, prune(prunable, anticollision), O.map(parserE))
+        return pipe(de.error, prune(prunable, anticollision), M.map(parserE))
       case 'RefinementE':
-        return pipe(de.error, prune(prunable, anticollision), O.map(refinementE))
+        return pipe(de.error, prune(prunable, anticollision), M.map(refinementE))
       case 'LazyE':
         return pipe(
           de.error,
           prune(prunable, anticollision),
-          O.map((pde) => lazyE(de.id, pde))
+          M.map((pde) => lazyE(de.id, pde))
         )
       case 'MemberE':
         return pipe(
           de.error,
           prune(prunable, anticollision),
-          O.map((pde) => memberE(de.member, pde))
+          M.map((pde) => memberE(de.member, pde))
         )
       case 'OptionalIndexE':
         return pipe(
           de.error,
           prune(prunable, anticollision + de.index + '.'),
-          O.map((pde) => optionalIndexE(de.index, pde))
+          M.map((pde) => optionalIndexE(de.index, pde))
         )
       case 'OptionalKeyE':
         return pipe(
           de.error,
           prune(prunable, anticollision + de.key + '.'),
-          O.map((pde) => optionalKeyE(de.key, pde))
+          M.map((pde) => optionalKeyE(de.key, pde))
         )
       case 'RequiredIndexE':
         return pipe(
           de.error,
           prune(prunable, anticollision + de.index + '.'),
-          O.map((pde) => requiredIndexE(de.index, pde))
+          M.map((pde) => requiredIndexE(de.index, pde))
         )
       case 'RequiredKeyE':
         return pipe(
           de.error,
           prune(prunable, anticollision + de.key + '.'),
-          O.map((pde) => requiredKeyE(de.key, pde))
+          M.map((pde) => requiredKeyE(de.key, pde))
         )
       case 'LeafE':
         return isUnexpectedIndicesE(de.error)
           ? pipe(
               de.error.indices,
               A.filter((index) => prunable.indexOf(anticollision + String(index)) !== -1),
-              F.if(A.isNonEmpty, flow(unexpectedIndicesE, leafE, O.some), () => O.none())
+              F.if(A.isNonEmpty, flow(unexpectedIndicesE, leafE, M.just), () => M.nothing())
             )
           : isUnexpectedKeysE(de.error)
           ? pipe(
               de.error.keys,
               A.filter((key) => prunable.indexOf(anticollision + key) !== -1),
-              F.if(A.isNonEmpty, flow(unexpectedKeysE, leafE, O.some), () => O.none())
+              F.if(A.isNonEmpty, flow(unexpectedKeysE, leafE, M.just), () => M.nothing())
             )
-          : O.some(de)
+          : M.just(de)
       case 'NamedE':
         return pipe(
           de.error,
           prune(prunable, anticollision),
-          O.map((pde) => namedE(de.name, pde))
+          M.map((pde) => namedE(de.name, pde))
         )
       case 'LabeledE':
         return pipe(
           de.error,
           prune(prunable, anticollision),
-          O.map((pde) => labeledE(de.label, pde))
+          M.map((pde) => labeledE(de.label, pde))
         )
       case 'MessageE':
         return pipe(
           de.error,
           prune(prunable, anticollision),
-          O.map((pde) => messageE(de.message, pde))
+          M.map((pde) => messageE(de.message, pde))
         )
     }
   }
@@ -973,8 +973,8 @@ function prune(prunable: Prunable, anticollision: string): (de: AnyError) => O.O
 }
 
 export function pruneAllUnexpected(de: MemberE<number, any>): CompoundE<MemberE<number, any>> | null {
-  const e = prune([], '')(de) as O.Option<MemberE<number, any>>
-  return O.isSome(e) ? intersectionE([e.value]) : null
+  const e = prune([], '')(de) as M.Maybe<MemberE<number, any>>
+  return M.isJust(e) ? intersectionE([e.value]) : null
 }
 
 export function pruneDifference(des: NonEmptyArray<MemberE<number, any>>): CompoundE<MemberE<number, any>> | null {
@@ -987,8 +987,8 @@ export function pruneDifference(des: NonEmptyArray<MemberE<number, any>>): Compo
     const de1  = des[1].error
     const pde0 = prune(collectPrunable(de1), '')(de0)
     const pde1 = prune(collectPrunable(de0), '')(de1)
-    O.isSome(pde0) && errors.push(memberE(0, pde0.value))
-    O.isSome(pde1) && errors.push(memberE(1, pde1.value))
+    M.isJust(pde0) && errors.push(memberE(0, pde0.value))
+    M.isJust(pde1) && errors.push(memberE(1, pde1.value))
     const rest = des.slice(2)
     if (A.isNonEmpty(rest)) {
       for (let i = 0; i < rest.length; i++) {
@@ -998,13 +998,13 @@ export function pruneDifference(des: NonEmptyArray<MemberE<number, any>>): Compo
           errors = pipe(errors, A.filterMap(prune(collectPrunable(dei), ''))) as typeof errors
 
           const pdei = prune(prunable, '')(dei)
-          O.isSome(pdei) && errors.push(memberE(i + 2, pdei.value))
+          M.isJust(pdei) && errors.push(memberE(i + 2, pdei.value))
         } else if (rest[i + 1]) {
           const dei1  = rest[i + 1].error
           const pdei  = prune(collectPrunable(dei1), '')(dei)
           const pdei1 = prune(collectPrunable(dei), '')(dei1)
-          O.isSome(pdei) && errors.push(memberE(i + 2, pdei.value))
-          O.isSome(pdei1) && errors.push(memberE(i + 3, pdei1.value))
+          M.isJust(pdei) && errors.push(memberE(i + 2, pdei.value))
+          M.isJust(pdei1) && errors.push(memberE(i + 3, pdei1.value))
           i++
         } else {
           errors.push(memberE(i + 2, dei))

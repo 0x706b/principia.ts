@@ -1,9 +1,9 @@
 import type { Has } from '../../../Has'
-import type * as M from '../../Managed'
+import type * as Ma from '../../Managed'
 
 import * as C from '../../../Chunk'
 import { flow, pipe } from '../../../function'
-import * as O from '../../../Option'
+import * as M from '../../../Maybe'
 import { tuple } from '../../../tuple'
 import { AtomicReference } from '../../../util/support/AtomicReference'
 import * as I from '../..'
@@ -37,7 +37,7 @@ export function failLazy<E>(e: () => E): Sink<unknown, unknown, unknown, E, neve
 }
 
 export function managed_<R, E, A, Env, InErr, In, OutErr, L, Z>(
-  resource: M.Managed<R, E, A>,
+  resource: Ma.Managed<R, E, A>,
   use: (a: A) => Sink<Env, InErr, In, OutErr, L, Z>
 ): Sink<R & Env, InErr, In, E | OutErr, L, Z> {
   return new Sink(Ch.managed_(resource, (a) => use(a).channel))
@@ -45,7 +45,7 @@ export function managed_<R, E, A, Env, InErr, In, OutErr, L, Z>(
 
 export function managed<A, Env, InErr, In, OutErr, L, Z>(
   use: (a: A) => Sink<Env, InErr, In, OutErr, L, Z>
-): <R, E>(resource: M.Managed<R, E, A>) => Sink<R & Env, InErr, In, E | OutErr, L, Z> {
+): <R, E>(resource: Ma.Managed<R, E, A>) => Sink<R & Env, InErr, In, E | OutErr, L, Z> {
   return (resource) => managed_(resource, use)
 }
 
@@ -525,13 +525,13 @@ function foldChunkSplitIO<Env, Err, In, S>(
   chunk: C.Chunk<In>,
   cont: (s: S) => boolean,
   f: (s: S, inp: In) => I.IO<Env, Err, S>
-): I.IO<Env, Err, readonly [S, O.Option<C.Chunk<In>>]> {
-  function go(s: S, chunk: C.Chunk<In>, idx: number, len: number): I.IO<Env, Err, readonly [S, O.Option<C.Chunk<In>>]> {
+): I.IO<Env, Err, readonly [S, M.Maybe<C.Chunk<In>>]> {
+  function go(s: S, chunk: C.Chunk<In>, idx: number, len: number): I.IO<Env, Err, readonly [S, M.Maybe<C.Chunk<In>>]> {
     if (idx === len) {
-      return I.succeed([s, O.none()])
+      return I.succeed([s, M.nothing()])
     } else {
       return I.chain_(f(s, C.unsafeGet_(chunk, idx)), (s1) =>
-        cont(s1) ? go(s, chunk, idx + 1, len) : I.succeed([s1, O.some(C.drop_(chunk, idx + 1))])
+        cont(s1) ? go(s, chunk, idx + 1, len) : I.succeed([s1, M.just(C.drop_(chunk, idx + 1))])
       )
     }
   }
@@ -546,7 +546,7 @@ function foldIOReader<Env, Err, In, S>(
   return Ch.readWith(
     (inp: C.Chunk<In>) =>
       Ch.chain_(Ch.fromIO(foldChunkSplitIO(s, inp, cont, f)), ([nextS, leftovers]) =>
-        O.match_(
+        M.match_(
           leftovers,
           () => foldIOReader(nextS, cont, f),
           (l) => Ch.as_(Ch.write(l), nextS)
@@ -901,18 +901,18 @@ export function foreachChunkWhile<R, Err, In>(
   return new Sink(reader)
 }
 
-export function head<Err, In>(): Sink<unknown, Err, In, Err, In, O.Option<In>> {
-  return fold(O.none(), O.isNone, (s, i) =>
-    O.match_(
+export function head<Err, In>(): Sink<unknown, Err, In, Err, In, M.Maybe<In>> {
+  return fold(M.nothing(), M.isNothing, (s, i) =>
+    M.match_(
       s,
-      () => O.some(i),
+      () => M.just(i),
       () => s
     )
   )
 }
 
-export function last<Err, In>(): Sink<unknown, Err, In, Err, In, O.Option<In>> {
-  return foldl(O.none(), (_, i) => O.some(i))
+export function last<Err, In>(): Sink<unknown, Err, In, Err, In, M.Maybe<In>> {
+  return foldl(M.nothing(), (_, i) => M.just(i))
 }
 
 export function leftover<L>(c: C.Chunk<L>): Sink<unknown, unknown, unknown, never, L, void> {

@@ -1,4 +1,4 @@
-import type { Option } from '../../Option'
+import type { Maybe } from '../../Maybe'
 import type { Exit } from '../Exit/core'
 import type { UIO } from '../IO/core'
 import type { Scope } from '../Scope'
@@ -6,7 +6,7 @@ import type { FiberId } from './FiberId'
 
 import * as Ev from '../../Eval'
 import { identity } from '../../function'
-import * as O from '../../Option'
+import * as M from '../../Maybe'
 import * as C from '../Cause'
 import * as Ex from '../Exit/core'
 import { FiberRef } from '../FiberRef/core'
@@ -84,7 +84,7 @@ export interface CommonFiber<E, A> {
   /**
    * Tentatively observes the fiber, but returns immediately if it is not already done.
    */
-  readonly poll: UIO<Option<Exit<E, A>>>
+  readonly poll: UIO<Maybe<Exit<E, A>>>
 }
 
 export interface RuntimeFiber<E, A> extends CommonFiber<E, A> {
@@ -125,7 +125,7 @@ export function done<E, A>(exit: Exit<E, A>): SyntheticFiber<E, A> {
     getRef: (ref) => I.pure(ref.initial),
     inheritRefs: I.unit(),
     interruptAs: () => I.pure(exit),
-    poll: I.pure(O.some(exit))
+    poll: I.pure(M.just(exit))
   }
 }
 
@@ -340,11 +340,11 @@ export function toFinishing(s: FiberStatus): FiberStatus {
 export interface FiberDump {
   _tag: 'FiberDump'
   fiberId: FiberId
-  fiberName: Option<string>
+  fiberName: Maybe<string>
   status: FiberStatus
 }
 
-export function FiberDump(fiberId: FiberId, fiberName: Option<string>, status: FiberStatus): FiberDump {
+export function FiberDump(fiberId: FiberId, fiberName: Maybe<string>, status: FiberStatus): FiberDump {
   return {
     _tag: 'FiberDump',
     fiberId,
@@ -359,4 +359,4 @@ export function FiberDump(fiberId: FiberId, fiberName: Option<string>, status: F
  * -------------------------------------------------------------------------------------------------
  */
 
-export const fiberName = new FiberRef<O.Option<string>>(O.none(), identity, identity)
+export const fiberName = new FiberRef<M.Maybe<string>>(M.nothing(), identity, identity)

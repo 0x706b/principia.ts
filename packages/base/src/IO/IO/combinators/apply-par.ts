@@ -6,8 +6,8 @@ import type { FiberId } from '../../Fiber/FiberId'
 
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
 
-import * as Ex from '../../Exit/core'
 import * as C from '../../Cause'
+import * as Ex from '../../Exit/core'
 import { join } from '../../Fiber/combinators/join'
 import * as I from '../core'
 import { raceWith_, transplant } from './core-scope'

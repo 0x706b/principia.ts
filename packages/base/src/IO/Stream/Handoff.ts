@@ -1,10 +1,10 @@
-import type { Option } from '../../Option'
+import type { Maybe } from '../../Maybe'
 
 import { pipe } from '../../function'
-import { none, some } from '../../Option'
+import { just, nothing } from '../../Maybe'
 import { matchTag } from '../../util/match'
-import * as I from '..'
 import * as F from '../Future'
+import * as I from '../IO'
 import * as Ref from '../Ref'
 
 type State<A> = Empty | Full<A>
@@ -90,17 +90,17 @@ export function take<A>(h: Handoff<A>): I.UIO<A> {
   )
 }
 
-export function poll<A>(h: Handoff<A>): I.UIO<Option<A>> {
+export function poll<A>(h: Handoff<A>): I.UIO<Maybe<A>> {
   return pipe(
     F.make<never, void>(),
     I.chain((p) =>
       pipe(
         h.ref,
-        Ref.modify<I.UIO<Option<A>>, State<A>>(
+        Ref.modify<I.UIO<Maybe<A>>, State<A>>(
           matchTag({
-            Empty: (s) => [I.succeed(none()), s] as const,
+            Empty: (s) => [I.succeed(nothing()), s] as const,
             Full: ({ a, notifyProducer }) =>
-              [pipe(F.succeed_(notifyProducer, undefined), I.as(some(a))), new Empty(p)] as const
+              [pipe(F.succeed_(notifyProducer, undefined), I.as(just(a))), new Empty(p)] as const
           })
         ),
         I.flatten

@@ -16,7 +16,7 @@ import type { Managed, Reservation } from '@principia/base/IO/Managed'
 import type { Schedule } from '@principia/base/IO/Schedule'
 import type { Scope } from '@principia/base/IO/Scope'
 import type { Supervisor } from '@principia/base/IO/Supervisor'
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 import type {
   Erase,
   Monoid,
@@ -107,9 +107,9 @@ export interface IOStaticOps {
    */
   asyncInterruptPromise: typeof I.asyncInterruptPromise
   /**
-   * @rewriteStatic asyncOption from "@principia/base/IO"
+   * @rewriteStatic asyncMaybe from "@principia/base/IO"
    */
-  asyncOption: typeof I.asyncOption
+  asyncMaybe: typeof I.asyncMaybe
   /**
    * @rewriteStatic checkInterruptible from "@principia/base/IO"
    */
@@ -415,13 +415,13 @@ export interface IOStaticOps {
    */
   from<R, E, A>(sync: Sync<R, E, A>): I.IO<R, E, A>
   /**
-   * @rewriteStatic fromOption from "@principia/base/IO"
+   * @rewriteStatic fromMaybe from "@principia/base/IO"
    */
-  from<A>(option: Option<A>): I.IO<unknown, Option<never>, A>
+  from<A>(maybe: Maybe<A>): I.IO<unknown, Maybe<never>, A>
   /**
-   * @rewriteStatic fromOptionLazy from "@principia/base/IO"
+   * @rewriteStatic fromMaybeLazy from "@principia/base/IO"
    */
-  from<A>(option: () => Option<A>): I.IO<unknown, Option<never>, A>
+  from<A>(maybe: () => Maybe<A>): I.IO<unknown, Maybe<never>, A>
   /**
    * @rewriteStatic fromAsync from "@principia/base/IO"
    */
@@ -487,14 +487,14 @@ export interface IOStaticOps {
   fromExitLazy: typeof I.fromExitLazy
 
   /**
-   * @rewriteStatic fromOption from "@principia/base/IO"
+   * @rewriteStatic fromMaybe from "@principia/base/IO"
    */
-  fromOption: typeof I.fromOption
+  fromMaybe: typeof I.fromMaybe
 
   /**
-   * @rewriteStatic fromOptionLazy from "@principia/base/IO"
+   * @rewriteStatic fromMaybeLazy from "@principia/base/IO"
    */
-  fromOptionLazy: typeof I.fromOptionLazy
+  fromMaybeLazy: typeof I.fromMaybeLazy
 
   /**
    * @rewriteStatic fromPromise from "@principia/base/IO"
@@ -525,27 +525,27 @@ export interface IOStaticOps {
    * @rewriteStatic getOrFail from "@principia/base/IO"
    * @trace call
    */
-  getOrFail<A>(option: Option<A>): I.FIO<NoSuchElementError, A>
+  getOrFail<A>(Maybe: Maybe<A>): I.FIO<NoSuchElementError, A>
 
   /**
    * @rewriteStatic getOrFailUnit from "@principia/base/IO"
    * @trace call
    */
-  getOrFailUnit<A>(option: Option<A>): I.FIO<void, A>
+  getOrFailUnit<A>(Maybe: Maybe<A>): I.FIO<void, A>
 
   /**
    * @rewriteStatic getOrFailWith from "@principia/base/IO"
    * @dataFirst getOrFailWith_
    * @trace 0
    */
-  getOrFailWith<E>(onNone: () => E): <A>(option: Option<A>) => I.FIO<E, A>
+  getOrFailWith<E>(onNothing: () => E): <A>(Maybe: Maybe<A>) => I.FIO<E, A>
 
   /**
    * @rewriteStatic getOrFailWith_ from "@principia/base/IO"
    * @trace call
    * @trace 1
    */
-  getOrFailWith<E, A>(option: Option<A>, onNone: () => E): I.FIO<E, A>
+  getOrFailWith<E, A>(Maybe: Maybe<A>, onNothing: () => E): I.FIO<E, A>
 
   /**
    * @rewriteStatic getState from "@principia/base/IO"
@@ -908,16 +908,16 @@ declare module '@principia/base/IO/IO/primitives' {
     as<R, E, A, B>(this: I.IO<R, E, A>, b: B): I.IO<R, E, B>
 
     /**
-     * @rewriteGetter asSome from "@principia/base/IO"
+     * @rewriteGetter asJust from "@principia/base/IO"
      * @trace getter
      */
-    asSome: I.IO<R, E, Option<A>>
+    asJust: I.IO<R, E, Maybe<A>>
 
     /**
-     * @rewriteGetter asSomeError from "@principia/base/IO"
+     * @rewriteGetter asJustError from "@principia/base/IO"
      * @trace getter
      */
-    asSomeError: I.IO<R, Option<E>, A>
+    asJustError: I.IO<R, Maybe<E>, A>
 
     /**
      * @rewriteGetter asUnit from "@principia/base/IO"
@@ -1001,30 +1001,27 @@ declare module '@principia/base/IO/IO/primitives' {
     ): I.IO<R & R1, E1, A | B>
 
     /**
-     * @rewrite catchSome_ from "@principia/base/IO"
+     * @rewrite catchJust_ from "@principia/base/IO"
      * @trace 0
      */
-    catchSome<R, E, A, R1, E1, B>(
+    catchJust<R, E, A, R1, E1, B>(this: I.IO<R, E, A>, f: (e: E) => Maybe<I.IO<R1, E1, B>>): I.IO<R & R1, E | E1, A | B>
+
+    /**
+     * @rewrite catchJustCause_ from "@principia/base/IO"
+     * @trace 0
+     */
+    catchJustCause<R, E, A, R1, E1, B>(
       this: I.IO<R, E, A>,
-      f: (e: E) => Option<I.IO<R1, E1, B>>
+      f: (cause: Cause<E>) => Maybe<I.IO<R1, E1, B>>
     ): I.IO<R & R1, E | E1, A | B>
 
     /**
-     * @rewrite catchSomeCause_ from "@principia/base/IO"
+     * @rewrite catchJustDefect_ from "@principia/base/IO"
      * @trace 0
      */
-    catchSomeCause<R, E, A, R1, E1, B>(
+    catchJustDefect<R, E, A, R1, E1, B>(
       this: I.IO<R, E, A>,
-      f: (cause: Cause<E>) => Option<I.IO<R1, E1, B>>
-    ): I.IO<R & R1, E | E1, A | B>
-
-    /**
-     * @rewrite catchSomeDefect_ from "@principia/base/IO"
-     * @trace 0
-     */
-    catchSomeDefect<R, E, A, R1, E1, B>(
-      this: I.IO<R, E, A>,
-      f: (_: unknown) => Option<I.IO<R1, E1, B>>
+      f: (_: unknown) => Maybe<I.IO<R1, E1, B>>
     ): I.IO<R & R1, E | E1, A | B>
 
     /**
@@ -1221,7 +1218,7 @@ declare module '@principia/base/IO/IO/primitives' {
      * @rewrite get from "@principia/base/IO"
      * @trace call
      */
-    get<R, E, A>(this: IO<R, E, Option<A>>): IO<R, Option<E>, A>
+    get<R, E, A>(this: IO<R, E, Maybe<A>>): IO<R, Maybe<E>, A>
 
     /**
      * @rewrite giveLayer_ from "@principia/base/IO"
@@ -1410,6 +1407,12 @@ declare module '@principia/base/IO/IO/primitives' {
     ): I.IO<R & R1 & R2, E1 | E2, B | C>
 
     /**
+     * @rewriteGetter maybe from "@principia/base/IO"
+     * @trace getter
+     */
+    maybe: URIO<R, Maybe<A>>
+
+    /**
      * @rewrite onError_ from "@principia/base/IO"
      * @trace 0
      */
@@ -1470,16 +1473,10 @@ declare module '@principia/base/IO/IO/primitives' {
     once: I.IO<unknown, never, I.IO<R, E, A>>
 
     /**
-     * @rewriteGetter option from "@principia/base/IO"
-     * @trace getter
-     */
-    option: URIO<R, Option<A>>
-
-    /**
      * @rewrite optional from "@principia/base/IO"
      * @trace call
      */
-    optional<R, E, A>(this: I.IO<R, Option<E>, A>): I.IO<R, E, Option<A>>
+    optional<R, E, A>(this: I.IO<R, Maybe<E>, A>): I.IO<R, E, Maybe<A>>
 
     /**
      * @rewrite or_ from "@principia/base/IO"
@@ -1509,13 +1506,13 @@ declare module '@principia/base/IO/IO/primitives' {
     orElseFail<R, E, A, E1>(this: I.IO<R, E, A>, e: () => E1): I.IO<R, E1, A>
 
     /**
-     * @rewrite orElseOption_ from "@principia/base/IO"
+     * @rewrite orElseMaybe_ from "@principia/base/IO"
      * @trace 0
      */
-    orElseOption<R, E, A, R1, E1, A1>(
-      this: I.IO<R, Option<E>, A>,
-      that: () => I.IO<R1, Option<E1>, A1>
-    ): I.IO<R & R1, Option<E | E1>, A | A1>
+    orElseMaybe<R, E, A, R1, E1, A1>(
+      this: I.IO<R, Maybe<E>, A>,
+      that: () => I.IO<R1, Maybe<E1>, A1>
+    ): I.IO<R & R1, Maybe<E | E1>, A | A1>
 
     /**
      * @rewrite orElseSucceed_ from "@principia/base/IO"
@@ -1585,33 +1582,33 @@ declare module '@principia/base/IO/IO/primitives' {
       that: I.IO<R1, E1, A1>,
       leftWins: (exit: Exit<E, A>, fiber: Fiber<E1, A1>) => I.IO<R2, E2, A2>,
       rightWins: (exit: Exit<E1, A1>, fiber: Fiber<E, A>) => I.IO<R3, E3, A3>,
-      scope?: Option<Scope<Exit<any, any>>>
+      scope?: Maybe<Scope<Exit<any, any>>>
     ): I.IO<R & R1 & R2 & R3, E2 | E3, A2 | A3>
 
     /**
-     * @rewrite refineOrDie_ from "@principia/base/IO"
+     * @rewrite refineOrHalt_ from "@principia/base/IO"
      * @trace 0
      */
-    refineOrDie<R, E, A, E1>(this: I.IO<R, E, A>, pf: (e: E) => Option<E1>): I.IO<R, E1, A>
+    refineOrHalt<R, E, A, E1>(this: I.IO<R, E, A>, pf: (e: E) => Maybe<E1>): I.IO<R, E1, A>
 
     /**
-     * @rewrite refineOrDieWith_ from "@principia/base/IO"
+     * @rewrite refineOrHaltWith_ from "@principia/base/IO"
      * @trace 0
      * @trace 1
      */
-    refineOrDieWith<R, E, A, E1>(this: I.IO<R, E, A>, pf: (e: E) => Option<E1>, f: (e: E) => unknown): I.IO<R, E1, A>
+    refineOrHaltWith<R, E, A, E1>(this: I.IO<R, E, A>, pf: (e: E) => Maybe<E1>, f: (e: E) => unknown): I.IO<R, E1, A>
 
     /**
      * @rewrite reject_ from "@principia/base/IO"
      * @trace 0
      */
-    reject<R, E, A, E1>(this: I.IO<R, E, A>, pf: (a: A) => Option<E1>): I.IO<R, E | E1, A>
+    reject<R, E, A, E1>(this: I.IO<R, E, A>, pf: (a: A) => Maybe<E1>): I.IO<R, E | E1, A>
 
     /**
      * @rewrite rejectIO_ from "@principia/base/IO"
      * @trace 0
      */
-    rejectIO<R, E, A, R1, E1>(this: I.IO<R, E, A>, pf: (a: A) => Option<I.IO<R1, E1, E1>>): I.IO<R & R1, E | E1, A>
+    rejectIO<R, E, A, R1, E1>(this: I.IO<R, E, A>, pf: (a: A) => Maybe<I.IO<R1, E1, E1>>): I.IO<R & R1, E | E1, A>
 
     /**
      * @rewrite repeat_ from "@principia/base/IO"
@@ -1632,7 +1629,7 @@ declare module '@principia/base/IO/IO/primitives' {
     repeatOrElse<R, E, A, R1, B, R2, E2, C>(
       this: I.IO<R, E, A>,
       schedule: Schedule<R1, A, B>,
-      f: (e: E, out: Option<B>) => I.IO<R2, E2, C>
+      f: (e: E, out: Maybe<B>) => I.IO<R2, E2, C>
     ): I.IO<R & R1 & R2 & Has<Clock>, E2, C | B>
 
     /**
@@ -1642,7 +1639,7 @@ declare module '@principia/base/IO/IO/primitives' {
     repeatOrElseEither<R, E, A, R1, B, R2, E2, C>(
       this: I.IO<R, E, A>,
       schedule: Schedule<R1, A, B>,
-      f: (e: E, out: Option<B>) => I.IO<R2, E2, C>
+      f: (e: E, out: Maybe<B>) => I.IO<R2, E2, C>
     ): I.IO<R & R1 & R2 & Has<Clock>, E2, Either<C, B>>
 
     /**
@@ -1840,7 +1837,7 @@ declare module '@principia/base/IO/IO/primitives' {
      * @rewrite timeout_ from "@principia/base/IO"
      * @trace call
      */
-    timeout(ms: number): I.IO<R & Has<Clock>, E, Option<A>>
+    timeout(ms: number): I.IO<R & Has<Clock>, E, Maybe<A>>
 
     /**
      * @rewrite timeoutFail_ from "@principia/base/IO"
@@ -1911,13 +1908,13 @@ declare module '@principia/base/IO/IO/primitives' {
      * @rewrite unrefine_ from "@principia/base/IO"
      * @trace 0
      */
-    unrefine<R, E, A, E1>(this: I.IO<R, E, A>, pf: (u: unknown) => Option<E1>): I.IO<R, E | E1, A>
+    unrefine<R, E, A, E1>(this: I.IO<R, E, A>, pf: (u: unknown) => Maybe<E1>): I.IO<R, E | E1, A>
 
     /**
      * @rewrite unrefine_ from "@principia/base/IO"
      * @trace 0
      */
-    unrefine<R, E, A, E1>(this: I.IO<R, E, A>, f: (_: unknown) => Option<E1>): I.IO<R, E | E1, A>
+    unrefine<R, E, A, E1>(this: I.IO<R, E, A>, f: (_: unknown) => Maybe<E1>): I.IO<R, E | E1, A>
 
     /**
      * @rewrite unrefineWith_ from "@principia/base/IO"
@@ -1926,7 +1923,7 @@ declare module '@principia/base/IO/IO/primitives' {
      */
     unrefineWith<R, E, A, E1, E2>(
       this: I.IO<R, E, A>,
-      f: (_: unknown) => Option<E1>,
+      f: (_: unknown) => Maybe<E1>,
       g: (e: E) => E2
     ): I.IO<R, E1 | E2, A>
 
@@ -1937,7 +1934,7 @@ declare module '@principia/base/IO/IO/primitives' {
      */
     unrefineWith<R, E, A, E1, E2>(
       this: I.IO<R, E, A>,
-      pf: (u: unknown) => Option<E1>,
+      pf: (u: unknown) => Maybe<E1>,
       f: (e: E) => E2
     ): I.IO<R, E1 | E2, A>
 

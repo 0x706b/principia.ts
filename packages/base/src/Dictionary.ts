@@ -1,13 +1,13 @@
 import type { Either } from './Either'
 import type { HashMap } from './HashMap'
 import type * as HKT from './HKT'
+import type { Maybe } from './Maybe'
 import type { DictionaryURI } from './Modules'
-import type { Option } from './Option'
 import type { PredicateWithIndex, RefinementWithIndex } from './prelude'
 import type { ReadonlyRecord } from './Record'
 
 import { identity } from './function'
-import * as O from './Option'
+import * as M from './Maybe'
 import * as P from './prelude'
 import * as R from './Record'
 
@@ -162,13 +162,13 @@ export function filter<A>(predicate: PredicateWithIndex<string, A>): (fa: Dictio
 
 /**
  */
-export function filterMap_<A, B>(fa: Dictionary<A>, f: (a: A, k: string) => Option<B>): Dictionary<B> {
+export function filterMap_<A, B>(fa: Dictionary<A>, f: (a: A, k: string) => Maybe<B>): Dictionary<B> {
   return fa[DictionaryOperate](R.filterMap(f))
 }
 
 /**
  */
-export function filterMap<A, B>(f: (a: A, k: string) => Option<B>): (fa: Dictionary<A>) => Dictionary<B> {
+export function filterMap<A, B>(f: (a: A, k: string) => Maybe<B>): (fa: Dictionary<A>) => Dictionary<B> {
   return (fa) => filterMap_(fa, f)
 }
 
@@ -386,43 +386,43 @@ export function deleteAt(k: string): <A>(dict: Dictionary<A>) => Dictionary<A> {
   return (dict) => deleteAt_(dict, k)
 }
 
-export function insertAt_<A>(dict: Dictionary<A>, k: string, a: A): Option<Dictionary<A>> {
-  return O.map_(R.insertAt_(dict[DictionaryStore], k, a), fromRecord)
+export function insertAt_<A>(dict: Dictionary<A>, k: string, a: A): Maybe<Dictionary<A>> {
+  return M.map_(R.insertAt_(dict[DictionaryStore], k, a), fromRecord)
 }
 
-export function insertAt<A>(k: string, a: A): (dict: Dictionary<A>) => Option<Dictionary<A>> {
+export function insertAt<A>(k: string, a: A): (dict: Dictionary<A>) => Maybe<Dictionary<A>> {
   return (dict) => insertAt_(dict, k, a)
 }
 
-export function lookup_<A>(dict: Dictionary<A>, k: string): Option<A> {
+export function lookup_<A>(dict: Dictionary<A>, k: string): Maybe<A> {
   return R.lookup_(dict[DictionaryStore], k)
 }
 
-export function lookup(k: string): <A>(dict: Dictionary<A>) => Option<A> {
+export function lookup(k: string): <A>(dict: Dictionary<A>) => Maybe<A> {
   return (dict) => lookup_(dict, k)
 }
 
-export function modifyAt_<A>(dict: Dictionary<A>, k: string, f: (a: A) => A): Option<Dictionary<A>> {
-  return O.map_(R.modifyAt_(dict[DictionaryStore], k, f), fromRecord)
+export function modifyAt_<A>(dict: Dictionary<A>, k: string, f: (a: A) => A): Maybe<Dictionary<A>> {
+  return M.map_(R.modifyAt_(dict[DictionaryStore], k, f), fromRecord)
 }
 
-export function modifyAt<A>(k: string, f: (a: A) => A): (dict: Dictionary<A>) => Option<Dictionary<A>> {
+export function modifyAt<A>(k: string, f: (a: A) => A): (dict: Dictionary<A>) => Maybe<Dictionary<A>> {
   return (dict) => modifyAt_(dict, k, f)
 }
 
-export function pop_<A>(dict: Dictionary<A>, k: string): Option<readonly [A, Dictionary<A>]> {
-  return O.map_(R.pop_(dict[DictionaryStore], k), ([a, record]) => [a, fromRecord(record)])
+export function pop_<A>(dict: Dictionary<A>, k: string): Maybe<readonly [A, Dictionary<A>]> {
+  return M.map_(R.pop_(dict[DictionaryStore], k), ([a, record]) => [a, fromRecord(record)])
 }
 
-export function pop(k: string): <A>(dict: Dictionary<A>) => Option<readonly [A, Dictionary<A>]> {
+export function pop(k: string): <A>(dict: Dictionary<A>) => Maybe<readonly [A, Dictionary<A>]> {
   return (dict) => pop_(dict, k)
 }
 
-export function updateAt_<A>(dict: Dictionary<A>, k: string, a: A): Option<Dictionary<A>> {
-  return O.map_(R.updateAt_(dict[DictionaryStore], k, a), fromRecord)
+export function updateAt_<A>(dict: Dictionary<A>, k: string, a: A): Maybe<Dictionary<A>> {
+  return M.map_(R.updateAt_(dict[DictionaryStore], k, a), fromRecord)
 }
 
-export function updateAt<A>(k: string, a: A): (dict: Dictionary<A>) => Option<Dictionary<A>> {
+export function updateAt<A>(k: string, a: A): (dict: Dictionary<A>) => Maybe<Dictionary<A>> {
   return (dict) => updateAt_(dict, k, a)
 }
 

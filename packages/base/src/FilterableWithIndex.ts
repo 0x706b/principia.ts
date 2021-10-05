@@ -1,13 +1,13 @@
 import type { FunctorWithIndexMin } from './FunctorWithIndex'
 import type { Either } from './internal/Either'
-import type { Option } from './internal/Option'
+import type { Maybe } from './internal/Maybe'
 import type { PredicateWithIndex } from './Predicate'
 import type { RefinementWithIndex } from './Refinement'
 
 import { FunctorWithIndex } from './FunctorWithIndex'
 import * as HKT from './HKT'
 import * as E from './internal/Either'
-import * as O from './internal/Option'
+import * as O from './internal/Maybe'
 
 export interface FilterableWithIndex<F extends HKT.URIS, C = HKT.Auto> extends FunctorWithIndex<F, C> {
   readonly ipartitionMap_: PartitionMapWithIndexFn_<F, C>
@@ -47,7 +47,7 @@ export function FilterableWithIndex<F>(F: FilterableWithIndexMin<HKT.UHKT<F>>): 
     ifilter_ = F.ifilter_
   } else {
     ifilter_ = <A>(fa: HKT.HKT<F, A>, predicate: PredicateWithIndex<unknown, A>): HKT.HKT<F, A> =>
-      F.ifilterMap_(fa, (a, i) => (predicate(a, i) ? O.some(a) : O.none()))
+      F.ifilterMap_(fa, (a, i) => (predicate(a, i) ? O.just(a) : O.nothing()))
   }
 
   if ('ipartition_' in F) {
@@ -108,7 +108,7 @@ export interface FilterWithIndexFn_<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface FilterMapWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
-  <K, A, B>(f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', C, K>>) => Option<B>): <Q, W, X, I, S, R, E>(
+  <K, A, B>(f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', C, K>>) => Maybe<B>): <Q, W, X, I, S, R, E>(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
   ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
 }
@@ -116,7 +116,7 @@ export interface FilterMapWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
 export interface FilterMapWithIndexFn_<F extends HKT.URIS, C = HKT.Auto> {
   <K, Q, W, X, I, S, R, E, A, B>(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
-    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', C, K>>) => Option<B>
+    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', C, K>>) => Maybe<B>
   ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
 }
 

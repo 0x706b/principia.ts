@@ -8,7 +8,7 @@ import { failLazy, flatten, succeed } from '../core'
 import { timeoutTo_ } from './timeoutTo'
 
 /**
- * The same as `timeout`, but instead of producing a `None` in the event
+ * The same as `timeout`, but instead of producing a `Nothing` in the event
  * of timeout, it will produce the specified error.
  *
  * @trace 2
@@ -18,7 +18,7 @@ export function timeoutFail_<R, E, A, E1>(ma: IO<R, E, A>, d: number, e: () => E
 }
 
 /**
- * The same as `timeout`, but instead of producing a `None` in the event
+ * The same as `timeout`, but instead of producing a `Nothing` in the event
  * of timeout, it will produce the specified error.
  *
  * @trace 1

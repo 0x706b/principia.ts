@@ -7,8 +7,8 @@ import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as T from '@principia/base/IO'
 import * as L from '@principia/base/IO/Layer'
-import * as M from '@principia/base/IO/Managed'
-import * as O from '@principia/base/Option'
+import * as Ma from '@principia/base/IO/Managed'
+import * as M from '@principia/base/Maybe'
 import { show } from '@principia/base/Structural'
 import { matchTag_ } from '@principia/base/util/match'
 import * as Z from '@principia/keeper'
@@ -53,7 +53,7 @@ class Initial extends S.Model<Initial>()(S.properties({ _tag: S.prop(S.tag('Init
 const userHandler = transactional(
   Message,
   S.taggedUnion({ Initial, User }),
-  O.some(S.string)
+  M.just(S.string)
 )(
   ({ event, state }) =>
     (msg) =>
@@ -81,7 +81,7 @@ const userHandler = transactional(
       })
 )
 
-export const makeUsersService = M.gen(function* (_) {
+export const makeUsersService = Ma.gen(function* (_) {
   const system = yield* _(ActorSystemTag)
 
   const users = yield* _(

@@ -15,10 +15,10 @@ import * as T from '@principia/base/IO'
 import { defaultPrettyPrint } from '@principia/base/IO/Cause'
 import * as F from '@principia/base/IO/Future'
 import * as L from '@principia/base/IO/Layer'
-import * as M from '@principia/base/IO/Managed'
+import * as Ma from '@principia/base/IO/Managed'
 import * as Q from '@principia/base/IO/Queue'
 import * as Ref from '@principia/base/IO/Ref'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import { hash } from '@principia/base/Structural'
 import * as PG from '@principia/pg'
 import * as S from '@principia/schema'
@@ -38,7 +38,7 @@ export type TransactionalEnvelope<F1 extends AM.AnyMessage> = {
 export function transactional<S, F1 extends AM.AnyMessage, Ev = never>(
   messages: AM.MessageRegistry<F1>,
   stateSchema: S.Standard<S>,
-  eventSchema: O.Option<S.Standard<Ev>>
+  eventSchema: M.Maybe<S.Standard<Ev>>
 ) {
   return <R>(
     receive: (
@@ -64,7 +64,7 @@ export interface StateStorageAdapter {
   readonly get: (persistenceId: string) => T.IO<
     unknown,
     never,
-    O.Option<{
+    M.Maybe<{
       persistenceId: string
       shard: number
       state: unknown
@@ -86,7 +86,7 @@ export interface ShardConfig {
 export const ShardConfig = tag<ShardConfig>()
 
 export const LiveStateStorageAdapter = L.fromManaged(StateStorageAdapter)(
-  M.gen(function* (_) {
+  Ma.gen(function* (_) {
     const cli = yield* _(PG.PG)
 
     yield* _(
@@ -118,7 +118,7 @@ export const LiveStateStorageAdapter = L.fromManaged(StateStorageAdapter)(
     ): T.IO<
       unknown,
       never,
-      O.Option<{
+      M.Maybe<{
         persistenceId: string
         shard: number
         state: unknown
@@ -129,8 +129,8 @@ export const LiveStateStorageAdapter = L.fromManaged(StateStorageAdapter)(
         cli.query(`SELECT * FROM "state_journal" WHERE "persistence_id" = '${persistenceId}'`),
         T.map((res) =>
           pipe(
-            O.fromNullable(res.rows?.[0]),
-            O.map((row) => ({
+            M.fromNullable(res.rows?.[0]),
+            M.map((row) => ({
               persistenceId: row.actor_name,
               shard: row.shard,
               state: row['state'],
@@ -192,7 +192,7 @@ const mod = (m: number) => (x: number) => x < 0 ? (x % m) + m : x % m
 const calcShard = (id: string) =>
   T.asks((r: unknown) => {
     const maybe = ShardConfig.readOption(r)
-    if (O.isSome(maybe)) {
+    if (M.isJust(maybe)) {
       return mod(maybe.value.shards)(hash(id))
     } else {
       return mod(16)(hash(id))
@@ -213,7 +213,7 @@ export class Transactional<R, S, Ev, F1 extends AM.AnyMessage> extends AbstractS
 
   readonly encodeState = Encoder.for(this.dbStateSchema)
 
-  readonly encodeEvent = O.map_(this.eventSchema, (s) => Encoder.for(S.properties({ event: S.prop(s) })))
+  readonly encodeEvent = M.map_(this.eventSchema, (s) => Encoder.for(S.properties({ event: S.prop(s) })))
 
   readonly getState = (initial: S, system: AS.ActorSystem, actorName: string) => {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
@@ -224,7 +224,7 @@ export class Transactional<R, S, Ev, F1 extends AM.AnyMessage> extends AbstractS
 
       const state = yield* _(get(actorName))
 
-      if (O.isSome(state)) {
+      if (M.isJust(state)) {
         return [(yield* _(self.decodeState(state.value.state, system))).current, state.value.event_sequence] as const
       }
       return [initial, 0] as const
@@ -257,7 +257,7 @@ export class Transactional<R, S, Ev, F1 extends AM.AnyMessage> extends AbstractS
   constructor(
     readonly messages: AM.MessageRegistry<F1>,
     readonly stateSchema: S.Standard<S>,
-    readonly eventSchema: O.Option<S.Standard<Ev>>,
+    readonly eventSchema: M.Maybe<S.Standard<Ev>>,
     readonly receive: (
       dsl: {
         state: {
@@ -357,7 +357,7 @@ export class Transactional<R, S, Ev, F1 extends AM.AnyMessage> extends AbstractS
         T.do,
         T.chainS('state', () => Ref.make(initial)),
         T.chainS('queue', () => Q.makeBounded<PendingMessage<F1>>(mailboxSize)),
-        T.chainS('ref', () => Ref.make(O.none<S>())),
+        T.chainS('ref', () => Ref.make(M.nothing<S>())),
         T.tap((_) =>
           pipe(
             Q.take(_.queue),

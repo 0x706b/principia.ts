@@ -3,7 +3,7 @@ import type * as C from '@principia/base/Cause'
 import type { Either } from '@principia/base/Either'
 import type { FiberId } from '@principia/base/Fiber'
 import type { Trace } from '@principia/base/Fiber/trace'
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 import type { Predicate } from '@principia/base/prelude'
 
 /* eslint typescript-sort-keys/interface: "error" */
@@ -65,9 +65,9 @@ export interface CauseOps {
   failed<Id, E>(this: PCause<Id, E>): boolean
 
   /**
-   * @rewrite failureOption from "@principia/base/Cause"
+   * @rewrite failureMaybe from "@principia/base/Cause"
    */
-  failureOption<Id, E>(this: PCause<Id, E>): Option<E>
+  failureMaybe<Id, E>(this: PCause<Id, E>): Maybe<E>
 
   /**
    * @rewrite failureOrCause from "@principia/base/Cause"
@@ -75,14 +75,14 @@ export interface CauseOps {
   failureOrCause<Id, E>(this: PCause<Id, E>): Either<E, PCause<Id, never>>
 
   /**
-   * @rewrite failureTraceOption from "@principia/base/Cause"
+   * @rewrite failureTraceMaybe from "@principia/base/Cause"
    */
-  failureTraceOption<Id, E>(this: PCause<Id, E>): Option<readonly [E, Option<Trace>]>
+  failureTraceMaybe<Id, E>(this: PCause<Id, E>): Maybe<readonly [E, Maybe<Trace>]>
 
   /**
    * @rewrite failureTraceOrCause from "@principia/base/Cause"
    */
-  failureTraceOrCause<Id, E>(this: PCause<Id, E>): Either<readonly [E, Option<Trace>], PCause<Id, never>>
+  failureTraceOrCause<Id, E>(this: PCause<Id, E>): Either<readonly [E, Maybe<Trace>], PCause<Id, never>>
 
   /**
    * @rewrite failures from "@principia/base/Cause"
@@ -92,7 +92,7 @@ export interface CauseOps {
   /**
    * @rewrite find_ from "@principia/base/Cause"
    */
-  find<Id, E, A>(this: PCause<Id, E>, f: (cause: PCause<Id, E>) => Option<A>): Option<A>
+  find<Id, E, A>(this: PCause<Id, E>, f: (cause: PCause<Id, E>) => Maybe<A>): Maybe<A>
 
   /**
    * @rewrite flipCauseEither from "@principia/base/Cause"
@@ -100,9 +100,9 @@ export interface CauseOps {
   flipCauseEither<Id, E, A>(this: PCause<Id, Either<E, A>>): Either<PCause<Id, E>, A>
 
   /**
-   * @rewrite flipCauseOption from "@principia/base/Cause"
+   * @rewrite flipCauseMaybe from "@principia/base/Cause"
    */
-  flipCauseOption<Id, E>(this: PCause<Id, Option<E>>): Option<PCause<Id, E>>
+  flipCauseMaybe<Id, E>(this: PCause<Id, Maybe<E>>): Maybe<PCause<Id, E>>
 
   /**
    * @rewrite fold_ from "@principia/base/Cause"
@@ -121,7 +121,7 @@ export interface CauseOps {
   /**
    * @rewrite foldl_ from "@principia/base/Cause"
    */
-  foldl<Id, E, A>(this: PCause<Id, E>, b: A, f: (b: A, a: PCause<Id, E>) => Option<A>): A
+  foldl<Id, E, A>(this: PCause<Id, E>, b: A, f: (b: A, a: PCause<Id, E>) => Maybe<A>): A
 
   /**
    * @rewrite halted from "@principia/base/Cause"
@@ -129,9 +129,9 @@ export interface CauseOps {
   halted<Id, E>(this: PCause<Id, E>): this is Halt
 
   /**
-   * @rewrite interruptOption from "@principia/base/Cause"
+   * @rewrite interruptMaybe from "@principia/base/Cause"
    */
-  interruptOption<Id, E>(this: PCause<Id, E>): Option<FiberId>
+  interruptMaybe<Id, E>(this: PCause<Id, E>): Maybe<FiberId>
 
   /**
    * @rewrite interrupted from "@principia/base/Cause"
@@ -151,7 +151,7 @@ export interface CauseOps {
   /**
    * @rewrite keepDefects from "@principia/base/Cause"
    */
-  keepDefects<Id, E>(this: PCause<Id, E>): Option<PCause<Id, never>>
+  keepDefects<Id, E>(this: PCause<Id, E>): Maybe<PCause<Id, never>>
 
   /**
    * @rewrite map_ from "@principia/base/Cause"
@@ -169,9 +169,9 @@ export interface CauseOps {
   sequenceCauseEither<Id, E, A>(this: PCause<Id, Either<E, A>>): Either<PCause<Id, E>, A>
 
   /**
-   * @rewrite sequenceCauseOption from "@principia/base/Cause"
+   * @rewrite sequenceCauseMaybe from "@principia/base/Cause"
    */
-  sequenceCauseOption<Id, E>(this: PCause<Id, Option<E>>): Option<PCause<Id, E>>
+  sequenceCauseMaybe<Id, E>(this: PCause<Id, Maybe<E>>): Maybe<PCause<Id, E>>
 
   /**
    * @rewrite stripFailures from "@principia/base/Cause"
@@ -184,9 +184,9 @@ export interface CauseOps {
   stripInterrupts<Id, E>(this: PCause<Id, E>): PCause<Id, E>
 
   /**
-   * @rewrite stripSomeDefects_ from "@principia/base/Cause"
+   * @rewrite stripJustDefects_ from "@principia/base/Cause"
    */
-  stripSomeDefects<Id, E>(this: PCause<Id, E>, predicate: Predicate<unknown>): Option<PCause<Id, E>>
+  stripJustDefects<Id, E>(this: PCause<Id, E>, predicate: Predicate<unknown>): Maybe<PCause<Id, E>>
 }
 
 declare module '@principia/base/Cause/generic' {

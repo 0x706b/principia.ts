@@ -8,7 +8,7 @@ import type { Sized } from '@principia/test/Sized'
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/function'
-import * as O from '@principia/base/Option'
+import * as O from '@principia/base/Maybe'
 import * as R from '@principia/base/Record'
 import * as G from '@principia/test/Gen'
 
@@ -82,10 +82,9 @@ export function record<A>(codomain: Gen<A>): Gen<Record<string, A>> {
  * -------------------------------------------
  */
 
-type EnsureTag<T extends string, M extends Record<string, G.Gen<any, any>>> = M &
-  {
-    [K in keyof M]: G.Gen<any, { [tag in T]: K }>
-  }
+type EnsureTag<T extends string, M extends Record<string, G.Gen<any, any>>> = M & {
+  [K in keyof M]: G.Gen<any, { [tag in T]: K }>
+}
 
 export function sum<T extends string>(
   _: T
@@ -142,8 +141,8 @@ export const Schemable: S.Schemable<GenSURI> = {
   newtypePrism: (gen, prism) =>
     pipe(
       gen,
-      G.map(prism.getOption),
-      G.filter(O.isSome),
+      G.map(prism.getMaybe),
+      G.filter(O.isJust),
       G.map((n) => n.value)
     )
 }

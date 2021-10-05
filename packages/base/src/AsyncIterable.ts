@@ -1,7 +1,7 @@
 import type { Either } from './Either'
 import type * as HKT from './HKT'
+import type { Maybe } from './Maybe'
 import type { AsyncIterableURI } from './Modules'
-import type { Option } from './Option'
 
 import { identity } from './function'
 import * as P from './prelude'
@@ -220,20 +220,20 @@ export function filter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: Asyn
   return (fa) => filter_(fa, predicate)
 }
 
-export function filterMap_<A, B>(fa: AsyncIterable<A>, f: (a: A, i: number) => Option<B>): AsyncIterable<B> {
+export function filterMap_<A, B>(fa: AsyncIterable<A>, f: (a: A, i: number) => Maybe<B>): AsyncIterable<B> {
   return asyncIterable(async function* () {
     let i = -1
     for await (const a of fa) {
       i       += 1
       const ob = f(a, i)
-      if (ob._tag === 'Some') {
+      if (ob._tag === 'Just') {
         yield ob.value
       }
     }
   })
 }
 
-export function filterMap<A, B>(f: (a: A, i: number) => Option<B>): (fa: AsyncIterable<A>) => AsyncIterable<B> {
+export function filterMap<A, B>(f: (a: A, i: number) => Maybe<B>): (fa: AsyncIterable<A>) => AsyncIterable<B> {
   return (fa) => filterMap_(fa, f)
 }
 

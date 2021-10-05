@@ -1,6 +1,6 @@
 import * as C from '../../../Chunk'
 import { pipe } from '../../../function'
-import * as O from '../../../Option'
+import * as M from '../../../Maybe'
 import { tuple } from '../../../tuple'
 import * as I from '../..'
 import * as Ref from '../../Ref'
@@ -8,13 +8,13 @@ import * as Pull from './Pull'
 
 export class BufferedPull<R, E, A> {
   constructor(
-    readonly upstream: I.IO<R, O.Option<E>, C.Chunk<A>>,
+    readonly upstream: I.IO<R, M.Maybe<E>, C.Chunk<A>>,
     readonly done: Ref.URef<boolean>,
     readonly cursor: Ref.URef<readonly [C.Chunk<A>, number]>
   ) {}
 }
 
-export function make<R, E, A>(upstream: I.IO<R, O.Option<E>, C.Chunk<A>>) {
+export function make<R, E, A>(upstream: I.IO<R, M.Maybe<E>, C.Chunk<A>>) {
   return pipe(
     I.do,
     I.chainS('done', () => Ref.make(false)),
@@ -25,8 +25,8 @@ export function make<R, E, A>(upstream: I.IO<R, O.Option<E>, C.Chunk<A>>) {
 
 export function ifNotDone_<R, R1, E, E1, A, A1>(
   self: BufferedPull<R, E, A>,
-  fa: I.IO<R1, O.Option<E1>, A1>
-): I.IO<R1, O.Option<E1>, A1> {
+  fa: I.IO<R1, M.Maybe<E1>, A1>
+): I.IO<R1, M.Maybe<E1>, A1> {
   return I.chain_(Ref.get(self.done), (_) => {
     if (_) {
       return Pull.end
@@ -36,16 +36,16 @@ export function ifNotDone_<R, R1, E, E1, A, A1>(
   })
 }
 
-export function ifNotDone<R1, E1, A1>(fa: I.IO<R1, O.Option<E1>, A1>) {
+export function ifNotDone<R1, E1, A1>(fa: I.IO<R1, M.Maybe<E1>, A1>) {
   return <R, E, A>(self: BufferedPull<R, E, A>) => ifNotDone_(self, fa)
 }
 
-export function update<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Option<E>, void> {
+export function update<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, M.Maybe<E>, void> {
   return ifNotDone_(
     self,
     I.matchIO_(
       self.upstream,
-      O.match(
+      M.match(
         () => I.crossSecond_(Ref.set_(self.done, true), Pull.end),
         (e) => Pull.fail(e)
       ),
@@ -54,7 +54,7 @@ export function update<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Option<E
   )
 }
 
-export function pullElement<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Option<E>, A> {
+export function pullElement<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, M.Maybe<E>, A> {
   return ifNotDone_(
     self,
     pipe(
@@ -71,7 +71,7 @@ export function pullElement<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Opt
   )
 }
 
-export function pullChunk<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Option<E>, C.Chunk<A>> {
+export function pullChunk<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, M.Maybe<E>, C.Chunk<A>> {
   return ifNotDone_(
     self,
     pipe(

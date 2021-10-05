@@ -2,7 +2,7 @@ import type { Eq } from './Eq'
 import type { Hash } from './Hash'
 
 import * as I from './Iterable'
-import * as O from './Option'
+import * as M from './Maybe'
 import { DefaultEq, DefaultHash } from './Structural'
 import { AtomicNumber } from './util/support/AtomicNumber'
 
@@ -50,24 +50,24 @@ export class HashMap<K, V> implements Iterable<readonly [K, V]> {
     this.hashEqK = hashEqK ?? { ...DefaultHash, ...DefaultEq }
   }
 
-  get(k: K): O.Option<V> {
+  get(k: K): M.Maybe<V> {
     const hash = this.hashEqK.hash(k)
     const arr  = this.backingMap.get(hash)
 
     if (typeof arr === 'undefined') {
-      return O.none()
+      return M.nothing()
     }
 
     let c: Node<K, V> | undefined = arr
 
     while (c) {
       if (this.hashEqK.equals_(k, c.k)) {
-        return O.some(c.v)
+        return M.just(c.v)
       }
       c = c.next
     }
 
-    return O.none()
+    return M.nothing()
   }
 
   remove(k: K): HashMap<K, V> {
@@ -167,7 +167,7 @@ export function hashMap<K, V>(hashEqK?: Hash<K> & Eq<K>) {
 /**
  * Lookup the value for `key` in `map` using internal hash function.
  */
-export function get_<K, V>(map: HashMap<K, V>, key: K): O.Option<V> {
+export function get_<K, V>(map: HashMap<K, V>, key: K): M.Maybe<V> {
   return map.get(key)
 }
 
@@ -244,9 +244,9 @@ export function update<K, V>(key: K, f: (v: V) => V) {
  * `modify` will always either update or insert a value into the map.
  * Returns a map with the modified value. Does not alter `map`.
  */
-export function modify_<K, V>(map: HashMap<K, V>, key: K, f: (v: O.Option<V>) => O.Option<V>) {
+export function modify_<K, V>(map: HashMap<K, V>, key: K, f: (v: M.Maybe<V>) => M.Maybe<V>) {
   const v = f(map.get(key))
-  if (O.isSome(v)) {
+  if (M.isJust(v)) {
     map.set(key, v.value)
   } else {
     map.remove(key)
@@ -265,6 +265,6 @@ export function modify_<K, V>(map: HashMap<K, V>, key: K, f: (v: O.Option<V>) =>
  *
  * @dataFirst modify_
  */
-export function modify<K, V>(key: K, f: (v: O.Option<V>) => O.Option<V>) {
+export function modify<K, V>(key: K, f: (v: M.Maybe<V>) => M.Maybe<V>) {
   return (map: HashMap<K, V>) => modify_(map, key, f)
 }

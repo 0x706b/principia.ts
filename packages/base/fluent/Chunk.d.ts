@@ -3,7 +3,7 @@ import type * as C from '@principia/base/Chunk'
 import type { Either } from '@principia/base/Either'
 import type * as HKT from '@principia/base/HKT'
 import type { IO } from '@principia/base/IO'
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 import type { Applicative, Eq, Monoid, Predicate, PredicateWithIndex } from '@principia/base/prelude'
 import type { Refinement, RefinementWithIndex } from '@principia/base/Refinement'
 import type { These } from '@principia/base/These'
@@ -173,12 +173,12 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewrite collectWhile_ from "@principia/base/Chunk"
      */
-    collectWhile<A, B>(this: Chunk<A>, f: (a: A) => Option<B>): Chunk<B>
+    collectWhile<A, B>(this: Chunk<A>, f: (a: A) => Maybe<B>): Chunk<B>
 
     /**
      * @rewrite compact from "@principia/base/Chunk"
      */
-    compact<A>(this: Chunk<Option<A>>): Chunk<A>
+    compact<A>(this: Chunk<Maybe<A>>): Chunk<A>
     /**
      * @rewrite concat_ from "@principia/base/Chunk"
      */
@@ -252,7 +252,7 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewrite filterMap_ from "@principia/base/Chunk"
      */
-    filterMap<A, B>(this: Chunk<A>, f: (a: A, i: number) => Option<B>): Chunk<B>
+    filterMap<A, B>(this: Chunk<A>, f: (a: A, i: number) => Maybe<B>): Chunk<B>
 
     /**
      * @rewriteConstraint filterMapA_ from "@principia/base/Chunk"
@@ -261,18 +261,18 @@ declare module '@principia/base/Chunk/core' {
       this: Chunk<A>,
       A: Applicative<F, C>
     ): <K, Q, W, X, I, S, R, E, B>(
-      f: (a: A, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<B>>
+      f: (a: A, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Maybe<B>>
     ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Chunk<B>>
 
     /**
      * @rewrite find_ from "@principia/base/Chunk"
      */
-    find<A>(this: Chunk<A>, predicate: PredicateWithIndex<number, A>): Option<A>
+    find<A>(this: Chunk<A>, predicate: PredicateWithIndex<number, A>): Maybe<A>
 
     /**
      * @rewrite findIO_ from "@principia/base/Chunk"
      */
-    findIO<A, R, E>(this: Chunk<A>, p: (a: A) => IO<R, E, boolean>): IO<R, E, Option<A>>
+    findIO<A, R, E>(this: Chunk<A>, p: (a: A) => IO<R, E, boolean>): IO<R, E, Maybe<A>>
 
     /**
      * @rewrite foldMap_ from "@principia/base/Chunk"
@@ -307,12 +307,12 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewrite get_ from "@principia/base/Chunk"
      */
-    get<A>(this: Chunk<A>, n: number): Option<A>
+    get<A>(this: Chunk<A>, n: number): Maybe<A>
 
     /**
      * @rewriteGetter head from "@principia/base/Chunk"
      */
-    head: Option<A>
+    head: Maybe<A>
 
     /**
      * @rewriteGetter isEmpty from "@principia/base/Chunk"
@@ -327,7 +327,7 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewriteGetter last from "@principia/base/Chunk"
      */
-    last: Option<A>
+    last: Maybe<A>
 
     /**
      * @rewrite map_ from "@principia/base/Chunk"
@@ -410,7 +410,7 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewriteGetter tail from "@principia/base/Chunk"
      */
-    tail: Option<Chunk<A>>
+    tail: Maybe<Chunk<A>>
 
     /**
      * @rewrite take_ from "@principia/base/Chunk"

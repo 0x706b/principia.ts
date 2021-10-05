@@ -3,9 +3,9 @@ import type { NonEmptyArray } from './NonEmptyArray'
 import * as A from './Array/core'
 import { flow, identity, pipe } from './function'
 import * as G from './Guard'
+import * as M from './Maybe'
 import * as NA from './NonEmptyArray'
 import * as N from './number'
-import * as O from './Option'
 import { max_ } from './Ord'
 import * as P from './prelude'
 
@@ -147,23 +147,23 @@ export function lines(s: string): ReadonlyArray<string> {
 /**
  * Match a string with a RegExp
  */
-export function match_(s: string, r: RegExp): O.Option<RegExpMatchArray> {
-  return O.fromNullable(s.match(r))
+export function match_(s: string, r: RegExp): M.Maybe<RegExpMatchArray> {
+  return M.fromNullable(s.match(r))
 }
 
 /**
  * Match a string with a RegExp
  */
-export function match(r: RegExp): (s: string) => O.Option<RegExpMatchArray> {
+export function match(r: RegExp): (s: string) => M.Maybe<RegExpMatchArray> {
   return (s) => match_(s, r)
 }
 
 /**
  * Match a string with a global RegExp
  */
-export function matchAll_(s: string, r: RegExp): O.Option<NonEmptyArray<RegExpMatchArray>> {
-  return O.chain_(
-    O.tryCatch(() => s.matchAll(r)),
+export function matchAll_(s: string, r: RegExp): M.Maybe<NonEmptyArray<RegExpMatchArray>> {
+  return M.chain_(
+    M.tryCatch(() => s.matchAll(r)),
     flow(A.from, NA.fromArray)
   )
 }
@@ -171,7 +171,7 @@ export function matchAll_(s: string, r: RegExp): O.Option<NonEmptyArray<RegExpMa
 /**
  * Matches a string with a global RegExp
  */
-export function matchAll(r: RegExp): (s: string) => O.Option<NonEmptyArray<RegExpMatchArray>> {
+export function matchAll(r: RegExp): (s: string) => M.Maybe<NonEmptyArray<RegExpMatchArray>> {
   return (s) => matchAll_(s, r)
 }
 

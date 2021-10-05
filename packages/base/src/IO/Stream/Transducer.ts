@@ -1,26 +1,26 @@
-import type { Cause } from '../Cause'
 import type { Chunk } from '../../Chunk'
 import type * as Eq from '../../Eq'
-import type { Option } from '../../Option'
+import type { Maybe } from '../../Maybe'
 import type { Predicate } from '../../Predicate'
 import type { Refinement } from '../../Refinement'
 import type { IO } from '..'
+import type { Cause } from '../Cause'
 import type { Managed } from '../Managed'
 import type { Finalizer } from '../Managed/ReleaseMap'
 
 import * as C from '../../Chunk'
 import * as E from '../../Either'
-import * as Ex from '../Exit'
 import { flow, pipe } from '../../function'
 import * as Map from '../../Map'
-import * as O from '../../Option'
+import * as M from '../../Maybe'
 import { not } from '../../Predicate'
-import * as RefM from '../RefM'
 import * as Set from '../../Set'
 import { tuple } from '../../tuple'
 import * as I from '..'
-import * as M from '../Managed'
+import * as Ex from '../Exit'
+import * as Ma from '../Managed'
 import * as Ref from '../Ref'
+import * as RefM from '../RefM'
 import { Sink } from './internal/Sink'
 import { Transducer } from './internal/Transducer'
 
@@ -29,13 +29,13 @@ export { Transducer }
 /**
  * Contract notes for transducers:
  * - When a None is received, the transducer must flush all of its internal state
- *   and remain empty until subsequent Some(Chunk) values.
+ *   and remain empty until subsequent Just(Chunk) values.
  *
  *   Stated differently, after a first push(None), all subsequent push(None) must
  *   result in empty [].
  */
 export function transducer<R, E, I, O, R1>(
-  push: Managed<R, never, (c: Option<Chunk<I>>) => IO<R1, E, Chunk<O>>>
+  push: Managed<R, never, (c: Maybe<Chunk<I>>) => IO<R1, E, Chunk<O>>>
 ): Transducer<R & R1, E, I, O> {
   return new Transducer<R & R1, E, I, O>(push)
 }
@@ -50,44 +50,42 @@ export function transducer<R, E, I, O, R1>(
  * Creates a transducer that always fails with the specified failure.
  */
 export function fail<E>(error: E): Transducer<unknown, E, unknown, never> {
-  return new Transducer(M.succeed((_) => I.fail(error)))
+  return new Transducer(Ma.succeed((_) => I.fail(error)))
 }
 
 /**
  * Creates a transducer that always halts with the specified exception.
  */
 export function halt(defect: unknown): Transducer<unknown, never, unknown, never> {
-  return new Transducer(M.succeed((_) => I.halt(defect)))
+  return new Transducer(Ma.succeed((_) => I.halt(defect)))
 }
 
 /**
  * Creates a transducer that always fails with the specified cause.
  */
 export function failCause<E>(cause: Cause<E>): Transducer<unknown, E, unknown, never> {
-  return new Transducer(M.succeed((_) => I.failCause(cause)))
+  return new Transducer(Ma.succeed((_) => I.failCause(cause)))
 }
 
 /**
  * The identity transducer. Passes elements through.
  */
 export function identity<I>(): Transducer<unknown, never, I, I> {
-  return fromPush(O.match(() => I.succeed(C.empty()), I.succeed))
+  return fromPush(M.match(() => I.succeed(C.empty()), I.succeed))
 }
 
 /**
  * Creates a transducer from a chunk processing function.
  */
-export function fromPush<R, E, I, O>(
-  push: (input: O.Option<Chunk<I>>) => I.IO<R, E, Chunk<O>>
-): Transducer<R, E, I, O> {
-  return new Transducer(M.succeed(push))
+export function fromPush<R, E, I, O>(push: (input: M.Maybe<Chunk<I>>) => I.IO<R, E, Chunk<O>>): Transducer<R, E, I, O> {
+  return new Transducer(Ma.succeed(push))
 }
 
 /**
  * Creates a transducer that always evaluates the specified effect.
  */
 export function fromEffect<R, E, A>(io: I.IO<R, E, A>): Transducer<R, E, unknown, A> {
-  return new Transducer(M.succeed((_: any) => I.map_(io, C.single)))
+  return new Transducer(Ma.succeed((_: any) => I.map_(io, C.single)))
 }
 
 /**
@@ -107,11 +105,11 @@ export function fromFunctionIO<R, E, I, O>(f: (i: I) => I.IO<R, E, O>): Transduc
 /**
  * Creates a transducer that returns the first element of the stream, if it exists.
  */
-export function head<O>(): Transducer<unknown, never, O, O.Option<O>> {
-  return reduce(O.none(), (acc, o) =>
-    O.match_(
+export function head<O>(): Transducer<unknown, never, O, M.Maybe<O>> {
+  return reduce(M.nothing(), (acc, o) =>
+    M.match_(
       acc,
-      () => O.some(o),
+      () => M.just(o),
       () => acc
     )
   )
@@ -120,8 +118,8 @@ export function head<O>(): Transducer<unknown, never, O, O.Option<O>> {
 /**
  * Creates a transducer that returns the last element of the stream, if it exists.
  */
-export function last<O>(): Transducer<unknown, never, O, O.Option<O>> {
-  return reduce(O.none(), (_, a) => O.some(a))
+export function last<O>(): Transducer<unknown, never, O, M.Maybe<O>> {
+  return reduce(M.nothing(), (_, a) => M.just(a))
 }
 
 /**
@@ -129,10 +127,10 @@ export function last<O>(): Transducer<unknown, never, O, O.Option<O>> {
  */
 export function prepend<O>(values: Chunk<O>): Transducer<unknown, never, O, O> {
   return new Transducer(
-    M.map_(
+    Ma.map_(
       Ref.managedRef(values),
-      (state) => (is: O.Option<Chunk<O>>) =>
-        O.match_(
+      (state) => (is: M.Maybe<Chunk<O>>) =>
+        M.match_(
           is,
           () => Ref.getAndSet_(state, C.empty()),
           (xs) =>
@@ -158,7 +156,7 @@ export function branchAfter<R, E, I, O>(n: number, f: (c: Chunk<I>) => Transduce
   interface Emitting {
     _tag: 'Emitting'
     finalizer: Finalizer
-    push: (is: O.Option<Chunk<I>>) => I.IO<R, E, Chunk<O>>
+    push: (is: M.Maybe<Chunk<I>>) => I.IO<R, E, Chunk<O>>
   }
   type State = Collecting | Emitting
   const initialState: State = {
@@ -169,11 +167,11 @@ export function branchAfter<R, E, I, O>(n: number, f: (c: Chunk<I>) => Transduce
   const toCollect = Math.max(0, n)
 
   return new Transducer(
-    M.chain_(M.scope(), (scope) =>
-      M.map_(
+    Ma.chain_(Ma.scope(), (scope) =>
+      Ma.map_(
         RefM.makeManaged<State>(initialState),
-        (state) => (is: O.Option<Chunk<I>>) =>
-          O.match_(
+        (state) => (is: M.Maybe<Chunk<I>>) =>
+          M.match_(
             is,
             () =>
               pipe(
@@ -181,10 +179,10 @@ export function branchAfter<R, E, I, O>(n: number, f: (c: Chunk<I>) => Transduce
                 I.chain((s) => {
                   switch (s._tag) {
                     case 'Collecting': {
-                      return M.use_(f(s.data).push, (f) => f(O.none()))
+                      return Ma.use_(f(s.data).push, (f) => f(M.nothing()))
                     }
                     case 'Emitting': {
-                      return I.crossFirst_(s.push(O.none()), s.finalizer(Ex.unit()))
+                      return I.crossFirst_(s.push(M.nothing()), s.finalizer(Ex.unit()))
                     }
                   }
                 })
@@ -193,7 +191,7 @@ export function branchAfter<R, E, I, O>(n: number, f: (c: Chunk<I>) => Transduce
               RefM.modifyIO_(state, (s) => {
                 switch (s._tag) {
                   case 'Emitting': {
-                    return I.map_(s.push(O.some(data)), (_) => [_, s] as const)
+                    return I.map_(s.push(M.just(data)), (_) => [_, s] as const)
                   }
                   case 'Collecting': {
                     if (C.isEmpty(data)) {
@@ -203,7 +201,7 @@ export function branchAfter<R, E, I, O>(n: number, f: (c: Chunk<I>) => Transduce
                       if (remaining <= data.length) {
                         const [newCollected, remainder] = C.splitAt_(data, remaining)
                         return I.chain_(scope.apply(f(C.concat_(s.data, newCollected)).push), ([finalizer, push]) =>
-                          I.map_(push(O.some(remainder)), (_) => [_, { _tag: 'Emitting', finalizer, push }] as const)
+                          I.map_(push(M.just(remainder)), (_) => [_, { _tag: 'Emitting', finalizer, push }] as const)
                         )
                       } else {
                         return I.succeed([C.empty<O>(), { _tag: 'Collecting', data: C.concat_(s.data, data) }] as const)
@@ -224,10 +222,10 @@ export function branchAfter<R, E, I, O>(n: number, f: (c: Chunk<I>) => Transduce
  */
 export function dropWhile<I>(predicate: Predicate<I>): Transducer<unknown, never, I, I> {
   return new Transducer(
-    M.map_(
+    Ma.map_(
       Ref.managedRef(true),
-      (dropping) => (is: O.Option<Chunk<I>>) =>
-        O.match_(
+      (dropping) => (is: M.Maybe<Chunk<I>>) =>
+        M.match_(
           is,
           () => I.succeed(C.empty()),
           (is) =>
@@ -255,9 +253,9 @@ export function dropWhileIO<R, E, I>(p: (i: I) => I.IO<R, E, boolean>): Transduc
   return new Transducer(
     pipe(
       Ref.managedRef(true),
-      M.map(
-        (droppingRef) => (is: O.Option<Chunk<I>>) =>
-          O.match_(
+      Ma.map(
+        (droppingRef) => (is: M.Maybe<Chunk<I>>) =>
+          M.match_(
             is,
             () => I.succeed(C.empty<I>()),
             (is) =>
@@ -303,23 +301,23 @@ export function fold<I, O>(
     })
 
   return new Transducer(
-    M.map_(
-      Ref.managedRef(O.some(initial)),
-      (state) => (is: O.Option<Chunk<I>>) =>
-        O.match_(
+    Ma.map_(
+      Ref.managedRef(M.just(initial)),
+      (state) => (is: M.Maybe<Chunk<I>>) =>
+        M.match_(
           is,
-          () => pipe(Ref.getAndSet_(state, O.none()), I.map(O.match(() => C.empty(), C.single))),
+          () => pipe(Ref.getAndSet_(state, M.nothing()), I.map(M.match(() => C.empty(), C.single))),
           (in_) =>
             Ref.modify_(state, (s) => {
               const [o, s2, progress] = go(
                 in_,
-                O.getOrElse_(s, () => initial),
-                O.isSome(s)
+                M.getOrElse_(s, () => initial),
+                M.isJust(s)
               )
               if (progress) {
-                return [o, O.some(s2)]
+                return [o, M.just(s2)]
               } else {
-                return [o, O.none()]
+                return [o, M.nothing()]
               }
             })
         )
@@ -343,7 +341,7 @@ export function foldWhileIO<R, E, I, O>(
   cont: (o: O) => boolean,
   f: (output: O, input: I) => I.IO<R, E, O>
 ): Transducer<R, E, I, O> {
-  const init = O.some(initial)
+  const init = M.just(initial)
   const go   = (in_: Chunk<I>, state: O, progress: boolean): I.IO<R, E, readonly [Chunk<O>, O, boolean]> =>
     C.foldl_(in_, I.succeed([C.empty(), state, progress]) as I.IO<R, E, readonly [Chunk<O>, O, boolean]>, (b, i) =>
       I.chain_(b, ([os0, state, _]) =>
@@ -357,12 +355,12 @@ export function foldWhileIO<R, E, I, O>(
       )
     )
   return new Transducer(
-    M.map_(
+    Ma.map_(
       Ref.managedRef(init),
-      (state) => (is: O.Option<Chunk<I>>) =>
-        O.match_(
+      (state) => (is: M.Maybe<Chunk<I>>) =>
+        M.match_(
           is,
-          () => pipe(state, Ref.getAndSet(O.none()), I.map(O.match(() => C.empty(), C.single))),
+          () => pipe(state, Ref.getAndSet(M.nothing()), I.map(M.match(() => C.empty(), C.single))),
           (in_) =>
             pipe(
               state,
@@ -370,14 +368,14 @@ export function foldWhileIO<R, E, I, O>(
               I.chain((s) =>
                 go(
                   in_,
-                  O.getOrElse_(s, () => initial),
-                  O.isSome(s)
+                  M.getOrElse_(s, () => initial),
+                  M.isJust(s)
                 )
               ),
               I.chain(([os, s, progress]) =>
                 progress
-                  ? I.crossSecond_(state.set(O.some(s)), I.succeed(os))
-                  : I.crossSecond_(state.set(O.none()), I.succeed(os))
+                  ? I.crossSecond_(state.set(M.just(s)), I.succeed(os))
+                  : I.crossSecond_(state.set(M.nothing()), I.succeed(os))
               )
             )
         )
@@ -499,17 +497,17 @@ export function foldWeightedDecompose<I, O>(
     })
 
   return new Transducer(
-    M.map_(
-      Ref.managedRef(O.some(initialState)),
-      (state) => (is: O.Option<Chunk<I>>) =>
-        O.match_(
+    Ma.map_(
+      Ref.managedRef(M.just(initialState)),
+      (state) => (is: M.Maybe<Chunk<I>>) =>
+        M.match_(
           is,
           () =>
             pipe(
               state,
-              Ref.getAndSet(O.none()),
+              Ref.getAndSet(M.nothing()),
               I.map(
-                O.match(
+                M.match(
                   () => C.empty(),
                   (s) => C.single(s.result)
                 )
@@ -520,13 +518,13 @@ export function foldWeightedDecompose<I, O>(
               const [o, s2, dirty] = go(
                 in_,
                 C.empty(),
-                O.getOrElse_(s, () => initialState),
-                O.isSome(s)
+                M.getOrElse_(s, () => initialState),
+                M.isJust(s)
               )
               if (dirty) {
-                return [o, O.some(s2)]
+                return [o, M.just(s2)]
               } else {
-                return [o, O.none()]
+                return [o, M.nothing()]
               }
             })
         )
@@ -604,17 +602,17 @@ export function foldWeightedDecomposeIO<R, E, I, O>(
     )
 
   return new Transducer(
-    M.map_(
-      Ref.managedRef(O.some(initialState)),
-      (state) => (is: O.Option<Chunk<I>>) =>
-        O.match_(
+    Ma.map_(
+      Ref.managedRef(M.just(initialState)),
+      (state) => (is: M.Maybe<Chunk<I>>) =>
+        M.match_(
           is,
           () =>
             pipe(
               state,
-              Ref.getAndSet(O.none()),
+              Ref.getAndSet(M.nothing()),
               I.map(
-                O.match(
+                M.match(
                   () => C.empty(),
                   (s) => C.single(s.result)
                 )
@@ -628,14 +626,14 @@ export function foldWeightedDecomposeIO<R, E, I, O>(
                 go(
                   in_,
                   C.empty(),
-                  O.getOrElse_(s, () => initialState),
-                  O.isSome(s)
+                  M.getOrElse_(s, () => initialState),
+                  M.isJust(s)
                 )
               ),
               I.chain(([os, s, dirty]) =>
                 dirty
-                  ? I.crossSecond_(state.set(O.some(s)), I.succeed(os))
-                  : I.crossSecond_(state.set(O.none()), I.succeed(os))
+                  ? I.crossSecond_(state.set(M.just(s)), I.succeed(os))
+                  : I.crossSecond_(state.set(M.nothing()), I.succeed(os))
               )
             )
         )
@@ -676,10 +674,10 @@ export function collectAllN<I>(n: number): Transducer<unknown, never, I, Chunk<I
   }
 
   return new Transducer(
-    M.map_(
+    Ma.map_(
       Ref.managedRef(C.empty<I>()),
-      (state) => (is: O.Option<Chunk<I>>) =>
-        O.match_(
+      (state) => (is: M.Maybe<Chunk<I>>) =>
+        M.match_(
           is,
           () =>
             I.map_(Ref.getAndSet_(state, C.empty()), (leftover) =>
@@ -776,7 +774,7 @@ export function collectAllWhileIO<R, E, I>(p: (i: I) => I.IO<R, E, boolean>): Tr
  * Transforms the inputs of this transducer.
  */
 export function contramap_<R, E, I, O, J>(fa: Transducer<R, E, I, O>, f: (j: J) => I): Transducer<R, E, J, O> {
-  return new Transducer(M.map_(fa.push, (push) => (input) => push(O.map_(input, C.map(f)))))
+  return new Transducer(Ma.map_(fa.push, (push) => (input) => push(M.map_(input, C.map(f)))))
 }
 
 /**
@@ -794,15 +792,15 @@ export function contramapIO_<R, E, I, O, R1, E1, J>(
   f: (j: J) => I.IO<R1, E1, I>
 ): Transducer<R & R1, E | E1, J, O> {
   return new Transducer(
-    M.map_(
+    Ma.map_(
       fa.push,
       (push) => (is) =>
-        O.match_(
+        M.match_(
           is,
-          () => push(O.none()),
+          () => push(M.nothing()),
           flow(
             C.mapIO(f),
-            I.chain((in_) => push(O.some(in_)))
+            I.chain((in_) => push(M.just(in_)))
           )
         )
     )
@@ -833,7 +831,7 @@ export function filter_<R, E, I, O, B extends O>(
   refinement: Refinement<O, B>
 ): Transducer<R, E, I, B>
 export function filter_<R, E, I, O>(fa: Transducer<R, E, I, O>, predicate: Predicate<O>): Transducer<R, E, I, O> {
-  return new Transducer(M.map_(fa.push, (push) => (is) => I.map_(push(is), C.filter(predicate))))
+  return new Transducer(Ma.map_(fa.push, (push) => (is) => I.map_(push(is), C.filter(predicate))))
 }
 
 /**
@@ -856,7 +854,7 @@ export function filterInput_<R, E, I, O, I1 extends I>(
   refinement: Refinement<I, I1>
 ): Transducer<R, E, I1, O>
 export function filterInput_<R, E, I, O>(fa: Transducer<R, E, I, O>, predicate: Predicate<I>): Transducer<R, E, I, O> {
-  return new Transducer(M.map_(fa.push, (push) => (is) => push(O.map_(is, C.filter(predicate)))))
+  return new Transducer(Ma.map_(fa.push, (push) => (is) => push(M.map_(is, C.filter(predicate)))))
 }
 
 /**
@@ -880,15 +878,15 @@ export function filterInputIO_<R, E, I, O, R1, E1>(
   predicate: (i: I) => I.IO<R1, E1, boolean>
 ): Transducer<R & R1, E | E1, I, O> {
   return new Transducer(
-    M.map_(
+    Ma.map_(
       fa.push,
       (push) => (is) =>
-        O.match_(
+        M.match_(
           is,
-          () => push(O.none()),
+          () => push(M.nothing()),
           flow(
             C.filterIO(predicate),
-            I.chain((in_) => push(O.some(in_)))
+            I.chain((in_) => push(M.just(in_)))
           )
         )
     )
@@ -914,7 +912,7 @@ export function filterInputIO<I, R1, E1>(
  * Transforms the outputs of this transducer.
  */
 export function map_<R, E, I, O, O1>(fa: Transducer<R, E, I, O>, f: (o: O) => O1): Transducer<R, E, I, O1> {
-  return new Transducer(M.map_(fa.push, (push) => (input) => I.map_(push(input), C.map(f))))
+  return new Transducer(Ma.map_(fa.push, (push) => (input) => I.map_(push(input), C.map(f))))
 }
 
 /**
@@ -931,7 +929,7 @@ export function mapChunks_<R, E, I, O, O1>(
   fa: Transducer<R, E, I, O>,
   f: (chunks: Chunk<O>) => Chunk<O1>
 ): Transducer<R, E, I, O1> {
-  return new Transducer(M.map_(fa.push, (push) => (input) => I.map_(push(input), f)))
+  return new Transducer(Ma.map_(fa.push, (push) => (input) => I.map_(push(input), f)))
 }
 
 /**
@@ -950,7 +948,7 @@ export function mapChunksIO_<R, E, I, O, R1, E1, O1>(
   fa: Transducer<R, E, I, O>,
   f: (chunk: Chunk<O>) => I.IO<R1, E1, Chunk<O1>>
 ): Transducer<R & R1, E | E1, I, O1> {
-  return new Transducer(M.map_(fa.push, (push) => (input) => I.chain_(push(input), f)))
+  return new Transducer(Ma.map_(fa.push, (push) => (input) => I.chain_(push(input), f)))
 }
 
 /**
@@ -969,7 +967,7 @@ export function mapIO_<R, E, I, O, R1, E1, O1>(
   fa: Transducer<R, E, I, O>,
   f: (o: O) => I.IO<R1, E1, O1>
 ): Transducer<R & R1, E | E1, I, O1> {
-  return new Transducer(M.map_(fa.push, (push) => (input) => I.chain_(push(input), C.mapIO(f))))
+  return new Transducer(Ma.map_(fa.push, (push) => (input) => I.chain_(push(input), C.mapIO(f))))
 }
 
 /**
@@ -997,21 +995,21 @@ export function then_<R, E, I, O, R1, E1, O1>(
   return new Transducer(
     pipe(
       self.push,
-      M.crossWith(that.push, (pushLeft, pushRight) =>
-        O.match(
+      Ma.crossWith(that.push, (pushLeft, pushRight) =>
+        M.match(
           () =>
             pipe(
-              pushLeft(O.none()),
+              pushLeft(M.nothing()),
               I.chain((cl) =>
                 cl.length === 0
-                  ? pushRight(O.none())
-                  : pipe(pushRight(O.some(cl)), I.crossWith(pushRight(O.none()), C.concat_))
+                  ? pushRight(M.nothing())
+                  : pipe(pushRight(M.just(cl)), I.crossWith(pushRight(M.nothing()), C.concat_))
               )
             ),
           (inputs) =>
             pipe(
-              pushLeft(O.some(inputs)),
-              I.chain((cl) => pushRight(O.some(cl)))
+              pushLeft(M.just(inputs)),
+              I.chain((cl) => pushRight(M.just(cl)))
             )
         )
       )
@@ -1038,23 +1036,23 @@ export function thenSink_<R, E, I, O, R1, E1, L, Z>(
 ): Sink<R & R1, E | E1, I, L, Z> {
   return new Sink(
     pipe(
-      M.crossWith_(
+      Ma.crossWith_(
         me.push,
         that.push,
-        (pushMe, pushThat) => (is: O.Option<Chunk<I>>) =>
-          O.match_(
+        (pushMe, pushThat) => (is: M.Maybe<Chunk<I>>) =>
+          M.match_(
             is,
             () =>
               pipe(
-                pushMe(O.none()),
+                pushMe(M.nothing()),
                 I.mapError((e) => [E.left<E | E1>(e), C.empty<L>()] as const),
-                I.chain((chunk) => I.crossSecond_(pushThat(O.some(chunk)), pushThat(O.none())))
+                I.chain((chunk) => I.crossSecond_(pushThat(M.just(chunk)), pushThat(M.nothing())))
               ),
             (in_) =>
               pipe(
-                pushMe(O.some(in_)),
+                pushMe(M.just(in_)),
                 I.mapError((e) => [E.left(e), C.empty<L>()] as const),
-                I.chain((chunk) => pushThat(O.some(chunk)))
+                I.chain((chunk) => pushThat(M.just(chunk)))
               )
           )
       )

@@ -1,5 +1,5 @@
 import type { Eval } from './Eval'
-import type { Option } from './internal/Option'
+import type { Maybe } from './internal/Maybe'
 import type { Monad } from './Monad'
 import type { Monoid } from './Monoid'
 import type { PredicateWithIndex } from './Predicate'
@@ -9,7 +9,7 @@ import type { TailRec } from './TailRec'
 import * as Ev from './Eval/core'
 import * as HKT from './HKT'
 import * as E from './internal/Either'
-import * as O from './internal/Option'
+import * as Mb from './internal/Maybe'
 
 export interface FoldableWithIndex<F extends HKT.URIS, C = HKT.Auto> extends Foldable<F, C> {
   readonly ifoldl_: FoldLeftWithIndexFn_<F, C>
@@ -219,11 +219,11 @@ export interface FindWithIndexFn_<F extends HKT.URIS, C = HKT.Auto> {
   <K, Q, W, X, I, S, R, E, A, B extends A>(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     refinement: RefinementWithIndex<HKT.IndexFor<F, HKT.OrFix<'K', C, K>>, A, B>
-  ): Option<B>
+  ): Maybe<B>
   <K, Q, W, X, I, S, R, E, A>(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     predicate: PredicateWithIndex<HKT.IndexFor<F, HKT.OrFix<'K', C, K>>, A>
-  ): Option<A>
+  ): Maybe<A>
 }
 
 export function getFindWithIndex_<F extends HKT.URIS, C = HKT.Auto>(
@@ -232,7 +232,7 @@ export function getFindWithIndex_<F extends HKT.URIS, C = HKT.Auto>(
   return <K, Q, W, X, I, S, R, E, A>(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     predicate: PredicateWithIndex<HKT.IndexFor<F, HKT.OrFix<'K', C, K>>, A>
-  ): Option<A> => F.ifoldr_(fa, Ev.now(O.none<A>()), (a, b, i) => (predicate(a, i) ? Ev.now(O.some(a)) : b)).value
+  ): Maybe<A> => F.ifoldr_(fa, Ev.now(Mb.nothing<A>()), (a, b, i) => (predicate(a, i) ? Ev.now(Mb.just(a)) : b)).value
 }
 
 export interface FindWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
@@ -246,10 +246,10 @@ export interface FindWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
     E
   >(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
-  ) => Option<B>
+  ) => Maybe<B>
   <K, A>(predicate: PredicateWithIndex<HKT.IndexFor<F, HKT.OrFix<'K', C, K>>, A>): <Q, W, X, I, S, R, E>(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
-  ) => Option<A>
+  ) => Maybe<A>
 }
 
 export function getFindWithIndex<F extends HKT.URIS, C = HKT.Auto>(
@@ -282,7 +282,7 @@ export interface FindWithIndexMFn_<F extends HKT.URIS, CF = HKT.Auto> {
   >(
     fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>,
     p: (a: AF, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
-  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, Option<AF>>
+  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, Maybe<AF>>
 }
 
 export function getFindWithIndexM_<F extends HKT.URIS, CF = HKT.Auto>(
@@ -291,9 +291,9 @@ export function getFindWithIndexM_<F extends HKT.URIS, CF = HKT.Auto>(
   return (M) => (fa, p) =>
     M.chainRec_(
       fromFoldableWithIndex(F)(fa),
-      O.match(
-        () => M.pure(E.right(O.none())),
-        ([a, i, src]) => M.map_(p(a, i), (b) => (b ? E.right(O.some(a)) : E.left(src.value)))
+      Mb.match(
+        () => M.pure(E.right(Mb.nothing())),
+        ([a, i, src]) => M.map_(p(a, i), (b) => (b ? E.right(Mb.just(a)) : E.left(src.value)))
       )
     )
 }
@@ -303,7 +303,7 @@ export interface FindWithIndexMFn<F extends HKT.URIS, CF = HKT.Auto> {
     p: (a: AF, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
   ) => <QF, WF, XF, IF, SF, RF, EF>(
     fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>
-  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, Option<AF>>
+  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, Maybe<AF>>
 }
 
 export function getFindWithIndexM<F extends HKT.URIS, CF = HKT.Auto>(
@@ -398,7 +398,7 @@ export function getFoldrWithIndexM_<F extends HKT.URIS, CF = HKT.Auto>(
     ) => {
       const source = fromFoldableWithIndex(F)(fa)
       return M.chainRec_([b, source] as const, ([z, src]) =>
-        O.match_(
+        Mb.match_(
           src,
           () => M.pure(E.right(z)),
           ([a, i, src]) => M.map_(f(a, z, i), (b) => E.left([b, src.value]))
@@ -535,7 +535,7 @@ export function getExistsWithIndexM_<F extends HKT.URIS, CF = HKT.Auto>(
   return (M) => (fa, p) =>
     M.chainRec_(
       fromFoldableWithIndex(F)(fa),
-      O.match(
+      Mb.match(
         () => M.pure(E.right(false)),
         ([a, i, src]) => M.map_(p(a, i), (bb) => (bb ? E.right(true) : E.left(src.value)))
       )
@@ -635,7 +635,7 @@ export function getEveryWithIndexM_<F extends HKT.URIS, CF = HKT.Auto>(
   return (M) => (fa, p) =>
     M.chainRec_(
       fromFoldableWithIndex(F)(fa),
-      O.match(
+      Mb.match(
         () => M.pure(E.right(true)),
         ([a, i, src]) => M.map_(p(a, i), (bb) => (!bb ? E.right(false) : E.left(src.value)))
       )
@@ -662,13 +662,13 @@ export function getEveryWithIndexM<F extends HKT.URIS, CF = HKT.Auto>(
  * -------------------------------------------------------------------------------------------------
  */
 
-type SourceWithIndex<F extends HKT.URIS, C, K, A> = Option<
+type SourceWithIndex<F extends HKT.URIS, C, K, A> = Maybe<
   readonly [A, HKT.IndexFor<F, HKT.OrFix<'K', C, K>>, Eval<SourceWithIndex<F, C, K, A>>]
 >
 
 function fromFoldableWithIndex<F extends HKT.URIS, C>(F: FoldableWithIndexMin<F, C>) {
   return <K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>): SourceWithIndex<F, C, K, A> =>
-    F.ifoldr_(fa, Ev.now<SourceWithIndex<F, C, K, A>>(O.none()), (a, evalSrc, i) =>
-      Ev.later(() => O.some([a, i, evalSrc] as const))
+    F.ifoldr_(fa, Ev.now<SourceWithIndex<F, C, K, A>>(Mb.nothing()), (a, evalSrc, i) =>
+      Ev.later(() => Mb.just([a, i, evalSrc] as const))
     ).value
 }

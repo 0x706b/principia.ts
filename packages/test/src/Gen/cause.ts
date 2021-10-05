@@ -7,7 +7,7 @@ import { pipe } from '@principia/base/function'
 import { emptyFiberId } from '@principia/base/IO/Fiber'
 import { Trace } from '@principia/base/IO/Fiber/trace'
 import * as L from '@principia/base/List'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 
 import * as G from './core'
 
@@ -24,7 +24,7 @@ export function cause<R, Id, R1, E, R2>(
     G.defer(() =>
       pipe(
         causesN(n - 1),
-        G.map((c) => C.traced(c, new Trace(emptyFiberId, L.empty(), L.empty(), O.none())))
+        G.map((c) => C.traced(c, new Trace(emptyFiberId, L.empty(), L.empty(), M.nothing())))
       )
     )
 

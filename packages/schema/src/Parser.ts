@@ -14,8 +14,8 @@ import * as Ev from '@principia/base/Eval'
 import { flow, memoize, pipe } from '@principia/base/function'
 import * as G from '@principia/base/Guard'
 import * as HR from '@principia/base/HeterogeneousRecord'
+import * as O from '@principia/base/Maybe'
 import * as NA from '@principia/base/NonEmptyArray'
-import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 import * as RT from '@principia/base/RoseTree'
 import { show } from '@principia/base/Structural'
@@ -65,7 +65,7 @@ export function parser<I, E, A>(parse: (i: I) => These<E, A>, label: string): Pa
 export interface FromRefinementP<I, W, E, A extends I> extends Parser<I, PE.RefinementE<E | W>, A> {
   readonly _tag: 'FromRefinement'
   readonly error: (i: I) => E
-  readonly warn: (a: A) => O.Option<W>
+  readonly warn: (a: A) => O.Maybe<W>
 }
 
 /**
@@ -77,7 +77,7 @@ export interface FromRefinementP<I, W, E, A extends I> extends Parser<I, PE.Refi
 export function fromRefinement<I, W, E, A extends I>(
   refinement: Refinement<I, A>,
   error: (a: I) => E,
-  warn: (b: A) => O.Option<W>,
+  warn: (b: A) => O.Maybe<W>,
   label: string
 ): FromRefinementP<I, W, E, A> {
   return {
@@ -92,13 +92,13 @@ export function fromRefinement<I, W, E, A extends I>(
 export interface FromPredicateP<I, W, E> extends Parser<I, PE.RefinementE<E | W>, I> {
   readonly _tag: 'FromPredicate'
   readonly error: (i: I) => E
-  readonly warn: (a: I) => O.Option<W>
+  readonly warn: (a: I) => O.Maybe<W>
 }
 
 export function fromPredicate<I, W, E>(
   predicate: Predicate<I>,
   error: (a: I) => E,
-  warn: (b: I) => O.Option<W>,
+  warn: (b: I) => O.Maybe<W>,
   label: string
 ): FromPredicateP<I, W, E> {
   return {
@@ -143,7 +143,7 @@ export function refine_<From extends AnyParser, W, E, B extends TypeOf<From>>(
   from: From,
   refinement: Refinement<TypeOf<From>, B>,
   error: (a: TypeOf<From>) => E,
-  warn: (b: B) => O.Option<W>,
+  warn: (b: B) => O.Maybe<W>,
   label: string
 ): RefineP<From, W, E, B> {
   return andThen_(from, fromRefinement(refinement, error, warn, label))
@@ -158,7 +158,7 @@ export function refine_<From extends AnyParser, W, E, B extends TypeOf<From>>(
 export function refine<From extends AnyParser, W, E, B extends TypeOf<From>>(
   refinement: Refinement<TypeOf<From>, B>,
   error: (a: TypeOf<From>) => E,
-  warn: (a: TypeOf<From>) => O.Option<W>,
+  warn: (a: TypeOf<From>) => O.Maybe<W>,
   label: string
 ): (from: From) => RefineP<From, W, E, B> {
   return (from) => refine_(from, refinement, error, warn, label)
@@ -170,7 +170,7 @@ export function constrain_<From extends AnyParser, W, E>(
   from: From,
   predicate: Predicate<TypeOf<From>>,
   error: (a: TypeOf<From>) => E,
-  warn: (b: TypeOf<From>) => O.Option<W>,
+  warn: (b: TypeOf<From>) => O.Maybe<W>,
   label: string
 ): ConstrainP<From, W, E> {
   return andThen_(from, fromPredicate(predicate, error, warn, label))
@@ -179,7 +179,7 @@ export function constrain_<From extends AnyParser, W, E>(
 export function constrain<From extends AnyParser, W, E>(
   predicate: Predicate<TypeOf<From>>,
   error: (a: TypeOf<From>) => E,
-  warn: (b: TypeOf<From>) => O.Option<W>,
+  warn: (b: TypeOf<From>) => O.Maybe<W>,
   label: string
 ): (from: From) => ConstrainP<From, W, E> {
   return (from) => constrain_(from, predicate, error, warn, label)
@@ -605,7 +605,7 @@ export function contramap<P extends AnyParser, I0>(f: (i0: I0) => InputOf<P>): (
  */
 
 export interface NullableP<P extends AnyParser>
-  extends Parser<InputOf<P> | undefined | null, PE.NullableE<ErrorOf<P>>, O.Option<TypeOf<P>>>,
+  extends Parser<InputOf<P> | undefined | null, PE.NullableE<ErrorOf<P>>, O.Maybe<TypeOf<P>>>,
     HasParserContinuation {
   readonly _tag: 'Nullable'
   readonly or: P
@@ -622,13 +622,13 @@ export function nullable<P extends AnyParser>(or: P): NullableP<P> {
     _tag: 'Nullable',
     label: `${or.label} | null | undefined`,
     or,
-    parse: (i) => (i == null ? Th.right(O.none()) : pipe(or.parse(i), Th.bimap(PE.nullableE, O.some))),
+    parse: (i) => (i == null ? Th.right(O.nothing()) : pipe(or.parse(i), Th.bimap(PE.nullableE, O.just))),
     [ParserContinuation]: or
   }
 }
 
 export interface OptionalP<P extends AnyParser>
-  extends Parser<O.Option<InputOf<P>>, PE.OptionalE<ErrorOf<P>>, O.Option<TypeOf<P>>>,
+  extends Parser<O.Maybe<InputOf<P>>, PE.OptionalE<ErrorOf<P>>, O.Maybe<TypeOf<P>>>,
     HasParserContinuation {
   readonly _tag: 'Optional'
   readonly or: P
@@ -639,7 +639,7 @@ export function optional<P extends AnyParser>(or: P): OptionalP<P> {
     _tag: 'Optional',
     label: `Option<${or.label}>`,
     or,
-    parse: O.match(() => Th.right(O.none()), flow(or.parse, Th.bimap(PE.optionalE, O.some))),
+    parse: O.match(() => Th.right(O.nothing()), flow(or.parse, Th.bimap(PE.optionalE, O.just))),
     [ParserContinuation]: or
   }
 }
@@ -786,7 +786,7 @@ function injectDefaults<E, P extends Record<PropertyKey, AnyParser>>(
       for (const key in properties) {
         if (!out[key]) {
           const od = extractDefault(properties[key])
-          if (od._tag === 'Some') {
+          if (od._tag === 'Just') {
             out[key] = od.value()
           }
         }
@@ -1435,10 +1435,9 @@ export interface FromSumP<T, M> extends Parser<InputOf<M[keyof M]>, PE.TagLE | S
   readonly members: M
 }
 
-export type EnsureTag<T extends string, Members extends Record<string, AnyParser>> = Members &
-  {
-    [K in keyof Members]: Parser<any, any, { [tag in T]: K }>
-  }
+export type EnsureTag<T extends string, Members extends Record<string, AnyParser>> = Members & {
+  [K in keyof Members]: Parser<any, any, { [tag in T]: K }>
+}
 
 /**
  * Constructs a Parser that can strictly decode a disjoint union of members based on a discriminating "tag",
@@ -1690,15 +1689,15 @@ export function withDefault<P extends AnyParser>(def: () => TypeOf<P>): (parser:
   return (parser) => withDefault_(parser, def)
 }
 
-export function extractDefault<P extends AnyParser>(parser: P): O.Option<() => any> {
+export function extractDefault<P extends AnyParser>(parser: P): O.Maybe<() => any> {
   concrete(parser)
   if (parser._tag === 'WithDefault') {
-    return O.some(parser.def)
+    return O.just(parser.def)
   }
   if (hasParserContinuation(parser)) {
     return extractDefault(parser[ParserContinuation])
   }
-  return O.none()
+  return O.nothing()
 }
 
 export function concrete(_: AnyParser): asserts _ is Concrete {

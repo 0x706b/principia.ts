@@ -1,4 +1,4 @@
-import type { Option } from '../Option'
+import type { Maybe } from '../Maybe'
 import type { Cause } from './Cause'
 import type { Exit } from './Exit'
 import type { FiberId } from './Fiber/FiberId'
@@ -6,7 +6,7 @@ import type { FIO } from './IO/core'
 
 import * as E from '../Either'
 import { pipe } from '../function'
-import * as O from '../Option'
+import * as M from '../Maybe'
 import { AtomicReference } from '../util/support/AtomicReference'
 import { asyncInterruptEither, interruptAs as interruptAsIO, uninterruptibleMask } from './IO/combinators/interrupt'
 import * as I from './IO/core'
@@ -232,16 +232,16 @@ export function makeAs<E, A>(fiberId: FiberId) {
  * Checks for completion of this Future. Returns the result effect if this
  * future has already been completed or a `None` otherwise.
  */
-export function poll<E, A>(future: Future<E, A>): I.UIO<Option<FIO<E, A>>> {
+export function poll<E, A>(future: Future<E, A>): I.UIO<Maybe<FIO<E, A>>> {
   return I.succeedLazy(() => {
     const state = future.state.get
 
     switch (state._tag) {
       case 'Done': {
-        return O.some(state.value)
+        return M.just(state.value)
       }
       case 'Pending': {
-        return O.none()
+        return M.nothing()
       }
     }
   })

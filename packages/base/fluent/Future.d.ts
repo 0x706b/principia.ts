@@ -3,7 +3,7 @@ import type { Cause } from '@principia/base/IO/Cause'
 import type { Exit } from '@principia/base/IO/Exit'
 import type { FiberId } from '@principia/base/IO/Fiber'
 import type * as F from '@principia/base/IO/Future'
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 
 declare global {
   export const Future: FutureStaticOps
@@ -62,7 +62,7 @@ declare module '@principia/base/IO/Future' {
     /**
      * @rewriteGetter poll from "@principia/base/IO/Future"
      */
-    poll: I.UIO<Option<I.FIO<E, A>>>
+    poll: I.UIO<Maybe<I.FIO<E, A>>>
     /**
      * @rewrite succeed_ from "@principia/base/IO/Future"
      */

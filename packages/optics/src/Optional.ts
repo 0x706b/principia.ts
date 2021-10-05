@@ -1,7 +1,7 @@
 import type { ReplaceFn_ } from './Setter'
 import type { PTraversal } from './Traversal'
 import type * as HKT from '@principia/base/HKT'
-import type * as O from '@principia/base/Option'
+import type * as M from '@principia/base/Maybe'
 
 import * as E from '@principia/base/Either'
 import { flow, identity, pipe } from '@principia/base/function'
@@ -15,10 +15,10 @@ import * as _ from './internal'
  */
 
 export interface POptional<S, T, A, B> extends PTraversal<S, T, A, B> {
-  readonly getOption: GetOptionFn<S, A>
+  readonly getMaybe: GetMaybeFn<S, A>
   readonly getOrModify: GetOrModifyFn<S, T, A>
-  readonly modifyOption_: ModifyOptionFn_<S, T, A, B>
-  readonly modifyOption: ModifyOptionFn<S, T, A, B>
+  readonly modifyMaybe_: ModifyMaybeFn_<S, T, A, B>
+  readonly modifyMaybe: ModifyMaybeFn<S, T, A, B>
 }
 
 export interface POptionalMin<S, T, A, B> {
@@ -32,28 +32,28 @@ export interface Optional<S, A> extends POptional<S, S, A, A> {}
 
 export const Optional: <S, A>(_: POptionalMin<S, S, A, A>) => Optional<S, A> = _.makePOptional
 
-export interface GetOptionFn<S, A> {
-  (s: S): O.Option<A>
+export interface GetMaybeFn<S, A> {
+  (s: S): M.Maybe<A>
 }
 
 export interface GetOrModifyFn<S, T, A> {
   (s: S): E.Either<T, A>
 }
 
-export interface ModifyOptionFn_<S, T, A, B> {
-  (s: S, f: (a: A) => B): O.Option<T>
+export interface ModifyMaybeFn_<S, T, A, B> {
+  (s: S, f: (a: A) => B): M.Maybe<T>
 }
 
-export interface ModifyOptionFn<S, T, A, B> {
-  (f: (a: A) => B): (s: S) => O.Option<T>
+export interface ModifyMaybeFn<S, T, A, B> {
+  (f: (a: A) => B): (s: S) => M.Maybe<T>
 }
 
 export interface ReplaceOptionFn_<S, T, B> {
-  (s: S, b: B): O.Option<T>
+  (s: S, b: B): M.Maybe<T>
 }
 
 export interface ReplaceOptionFn<S, T, B> {
-  (b: B): (s: S) => O.Option<T>
+  (b: B): (s: S) => M.Maybe<T>
 }
 
 export type V = HKT.V<'I', '_'>

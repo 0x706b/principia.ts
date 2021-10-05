@@ -1,13 +1,13 @@
 import type { FunctorMin } from './Functor'
 import type { Either } from './internal/Either'
-import type { Option } from './internal/Option'
+import type { Maybe } from './internal/Maybe'
 import type { Predicate } from './Predicate'
 import type { Refinement } from './Refinement'
 
 import { Functor } from './Functor'
 import * as HKT from './HKT'
 import * as E from './internal/Either'
-import * as O from './internal/Option'
+import * as M from './internal/Maybe'
 
 export interface Filterable<F extends HKT.URIS, C = HKT.Auto> extends Functor<F, C> {
   readonly partitionMap_: PartitionMapFn_<F, C>
@@ -45,7 +45,7 @@ export function Filterable<F>(F: FilterableMin<HKT.UHKT<F>>): Filterable<HKT.UHK
     filter_ = F.filter_
   } else {
     filter_ = <A>(fa: HKT.HKT<F, A>, predicate: Predicate<A>): HKT.HKT<F, A> =>
-      F.filterMap_(fa, (a) => O.fromPredicate_(a, predicate))
+      F.filterMap_(fa, (a) => M.fromPredicate_(a, predicate))
   }
 
   if ('partition_' in F) {
@@ -104,13 +104,13 @@ export interface FilterFn_<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface FilterMapFn<F extends HKT.URIS, C = HKT.Auto> {
-  <A, B>(f: (a: A) => Option<B>): <K, Q, W, X, I, S, R, E>(
+  <A, B>(f: (a: A) => Maybe<B>): <K, Q, W, X, I, S, R, E>(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
   ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
 }
 
 export interface FilterMapFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <K, Q, W, X, I, S, R, E, A, B>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>, f: (a: A) => Option<B>): HKT.Kind<
+  <K, Q, W, X, I, S, R, E, A, B>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>, f: (a: A) => Maybe<B>): HKT.Kind<
     F,
     C,
     K,

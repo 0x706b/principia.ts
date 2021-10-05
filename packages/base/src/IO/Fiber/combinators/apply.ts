@@ -1,8 +1,8 @@
 import type { Fiber, SyntheticFiber } from '../core'
 
 import * as C from '../../../Cause'
+import * as M from '../../../Maybe'
 import * as Ex from '../../Exit'
-import * as O from '../../../Option'
 import { crossWithPar_ } from '../../IO/combinators/apply-par'
 import * as I from '../internal/io'
 
@@ -53,7 +53,7 @@ export function crossWith_<E, E1, A, A1, B>(
     interruptAs: (id) =>
       I.crossWith_(fa.interruptAs(id), fb.interruptAs(id), (ea, eb) => Ex.crossWithCause_(ea, eb, f, C.both)),
     poll: I.crossWith_(fa.poll, fb.poll, (fa, fb) =>
-      O.chain_(fa, (ea) => O.map_(fb, (eb) => Ex.crossWithCause_(ea, eb, f, C.both)))
+      M.chain_(fa, (ea) => M.map_(fb, (eb) => Ex.crossWithCause_(ea, eb, f, C.both)))
     ),
     await: I.result(crossWithPar_(I.chain_(fa.await, I.fromExit), I.chain_(fb.await, I.fromExit), f))
   }

@@ -5,11 +5,11 @@ import type { Semaphore } from './Semaphore'
 
 import * as E from '../Either'
 import { flow, identity, pipe } from '../function'
-import * as O from '../Option'
+import * as M from '../Maybe'
 import * as P from '../prelude'
 import { tuple } from '../tuple'
 import * as I from './IO/core'
-import * as M from './Managed/core'
+import * as Ma from './Managed/core'
 import * as Q from './Queue'
 import * as R from './Ref'
 import * as S from './Semaphore'
@@ -274,7 +274,7 @@ export function unsafeMake<A>(a: A): URefM<A> {
  * `Managed.`
  */
 export function makeManaged<A>(a: A): UManaged<URefM<A>> {
-  return pipe(make(a), M.fromIO)
+  return pipe(make(a), Ma.fromIO)
 }
 
 /**
@@ -355,17 +355,17 @@ export function contramap<C, A>(
 export function filterInputIO_<RA, RB, EA, EB, B, A, RC, EC, A1 extends A = A>(
   ref: RefM<RA, RB, EA, EB, A, B>,
   f: (a: A1) => I.IO<RC, EC, boolean>
-): RefM<RA & RC, RB, O.Option<EC | EA>, EB, A1, B> {
+): RefM<RA & RC, RB, M.Maybe<EC | EA>, EB, A1, B> {
   return pipe(
     ref,
     matchIO(
-      (ea) => O.some<EA | EC>(ea),
+      (ea) => M.just<EA | EC>(ea),
       identity,
       (a: A1) =>
         I.ifIOLazy_(
-          I.asSomeError(f(a)),
+          I.asJustError(f(a)),
           () => I.pure(a),
-          () => I.fail<O.Option<EA | EC>>(O.none())
+          () => I.fail<M.Maybe<EA | EC>>(M.nothing())
         ),
       I.pure
     )
@@ -379,7 +379,7 @@ export function filterInputIO_<RA, RB, EA, EB, B, A, RC, EC, A1 extends A = A>(
  */
 export function filterInputIO<A, RC, EC, A1 extends A = A>(
   f: (a: A1) => I.IO<RC, EC, boolean>
-): <RA, RB, EA, EB, B>(ref: RefM<RA, RB, EA, EB, A, B>) => RefM<RA & RC, RB, O.Option<EA | EC>, EB, A1, B> {
+): <RA, RB, EA, EB, B>(ref: RefM<RA, RB, EA, EB, A, B>) => RefM<RA & RC, RB, M.Maybe<EA | EC>, EB, A1, B> {
   return (ref) => filterInputIO_(ref, f)
 }
 
@@ -391,7 +391,7 @@ export function filterInputIO<A, RC, EC, A1 extends A = A>(
 export function filterInput_<RA, RB, EA, EB, B, A, A1 extends A = A>(
   ref: RefM<RA, RB, EA, EB, A, B>,
   f: (a: A1) => boolean
-): RefM<RA, RB, O.Option<EA>, EB, A1, B> {
+): RefM<RA, RB, M.Maybe<EA>, EB, A1, B> {
   return filterInputIO_(ref, (a) => I.pure(f(a)))
 }
 
@@ -402,7 +402,7 @@ export function filterInput_<RA, RB, EA, EB, B, A, A1 extends A = A>(
  */
 export function filterInput<A, A1 extends A = A>(
   f: (a: A1) => boolean
-): <RA, RB, EA, EB, B>(ref: RefM<RA, RB, EA, EB, A, B>) => RefM<RA, RB, O.Option<EA>, EB, A1, B> {
+): <RA, RB, EA, EB, B>(ref: RefM<RA, RB, EA, EB, A, B>) => RefM<RA, RB, M.Maybe<EA>, EB, A1, B> {
   return (ref) => filterInput_(ref, f)
 }
 
@@ -414,17 +414,17 @@ export function filterInput<A, A1 extends A = A>(
 export function filterOutputIO_<RA, RB, EA, EB, A, B, RC, EC>(
   ref: RefM<RA, RB, EA, EB, A, B>,
   f: (b: B) => I.IO<RC, EC, boolean>
-): RefM<RA, RB & RC, EA, O.Option<EC | EB>, A, B> {
+): RefM<RA, RB & RC, EA, M.Maybe<EC | EB>, A, B> {
   return matchIO_(
     ref,
     (ea) => ea,
-    (eb) => O.some<EB | EC>(eb),
+    (eb) => M.just<EB | EC>(eb),
     (a) => I.pure(a),
     (b) =>
       I.ifIOLazy_(
-        I.asSomeError(f(b)),
+        I.asJustError(f(b)),
         () => I.pure(b),
-        () => I.fail(O.none())
+        () => I.fail(M.nothing())
       )
   )
 }
@@ -436,7 +436,7 @@ export function filterOutputIO_<RA, RB, EA, EB, A, B, RC, EC>(
  */
 export function filterOutputIO<B, RC, EC>(
   f: (b: B) => I.IO<RC, EC, boolean>
-): <RA, RB, EA, EB, A>(ref: RefM<RA, RB, EA, EB, A, B>) => RefM<RA, RB & RC, EA, O.Option<EB | EC>, A, B> {
+): <RA, RB, EA, EB, A>(ref: RefM<RA, RB, EA, EB, A, B>) => RefM<RA, RB & RC, EA, M.Maybe<EB | EC>, A, B> {
   return (ref) => filterOutputIO_(ref, f)
 }
 
@@ -448,7 +448,7 @@ export function filterOutputIO<B, RC, EC>(
 export function filterOutput_<RA, RB, EA, EB, A, B>(
   ref: RefM<RA, RB, EA, EB, A, B>,
   f: (b: B) => boolean
-): RefM<RA, RB, EA, O.Option<EB>, A, B> {
+): RefM<RA, RB, EA, M.Maybe<EB>, A, B> {
   return filterOutputIO_(ref, (b) => I.pure(f(b)))
 }
 
@@ -459,7 +459,7 @@ export function filterOutput_<RA, RB, EA, EB, A, B>(
  */
 export function filterOutput<B>(
   f: (b: B) => boolean
-): <RA, RB, EA, EB, A>(ref: RefM<RA, RB, EA, EB, A, B>) => RefM<RA, RB, EA, O.Option<EB>, A, B> {
+): <RA, RB, EA, EB, A>(ref: RefM<RA, RB, EA, EB, A, B>) => RefM<RA, RB, EA, M.Maybe<EB>, A, B> {
   return (ref) => filterOutput_(ref, f)
 }
 
@@ -857,16 +857,16 @@ export function getAndUpdateIO<R1, E1, A>(
  * Atomically modifies the `RefM` with the specified function, returning the
  * value immediately before modification.
  */
-export function getAndUpdateSomeIO_<RA, RB, EA, EB, R1, E1, A>(
+export function getAndUpdateJustIO_<RA, RB, EA, EB, R1, E1, A>(
   ref: RefM<RA, RB, EA, EB, A, A>,
-  f: (a: A) => O.Option<I.IO<R1, E1, A>>
+  f: (a: A) => M.Maybe<I.IO<R1, E1, A>>
 ): I.IO<RA & RB & R1, EA | EB | E1, A> {
   return pipe(
     ref,
     modifyIO((v) =>
       pipe(
         f(v),
-        O.getOrElse(() => I.pure(v)),
+        M.getOrElse(() => I.pure(v)),
         I.map((r) => [v, r])
       )
     )
@@ -877,29 +877,29 @@ export function getAndUpdateSomeIO_<RA, RB, EA, EB, R1, E1, A>(
  * Atomically modifies the `RefM` with the specified function, returning the
  * value immediately before modification.
  */
-export function getAndUpdateSomeIO<R1, E1, A>(
-  f: (a: A) => O.Option<I.IO<R1, E1, A>>
+export function getAndUpdateJustIO<R1, E1, A>(
+  f: (a: A) => M.Maybe<I.IO<R1, E1, A>>
 ): <RA, RB, EA, EB>(ref: RefM<RA, RB, EA, EB, A, A>) => I.IO<RA & RB & R1, EA | EB | E1, A> {
-  return (ref) => getAndUpdateSomeIO_(ref, f)
+  return (ref) => getAndUpdateJustIO_(ref, f)
 }
 
 /**
  * Atomically modifies the `RefM` with the specified function, which computes
  * a return value for the modification if the function is defined in the current value
  * otherwise it returns a default value.
- * This is a more powerful version of `updateSome`.
+ * This is a more powerful version of `updateJust`.
  */
-export function modifySomeIO_<RA, RB, EA, EB, R1, E1, A, B>(
+export function modifyJustIO_<RA, RB, EA, EB, R1, E1, A, B>(
   ref: RefM<RA, RB, EA, EB, A, A>,
   def: B,
-  f: (a: A) => O.Option<I.IO<R1, E1, readonly [B, A]>>
+  f: (a: A) => M.Maybe<I.IO<R1, E1, readonly [B, A]>>
 ): I.IO<RA & RB & R1, EA | EB | E1, B> {
   return pipe(
     ref,
     modifyIO((v) =>
       pipe(
         f(v),
-        O.getOrElse(() => I.pure(tuple(def, v)))
+        M.getOrElse(() => I.pure(tuple(def, v)))
       )
     )
   )
@@ -909,14 +909,14 @@ export function modifySomeIO_<RA, RB, EA, EB, R1, E1, A, B>(
  * Atomically modifies the `RefM` with the specified function, which computes
  * a return value for the modification if the function is defined in the current value
  * otherwise it returns a default value.
- * This is a more powerful version of `updateSome`.
+ * This is a more powerful version of `updateJust`.
  */
-export function modifySomeIO<B>(
+export function modifyJustIO<B>(
   def: B
 ): <R1, E1, A>(
-  f: (a: A) => O.Option<I.IO<R1, E1, [B, A]>>
+  f: (a: A) => M.Maybe<I.IO<R1, E1, [B, A]>>
 ) => <RA, RB, EA, EB>(ref: RefM<RA, RB, EA, EB, A, A>) => I.IO<RA & RB & R1, E1 | EA | EB, B> {
-  return (f) => (ref) => modifySomeIO_(ref, def, f)
+  return (f) => (ref) => modifyJustIO_(ref, def, f)
 }
 
 /**
@@ -977,16 +977,16 @@ export function updateAndGetIO<R1, E1, A>(
 /**
  * Atomically modifies the `RefM` with the specified function.
  */
-export function updateSomeIO_<RA, RB, EA, EB, R1, E1, A>(
+export function updateJustIO_<RA, RB, EA, EB, R1, E1, A>(
   ref: RefM<RA, RB, EA, EB, A, A>,
-  f: (a: A) => O.Option<I.IO<R1, E1, A>>
+  f: (a: A) => M.Maybe<I.IO<R1, E1, A>>
 ): I.IO<RA & RB & R1, E1 | EA | EB, void> {
   return pipe(
     ref,
     modifyIO((v) =>
       pipe(
         f(v),
-        O.getOrElse(() => I.pure(v)),
+        M.getOrElse(() => I.pure(v)),
         I.map((r) => [undefined, r])
       )
     )
@@ -996,25 +996,25 @@ export function updateSomeIO_<RA, RB, EA, EB, R1, E1, A>(
 /**
  * Atomically modifies the `RefM` with the specified function.
  */
-export function updateSomeIO<R1, E1, A>(
-  f: (a: A) => O.Option<I.IO<R1, E1, A>>
+export function updateJustIO<R1, E1, A>(
+  f: (a: A) => M.Maybe<I.IO<R1, E1, A>>
 ): <RA, RB, EA, EB>(ref: RefM<RA, RB, EA, EB, A, A>) => I.IO<RA & RB & R1, EA | EB | E1, void> {
-  return (ref) => updateSomeIO_(ref, f)
+  return (ref) => updateJustIO_(ref, f)
 }
 
 /**
  * Atomically modifies the `RefM` with the specified function.
  */
-export function updateSomeAndGetIO_<RA, RB, EA, EB, R1, E1, A>(
+export function updateJustAndGetIO_<RA, RB, EA, EB, R1, E1, A>(
   ref: RefM<RA, RB, EA, EB, A, A>,
-  f: (a: A) => O.Option<I.IO<R1, E1, A>>
+  f: (a: A) => M.Maybe<I.IO<R1, E1, A>>
 ): I.IO<RA & RB & R1, E1 | EA | EB, A> {
   return pipe(
     ref,
     modifyIO((v) =>
       pipe(
         f(v),
-        O.getOrElse(() => I.pure(v)),
+        M.getOrElse(() => I.pure(v)),
         I.map((r) => [r, r])
       )
     )
@@ -1024,10 +1024,10 @@ export function updateSomeAndGetIO_<RA, RB, EA, EB, R1, E1, A>(
 /**
  * Atomically modifies the `RefM` with the specified function.
  */
-export function updateSomeAndGetIO<R1, E1, A>(
-  f: (a: A) => O.Option<I.IO<R1, E1, A>>
+export function updateJustAndGetIO<R1, E1, A>(
+  f: (a: A) => M.Maybe<I.IO<R1, E1, A>>
 ): <RA, RB, EA, EB>(ref: RefM<RA, RB, EA, EB, A, A>) => I.IO<RA & RB & R1, E1 | EA | EB, A> {
-  return (ref) => updateSomeAndGetIO_(ref, f)
+  return (ref) => updateJustAndGetIO_(ref, f)
 }
 
 /**
@@ -1038,17 +1038,17 @@ export function updateSomeAndGetIO<R1, E1, A>(
  */
 export function collectIO_<RA, RB, EA, EB, A, B, RC, EC, C>(
   ref: RefM<RA, RB, EA, EB, A, B>,
-  f: (b: B) => O.Option<I.IO<RC, EC, C>>
-): RefM<RA, RB & RC, EA, O.Option<EB | EC>, A, C> {
+  f: (b: B) => M.Maybe<I.IO<RC, EC, C>>
+): RefM<RA, RB & RC, EA, M.Maybe<EB | EC>, A, C> {
   return ref.matchIO(
     identity,
-    (_) => O.some<EB | EC>(_),
+    (_) => M.just<EB | EC>(_),
     (_) => I.pure(_),
     (b) =>
       pipe(
         f(b),
-        O.map((a) => I.asSomeError(a)),
-        O.getOrElse(() => I.fail(O.none()))
+        M.map((a) => I.asJustError(a)),
+        M.getOrElse(() => I.fail(M.nothing()))
       )
   )
 }
@@ -1060,8 +1060,8 @@ export function collectIO_<RA, RB, EA, EB, A, B, RC, EC, C>(
  * fails with `None`.
  */
 export function collectIO<B, RC, EC, C>(
-  f: (b: B) => O.Option<I.IO<RC, EC, C>>
-): <RA, RB, EA, EB, A>(ref: RefM<RA, RB, EA, EB, A, B>) => RefM<RA, RB & RC, EA, O.Option<EC | EB>, A, C> {
+  f: (b: B) => M.Maybe<I.IO<RC, EC, C>>
+): <RA, RB, EA, EB, A>(ref: RefM<RA, RB, EA, EB, A, B>) => RefM<RA, RB & RC, EA, M.Maybe<EC | EB>, A, C> {
   return (ref) => collectIO_(ref, f)
 }
 
@@ -1072,11 +1072,11 @@ export function collectIO<B, RC, EC, C>(
  */
 export function collect_<RA, RB, EA, EB, A, B, C>(
   ref: RefM<RA, RB, EA, EB, A, B>,
-  f: (b: B) => O.Option<C>
-): RefM<RA, RB, EA, O.Option<EB>, A, C> {
+  f: (b: B) => M.Maybe<C>
+): RefM<RA, RB, EA, M.Maybe<EB>, A, C> {
   return pipe(
     ref,
-    collectIO((b) => pipe(f(b), O.map(I.pure)))
+    collectIO((b) => pipe(f(b), M.map(I.pure)))
   )
 }
 
@@ -1086,8 +1086,8 @@ export function collect_<RA, RB, EA, EB, A, B, C>(
  * result of the partial function if it is defined or else fails with `None`.
  */
 export function collect<B, C>(
-  f: (b: B) => O.Option<C>
-): <RA, RB, EA, EB, A>(ref: RefM<RA, RB, EA, EB, A, B>) => RefM<RA, RB, EA, O.Option<EB>, A, C> {
+  f: (b: B) => M.Maybe<C>
+): <RA, RB, EA, EB, A>(ref: RefM<RA, RB, EA, EB, A, B>) => RefM<RA, RB, EA, M.Maybe<EB>, A, C> {
   return (ref) => collect_(ref, f)
 }
 

@@ -1,7 +1,7 @@
 import type { Has, Tag } from '../Has'
 import type * as HKT from '../HKT'
+import type { Maybe } from '../Maybe'
 import type { AsyncURI } from '../Modules'
-import type { Option } from '../Option'
 import type { Stack } from '../util/support/Stack'
 
 import * as A from '../Array/core'
@@ -13,8 +13,8 @@ import { flow, identity, pipe, unsafeCoerce } from '../function'
 import { genF, GenHKT } from '../Gen'
 import { isTag, mergeEnvironments } from '../Has'
 import * as L from '../List/core'
-import * as O from '../Option'
-import { isOption } from '../Option'
+import * as M from '../Maybe'
+import { isMaybe } from '../Maybe'
 import * as P from '../prelude'
 import * as R from '../Record'
 import { tuple } from '../tuple'
@@ -955,7 +955,7 @@ export function runPromiseExitEnv_<R, E, A>(
         })
       }
       finalizers = null!
-      return O.getOrElse_(Ex.collectAll(...exits), () => Ex.unit())
+      return M.getOrElse_(Ex.collectAll(...exits), () => Ex.unit())
     }
 
     function isInterrupted() {
@@ -1357,8 +1357,8 @@ export const toS = P.toSF(Monad)
 
 const adapter: {
   <A>(_: Tag<A>): GenHKT<Async<Has<A>, never, A>, A>
-  <A>(_: Option<A>): GenHKT<Async<unknown, NoSuchElementError, A>, A>
-  <E, A>(_: Option<A>, onNone: () => E): GenHKT<Async<unknown, E, A>, A>
+  <A>(_: Maybe<A>): GenHKT<Async<unknown, NoSuchElementError, A>, A>
+  <E, A>(_: Maybe<A>, onNothing: () => E): GenHKT<Async<unknown, E, A>, A>
   <E, A>(_: E.Either<E, A>): GenHKT<Async<unknown, E, A>, A>
   <R, E, A>(_: Async<R, E, A>): GenHKT<Async<R, E, A>, A>
 } = (_: any, __?: any) => {
@@ -1368,8 +1368,8 @@ const adapter: {
   if (E.isEither(_)) {
     return new GenHKT(_._tag === 'Left' ? fail(_.left) : succeed(_.right))
   }
-  if (isOption(_)) {
-    return new GenHKT(_._tag === 'None' ? fail(__ ? __() : new NoSuchElementError('Async.gen')) : succeed(_.value))
+  if (isMaybe(_)) {
+    return new GenHKT(_._tag === 'Nothing' ? fail(__ ? __() : new NoSuchElementError('Async.gen')) : succeed(_.value))
   }
   return new GenHKT(_)
 }

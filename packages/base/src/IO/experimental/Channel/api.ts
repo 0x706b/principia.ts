@@ -13,7 +13,7 @@ import * as E from '../../../Either'
 import * as Ev from '../../../Eval'
 import { sequential } from '../../../ExecutionStrategy'
 import { flow, identity, pipe } from '../../../function'
-import * as O from '../../../Option'
+import * as M from '../../../Maybe'
 import { tuple } from '../../../tuple'
 import * as I from '../..'
 import * as Ca from '../../Cause'
@@ -21,7 +21,7 @@ import * as Ex from '../../Exit'
 import * as F from '../../Fiber'
 import * as PR from '../../Future'
 import * as H from '../../Hub'
-import * as M from '../../Managed'
+import * as Ma from '../../Managed'
 import * as RM from '../../Managed/ReleaseMap'
 import * as Q from '../../Queue'
 import * as Ref from '../../Ref'
@@ -648,9 +648,11 @@ export function fromIO<R, E, A>(io: IO<R, E, A>): Channel<R, unknown, unknown, u
 /**
  * Use a managed to emit an output element
  */
-export function managedOut<R, E, A>(managed: M.Managed<R, E, A>): Channel<R, unknown, unknown, unknown, E, A, unknown> {
+export function managedOut<R, E, A>(
+  managed: Ma.Managed<R, E, A>
+): Channel<R, unknown, unknown, unknown, E, A, unknown> {
   return concatMap_(
-    bracketOutExit_(RM.make, (rm, ex) => M.releaseAll_(rm, ex, sequential)),
+    bracketOutExit_(RM.make, (rm, ex) => Ma.releaseAll_(rm, ex, sequential)),
     (rm) =>
       pipe(
         managed.io,
@@ -715,7 +717,7 @@ export function unwrap<R, E, Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
  * Makes a channel from a managed that returns a channel in case of success
  */
 export function unwrapManaged<R, E, Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
-  self: M.Managed<R, E, Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>>
+  self: Ma.Managed<R, E, Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>>
 ): Channel<R & Env, InErr, InElem, InDone, E | OutErr, OutElem, OutDone> {
   return concatAllWith_(managedOut(self), identity, identity)
 }
@@ -876,11 +878,11 @@ export function catchAllCause<Env1, InErr1, InElem1, InDone1, OutErr, OutErr1, O
  */
 export function collect_<Env, InErr, InElem, InDone, OutErr, OutElem, OutElem2, OutDone>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
-  f: (o: OutElem) => O.Option<OutElem2>
+  f: (o: OutElem) => M.Maybe<OutElem2>
 ): Channel<Env, InErr, InElem, InDone, OutErr, OutElem2, OutDone> {
   const collector: Channel<Env, OutErr, OutElem, OutDone, OutErr, OutElem2, OutDone> = readWith(
     (o) =>
-      O.match_(
+      M.match_(
         f(o),
         () => collector,
         (out2) => crossSecond_(write(out2), collector)
@@ -898,7 +900,7 @@ export function collect_<Env, InErr, InElem, InDone, OutErr, OutElem, OutElem2, 
  *
  * @dataFirst collect_
  */
-export function collect<OutElem, OutElem2>(f: (o: OutElem) => O.Option<OutElem2>) {
+export function collect<OutElem, OutElem2>(f: (o: OutElem) => M.Maybe<OutElem2>) {
   return <Env, InErr, InElem, InDone, OutErr, OutDone>(
     self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
   ) => collect_(self, f)
@@ -1405,14 +1407,14 @@ export function mergeAllWith_<
   mergeStrategy: MergeStrategy = 'BackPressure'
 ): Channel<Env & Env1, InErr & InErr1, InElem & InElem1, InDone & InDone1, OutErr | OutErr1, OutElem, OutDone> {
   return managed_(
-    M.withChildren((getChildren) =>
-      M.gen(function* (_) {
-        yield* _(M.finalizer(I.chain_(getChildren, F.interruptAll)))
+    Ma.withChildren((getChildren) =>
+      Ma.gen(function* (_) {
+        yield* _(Ma.finalizer(I.chain_(getChildren, F.interruptAll)))
         const queue = yield* _(
-          M.bracket_(Q.makeBounded<I.IO<Env, E.Either<OutErr | OutErr1, OutDone>, OutElem>>(bufferSize), Q.shutdown)
+          Ma.bracket_(Q.makeBounded<I.IO<Env, E.Either<OutErr | OutErr1, OutDone>, OutElem>>(bufferSize), Q.shutdown)
         )
-        const cancelers   = yield* _(M.bracket_(Q.makeBounded<PR.Future<never, void>>(n), Q.shutdown))
-        const lastDone    = yield* _(Ref.make<O.Option<OutDone>>(O.none()))
+        const cancelers   = yield* _(Ma.bracket_(Q.makeBounded<PR.Future<never, void>>(n), Q.shutdown))
+        const lastDone    = yield* _(Ref.make<M.Maybe<OutDone>>(M.nothing()))
         const errorSignal = yield* _(PR.make<never, void>())
         const permits     = yield* _(Sem.make(n))
         const pull        = yield* _(toPull(channels))
@@ -1434,9 +1436,9 @@ export function mergeAllWith_<
                   (outDone) =>
                     Ref.update_(
                       lastDone,
-                      O.match(
-                        () => O.some(outDone),
-                        (lastDone) => O.some(f(lastDone, outDone))
+                      M.match(
+                        () => M.just(outDone),
+                        (lastDone) => M.just(f(lastDone, outDone))
                       )
                     )
                 )
@@ -1474,7 +1476,7 @@ export function mergeAllWith_<
                             pipe(
                               Ref.get(lastDone),
                               I.chain(
-                                O.match(
+                                M.match(
                                   () => Q.offer_(queue, I.fail(E.right(outDone))),
                                   (lastDone) => Q.offer_(queue, I.fail(E.right(f(lastDone, outDone))))
                                 )
@@ -1491,7 +1493,7 @@ export function mergeAllWith_<
                   case 'BackPressure':
                     return I.gen(function* (_) {
                       const latch   = yield* _(PR.make<never, void>())
-                      const raceIOs = pipe(toPull(channel), M.use(flow(evaluatePull, I.race(PR.await(errorSignal)))))
+                      const raceIOs = pipe(toPull(channel), Ma.use(flow(evaluatePull, I.race(PR.await(errorSignal)))))
                       yield* _(I.fork(Sem.withPermit(permits)(I.crossSecond_(PR.succeed_(latch, undefined), raceIOs))))
                       yield* _(PR.await(latch))
                       return !(yield* _(PR.isDone(errorSignal)))
@@ -1505,7 +1507,7 @@ export function mergeAllWith_<
                       yield* _(Q.offer_(cancelers, canceler))
                       const raceIOs = pipe(
                         toPull(channel),
-                        M.use(flow(evaluatePull, I.race(PR.await(errorSignal)), I.race(PR.await(canceler))))
+                        Ma.use(flow(evaluatePull, I.race(PR.await(errorSignal)), I.race(PR.await(canceler))))
                       )
                       yield* _(I.fork(Sem.withPermit(permits)(I.crossSecond_(PR.succeed_(latch, undefined), raceIOs))))
                       yield* _(PR.await(latch))
@@ -1721,7 +1723,7 @@ export function mergeWith_<
   OutDone2 | OutDone3
 > {
   return unwrapManaged(
-    M.gen(function* (_) {
+    Ma.gen(function* (_) {
       const input       = yield* _(makeSingleProducerAsyncInput<InErr & InErr1, InElem & InElem1, InDone & InDone1>())
       const queueReader = fromInput(input)
       const pullL       = yield* _(toPull(pipeTo_(queueReader, self)))
@@ -1961,11 +1963,11 @@ export function mapOutIOPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
   f: (_: OutElem) => I.IO<Env1, OutErr1, OutElem1>
 ): Channel<Env & Env1, InErr, InElem, InDone, OutErr | OutErr1, OutElem1, OutDone> {
   return managed_(
-    M.withChildren((getChildren) =>
-      M.gen(function* (_) {
-        yield* _(M.finalizer(pipe(getChildren, I.chain(F.interruptAll))))
+    Ma.withChildren((getChildren) =>
+      Ma.gen(function* (_) {
+        yield* _(Ma.finalizer(pipe(getChildren, I.chain(F.interruptAll))))
         const queue = yield* _(
-          M.bracket_(Q.makeBounded<I.IO<Env1, E.Either<OutErr | OutErr1, OutDone>, OutElem1>>(n), Q.shutdown)
+          Ma.bracket_(Q.makeBounded<I.IO<Env1, E.Either<OutErr | OutErr1, OutDone>, OutElem1>>(n), Q.shutdown)
         )
         const errorSignal = yield* _(PR.make<OutErr1, never>())
         const permits     = yield* _(Sem.make(n))
@@ -2090,9 +2092,9 @@ export function repeated<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
  */
 export function runManaged<Env, InErr, InDone, OutErr, OutDone>(
   self: Channel<Env, InErr, unknown, InDone, OutErr, never, OutDone>
-): M.Managed<Env, OutErr, OutDone> {
-  return M.mapIO_(
-    M.bracketExit_(
+): Ma.Managed<Env, OutErr, OutDone> {
+  return Ma.mapIO_(
+    Ma.bracketExit_(
       I.succeedLazy(() => new ChannelExecutor(() => self, undefined)),
       (exec, exit) => exec.close(exit) || I.unit()
     ),
@@ -2106,7 +2108,7 @@ export function runManaged<Env, InErr, InDone, OutErr, OutDone>(
 export function run<Env, InErr, InDone, OutErr, OutDone>(
   self: Channel<Env, InErr, unknown, InDone, OutErr, never, OutDone>
 ): IO<Env, OutErr, OutDone> {
-  return M.useNow(runManaged(self))
+  return Ma.useNow(runManaged(self))
 }
 
 export function runCollect<Env, InErr, InDone, OutErr, OutElem, OutDone>(
@@ -2135,9 +2137,9 @@ export function asUnit<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
  */
 export function toPull<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
-): M.Managed<Env, never, IO<Env, E.Either<OutErr, OutDone>, OutElem>> {
-  return M.map_(
-    M.bracketExit_(
+): Ma.Managed<Env, never, IO<Env, E.Either<OutErr, OutDone>, OutElem>> {
+  return Ma.map_(
+    Ma.bracketExit_(
       I.succeedLazy(() => new ChannelExecutor(() => self, undefined)),
       (exec, exit) => exec.close(exit) || I.unit()
     ),
@@ -2380,10 +2382,10 @@ export function fromEither<E, A>(either: E.Either<E, A>): Channel<unknown, unkno
   return E.match_(either, fail, succeed)
 }
 
-export function fromOption<A>(option: O.Option<A>): Channel<unknown, unknown, unknown, unknown, O.None, never, A> {
-  return O.match_(
+export function fromOption<A>(option: M.Maybe<A>): Channel<unknown, unknown, unknown, unknown, M.Nothing, never, A> {
+  return M.match_(
     option,
-    () => fail(O.none() as O.None),
+    () => fail(M.nothing() as M.Nothing),
     (_) => succeed(_)
   )
 }
@@ -2401,7 +2403,7 @@ export function interrupt(fiberId: F.FiberId): Channel<unknown, unknown, unknown
 }
 
 export function managed_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1, OutElem, OutDone, A>(
-  m: M.Managed<Env, OutErr, A>,
+  m: Ma.Managed<Env, OutErr, A>,
   use: (a: A) => Channel<Env1, InErr, InElem, InDone, OutErr1, OutElem, OutDone>
 ): Channel<Env & Env1, InErr, InElem, InDone, OutErr | OutErr1, OutElem, OutDone> {
   return bracket_(
@@ -2419,7 +2421,7 @@ export function managed_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1, OutE
       )
     },
     (_) =>
-      M.releaseAll_(
+      Ma.releaseAll_(
         _,
         Ex.unit(), // FIXME: BracketOut should be BracketOutExit (From ZIO)
         sequential
@@ -2433,7 +2435,7 @@ export function managed_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1, OutE
 export function managed<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1, OutElem, OutDone, A>(
   use: (a: A) => Channel<Env1, InErr, InElem, InDone, OutErr1, OutElem, OutDone>
 ) {
-  return (m: M.Managed<Env, OutErr, A>) => managed_(m, use)
+  return (m: Ma.Managed<Env, OutErr, A>) => managed_(m, use)
 }
 
 export function readOrFail<In, E>(e: E): Channel<unknown, unknown, In, unknown, E, never, In> {
@@ -2446,8 +2448,8 @@ export function readOrFail<In, E>(e: E): Channel<unknown, unknown, In, unknown, 
   )
 }
 
-export function read<In>(): Channel<unknown, unknown, In, unknown, O.None, never, In> {
-  return readOrFail(O.none() as O.None)
+export function read<In>(): Channel<unknown, unknown, In, unknown, M.Nothing, never, In> {
+  return readOrFail(M.nothing() as M.Nothing)
 }
 
 export function fromHub<Err, Done, Elem>(hub: H.UHub<Ex.Exit<E.Either<Err, Done>, Elem>>) {

@@ -6,7 +6,7 @@ import type { HashMap } from '@principia/base/HashMap'
 import * as C from '@principia/base/Chunk'
 import * as HM from '@principia/base/HashMap'
 import * as It from '@principia/base/Iterable'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 
 export class Sequential<R> {
   readonly _tag = 'Sequential'
@@ -19,7 +19,7 @@ export class Sequential<R> {
         HM.set_(
           map,
           k,
-          O.match_(HM.get_(map, k), () => C.empty(), C.concat(v))
+          M.match_(HM.get_(map, k), () => C.empty(), C.concat(v))
         )
       )
     )

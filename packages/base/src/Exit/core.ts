@@ -6,7 +6,7 @@ import * as A from '../Array/core'
 import * as C from '../Cause'
 import * as E from '../Either'
 import { flow, identity, pipe } from '../function'
-import * as O from '../Option'
+import * as M from '../Maybe'
 import { tailRec_ } from '../prelude'
 import * as St from '../Structural'
 import { tuple } from '../tuple'
@@ -82,12 +82,12 @@ export function fromEither<Id = never, E = never, A = never>(e: E.Either<E, A>):
   return e._tag === 'Left' ? fail(e.left) : succeed(e.right)
 }
 
-export function fromOption_<E, A>(fa: O.Option<A>, onNone: () => E): PExit<never, E, A> {
-  return fa._tag === 'None' ? fail(onNone()) : succeed(fa.value)
+export function fromMaybe_<E, A>(fa: M.Maybe<A>, onNothing: () => E): PExit<never, E, A> {
+  return fa._tag === 'Nothing' ? fail(onNothing()) : succeed(fa.value)
 }
 
-export function fromOption<E>(onNone: () => E): <A>(fa: O.Option<A>) => PExit<never, E, A> {
-  return (fa) => fromOption_(fa, onNone)
+export function fromMaybe<E>(onNothing: () => E): <A>(fa: M.Maybe<A>) => PExit<never, E, A> {
+  return (fa) => fromMaybe_(fa, onNothing)
 }
 
 export function failCause<Id = never, E = never, A = never>(cause: C.PCause<Id, E>): PExit<Id, E, A> {
@@ -470,10 +470,10 @@ export function unit(): PExit<never, never, void> {
 
 export function collectAll<Id, E, A>(
   ...exits: ReadonlyArray<PExit<Id, E, A>>
-): O.Option<PExit<Id, E, ReadonlyArray<A>>> {
+): M.Maybe<PExit<Id, E, ReadonlyArray<A>>> {
   return pipe(
     A.head(exits),
-    O.map((head) =>
+    M.map((head) =>
       pipe(
         A.drop_(exits, 1),
         A.foldl(
@@ -489,12 +489,10 @@ export function collectAll<Id, E, A>(
   )
 }
 
-export function collectAllPar<Id, E, A>(
-  ...exits: ReadonlyArray<PExit<Id, E, A>>
-): O.Option<PExit<Id, E, readonly A[]>> {
+export function collectAllPar<Id, E, A>(...exits: ReadonlyArray<PExit<Id, E, A>>): M.Maybe<PExit<Id, E, readonly A[]>> {
   return pipe(
     A.head(exits),
-    O.map((head) =>
+    M.map((head) =>
       pipe(
         A.drop_(exits, 1),
         A.foldl(

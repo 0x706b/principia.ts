@@ -4,7 +4,7 @@ import type { Optional, POptional } from './Optional'
 import type { PPrism } from './Prism'
 import type { ReplaceFn_ } from './Setter'
 import type { PTraversal, Traversal } from './Traversal'
-import type * as O from '@principia/base/Option'
+import type * as O from '@principia/base/Maybe'
 import type { Predicate } from '@principia/base/Predicate'
 import type { Refinement } from '@principia/base/Refinement'
 
@@ -333,17 +333,17 @@ export function key(key: string) {
  * @category Combinators
  */
 export function atKey(key: string) {
-  return <S, A>(sa: Lens<S, Readonly<Record<string, A>>>): Lens<S, O.Option<A>> =>
+  return <S, A>(sa: Lens<S, Readonly<Record<string, A>>>): Lens<S, O.Maybe<A>> =>
     pipe(sa, andThen(At.atRecord<A>().at(key)))
 }
 
 /**
- * Return a `Optional` from a `Lens` focused on the `Some` of a `Option` type
+ * Return a `Optional` from a `Lens` focused on the `Just` of a `Maybe` type
  *
  * @category Combinators
  * @since 1.0.0
  */
-export const some: <S, A>(soa: Lens<S, O.Option<A>>) => Optional<S, A> = andThenPrism(_.prismSome())
+export const just: <S, A>(soa: Lens<S, O.Maybe<A>>) => Optional<S, A> = andThenPrism(_.prismJust())
 
 /**
  * Return a `Optional` from a `Lens` focused on the `Right` of a `Either` type

@@ -1,8 +1,8 @@
 import type * as S from './Schemable'
 import type { Chunk } from '@principia/base/Chunk'
 import type * as HKT from '@principia/base/HKT'
+import type * as O from '@principia/base/Maybe'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
-import type * as O from '@principia/base/Option'
 import type * as P from '@principia/base/prelude'
 import type { UnionToIntersection } from '@principia/base/util/types'
 
@@ -115,8 +115,8 @@ export function nullable<A, O>(or: Encoder<A, O>): Encoder<A | null, O | null> {
   return Encoder((a) => (a === null ? null : or.encode(a)))
 }
 
-export function optional<A, O>(or: Encoder<A, O>): Encoder<O.Option<A>, O | null> {
-  return Encoder((oa) => (oa._tag === 'None' ? null : or.encode(oa.value)))
+export function optional<A, O>(or: Encoder<A, O>): Encoder<O.Maybe<A>, O | null> {
+  return Encoder((oa) => (oa._tag === 'Nothing' ? null : or.encode(oa.value)))
 }
 
 /*
@@ -274,32 +274,32 @@ export const dateToString: Encoder<Date, string> = Encoder((d) => d.toISOString(
 
 export const dateToMs: Encoder<Date, number> = Encoder((d) => d.getTime())
 
-export interface EncodedNone {
-  readonly _tag: 'None'
+export interface EncodedNothing {
+  readonly _tag: 'Nothing'
 }
 
-export interface EncodedSome<A> {
-  readonly _tag: 'Some'
+export interface EncodedJust<A> {
+  readonly _tag: 'Just'
   readonly value: A
 }
 
-export type EncodedOption<A> = EncodedNone | EncodedSome<A>
+export type EncodedOption<A> = EncodedNothing | EncodedJust<A>
 
-export const None: Encoder<O.None, EncodedNone> = struct({
-  _tag: id<'None'>()
+export const Nothing: Encoder<O.Nothing, EncodedNothing> = struct({
+  _tag: id<'Nothing'>()
 })
 
-export function Some<A, O>(value: Encoder<A, O>): Encoder<O.Some<A>, EncodedSome<O>> {
+export function Just<A, O>(value: Encoder<A, O>): Encoder<O.Just<A>, EncodedJust<O>> {
   return struct({
-    _tag: id<'Some'>(),
+    _tag: id<'Just'>(),
     value
   })
 }
 
-export function Option<A, O>(value: Encoder<A, O>): Encoder<O.Option<A>, EncodedOption<O>> {
+export function Option<A, O>(value: Encoder<A, O>): Encoder<O.Maybe<A>, EncodedOption<O>> {
   return sum('_tag')({
-    None,
-    Some: Some(value)
+    Nothing,
+    Just: Just(value)
   })
 }
 
@@ -398,7 +398,7 @@ export const Schemable: S.Schemable<EncoderSURI> = {
   withEncoder: (_, __, E) => E,
   taggedUnion: (encoders, schema) =>
     Encoder((a) => {
-      if (schema.tag._tag === 'Some') {
+      if (schema.tag._tag === 'Just') {
         const tagv = schema.tag.value
         return encoders[tagv.index[a[tagv.key]]].encode(a)
       }

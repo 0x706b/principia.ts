@@ -5,7 +5,7 @@ import type { Optional } from './Optional'
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/function'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import * as R from '@principia/base/Record'
 
 import * as _ from './internal'
@@ -41,8 +41,8 @@ export interface IndexFn<S, I, A> {
  * @category Constructors
  * @since 1.0.0
  */
-export function fromAt<T, J, B>(at: At<T, J, O.Option<B>>): Ix<T, J, B> {
-  return Ix((i) => _.optionalAndThenOptional(at.at(i), _.prismSome<B>()))
+export function fromAt<T, J, B>(at: At<T, J, M.Maybe<B>>): Ix<T, J, B> {
+  return Ix((i) => _.optionalAndThenOptional(at.at(i), _.prismJust<B>()))
 }
 
 /**
@@ -64,12 +64,12 @@ export function array<A>(): Ix<ReadonlyArray<A>, number, A> {
         pipe(
           as,
           A.lookup(i),
-          O.match(() => E.left(as), E.right)
+          M.match(() => E.left(as), E.right)
         ),
       replace_: (as, a) =>
         pipe(
           A.updateAt_(as, i, a),
-          O.getOrElse(() => as)
+          M.getOrElse(() => as)
         )
     })
   )
@@ -86,10 +86,10 @@ export function record<A>(): Ix<Record<string, A>, string, A> {
         pipe(
           r,
           R.lookup(k),
-          O.match(() => E.left(r), E.right)
+          M.match(() => E.left(r), E.right)
         ),
       replace_: (r, a) => {
-        if (r[k] === a || O.isNone(R.lookup_(r, k))) {
+        if (r[k] === a || M.isNothing(R.lookup_(r, k))) {
           return r
         }
         return R.upsertAt_(r, k, a)

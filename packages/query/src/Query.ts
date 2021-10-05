@@ -17,10 +17,10 @@ import * as Ca from '@principia/base/IO/Cause'
 import * as Ex from '@principia/base/IO/Exit'
 import * as FR from '@principia/base/IO/FiberRef'
 import * as L from '@principia/base/IO/Layer'
-import * as M from '@principia/base/IO/Managed'
+import * as Ma from '@principia/base/IO/Managed'
 import * as Ref from '@principia/base/IO/Ref'
 import * as It from '@principia/base/Iterable'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import { tuple } from '@principia/base/tuple'
 import { matchTag } from '@principia/base/util/match'
 import { isObject } from '@principia/base/util/predicates'
@@ -670,8 +670,8 @@ export function fromEither<E, A>(either: E.Either<E, A>): Query<unknown, E, A> {
   return pipe(succeed(either), chain(E.match(fail, succeed)))
 }
 
-export function fromOption<A>(option: O.Option<A>): Query<unknown, O.Option<never>, A> {
-  return pipe(succeed(option), chain(O.match(() => fail(O.none()), succeed)))
+export function fromOption<A>(option: M.Maybe<A>): Query<unknown, M.Maybe<never>, A> {
+  return pipe(succeed(option), chain(M.match(() => fail(M.nothing()), succeed)))
 }
 
 export function fromRequest<R, A extends AnyRequest>(request: A, dataSource: DataSource<R, A>): Query<R, _E<A>, _A<A>> {
@@ -694,12 +694,12 @@ export function fromRequest<R, A extends AnyRequest>(request: A, dataSource: Dat
                 (ref) =>
                   I.map_(
                     ref.get,
-                    O.match(() => Res.blocked(BRS.empty, Cont.make(request, dataSource, ref)), Res.fromEither)
+                    M.match(() => Res.blocked(BRS.empty, Cont.make(request, dataSource, ref)), Res.fromEither)
                   )
               )
             )
           } else {
-            return I.map_(Ref.make<O.Option<E.Either<_E<A>, _A<A>>>>(O.none()), (ref) =>
+            return I.map_(Ref.make<M.Maybe<E.Either<_E<A>, _A<A>>>>(M.nothing()), (ref) =>
               Res.blocked(
                 BRS.single(dataSource, BlockedRequest.make(request, ref)),
                 Cont.make(request, dataSource, ref)
@@ -718,7 +718,7 @@ export function fromRequestUncached<R, A extends AnyRequest>(
 ): Query<R, _E<A>, _A<A>> {
   return new Query(
     pipe(
-      Ref.make(O.none<E.Either<_E<A>, _A<A>>>()),
+      Ref.make(M.nothing<E.Either<_E<A>, _A<A>>>()),
       I.map((ref) =>
         Res.blocked(BRS.single(dataSource, BlockedRequest.make(request, ref)), Cont.make(request, dataSource, ref))
       )
@@ -732,16 +732,16 @@ export function failCause<E>(cause: Ca.Cause<E>): Query<unknown, E, never> {
 
 export const never: Query<unknown, never, never> = fromIO(I.never)
 
-export function none<A = never>(): Query<unknown, never, O.Option<A>> {
-  return succeed(O.none())
+export function nothing<A = never>(): Query<unknown, never, M.Maybe<A>> {
+  return succeed(M.nothing())
 }
 
 export function succeed<A>(value: A): Query<unknown, never, A> {
   return new Query(I.succeed(Res.done(value)))
 }
 
-export function some<A>(a: A): Query<unknown, never, O.Option<A>> {
-  return succeed(O.some(a))
+export function just<A>(a: A): Query<unknown, never, M.Maybe<A>> {
+  return succeed(M.just(a))
 }
 
 /*
@@ -837,9 +837,9 @@ export function giveLayer_<R, E, A, R1, E1, A1>(
   return new Query(
     pipe(
       L.build(layer.value),
-      M.gives(([r1, _]: readonly [R1, QueryContext]) => r1),
-      M.result,
-      M.use(
+      Ma.gives(([r1, _]: readonly [R1, QueryContext]) => r1),
+      Ma.result,
+      Ma.use(
         Ex.matchIO(
           (c): IO<readonly [R & R1, QueryContext], never, Result<R & R1, E | E1, A>> => I.succeed(Res.failCause(c)),
           (r) =>
@@ -860,9 +860,9 @@ export function giveLayer<R1, E1, A1>(
     new Query(
       pipe(
         L.build(layer.value),
-        M.gives(([r1, _]: readonly [R1, QueryContext]) => r1),
-        M.result,
-        M.use(
+        Ma.gives(([r1, _]: readonly [R1, QueryContext]) => r1),
+        Ma.result,
+        Ma.use(
           Ex.matchIO(
             (c): IO<readonly [R & R1, QueryContext], never, Result<R & R1, E | E1, A>> => I.succeed(Res.failCause(c)),
             (r) =>
@@ -1011,42 +1011,42 @@ export function foreachBatched<A, R, E, B>(
   return (as) => foreachBatched_(as, f)
 }
 
-export function getError<R, E, A>(ma: Query<R, O.Option<E>, A>): Query<R, E, O.Option<A>> {
-  return matchQuery_(ma, O.match(none, fail), some)
+export function getError<R, E, A>(ma: Query<R, M.Maybe<E>, A>): Query<R, E, M.Maybe<A>> {
+  return matchQuery_(ma, M.match(nothing, fail), just)
 }
 
-export function get<R, E, A>(ma: Query<R, E, O.Option<A>>): Query<R, O.Option<E>, A> {
+export function get<R, E, A>(ma: Query<R, E, M.Maybe<A>>): Query<R, M.Maybe<E>, A> {
   return matchQuery_(
     ma,
-    flow(O.some, fail),
-    O.match(() => fail(O.none()), succeed)
+    flow(M.just, fail),
+    M.match(() => fail(M.nothing()), succeed)
   )
 }
 
-export function getOrFail_<R, E, A, E1>(ma: Query<R, E, O.Option<A>>, e: E1): Query<R, E | E1, A> {
+export function getOrFail_<R, E, A, E1>(ma: Query<R, E, M.Maybe<A>>, e: E1): Query<R, E | E1, A> {
   return chain_(
     ma,
-    O.match(() => fail(e), succeed)
+    M.match(() => fail(e), succeed)
   )
 }
 
-export function getOrFail<E1>(e: E1): <R, E, A>(ma: Query<R, E, O.Option<A>>) => Query<R, E | E1, A> {
+export function getOrFail<E1>(e: E1): <R, E, A>(ma: Query<R, E, M.Maybe<A>>) => Query<R, E | E1, A> {
   return (ma) => getOrFail_(ma, e)
 }
 
-export function left<R, E, A, B>(ma: Query<R, E, E.Either<A, B>>): Query<R, O.Option<E>, A> {
+export function left<R, E, A, B>(ma: Query<R, E, E.Either<A, B>>): Query<R, M.Maybe<E>, A> {
   return matchQuery_(
     ma,
-    flow(O.some, fail),
-    E.match(succeed, () => fail(O.none()))
+    flow(M.just, fail),
+    E.match(succeed, () => fail(M.nothing()))
   )
 }
 
-export function right<R, E, A, B>(ma: Query<R, E, E.Either<A, B>>): Query<R, O.Option<E>, B> {
+export function right<R, E, A, B>(ma: Query<R, E, E.Either<A, B>>): Query<R, M.Maybe<E>, B> {
   return matchQuery_(
     ma,
-    flow(O.some, fail),
-    E.match(() => fail(O.none()), succeed)
+    flow(M.just, fail),
+    E.match(() => fail(M.nothing()), succeed)
   )
 }
 
@@ -1074,14 +1074,14 @@ export function leftOrFailWith<B, E1>(
   return (ma) => leftOrFailWith_(ma, f)
 }
 
-export function optional<R, E, A>(ma: Query<R, E, A>): Query<R, E, O.Option<A>> {
+export function optional<R, E, A>(ma: Query<R, E, A>): Query<R, E, M.Maybe<A>> {
   return matchCauseQuery_(
     ma,
     flow(
       Ca.filterDefects((_) => !(_ instanceof QueryFailure)),
-      O.match(() => none(), failCause)
+      M.match(() => nothing(), failCause)
     ),
-    some
+    just
   )
 }
 
@@ -1097,31 +1097,31 @@ export function orHalt<R, E, A>(ma: Query<R, E, A>): Query<R, never, A> {
   return orHaltWith_(ma, identity)
 }
 
-export function refineOrHalt_<R, E, A, E1>(ma: Query<R, E, A>, pf: (e: E) => O.Option<E1>): Query<R, E1, A> {
+export function refineOrHalt_<R, E, A, E1>(ma: Query<R, E, A>, pf: (e: E) => M.Maybe<E1>): Query<R, E1, A> {
   return refineOrHaltWith_(ma, pf, identity)
 }
 
 export function refineOrHalt<E extends Error, E1>(
-  pf: (e: E) => O.Option<E1>
+  pf: (e: E) => M.Maybe<E1>
 ): <R, A>(ma: Query<R, E, A>) => Query<R, E1, A> {
   return (ma) => refineOrHalt_(ma, pf)
 }
 
 export function refineOrHaltWith_<R, E, A, E1>(
   ma: Query<R, E, A>,
-  pf: (e: E) => O.Option<E1>,
+  pf: (e: E) => M.Maybe<E1>,
   f: (e: E) => unknown
 ): Query<R, E1, A> {
   return catchAll_(ma, (e) =>
     pipe(
       pf(e),
-      O.match(() => halt(f(e)), fail)
+      M.match(() => halt(f(e)), fail)
     )
   )
 }
 
 export function refineOrHaltWith<E, E1>(
-  pf: (e: E) => O.Option<E1>,
+  pf: (e: E) => M.Maybe<E1>,
   f: (e: E) => unknown
 ): <R, A>(ma: Query<R, E, A>) => Query<R, E1, A> {
   return (ma) => refineOrHaltWith_(ma, pf, f)
@@ -1193,30 +1193,30 @@ export function summarized<R1, E1, B, C>(
 
 export function unrefineWith_<R, E, A, E1>(
   ma: Query<R, E, A>,
-  pf: (error: unknown) => O.Option<E1>,
+  pf: (error: unknown) => M.Maybe<E1>,
   f: (e: E) => E1
 ): Query<R, E1, A> {
   return catchAllCause_(ma, (cause) =>
     pipe(
       cause,
       Ca.find(pf),
-      O.match(() => pipe(cause, Ca.map(f), failCause), fail)
+      M.match(() => pipe(cause, Ca.map(f), failCause), fail)
     )
   )
 }
 
 export function unrefineWith<E, E1>(
-  pf: (error: unknown) => O.Option<E1>,
+  pf: (error: unknown) => M.Maybe<E1>,
   f: (e: E) => E1
 ): <R, A>(ma: Query<R, E, A>) => Query<R, E1, A> {
   return (ma) => unrefineWith_(ma, pf, f)
 }
 
-export function unrefine_<R, E, A>(ma: Query<R, E, A>, pf: (error: unknown) => O.Option<E>): Query<R, E, A> {
+export function unrefine_<R, E, A>(ma: Query<R, E, A>, pf: (error: unknown) => M.Maybe<E>): Query<R, E, A> {
   return unrefineWith_(ma, pf, identity)
 }
 
-export function unrefine<E>(pf: (error: unknown) => O.Option<E>): <R, A>(ma: Query<R, E, A>) => Query<R, E, A> {
+export function unrefine<E>(pf: (error: unknown) => M.Maybe<E>): <R, A>(ma: Query<R, E, A>) => Query<R, E, A> {
   return (ma) => unrefine_(ma, pf)
 }
 

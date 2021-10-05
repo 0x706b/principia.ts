@@ -1,5 +1,5 @@
 import type * as E from './Either'
-import type * as O from './Option'
+import type * as M from './Maybe'
 
 import * as A from './Array/core'
 import { identity } from './function'
@@ -182,7 +182,7 @@ export function isNonEmpty<A>(set: ReadonlySet<A>): boolean {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function compact<A>(E: P.Eq<A>): (fa: ReadonlySet<O.Option<A>>) => ReadonlySet<A> {
+export function compact<A>(E: P.Eq<A>): (fa: ReadonlySet<M.Maybe<A>>) => ReadonlySet<A> {
   return filterMap(E)(identity)
 }
 
@@ -332,11 +332,11 @@ export function partitionMap<B, C>(
  */
 export function filterMap_<B>(E: P.Eq<B>) {
   const elemE_ = elem_(E)
-  return <A>(fa: ReadonlySet<A>, f: (a: A) => O.Option<B>) => {
+  return <A>(fa: ReadonlySet<A>, f: (a: A) => M.Maybe<B>) => {
     const r: Set<B> = new Set()
     fa.forEach((a) => {
       const ob = f(a)
-      if (ob._tag === 'Some' && !elemE_(r, ob.value)) {
+      if (ob._tag === 'Just' && !elemE_(r, ob.value)) {
         r.add(ob.value)
       }
     })
@@ -349,7 +349,7 @@ export function filterMap_<B>(E: P.Eq<B>) {
  */
 export function filterMap<B>(E: P.Eq<B>) {
   const filterMapE_ = filterMap_(E)
-  return <A>(f: (a: A) => O.Option<B>) =>
+  return <A>(f: (a: A) => M.Maybe<B>) =>
     (fa: ReadonlySet<A>) =>
       filterMapE_(fa, f)
 }

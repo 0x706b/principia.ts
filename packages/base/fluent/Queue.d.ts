@@ -1,7 +1,7 @@
 import type { Chunk } from '@principia/base/Chunk'
 import type { IO } from '@principia/base/IO'
 import type * as Q from '@principia/base/IO/Queue'
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 import type { Predicate } from '@principia/base/prelude'
 
 declare global {
@@ -223,12 +223,12 @@ declare module '@principia/base/Queue' {
     offerAll<RA, RB, EA, EB, A, B>(this: Queue<RA, RB, EA, EB, A, B>, as: Iterable<A>): IO<RA, EA, boolean>
 
     /**
-     * Take the head option of values in the queue.
+     * Take the head Maybe of values in the queue.
      *
      * @rewriteGetter poll from "@principia/base/Queue"
      * @trace getter
      */
-    poll: IO<RB, EB, Option<B>>
+    poll: IO<RB, EB, Maybe<B>>
 
     /**
      * Interrupts any fibers that are suspended on `offer` or `take`.

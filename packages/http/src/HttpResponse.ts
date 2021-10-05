@@ -7,14 +7,14 @@ import type { Readable } from 'stream'
 
 import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
-import * as M from '@principia/base/IO/Managed'
+import * as Ma from '@principia/base/IO/Managed'
 import * as Q from '@principia/base/IO/Queue'
 import * as Ref from '@principia/base/IO/Ref'
 import * as RefM from '@principia/base/IO/RefM'
 import * as S from '@principia/base/IO/Stream'
 import * as Pull from '@principia/base/IO/Stream/Pull'
+import * as M from '@principia/base/Maybe'
 import * as NT from '@principia/base/Newtype'
-import * as O from '@principia/base/Option'
 import * as NS from '@principia/node/stream'
 
 import { HttpException } from './HttpException'
@@ -53,16 +53,16 @@ export const HttpResponseCompleted = NT.typeDef<void>()('HttpResponseCompleted')
 export interface HttpResponseCompleted extends NT.TypeOf<typeof HttpResponseCompleted> {}
 
 export class HttpResponse {
-  eventStream: M.Managed<unknown, never, I.UIO<S.Stream<unknown, never, ResponseEvent>>>
+  eventStream: Ma.Managed<unknown, never, I.UIO<S.Stream<unknown, never, ResponseEvent>>>
 
   constructor(readonly ref: RefM.URefM<http.ServerResponse>) {
     this.eventStream = pipe(
       ref.get,
-      M.fromIO,
-      M.chain((res) =>
+      Ma.fromIO,
+      Ma.chain((res) =>
         S.broadcastDynamic_(
           new S.Stream(
-            M.gen(function* ($) {
+            Ma.gen(function* ($) {
               const queue   = yield* $(Q.makeUnbounded<ResponseEvent>())
               const done    = yield* $(Ref.make(false))
               const runtime = yield* $(I.runtime<unknown>())
@@ -127,8 +127,8 @@ export class HttpResponse {
     return I.map_(this.ref.get, (res) => res.getHeaders())
   }
 
-  get(name: string): UIO<O.Option<http.OutgoingHttpHeader>> {
-    return I.map_(this.ref.get, (res) => O.fromNullable(res.getHeaders()[name]))
+  get(name: string): UIO<M.Maybe<http.OutgoingHttpHeader>> {
+    return I.map_(this.ref.get, (res) => M.fromNullable(res.getHeaders()[name]))
   }
 
   set(headers: ReadonlyRecord<string, http.OutgoingHttpHeader>): FIO<HttpException, void> {

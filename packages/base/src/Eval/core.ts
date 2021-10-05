@@ -8,7 +8,7 @@ import type { Stack } from '../util/support/Stack'
 
 import { identity } from '../function'
 import * as E from '../internal/Either'
-import * as O from '../internal/Option'
+import * as M from '../internal/Maybe'
 import { tuple } from '../internal/tuple'
 import { AtomicReference } from '../util/support/AtomicReference'
 import { makeStack } from '../util/support/Stack'
@@ -125,16 +125,16 @@ class Memoize<A> extends Eval<A> {
   constructor(readonly ma: Eval<A>) {
     super()
   }
-  public result: O.Option<A> = O.none<A>()
+  public result: M.Maybe<A> = M.nothing<A>()
 
   get memoize() {
     return this
   }
 
   get value(): A {
-    return O.getOrElse_(this.result, () => {
+    return M.getOrElse_(this.result, () => {
       const a     = evaluate(this)
-      this.result = O.some(a)
+      this.result = M.just(a)
       return a
     })
   }
@@ -293,7 +293,7 @@ export function evaluate<A>(e: Eval<A>): A {
   const addToMemo =
     <A1>(m: Memoize<A1>) =>
     (a: A1): Eval<A1> => {
-      m.result = O.some(a)
+      m.result = M.just(a)
       return new Now(a)
     }
 
@@ -354,7 +354,7 @@ export function evaluate<A>(e: Eval<A>): A {
         break
       }
       case EvalTag.Memoize: {
-        if (I.result._tag === 'Some') {
+        if (I.result._tag === 'Just') {
           result             = I.result.value
           const continuation = popContinuation()
           if (continuation) {

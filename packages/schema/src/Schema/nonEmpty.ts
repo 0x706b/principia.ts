@@ -1,7 +1,7 @@
 import type { Branded } from '@principia/base/Brand'
 
 import { flow, pipe } from '@principia/base/function'
-import * as O from '@principia/base/Option'
+import * as O from '@principia/base/Maybe'
 
 import * as PE from '../ParseError'
 import * as S from './core'
@@ -21,7 +21,7 @@ export function nonEmpty<S extends S.Schema<any, any, any, any, any, { length: n
     S.refine(
       (a): a is NonEmpty<S.TypeOf<S>> => a.length > 0,
       flow(PE.emptyE, PE.leafE),
-      () => O.none(),
+      () => O.nothing(),
       'NonEmpty'
     )
   )

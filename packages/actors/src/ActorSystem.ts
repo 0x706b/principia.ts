@@ -12,7 +12,7 @@ import * as HS from '@principia/base/HashSet'
 import * as I from '@principia/base/IO'
 import * as L from '@principia/base/IO/Layer'
 import * as Ref from '@principia/base/IO/Ref'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import * as St from '@principia/base/Structural'
 
 import * as AR from './ActorRef'
@@ -80,9 +80,9 @@ export class RemoteConfig extends Tagged('RemoteConfig')<{
 export class ActorSystem {
   constructor(
     readonly actorSystemName: string,
-    readonly remoteConfig: O.Option<RemoteConfig>,
+    readonly remoteConfig: M.Maybe<RemoteConfig>,
     readonly refActorMap: Ref.URef<HM.HashMap<string, A.Actor<any>>>,
-    readonly parentActor: O.Option<string>
+    readonly parentActor: M.Maybe<string>
   ) {}
 
   /**
@@ -103,12 +103,12 @@ export class ActorSystem {
       const map       = yield* _(Ref.get(self.refActorMap))
       const finalName = yield* _(
         buildFinalName(
-          O.getOrElse_(self.parentActor, () => ''),
+          M.getOrElse_(self.parentActor, () => ''),
           actorName
         )
       )
       yield* _(
-        O.match_(
+        M.match_(
           HM.get_(map, finalName),
           () => I.unit(),
           () => I.fail(new ActorAlreadyExistsException({ actorName }))
@@ -119,7 +119,7 @@ export class ActorSystem {
         self.actorSystemName,
         self.remoteConfig,
         self.refActorMap,
-        O.some(finalName)
+        M.just(finalName)
       )
       const childrenSet = yield* _(Ref.make(HS.makeDefault<AR.ActorRef<any>>()))
       const actor       = yield* _(
@@ -159,11 +159,11 @@ export class ActorSystem {
     return I.gen(function* (_) {
       const [, addr, port, actorName] = yield* _(resolvePath(address))
 
-      const rc       = `${addr}:${port}` === '0.0.0.0:0000' ? O.none() : O.some(new RemoteConfig({ host: addr, port }))
+      const rc       = `${addr}:${port}` === '0.0.0.0:0000' ? M.nothing() : M.just(new RemoteConfig({ host: addr, port }))
       const actorMap = yield* _(Ref.get(self.refActorMap))
       const actorRef = HM.get_(actorMap, actorName)
       return yield* _(
-        O.match_(
+        M.match_(
           actorRef,
           () =>
             St.equals(rc, self.remoteConfig)
@@ -193,11 +193,11 @@ function buildFinalName(parentActorName: string, actorName: string): I.FIO<Inval
     : I.succeed(parentActorName + '/' + actorName)
 }
 
-function buildPath(actorSystemName: string, actorPath: string, remoteConfig: O.Option<RemoteConfig>): string {
+function buildPath(actorSystemName: string, actorPath: string, remoteConfig: M.Maybe<RemoteConfig>): string {
   return `zio://${actorSystemName}@${pipe(
     remoteConfig,
-    O.map(({ host, port }) => `${host}:${port}`),
-    O.getOrElse(() => '0.0.0.0:0000')
+    M.map(({ host, port }) => `${host}:${port}`),
+    M.getOrElse(() => '0.0.0.0:0000')
   )}${actorPath}`
 }
 
@@ -213,13 +213,13 @@ export function resolvePath(
   return I.fail(new InvalidActorPathException({ path }))
 }
 
-export function make(sysName: string, remoteConfig: O.Option<RemoteConfig> = O.none()) {
+export function make(sysName: string, remoteConfig: M.Maybe<RemoteConfig> = M.nothing()) {
   return I.gen(function* (_) {
     const initActorRefMap = yield* _(Ref.make(HM.makeDefault<string, A.Actor<any>>()))
-    return new ActorSystem(sysName, remoteConfig, initActorRefMap, O.none())
+    return new ActorSystem(sysName, remoteConfig, initActorRefMap, M.nothing())
   })
 }
 
 export const ActorSystemTag = tag<ActorSystem>()
 
-export const LiveActorSystem = (sysName: string) => L.fromIO(ActorSystemTag)(make(sysName, O.none()))
+export const LiveActorSystem = (sysName: string) => L.fromIO(ActorSystemTag)(make(sysName, M.nothing()))

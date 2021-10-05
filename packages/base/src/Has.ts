@@ -9,9 +9,9 @@
  * Copyright 2020 Michael Arnaldi and the Matechs Garage Contributors.
  */
 
-import type { Option } from './internal/Option'
+import type { Maybe } from './internal/Maybe'
 
-import { fromNullable, none } from './internal/Option'
+import { fromNullable, nothing } from './internal/Maybe'
 import { isObject } from './util/predicates'
 
 /**
@@ -53,7 +53,7 @@ export class Tag<T> {
   readonly fixed       = (): Tag<T> => new Tag(false, this.key)
   readonly refine      = <T1 extends T>(): Tag<T1> => new Tag(this.def, this.key)
   readonly read        = (r: Has<T>): T => r[this.key]
-  readonly readOption  = (r: unknown): Option<T> => (isObject(r) ? fromNullable(r[this.key]) : none())
+  readonly readOption  = (r: unknown): Maybe<T> => (isObject(r) ? fromNullable(r[this.key]) : nothing())
   readonly setKey      = (s: PropertyKey): Tag<T> => new Tag(this.def, s)
   readonly of          = (_: T): Has<T> => ({ [this.key]: _ } as any)
 }

@@ -6,7 +6,7 @@
 // - Result of processing of the stream using the sink must not depend on how the stream is chunked
 //   (chunking-invariance)
 //   pipe(stream, run(sink), IO.either) === pipe(stream, chunkN(1), run(sink), IO.either)
-// - Sinks should always end when receiving a `None`. It is a defect to not end with some
+// - Sinks should always end when receiving a `Nothing`. It is a defect to not end with some
 //   sort of result (even a failure) when receiving a `None`.
 
 import type { Managed } from '../../Managed'

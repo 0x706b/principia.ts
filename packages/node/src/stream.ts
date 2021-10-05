@@ -4,11 +4,11 @@ import type * as stream from 'stream'
 import * as C from '@principia/base/Chunk'
 import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
-import * as M from '@principia/base/IO/Managed'
+import * as Ma from '@principia/base/IO/Managed'
 import * as S from '@principia/base/IO/Stream'
 import * as Push from '@principia/base/IO/Stream/Push'
 import * as Sink from '@principia/base/IO/Stream/Sink'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import { tuple } from '@principia/base/tuple'
 
 export class ReadableError {
@@ -41,10 +41,10 @@ export function streamFromReadable(r: () => stream.Readable): S.Stream<unknown, 
           cb(I.succeed(chunk))
         })
         sr.on('error', (err) => {
-          cb(I.fail(O.some(new ReadableError(err))))
+          cb(I.fail(M.just(new ReadableError(err))))
         })
         sr.on('end', () => {
-          cb(I.fail(O.none()))
+          cb(I.fail(M.nothing()))
         })
       })
     )
@@ -77,13 +77,13 @@ export function sinkFromWritable(w: () => stream.Writable): Sink.Sink<unknown, W
           cb(I.succeed(sw))
         })
       }),
-      M.bracket((sw) =>
+      Ma.bracket((sw) =>
         I.succeedLazy(() => {
           sw.destroy()
         })
       ),
-      M.map((sw) =>
-        O.match(
+      Ma.map((sw) =>
+        M.match(
           () => Push.emit(undefined, C.empty()),
           (chunk) =>
             I.async((cb) => {
@@ -106,16 +106,16 @@ export function transform(
   return <R, E>(stream: S.Stream<R, E, Byte>) => {
     const managedSink = pipe(
       I.succeedLazy(tr),
-      M.bracket((st) =>
+      Ma.bracket((st) =>
         I.succeedLazy(() => {
           st.destroy()
         })
       ),
-      M.map((st) =>
+      Ma.map((st) =>
         tuple(
           st,
           Sink.fromPush<unknown, TransformError, Byte, never, void>(
-            O.match(
+            M.match(
               () =>
                 I.chain_(
                   I.succeedLazy(() => {
@@ -144,10 +144,10 @@ export function transform(
                 cb(I.succeed(chunk))
               })
               transform.on('error', (err) => {
-                cb(I.fail(O.some(new TransformError(err))))
+                cb(I.fail(M.just(new TransformError(err))))
               })
               transform.on('end', () => {
-                cb(I.fail(O.none()))
+                cb(I.fail(M.nothing()))
               })
             }),
             S.run_(stream, sink)

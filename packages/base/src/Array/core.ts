@@ -1,8 +1,8 @@
 import type { Byte } from '../Byte'
 import type { Either } from '../Either'
+import type { Maybe } from '../Maybe'
 import type { ArrayURI } from '../Modules'
 import type { NonEmptyArray } from '../NonEmptyArray'
-import type { Option } from '../Option'
 import type { ReadonlyRecord } from '../Record'
 import type { These } from '../These'
 
@@ -16,9 +16,9 @@ import * as _ from '../internal/Array'
 import * as E from '../internal/Either'
 import * as Th from '../internal/These'
 import { tuple } from '../internal/tuple'
+import * as M from '../Maybe'
 import * as NEA from '../NonEmptyArray/core'
 import * as N from '../number'
-import * as O from '../Option'
 import * as Ord from '../Ord'
 import { EQ } from '../Ordering'
 import * as P from '../prelude'
@@ -296,7 +296,7 @@ export function zip<B>(fb: ReadonlyArray<B>): <A>(fa: ReadonlyArray<A>) => Reado
  * @category Compactable
  * @since 1.0.0
  */
-export function compact<A>(as: ReadonlyArray<Option<A>>): ReadonlyArray<A> {
+export function compact<A>(as: ReadonlyArray<Maybe<A>>): ReadonlyArray<A> {
   return filterMap_(as, identity)
 }
 
@@ -411,11 +411,11 @@ export function filter<A>(f: P.PredicateWithIndex<number, A>): (fa: ReadonlyArra
  * @category FilterableWithIndex
  * @since 1.0.0
  */
-export function filterMap_<A, B>(fa: ReadonlyArray<A>, f: (a: A, i: number) => Option<B>): ReadonlyArray<B> {
+export function filterMap_<A, B>(fa: ReadonlyArray<A>, f: (a: A, i: number) => Maybe<B>): ReadonlyArray<B> {
   const result = []
   for (let i = 0; i < fa.length; i++) {
     const optionB = f(fa[i], i)
-    if (O.isSome(optionB)) {
+    if (M.isJust(optionB)) {
       result.push(optionB.value)
     }
   }
@@ -426,7 +426,7 @@ export function filterMap_<A, B>(fa: ReadonlyArray<A>, f: (a: A, i: number) => O
  * @category FilterableWithIndex
  * @since 1.0.0
  */
-export function filterMap<A, B>(f: (a: A, i: number) => Option<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
+export function filterMap<A, B>(f: (a: A, i: number) => Maybe<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
   return (fa) => filterMap_(fa, f)
 }
 
@@ -898,13 +898,13 @@ export const sequence = P.implementSequence<[HKT.URI<ArrayURI>]>()((_) => (G) =>
  * @category instances
  * @since 1.0.0
  */
-export function unfold<A, B>(b: B, f: (b: B) => Option<readonly [A, B]>): ReadonlyArray<A> {
+export function unfold<A, B>(b: B, f: (b: B) => Maybe<readonly [A, B]>): ReadonlyArray<A> {
   const ret = []
   let bb    = b
   /* eslint-disable-next-line no-constant-condition */
   while (true) {
     const mt = f(bb)
-    if (O.isSome(mt)) {
+    if (M.isJust(mt)) {
       const [a, b] = mt.value
       ret.push(a)
       bb = b
@@ -1051,11 +1051,11 @@ export function chunksOf(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<
  * @category combinators
  * @since 1.0.0
  */
-export function collectWhile_<A, B>(as: ReadonlyArray<A>, f: (a: A) => Option<B>): ReadonlyArray<B> {
+export function collectWhile_<A, B>(as: ReadonlyArray<A>, f: (a: A) => Maybe<B>): ReadonlyArray<B> {
   const result: Array<B> = []
   for (let i = 0; i < as.length; i++) {
     const o = f(as[i])
-    if (O.isSome(o)) {
+    if (M.isJust(o)) {
       result.push(o.value)
     } else {
       break
@@ -1068,7 +1068,7 @@ export function collectWhile_<A, B>(as: ReadonlyArray<A>, f: (a: A) => Option<B>
  * @category combinators
  * @since 1.0.0
  */
-export function collectWhile<A, B>(f: (a: A) => Option<B>): (as: ReadonlyArray<A>) => ReadonlyArray<B> {
+export function collectWhile<A, B>(f: (a: A) => Maybe<B>): (as: ReadonlyArray<A>) => ReadonlyArray<B> {
   return (as) => collectWhile_(as, f)
 }
 
@@ -1154,8 +1154,8 @@ export const concat: <A>(ys: ReadonlyArray<A>) => (xs: ReadonlyArray<A>) => Read
  * @category combinators
  * @since 1.0.0
  */
-export function deleteAt_<A>(as: ReadonlyArray<A>, i: number): Option<ReadonlyArray<A>> {
-  return isOutOfBound_(as, i) ? O.none() : O.some(unsafeDeleteAt_(as, i))
+export function deleteAt_<A>(as: ReadonlyArray<A>, i: number): Maybe<ReadonlyArray<A>> {
+  return isOutOfBound_(as, i) ? M.nothing() : M.just(unsafeDeleteAt_(as, i))
 }
 
 /**
@@ -1165,7 +1165,7 @@ export function deleteAt_<A>(as: ReadonlyArray<A>, i: number): Option<ReadonlyAr
  * @since 1.0.0
  * @dataFirst deleteAt_
  */
-export function deleteAt(i: number): <A>(as: ReadonlyArray<A>) => Option<ReadonlyArray<A>> {
+export function deleteAt(i: number): <A>(as: ReadonlyArray<A>) => Maybe<ReadonlyArray<A>> {
   return (as) => deleteAt_(as, i)
 }
 
@@ -1306,16 +1306,16 @@ export function elem<A>(E: P.Eq<A>): (a: A) => (as: ReadonlyArray<A>) => boolean
  * @category combinators
  * @since 1.0.0
  */
-export function findLast_<A, B extends A>(as: ReadonlyArray<A>, refinement: P.Refinement<A, B>): Option<B>
-export function findLast_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Option<A>
-export function findLast_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Option<A> {
+export function findLast_<A, B extends A>(as: ReadonlyArray<A>, refinement: P.Refinement<A, B>): Maybe<B>
+export function findLast_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Maybe<A>
+export function findLast_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Maybe<A> {
   const len = as.length
   for (let i = len - 1; i >= 0; i--) {
     if (predicate(as[i])) {
-      return O.some(as[i])
+      return M.just(as[i])
     }
   }
-  return O.none()
+  return M.nothing()
 }
 
 /**
@@ -1323,9 +1323,9 @@ export function findLast_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): O
  * @since 1.0.0
  * @dataFirst findLast_
  */
-export function findLast<A, B extends A>(refinement: P.Refinement<A, B>): (as: ReadonlyArray<A>) => Option<B>
-export function findLast<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Option<A>
-export function findLast<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Option<A> {
+export function findLast<A, B extends A>(refinement: P.Refinement<A, B>): (as: ReadonlyArray<A>) => Maybe<B>
+export function findLast<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Maybe<A>
+export function findLast<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Maybe<A> {
   return (as) => findLast_(as, predicate)
 }
 
@@ -1333,15 +1333,15 @@ export function findLast<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) =
  * @category combinators
  * @since 1.0.0
  */
-export function findLastMap_<A, B>(as: ReadonlyArray<A>, f: (a: A) => Option<B>): Option<B> {
+export function findLastMap_<A, B>(as: ReadonlyArray<A>, f: (a: A) => Maybe<B>): Maybe<B> {
   const len = as.length
   for (let i = len - 1; i >= 0; i--) {
     const v = f(as[i])
-    if (O.isSome(v)) {
+    if (M.isJust(v)) {
       return v
     }
   }
-  return O.none()
+  return M.nothing()
 }
 
 /**
@@ -1349,7 +1349,7 @@ export function findLastMap_<A, B>(as: ReadonlyArray<A>, f: (a: A) => Option<B>)
  * @since 1.0.0
  * @dataFirst findLastMap_
  */
-export function findLastMap<A, B>(f: (a: A) => Option<B>): (as: ReadonlyArray<A>) => Option<B> {
+export function findLastMap<A, B>(f: (a: A) => Maybe<B>): (as: ReadonlyArray<A>) => Maybe<B> {
   return (as) => findLastMap_(as, f)
 }
 
@@ -1359,14 +1359,14 @@ export function findLastMap<A, B>(f: (a: A) => Option<B>): (as: ReadonlyArray<A>
  * @category combinators
  * @since 1.0.0
  */
-export function findIndex_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Option<number> {
+export function findIndex_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Maybe<number> {
   const len = as.length
   for (let i = 0; i < len; i++) {
     if (predicate(as[i])) {
-      return O.some(i)
+      return M.just(i)
     }
   }
-  return O.none()
+  return M.nothing()
 }
 
 /**
@@ -1376,7 +1376,7 @@ export function findIndex_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): 
  * @since 1.0.0
  * @dataFirst findFirstIndex_
  */
-export function findIndex<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Option<number> {
+export function findIndex<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Maybe<number> {
   return (as) => findIndex_(as, predicate)
 }
 
@@ -1384,16 +1384,16 @@ export function findIndex<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) 
  * @category combinators
  * @since 1.0.0
  */
-export function find_<A, B extends A>(as: ReadonlyArray<A>, refinement: P.Refinement<A, B>): Option<B>
-export function find_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Option<A>
-export function find_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Option<A> {
+export function find_<A, B extends A>(as: ReadonlyArray<A>, refinement: P.Refinement<A, B>): Maybe<B>
+export function find_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Maybe<A>
+export function find_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Maybe<A> {
   const len = as.length
   for (let i = 0; i < len; i++) {
     if (predicate(as[i])) {
-      return O.some(as[i])
+      return M.just(as[i])
     }
   }
-  return O.none()
+  return M.nothing()
 }
 
 /**
@@ -1401,9 +1401,9 @@ export function find_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Optio
  * @since 1.0.0
  * @dataFirst findFirst_
  */
-export function find<A, B extends A>(refinement: P.Refinement<A, B>): (as: ReadonlyArray<A>) => Option<B>
-export function find<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Option<A>
-export function find<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Option<A> {
+export function find<A, B extends A>(refinement: P.Refinement<A, B>): (as: ReadonlyArray<A>) => Maybe<B>
+export function find<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Maybe<A>
+export function find<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Maybe<A> {
   return (as) => find_(as, predicate)
 }
 
@@ -1411,15 +1411,15 @@ export function find<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Op
  * @category combinators
  * @since 1.0.0
  */
-export function findMap_<A, B>(as: ReadonlyArray<A>, f: (a: A, index: number) => Option<B>): Option<B> {
+export function findMap_<A, B>(as: ReadonlyArray<A>, f: (a: A, index: number) => Maybe<B>): Maybe<B> {
   const len = as.length
   for (let i = 0; i < len; i++) {
     const v = f(as[i], i)
-    if (O.isSome(v)) {
+    if (M.isJust(v)) {
       return v
     }
   }
-  return O.none()
+  return M.nothing()
 }
 
 /**
@@ -1427,7 +1427,7 @@ export function findMap_<A, B>(as: ReadonlyArray<A>, f: (a: A, index: number) =>
  * @since 1.0.0
  * @dataFirst findMap_
  */
-export function findMap<A, B>(f: (a: A, index: number) => Option<B>): (as: ReadonlyArray<A>) => Option<B> {
+export function findMap<A, B>(f: (a: A, index: number) => Maybe<B>): (as: ReadonlyArray<A>) => Maybe<B> {
   return (as) => findMap_(as, f)
 }
 
@@ -1437,14 +1437,14 @@ export function findMap<A, B>(f: (a: A, index: number) => Option<B>): (as: Reado
  * @category combinators
  * @since 1.0.0
  */
-export function findLastIndex_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Option<number> {
+export function findLastIndex_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Maybe<number> {
   const len = as.length
   for (let i = len - 1; i >= 0; i--) {
     if (predicate(as[i])) {
-      return O.some(i)
+      return M.just(i)
     }
   }
-  return O.none()
+  return M.nothing()
 }
 
 /**
@@ -1454,7 +1454,7 @@ export function findLastIndex_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A
  * @since 1.0.0
  * @dataFirst findLastIndex_
  */
-export function findLastIndex<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Option<number> {
+export function findLastIndex<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Maybe<number> {
   return (as) => findLastIndex_(as, predicate)
 }
 
@@ -1584,8 +1584,8 @@ export function groupBy<A>(f: (a: A) => string): (as: ReadonlyArray<A>) => Reado
  * @category combinators
  * @since 1.0.0
  */
-export function insertAt_<A>(as: ReadonlyArray<A>, i: number, a: A): Option<NonEmptyArray<A>> {
-  return isOutOfBound_(as, i) ? O.none() : O.some(unsafeInsertAt_(as, i, a))
+export function insertAt_<A>(as: ReadonlyArray<A>, i: number, a: A): Maybe<NonEmptyArray<A>> {
+  return isOutOfBound_(as, i) ? M.nothing() : M.just(unsafeInsertAt_(as, i, a))
 }
 
 /**
@@ -1595,7 +1595,7 @@ export function insertAt_<A>(as: ReadonlyArray<A>, i: number, a: A): Option<NonE
  * @since 1.0.0
  * @dataFirst insertAt_
  */
-export function insertAt<A>(i: number, a: A): (as: ReadonlyArray<A>) => Option<NonEmptyArray<A>> {
+export function insertAt<A>(i: number, a: A): (as: ReadonlyArray<A>) => Maybe<NonEmptyArray<A>> {
   return (as) => insertAt_(as, i, a)
 }
 
@@ -1639,8 +1639,8 @@ export function intersperse<A>(a: A): (as: ReadonlyArray<A>) => ReadonlyArray<A>
  * @category combinators
  * @since 1.0.0
  */
-export function lookup_<A>(as: ReadonlyArray<A>, i: number): Option<A> {
-  return isOutOfBound_(as, i) ? O.none() : O.some(as[i])
+export function lookup_<A>(as: ReadonlyArray<A>, i: number): Maybe<A> {
+  return isOutOfBound_(as, i) ? M.nothing() : M.just(as[i])
 }
 
 /**
@@ -1648,7 +1648,7 @@ export function lookup_<A>(as: ReadonlyArray<A>, i: number): Option<A> {
  * @since 1.0.0
  * @dataFirst lookup_
  */
-export function lookup(i: number): <A>(as: ReadonlyArray<A>) => Option<A> {
+export function lookup(i: number): <A>(as: ReadonlyArray<A>) => Maybe<A> {
   return (as) => lookup_(as, i)
 }
 
@@ -1710,8 +1710,8 @@ export function mapAccum<A, S, B>(
  * @category combinators
  * @since 1.0.0
  */
-export function modifyAt_<A>(as: ReadonlyArray<A>, i: number, f: (a: A) => A): Option<ReadonlyArray<A>> {
-  return isOutOfBound_(as, i) ? O.none() : O.some(unsafeUpdateAt_(as, i, f(as[i])))
+export function modifyAt_<A>(as: ReadonlyArray<A>, i: number, f: (a: A) => A): Maybe<ReadonlyArray<A>> {
+  return isOutOfBound_(as, i) ? M.nothing() : M.just(unsafeUpdateAt_(as, i, f(as[i])))
 }
 
 /**
@@ -1721,7 +1721,7 @@ export function modifyAt_<A>(as: ReadonlyArray<A>, i: number, f: (a: A) => A): O
  * @category combinators
  * @since 1.0.0
  */
-export function modifyAt<A>(i: number, f: (a: A) => A): (as: ReadonlyArray<A>) => Option<ReadonlyArray<A>> {
+export function modifyAt<A>(i: number, f: (a: A) => A): (as: ReadonlyArray<A>) => Maybe<ReadonlyArray<A>> {
   return (as) => modifyAt_(as, i, f)
 }
 
@@ -2124,8 +2124,8 @@ export function takeWhile<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) 
  * @category combinators
  * @since 1.0.0
  */
-export function updateAt_<A>(as: ReadonlyArray<A>, i: number, a: A): Option<ReadonlyArray<A>> {
-  return isOutOfBound_(as, i) ? O.none() : O.some(unsafeUpdateAt_(as, i, a))
+export function updateAt_<A>(as: ReadonlyArray<A>, i: number, a: A): Maybe<ReadonlyArray<A>> {
+  return isOutOfBound_(as, i) ? M.nothing() : M.just(unsafeUpdateAt_(as, i, a))
 }
 
 /**
@@ -2135,7 +2135,7 @@ export function updateAt_<A>(as: ReadonlyArray<A>, i: number, a: A): Option<Read
  * @since 1.0.0
  * @dataFirst updateAt_
  */
-export function updateAt<A>(i: number, a: A): (as: ReadonlyArray<A>) => Option<ReadonlyArray<A>> {
+export function updateAt<A>(i: number, a: A): (as: ReadonlyArray<A>) => Maybe<ReadonlyArray<A>> {
   return (as) => updateAt_(as, i, a)
 }
 
@@ -2393,11 +2393,9 @@ export const chainS_ = P.chainSF_(Monad)
 export const chainS: <A, K, N extends string>(
   name: Exclude<N, keyof K>,
   f: (_: K) => ReadonlyArray<A>
-) => (mk: ReadonlyArray<K>) => ReadonlyArray<
-  {
-    [k in N | keyof K]: k extends keyof K ? K[k] : A
-  }
-> = P.chainSF(Monad)
+) => (mk: ReadonlyArray<K>) => ReadonlyArray<{
+  [k in N | keyof K]: k extends keyof K ? K[k] : A
+}> = P.chainSF(Monad)
 
 export const pureS_ = P.pureSF_(Monad)
 
@@ -2410,11 +2408,9 @@ export const toS_ = P.toSF_(Monad)
 
 export const toS: <K, N extends string>(
   name: Exclude<N, keyof K>
-) => <A>(fa: ReadonlyArray<A>) => ReadonlyArray<
-  {
-    [k in Exclude<N, keyof K>]: A
-  }
-> = P.toSF(Functor)
+) => <A>(fa: ReadonlyArray<A>) => ReadonlyArray<{
+  [k in Exclude<N, keyof K>]: A
+}> = P.toSF(Functor)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -2423,13 +2419,13 @@ export const toS: <K, N extends string>(
  */
 
 const adapter: {
-  <A>(_: () => O.Option<A>): GenLazyHKT<ReadonlyArray<A>, A>
+  <A>(_: () => M.Maybe<A>): GenLazyHKT<ReadonlyArray<A>, A>
   <A>(_: () => ReadonlyArray<A>): GenLazyHKT<ReadonlyArray<A>, A>
 } = (_: () => any) =>
   new GenLazyHKT(() => {
     const x = _()
-    if (O.isOption(x)) {
-      return new GenLazyHKT(() => O.match_(x, () => [], pure))
+    if (M.isMaybe(x)) {
+      return new GenLazyHKT(() => M.match_(x, () => [], pure))
     }
     return x
   })
@@ -2543,16 +2539,16 @@ export function exists<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => 
   return (as): as is NonEmptyArray<A> => exists_(as, predicate)
 }
 
-export function head<A>(as: ReadonlyArray<A>): Option<A> {
-  return isEmpty(as) ? O.none() : O.some(as[0])
+export function head<A>(as: ReadonlyArray<A>): Maybe<A> {
+  return isEmpty(as) ? M.nothing() : M.just(as[0])
 }
 
-export function init<A>(as: ReadonlyArray<A>): Option<ReadonlyArray<A>> {
+export function init<A>(as: ReadonlyArray<A>): Maybe<ReadonlyArray<A>> {
   const len = as.length
-  return len === 0 ? O.none() : O.some(as.slice(0, len - 1))
+  return len === 0 ? M.nothing() : M.just(as.slice(0, len - 1))
 }
 
-export function last<A>(as: ReadonlyArray<A>): Option<A> {
+export function last<A>(as: ReadonlyArray<A>): Maybe<A> {
   return lookup_(as, as.length - 1)
 }
 
@@ -2617,8 +2613,8 @@ export function sum(as: ReadonlyArray<number>): number {
   return foldl_(as, 0, (b, a) => b + a)
 }
 
-export function tail<A>(as: ReadonlyArray<A>): Option<ReadonlyArray<A>> {
-  return isEmpty(as) ? O.none() : O.some(as.slice(1))
+export function tail<A>(as: ReadonlyArray<A>): Maybe<ReadonlyArray<A>> {
+  return isEmpty(as) ? M.nothing() : M.just(as.slice(1))
 }
 
 export function toBuffer(as: ReadonlyArray<Byte>): Uint8Array {

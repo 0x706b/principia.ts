@@ -1,6 +1,6 @@
 import type { Eq } from '../Eq'
 
-import * as O from '../Option'
+import * as M from '../Maybe'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -118,8 +118,8 @@ interface Empty<K, V> extends ModifyFn<K, V> {
 export const Empty: Empty<any, any> = {
   _tag: 'Empty',
   modify(edit, keyEq, shift, f, hash, key, size) {
-    const v = f(O.none())
-    if (O.isNone(v)) return Empty
+    const v = f(M.nothing())
+    if (M.isNothing(v)) return Empty
     ++size.value
     return LeafNode(edit, hash, key, v)
   }
@@ -139,7 +139,7 @@ export function canEditNode<K, V>(edit: number, node: Node<K, V>): boolean {
 
 export type KeyEq<K> = Eq<K>['equals_']
 
-export type UpdateFn<V> = (v: O.Option<V>) => O.Option<V>
+export type UpdateFn<V> = (v: M.Maybe<V>) => M.Maybe<V>
 
 interface ModifyFn<K, V> {
   modify(edit: number, keyEq: KeyEq<K>, shift: number, f: UpdateFn<V>, hash: number, key: K, size: SizeRef): Node<K, V>
@@ -150,10 +150,10 @@ interface LeafNode<K, V> extends ModifyFn<K, V> {
   edit: number
   hash: number
   key: K
-  value: O.Option<V>
+  value: M.Maybe<V>
 }
 
-export function LeafNode<K, V>(edit: number, hash: number, key: K, value: O.Option<V>): LeafNode<K, V> {
+export function LeafNode<K, V>(edit: number, hash: number, key: K, value: M.Maybe<V>): LeafNode<K, V> {
   return {
     _tag: 'LeafNode',
     edit,
@@ -178,7 +178,7 @@ function LeafNode__modify<K, V>(
     const v = f(this.value)
     if (v === this.value) {
       return this
-    } else if (O.isNone(v)) {
+    } else if (M.isNothing(v)) {
       --size.value
       return Empty
     }
@@ -188,8 +188,8 @@ function LeafNode__modify<K, V>(
     }
     return LeafNode(edit, hash, key, v)
   }
-  const v = f(O.none())
-  if (O.isNone(v)) return this
+  const v = f(M.nothing())
+  if (M.isNothing(v)) return this
   ++size.value
   return mergeLeaves(edit, shift, this.hash, this, hash, LeafNode(edit, hash, key, v))
 }
@@ -228,8 +228,8 @@ function CollisionNode__modify<K, V>(
 
     return list.length > 1 ? CollisionNode(edit, this.hash, list) : list[0] // collapse single element collision list
   }
-  const v = f(O.none())
-  if (O.isNone(v)) return this
+  const v = f(M.nothing())
+  if (M.isNothing(v)) return this
   ++size.value
   return mergeLeaves(edit, shift, this.hash, this, hash, LeafNode(edit, hash, key, v))
 }
@@ -251,7 +251,7 @@ function updateCollisionList<K, V>(
       const value    = child.value
       const newValue = f(value)
       if (newValue === value) return list
-      if (O.isNone(newValue)) {
+      if (M.isNothing(newValue)) {
         --size.value
         return arraySpliceOut(mutate, i, list)
       }
@@ -259,8 +259,8 @@ function updateCollisionList<K, V>(
     }
   }
 
-  const newValue = f(O.none())
-  if (O.isNone(newValue)) return list
+  const newValue = f(M.nothing())
+  if (M.isNothing(newValue)) return list
   ++size.value
   return arrayUpdate(mutate, len, LeafNode(edit, hash, key, newValue), list)
 }

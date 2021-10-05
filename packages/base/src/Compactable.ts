@@ -1,6 +1,6 @@
 import type * as HKT from './HKT'
 import type { Either } from './internal/Either'
-import type { Option } from './internal/Option'
+import type { Maybe } from './internal/Maybe'
 
 export interface Compactable<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
   readonly compact: CompactFn<F, C>
@@ -8,7 +8,7 @@ export interface Compactable<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<
 }
 
 export interface CompactFn<F extends HKT.URIS, C = HKT.Auto> {
-  <K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<A>>): HKT.Kind<
+  <K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Maybe<A>>): HKT.Kind<
     F,
     C,
     K,

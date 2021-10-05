@@ -1,13 +1,13 @@
 import type { Either } from '../../Either'
 import type { Has } from '../../Has'
-import type { Option } from '../../Option'
+import type { Maybe } from '../../Maybe'
 import type { FIO, IO, UIO } from '../IO/core'
 import type { Decision, StepFunction } from './Decision'
 
 import * as E from '../../Either'
 import { NoSuchElementError } from '../../Error'
 import { pipe } from '../../function'
-import * as O from '../../Option'
+import * as M from '../../Maybe'
 import { tuple } from '../../tuple'
 import { Clock } from '../Clock'
 import * as I from '../IO/core'
@@ -66,7 +66,7 @@ export class Schedule<R, I, O> {
 
 export class Driver<R, I, O> {
   constructor(
-    readonly next: (input: I) => IO<R, Option<never>, O>,
+    readonly next: (input: I) => IO<R, Maybe<never>, O>,
     readonly last: FIO<Error, O>,
     readonly reset: UIO<void>
   ) {}
@@ -80,14 +80,14 @@ export class Driver<R, I, O> {
 
 export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<Clock> & R, I, O>> {
   return pipe(
-    Ref.make([O.none<O>(), schedule.step] as const),
+    Ref.make([M.nothing<O>(), schedule.step] as const),
     I.map((ref) => {
-      const reset = ref.set([O.none(), schedule.step])
+      const reset = ref.set([M.nothing(), schedule.step])
 
       const last = pipe(
         ref.get,
         I.chain(([o, _]) =>
-          O.match_(
+          M.match_(
             o,
             () => I.fail(new NoSuchElementError('Driver.last')),
             (b) => I.pure(b)
@@ -102,12 +102,12 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
           const dec  = yield* _(step(now, input))
           switch (dec._tag) {
             case 'Done': {
-              return yield* _(pipe(ref.set(tuple(O.some(dec.out), done(dec.out))), I.crossSecond(I.fail(O.none()))))
+              return yield* _(pipe(ref.set(tuple(M.just(dec.out), done(dec.out))), I.crossSecond(I.fail(M.nothing()))))
             }
             case 'Continue': {
               return yield* _(
                 pipe(
-                  ref.set(tuple(O.some(dec.out), dec.next)),
+                  ref.set(tuple(M.just(dec.out), dec.next)),
                   I.asLazy(() => dec.interval - now),
                   I.chain((s) => (s > 0 ? Clock.sleep(s) : I.unit())),
                   I.asLazy(() => dec.out)
@@ -803,24 +803,24 @@ export function fixed(interval: number): Schedule<unknown, unknown, number> {
   type State = { startMillis: number, lastRun: number }
 
   const loop =
-    (startMillis: Option<State>, n: number): StepFunction<unknown, unknown, number> =>
+    (startMillis: Maybe<State>, n: number): StepFunction<unknown, unknown, number> =>
     (now, _) =>
       I.pure(
-        O.match_(
+        M.match_(
           startMillis,
-          () => makeContinue(n + 1, now + interval, loop(O.some({ startMillis: now, lastRun: now }), n + 1)),
+          () => makeContinue(n + 1, now + interval, loop(M.just({ startMillis: now, lastRun: now }), n + 1)),
           ({ lastRun, startMillis }) => {
             const runningBehind = now > lastRun + interval
             const boundary      = interval === 0 ? interval : interval - ((now - startMillis) % interval)
             const sleepTime     = boundary === 0 ? interval : boundary
             const nextRun       = runningBehind ? now : now + sleepTime
 
-            return makeContinue(n + 1, nextRun, loop(O.some<State>({ startMillis, lastRun: nextRun }), n + 1))
+            return makeContinue(n + 1, nextRun, loop(M.just<State>({ startMillis, lastRun: nextRun }), n + 1))
           }
         )
       )
 
-  return new Schedule(loop(O.none(), 0))
+  return new Schedule(loop(M.nothing(), 0))
 }
 
 const foldIOLoop =
@@ -1560,21 +1560,21 @@ export function whileOutputIO<R1, O>(
 }
 
 const windowedLoop =
-  (interval: number, startMillis: Option<number>, n: number): StepFunction<unknown, unknown, number> =>
+  (interval: number, startMillis: Maybe<number>, n: number): StepFunction<unknown, unknown, number> =>
   (now, _) =>
     I.pure(
-      O.match_(
+      M.match_(
         startMillis,
-        () => makeContinue(n + 1, now + interval, windowedLoop(interval, O.some(now), n + 1)),
+        () => makeContinue(n + 1, now + interval, windowedLoop(interval, M.just(now), n + 1)),
         (startMillis) =>
           makeContinue(
             n + 1,
             now + ((now - startMillis) % interval),
-            windowedLoop(interval, O.some(startMillis), n + 1)
+            windowedLoop(interval, M.just(startMillis), n + 1)
           )
       )
     )
 
 export function windowed(interval: number): Schedule<unknown, unknown, number> {
-  return new Schedule(windowedLoop(interval, O.none(), 0))
+  return new Schedule(windowedLoop(interval, M.nothing(), 0))
 }

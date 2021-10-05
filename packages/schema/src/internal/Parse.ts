@@ -4,8 +4,8 @@ import type { Refinement } from '@principia/base/Refinement'
 import type { These } from '@principia/base/These'
 
 import { flow, pipe } from '@principia/base/function'
+import * as M from '@principia/base/Maybe'
 import * as NEA from '@principia/base/NonEmptyArray'
-import * as O from '@principia/base/Option'
 import * as Th from '@principia/base/These'
 
 export interface Parse<I, E, A> {
@@ -27,22 +27,22 @@ export function fromPredicateWarn<E, A>(predicate: Predicate<A>, onFalse: (a: A)
 export function fromPredicate<I, E, W, A extends I>(
   refinement: Refinement<I, A>,
   onFalse: (i: I) => E,
-  onTrueWarn: (i: A) => O.Option<W>
+  onTrueWarn: (i: A) => M.Maybe<W>
 ): Parse<I, E, A>
 export function fromPredicate<E, W, A>(
   predicate: Predicate<A>,
   onFalse: (a: A) => E,
-  onTrueWarn: (a: A) => O.Option<W>
+  onTrueWarn: (a: A) => M.Maybe<W>
 ): Parse<A, E | W, A>
 export function fromPredicate<E, W, A>(
   predicate: Predicate<A>,
   onFalse: (a: A) => E,
-  onTrueWarn: (a: A) => O.Option<W>
+  onTrueWarn: (a: A) => M.Maybe<W>
 ): Parse<A, E | W, A> {
   return (a) => {
     if (predicate(a)) {
       const w = onTrueWarn(a)
-      return O.isSome(w) ? Th.both(w.value, a) : Th.right(a)
+      return M.isJust(w) ? Th.both(w.value, a) : Th.right(a)
     }
     return Th.left(onFalse(a))
   }

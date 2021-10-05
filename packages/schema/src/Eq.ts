@@ -1,6 +1,6 @@
 import type * as S from './Schemable'
 import type { Chunk } from '@principia/base/Chunk'
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 import type { UnionToIntersection } from '@principia/base/prelude'
 
 import * as A from '@principia/base/Array'
@@ -9,8 +9,8 @@ import * as E from '@principia/base/Either'
 import * as _ from '@principia/base/Eq'
 import { flow } from '@principia/base/function'
 import * as HR from '@principia/base/HeterogeneousRecord'
+import * as M from '@principia/base/Maybe'
 import * as NA from '@principia/base/NonEmptyArray'
-import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 import { DefaultEq } from '@principia/base/Structural/Equatable'
 import * as tup from '@principia/base/tuple'
@@ -56,8 +56,8 @@ export const UnknownRecord: Eq<Record<string, any>> = R.UnknownRecordEq
  * -------------------------------------------
  */
 
-export function nullable<A>(or: Eq<A>): Eq<Option<A>> {
-  return O.getEq(or)
+export function nullable<A>(or: Eq<A>): Eq<Maybe<A>> {
+  return M.getEq(or)
 }
 
 /*
@@ -250,7 +250,7 @@ export const Schemable: S.Schemable<EqSURI> = {
   },
   taggedUnion: (eqs, schema) =>
     _.Eq((x, y) => {
-      if (O.isSome(schema.tag)) {
+      if (M.isJust(schema.tag)) {
         const tagv = schema.tag.value
         return eqs[tagv.index[x[tagv.key]]].equals_(x, y)
       }

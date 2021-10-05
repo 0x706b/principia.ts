@@ -7,14 +7,14 @@ import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/function'
 import { Integer } from '@principia/base/Integer'
 import * as I from '@principia/base/IO'
-import * as M from '@principia/base/IO/Managed'
+import * as Ma from '@principia/base/IO/Managed'
 import * as Queue from '@principia/base/IO/Queue'
 import * as Ref from '@principia/base/IO/Ref'
 import * as S from '@principia/base/IO/Stream'
 import * as Push from '@principia/base/IO/Stream/Push'
 import * as Sink from '@principia/base/IO/Stream/Sink'
+import * as M from '@principia/base/Maybe'
 import * as N from '@principia/base/Newtype'
-import * as O from '@principia/base/Option'
 import * as fs from 'fs'
 
 type ErrnoException = NodeJS.ErrnoException
@@ -95,13 +95,13 @@ export function createReadStream(
     ),
     S.bracket(([fd, _]) => I.orHalt(close(fd))),
     S.chain(([fd, state]) =>
-      S.repeatIOChunkOption(
+      S.repeatIOChunkMaybe(
         I.gen(function* (_) {
           const [pos, end]     = yield* _(state.get)
           const n              = Math.min(end - pos + 1, chunkSize)
-          const [bytes, chunk] = yield* _(I.mapError_(read(fd, n, pos), O.some))
+          const [bytes, chunk] = yield* _(I.mapError_(read(fd, n, pos), M.just))
 
-          yield* _(I.when_(I.fail(O.none()), () => bytes === 0))
+          yield* _(I.when_(I.fail(M.nothing()), () => bytes === 0))
           yield* _(state.set([pos + n, end]))
           if (bytes !== chunk.length) {
             const dst = Buffer.allocUnsafeSlow(bytes)
@@ -127,27 +127,27 @@ export function createWriteSink(
   options?: CreateWriteSinkOptions
 ): Sink.Sink<unknown, ErrnoException, Byte, never, void> {
   return new Sink.Sink(
-    M.gen(function* (_) {
-      const errorRef = yield* _(Ref.make<O.Option<ErrnoException>>(O.none()))
+    Ma.gen(function* (_) {
+      const errorRef = yield* _(Ref.make<M.Maybe<ErrnoException>>(M.nothing()))
       const st       = yield* _(
-        M.catchAll_(
-          M.bracket_(
+        Ma.catchAll_(
+          Ma.bracket_(
             I.crossPar_(
               open(path, options?.flags ?? fs.constants.O_CREAT | fs.constants.O_WRONLY, options?.mode),
               Ref.make(options?.start ? Integer.unwrap(options.start) : undefined)
             ),
             ([fd, _]) => I.orHalt(close(fd))
           ),
-          (err) => I.toManaged_(errorRef.set(O.some(err)))
+          (err) => I.toManaged_(errorRef.set(M.just(err)))
         )
       )
 
       const maybeError = yield* _(errorRef.get)
-      if (!st && O.isSome(maybeError)) {
-        return (_: O.Option<Chunk<Byte>>) => Push.fail(maybeError.value, C.empty())
+      if (!st && M.isJust(maybeError)) {
+        return (_: M.Maybe<Chunk<Byte>>) => Push.fail(maybeError.value, C.empty())
       } else {
-        return (is: O.Option<Chunk<Byte>>) =>
-          O.match_(
+        return (is: M.Maybe<Chunk<Byte>>) =>
+          M.match_(
             is,
             () => Push.emit(undefined, C.empty()),
             (chunk) =>
@@ -249,9 +249,9 @@ export function lstat(path: fs.PathLike): I.FIO<ErrnoException, fs.Stats> {
 export function mkdir(
   path: fs.PathLike,
   options?: { recursive?: boolean, mode?: fs.Mode }
-): I.FIO<ErrnoException, O.Option<string>> {
-  return I.async<unknown, ErrnoException, O.Option<string>>((cb) => {
-    fs.mkdir(path, options, (err, path) => (err ? cb(I.fail(err)) : cb(I.succeed(O.fromNullable(path)))))
+): I.FIO<ErrnoException, M.Maybe<string>> {
+  return I.async<unknown, ErrnoException, M.Maybe<string>>((cb) => {
+    fs.mkdir(path, options, (err, path) => (err ? cb(I.fail(err)) : cb(I.succeed(M.fromNullable(path)))))
   })
 }
 
@@ -285,9 +285,9 @@ export class Dir {
     })
   }
 
-  read(): I.FIO<ErrnoException, O.Option<fs.Dirent>> {
-    return I.async<unknown, ErrnoException, O.Option<fs.Dirent>>((cb) => {
-      this._dir.read((err, dirEnt) => (err ? cb(I.fail(err)) : cb(I.succeed(O.fromNullable(dirEnt)))))
+  read(): I.FIO<ErrnoException, M.Maybe<fs.Dirent>> {
+    return I.async<unknown, ErrnoException, M.Maybe<fs.Dirent>>((cb) => {
+      this._dir.read((err, dirEnt) => (err ? cb(I.fail(err)) : cb(I.succeed(M.fromNullable(dirEnt)))))
     })
   }
 }
@@ -495,19 +495,19 @@ export function watch(
     ),
     S.fromIO,
     S.chain((watcher) =>
-      S.repeatIOOption(
-        I.async<unknown, O.Option<Error>, { eventType: 'rename' | 'change', filename: string | Buffer }>((cb) => {
+      S.repeatIOMaybe(
+        I.async<unknown, M.Maybe<Error>, { eventType: 'rename' | 'change', filename: string | Buffer }>((cb) => {
           watcher.once('change', (eventType, filename) => {
             watcher.removeAllListeners()
             cb(I.succeed({ eventType: eventType as any, filename }))
           })
           watcher.once('error', (error) => {
             watcher.removeAllListeners()
-            cb(I.fail(O.some(error)))
+            cb(I.fail(M.just(error)))
           })
           watcher.once('close', () => {
             watcher.removeAllListeners()
-            cb(I.fail(O.none()))
+            cb(I.fail(M.nothing()))
           })
         })
       )
@@ -546,7 +546,7 @@ export function watchFile(
     }),
     S.bracket(Queue.shutdown),
     S.chain((q) =>
-      S.repeatIOOption<unknown, never, [fs.BigIntStats | fs.Stats, fs.BigIntStats | fs.Stats]>(Queue.take(q))
+      S.repeatIOMaybe<unknown, never, [fs.BigIntStats | fs.Stats, fs.BigIntStats | fs.Stats]>(Queue.take(q))
     )
   )
 }

@@ -10,7 +10,7 @@ import { Either } from '@principia/base/Either'
 import * as E from '@principia/base/Either'
 import { flow, pipe } from '@principia/base/function'
 import * as HS from '@principia/base/HashSet'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import * as R from '@principia/base/Record'
 import * as Set from '@principia/base/Set'
 import { isString } from '@principia/base/string'
@@ -210,29 +210,29 @@ export const dateMs: DateMsD = Pr.parser((u: unknown) => {
     : pipe(PE.dateFromMsE(u), PE.leafE, Th.left)
 }, 'DateFromMs')
 
-export interface NoneD extends Pr.MapP<Pr.StructP<{ _tag: LiteralP<['None']> }>, O.None> {}
-export const None: NoneD = pipe(
+export interface NothingD extends Pr.MapP<Pr.StructP<{ _tag: LiteralP<['Nothing']> }>, M.Nothing> {}
+export const Nothing: NothingD = pipe(
   Pr.struct({
-    _tag: Pr.literal('None')
+    _tag: Pr.literal('Nothing')
   }),
-  Pr.map(() => O.none() as O.None)
+  Pr.map(() => M.nothing() as M.Nothing)
 )
 
-export interface SomeD<D> extends Pr.MapP<Pr.StructP<{ _tag: LiteralP<['Some']>, value: D }>, O.Some<TypeOf<D>>> {}
-export function Some<D extends AnyUParser>(value: D): SomeD<D> {
+export interface JustD<D> extends Pr.MapP<Pr.StructP<{ _tag: LiteralP<['Just']>, value: D }>, M.Just<TypeOf<D>>> {}
+export function Just<D extends AnyUParser>(value: D): JustD<D> {
   return pipe(
     Pr.struct({
-      _tag: Pr.literal('Some'),
+      _tag: Pr.literal('Just'),
       value
     }),
-    Pr.map(({ value }) => O.some(value) as O.Some<TypeOf<D>>)
+    Pr.map(({ value }) => M.just(value) as M.Just<TypeOf<D>>)
   )
 }
 
-export function Option<D extends AnyUParser>(value: D): SumP<'_tag', { None: NoneD, Some: SomeD<D> }> {
+export function Option<D extends AnyUParser>(value: D): SumP<'_tag', { Nothing: NothingD, Just: JustD<D> }> {
   return Pr.sum('_tag')({
-    None,
-    Some: Some(value)
+    Nothing,
+    Just: Just(value)
   })
 }
 
@@ -332,7 +332,7 @@ export const Schemable: S.Schemable<DecoderSURI> = {
         return Th.left(PE.leafE(PE.unknownRecordE(u)))
       }
 
-      if (schema.tag._tag === 'Some') {
+      if (schema.tag._tag === 'Just') {
         const tagv = schema.tag.value
         if (!(tagv.key in u) || !isString(u[tagv.key]) || !(u[tagv.key] in tagv.index)) {
           return Th.left(PE.leafE(PE.tagE(tagv.key, tagv.values)))
@@ -377,7 +377,7 @@ export const Schemable: S.Schemable<DecoderSURI> = {
       const decoder = prop.instance
       if (prop._optional === 'required') {
         required[key] = decoder
-        if (prop._def._tag === 'Some') {
+        if (prop._def._tag === 'Just') {
           const def = prop._def.value
           switch (def[0]) {
             case 'both': {
@@ -516,8 +516,8 @@ export const Schemable: S.Schemable<DecoderSURI> = {
       D,
       Pr.parser(
         (a: InputOfPrism<typeof prism>) =>
-          O.match_(
-            prism.getOption(a),
+          M.match_(
+            prism.getMaybe(a),
             () => Th.left(PE.leafE(PE.newtypePrismE(a))),
             (n) => Th.right(n)
           ),

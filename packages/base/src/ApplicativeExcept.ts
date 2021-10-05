@@ -1,19 +1,19 @@
 import type { ApplicativeMin } from './Applicative'
 import type { Fail, FailMin } from './Fail'
 import type { Either } from './internal/Either'
-import type { Option } from './internal/Option'
+import type { Maybe } from './internal/Maybe'
 
 import { Applicative, pureF } from './Applicative'
 import { flow } from './function'
 import * as HKT from './HKT'
 import * as E from './internal/Either'
-import * as O from './internal/Option'
+import * as M from './internal/Maybe'
 
 export interface ApplicativeExcept<F extends HKT.URIS, C = HKT.Auto> extends Applicative<F, C>, Fail<F, C> {
   readonly catchAll_: CatchAllFn_<F, C>
   readonly catchAll: CatchAllFn<F, C>
-  readonly catchSome_: CatchSomeFn_<F, C>
-  readonly catchSome: CatchSomeFn<F, C>
+  readonly catchJust_: CatchJustFn_<F, C>
+  readonly catchJust: CatchJustFn<F, C>
   readonly either: EitherFn<F, C>
 }
 
@@ -26,13 +26,13 @@ export function ApplicativeExcept<F extends HKT.URIS, C = HKT.Auto>(
   F: ApplicativeExceptMin<F, C>
 ): ApplicativeExcept<F, C> {
   const ApplicativeF = Applicative(F)
-  const catchSome_   = getCatchSome_(F)
+  const catchJust_   = getCatchJust_(F)
   return HKT.instance<ApplicativeExcept<F, C>>({
     ...ApplicativeF,
     catchAll_: F.catchAll_,
     catchAll: (f) => (fa) => F.catchAll_(fa, f),
-    catchSome_,
-    catchSome: (f) => (fa) => catchSome_(fa, f),
+    catchJust_,
+    catchJust: (f) => (fa) => catchJust_(fa, f),
     either: getEither(F),
     fail: F.fail
   })
@@ -103,12 +103,12 @@ export interface CatchAllFn<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export interface CatchSomeFn_<F extends HKT.URIS, C = HKT.Auto> {
+export interface CatchJustFn_<F extends HKT.URIS, C = HKT.Auto> {
   <K, Q, W, X, I, S, R, E, A, K1, Q1, W1, X1, I1, S1, R1, E1, A1>(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     f: (
       e: HKT.OrFix<'E', C, E>
-    ) => Option<
+    ) => Maybe<
       HKT.Kind<
         F,
         C,
@@ -138,20 +138,20 @@ export interface CatchSomeFn_<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export function getCatchSome_<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeExceptMin<F, C>): CatchSomeFn_<F, C> {
+export function getCatchJust_<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeExceptMin<F, C>): CatchJustFn_<F, C> {
   return (fa, f) =>
     F.catchAll_(
       fa,
       flow(
         f,
-        O.getOrElse(() => fa)
+        M.getOrElse(() => fa)
       )
     )
 }
 
-export interface CatchSomeFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface CatchJustFn<F extends HKT.URIS, C = HKT.Auto> {
   <E, K1, Q1, W1, X1, I1, S1, R1, E1, A1>(
-    f: (e: HKT.OrFix<'E', C, E>) => Option<HKT.Kind<F, C, K1, Q1, W1, X1, I1, S1, R1, E1, A1>>
+    f: (e: HKT.OrFix<'E', C, E>) => Maybe<HKT.Kind<F, C, K1, Q1, W1, X1, I1, S1, R1, E1, A1>>
   ): <K, Q, W, X, I, S, R, A>(
     fa: HKT.Kind<
       F,
@@ -181,13 +181,13 @@ export interface CatchSomeFn<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export function getCatchSome<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeExceptMin<F, C>): CatchSomeFn<F, C> {
+export function getCatchJust<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeExceptMin<F, C>): CatchJustFn<F, C> {
   return (f) => (fa) =>
     F.catchAll_(
       fa,
       flow(
         f,
-        O.getOrElse(() => fa)
+        M.getOrElse(() => fa)
       )
     )
 }

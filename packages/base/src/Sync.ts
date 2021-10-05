@@ -9,8 +9,8 @@ import * as E from './Either'
 import { NoSuchElementError } from './Error'
 import { flow, identity, pipe } from './function'
 import { isTag, mergeEnvironments } from './Has'
+import * as M from './Maybe'
 import { ZURI } from './Modules'
-import * as O from './Option'
 import * as P from './prelude'
 import * as R from './Record'
 import * as Z from './Z'
@@ -66,8 +66,8 @@ export const deferTryCatch: <E1>(
 
 export const fromEither: <E, A>(either: E.Either<E, A>) => Sync<unknown, E, A> = E.match(fail, succeed)
 
-export const fromOption = <E, A>(option: O.Option<A>, onNone: () => E): Sync<unknown, E, A> =>
-  O.match_(option, () => fail(onNone()), succeed)
+export const fromMaybe = <E, A>(option: M.Maybe<A>, onNothing: () => E): Sync<unknown, E, A> =>
+  M.match_(option, () => fail(onNothing()), succeed)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -148,14 +148,14 @@ export const catchAll: <E, R1, E1, B>(
   onFailure: (e: E) => Sync<R1, E1, B>
 ) => <R, A>(fa: Sync<R, E, A>) => Sync<R1 & R, E1, A | B> = Z.catchAll
 
-export const catchSome_: <R, E, A, R1, E1, B>(
+export const catchJust_: <R, E, A, R1, E1, B>(
   fa: Sync<R, E, A>,
-  onFailure: (e: E) => O.Option<Sync<R1, E1, B>>
-) => Sync<R1 & R, E | E1, A | B> = Z.catchSome_
+  onFailure: (e: E) => M.Maybe<Sync<R1, E1, B>>
+) => Sync<R1 & R, E | E1, A | B> = Z.catchJust_
 
-export const catchSome: <E, R1, E1, B>(
-  onFailure: (e: E) => O.Option<Sync<R1, E1, B>>
-) => <R, A>(fa: Sync<R, E, A>) => Sync<R1 & R, E | E1, A | B> = Z.catchSome
+export const catchJust: <E, R1, E1, B>(
+  onFailure: (e: E) => M.Maybe<Sync<R1, E1, B>>
+) => <R, A>(fa: Sync<R, E, A>) => Sync<R1 & R, E | E1, A | B> = Z.catchJust
 
 /**
  * Effectfully matches two `Sync` computations together
@@ -871,8 +871,8 @@ const adapter = (_: any, __?: any) => {
   if (E.isEither(_)) {
     return new GenSync(fromEither(_))
   }
-  if (O.isOption(_)) {
-    return new GenSync(fromOption(_, () => (__ ? __() : new NoSuchElementError('Sync.gen'))))
+  if (M.isMaybe(_)) {
+    return new GenSync(fromMaybe(_, () => (__ ? __() : new NoSuchElementError('Sync.gen'))))
   }
   if (isTag(_)) {
     return new GenSync(asksService(_)(identity))
@@ -883,8 +883,8 @@ const adapter = (_: any, __?: any) => {
 export function gen<R0, E0, A0>(): <T extends GenSync<R0, E0, any>>(
   f: (i: {
     <A>(_: Tag<A>): GenSync<Has<A>, never, A>
-    <E, A>(_: O.Option<A>, onNone: () => E): GenSync<unknown, E, A>
-    <A>(_: O.Option<A>): GenSync<unknown, NoSuchElementError, A>
+    <E, A>(_: M.Maybe<A>, onNothing: () => E): GenSync<unknown, E, A>
+    <A>(_: M.Maybe<A>): GenSync<unknown, NoSuchElementError, A>
     <E, A>(_: E.Either<E, A>): GenSync<unknown, E, A>
     <R, E, A>(_: Sync<R, E, A>): GenSync<R, E, A>
   }) => Generator<T, A0, any>
@@ -892,8 +892,8 @@ export function gen<R0, E0, A0>(): <T extends GenSync<R0, E0, any>>(
 export function gen<E0, A0>(): <T extends GenSync<any, E0, any>>(
   f: (i: {
     <A>(_: Tag<A>): GenSync<Has<A>, never, A>
-    <E, A>(_: O.Option<A>, onNone: () => E): GenSync<unknown, E, A>
-    <A>(_: O.Option<A>): GenSync<unknown, NoSuchElementError, A>
+    <E, A>(_: M.Maybe<A>, onNothing: () => E): GenSync<unknown, E, A>
+    <A>(_: M.Maybe<A>): GenSync<unknown, NoSuchElementError, A>
     <E, A>(_: E.Either<E, A>): GenSync<unknown, E, A>
     <R, E, A>(_: Sync<R, E, A>): GenSync<R, E, A>
   }) => Generator<T, A0, any>
@@ -901,8 +901,8 @@ export function gen<E0, A0>(): <T extends GenSync<any, E0, any>>(
 export function gen<A0>(): <T extends GenSync<any, any, any>>(
   f: (i: {
     <A>(_: Tag<A>): GenSync<Has<A>, never, A>
-    <E, A>(_: O.Option<A>, onNone: () => E): GenSync<unknown, E, A>
-    <A>(_: O.Option<A>): GenSync<unknown, NoSuchElementError, A>
+    <E, A>(_: M.Maybe<A>, onNothing: () => E): GenSync<unknown, E, A>
+    <A>(_: M.Maybe<A>): GenSync<unknown, NoSuchElementError, A>
     <E, A>(_: E.Either<E, A>): GenSync<unknown, E, A>
     <R, E, A>(_: Sync<R, E, A>): GenSync<R, E, A>
   }) => Generator<T, A0, any>
@@ -910,8 +910,8 @@ export function gen<A0>(): <T extends GenSync<any, any, any>>(
 export function gen<T extends GenSync<any, any, any>, A>(
   f: (i: {
     <A>(_: Tag<A>): GenSync<Has<A>, never, A>
-    <E, A>(_: O.Option<A>, onNone: () => E): GenSync<unknown, E, A>
-    <A>(_: O.Option<A>): GenSync<unknown, NoSuchElementError, A>
+    <E, A>(_: M.Maybe<A>, onNothing: () => E): GenSync<unknown, E, A>
+    <A>(_: M.Maybe<A>): GenSync<unknown, NoSuchElementError, A>
     <E, A>(_: E.Either<E, A>): GenSync<unknown, E, A>
     <R, E, A>(_: Sync<R, E, A>): GenSync<R, E, A>
   }) => Generator<T, A, any>

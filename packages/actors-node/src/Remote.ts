@@ -6,8 +6,8 @@ import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as T from '@principia/base/IO'
 import * as L from '@principia/base/IO/Layer'
-import * as M from '@principia/base/IO/Managed'
-import * as O from '@principia/base/Option'
+import * as Ma from '@principia/base/IO/Managed'
+import * as M from '@principia/base/Maybe'
 import * as Ex from '@principia/express'
 import * as S from '@principia/schema'
 import * as Parser from '@principia/schema/Decoder'
@@ -68,7 +68,7 @@ export const RemotingExpress = L.fresh(
 )['>>>'](
   L.fresh(
     L.fromRawManaged(
-      M.gen(function* (_) {
+      Ma.gen(function* (_) {
         const { host, port } = yield* _(RemotingExpressConfig)
         const system         = yield* _(ActorSystemTag)
 
@@ -177,7 +177,7 @@ export const RemotingExpress = L.fresh(
         return ActorSystemTag.of(
           new ActorSystem(
             system.actorSystemName,
-            O.some(new RemoteConfig({ host, port })),
+            M.just(new RemoteConfig({ host, port })),
             system.refActorMap,
             system.parentActor
           )

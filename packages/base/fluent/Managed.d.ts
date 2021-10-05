@@ -9,7 +9,7 @@ import type { FiberContext } from '@principia/base/IO/Fiber'
 import type { Layer } from '@principia/base/IO/Layer'
 import type * as M from '@principia/base/IO/Managed'
 import type { Schedule } from '@principia/base/IO/Schedule'
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 import type { Erase, Monoid } from '@principia/base/prelude'
 
 /* eslint typescript-sort-keys/interface: "error" */
@@ -437,22 +437,22 @@ declare module '@principia/base/IO/Managed/core' {
     as<R, E, A, B>(this: M.Managed<R, E, A>, b: B): M.Managed<R, E, B>
 
     /**
+     * @rewriteGetter asJust from "@principia/base/IO/Managed"
+     * @trace getter
+     */
+    asJust: M.Managed<R, E, Maybe<A>>
+
+    /**
+     * @rewriteGetter asJustError from "@principia/base/IO/Managed"
+     * @trace getter
+     */
+    asJustError: M.Managed<R, Maybe<E>, A>
+
+    /**
      * @rewrite asLazy_ from "@principia/base/IO/Managed"
      * @trace 0
      */
     asLazy<R, E, A, B>(this: M.Managed<R, E, A>, b: () => B): M.Managed<R, E, B>
-
-    /**
-     * @rewriteGetter asSome from "@principia/base/IO/Managed"
-     * @trace getter
-     */
-    asSome: M.Managed<R, E, Option<A>>
-
-    /**
-     * @rewriteGetter asSomeError from "@principia/base/IO/Managed"
-     * @trace getter
-     */
-    asSomeError: M.Managed<R, Option<E>, A>
 
     /**
      * @rewriteGetter asUnit from "@principia/base/IO/Managed"
@@ -486,21 +486,21 @@ declare module '@principia/base/IO/Managed/core' {
     ): M.Managed<R & R1, E1, A | B>
 
     /**
-     * @rewrite catchSome_ from "@principia/base/IO/Managed"
+     * @rewrite catchJust_ from "@principia/base/IO/Managed"
      * @trace 0
      */
-    catchSome<R, E, A, R1, E1, B>(
+    catchJust<R, E, A, R1, E1, B>(
       this: M.Managed<R, E, A>,
-      pf: (e: E) => Option<Managed<R1, E1, B>>
+      pf: (e: E) => Maybe<Managed<R1, E1, B>>
     ): M.Managed<R & R1, E | E1, A | B>
 
     /**
-     * @rewrite catchSomeCause_ from "@principia/base/IO/Managed"
+     * @rewrite catchJustCause_ from "@principia/base/IO/Managed"
      * @trace 0
      */
-    catchSomeCause<R, E, A, R1, E1, B>(
+    catchJustCause<R, E, A, R1, E1, B>(
       this: M.Managed<R, E, A>,
-      pf: (cause: Cause<E>) => Option<Managed<R1, E1, B>>
+      pf: (cause: Cause<E>) => Maybe<Managed<R1, E1, B>>
     ): M.Managed<R & R1, E | E1, A | B>
 
     /**
@@ -529,7 +529,7 @@ declare module '@principia/base/IO/Managed/core' {
      * @rewrite collect_ from "@principia/base/IO/Managed"
      * @trace 1
      */
-    collect<R, E, A, E1, B>(this: M.Managed<R, E, A>, e: E1, pf: (a: A) => Option<B>): M.Managed<R, E | E1, B>
+    collect<R, E, A, E1, B>(this: M.Managed<R, E, A>, e: E1, pf: (a: A) => Maybe<B>): M.Managed<R, E | E1, B>
 
     /**
      * @rewrite collectManaged_ from "@principia/base/IO/Managed"
@@ -538,7 +538,7 @@ declare module '@principia/base/IO/Managed/core' {
     collectManaged<R, E, A, E1, R2, E2, B>(
       this: M.Managed<R, E, A>,
       e: E1,
-      pf: (a: A) => Option<M.Managed<R2, E2, B>>
+      pf: (a: A) => Maybe<M.Managed<R2, E2, B>>
     ): M.Managed<R & R2, E | E1 | E2, B>
 
     /**
@@ -649,7 +649,7 @@ declare module '@principia/base/IO/Managed/core' {
      * @rewrite get from "@principia/base/IO/Managed"
      * @trace call
      */
-    get<R, A>(this: M.Managed<R, never, Option<A>>): M.Managed<R, Option<never>, A>
+    get<R, A>(this: M.Managed<R, never, Maybe<A>>): M.Managed<R, Maybe<never>, A>
 
     /**
      * @rewrite giveLayer_ from "@principia/base/IO/Managed"
@@ -727,6 +727,33 @@ declare module '@principia/base/IO/Managed/core' {
       this: M.Managed<R, E, A>,
       that: M.Managed<R1, E1, A1>
     ): M.Managed<Either<R, R1>, E | E1, Either<A, A1>>
+
+    /**
+     * @rewrite justOrElse_ from "@principia/base/IO/Managed"
+     * @trace 0
+     */
+    justOrElse<R, E, A, B>(this: M.Managed<R, E, Maybe<A>>, onNothing: () => B): M.Managed<R, E, A | B>
+
+    /**
+     * @rewrite justOrElseManaged_ from "@principia/base/IO/Managed"
+     * @trace call
+     */
+    justOrElseManaged<R, E, A, R1, E1, B>(
+      this: M.Managed<R, E, Maybe<A>>,
+      onNothing: M.Managed<R1, E1, B>
+    ): M.Managed<R & R1, E | E1, A | B>
+
+    /**
+     * @rewrite justOrFail_ from "@principia/base/IO/Managed"
+     * @trace call
+     */
+    justOrFail<R, E, A>(this: M.Managed<R, E, Maybe<A>>): M.Managed<R, E | NoSuchElementError, A>
+
+    /**
+     * @rewrite justOrFailWith_ from "@principia/base/IO/Managed"
+     * @trace call
+     */
+    justOrFailWith<R, E, A, E1>(this: M.Managed<R, E, Maybe<A>>, onNone: () => E1): M.Managed<R, E | E1, A>
 
     /**
      * @rewrite map_ from "@principia/base/IO/Managed"
@@ -813,6 +840,12 @@ declare module '@principia/base/IO/Managed/core' {
     ): M.Managed<R & R1 & R2, E1 | E2, B | C>
 
     /**
+     * @rewriteGetter Maybe from "@principia/base/IO/Managed"
+     * @trace getter
+     */
+    maybe: M.Managed<R, never, Maybe<A>>
+
+    /**
      * @rewriteGetter memoize from "@principia/base/IO/Managed"
      * @trace getter
      */
@@ -828,19 +861,13 @@ declare module '@principia/base/IO/Managed/core' {
      * @rewrite none from "@principia/base/IO/Managed"
      * @trace call
      */
-    none<R, E, A>(this: M.Managed<R, E, Option<A>>): M.Managed<R, Option<E>, void>
-
-    /**
-     * @rewriteGetter option from "@principia/base/IO/Managed"
-     * @trace getter
-     */
-    option: M.Managed<R, never, Option<A>>
+    none<R, E, A>(this: M.Managed<R, E, Maybe<A>>): M.Managed<R, Maybe<E>, void>
 
     /**
      * @rewrite optional from "@principia/base/IO/Managed"
      * @trace call
      */
-    optional<R, E, A>(this: M.Managed<R, Option<E>, A>): M.Managed<R, E, Option<A>>
+    optional<R, E, A>(this: M.Managed<R, Maybe<E>, A>): M.Managed<R, E, Maybe<A>>
 
     /**
      * @rewriteGetter orDie from "@principia/base/IO/Managed"
@@ -880,9 +907,9 @@ declare module '@principia/base/IO/Managed/core' {
      * @trace 0
      */
     orElseOptional<R, E, A, R1, E1, B>(
-      this: M.Managed<R, Option<E>, A>,
-      that: () => M.Managed<R1, Option<E1>, B>
-    ): M.Managed<R & R1, Option<E | E1>, A | B>
+      this: M.Managed<R, Maybe<E>, A>,
+      that: () => M.Managed<R1, Maybe<E1>, B>
+    ): M.Managed<R & R1, Maybe<E | E1>, A | B>
 
     /**
      * @rewrite orElseSucceed_ from "@principia/base/IO/Managed"
@@ -913,19 +940,19 @@ declare module '@principia/base/IO/Managed/core' {
     ): Managed<R, E, { [k in N | keyof K]: k extends keyof K ? K[k] : A }>
 
     /**
-     * @rewrite refineOrDie_ from "@principia/base/IO/Managed"
+     * @rewrite refineOrHalt_ from "@principia/base/IO/Managed"
      * @trace 0
      */
-    refineOrDie<R, E, A, E1>(this: M.Managed<R, E, A>, pf: (e: E) => Option<E1>): M.Managed<R, E1, A>
+    refineOrHalt<R, E, A, E1>(this: M.Managed<R, E, A>, pf: (e: E) => Maybe<E1>): M.Managed<R, E1, A>
 
     /**
-     * @rewrite refineOrDieWith_ from "@principia/base/IO/Managed"
+     * @rewrite refineOrHaltWith_ from "@principia/base/IO/Managed"
      * @trace 0
      * @trace 1
      */
-    refineOrDieWith<R, E, A, E1>(
+    refineOrHaltWith<R, E, A, E1>(
       this: M.Managed<R, E, A>,
-      pf: (e: E) => Option<E1>,
+      pf: (e: E) => Maybe<E1>,
       f: (e: E) => unknown
     ): M.Managed<R, E1, A>
 
@@ -933,7 +960,7 @@ declare module '@principia/base/IO/Managed/core' {
      * @rewrite reject_ from "@principia/base/IO/Managed"
      * @trace 0
      */
-    reject<R, E, A, E1>(this: M.Managed<R, E, A>, pf: (a: A) => Option<E1>): M.Managed<R, E | E1, A>
+    reject<R, E, A, E1>(this: M.Managed<R, E, A>, pf: (a: A) => Maybe<E1>): M.Managed<R, E | E1, A>
 
     /**
      * @rewrite rejectManaged_ from "@principia/base/IO/Managed"
@@ -941,7 +968,7 @@ declare module '@principia/base/IO/Managed/core' {
      */
     rejectManaged<R, E, A, R1, E1>(
       this: M.Managed<R, E, A>,
-      pf: (a: A) => Option<M.Managed<R1, E1, E1>>
+      pf: (a: A) => Maybe<M.Managed<R1, E1, E1>>
     ): M.Managed<R & R1, E | E1, A>
 
     /**
@@ -982,33 +1009,6 @@ declare module '@principia/base/IO/Managed/core' {
       this: M.Managed<R, E, A>,
       f: (_: M.Managed<R, Cause<E>, A>) => M.Managed<R1, Cause<E1>, B>
     ): M.Managed<R & R1, E | E1, B>
-
-    /**
-     * @rewrite someOrElse_ from "@principia/base/IO/Managed"
-     * @trace 0
-     */
-    someOrElse<R, E, A, B>(this: M.Managed<R, E, Option<A>>, onNone: () => B): M.Managed<R, E, A | B>
-
-    /**
-     * @rewrite someOrElseManaged_ from "@principia/base/IO/Managed"
-     * @trace call
-     */
-    someOrElseManaged<R, E, A, R1, E1, B>(
-      this: M.Managed<R, E, Option<A>>,
-      onNone: M.Managed<R1, E1, B>
-    ): M.Managed<R & R1, E | E1, A | B>
-
-    /**
-     * @rewrite someOrFail_ from "@principia/base/IO/Managed"
-     * @trace call
-     */
-    someOrFail<R, E, A>(this: M.Managed<R, E, Option<A>>): M.Managed<R, E | NoSuchElementError, A>
-
-    /**
-     * @rewrite someOrFailWith_ from "@principia/base/IO/Managed"
-     * @trace call
-     */
-    someOrFailWith<R, E, A, E1>(this: M.Managed<R, E, Option<A>>, onNone: () => E1): M.Managed<R, E | E1, A>
 
     /**
      * @rewrite subsumeEither from "@principia/base/IO/Managed"
@@ -1082,7 +1082,7 @@ declare module '@principia/base/IO/Managed/core' {
      * @rewrite timeout from "@principia/base/IO/Managed"
      * @trace call
      */
-    timeout<R, E, A>(this: M.Managed<R, E, A>, ms: number): M.Managed<R & Has<Clock>, E, Option<A>>
+    timeout<R, E, A>(this: M.Managed<R, E, A>, ms: number): M.Managed<R & Has<Clock>, E, Maybe<A>>
 
     /**
      * @rewrite toS_ from "@principia/base/IO/Managed"

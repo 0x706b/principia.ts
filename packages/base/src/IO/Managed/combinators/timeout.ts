@@ -7,10 +7,10 @@ import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
 import * as E from '../../../Either'
 import { sequential } from '../../../ExecutionStrategy'
-import * as Ex from '../../Exit'
 import { flow, pipe } from '../../../function'
-import * as O from '../../../Option'
+import * as M from '../../../Maybe'
 import { tuple } from '../../../tuple'
+import * as Ex from '../../Exit'
 import { Managed } from '../core'
 import * as I from '../internal/_io'
 import * as RM from '../ReleaseMap'
@@ -19,7 +19,7 @@ import { releaseAll_ } from './releaseAll'
 /**
  * @trace call
  */
-export function timeout<R, E, A>(ma: Managed<R, E, A>, d: number): Managed<R & Has<Clock>, E, O.Option<A>> {
+export function timeout<R, E, A>(ma: Managed<R, E, A>, d: number): Managed<R & Has<Clock>, E, M.Maybe<A>> {
   const trace = accessCallTrace()
   return new Managed(
     I.uninterruptibleMask(
@@ -35,7 +35,7 @@ export function timeout<R, E, A>(ma: Managed<R, E, A>, d: number): Managed<R & H
               ma.io,
               I.giveAll(tuple(r, innerReleaseMap)),
               I.raceWith(
-                pipe(I.sleep(d), I.as(O.none())),
+                pipe(I.sleep(d), I.as(M.nothing())),
                 (result, sleeper) =>
                   pipe(sleeper.interruptAs(id), I.crossSecond(I.fromExit(Ex.map_(result, ([, a]) => E.right(a))))),
                 (_, resultFiber) => I.succeed(E.left(resultFiber))
@@ -52,9 +52,9 @@ export function timeout<R, E, A>(ma: Managed<R, E, A>, d: number): Managed<R & H
                   fiber.interruptAs(id),
                   I.ensuring(releaseAll_(innerReleaseMap, Ex.interrupt(id), sequential)),
                   I.forkDaemon,
-                  I.as(O.none())
+                  I.as(M.nothing())
                 ),
-              flow(O.some, I.succeed)
+              flow(M.just, I.succeed)
             )
           )
           return tuple(earlyRelease, a)

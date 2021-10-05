@@ -7,8 +7,8 @@ import { traceAs } from '@principia/compile/util'
 
 import * as C from '../../../Chunk/core'
 import { pipe } from '../../../function'
-import * as O from '../../../Option'
-import { map, map_ } from '../core'
+import * as M from '../../../Maybe'
+import * as I from '../core'
 import { foreachParN } from './foreachParN'
 
 /**
@@ -24,9 +24,9 @@ export function filterParN_<A, R, E>(as: Iterable<A>, n: number, f: (a: A) => IO
     as,
     foreachParN(
       n,
-      traceAs(f, (a) => map_(f(a), (b) => (b ? O.some(a) : O.none())))
+      traceAs(f, (a) => I.map_(f(a), (b) => (b ? M.just(a) : M.nothing())))
     ),
-    map(C.compact)
+    I.map(C.compact)
   )
 }
 

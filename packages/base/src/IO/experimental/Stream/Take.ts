@@ -1,11 +1,11 @@
 import type { Pull } from './Pull'
 
-import * as C from '../../Cause'
 import * as A from '../../../Chunk'
 import { RuntimeException } from '../../../Exception'
-import * as Ex from '../../Exit'
-import * as O from '../../../Option'
+import * as M from '../../../Maybe'
 import * as T from '../..'
+import * as C from '../../Cause'
+import * as Ex from '../../Exit'
 
 /**
  * A `Take<E, A>` represents a single `take` from a queue modeling a stream of
@@ -16,13 +16,13 @@ export class Take<E, A> {
   readonly _E!: () => E
   readonly _A!: () => A
 
-  constructor(readonly exit: Ex.Exit<O.Option<E>, A.Chunk<A>>) {}
+  constructor(readonly exit: Ex.Exit<M.Maybe<E>, A.Chunk<A>>) {}
 }
 
 /**
  * Transforms `Take[E, A]` to `Effect[R, E, B]`.
  */
-export function done<E, A>(self: Take<E, A>): T.FIO<O.Option<E>, A.Chunk<A>> {
+export function done<E, A>(self: Take<E, A>): T.FIO<M.Maybe<E>, A.Chunk<A>> {
   return T.fromExit(self.exit)
 }
 
@@ -36,7 +36,7 @@ export function fold_<E, A, Z>(
   error: (cause: C.Cause<E>) => Z,
   value: (chunk: A.Chunk<A>) => Z
 ): Z {
-  return Ex.match_(self.exit, (_) => O.match_(C.flipCauseOption(_), () => end, error), value)
+  return Ex.match_(self.exit, (_) => M.match_(C.flipCauseOption(_), () => end, error), value)
 }
 
 /**
@@ -61,7 +61,7 @@ export function foldIO_<R, R1, R2, E, E1, E2, E3, A, Z>(
 ): T.IO<R & R1 & R2, E1 | E2 | E3, Z> {
   return Ex.matchIO_(
     self.exit,
-    (_): T.IO<R & R1, E1 | E2, Z> => O.match_(C.flipCauseOption(_), () => end, error),
+    (_): T.IO<R & R1, E1 | E2, Z> => M.match_(C.flipCauseOption(_), () => end, error),
     value
   )
 }
@@ -86,7 +86,7 @@ export function foldIO<R, R1, R2, E, E1, E2, E3, A, Z>(
 export function isDone<E, A>(self: Take<E, A>): boolean {
   return Ex.match_(
     self.exit,
-    (_) => O.isNone(C.flipCauseOption(_)),
+    (_) => M.isNothing(C.flipCauseOption(_)),
     (_) => false
   )
 }
@@ -97,7 +97,7 @@ export function isDone<E, A>(self: Take<E, A>): boolean {
 export function isFailure<E, A>(self: Take<E, A>): boolean {
   return Ex.match_(
     self.exit,
-    (_) => O.isSome(C.flipCauseOption(_)),
+    (_) => M.isJust(C.flipCauseOption(_)),
     (_) => false
   )
 }
@@ -159,7 +159,7 @@ export function chunk<A>(as: A.Chunk<A>): Take<never, A> {
  * Creates a failing `Take<E, unknown>` with the specified failure.
  */
 export function fail<E>(e: E): Take<E, never> {
-  return new Take(Ex.fail(O.some(e)))
+  return new Take(Ex.fail(M.just(e)))
 }
 
 /**
@@ -175,14 +175,14 @@ export function fromIO<R, E, A>(effect: T.IO<R, E, A>): T.URIO<R, Take<E, A>> {
  * Error from stream when pulling is converted to `Take.halt`, end of stream to `Take.end`.
  */
 export function fromPull<R, E, A>(pull: Pull<R, E, A>): T.URIO<R, Take<E, A>> {
-  return T.matchCause_(pull, (_) => O.match_(C.flipCauseOption(_), () => end, failCause), chunk)
+  return T.matchCause_(pull, (_) => M.match_(C.flipCauseOption(_), () => end, failCause), chunk)
 }
 
 /**
  * Creates a failing `Take<E, never>` with the specified cause.
  */
 export function failCause<E>(c: C.Cause<E>): Take<E, never> {
-  return new Take(Ex.failCause(C.map_(c, O.some)))
+  return new Take(Ex.failCause(C.map_(c, M.just)))
 }
 
 /**
@@ -203,10 +203,10 @@ export function haltMessage(msg: string): Take<never, never> {
  * Creates a `Take<E, A>` from `Exit<E, A>`.
  */
 export function fromExit<E, A>(exit: Ex.Exit<E, A>): Take<E, A> {
-  return new Take(Ex.map_(Ex.mapError_(exit, O.some), A.single))
+  return new Take(Ex.map_(Ex.mapError_(exit, M.just), A.single))
 }
 
 /**
  * End-of-stream marker
  */
-export const end: Take<never, never> = new Take(Ex.fail(O.none()))
+export const end: Take<never, never> = new Take(Ex.fail(M.nothing()))

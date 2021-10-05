@@ -80,7 +80,7 @@ export function prettyTraceNodeSafe(trace: Trace, adapt: (path: string, mod?: st
     const parent = trace.parentTrace
 
     const ancestry =
-      parent._tag === 'None'
+      parent._tag === 'Nothing'
         ? [`Fiber: ${Fiber.prettyFiberId(trace.fiberId)} was spawned by: <empty trace>`]
         : [
             `Fiber: ${Fiber.prettyFiberId(trace.fiberId)} was spawned by:\n`,

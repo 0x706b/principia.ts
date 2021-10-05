@@ -1,7 +1,7 @@
 // tracing: off
 
 import type { Has } from '../../../Has'
-import type { Option } from '../../../Option'
+import type { Maybe } from '../../../Maybe'
 import type { Future } from '../../Future'
 import type { FIO, IO, UIO, URIO } from '../core'
 
@@ -9,7 +9,7 @@ import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
 import { RuntimeException } from '../../../Exception'
 import { pipe } from '../../../function'
-import * as O from '../../../Option'
+import * as M from '../../../Maybe'
 import { tuple } from '../../../tuple'
 import { Clock } from '../../Clock'
 import * as F from '../../Future'
@@ -33,7 +33,7 @@ export function cachedInvalidate_<R, E, A>(
   const trace = accessCallTrace()
   return I.gen(function* (_) {
     const r     = yield* _(I.ask<R & Has<Clock>>())
-    const cache = yield* _(RefM.make<Option<readonly [number, Future<E, A>]>>(O.none()))
+    const cache = yield* _(RefM.make<Maybe<readonly [number, Future<E, A>]>>(M.nothing()))
     return yield* _(traceCall(I.succeed, trace)(tuple(I.giveAll_(_get(ma, timeToLive, cache), r), _invalidate(cache))))
   })
 }
@@ -88,39 +88,39 @@ function _compute<R, E, A>(fa: IO<R, E, A>, ttl: number, start: number) {
   return I.gen(function* (_) {
     const p = yield* _(F.make<E, A>())
     yield* _(fulfill(p)(fa))
-    return O.some(tuple(start + ttl, p))
+    return M.just(tuple(start + ttl, p))
   })
 }
 
 /**
  * @trace call
  */
-function _get<R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Option<readonly [number, Future<E, A>]>>) {
+function _get<R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Maybe<readonly [number, Future<E, A>]>>) {
   return uninterruptibleMask(({ restore }) =>
     pipe(
       Clock.currentTime,
       I.chain((time) =>
         pipe(
           cache,
-          RefM.updateSomeAndGetIO((o) =>
+          RefM.updateJustAndGetIO((o) =>
             pipe(
               o,
-              O.match(
-                () => O.some(_compute(fa, ttl, time)),
+              M.match(
+                () => M.just(_compute(fa, ttl, time)),
                 ([end]) =>
                   end - time <= 0
-                    ? O.some(_compute(fa, ttl, time))
-                    : O.none<IO<R, never, Option<readonly [number, F.Future<E, A>]>>>()
+                    ? M.just(_compute(fa, ttl, time))
+                    : M.nothing<IO<R, never, Maybe<readonly [number, F.Future<E, A>]>>>()
               )
             )
           ),
-          I.chain((a) => (a._tag === 'None' ? I.halt(new RuntimeException('bug')) : restore(F.await(a.value[1]))))
+          I.chain((a) => (a._tag === 'Nothing' ? I.halt(new RuntimeException('bug')) : restore(F.await(a.value[1]))))
         )
       )
     )
   )
 }
 
-function _invalidate<E, A>(cache: RefM.URefM<Option<readonly [number, Future<E, A>]>>): UIO<void> {
-  return cache.set(O.none())
+function _invalidate<E, A>(cache: RefM.URefM<Maybe<readonly [number, Future<E, A>]>>): UIO<void> {
+  return cache.set(M.nothing())
 }

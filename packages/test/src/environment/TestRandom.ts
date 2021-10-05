@@ -4,7 +4,7 @@ import type { Clock } from '@principia/base/IO/Clock'
 import type { Random } from '@principia/base/IO/Random'
 import type { URef } from '@principia/base/IO/Ref'
 import type { List } from '@principia/base/List'
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 import type { ArrayInt } from '@principia/base/util/pure-rand/distribution/internals/ArrayInt'
 
 import { Byte } from '@principia/base/Byte'
@@ -18,7 +18,7 @@ import * as L from '@principia/base/IO/Layer'
 import { RandomTag } from '@principia/base/IO/Random'
 import * as Ref from '@principia/base/IO/Ref'
 import * as Li from '@principia/base/List'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import { Mash } from '@principia/base/util/Mash'
 import { ImmutableQueue } from '@principia/base/util/support/ImmutableQueue'
 
@@ -63,27 +63,27 @@ export class TestRandom implements Random {
     return this.randomState.set(new Data(seed1, seed2, new ImmutableQueue([])))
   }
 
-  private bufferedBoolean = (buffer: Buffer): readonly [Option<boolean>, Buffer] => {
+  private bufferedBoolean = (buffer: Buffer): readonly [Maybe<boolean>, Buffer] => {
     return [Li.head(buffer.booleans), buffer.copy({ booleans: Li.drop_(buffer.booleans, 1) })]
   }
-  private bufferedByte = (buffer: Buffer): readonly [Option<ReadonlyArray<Byte>>, Buffer] => {
+  private bufferedByte = (buffer: Buffer): readonly [Maybe<ReadonlyArray<Byte>>, Buffer] => {
     return [Li.head(buffer.bytes), buffer.copy({ bytes: Li.drop_(buffer.bytes, 1) })]
   }
-  private bufferedChar = (buffer: Buffer): readonly [Option<string>, Buffer] => {
+  private bufferedChar = (buffer: Buffer): readonly [Maybe<string>, Buffer] => {
     return [Li.head(buffer.chars), buffer.copy({ chars: Li.drop_(buffer.chars, 1) })]
   }
-  private bufferedDouble = (buffer: Buffer): readonly [Option<number>, Buffer] => {
+  private bufferedDouble = (buffer: Buffer): readonly [Maybe<number>, Buffer] => {
     return [Li.head(buffer.doubles), buffer.copy({ doubles: Li.drop_(buffer.doubles, 1) })]
   }
-  private bufferedInt = (buffer: Buffer): readonly [Option<number>, Buffer] => {
+  private bufferedInt = (buffer: Buffer): readonly [Maybe<number>, Buffer] => {
     return [Li.head(buffer.integers), buffer.copy({ integers: Li.drop_(buffer.doubles, 1) })]
   }
-  private bufferedString = (buffer: Buffer): readonly [Option<string>, Buffer] => {
+  private bufferedString = (buffer: Buffer): readonly [Maybe<string>, Buffer] => {
     return [Li.head(buffer.strings), buffer.copy({ strings: Li.drop_(buffer.strings, 1) })]
   }
 
-  private getOrElse = <A>(buffer: (_: Buffer) => readonly [Option<A>, Buffer], random: UIO<A>): UIO<A> => {
-    return pipe(this.bufferState, Ref.modify(buffer), I.chain(O.match(() => random, I.succeed)))
+  private getOrElse = <A>(buffer: (_: Buffer) => readonly [Maybe<A>, Buffer], random: UIO<A>): UIO<A> => {
+    return pipe(this.bufferState, Ref.modify(buffer), I.chain(M.match(() => random, I.succeed)))
   }
 
   private leastSignificantBits = (x: number): number => {

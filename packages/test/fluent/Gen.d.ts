@@ -1,4 +1,6 @@
 import type { IO } from '@principia/base/IO'
+import type { Predicate } from '@principia/base/Predicate'
+import type { Refinement } from '@principia/base/Refinement'
 import type { Sample } from '@principia/test/Sample'
 
 /* eslint typescript-sort-keys/interface: "error" */

@@ -10,9 +10,9 @@ import * as HM from '@principia/base/HashMap'
 import * as T from '@principia/base/IO'
 import * as ST from '@principia/base/IO/experimental/Stream'
 import * as L from '@principia/base/IO/Layer'
-import * as M from '@principia/base/IO/Managed'
+import * as Ma from '@principia/base/IO/Managed'
 import * as Ref from '@principia/base/IO/Ref'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import * as PG from '@principia/pg'
 import * as S from '@principia/schema'
 import * as P from '@principia/schema/Decoder'
@@ -25,7 +25,7 @@ export interface Persistence {
   readonly get: (persistenceId: string) => T.IO<
     Has<ShardContext>,
     never,
-    O.Option<{
+    M.Maybe<{
       persistenceId: string
       shard: number
       state: unknown
@@ -81,7 +81,7 @@ export class Offset extends S.Model<Offset>()(
 ) {}
 
 export const LivePersistence = L.fromManaged(Persistence)(
-  M.gen(function* (_) {
+  Ma.gen(function* (_) {
     const cli = yield* _(PG.PG)
 
     yield* _(
@@ -145,7 +145,7 @@ export const LivePersistence = L.fromManaged(Persistence)(
             yield* _(Ref.update_(currentRef, HM.set(`${offset.domain}-${offset.shard}` as const, offset)))
           }
 
-          const poll: T.IO<IOEnv, O.Option<never>, Chunk.Chunk<QueryResultRow>> = pipe(
+          const poll: T.IO<IOEnv, M.Maybe<never>, Chunk.Chunk<QueryResultRow>> = pipe(
             T.cross_(
               Ref.get(currentRef),
               Ref.getAndUpdate_(delayRef, () => opts?.delay ?? 1_000)
@@ -244,7 +244,7 @@ export const LivePersistence = L.fromManaged(Persistence)(
     const get: (persistenceId: string) => T.IO<
       Has<ShardContext>,
       never,
-      O.Option<{
+      M.Maybe<{
         persistenceId: string
         shard: number
         state: unknown
@@ -261,8 +261,8 @@ export const LivePersistence = L.fromManaged(Persistence)(
         ),
         T.map((res) =>
           pipe(
-            O.fromNullable(res.rows?.[0]),
-            O.map((row) => ({
+            M.fromNullable(res.rows?.[0]),
+            M.map((row) => ({
               persistenceId: row.actor_name,
               shard: row.shard,
               state: row['state'],

@@ -5,7 +5,7 @@ import type * as HKT from '@principia/base/HKT'
 
 import * as A from '@principia/base/Array'
 import { flow, pipe } from '@principia/base/function'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import * as R from '@principia/base/Record'
 import * as Th from '@principia/base/These'
 import { isString } from '@principia/base/util/predicates'
@@ -82,7 +82,7 @@ export const Schemable: S.Schemable<ConstructorSURI> = {
       A.join(' | ')
     )
     return Pr.parser((i): Th.These<PE.TagLE | PE.CompoundE<any>, any> => {
-      if (schema.tag._tag === 'Some') {
+      if (schema.tag._tag === 'Just') {
         const tagv = schema.tag.value
         if (!(tagv.key in i) || !isString(i[tagv.key]) || !(i[tagv.key] in tagv.index)) {
           return Th.left(PE.leafE(PE.tagE(tagv.key, tagv.values)))
@@ -130,7 +130,7 @@ export const Schemable: S.Schemable<ConstructorSURI> = {
       const constructor = prop.instance
       if (prop._optional === 'required') {
         required[key] = constructor
-        if (prop._def._tag === 'Some') {
+        if (prop._def._tag === 'Just') {
           const def = prop._def.value
           switch (def[0]) {
             case 'both': {
@@ -229,8 +229,8 @@ export const Schemable: S.Schemable<ConstructorSURI> = {
       C,
       Pr.parser(
         (a: InputOfPrism<typeof prism>) =>
-          O.match_(
-            prism.getOption(a),
+          M.match_(
+            prism.getMaybe(a),
             () => Th.left(PE.leafE(PE.newtypePrismE(a))),
             (n) => Th.right(n)
           ),

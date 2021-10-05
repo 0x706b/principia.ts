@@ -5,7 +5,7 @@ import type { PCause } from './core'
 import * as A from '../Array/core'
 import * as Ev from '../Eval'
 import { pipe } from '../function'
-import * as O from '../Option'
+import * as M from '../Maybe'
 import { CauseTag } from './core'
 
 /*
@@ -71,17 +71,17 @@ const prefixBlock = (values: readonly string[], p1: string, p2: string): string[
     ? pipe(headTail(values), ([head, tail]) => [`${p1}${head}`, ...tail.map((_) => `${p2}${_}`)])
     : []
 
-const renderInterrupt = <Id, E>(id: Id, trace: O.Option<Trace>, renderer: Renderer<Id, E>): Sequential =>
+const renderInterrupt = <Id, E>(id: Id, trace: M.Maybe<Trace>, renderer: Renderer<Id, E>): Sequential =>
   Sequential([
     Failure([`An interrupt was produced by ${renderer.renderId(id)}.`, '', ...renderTrace(trace, renderer.renderTrace)])
   ])
 
 export const renderError = (error: Error): string[] => lines(error.stack ? error.stack : String(error))
 
-const renderHalt = (error: string[], trace: O.Option<Trace>, traceRenderer: TraceRenderer): Sequential =>
+const renderHalt = (error: string[], trace: M.Maybe<Trace>, traceRenderer: TraceRenderer): Sequential =>
   Sequential([Failure(['An unchecked error was produced.', '', ...error, ...renderTrace(trace, traceRenderer)])])
 
-const renderFailure = (error: string[], trace: O.Option<Trace>, traceRenderer: TraceRenderer): Sequential =>
+const renderFailure = (error: string[], trace: M.Maybe<Trace>, traceRenderer: TraceRenderer): Sequential =>
   Sequential([Failure(['A checked error was not handled.', '', ...error, ...renderTrace(trace, traceRenderer)])])
 
 const renderToString = (u: unknown): string => {
@@ -99,16 +99,16 @@ const causeToSequential = <Id, E>(cause: PCause<Id, E>, renderer: Renderer<Id, E
       }
       case CauseTag.Fail: {
         return cause.value instanceof Error
-          ? renderFailure(renderer.renderError(cause.value), O.none(), renderer.renderTrace)
-          : renderFailure(renderer.renderFailure(cause.value), O.none(), renderer.renderTrace)
+          ? renderFailure(renderer.renderError(cause.value), M.nothing(), renderer.renderTrace)
+          : renderFailure(renderer.renderFailure(cause.value), M.nothing(), renderer.renderTrace)
       }
       case CauseTag.Halt: {
         return cause.value instanceof Error
-          ? renderHalt(renderer.renderError(cause.value), O.none(), renderer.renderTrace)
-          : renderHalt(renderer.renderUnknown(cause.value), O.none(), renderer.renderTrace)
+          ? renderHalt(renderer.renderError(cause.value), M.nothing(), renderer.renderTrace)
+          : renderHalt(renderer.renderUnknown(cause.value), M.nothing(), renderer.renderTrace)
       }
       case CauseTag.Interrupt: {
-        return renderInterrupt(cause.id, O.none(), renderer)
+        return renderInterrupt(cause.id, M.nothing(), renderer)
       }
       case CauseTag.Then: {
         return Sequential(yield* _(linearSegments(cause, renderer)))
@@ -119,19 +119,19 @@ const causeToSequential = <Id, E>(cause: PCause<Id, E>, renderer: Renderer<Id, E
       case CauseTag.Traced: {
         switch (cause.cause._tag) {
           case CauseTag.Fail: {
-            return renderFailure(renderer.renderFailure(cause.cause.value), O.some(cause.trace), renderer.renderTrace)
+            return renderFailure(renderer.renderFailure(cause.cause.value), M.just(cause.trace), renderer.renderTrace)
           }
           case CauseTag.Halt: {
-            return renderHalt(renderer.renderUnknown(cause.cause.value), O.some(cause.trace), renderer.renderTrace)
+            return renderHalt(renderer.renderUnknown(cause.cause.value), M.just(cause.trace), renderer.renderTrace)
           }
           case CauseTag.Interrupt: {
-            return renderInterrupt(cause.cause.id, O.some(cause.trace), renderer)
+            return renderInterrupt(cause.cause.id, M.just(cause.trace), renderer)
           }
           default: {
             return Sequential([
               Failure([
                 'An error was rethrown with a new trace.',
-                ...renderTrace(O.some(cause.trace), renderer.renderTrace)
+                ...renderTrace(M.just(cause.trace), renderer.renderTrace)
               ]),
               ...(yield* _(causeToSequential(cause.cause, renderer))).all
             ])
@@ -209,11 +209,11 @@ const prettyLines = <Id, E>(cause: PCause<Id, E>, renderer: Renderer<Id, E>): Ev
       return s.all[0].lines
     }
 
-    return O.getOrElse_(A.updateAt(0, '╥')(format(s)), (): string[] => [])
+    return M.getOrElse_(A.updateAt(0, '╥')(format(s)), (): string[] => [])
   })
 
-function renderTrace(o: O.Option<Trace>, renderTrace: TraceRenderer) {
-  return o._tag === 'None' ? [] : lines(renderTrace(o.value))
+function renderTrace(o: M.Maybe<Trace>, renderTrace: TraceRenderer) {
+  return o._tag === 'Nothing' ? [] : lines(renderTrace(o.value))
 }
 
 export function prettySafe<Id, E>(cause: PCause<Id, E>, renderer: Renderer<Id, E>): Ev.Eval<string> {

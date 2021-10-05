@@ -5,7 +5,7 @@ import type { TraceElement } from '../IO/Fiber/trace'
 import type { FiberRef } from '../IO/FiberRef'
 import type { Instruction, IO, Match, Race, UIO } from '../IO/IO/primitives'
 import type { Supervisor } from '../IO/Supervisor'
-import type { Option } from '../Option'
+import type { Maybe } from '../Maybe'
 import type { Stack } from '../util/support/Stack'
 import type { Platform } from './Platform'
 
@@ -48,7 +48,7 @@ import { concrete, IOTag, Succeed } from '../IO/IO/primitives'
 import * as Scope from '../IO/Scope'
 import * as Super from '../IO/Supervisor'
 import * as L from '../List/core'
-import * as O from '../Option'
+import * as M from '../Maybe'
 import { AtomicReference } from '../util/support/AtomicReference'
 import { RingBuffer } from '../util/support/RingBuffer'
 import { defaultScheduler } from '../util/support/Scheduler'
@@ -85,8 +85,8 @@ export type Frame =
 
 export const currentFiber = new AtomicReference<FiberContext<any, any> | null>(null)
 
-export function unsafeCurrentFiber(): O.Option<FiberContext<any, any>> {
-  return O.fromNullable(currentFiber.get)
+export function unsafeCurrentFiber(): M.Maybe<FiberContext<any, any>> {
+  return M.fromNullable(currentFiber.get)
 }
 
 /**
@@ -103,7 +103,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   private environments       = makeStack(this.initialEnv) as Stack<any> | undefined
   private interruptStatus    = makeStack(this.initialInterruptStatus.toBoolean) as Stack<boolean> | undefined
   private supervisors        = makeStack(this.initialSupervisor)
-  private forkScopeOverride  = undefined as Stack<Option<Scope.Scope<Exit<any, any>>>> | undefined
+  private forkScopeOverride  = undefined as Stack<Maybe<Scope.Scope<Exit<any, any>>>> | undefined
   private traceStatusEnabled = this.platform.traceExecution || this.platform.traceStack
   private executionTraces    = this.traceStatusEnabled
     ? new RingBuffer<TraceElement>(this.platform.executionTraceLength)
@@ -123,7 +123,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     private readonly maxOperations: number,
     private readonly reportFailure: (e: C.Cause<E>) => void,
     private readonly platform: Platform<unknown>,
-    private readonly parentTrace: O.Option<Trace>
+    private readonly parentTrace: M.Maybe<Trace>
   ) {
     this.evaluateNow = this.evaluateNow.bind(this)
   }
@@ -158,10 +158,10 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
     switch (state._tag) {
       case 'Executing': {
-        return O.none()
+        return M.nothing()
       }
       case 'Done': {
-        return O.some(state.value)
+        return M.just(state.value)
       }
     }
   }
@@ -349,21 +349,21 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     observers.forEach((k) => k(result))
   }
 
-  private observe(k: Callback<never, Exit<E, A>>): Option<UIO<Exit<E, A>>> {
+  private observe(k: Callback<never, Exit<E, A>>): Maybe<UIO<Exit<E, A>>> {
     const x = this.registerObserver(k)
 
     if (x != null) {
-      return O.some(succeed(x))
+      return M.just(succeed(x))
     }
 
-    return O.none()
+    return M.nothing()
   }
 
   get await(): UIO<Exit<E, A>> {
     return asyncInterruptEither(
       (k): E.Either<UIO<void>, UIO<Exit<E, A>>> => {
         const cb: Callback<never, Exit<E, A>> = (x) => k(fromExit(x))
-        return O.match_(this.observe(cb), () => E.left(succeedLazy(() => this.interruptObserver(cb))), E.right)
+        return M.match_(this.observe(cb), () => E.left(succeedLazy(() => this.interruptObserver(cb))), E.right)
       },
       [this.fiberId]
     )
@@ -535,8 +535,8 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
   private fork(
     i0: Instruction,
-    forkScope: Option<Scope.Scope<Exit<any, any>>>,
-    reportFailure: O.Option<(e: C.Cause<E>) => void>
+    forkScope: Maybe<Scope.Scope<Exit<any, any>>>,
+    reportFailure: M.Maybe<(e: C.Cause<E>) => void>
   ): FiberContext<any, any> {
     const childFiberRefLocals: FiberRefLocals = new Map()
 
@@ -544,8 +544,8 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       childFiberRefLocals.set(k, k.fork(v))
     })
 
-    const parentScope: Scope.Scope<Exit<any, any>> = O.getOrElse_(
-      forkScope._tag === 'Some' ? forkScope : this.forkScopeOverride?.value || O.none(),
+    const parentScope: Scope.Scope<Exit<any, any>> = M.getOrElse_(
+      forkScope._tag === 'Just' ? forkScope : this.forkScopeOverride?.value || M.nothing(),
       () => this.scope
     )
 
@@ -554,8 +554,8 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     const childId           = newFiberId()
     const childScope        = Scope.unsafeMakeScope<Exit<E, A>>()
     const ancestry          = this.inTracingRegion && (this.platform.traceExecution || this.platform.traceStack)
-        ? O.some(this.cutAncestryTrace(this.captureTrace(undefined)))
-        : O.none()
+        ? M.just(this.cutAncestryTrace(this.captureTrace(undefined)))
+        : M.nothing()
 
     const childContext = new FiberContext(
       childId,
@@ -565,13 +565,13 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       currentSupervisor,
       childScope,
       this.maxOperations,
-      O.getOrElse_(reportFailure, () => this.reportFailure),
+      M.getOrElse_(reportFailure, () => this.reportFailure),
       this.platform,
       ancestry
     )
 
     if (currentSupervisor !== Super.none) {
-      currentSupervisor.unsafeOnStart(currentEnv, i0, O.some(this), childContext)
+      currentSupervisor.unsafeOnStart(currentEnv, i0, M.just(this), childContext)
       childContext.onDone((exit) => {
         currentSupervisor.unsafeOnEnd(Ex.flatten(exit), childContext)
       })
@@ -614,7 +614,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                 C.interruptors,
                 A.from,
                 A.head,
-                O.getOrElse(() => this.fiberId),
+                M.getOrElse(() => this.fiberId),
                 interruptAs
               ),
               () => interruptAs(this.fiberId)
@@ -691,8 +691,8 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     race: Race<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>
   ): IO<R & R1 & R2 & R3, E2 | E3, A2 | A3> {
     const raceIndicator = new AtomicReference(true)
-    const left          = this.fork(concrete(race.left), race.scope, O.some(constVoid))
-    const right         = this.fork(concrete(race.right), race.scope, O.some(constVoid))
+    const left          = this.fork(concrete(race.left), race.scope, M.just(constVoid))
+    const right         = this.fork(concrete(race.right), race.scope, M.just(constVoid))
 
     return async<R & R1 & R2 & R3, E2 | E3, A2 | A3>(
       traceAs(race.trace, (cb) => {
@@ -890,11 +890,11 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                         this.addTrace(onResolve)
                       }
                       switch (h._tag) {
-                        case 'None': {
+                        case 'Nothing': {
                           current = undefined
                           break
                         }
-                        case 'Some': {
+                        case 'Just': {
                           if (this.exitAsync(epoch)) {
                             current = concrete(h.value)
                           } else {
@@ -1007,8 +1007,8 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
                   case IOTag.ModifyFiberRef: {
                     const c                  = current
-                    const oldValue           = O.fromNullable(this.fiberRefLocals.get(c.fiberRef))
-                    const [result, newValue] = current.f(O.getOrElse_(oldValue, () => c.fiberRef.initial))
+                    const oldValue           = M.fromNullable(this.fiberRefLocals.get(c.fiberRef))
+                    const [result, newValue] = current.f(M.getOrElse_(oldValue, () => c.fiberRef.initial))
                     this.fiberRefLocals.set(c.fiberRef, newValue)
                     current = this.next(result)
                     break
@@ -1049,7 +1049,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
                   case IOTag.GetForkScope: {
                     current = concrete(
-                      current.f(O.getOrElse_(this.forkScopeOverride?.value || O.none(), () => this.scope))
+                      current.f(M.getOrElse_(this.forkScopeOverride?.value || M.nothing(), () => this.scope))
                     )
                     break
                   }

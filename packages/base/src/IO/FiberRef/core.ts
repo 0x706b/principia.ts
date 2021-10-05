@@ -1,7 +1,7 @@
 import type { UIO } from '../IO/core'
 
 import { identity, pipe } from '../../function'
-import * as O from '../../Option'
+import * as M from '../../Maybe'
 import { ModifyFiberRef, NewFiberRef } from '../IO/core'
 
 /*
@@ -85,10 +85,10 @@ export function getAndUpdate<A>(f: (a: A) => A): (fiberRef: FiberRef<A>) => UIO<
   return (fr) => getAndUpdate_(fr, f)
 }
 
-export function getAndUpdateSome_<A>(fiberRef: FiberRef<A>, f: (a: A) => O.Option<A>): UIO<A> {
-  return modify_(fiberRef, (a) => [a, O.getOrElse_(f(a), () => a)])
+export function getAndUpdateJust_<A>(fiberRef: FiberRef<A>, f: (a: A) => M.Maybe<A>): UIO<A> {
+  return modify_(fiberRef, (a) => [a, M.getOrElse_(f(a), () => a)])
 }
 
-export function getAndUpdateSome<A>(f: (a: A) => O.Option<A>): (fiberRef: FiberRef<A>) => UIO<A> {
-  return (fr) => getAndUpdateSome_(fr, f)
+export function getAndUpdateJust<A>(f: (a: A) => M.Maybe<A>): (fiberRef: FiberRef<A>) => UIO<A> {
+  return (fr) => getAndUpdateJust_(fr, f)
 }

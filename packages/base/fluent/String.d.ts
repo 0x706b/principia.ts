@@ -1,5 +1,5 @@
+import type { Maybe } from '@principia/base/Maybe'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
-import type { Option } from '@principia/base/Option'
 
 /* eslint typescript-sort-keys/interface: "error" */
 
@@ -43,12 +43,12 @@ declare global {
     /**
      * @rewrite matchAll_ from "@principia/base/string"
      */
-    matchAllOption(regex: RegExp): Option<NonEmptyArray<RegExpMatchArray>>
+    matchAllMaybe(regex: RegExp): Maybe<NonEmptyArray<RegExpMatchArray>>
 
     /**
      * @rewrite match_ from "@principia/base/string"
      */
-    matchOption(regex: RegExp): Option<RegExpMatchArray>
+    matchMaybe(regex: RegExp): Maybe<RegExpMatchArray>
 
     /**
      * @rewrite prepend_ from "@principia/base/string"

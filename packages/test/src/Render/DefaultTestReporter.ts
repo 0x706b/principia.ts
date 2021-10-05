@@ -11,7 +11,7 @@ import * as E from '@principia/base/Either'
 import { absurd, identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as L from '@principia/base/List'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import * as Sy from '@principia/base/Sync'
 import { cyan, green, red, RESET } from '@principia/base/util/AnsiFormat'
 import { matchTag, matchTag_ } from '@principia/base/util/match'
@@ -256,7 +256,7 @@ class RenderedResult<T> {
       return this
     } else {
       const renderedAnnotations     = ` - ${L.join_(annotations, ', ')}`
-      const head                    = O.match_(L.head(this.rendered), () => '', identity)
+      const head                    = M.match_(L.head(this.rendered), () => '', identity)
       const tail                    = L.tail(this.rendered)
       const renderedWithAnnotations = L.prepend_(tail, head + renderedAnnotations)
       return new RenderedResult(this.caseType, this.label, this.status, this.offset, renderedWithAnnotations)

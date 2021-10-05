@@ -4,7 +4,7 @@ import type { HashMap } from '@principia/base/HashMap'
 import * as A from '@principia/base/Array'
 import { identity, pipe } from '@principia/base/function'
 import * as Map from '@principia/base/HashMap'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 
 export class TestAnnotationMap {
   constructor(private readonly map: HashMap<TestAnnotation<any>, any>) {}
@@ -18,7 +18,7 @@ export class TestAnnotationMap {
           Map.set_(
             acc,
             key,
-            O.match_(
+            M.match_(
               Map.get_(acc, key),
               () => value,
               (_) => key.combine(_, value)
@@ -30,7 +30,7 @@ export class TestAnnotationMap {
   }
 
   get<V>(key: TestAnnotation<V>): V {
-    return O.match_(Map.get_(this.map, key), () => key.initial, identity)
+    return M.match_(Map.get_(this.map, key), () => key.initial, identity)
   }
 
   private overwrite<V>(key: TestAnnotation<V>, value: V): TestAnnotationMap {

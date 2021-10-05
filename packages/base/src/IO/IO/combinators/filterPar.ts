@@ -7,8 +7,8 @@ import { traceAs } from '@principia/compile/util'
 
 import * as C from '../../../Chunk/core'
 import { pipe } from '../../../function'
-import * as O from '../../../Option'
-import { map, map_ } from '../core'
+import * as M from '../../../Maybe'
+import * as I from '../core'
 import { foreachPar } from './foreachPar'
 
 /**
@@ -18,7 +18,7 @@ import { foreachPar } from './foreachPar'
  * @trace 1
  */
 export function filterPar_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boolean>): IO<R, E, Chunk<A>> {
-  return pipe(as, foreachPar(traceAs(f, (a) => map_(f(a), (b) => (b ? O.some(a) : O.none())))), map(C.compact))
+  return pipe(as, foreachPar(traceAs(f, (a) => I.map_(f(a), (b) => (b ? M.just(a) : M.nothing())))), I.map(C.compact))
 }
 
 /**

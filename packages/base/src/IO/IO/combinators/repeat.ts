@@ -1,7 +1,7 @@
 // tracing: off
 
 import type { Has } from '../../../Has'
-import type { Option } from '../../../Option'
+import type { Maybe } from '../../../Maybe'
 import type { Clock } from '../../Clock'
 import type { IO } from '../core'
 
@@ -9,7 +9,7 @@ import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compi
 
 import * as E from '../../../Either'
 import { pipe } from '../../../function'
-import * as O from '../../../Option'
+import * as M from '../../../Maybe'
 import * as S from '../../Schedule'
 import { chain, fail, map, map_, matchIO, orHalt } from '../core'
 
@@ -68,7 +68,7 @@ export function repeat<SR, A, B>(sc: S.Schedule<SR, A, B>) {
 export function repeatOrElse_<R, E, A, R1, B, R2, E2, C>(
   ma: IO<R, E, A>,
   sc: S.Schedule<R1, A, B>,
-  f: (e: E, o: Option<B>) => IO<R2, E2, C>
+  f: (e: E, o: Maybe<B>) => IO<R2, E2, C>
 ): IO<R & R1 & R2 & Has<Clock>, E2, C | B> {
   return map_(repeatOrElseEither_(ma, sc, f), E.merge)
 }
@@ -89,7 +89,7 @@ export function repeatOrElse_<R, E, A, R1, B, R2, E2, C>(
  */
 export function repeatOrElse<E, A, R1, B, R2, E2, C>(
   sc: S.Schedule<R1, A, B>,
-  f: (e: E, o: Option<B>) => IO<R2, E2, C>
+  f: (e: E, o: Maybe<B>) => IO<R2, E2, C>
 ): <R>(ma: IO<R, E, A>) => IO<R & R1 & R2 & Has<Clock>, E2, B | C> {
   return (ma) => repeatOrElse_(ma, sc, f)
 }
@@ -111,7 +111,7 @@ export function repeatOrElse<E, A, R1, B, R2, E2, C>(
 export function repeatOrElseEither_<R, E, A, R1, B, R2, E2, C>(
   fa: IO<R, E, A>,
   sc: S.Schedule<R1, A, B>,
-  f: (e: E, o: Option<B>) => IO<R2, E2, C>
+  f: (e: E, o: Maybe<B>) => IO<R2, E2, C>
 ): IO<R & R1 & R2 & Has<Clock>, E2, E.Either<C, B>> {
   return pipe(
     S.driver(sc),
@@ -125,7 +125,7 @@ export function repeatOrElseEither_<R, E, A, R1, B, R2, E2, C>(
               pipe(
                 fa,
                 matchIO(
-                  traceAs(f, (e) => pipe(f(e, O.some(b)), map(E.left))),
+                  traceAs(f, (e) => pipe(f(e, M.just(b)), map(E.left))),
                   (a) => loop(a)
                 )
               )
@@ -135,7 +135,7 @@ export function repeatOrElseEither_<R, E, A, R1, B, R2, E2, C>(
       return pipe(
         fa,
         matchIO(
-          traceAs(f, (e) => pipe(f(e, O.none()), map(E.left))),
+          traceAs(f, (e) => pipe(f(e, M.nothing()), map(E.left))),
           (a) => loop(a)
         )
       )
@@ -159,7 +159,7 @@ export function repeatOrElseEither_<R, E, A, R1, B, R2, E2, C>(
  */
 export function repeatOrElseEither<E, A, R1, B, R2, E2, C>(
   sc: S.Schedule<R1, A, B>,
-  f: (e: E, o: Option<B>) => IO<R2, E2, C>
+  f: (e: E, o: Maybe<B>) => IO<R2, E2, C>
 ): <R>(ma: IO<R, E, A>) => IO<R & R1 & R2 & Has<Clock>, E2, E.Either<C, B>> {
   return (ma) => repeatOrElseEither_(ma, sc, f)
 }

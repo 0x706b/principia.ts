@@ -4,9 +4,9 @@ import type { Chunk } from '../../Chunk'
 import type { Eval } from '../../Eval'
 import type { Has, Tag } from '../../Has'
 import type { FiberContext } from '../../internal/FiberContext'
+import type { Maybe } from '../../Maybe'
 import type { Monoid } from '../../Monoid'
 import type { NonEmptyArray } from '../../NonEmptyArray'
-import type { Option } from '../../Option'
 import type { Predicate } from '../../Predicate'
 import type { HasStruct, HasTuple, ServicesStruct, ServicesTuple } from '../../prelude'
 import type { Refinement } from '../../Refinement'
@@ -30,8 +30,8 @@ import { RuntimeException } from '../../Exception'
 import { constant, flow, identity, pipe } from '../../function'
 import { isTag, mergeEnvironments } from '../../Has'
 import * as I from '../../Iterable'
+import * as M from '../../Maybe'
 import * as NEA from '../../NonEmptyArray'
-import * as O from '../../Option'
 import * as P from '../../prelude'
 import * as R from '../../Record'
 import * as S from '../../Sync'
@@ -95,7 +95,7 @@ export function async<R, E, A>(
   return new Primitives.Async(
     traceAs(register, (cb) => {
       register(cb)
-      return O.none()
+      return M.nothing()
     }),
     blockingOn
   )
@@ -111,8 +111,8 @@ export function async<R, E, A>(
  * @since 1.0.0
  * @trace 0
  */
-export function asyncOption<R, E, A>(
-  register: (resolve: (_: IO<R, E, A>) => void) => O.Option<IO<R, E, A>>,
+export function asyncMaybe<R, E, A>(
+  register: (resolve: (_: IO<R, E, A>) => void) => M.Maybe<IO<R, E, A>>,
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
   return new Primitives.Async(register, blockingOn)
@@ -397,24 +397,24 @@ export function fromEval<A>(ma: Eval<A>): IO<unknown, never, A> {
 }
 
 /**
- * Lifts an `Option` into an `IO` but preserves the error as an option in the error channel, making it easier to compose
+ * Lifts a `Maybe` into an `IO` but preserves the error as a `Maybe` in the error channel, making it easier to compose
  * in some scenarios.
  *
  * @trace 0
  */
-export function fromOptionLazy<A>(m: () => Option<A>): FIO<Option<never>, A> {
+export function fromMaybeLazy<A>(maybe: () => Maybe<A>): FIO<Maybe<never>, A> {
   return chain_(
-    succeedLazy(m),
-    O.match(() => fail(O.none()), succeed)
+    succeedLazy(maybe),
+    M.match(() => fail(M.nothing()), succeed)
   )
 }
 
 /**
  * @trace call
  */
-export function fromOption<A = never>(option: Option<A>): IO<unknown, Option<never>, A> {
+export function fromMaybe<A = never>(maybe: Maybe<A>): IO<unknown, Maybe<never>, A> {
   const trace = accessCallTrace()
-  return O.match_(option, () => traceCall(fail, trace)(O.none()), succeed)
+  return M.match_(maybe, () => traceCall(fail, trace)(M.nothing()), succeed)
 }
 
 /**
@@ -856,7 +856,7 @@ export function matchCause<E, A, A1, A2>(
  */
 export function matchTraceIO_<R, E, A, R1, E1, A1, R2, E2, A2>(
   ma: IO<R, E, A>,
-  onFailure: (e: E, trace: O.Option<Trace>) => IO<R1, E1, A1>,
+  onFailure: (e: E, trace: M.Maybe<Trace>) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): IO<R & R1 & R2, E1 | E2, A1 | A2> {
   return matchCauseIO_(
@@ -880,7 +880,7 @@ export function matchTraceIO_<R, E, A, R1, E1, A1, R2, E2, A2>(
  * @trace 1
  */
 export function matchTraceIO<E, A, R1, E1, A1, R2, E2, A2>(
-  onFailure: (e: E, trace: O.Option<Trace>) => IO<R1, E1, A1>,
+  onFailure: (e: E, trace: M.Maybe<Trace>) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
 ): <R>(ma: IO<R, E, A>) => IO<R & R1 & R2, E1 | E2, A1 | A2> {
   return (ma) => matchTraceIO_(ma, onFailure, onSuccess)
@@ -1460,9 +1460,9 @@ export function asLazy<B>(b: () => B): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, B>
  *
  * @trace call
  */
-export function asSome<R, E, A>(ma: IO<R, E, A>): IO<R, E, Option<A>> {
+export function asJust<R, E, A>(ma: IO<R, E, A>): IO<R, E, Maybe<A>> {
   const trace = accessCallTrace()
-  return traceCall(map_, trace)(ma, O.some)
+  return traceCall(map_, trace)(ma, M.just)
 }
 
 /**
@@ -1473,11 +1473,11 @@ export function asSome<R, E, A>(ma: IO<R, E, A>): IO<R, E, Option<A>> {
  *
  * @trace call
  */
-export function asSomeError<R, E, A>(ma: IO<R, E, A>): IO<R, O.Option<E>, A> {
+export function asJustError<R, E, A>(ma: IO<R, E, A>): IO<R, M.Maybe<E>, A> {
   const trace = accessCallTrace()
   return mapError_(
     ma,
-    traceFrom(trace, (e) => O.some(e))
+    traceFrom(trace, (e) => M.just(e))
   )
 }
 
@@ -1615,9 +1615,9 @@ export function catchAllCause<E, R1, E1, A1>(
  *
  * @trace 1
  */
-export function catchSome_<R, E, A, R1, E1, A1>(
+export function catchJust_<R, E, A, R1, E1, A1>(
   ma: IO<R, E, A>,
-  f: (e: E) => O.Option<IO<R1, E1, A1>>
+  f: (e: E) => M.Maybe<IO<R1, E1, A1>>
 ): IO<R & R1, E | E1, A | A1> {
   return matchCauseIO_(
     ma,
@@ -1630,7 +1630,7 @@ export function catchSome_<R, E, A, R1, E1, A1>(
           E.match(
             flow(
               f,
-              O.getOrElse(() => failCause(cause))
+              M.getOrElse(() => failCause(cause))
             ),
             failCause
           )
@@ -1643,13 +1643,13 @@ export function catchSome_<R, E, A, R1, E1, A1>(
 /**
  * Recovers from some or all of the error cases.
  *
- * @dataFirst catchSome_
+ * @dataFirst catchJust_
  * @trace 0
  */
-export function catchSome<E, R1, E1, A1>(
-  f: (e: E) => O.Option<IO<R1, E1, A1>>
+export function catchJust<E, R1, E1, A1>(
+  f: (e: E) => M.Maybe<IO<R1, E1, A1>>
 ): <R, A>(ma: IO<R, E, A>) => IO<R & R1, E | E1, A | A1> {
-  return (fa) => catchSome_(fa, f)
+  return (fa) => catchJust_(fa, f)
 }
 
 /**
@@ -1657,16 +1657,16 @@ export function catchSome<E, R1, E1, A1>(
  *
  * @trace 1
  */
-export function catchSomeCause_<R, E, A, R1, E1, A1>(
+export function catchJustCause_<R, E, A, R1, E1, A1>(
   ma: IO<R, E, A>,
-  f: (_: Cause<E>) => O.Option<IO<R1, E1, A1>>
+  f: (_: Cause<E>) => M.Maybe<IO<R1, E1, A1>>
 ): IO<R & R1, E | E1, A | A1> {
   return matchCauseIO_(
     ma,
     traceAs(
       f,
       (c): IO<R1, E1 | E, A1> =>
-        O.match_(
+        M.match_(
           f(c),
           () => failCause(c),
           (a) => a
@@ -1679,13 +1679,13 @@ export function catchSomeCause_<R, E, A, R1, E1, A1>(
 /**
  * Recovers from some or all of the error cases with provided cause.
  *
- * @dataFirst catchSomeCause_
+ * @dataFirst catchJustCause_
  * @trace 0
  */
-export function catchSomeCause<E, R1, E1, A1>(
-  f: (_: Cause<E>) => O.Option<IO<R1, E1, A1>>
+export function catchJustCause<E, R1, E1, A1>(
+  f: (_: Cause<E>) => M.Maybe<IO<R1, E1, A1>>
 ): <R, A>(ma: IO<R, E, A>) => IO<R & R1, E | E1, A | A1> {
-  return (ma) => catchSomeCause_(ma, f)
+  return (ma) => catchJustCause_(ma, f)
 }
 
 /**
@@ -1701,9 +1701,9 @@ export function catchSomeCause<E, R1, E1, A1>(
  *
  * @trace 1
  */
-export function catchSomeDefect_<R, E, A, R1, E1, A1>(
+export function catchJustDefect_<R, E, A, R1, E1, A1>(
   ma: IO<R, E, A>,
-  f: (_: unknown) => Option<IO<R1, E1, A1>>
+  f: (_: unknown) => Maybe<IO<R1, E1, A1>>
 ): IO<R & R1, E | E1, A | A1> {
   return catchAll_(unrefineWith_(ma, f, fail), (s): IO<R1, E | E1, A1> => s)
 }
@@ -1719,13 +1719,13 @@ export function catchSomeDefect_<R, E, A, R1, E1, A1>(
  * @category Combinators
  * @since 1.0.0
  *
- * @dataFirst catchSomeDefect_
+ * @dataFirst catchJustDefect_
  * @trace 0
  */
-export function catchSomeDefect<R1, E1, A1>(
-  f: (_: unknown) => Option<IO<R1, E1, A1>>
+export function catchJustDefect<R1, E1, A1>(
+  f: (_: unknown) => Maybe<IO<R1, E1, A1>>
 ): <R, E, A>(ma: IO<R, E, A>) => IO<R & R1, E1 | E, A1 | A> {
-  return (ma) => catchSomeDefect_(ma, f)
+  return (ma) => catchJustDefect_(ma, f)
 }
 
 /**
@@ -1765,8 +1765,8 @@ export function checkInterruptible<R, E, A>(f: (i: InterruptStatus) => IO<R, E, 
  * @trace 1
  * @trace 2
  */
-export function collect_<R, E, A, E1, A1>(ma: IO<R, E, A>, f: () => E1, pf: (a: A) => Option<A1>): IO<R, E | E1, A1> {
-  return collectIO_(ma, f, traceAs(pf, flow(pf, O.map(succeed))))
+export function collect_<R, E, A, E1, A1>(ma: IO<R, E, A>, f: () => E1, pf: (a: A) => Maybe<A1>): IO<R, E | E1, A1> {
+  return collectIO_(ma, f, traceAs(pf, flow(pf, M.map(succeed))))
 }
 
 /**
@@ -1774,10 +1774,7 @@ export function collect_<R, E, A, E1, A1>(ma: IO<R, E, A>, f: () => E1, pf: (a: 
  * @trace 0
  * @trace 1
  */
-export function collect<A, E1, A1>(
-  f: () => E1,
-  pf: (a: A) => Option<A1>
-): <R, E>(ma: IO<R, E, A>) => IO<R, E1 | E, A1> {
+export function collect<A, E1, A1>(f: () => E1, pf: (a: A) => Maybe<A1>): <R, E>(ma: IO<R, E, A>) => IO<R, E1 | E, A1> {
   return (ma) => collect_(ma, f, pf)
 }
 
@@ -1804,7 +1801,7 @@ export function collectAllUnit<R, E, A>(as: Iterable<IO<R, E, A>>): IO<R, E, voi
 export function collectIO_<R, E, A, R1, E1, A1, E2>(
   ma: IO<R, E, A>,
   f: () => E2,
-  pf: (a: A) => Option<IO<R1, E1, A1>>
+  pf: (a: A) => Maybe<IO<R1, E1, A1>>
 ): IO<R & R1, E | E1 | E2, A1> {
   return chain_(
     ma,
@@ -1813,7 +1810,7 @@ export function collectIO_<R, E, A, R1, E1, A1, E2>(
       (a): IO<R1, E1 | E2, A1> =>
         pipe(
           pf(a),
-          O.getOrElse(() => fail(f()))
+          M.getOrElse(() => fail(f()))
         )
     )
   )
@@ -1826,7 +1823,7 @@ export function collectIO_<R, E, A, R1, E1, A1, E2>(
  */
 export function collectIO<A, R1, E1, A1, E2>(
   f: () => E2,
-  pf: (a: A) => Option<IO<R1, E1, A1>>
+  pf: (a: A) => Maybe<IO<R1, E1, A1>>
 ): <R, E>(ma: IO<R, E, A>) => IO<R & R1, E1 | E2 | E, A1> {
   return (ma) => collectIO_(ma, f, pf)
 }
@@ -2450,7 +2447,7 @@ export function forever<R, E, A>(ma: IO<R, E, A>): IO<R, E, never> {
  */
 export function fork<R, E, A>(ma: IO<R, E, A>): URIO<R, FiberContext<E, A>> {
   const trace = accessCallTrace()
-  return new Primitives.Fork(ma, O.none(), O.none(), trace)
+  return new Primitives.Fork(ma, M.nothing(), M.nothing(), trace)
 }
 
 /**
@@ -2479,22 +2476,22 @@ export function fork<R, E, A>(ma: IO<R, E, A>): URIO<R, FiberContext<E, A>> {
  */
 export function forkReport(reportFailure: FailureReporter): <R, E, A>(ma: IO<R, E, A>) => URIO<R, FiberContext<E, A>> {
   const trace = accessCallTrace()
-  return (ma) => new Primitives.Fork(ma, O.none(), O.some(reportFailure), trace)
+  return (ma) => new Primitives.Fork(ma, M.nothing(), M.just(reportFailure), trace)
 }
 
 /**
- * Unwraps the optional success of an `IO`, but can fail with a `None` value.
+ * Unwraps the optional success of an `IO`, but can fail with a `Nothing` value.
  *
  * @trace call
  */
-export function get<R, E, A>(ma: IO<R, E, O.Option<A>>): IO<R, O.Option<E>, A> {
+export function get<R, E, A>(ma: IO<R, E, M.Maybe<A>>): IO<R, M.Maybe<E>, A> {
   const trace = accessCallTrace()
   return matchCauseIO_(
     ma,
-    traceFrom(trace, flow(C.map(O.some), failCause)),
+    traceFrom(trace, flow(C.map(M.just), failCause)),
     traceFrom(
       trace,
-      O.match(() => fail(O.none()), pure)
+      M.match(() => fail(M.nothing()), pure)
     )
   )
 }
@@ -2507,8 +2504,8 @@ export function get<R, E, A>(ma: IO<R, E, O.Option<A>>): IO<R, O.Option<E>, A> {
  *
  * @trace 1
  */
-export function getOrElse_<R, E, A, B>(ma: IO<R, E, Option<A>>, orElse: () => B): IO<R, E, A | B> {
-  return pipe(ma, map(traceAs(orElse, flow(O.getOrElse(orElse)))))
+export function getOrElse_<R, E, A, B>(ma: IO<R, E, Maybe<A>>, orElse: () => B): IO<R, E, A | B> {
+  return pipe(ma, map(traceAs(orElse, flow(M.getOrElse(orElse)))))
 }
 
 /**
@@ -2520,7 +2517,7 @@ export function getOrElse_<R, E, A, B>(ma: IO<R, E, Option<A>>, orElse: () => B)
  * @dataFirst getOrElse_
  * @trace 0
  */
-export function getOrElse<B>(orElse: () => B): <R, E, A>(ma: IO<R, E, Option<A>>) => IO<R, E, B | A> {
+export function getOrElse<B>(orElse: () => B): <R, E, A>(ma: IO<R, E, Maybe<A>>) => IO<R, E, B | A> {
   return (ma) => getOrElse_(ma, orElse)
 }
 
@@ -2533,11 +2530,11 @@ export function getOrElse<B>(orElse: () => B): <R, E, A>(ma: IO<R, E, Option<A>>
  * @trace call
  */
 export function getOrElseIO_<R, E, A, R1, E1, B>(
-  ma: IO<R, E, Option<A>>,
+  ma: IO<R, E, Maybe<A>>,
   orElse: IO<R1, E1, B>
 ): IO<R & R1, E | E1, A | B> {
   const trace = accessCallTrace()
-  return chain_(ma as IO<R, E, Option<A | B>>, traceFrom(trace, flow(O.map(succeed), O.getOrElse(constant(orElse)))))
+  return chain_(ma as IO<R, E, Maybe<A | B>>, traceFrom(trace, flow(M.map(succeed), M.getOrElse(constant(orElse)))))
 }
 
 /**
@@ -2551,51 +2548,51 @@ export function getOrElseIO_<R, E, A, R1, E1, B>(
  */
 export function getOrElseIO<R1, E1, B>(
   orElse: IO<R1, E1, B>
-): <R, E, A>(ma: IO<R, E, Option<A>>) => IO<R & R1, E1 | E, B | A> {
+): <R, E, A>(ma: IO<R, E, Maybe<A>>) => IO<R & R1, E1 | E, B | A> {
   const trace = accessCallTrace()
   return (ma) => traceCall(getOrElseIO_, trace)(ma, orElse)
 }
 
 /**
- * Lifts an Option into an IO, if the option is `None` it fails with NoSuchElementError.
+ * Lifts a Maybe into an IO, if the option is `Nothing` it fails with NoSuchElementError.
  *
  * @trace call
  */
-export function getOrFail<A>(option: Option<A>): FIO<NoSuchElementError, A> {
+export function getOrFail<A>(maybe: Maybe<A>): FIO<NoSuchElementError, A> {
   const trace = accessCallTrace()
   return getOrFailWith_(
-    option,
+    maybe,
     traceFrom(trace, () => new NoSuchElementError('IO.getOrFail'))
   )
 }
 
 /**
- * Lifts an Option into an IO. If the option is `None`, fail with `onNone`.
+ * Lifts a Maybe into an IO. If the option is `Nothing`, fail with `onNothing`.
  *
  * @trace call
  * @trace 1
  */
-export function getOrFailWith_<E, A>(option: Option<A>, onNone: () => E): FIO<E, A> {
+export function getOrFailWith_<E, A>(option: Maybe<A>, onNothing: () => E): FIO<E, A> {
   const trace = accessCallTrace()
-  return defer(traceFrom(trace, () => O.match_(option, () => failLazy(onNone), succeed)))
+  return defer(traceFrom(trace, () => M.match_(option, () => failLazy(onNothing), succeed)))
 }
 
 /**
- * Lifts an Option into an IO. If the option is `None`, fail with `onNone`.
+ * Lifts a Maybe into an IO. If the Maybe is `Nothing`, fail with `onNothing`.
  *
  * @dataFirst getOrFailWith_
  * @trace 0
  */
-export function getOrFailWith<E>(onNone: () => E) {
-  return <A>(option: Option<A>): FIO<E, A> => getOrFailWith_(option, onNone)
+export function getOrFailWith<E>(onNothing: () => E) {
+  return <A>(option: Maybe<A>): FIO<E, A> => getOrFailWith_(option, onNothing)
 }
 
 /**
- * Lifts an Option into a IO, if the option is `None` it fails with Unit.
+ * Lifts a Maybe into a IO, if the Maybe is `Nothing` it fails with Unit.
  *
  * @trace call
  */
-export function getOrFailUnit<A>(option: Option<A>): FIO<void, A> {
+export function getOrFailUnit<A>(option: Maybe<A>): FIO<void, A> {
   return getOrFailWith_(option, () => undefined)
 }
 
@@ -3101,12 +3098,12 @@ export function not<R, E>(ma: IO<R, E, boolean>): IO<R, E, boolean> {
 /**
  * @trace call
  */
-export function option<R, E, A>(io: IO<R, E, A>): URIO<R, Option<A>> {
+export function maybe<R, E, A>(io: IO<R, E, A>): URIO<R, Maybe<A>> {
   const trace = accessCallTrace()
   return match_(
     io,
-    traceFrom(trace, () => O.none()),
-    traceFrom(trace, (a) => O.some(a))
+    traceFrom(trace, () => M.nothing()),
+    traceFrom(trace, (a) => M.just(a))
   )
 }
 
@@ -3115,15 +3112,15 @@ export function option<R, E, A>(io: IO<R, E, A>): URIO<R, Option<A>> {
  *
  * @trace call
  */
-export function optional<R, E, A>(ma: IO<R, Option<E>, A>): IO<R, E, Option<A>> {
+export function optional<R, E, A>(ma: IO<R, Maybe<E>, A>): IO<R, E, Maybe<A>> {
   const trace = accessCallTrace()
   return matchIO_(
     ma,
     traceFrom(
       trace,
-      O.match(() => pure(O.none()), fail)
+      M.match(() => pure(M.nothing()), fail)
     ),
-    flow(O.some, pure)
+    flow(M.just, pure)
   )
 }
 
@@ -3248,27 +3245,27 @@ export function orElseFail<E1>(e: () => E1): <R, E, A>(fa: IO<R, E, A>) => IO<R,
 /**
  * @trace 1
  */
-export function orElseOption_<R, E, A, R1, E1, A1>(
-  ma: IO<R, Option<E>, A>,
-  that: () => IO<R1, Option<E1>, A1>
-): IO<R & R1, Option<E | E1>, A | A1> {
+export function orElseMaybe_<R, E, A, R1, E1, A1>(
+  ma: IO<R, Maybe<E>, A>,
+  that: () => IO<R1, Maybe<E1>, A1>
+): IO<R & R1, Maybe<E | E1>, A | A1> {
   return catchAll_(
     ma,
     traceAs(
       that,
-      O.match(that, (e) => fail(O.some<E | E1>(e)))
+      M.match(that, (e) => fail(M.just<E | E1>(e)))
     )
   )
 }
 
 /**
- * @dataFirst orElseOption_
+ * @dataFirst orElseMaybe_
  * @trace 0
  */
-export function orElseOption<R1, E1, A1>(
-  that: () => IO<R1, Option<E1>, A1>
-): <R, E, A>(ma: IO<R, Option<E>, A>) => IO<R & R1, Option<E1 | E>, A1 | A> {
-  return (ma) => orElseOption_(ma, that)
+export function orElseMaybe<R1, E1, A1>(
+  that: () => IO<R1, Maybe<E1>, A1>
+): <R, E, A>(ma: IO<R, Maybe<E>, A>) => IO<R & R1, Maybe<E1 | E>, A1 | A> {
+  return (ma) => orElseMaybe_(ma, that)
 }
 
 /**
@@ -3369,7 +3366,7 @@ export function refailWithTrace<R, E, A>(ma: IO<R, E, A>): IO<R, E, A> {
  *
  * @trace 1
  */
-export function refineOrHalt_<R, E, A, E1>(fa: IO<R, E, A>, pf: (e: E) => Option<E1>): IO<R, E1, A> {
+export function refineOrHalt_<R, E, A, E1>(fa: IO<R, E, A>, pf: (e: E) => Maybe<E1>): IO<R, E1, A> {
   return refineOrHaltWith_(fa, pf, identity)
 }
 
@@ -3379,7 +3376,7 @@ export function refineOrHalt_<R, E, A, E1>(fa: IO<R, E, A>, pf: (e: E) => Option
  * @dataFirst refineOrHalt_
  * @trace 0
  */
-export function refineOrHalt<E, E1>(pf: (e: E) => Option<E1>): <R, A>(fa: IO<R, E, A>) => IO<R, E1, A> {
+export function refineOrHalt<E, E1>(pf: (e: E) => Maybe<E1>): <R, A>(fa: IO<R, E, A>) => IO<R, E1, A> {
   return (fa) => refineOrHalt_(fa, pf)
 }
 
@@ -3391,13 +3388,13 @@ export function refineOrHalt<E, E1>(pf: (e: E) => Option<E1>): <R, A>(fa: IO<R, 
  */
 export function refineOrHaltWith_<R, E, A, E1>(
   fa: IO<R, E, A>,
-  pf: (e: E) => Option<E1>,
+  pf: (e: E) => Maybe<E1>,
   f: (e: E) => unknown
 ): IO<R, E1, A> {
   const trace = accessCallTrace()
   return catchAll_(
     fa,
-    traceFrom(trace, (e) => O.match_(pf(e), () => halt(f(e)), fail))
+    traceFrom(trace, (e) => M.match_(pf(e), () => halt(f(e)), fail))
   )
 }
 
@@ -3409,7 +3406,7 @@ export function refineOrHaltWith_<R, E, A, E1>(
  * @trace call
  */
 export function refineOrHaltWith<E, E1>(
-  pf: (e: E) => Option<E1>,
+  pf: (e: E) => Maybe<E1>,
   f: (e: E) => unknown
 ): <R, A>(fa: IO<R, E, A>) => IO<R, E1, A> {
   const trace = accessCallTrace()
@@ -3425,10 +3422,10 @@ export function refineOrHaltWith<E, E1>(
  *
  * @trace 1
  */
-export function reject_<R, E, A, E1>(fa: IO<R, E, A>, pf: (a: A) => Option<E1>): IO<R, E | E1, A> {
+export function reject_<R, E, A, E1>(fa: IO<R, E, A>, pf: (a: A) => Maybe<E1>): IO<R, E | E1, A> {
   return rejectIO_(
     fa,
-    traceAs(pf, (a) => O.map_(pf(a), fail))
+    traceAs(pf, (a) => M.map_(pf(a), fail))
   )
 }
 
@@ -3442,7 +3439,7 @@ export function reject_<R, E, A, E1>(fa: IO<R, E, A>, pf: (a: A) => Option<E1>):
  * @dataFirst reject_
  * @trace 0
  */
-export function reject<A, E1>(pf: (a: A) => Option<E1>): <R, E>(fa: IO<R, E, A>) => IO<R, E1 | E, A> {
+export function reject<A, E1>(pf: (a: A) => Maybe<E1>): <R, E>(fa: IO<R, E, A>) => IO<R, E1 | E, A> {
   return (fa) => reject_(fa, pf)
 }
 
@@ -3458,11 +3455,11 @@ export function reject<A, E1>(pf: (a: A) => Option<E1>): <R, E>(fa: IO<R, E, A>)
  */
 export function rejectIO_<R, E, A, R1, E1>(
   fa: IO<R, E, A>,
-  pf: (a: A) => Option<IO<R1, E1, E1>>
+  pf: (a: A) => Maybe<IO<R1, E1, E1>>
 ): IO<R & R1, E | E1, A> {
   return chain_(
     fa,
-    traceAs(pf, (a) => O.match_(pf(a), () => pure(a), chain(fail)))
+    traceAs(pf, (a) => M.match_(pf(a), () => pure(a), chain(fail)))
   )
 }
 
@@ -3478,7 +3475,7 @@ export function rejectIO_<R, E, A, R1, E1>(
  * @trace 0
  */
 export function rejectIO<R1, E1, A>(
-  pf: (a: A) => Option<IO<R1, E1, E1>>
+  pf: (a: A) => Maybe<IO<R1, E1, E1>>
 ): <R, E>(fa: IO<R, E, A>) => IO<R & R1, E1 | E, A> {
   return (fa) => rejectIO_(fa, pf)
 }
@@ -3622,12 +3619,12 @@ export function replicate(n: number): <R, E, A>(ma: IO<R, E, A>) => ReadonlyArra
 /**
  * @trace 1
  */
-export function require_<R, E, A>(ma: IO<R, E, O.Option<A>>, error: () => E): IO<R, E, A> {
+export function require_<R, E, A>(ma: IO<R, E, M.Maybe<A>>, error: () => E): IO<R, E, A> {
   return chain_(
     ma,
     traceAs(
       error,
-      O.match(() => chain_(succeedLazy(error), fail), succeed)
+      M.match(() => chain_(succeedLazy(error), fail), succeed)
     )
   )
 }
@@ -3636,7 +3633,7 @@ export function require_<R, E, A>(ma: IO<R, E, O.Option<A>>, error: () => E): IO
  * @trace 0
  * @dataFirst require_
  */
-function _require<E>(error: () => E): <R, A>(ma: IO<R, E, O.Option<A>>) => IO<R, E, A> {
+function _require<E>(error: () => E): <R, A>(ma: IO<R, E, M.Maybe<A>>) => IO<R, E, A> {
   return (ma) => require_(ma, error)
 }
 
@@ -3649,7 +3646,7 @@ export { _require as require }
  */
 export function resurrect<R, E, A>(io: IO<R, E, A>): IO<R, unknown, A> {
   const trace = accessCallTrace()
-  return unrefineWith_(io, traceFrom(trace, O.some), identity)
+  return unrefineWith_(io, traceFrom(trace, M.just), identity)
 }
 
 /**
@@ -3922,7 +3919,7 @@ export function tryOrElse_<R, E, A, R1, E1, A1, R2, E2, A2>(
 ): IO<R & R1 & R2, E1 | E2, A1 | A2> {
   return matchCauseIO_(
     ma,
-    traceAs(that, (cause) => O.match_(C.keepDefects(cause), that, failCause)),
+    traceAs(that, (cause) => M.match_(C.keepDefects(cause), that, failCause)),
     onSuccess
   )
 }
@@ -3964,7 +3961,7 @@ export function uncause<R, E>(ma: IO<R, never, C.Cause<E>>): IO<R, E, void> {
  *
  * @trace 1
  */
-export function unrefine_<R, E, A, E1>(fa: IO<R, E, A>, pf: (u: unknown) => Option<E1>) {
+export function unrefine_<R, E, A, E1>(fa: IO<R, E, A>, pf: (u: unknown) => Maybe<E1>) {
   return unrefineWith_(fa, pf, identity)
 }
 
@@ -3977,7 +3974,7 @@ export function unrefine_<R, E, A, E1>(fa: IO<R, E, A>, pf: (u: unknown) => Opti
  * @dataFirst unrefine_
  * @trace 0
  */
-export function unrefine<E1>(pf: (u: unknown) => Option<E1>): <R, E, A>(fa: IO<R, E, A>) => IO<R, E1 | E, A> {
+export function unrefine<E1>(pf: (u: unknown) => Maybe<E1>): <R, E, A>(fa: IO<R, E, A>) => IO<R, E1 | E, A> {
   return (fa) => unrefine_(fa, pf)
 }
 
@@ -3993,7 +3990,7 @@ export function unrefine<E1>(pf: (u: unknown) => Option<E1>): <R, E, A>(fa: IO<R
  */
 export function unrefineWith_<R, E, A, E1, E2>(
   fa: IO<R, E, A>,
-  pf: (u: unknown) => Option<E1>,
+  pf: (u: unknown) => Maybe<E1>,
   f: (e: E) => E2
 ): IO<R, E1 | E2, A> {
   return catchAllCause_(
@@ -4003,8 +4000,8 @@ export function unrefineWith_<R, E, A, E1, E2>(
       (cause): IO<R, E1 | E2, A> =>
         pipe(
           cause,
-          C.find((c) => (C.halted(c) ? pf(c.value) : O.none())),
-          O.match(() => pipe(cause, C.map(f), failCause), fail)
+          C.find((c) => (C.halted(c) ? pf(c.value) : M.nothing())),
+          M.match(() => pipe(cause, C.map(f), failCause), fail)
         )
     )
   )
@@ -4021,7 +4018,7 @@ export function unrefineWith_<R, E, A, E1, E2>(
  * @trace 0
  * @trace 1
  */
-export function unrefineWith<E, E1, E2>(pf: (u: unknown) => Option<E1>, f: (e: E) => E2) {
+export function unrefineWith<E, E1, E2>(pf: (u: unknown) => Maybe<E1>, f: (e: E) => E2) {
   return <R, A>(ma: IO<R, E, A>): IO<R, E1 | E2, A> => unrefineWith_(ma, pf, f)
 }
 
@@ -4398,8 +4395,8 @@ const adapter = (_: any, __?: any) => {
       adapter['$trace']
     )
   }
-  if (O.isOption(_)) {
-    return new GenIO(__ ? (_._tag === 'None' ? fail(__()) : pure(_.value)) : getOrFail(_), adapter['$trace'])
+  if (M.isMaybe(_)) {
+    return new GenIO(__ ? (_._tag === 'Nothing' ? fail(__()) : pure(_.value)) : getOrFail(_), adapter['$trace'])
   }
   if (isTag(_)) {
     return new GenIO(askService(_), adapter['$trace'])
@@ -4422,11 +4419,11 @@ export function gen<T extends GenIO<any, any, any>, A>(
     /**
      * @trace call
      */
-    <E, A>(_: Option<A>, onNone: () => E): GenIO<unknown, E, A>
+    <E, A>(_: Maybe<A>, onNothing: () => E): GenIO<unknown, E, A>
     /**
      * @trace call
      */
-    <A>(_: Option<A>): GenIO<unknown, NoSuchElementError, A>
+    <A>(_: Maybe<A>): GenIO<unknown, NoSuchElementError, A>
     /**
      * @trace call
      */

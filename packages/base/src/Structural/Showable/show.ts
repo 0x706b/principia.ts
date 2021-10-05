@@ -8,7 +8,7 @@ import * as C from '../../Chunk/core'
 import { pipe } from '../../function'
 import * as HM from '../../HashMap'
 import * as It from '../../Iterable'
-import * as O from '../../Option'
+import * as M from '../../Maybe'
 import {
   isAnyArrayBuffer,
   isArray,
@@ -165,7 +165,7 @@ function showValue(value: object): ShowComputation {
         Z.modify((context: ShowContext) =>
           pipe(
             HM.get_(context.circular, value),
-            O.match(
+            M.match(
               () => [
                 context.circular.size + 1,
                 context.copy({ circular: HM.set_(context.circular, value, context.circular.size + 1) })
@@ -452,7 +452,7 @@ function showRaw(value: object, typedArray?: string): ShowComputation {
               const baseWithRef = Z.getsZ((context: ShowContext) =>
                 pipe(
                   HM.get_(context.circular, value),
-                  O.match(
+                  M.match(
                     () => base,
                     (index) =>
                       Z.map_(base, (base) => {

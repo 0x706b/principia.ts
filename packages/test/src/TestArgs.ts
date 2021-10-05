@@ -1,19 +1,19 @@
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 
 import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/function'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import { tuple } from '@principia/base/tuple'
 
 export class TestArgs {
   constructor(
     readonly testSearchTerms: ReadonlyArray<string>,
     readonly tagSearchTerms: ReadonlyArray<string>,
-    readonly testTaskPolicy: Option<string>
+    readonly testTaskPolicy: Maybe<string>
   ) {}
 }
 
-export const empty: TestArgs = new TestArgs(A.empty(), A.empty(), O.none())
+export const empty: TestArgs = new TestArgs(A.empty(), A.empty(), M.nothing())
 
 export function parse(args: ReadonlyArray<string>): TestArgs {
   const [terms, tags, policies] = pipe(
@@ -21,15 +21,15 @@ export function parse(args: ReadonlyArray<string>): TestArgs {
     A.chunksOf(2),
     A.filterMap((as) => {
       if (as[0] === '-t') {
-        return O.some(tuple('testSearchTerm', as[1]))
+        return M.just(tuple('testSearchTerm', as[1]))
       }
       if (as[0] === '-tags') {
-        return O.some(tuple('tagSearchTerm', as[1]))
+        return M.just(tuple('tagSearchTerm', as[1]))
       }
       if (as[0] === '-policy') {
-        return O.some(tuple('policy', as[1]))
+        return M.just(tuple('policy', as[1]))
       }
-      return O.none()
+      return M.nothing()
     }),
     A.foldl(
       tuple(<ReadonlyArray<string>>[], <ReadonlyArray<string>>[], <ReadonlyArray<string>>[]),

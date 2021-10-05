@@ -4,7 +4,7 @@ import * as I from '@principia/base/IO'
 import * as C from '@principia/base/IO/Cause'
 import * as Ex from '@principia/base/IO/Exit'
 import { showFiberId } from '@principia/base/IO/Fiber'
-import * as O from '@principia/base/Option'
+import * as Mb from '@principia/base/Maybe'
 import { isRunnableSpec } from '@principia/test/RunnableSpec'
 import { TestArgs } from '@principia/test/TestArgs'
 import { createRequire } from 'module'
@@ -38,7 +38,7 @@ const argv = yargs(process.argv.slice(2))
   .help()
   .parseSync()
 
-const testArgs = new TestArgs(argv.tests || [], argv.tags || [], O.fromNullable(argv.policy))
+const testArgs = new TestArgs(argv.tests || [], argv.tags || [], Mb.fromNullable(argv.policy))
 
 const program = pipe(
   glob(argv.path ?? './**/test/*Spec.ts'),

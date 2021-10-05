@@ -2,7 +2,7 @@ import type { Either } from '@principia/base/Either'
 import type * as HM from '@principia/base/HashMap'
 import type { HashSet } from '@principia/base/HashSet'
 import type * as HKT from '@principia/base/HKT'
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 import type { Applicative, PredicateWithIndex, RefinementWithIndex } from '@principia/base/prelude'
 
 /* eslint typescript-sort-keys/interface: "error" */
@@ -57,7 +57,7 @@ declare module '@principia/base/HashMap' {
     /**
      * @rewrite filterMap_ from "@principia/base/HashMap"
      */
-    filterMap<K, V, B>(this: HashMap<K, V>, f: (a: V, k: K) => Option<B>): HashMap<K, B>
+    filterMap<K, V, B>(this: HashMap<K, V>, f: (a: V, k: K) => Maybe<B>): HashMap<K, B>
 
     /**
      * @rewriteConstraint filterMapA_ from "@principia/base/HashMap"
@@ -66,7 +66,7 @@ declare module '@principia/base/HashMap' {
       this: HashMap<K, V>,
       A: Applicative<F, C>
     ): <K_, Q, W, X, I, S, R, E, A>(
-      f: (a: V, k: K) => HKT.Kind<F, C, K_, Q, W, X, I, S, R, E, Option<A>>
+      f: (a: V, k: K) => HKT.Kind<F, C, K_, Q, W, X, I, S, R, E, Maybe<A>>
     ) => HKT.Kind<F, C, K_, Q, W, X, I, S, R, E, HashMap<K, A>>
 
     /**
@@ -82,7 +82,7 @@ declare module '@principia/base/HashMap' {
     /**
      * @rewrite get_ from "@principia/base/HashMap"
      */
-    get<K, V>(this: HashMap<K, V>, key: K): Option<V>
+    get<K, V>(this: HashMap<K, V>, key: K): Maybe<V>
 
     /**
      * @rewrite has_ from "@principia/base/HashMap"
@@ -122,7 +122,7 @@ declare module '@principia/base/HashMap' {
     /**
      * @rewrite modify_ from "@principia/base/HashMap"
      */
-    modify<K, V>(this: HashMap<K, V>, key: K, f: (a: Option<V>) => Option<V>): HashMap<K, V>
+    modify<K, V>(this: HashMap<K, V>, key: K, f: (a: Maybe<V>) => Maybe<V>): HashMap<K, V>
 
     /**
      * @rewrite mutate_ from "@principia/base/HashMap"
@@ -163,7 +163,7 @@ declare module '@principia/base/HashMap' {
     /**
      * @rewrite pop_ from "@principia/base/HashMap"
      */
-    pop<K, V>(this: HashMap<K, V>, k: K): Option<readonly [V, HashMap<K, V>]>
+    pop<K, V>(this: HashMap<K, V>, k: K): Maybe<readonly [V, HashMap<K, V>]>
     /**
      * @rewrite remove_ from "@principia/base/HashMap"
      */

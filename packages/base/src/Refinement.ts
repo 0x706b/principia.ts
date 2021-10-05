@@ -1,4 +1,4 @@
-import type * as O from './internal/Option'
+import type * as O from './internal/Maybe'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -20,8 +20,8 @@ export interface RefinementWithIndex<I, A, B extends A> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function fromOptionK<A, B extends A>(pf: (a: A) => O.Option<B>): Refinement<A, B> {
-  return (a): a is B => pf(a)._tag === 'Some'
+export function fromMaybeK<A, B extends A>(pf: (a: A) => O.Maybe<B>): Refinement<A, B> {
+  return (a): a is B => pf(a)._tag === 'Just'
 }
 
 /*

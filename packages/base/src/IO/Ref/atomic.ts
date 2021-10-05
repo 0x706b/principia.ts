@@ -1,4 +1,4 @@
-import type { Option } from '../../Option'
+import type { Maybe } from '../../Maybe'
 import type { UIO } from '../IO/core'
 import type { Atomic } from './core'
 
@@ -22,12 +22,12 @@ export function getAndUpdate<A>(f: (a: A) => A) {
     })
 }
 
-export function getAndUpdateSome<A>(f: (a: A) => Option<A>) {
+export function getAndUpdateJust<A>(f: (a: A) => Maybe<A>) {
   return (self: Atomic<A>): UIO<A> =>
     I.succeedLazy(() => {
       const v = self.value.get
       const o = f(v)
-      if (o._tag === 'Some') {
+      if (o._tag === 'Just') {
         self.value.set(o.value)
       }
       return v
@@ -44,14 +44,14 @@ export function modify<A, B>(f: (a: A) => readonly [B, A]) {
     })
 }
 
-export function modifySome<B>(def: B) {
-  return <A>(f: (a: A) => Option<readonly [B, A]>) =>
+export function modifyJust<B>(def: B) {
+  return <A>(f: (a: A) => Maybe<readonly [B, A]>) =>
     (self: Atomic<A>): UIO<B> =>
       I.succeedLazy(() => {
         const v = self.value.get
         const o = f(v)
 
-        if (o._tag === 'Some') {
+        if (o._tag === 'Just') {
           self.value.set(o.value[1])
           return o.value[0]
         }
@@ -76,23 +76,23 @@ export function updateAndGet<A>(f: (a: A) => A) {
   }
 }
 
-export function updateSome<A>(f: (a: A) => Option<A>) {
+export function updateJust<A>(f: (a: A) => Maybe<A>) {
   return (self: Atomic<A>): UIO<void> =>
     I.succeedLazy(() => {
       const o = f(self.value.get)
 
-      if (o._tag === 'Some') {
+      if (o._tag === 'Just') {
         self.value.set(o.value)
       }
     })
 }
 
-export function updateSomeAndGet<A>(f: (a: A) => Option<A>) {
+export function updateJustAndGet<A>(f: (a: A) => Maybe<A>) {
   return (self: Atomic<A>): UIO<A> => {
     return I.succeedLazy(() => {
       const o = f(self.value.get)
 
-      if (o._tag === 'Some') {
+      if (o._tag === 'Just') {
         self.value.set(o.value)
       }
 

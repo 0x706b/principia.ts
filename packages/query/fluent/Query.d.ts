@@ -3,7 +3,7 @@ import type { Either } from '@principia/base/Either'
 import type { Has, Tag } from '@principia/base/Has'
 import type { IO } from '@principia/base/IO'
 import type { Layer } from '@principia/base/Layer'
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 import type { Erase } from '@principia/base/prelude'
 import type { Cache } from '@principia/query/Cache'
 import type { DataSourceAspect } from '@principia/query/DataSourceAspect'
@@ -159,15 +159,15 @@ declare module '@principia/query/Query' {
     /**
      * @rewrite get from "@principia/query/Query"
      */
-    get<R, E, A>(this: Query<R, E, Option<A>>): Query<R, Option<E>, A>
+    get<R, E, A>(this: Query<R, E, Maybe<A>>): Query<R, Maybe<E>, A>
     /**
      * @rewrite getError from "@principia/query/Query"
      */
-    getError<R, E, A>(this: Query<R, Option<E>, A>): Query<R, E, Option<A>>
+    getError<R, E, A>(this: Query<R, Maybe<E>, A>): Query<R, E, Maybe<A>>
     /**
      * @rewrite getOrFail_ from "@principia/query/Query"
      */
-    getOrFail<R, E, A, E1>(this: Query<R, E, Option<A>>, e: E1): Query<R, E | E1, A>
+    getOrFail<R, E, A, E1>(this: Query<R, E, Maybe<A>>, e: E1): Query<R, E | E1, A>
     /**
      * @rewrite give_ from "@principia/query/Query"
      */
@@ -201,7 +201,7 @@ declare module '@principia/query/Query' {
     /**
      * @rewrite left from "@principia/query/Query"
      */
-    left<R, E, A, B>(this: Query<R, E, Either<A, B>>): Query<R, Option<E>, A>
+    left<R, E, A, B>(this: Query<R, E, Either<A, B>>): Query<R, Maybe<E>, A>
     /**
      * @rewrite leftOrFail_ from "@principia/query/Query"
      */
@@ -253,7 +253,7 @@ declare module '@principia/query/Query' {
     /**
      * @rewriteGetter optional from "@principia/query/Query"
      */
-    optional: Query<R, E, Option<A>>
+    optional: Query<R, E, Maybe<A>>
     /**
      * @rewriteGetter orHalt from "@principia/query/Query"
      */
@@ -265,15 +265,15 @@ declare module '@principia/query/Query' {
     /**
      * @rewrite refineOrHalt_ from "@principia/query/Query"
      */
-    refineOrHalt<R, E, A, E1>(this: Query<R, E, A>, pf: (e: E) => Option<E1>): Query<R, E1, A>
+    refineOrHalt<R, E, A, E1>(this: Query<R, E, A>, pf: (e: E) => Maybe<E1>): Query<R, E1, A>
     /**
      * @rewrite refineOrHaltWith_ from "@principia/query/Query"
      */
-    refineOrHaltWith<R, E, A, E1>(this: Query<R, E, A>, pf: (e: E) => Option<E1>, f: (e: E) => unknown): Query<R, E1, A>
+    refineOrHaltWith<R, E, A, E1>(this: Query<R, E, A>, pf: (e: E) => Maybe<E1>, f: (e: E) => unknown): Query<R, E1, A>
     /**
      * @rewrite right from "@principia/query/Query"
      */
-    right<R, E, A, B>(this: Query<R, E, Either<A, B>>): Query<R, Option<E>, B>
+    right<R, E, A, B>(this: Query<R, E, Either<A, B>>): Query<R, Maybe<E>, B>
     /**
      * @rewrite rightOrFail_ from "@principia/query/Query"
      */
@@ -324,15 +324,11 @@ declare module '@principia/query/Query' {
     /**
      * @rewrite unrefine_ from "@principia/query/Query"
      */
-    unrefine<R, E, A>(this: Query<R, E, A>, pf: (error: unknown) => Option<E>): Query<R, E, A>
+    unrefine<R, E, A>(this: Query<R, E, A>, pf: (error: unknown) => Maybe<E>): Query<R, E, A>
     /**
      * @rewrite unrefineWith_ from "@principia/query/Query"
      */
-    unrefineWith<R, E, A, E1>(
-      this: Query<R, E, A>,
-      pf: (error: unknown) => Option<E1>,
-      f: (e: E) => E1
-    ): Query<R, E1, A>
+    unrefineWith<R, E, A, E1>(this: Query<R, E, A>, pf: (error: unknown) => Maybe<E1>, f: (e: E) => E1): Query<R, E1, A>
     /**
      * @rewrite unsandbox from "@principia/query/Query"
      */

@@ -2,7 +2,7 @@ import type { FiberId } from './FiberId'
 
 import * as Ev from '../../Eval'
 import * as L from '../../List/core'
-import * as O from '../../Option'
+import * as M from '../../Maybe'
 import { prettyFiberId } from './FiberId'
 
 export type TraceElement = NoLocation | SourceLocation
@@ -27,7 +27,7 @@ export class Trace {
     readonly fiberId: FiberId,
     readonly executionTrace: L.List<TraceElement>,
     readonly stackTrace: L.List<TraceElement>,
-    readonly parentTrace: O.Option<Trace>
+    readonly parentTrace: M.Maybe<Trace>
   ) {}
 }
 
@@ -37,18 +37,18 @@ export function ancestryLength(trace: Trace): number {
 
 export function parents(trace: Trace): L.List<Trace> {
   const pushable = L.emptyPushable<Trace>()
-  let parent     = O.toUndefined(trace.parentTrace)
+  let parent     = M.toUndefined(trace.parentTrace)
   while (parent != null) {
     L.push(parent, pushable)
-    parent = O.toUndefined(parent.parentTrace)
+    parent = M.toUndefined(parent.parentTrace)
   }
   return pushable
 }
 
-export function truncatedParentTrace(trace: Trace, maxAncestors: number): O.Option<Trace> {
+export function truncatedParentTrace(trace: Trace, maxAncestors: number): M.Maybe<Trace> {
   if (ancestryLength(trace) > maxAncestors) {
-    return L.foldr_(L.take_(parents(trace), maxAncestors), O.none() as O.Option<Trace>, (trace, parent) =>
-      O.some(new Trace(trace.fiberId, trace.executionTrace, trace.stackTrace, parent))
+    return L.foldr_(L.take_(parents(trace), maxAncestors), M.nothing() as M.Maybe<Trace>, (trace, parent) =>
+      M.just(new Trace(trace.fiberId, trace.executionTrace, trace.stackTrace, parent))
     )
   } else {
     return trace.parentTrace
@@ -87,7 +87,7 @@ export function prettyTraceEval(trace: Trace): Ev.Eval<string> {
     const parent = trace.parentTrace
 
     const ancestry =
-      parent._tag === 'None'
+      parent._tag === 'Nothing'
         ? [`Fiber: ${prettyFiberId(trace.fiberId)} was spawned by: <empty trace>`]
         : [`Fiber: ${prettyFiberId(trace.fiberId)} was spawned by:\n`, yield* _(prettyTraceEval(parent.value))]
 
@@ -97,7 +97,7 @@ export function prettyTraceEval(trace: Trace): Ev.Eval<string> {
 
 function ancestryLengthEval(trace: Trace, i: number): Ev.Eval<number> {
   const parent = trace.parentTrace
-  if (parent._tag === 'None') {
+  if (parent._tag === 'Nothing') {
     return Ev.now(i)
   } else {
     return Ev.defer(() => ancestryLengthEval(parent.value, i + 1))

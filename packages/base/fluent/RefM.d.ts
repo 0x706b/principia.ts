@@ -1,7 +1,7 @@
 import type { Either } from '@principia/base/Either'
 import type { IO } from '@principia/base/IO'
 import type * as RM from '@principia/base/IO/RefM'
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 import type { Predicate } from '@principia/base/prelude'
 
 declare global {
@@ -40,8 +40,8 @@ declare module '@principia/base/IO/RefM' {
      */
     collect<RA, RB, EA, EB, A, B, C>(
       this: RefM<RA, RB, EA, EB, A, B>,
-      f: (b: B) => Option<C>
-    ): RefM<RA, RB, EA, Option<EB>, A, C>
+      f: (b: B) => Maybe<C>
+    ): RefM<RA, RB, EA, Maybe<EB>, A, C>
 
     /**
      * Maps and filters the `get` value of the `RefM` with the specified
@@ -54,8 +54,8 @@ declare module '@principia/base/IO/RefM' {
      */
     collectIO<RA, RB, EA, EB, A, B, RC, EC, C>(
       this: RefM<RA, RB, EA, EB, A, B>,
-      f: (b: B) => Option<IO<RC, EC, C>>
-    ): RefM<RA, RB & RC, EA, Option<EC | EB>, A, C>
+      f: (b: B) => Maybe<IO<RC, EC, C>>
+    ): RefM<RA, RB & RC, EA, Maybe<EC | EB>, A, C>
 
     /**
      * Transforms the `set` value of the `RefM` with the specified function.
@@ -116,7 +116,7 @@ declare module '@principia/base/IO/RefM' {
     filterInput<RA, RB, EA, EB, A, B, A1 extends A>(
       this: RefM<RA, RB, EA, EB, A, B>,
       predicate: Predicate<A1>
-    ): RefM<RA, RB, Option<EA>, EB, A1, B>
+    ): RefM<RA, RB, Maybe<EA>, EB, A1, B>
 
     /**
      * Filters the `set` value of the `RefM` with the specified effectful
@@ -129,7 +129,7 @@ declare module '@principia/base/IO/RefM' {
     filterInputIO<RA, RB, EA, EB, A, B, RC, EC, A1 extends A>(
       this: RefM<RA, RB, EA, EB, A, B>,
       f: (a: A1) => IO<RC, EC, boolean>
-    ): RefM<RA & RC, RB, Option<EC | EA>, EB, A1, B>
+    ): RefM<RA & RC, RB, Maybe<EC | EA>, EB, A1, B>
 
     /**
      * Filters the `get` value of the `RefM` with the specified predicate,
@@ -139,7 +139,7 @@ declare module '@principia/base/IO/RefM' {
      * @rewrite filterOutput_ from "@principia/base/IO/RefM"
      * @trace 0
      */
-    filterOutput(predicate: Predicate<B>): RefM<RA, RB, EA, Option<EB>, A, B>
+    filterOutput(predicate: Predicate<B>): RefM<RA, RB, EA, Maybe<EB>, A, B>
 
     /**
      * Filters the `get` value of the `RefM` with the specified effectual predicate,
@@ -152,7 +152,7 @@ declare module '@principia/base/IO/RefM' {
     filterOutputIO<RA, RB, EA, EB, A, B, RC, EC>(
       this: RefM<RA, RB, EA, EB, A, B>,
       f: (b: B) => IO<RC, EC, boolean>
-    ): RefM<RA, RB & RC, EA, Option<EB | EC>, A, B>
+    ): RefM<RA, RB & RC, EA, Maybe<EB | EC>, A, B>
 
     /**
      * Reads the value from the `RefM`.
@@ -181,12 +181,12 @@ declare module '@principia/base/IO/RefM' {
     ): IO<RA & RB & R1, EA | EB | E1, A>
 
     /**
-     * @rewrite getAndUpdateSomeIO_ from "@principia/base/IO/RefM"
+     * @rewrite getAndUpdateJustIO_ from "@principia/base/IO/RefM"
      * @trace 0
      */
-    getAndUpdateSomeIO<RA, RB, EA, EB, A, R1, E1>(
+    getAndUpdateJustIO<RA, RB, EA, EB, A, R1, E1>(
       this: RefM<RA, RB, EA, EB, A, A>,
-      f: (a: A) => Option<IO<R1, E1, A>>
+      f: (a: A) => Maybe<IO<R1, E1, A>>
     ): IO<RA & RB & R1, EA | EB | E1, A>
 
     /**
@@ -288,15 +288,15 @@ declare module '@principia/base/IO/RefM' {
      * Atomically modifies the `RefM` with the specified function, which computes
      * a return value for the modification if the function is defined in the current value
      * otherwise it returns a default value.
-     * This is a more powerful version of `updateSome`.
+     * This is a more powerful version of `updateJust`.
      *
-     * @rewrite modifySomeIO_ from "@principia/base/IO/RefM"
+     * @rewrite modifyJustIO_ from "@principia/base/IO/RefM"
      * @trace 1
      */
-    modifySomeIO<RA, RB, EA, EB, A, R1, E1, B>(
+    modifyJustIO<RA, RB, EA, EB, A, R1, E1, B>(
       this: RefM<RA, RB, EA, EB, A, A>,
       def: B,
-      f: (a: A) => Option<IO<R1, E1, readonly [B, A]>>
+      f: (a: A) => Maybe<IO<R1, E1, readonly [B, A]>>
     ): IO<RA & RB & R1, EA | EB | E1, B>
 
     /**
@@ -351,21 +351,21 @@ declare module '@principia/base/IO/RefM' {
     ): IO<RA & RB & R1, EA | EB | E1, void>
 
     /**
-     * @rewrite updateSomeAndGetIO_ from "@principia/base/IO/RefM"
+     * @rewrite updateJustAndGetIO_ from "@principia/base/IO/RefM"
      * @trace 0
      */
-    updateSomeAndGetIO<RA, RB, EA, EB, A, R1, E1>(
+    updateJustAndGetIO<RA, RB, EA, EB, A, R1, E1>(
       this: RefM<RA, RB, EA, EB, A, A>,
-      f: (a: A) => Option<IO<R1, E1, A>>
+      f: (a: A) => Maybe<IO<R1, E1, A>>
     ): IO<RA & RB & R1, EA | EB | E1, A>
 
     /**
-     * @rewrite updateSomeIO_ from "@principia/base/IO/RefM"
+     * @rewrite updateJustIO_ from "@principia/base/IO/RefM"
      * @trace 0
      */
-    updateSomeIO<RA, RB, EA, EB, A, R1, E1>(
+    updateJustIO<RA, RB, EA, EB, A, R1, E1>(
       this: RefM<RA, RB, EA, EB, A, A>,
-      f: (a: A) => Option<IO<R1, E1, A>>
+      f: (a: A) => Maybe<IO<R1, E1, A>>
     ): IO<RA & RB & R1, EA | EB | E1, void>
   }
 }

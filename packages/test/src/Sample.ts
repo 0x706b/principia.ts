@@ -1,6 +1,6 @@
 import type { IO } from '@principia/base/IO'
 import type { Stream } from '@principia/base/IO/Stream'
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 import type { Predicate } from '@principia/base/Predicate'
 import type { ArrayInt64 } from '@principia/base/util/pure-rand/distribution/internals/ArrayInt'
 
@@ -10,7 +10,7 @@ import * as I from '@principia/base/IO'
 import * as Ca from '@principia/base/IO/Cause'
 import * as Ex from '@principia/base/IO/Exit'
 import * as S from '@principia/base/IO/Stream'
-import * as O from '@principia/base/Option'
+import * as O from '@principia/base/Maybe'
 import { tuple } from '@principia/base/tuple'
 
 import { add64, halve64, isEqual64, substract64 } from './util/math'
@@ -140,12 +140,12 @@ export function filter<A>(f: Predicate<A>): <R>(ma: Sample<R, A>) => Stream<R, n
 }
 
 export function zipWith_<R, A, R1, B, C>(ma: Sample<R, A>, mb: Sample<R1, B>, f: (a: A, b: B) => C): Sample<R & R1, C> {
-  type State = readonly [boolean, boolean, Option<Sample<R, A>>, Option<Sample<R1, B>>]
+  type State = readonly [boolean, boolean, Maybe<Sample<R, A>>, Maybe<Sample<R1, B>>]
   const value  = f(ma.value, mb.value)
   const shrink = S.combine_(
     ma.shrink,
     mb.shrink,
-    <State>[false, false, O.none(), O.none()],
+    <State>[false, false, O.nothing(), O.nothing()],
     ([leftDone, rightDone, s1, s2], left, right) =>
       pipe(
         I.result(left),
@@ -154,7 +154,7 @@ export function zipWith_<R, A, R1, B, C>(ma: Sample<R, A>, mb: Sample<R1, B>, f:
             if (Ex.isSuccess(eb)) {
               // Success && Success
               return Ex.succeed(
-                tuple(zipWith_(ea.value, eb.value, f), tuple(leftDone, rightDone, O.some(ea.value), O.some(eb.value)))
+                tuple(zipWith_(ea.value, eb.value, f), tuple(leftDone, rightDone, O.just(ea.value), O.just(eb.value)))
               )
             } else {
               // Success && Failure
@@ -169,11 +169,11 @@ export function zipWith_<R, A, R1, B, C>(ma: Sample<R, A>, mb: Sample<R1, B>, f:
                         Ex.succeed(
                           tuple(
                             map_(ea.value, (a) => f(a, mb.value)),
-                            tuple(leftDone, true, O.some(ea.value), s2)
+                            tuple(leftDone, true, O.just(ea.value), s2)
                           )
                         ),
                       (r) =>
-                        Ex.succeed(tuple(zipWith_(ea.value, r, f), tuple(leftDone, rightDone, O.some(ea.value), s2)))
+                        Ex.succeed(tuple(zipWith_(ea.value, r, f), tuple(leftDone, rightDone, O.just(ea.value), s2)))
                     ),
                   (cause) => Ex.failCause(cause)
                 )
@@ -193,11 +193,11 @@ export function zipWith_<R, A, R1, B, C>(ma: Sample<R, A>, mb: Sample<R1, B>, f:
                         Ex.succeed(
                           tuple(
                             map_(eb.value, (b) => f(ma.value, b)),
-                            tuple(true, rightDone, s1, O.some(eb.value))
+                            tuple(true, rightDone, s1, O.just(eb.value))
                           )
                         ),
                       (l) =>
-                        Ex.succeed(tuple(zipWith_(l, eb.value, f), tuple(leftDone, rightDone, s1, O.some(eb.value))))
+                        Ex.succeed(tuple(zipWith_(l, eb.value, f), tuple(leftDone, rightDone, s1, O.just(eb.value))))
                     ),
                   (cause) => Ex.failCause(cause)
                 )
@@ -206,32 +206,32 @@ export function zipWith_<R, A, R1, B, C>(ma: Sample<R, A>, mb: Sample<R1, B>, f:
               // Failure && Failure
               const causeL = Ca.sequenceCauseOption(ea.cause)
               const causeR = Ca.sequenceCauseOption(eb.cause)
-              if (O.isSome(causeL)) {
-                if (O.isSome(causeR)) {
+              if (O.isJust(causeL)) {
+                if (O.isJust(causeR)) {
                   return Ex.failCause(Ca.both(causeL.value, causeR.value))
                 } else {
                   return Ex.failCause(causeL.value)
                 }
               } else {
-                if (O.isSome(causeR)) {
+                if (O.isJust(causeR)) {
                   return Ex.failCause(causeR.value)
                 } else {
-                  if (!leftDone && s2._tag === 'Some') {
+                  if (!leftDone && s2._tag === 'Just') {
                     return Ex.succeed(
                       tuple(
                         map_(s2.value, (b) => f(ma.value, b)),
                         tuple(true, rightDone, s1, s2)
                       )
                     )
-                  } else if (!rightDone && s1._tag === 'Some') {
+                  } else if (!rightDone && s1._tag === 'Just') {
                     return Ex.succeed(
                       tuple(
                         map_(s1.value, (a) => f(a, mb.value)),
-                        tuple(leftDone, true, O.none(), s2)
+                        tuple(leftDone, true, O.nothing(), s2)
                       )
                     )
                   } else {
-                    return Ex.fail(O.none())
+                    return Ex.fail(O.nothing())
                   }
                 }
               }
@@ -270,11 +270,11 @@ export function shrinkFractional(smallest: number): (a: number) => Sample<unknow
         S.unfold(smallest, (min) => {
           const mid = min + (max - min) / 2
           if (mid === max) {
-            return O.none()
+            return O.nothing()
           } else if (Math.abs(max - mid) < 0.001) {
-            return O.some([min, max])
+            return O.just([min, max])
           } else {
-            return O.some([mid, mid])
+            return O.just([mid, mid])
           }
         })
       )
@@ -297,11 +297,11 @@ export function shrinkBigInt(smallest: bigint): (a: bigint) => Sample<unknown, b
         S.unfold(smallest, (min) => {
           const mid = min + (max - min) / BigInt(2)
           if (mid === max) {
-            return O.none()
+            return O.nothing()
           } else if (bigIntAbs(max - mid) === BigInt(1)) {
-            return O.some([mid, max])
+            return O.just([mid, max])
           } else {
-            return O.some([mid, mid])
+            return O.just([mid, mid])
           }
         })
       )
@@ -316,11 +316,11 @@ export function shrinkIntegral(smallest: number): (a: number) => Sample<unknown,
         S.unfold(smallest, (min) => {
           const mid = min + quot(max - min, 2)
           if (mid === max) {
-            return O.none()
+            return O.nothing()
           } else if (Math.abs(max - mid) === 1) {
-            return O.some([mid, max])
+            return O.just([mid, max])
           } else {
-            return O.some([mid, mid])
+            return O.just([mid, mid])
           }
         })
       )
@@ -335,9 +335,9 @@ export function shrinkArrayInt64(target: ArrayInt64): (value: ArrayInt64) => Sam
         S.unfold(target, (min) => {
           const mid = add64(min, halve64(substract64(max, min)))
           if (isEqual64(mid, max)) {
-            return O.none()
+            return O.nothing()
           } else {
-            return O.some([mid, max])
+            return O.just([mid, max])
           }
         })
       )

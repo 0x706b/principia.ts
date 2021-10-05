@@ -1,68 +1,68 @@
-import type { OptionURI } from './Option'
+import type { MaybeURI } from './Maybe'
 
 import * as HKT from './HKT'
-import * as O from './Option'
+import * as Maybe from './Maybe'
 import * as P from './prelude'
 
-export function getOptionT<M extends HKT.URIS, C = HKT.Auto>(M: P.Monad<M, C>): OptionT<M, C>
-export function getOptionT<M>(M: P.Monad<HKT.UHKT<M>, HKT.Auto>): OptionT<HKT.UHKT<M>> {
-  const chain_: OptionT<HKT.UHKT<M>>['chain_'] = (ma, f) =>
+export function getMaybeT<M extends HKT.URIS, C = HKT.Auto>(M: P.Monad<M, C>): MaybeT<M, C>
+export function getMaybeT<M>(M: P.Monad<HKT.UHKT<M>, HKT.Auto>): MaybeT<HKT.UHKT<M>> {
+  const chain_: MaybeT<HKT.UHKT<M>>['chain_'] = (ma, f) =>
     M.chain_(
       ma,
-      O.match(() => M.pure(O.none()), f)
+      Maybe.match(() => M.pure(Maybe.nothing()), f)
     )
 
-  return HKT.instance<OptionT<HKT.UHKT<M>>>({
-    ...P.Monad({ ...P.getApplicativeComposition(M, O.Applicative), chain_ }),
-    none: () => M.pure(O.none()),
-    some: (a) => M.pure(O.some(a)),
-    someM: (ma) => M.map_(ma, O.some),
-    matchOption_: (ma, onNone, onSome) => M.map_(ma, O.match(onNone, onSome)),
-    matchOption: (onNone, onSome) => M.map(O.match(onNone, onSome)),
+  return HKT.instance<MaybeT<HKT.UHKT<M>>>({
+    ...P.Monad({ ...P.getApplicativeComposition(M, Maybe.Applicative), chain_ }),
+    nothing: () => M.pure(Maybe.nothing()),
+    just: (a) => M.pure(Maybe.just(a)),
+    justM: (ma) => M.map_(ma, Maybe.just),
+    matchOption_: (ma, onNothing, onJust) => M.map_(ma, Maybe.match(onNothing, onJust)),
+    matchOption: (onNothing, onJust) => M.map(Maybe.match(onNothing, onJust)),
     matchOptionM_: <A1, A2, A3>(
-      ma: HKT.HKT<M, O.Option<A1>>,
-      onNone: () => HKT.HKT<M, A2>,
-      onSome: (a: A1) => HKT.HKT<M, A3>
+      ma: HKT.HKT<M, Maybe.Maybe<A1>>,
+      onNothing: () => HKT.HKT<M, A2>,
+      onJust: (a: A1) => HKT.HKT<M, A3>
     ) =>
       M.chain_(
         ma,
-        O.match((): HKT.HKT<M, A2 | A3> => onNone(), onSome)
+        Maybe.match((): HKT.HKT<M, A2 | A3> => onNothing(), onJust)
       ),
     matchOptionM:
-      <A1, A2, A3>(onNone: () => HKT.HKT<M, A2>, onSome: (a: A1) => HKT.HKT<M, A3>) =>
-      (ma: HKT.HKT<M, O.Option<A1>>) =>
+      <A1, A2, A3>(onNothing: () => HKT.HKT<M, A2>, onJust: (a: A1) => HKT.HKT<M, A3>) =>
+      (ma: HKT.HKT<M, Maybe.Maybe<A1>>) =>
         M.chain_(
           ma,
-          O.match((): HKT.HKT<M, A2 | A3> => onNone(), onSome)
+          Maybe.match((): HKT.HKT<M, A2 | A3> => onNothing(), onJust)
         ),
-    getOrElse_: <A, A1>(fa: HKT.HKT<M, O.Option<A>>, onNone: () => HKT.HKT<M, A1>) =>
+    getOrElse_: <A, A1>(fa: HKT.HKT<M, Maybe.Maybe<A>>, onNothing: () => HKT.HKT<M, A1>) =>
       M.chain_(
         fa,
-        O.match((): HKT.HKT<M, A | A1> => onNone(), M.pure)
+        Maybe.match((): HKT.HKT<M, A | A1> => onNothing(), M.pure)
       ),
-    getOrElse: (onNone) => M.chain(O.match(onNone, M.pure))
+    getOrElse: (onNone) => M.chain(Maybe.match(onNone, M.pure))
   })
 }
 
-export interface OptionT<M extends HKT.URIS, C = HKT.Auto>
-  extends P.Monad<[M[0], ...HKT.Rest<M>, HKT.URI<OptionURI>], C> {
-  readonly some: SomeFn<M, C>
-  readonly none: NoneFn<M, C>
-  readonly someM: FromFFn<M, C>
+export interface MaybeT<M extends HKT.URIS, C = HKT.Auto>
+  extends P.Monad<[M[0], ...HKT.Rest<M>, HKT.URI<MaybeURI>], C> {
+  readonly just: JustFn<M, C>
+  readonly nothing: NothingFn<M, C>
+  readonly justM: FromFFn<M, C>
   readonly getOrElse_: GetOrElseFn_<M, C>
   readonly getOrElse: GetOrElseFn<M, C>
 
   readonly matchOption_: <K, Q, W, X, I, S, R, E, A, B, C>(
-    ma: HKT.Kind<M, C, K, Q, W, X, I, S, R, E, O.Option<A>>,
-    onNone: () => B,
-    onSome: (a: A) => C
+    ma: HKT.Kind<M, C, K, Q, W, X, I, S, R, E, Maybe.Maybe<A>>,
+    onNothing: () => B,
+    onJust: (a: A) => C
   ) => HKT.Kind<M, C, K, Q, W, X, I, S, R, E, B | C>
 
   readonly matchOption: <A, B, C>(
-    onNone: () => B,
-    onSome: (a: A) => C
+    onNothing: () => B,
+    onJust: (a: A) => C
   ) => <K, Q, W, X, I, S, R, E>(
-    ma: HKT.Kind<M, C, K, Q, W, X, I, S, R, E, O.Option<A>>
+    ma: HKT.Kind<M, C, K, Q, W, X, I, S, R, E, Maybe.Maybe<A>>
   ) => HKT.Kind<M, C, K, Q, W, X, I, S, R, E, B | C>
 
   readonly matchOptionM_: <
@@ -94,8 +94,8 @@ export interface OptionT<M extends HKT.URIS, C = HKT.Auto>
     E3,
     A3
   >(
-    ma: HKT.Kind<M, C, K1, Q1, W1, X1, I1, S1, R1, E1, O.Option<A1>>,
-    onNone: () => HKT.Kind<
+    ma: HKT.Kind<M, C, K1, Q1, W1, X1, I1, S1, R1, E1, Maybe.Maybe<A1>>,
+    onNothing: () => HKT.Kind<
       M,
       C,
       HKT.Intro<C, 'K', K1, K2>,
@@ -108,7 +108,7 @@ export interface OptionT<M extends HKT.URIS, C = HKT.Auto>
       HKT.Intro<C, 'E', E1, E2>,
       A2
     >,
-    onSome: (
+    onJust: (
       a: A1
     ) => HKT.Kind<
       M,
@@ -166,7 +166,7 @@ export interface OptionT<M extends HKT.URIS, C = HKT.Auto>
     E3,
     A3
   >(
-    onNone: () => HKT.Kind<
+    onNothing: () => HKT.Kind<
       M,
       C,
       HKT.Intro<C, 'K', K1, K2>,
@@ -179,7 +179,7 @@ export interface OptionT<M extends HKT.URIS, C = HKT.Auto>
       HKT.Intro<C, 'E', E1, E2>,
       A2
     >,
-    onSome: (
+    onJust: (
       a: A1
     ) => HKT.Kind<
       M,
@@ -195,7 +195,7 @@ export interface OptionT<M extends HKT.URIS, C = HKT.Auto>
       A3
     >
   ) => (
-    ma: HKT.Kind<M, C, K1, Q1, W1, X1, I1, S1, R1, E1, O.Option<A1>>
+    ma: HKT.Kind<M, C, K1, Q1, W1, X1, I1, S1, R1, E1, Maybe.Maybe<A1>>
   ) => HKT.Kind<
     M,
     C,
@@ -211,7 +211,7 @@ export interface OptionT<M extends HKT.URIS, C = HKT.Auto>
   >
 }
 
-export interface SomeFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface JustFn<F extends HKT.URIS, C = HKT.Auto> {
   <
     A,
     K = HKT.Initial<C, 'K'>,
@@ -224,10 +224,10 @@ export interface SomeFn<F extends HKT.URIS, C = HKT.Auto> {
     E = HKT.Initial<C, 'E'>
   >(
     a: A
-  ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, O.Option<A>>
+  ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Maybe.Maybe<A>>
 }
 
-export interface NoneFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface NothingFn<F extends HKT.URIS, C = HKT.Auto> {
   <
     A = never,
     K = HKT.Initial<C, 'K'>,
@@ -238,7 +238,7 @@ export interface NoneFn<F extends HKT.URIS, C = HKT.Auto> {
     S = HKT.Initial<C, 'S'>,
     R = HKT.Initial<C, 'R'>,
     E = HKT.Initial<C, 'E'>
-  >(): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, O.Option<A>>
+  >(): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Maybe.Maybe<A>>
 }
 
 export interface FromFFn<F extends HKT.URIS, C = HKT.Auto> {
@@ -253,14 +253,14 @@ export interface FromFFn<F extends HKT.URIS, C = HKT.Auto> {
     S,
     R,
     E,
-    O.Option<A>
+    Maybe.Maybe<A>
   >
 }
 
 export interface GetOrElseFn_<F extends HKT.URIS, C = HKT.Auto> {
   <K, Q, W, X, I, S, R, E, A, K1, Q1, W1, X1, I1, S1, R1, E1, A1>(
-    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, O.Option<A>>,
-    onNone: () => HKT.Kind<
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Maybe.Maybe<A>>,
+    onNothing: () => HKT.Kind<
       F,
       C,
       HKT.Intro<C, 'K', K, K1>,
@@ -289,7 +289,7 @@ export interface GetOrElseFn_<F extends HKT.URIS, C = HKT.Auto> {
 }
 
 export interface GetOrElseFn<F extends HKT.URIS, C = HKT.Auto> {
-  <K, Q, W, X, I, S, R, E, A>(onNone: () => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>): <
+  <K, Q, W, X, I, S, R, E, A>(onNothing: () => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>): <
     K1,
     Q1,
     W1,
@@ -311,7 +311,7 @@ export interface GetOrElseFn<F extends HKT.URIS, C = HKT.Auto> {
       HKT.Intro<C, 'S', S, S1>,
       HKT.Intro<C, 'R', R, R1>,
       HKT.Intro<C, 'E', E, E1>,
-      O.Option<A>
+      Maybe.Maybe<A>
     >
   ) => HKT.Kind<
     F,

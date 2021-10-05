@@ -7,7 +7,7 @@ import { traceAs } from '@principia/compile/util'
 
 import { pipe } from '../../../function'
 import * as HM from '../../../HashMap'
-import * as O from '../../../Option'
+import * as M from '../../../Maybe'
 import { tuple } from '../../../tuple'
 import * as F from '../../Future'
 import * as RefM from '../../RefM'
@@ -30,7 +30,7 @@ export function memoize<R, E, A, B>(f: (a: A) => IO<R, E, B>): UIO<(a: A) => IO<
               pipe(
                 RefM.modifyIO_(ref, (m) => {
                   const memo = HM.get_(m, a)
-                  if (O.isSome(memo)) {
+                  if (M.isJust(memo)) {
                     return I.succeed(tuple(memo.value, m))
                   } else {
                     return I.gen(function* (_) {

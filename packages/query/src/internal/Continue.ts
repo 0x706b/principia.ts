@@ -12,7 +12,7 @@ import type { URef } from '@principia/base/IO/Ref'
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import { matchTag_ } from '@principia/base/util/match'
 
 import * as Q from '../Query'
@@ -156,9 +156,9 @@ export function mapDataSources<R1>(
 export function make<R, E, A extends Request<E, B>, B>(
   request: A,
   dataSource: DataSource<R, A>,
-  ref: URef<O.Option<E.Either<E, B>>>
+  ref: URef<M.Maybe<E.Either<E, B>>>
 ): Continue<R, E, B> {
-  return get(pipe(ref.get, I.chain(O.match(() => I.haltMessage('TODO: Query Failure'), I.fromEither))))
+  return get(pipe(ref.get, I.chain(M.match(() => I.haltMessage('TODO: Query Failure'), I.fromEither))))
 }
 
 export function mapQuery_<R, E, A, R1, E1, B>(

@@ -15,9 +15,9 @@ import * as I from '@principia/base/IO'
 import { Console } from '@principia/base/IO/Console'
 import * as Ex from '@principia/base/IO/Exit'
 import * as Fi from '@principia/base/IO/Fiber'
-import * as M from '@principia/base/IO/Managed'
+import * as Ma from '@principia/base/IO/Managed'
 import * as Sc from '@principia/base/IO/Schedule'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import * as Str from '@principia/base/string'
 import { hashString } from '@principia/base/Structural'
 import { matchTag, matchTag_ } from '@principia/base/util/match'
@@ -134,9 +134,9 @@ export function aroundAll<R, E, A, R1>(
 ): TestAspect<R & R1, E> {
   return new TestAspect(<R0, E0>(predicate: (label: string) => boolean, spec: S.XSpec<R0, E0>) => {
     const aroundAll = (
-      specs: M.Managed<R0, TestFailure<E0>, ReadonlyArray<S.Spec<R0, TestFailure<E0>, TestSuccess>>>
-    ): M.Managed<R0 & R1 & R, TestFailure<E | E0>, ReadonlyArray<S.Spec<R0, TestFailure<E0>, TestSuccess>>> =>
-      pipe(before, M.bracket(after), M.mapError(TF.fail), M.crossSecond(specs))
+      specs: Ma.Managed<R0, TestFailure<E0>, ReadonlyArray<S.Spec<R0, TestFailure<E0>, TestSuccess>>>
+    ): Ma.Managed<R0 & R1 & R, TestFailure<E | E0>, ReadonlyArray<S.Spec<R0, TestFailure<E0>, TestSuccess>>> =>
+      pipe(before, Ma.bracket(after), Ma.mapError(TF.fail), Ma.crossSecond(specs))
 
     const around = (
       test: I.IO<R0, TestFailure<E0>, TestSuccess>
@@ -177,7 +177,8 @@ export function executionStrategy(exec: ExecutionStrategy): TestAspectPoly {
       S.transform_(
         spec,
         matchTag({
-          Suite: (s) => (O.isNone(s.exec) && predicate(s.label) ? new S.SuiteCase(s.label, s.specs, O.some(exec)) : s),
+          Suite: (s) =>
+            M.isNothing(s.exec) && predicate(s.label) ? new S.SuiteCase(s.label, s.specs, M.just(exec)) : s,
           Test: (t) => t
         })
       )
@@ -240,7 +241,7 @@ export function timeoutWarning(duration: number): TestAspect<Has<Live>, any> {
         Suite: ({ label, specs, exec }) =>
           S.suite(
             label,
-            M.map_(
+            Ma.map_(
               specs,
               A.map((spec) => loop(A.append_(labels, label), spec))
             ),

@@ -3,10 +3,10 @@ import type { Fiber } from '../core'
 
 import * as C from '../../../Cause'
 import * as Ch from '../../../Chunk/core'
-import * as Ex from '../../Exit'
 import { pipe } from '../../../function'
-import { none, some } from '../../../Option'
-import * as O from '../../../Option'
+import { just, nothing } from '../../../Maybe'
+import * as M from '../../../Maybe'
+import * as Ex from '../../Exit'
 import { syntheticFiber } from '../core'
 import * as I from '../internal/io'
 import { awaitAll } from './awaitAll'
@@ -38,15 +38,15 @@ export function collectAll<E, A>(fibers: Iterable<Fiber<E, A>>): Fiber<E, Chunk<
     poll: pipe(
       I.foreach_(fibers, (f) => f.poll),
       I.map(
-        Ch.foldr(some(Ex.succeed(Ch.empty()) as Ex.Exit<E, Chunk<A>>), (a, b) =>
-          O.match_(
+        Ch.foldr(just(Ex.succeed(Ch.empty()) as Ex.Exit<E, Chunk<A>>), (a, b) =>
+          M.match_(
             a,
-            () => none(),
+            () => nothing(),
             (ra) =>
-              O.match_(
+              M.match_(
                 b,
-                () => none(),
-                (rb) => some(Ex.crossWithCause_(ra, rb, (_a, _b) => Ch.prepend_(_b, _a), C.both))
+                () => nothing(),
+                (rb) => just(Ex.crossWithCause_(ra, rb, (_a, _b) => Ch.prepend_(_b, _a), C.both))
               )
           )
         )

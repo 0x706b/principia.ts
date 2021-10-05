@@ -14,8 +14,8 @@ import type { Identity } from './Identity'
 import type { IO } from './IO'
 import type { Managed } from './IO/Managed'
 import type { List } from './List/core'
+import type { Maybe } from './Maybe'
 import type { NonEmptyArray } from './NonEmptyArray'
-import type { Option } from './Option'
 import type { Ord } from './Ord'
 import type { Predicate } from './Predicate'
 import type { Reader } from './Reader'
@@ -79,8 +79,8 @@ export type MapURI = typeof MapURI
 export const NonEmptyArrayURI = 'NonEmptyArray'
 export type NonEmptyArrayURI = typeof NonEmptyArrayURI
 
-export const OptionURI = 'Option'
-export type OptionURI = typeof OptionURI
+export const MaybeURI = 'Maybe'
+export type MaybeURI = typeof MaybeURI
 
 export const ReaderURI = 'Reader'
 export type ReaderURI = typeof ReaderURI
@@ -192,7 +192,7 @@ declare module './HKT' {
     [ListURI]: List<A>
     [MapURI]: ReadonlyMap<K, A>
     [NonEmptyArrayURI]: NonEmptyArray<A>
-    [OptionURI]: Option<A>
+    [MaybeURI]: Maybe<A>
     [ReaderURI]: Reader<R, A>
     [ReaderCategoryURI]: Reader<I, A>
     [RecordURI]: ReadonlyRecord<string, A>

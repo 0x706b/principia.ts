@@ -10,8 +10,8 @@ import type { AndThenE, Parser } from '../Parser'
 import type { IdentityOmits, IdentityOmitURIS, IdentityRequires, IdentityRequireURIS, Kind, URIS } from '../Schemable'
 import type { CastToNumber } from '../util'
 import type { SchemaAnnotation } from './SchemaAnnotation'
+import type * as M from '@principia/base/Maybe'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
-import type * as O from '@principia/base/Option'
 import type { EnforceNonEmptyRecord, Predicate, UnionToIntersection } from '@principia/base/prelude'
 import type { Refinement } from '@principia/base/Refinement'
 import type { These } from '@principia/base/These'
@@ -179,11 +179,9 @@ export const boolean = new BooleanS()
 
 export interface LiteralApi<L extends NonEmptyArray<string>> {
   readonly literals: L
-  readonly matchS: <A>(
-    _: {
-      [K in L[number]]: (_: K) => A
-    }
-  ) => (ks: L[number]) => A
+  readonly matchS: <A>(_: {
+    [K in L[number]]: (_: K) => A
+  }) => (ks: L[number]) => A
   readonly matchW: <M extends { [K in L[number]]: (_: K) => any }>(
     _: M
   ) => (ks: L[number]) => {
@@ -256,9 +254,9 @@ export class IdentityS<U extends URIS, A> extends Schema<
   }
 }
 
-export function identity<A>(): <U extends Exclude<URIS, IdentityOmitURIS>>(
-  ids: { [F in U | IdentityRequireURIS]: Kind<F, A, A, never, never, A, A> }
-) => IdentityS<U, A> {
+export function identity<A>(): <U extends Exclude<URIS, IdentityOmitURIS>>(ids: {
+  [F in U | IdentityRequireURIS]: Kind<F, A, A, never, never, A, A>
+}) => IdentityS<U, A> {
   return (ids) => new IdentityS(ids)
 }
 
@@ -327,7 +325,7 @@ export class RefineS<S extends AnyS, W, E, B extends TypeOf<S>>
     readonly from: S,
     readonly refinement: Refinement<TypeOf<S>, B>,
     readonly error: (a: TypeOf<S>) => E,
-    readonly warn: (a: B) => O.Option<W>,
+    readonly warn: (a: B) => M.Maybe<W>,
     readonly label = '<anonymous>'
   ) {
     super()
@@ -348,7 +346,7 @@ export function refine_<S extends AnyS, W, E, B extends TypeOf<S>>(
   from: S,
   refinement: Refinement<TypeOf<S>, B>,
   error: (a: TypeOf<S>) => E,
-  warn: (a: B) => O.Option<W>,
+  warn: (a: B) => M.Maybe<W>,
   label?: string
 ): RefineS<S, W, E, B> {
   return new RefineS(from, refinement, error, warn, label)
@@ -357,7 +355,7 @@ export function refine_<S extends AnyS, W, E, B extends TypeOf<S>>(
 export function refine<S extends AnyS, W, E, B extends TypeOf<S>>(
   refinement: Refinement<TypeOf<S>, B>,
   error: (a: TypeOf<S>) => E,
-  warn: (a: B) => O.Option<W>,
+  warn: (a: B) => M.Maybe<W>,
   label?: string
 ): (from: S) => RefineS<S, W, E, B> {
   return (from) => refine_(from, refinement, error, warn, label)
@@ -381,7 +379,7 @@ export class ConstrainS<S extends AnyS, W, E>
     readonly from: S,
     readonly predicate: Predicate<TypeOf<S>>,
     readonly error: (a: TypeOf<S>) => E,
-    readonly warn: (a: TypeOf<S>) => O.Option<W>,
+    readonly warn: (a: TypeOf<S>) => M.Maybe<W>,
     readonly label = '<anonymous>'
   ) {
     super()
@@ -402,7 +400,7 @@ export function constrain_<S extends AnyS, W, E>(
   from: S,
   predicate: Predicate<TypeOf<S>>,
   error: (a: TypeOf<S>) => E,
-  warn: (a: TypeOf<S>) => O.Option<W>,
+  warn: (a: TypeOf<S>) => M.Maybe<W>,
   label?: string
 ): ConstrainS<S, W, E> {
   return new ConstrainS(from, predicate, error, warn, label)
@@ -411,7 +409,7 @@ export function constrain_<S extends AnyS, W, E>(
 export function constrain<S extends AnyS, W, E>(
   predicate: Predicate<TypeOf<S>>,
   error: (a: TypeOf<S>) => E,
-  warn: (a: TypeOf<S>) => O.Option<W>,
+  warn: (a: TypeOf<S>) => M.Maybe<W>,
   label?: string
 ): (from: S) => ConstrainS<S, W, E> {
   return (from) => constrain_(from, predicate, error, warn, label)
@@ -420,10 +418,10 @@ export function constrain<S extends AnyS, W, E>(
 export class NullableS<S extends AnyS> extends Schema<
   URISIn<S>,
   InputOf<S> | null | undefined,
-  O.Option<CInputOf<S>>,
+  M.Maybe<CInputOf<S>>,
   PE.NullableE<ErrorOf<S>>,
   PE.NullableE<CErrorOf<S>>,
-  O.Option<TypeOf<S>>,
+  M.Maybe<TypeOf<S>>,
   OutputOf<S> | null,
   ApiOf<S>
 > {
@@ -449,7 +447,7 @@ export function nullable<S extends AnyS>(or: S): NullableS<S> {
 export class WithDefaultS<S extends AnyS> extends Schema<
   URISIn<S>,
   InputOf<S> | null | undefined,
-  O.Option<CInputOf<S>>,
+  M.Maybe<CInputOf<S>>,
   ErrorOf<S>,
   CErrorOf<S>,
   TypeOf<S>,
@@ -787,10 +785,9 @@ export function intersect<M extends NonEmptyArray<IntersectableSchema>>(...membe
  * -------------------------------------------
  */
 
-type EnsureTag<T extends string, M extends Record<string, AnyS>> = EnforceNonEmptyRecord<M> &
-  {
-    [K in keyof M]: Schema<any, any, any, { [tag in T]: K }, any, any, { [tag in T]: K }, any>
-  }
+type EnsureTag<T extends string, M extends Record<string, AnyS>> = EnforceNonEmptyRecord<M> & {
+  [K in keyof M]: Schema<any, any, any, { [tag in T]: K }, any, any, { [tag in T]: K }, any>
+}
 
 interface SumApi<T extends string, M extends Record<string, AnyS>> {
   readonly tag: T

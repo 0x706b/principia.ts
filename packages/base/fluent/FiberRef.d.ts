@@ -1,6 +1,6 @@
 import type { IO, UIO } from '@principia/base/IO'
 import type * as FR from '@principia/base/IO/FiberRef'
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 
 declare global {
   export const FiberRef: FiberRefStaticOps
@@ -29,9 +29,9 @@ declare module '@principia/base/IO/FiberRef/core' {
     getAndUpdate<A>(this: FiberRef<A>, f: (a: A) => A): UIO<A>
 
     /**
-     * @rewrite getAndUpdateSome_ from "@principia/base/IO/FiberRef"
+     * @rewrite getAndUpdateJust_ from "@principia/base/IO/FiberRef"
      */
-    getAndUpdateSome<A>(this: FiberRef<A>, f: (a: A) => Option<A>): UIO<A>
+    getAndUpdateJust<A>(this: FiberRef<A>, f: (a: A) => Maybe<A>): UIO<A>
 
     /**
      * @rewrite locally_ from "@principia/base/IO/FiberRef"

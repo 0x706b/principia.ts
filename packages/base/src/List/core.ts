@@ -18,7 +18,7 @@ import type { These } from '../These'
 import { identity, unsafeCoerce } from '../function'
 import * as HKT from '../HKT'
 import { tuple } from '../internal/tuple'
-import * as O from '../Option'
+import * as M from '../Maybe'
 import * as P from '../prelude'
 import * as Equ from '../Structural/Equatable'
 import * as Ha from '../Structural/Hashable'
@@ -285,8 +285,8 @@ export function unsafeGet(index: number): <A>(l: List<A>) => A | undefined {
  *
  * @complexity O(log(n))
  */
-export function get_<A>(l: List<A>, index: number): O.Option<A> {
-  return O.fromNullable(unsafeGet_(l, index))
+export function get_<A>(l: List<A>, index: number): M.Maybe<A> {
+  return M.fromNullable(unsafeGet_(l, index))
 }
 
 /**
@@ -295,7 +295,7 @@ export function get_<A>(l: List<A>, index: number): O.Option<A> {
  *
  * @complexity O(log(n))
  */
-export function get(index: number): <A>(l: List<A>) => O.Option<A> {
+export function get(index: number): <A>(l: List<A>) => M.Maybe<A> {
   return (l) => get_(l, index)
 }
 
@@ -315,8 +315,8 @@ export function unsafeHead<A>(l: List<A>): A | undefined {
  *
  * @complexity O(1)
  */
-export function head<A>(l: List<A>): O.Option<NonNullable<A>> {
-  return O.fromNullable(unsafeHead(l))
+export function head<A>(l: List<A>): M.Maybe<NonNullable<A>> {
+  return M.fromNullable(unsafeHead(l))
 }
 
 /**
@@ -335,8 +335,8 @@ export function unsafeLast<A>(l: List<A>): A | undefined {
  *
  * @complexity O(1)
  */
-export function last<A>(l: List<A>): O.Option<NonNullable<A>> {
-  return O.fromNullable(unsafeLast(l))
+export function last<A>(l: List<A>): M.Maybe<NonNullable<A>> {
+  return M.fromNullable(unsafeLast(l))
 }
 
 /**
@@ -553,7 +553,7 @@ export function zip<B>(bs: List<B>): <A>(as: List<A>) => List<readonly [A, B]> {
 /**
  * Filter out optional values
  */
-export function compact<A>(fa: List<O.Option<A>>): List<A> {
+export function compact<A>(fa: List<M.Maybe<A>>): List<A> {
   return filterMap_(fa, identity)
 }
 
@@ -608,14 +608,14 @@ export function filter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: List
 
 /**
  * Returns a new list that only contains the elements of the original
- * list for which the f returns `Some`.
+ * list for which the f returns `Just`.
  *
  * @complexity O(n)
  */
-export function filterMap_<A, B>(fa: List<A>, f: (a: A, i: number) => O.Option<B>): List<B> {
+export function filterMap_<A, B>(fa: List<A>, f: (a: A, i: number) => M.Maybe<B>): List<B> {
   return foldl_(fa, emptyPushable(), (b, a, i) => {
     const result = f(a, i)
-    if (result._tag === 'Some') {
+    if (result._tag === 'Just') {
       push(result.value, b)
     }
     return b
@@ -624,11 +624,11 @@ export function filterMap_<A, B>(fa: List<A>, f: (a: A, i: number) => O.Option<B
 
 /**
  * Returns a new list that only contains the elements of the original
- * list for which the f returns `Some`.
+ * list for which the f returns `Just`.
  *
  * @complexity O(n)
  */
-export function filterMap<A, B>(f: (a: A, i: number) => O.Option<B>): (fa: List<A>) => List<B> {
+export function filterMap<A, B>(f: (a: A, i: number) => M.Maybe<B>): (fa: List<A>) => List<B> {
   return (fa) => filterMap_(fa, f)
 }
 
@@ -885,13 +885,13 @@ export const sequence: P.SequenceFn<[HKT.URI<ListURI>]> = (A) => mapA(A)(identit
  * -------------------------------------------------------------------------------------------------
  */
 
-export function unfold<A, B>(b: B, f: (b: B) => O.Option<readonly [A, B]>): List<A> {
+export function unfold<A, B>(b: B, f: (b: B) => M.Maybe<readonly [A, B]>): List<A> {
   const out = emptyPushable<A>()
   let state = b
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const mt = f(state)
-    if (mt._tag === 'Some') {
+    if (mt._tag === 'Just') {
       const [a, b] = mt.value
       push(a, out)
       state = b
@@ -1305,8 +1305,8 @@ export function every<A>(predicate: Predicate<A>): (as: List<A>) => boolean {
  *
  * @complexity O(n)
  */
-export function find_<A>(as: List<A>, predicate: Predicate<A>): O.Option<A> {
-  return O.fromNullable(unsafeFind_(as, predicate))
+export function find_<A>(as: List<A>, predicate: Predicate<A>): M.Maybe<A> {
+  return M.fromNullable(unsafeFind_(as, predicate))
 }
 
 /**
@@ -1315,7 +1315,7 @@ export function find_<A>(as: List<A>, predicate: Predicate<A>): O.Option<A> {
  *
  * @complexity O(n)
  */
-export function find<A>(predicate: Predicate<A>): (as: List<A>) => O.Option<A> {
+export function find<A>(predicate: Predicate<A>): (as: List<A>) => M.Maybe<A> {
   return (as) => find_(as, predicate)
 }
 
@@ -1348,8 +1348,8 @@ export function findIndex<A>(predicate: Predicate<A>): (as: List<A>) => number {
  *
  * @complexity O(n)
  */
-export function findLast_<A>(as: List<A>, predicate: Predicate<A>): O.Option<A> {
-  return O.fromNullable(unsafeFindLast_(as, predicate))
+export function findLast_<A>(as: List<A>, predicate: Predicate<A>): M.Maybe<A> {
+  return M.fromNullable(unsafeFindLast_(as, predicate))
 }
 
 /**
@@ -1358,7 +1358,7 @@ export function findLast_<A>(as: List<A>, predicate: Predicate<A>): O.Option<A> 
  *
  * @complexity O(n)
  */
-export function findLast<A>(predicate: Predicate<A>): (as: List<A>) => O.Option<A> {
+export function findLast<A>(predicate: Predicate<A>): (as: List<A>) => M.Maybe<A> {
   return (as) => findLast_(as, predicate)
 }
 

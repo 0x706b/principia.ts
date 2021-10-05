@@ -6,13 +6,13 @@ import type { IO } from '../core'
 
 import { accessCallTrace, traceCall } from '@principia/compile/util'
 
-import * as O from '../../../Option'
+import * as M from '../../../Maybe'
 import { timeoutTo_ } from './timeoutTo'
 
 /**
- * Returns an IO that will timeout this effect, returning `None` if the
+ * Returns an IO that will timeout this effect, returning `Nothing` if the
  * timeout elapses before the effect has produced a value; and returning
- * `Some` of the produced value otherwise.
+ * `Just` of the produced value otherwise.
  *
  * If the timeout elapses without producing a value, the running effect
  * will be safely interrupted.
@@ -27,15 +27,15 @@ import { timeoutTo_ } from './timeoutTo'
  *
  * @trace call
  */
-export function timeout_<R, E, A>(ma: IO<R, E, A>, d: number): IO<R & Has<Clock>, E, O.Option<A>> {
+export function timeout_<R, E, A>(ma: IO<R, E, A>, d: number): IO<R & Has<Clock>, E, M.Maybe<A>> {
   const trace = accessCallTrace()
-  return traceCall(timeoutTo_, trace)(ma, d, O.none(), O.some)
+  return traceCall(timeoutTo_, trace)(ma, d, M.nothing(), M.just)
 }
 
 /**
- * Returns an IO that will timeout this effect, returning `None` if the
+ * Returns an IO that will timeout this effect, returning `Nothing` if the
  * timeout elapses before the effect has produced a value; and returning
- * `Some` of the produced value otherwise.
+ * `Just` of the produced value otherwise.
  *
  * If the timeout elapses without producing a value, the running effect
  * will be safely interrupted.
@@ -50,7 +50,7 @@ export function timeout_<R, E, A>(ma: IO<R, E, A>, d: number): IO<R & Has<Clock>
  *
  * @trace call
  */
-export function timeout(d: number): <R, E, A>(ma: IO<R, E, A>) => IO<R & Has<Clock>, E, O.Option<A>> {
+export function timeout(d: number): <R, E, A>(ma: IO<R, E, A>) => IO<R & Has<Clock>, E, M.Maybe<A>> {
   const trace = accessCallTrace()
   return (ma) => traceCall(timeout_, trace)(ma, d)
 }

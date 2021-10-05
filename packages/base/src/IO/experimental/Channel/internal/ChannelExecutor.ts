@@ -1,15 +1,15 @@
-import type { Cause } from '../../../Cause'
-import type { Exit } from '../../../Exit'
 import type { List, MutableList } from '../../../../List'
 import type { IO, URIO } from '../../..'
+import type { Cause } from '../../../Cause'
+import type { Exit } from '../../../Exit'
 import type { ChannelState } from './ChannelState'
 
-import * as Ca from '../../../Cause'
-import * as Ex from '../../../Exit'
 import { identity, pipe } from '../../../../function'
 import * as L from '../../../../List'
-import * as O from '../../../../Option'
+import * as M from '../../../../Maybe'
 import * as I from '../../..'
+import * as Ca from '../../../Cause'
+import * as Ex from '../../../Exit'
 import * as F from '../../../Fiber'
 import * as C from '../core'
 import * as State from './ChannelState'
@@ -292,7 +292,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
       I.map((results) =>
         pipe(
           Ex.collectAll(...results),
-          O.getOrElse(() => Ex.unit())
+          M.getOrElse(() => Ex.unit())
         )
       )
     )

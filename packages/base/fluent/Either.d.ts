@@ -1,7 +1,7 @@
 import type { Either, Left, Right } from '@principia/base/Either'
 import type * as E from '@principia/base/Either'
 import type * as HKT from '@principia/base/HKT'
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 import type * as P from '@principia/base/prelude'
 
 /* eslint typescript-sort-keys/interface: "error" */
@@ -79,6 +79,15 @@ interface EitherStaticOps {
    */
   Traversable: typeof E.Traversable
   /**
+   * @rewriteStatic fromMaybe_ from "@prinipia/base/Either"
+   */
+  fromMaybe<E, A>(fa: Maybe<A>, onNone: () => E): E.Either<E, A>
+  /**
+   * @rewriteStatic fromMaybe from "@prinipia/base/Either"
+   * @dataFirst fromMaybe_
+   */
+  fromMaybe<E>(onNone: () => E): <A>(fa: Maybe<A>) => E.Either<E, A>
+  /**
    * @rewriteStatic fromNullable_ from "@prinipia/base/Either"
    */
   fromNullable<E, A>(a: A, e: () => E): E.Either<E, NonNullable<A>>
@@ -94,15 +103,6 @@ interface EitherStaticOps {
     f: (...args: A) => B | null | undefined,
     e: () => E
   ): (...args: A) => E.Either<E, NonNullable<B>>
-  /**
-   * @rewriteStatic fromOption_ from "@prinipia/base/Either"
-   */
-  fromOption<E, A>(fa: Option<A>, onNone: () => E): E.Either<E, A>
-  /**
-   * @rewriteStatic fromOption from "@prinipia/base/Either"
-   * @dataFirst fromOption_
-   */
-  fromOption<E>(onNone: () => E): <A>(fa: Option<A>) => E.Either<E, A>
   /**
    * @rewriteStatic fromPredicate_ from "@prinipia/base/Either"
    */
@@ -196,9 +196,9 @@ interface EitherOps<E, A> {
   catchAll<E, A, E1, B>(this: Either<E, A>, f: (e: E) => Either<E1, B>): Either<E1, A | B>
 
   /**
-   * @rewrite catchSome_ from "@principia/base/Either"
+   * @rewrite catchJust_ from "@principia/base/Either"
    */
-  catchSome<E, A, E1, B>(this: Either<E, A>, f: (e: E) => Option<Either<E1, B>>): Either<E | E1, A | B>
+  catchJust<E, A, E1, B>(this: Either<E, A>, f: (e: E) => Maybe<Either<E1, B>>): Either<E | E1, A | B>
 
   /**
    * @rewrite chain_ from "@principia/base/Either"
@@ -242,9 +242,9 @@ interface EitherOps<E, A> {
   crossWith<E, A, E1, B, C>(this: Either<E, A>, that: Either<E1, B>, f: (a: A, b: B) => C): Either<E | E1, C>
 
   /**
-   * @rewrite getLeft from "@principia/base/Option"
+   * @rewrite getLeft from "@principia/base/Maybe"
    */
-  getLeft<E, A>(this: Either<E, A>): Option<E>
+  getLeft<E, A>(this: Either<E, A>): Maybe<E>
 
   /**
    * @rewrite getOrElse_ from "@principia/base/Either"
@@ -252,9 +252,9 @@ interface EitherOps<E, A> {
   getOrElse<E, A, B>(this: Either<E, A>, onLeft: (e: E) => B): A | B
 
   /**
-   * @rewrite getRight from "@principia/base/Option"
+   * @rewrite getRight from "@principia/base/Maybe"
    */
-  getRight<E, A>(this: Either<E, A>): Option<A>
+  getRight<E, A>(this: Either<E, A>): Maybe<A>
 
   /**
    * @rewrite isLeft from "@principia/base/Either"

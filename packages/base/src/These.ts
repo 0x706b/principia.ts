@@ -1,13 +1,13 @@
 import type { Eq } from './Eq'
 import type { Both, Left, Right, These } from './internal/These'
+import type * as M from './Maybe'
 import type { TheseURI } from './Modules'
-import type * as O from './Option'
 import type { Show } from './Show'
 
 import { flow, identity, pipe } from './function'
 import * as HKT from './HKT'
 import * as E from './internal/Either'
-import { none, some } from './internal/Option'
+import { just, nothing } from './internal/Maybe'
 import * as T from './internal/These'
 import * as P from './prelude'
 import { tailRec_ } from './prelude'
@@ -35,11 +35,11 @@ type URI = [HKT.URI<TheseURI>]
  */
 export const left = T.left
 
-export function leftOrThese_<E, A>(me: O.Option<A>, e: E): These<E, A> {
-  return me._tag === 'None' ? left(e) : both(e, me.value)
+export function leftOrThese_<E, A>(me: M.Maybe<A>, e: E): These<E, A> {
+  return me._tag === 'Nothing' ? left(e) : both(e, me.value)
 }
 
-export function leftOrThese<E>(e: E): <A>(me: O.Option<A>) => These<E, A> {
+export function leftOrThese<E>(e: E): <A>(me: M.Maybe<A>) => These<E, A> {
   return (me) => leftOrThese_(me, e)
 }
 
@@ -48,11 +48,11 @@ export function leftOrThese<E>(e: E): <A>(me: O.Option<A>) => These<E, A> {
  */
 export const right = T.right
 
-export function rightOrThese_<E, A>(me: O.Option<E>, a: A): These<E, A> {
-  return me._tag === 'None' ? right(a) : both(me.value, a)
+export function rightOrThese_<E, A>(me: M.Maybe<E>, a: A): These<E, A> {
+  return me._tag === 'Nothing' ? right(a) : both(me.value, a)
 }
 
-export function rightOrThese<A>(a: A): <E>(me: O.Option<E>) => These<E, A> {
+export function rightOrThese<A>(a: A): <E>(me: M.Maybe<E>) => These<E, A> {
   return (me) => rightOrThese_(me, a)
 }
 
@@ -61,14 +61,14 @@ export function rightOrThese<A>(a: A): <E>(me: O.Option<E>) => These<E, A> {
  */
 export const both = T.both
 
-export function fromOptions<E, A>(fe: O.Option<E>, fa: O.Option<A>): O.Option<These<E, A>> {
-  return fe._tag === 'None'
-    ? fa._tag === 'None'
-      ? none()
-      : some(right(fa.value))
-    : fa._tag === 'None'
-    ? some(left(fe.value))
-    : some(both(fe.value, fa.value))
+export function fromOptions<E, A>(fe: M.Maybe<E>, fa: M.Maybe<A>): M.Maybe<These<E, A>> {
+  return fe._tag === 'Nothing'
+    ? fa._tag === 'Nothing'
+      ? nothing()
+      : just(right(fa.value))
+    : fa._tag === 'Nothing'
+    ? just(left(fe.value))
+    : just(both(fe.value, fa.value))
 }
 
 /*
@@ -95,20 +95,20 @@ export function isRight<E, A>(fa: These<E, A>): fa is Right<A> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function getLeft<E, A>(fa: These<E, A>): O.Option<E> {
-  return isRight(fa) ? none() : some(fa.left)
+export function getLeft<E, A>(fa: These<E, A>): M.Maybe<E> {
+  return isRight(fa) ? nothing() : just(fa.left)
 }
 
-export function getLeftOnly<E, A>(fa: These<E, A>): O.Option<E> {
-  return isLeft(fa) ? some(fa.left) : none()
+export function getLeftOnly<E, A>(fa: These<E, A>): M.Maybe<E> {
+  return isLeft(fa) ? just(fa.left) : nothing()
 }
 
-export function getRight<E, A>(fa: These<E, A>): O.Option<A> {
-  return isLeft(fa) ? none() : some(fa.right)
+export function getRight<E, A>(fa: These<E, A>): M.Maybe<A> {
+  return isLeft(fa) ? nothing() : just(fa.right)
 }
 
-export function getRightOnly<E, A>(fa: These<E, A>): O.Option<A> {
-  return isRight(fa) ? some(fa.right) : none()
+export function getRightOnly<E, A>(fa: These<E, A>): M.Maybe<A> {
+  return isRight(fa) ? just(fa.right) : nothing()
 }
 
 export const match_ = T.match_

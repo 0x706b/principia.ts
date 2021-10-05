@@ -3,15 +3,15 @@ import type { GenFailureDetails } from '../GenFailureDetails'
 import type { FailureDetails } from './FailureDetails'
 import type { Cause } from '@principia/base/IO/Cause'
 import type { List } from '@principia/base/List'
+import type { Maybe } from '@principia/base/Maybe'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
-import type { Option } from '@principia/base/Option'
 
 import * as A from '@principia/base/Array'
 import * as Ev from '@principia/base/Eval'
 import { pipe } from '@principia/base/function'
 import * as C from '@principia/base/IO/Cause'
 import * as L from '@principia/base/List'
-import * as O from '@principia/base/Option'
+import * as O from '@principia/base/Maybe'
 import { BLUE, CYAN, RED, YELLOW } from '@principia/base/util/AnsiFormat'
 
 import * as BA from '../FreeBooleanAlgebra'
@@ -120,7 +120,7 @@ function renderWhole(fragment: AssertionValue<any>, whole: AssertionValue<any>, 
   )
 }
 
-function renderGenFailureDetails(failureDetails: Option<GenFailureDetails>, offset: number): Message {
+function renderGenFailureDetails(failureDetails: Maybe<GenFailureDetails>, offset: number): Message {
   return O.match_(
     failureDetails,
     () => Message.empty,

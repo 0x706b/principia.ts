@@ -5,11 +5,11 @@ import type { Managed } from '../core'
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
 import { sequential } from '../../../ExecutionStrategy'
-import * as Ex from '../../Exit'
 import { pipe } from '../../../function'
-import * as O from '../../../Option'
+import * as M from '../../../Maybe'
 import { tuple } from '../../../tuple'
-import * as M from '../core'
+import * as Ex from '../../Exit'
+import * as Ma from '../core'
 import * as I from '../internal/io'
 import * as RelMap from '../ReleaseMap'
 import { releaseAll_ } from './releaseAll'
@@ -32,13 +32,13 @@ import { releaseMap } from './releaseMap'
  */
 export function switchable<R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) => I.IO<R, E, A>> {
   const trace = accessCallTrace()
-  return M.gen(function* (_) {
+  return Ma.gen(function* (_) {
     const rm  = yield* _(releaseMap())
     const key = yield* _(
       pipe(
         RelMap.addIfOpen(rm, (_) => I.unit()),
-        I.chain(O.match(() => I.interrupt, I.succeed)),
-        M.fromIO
+        I.chain(M.match(() => I.interrupt, I.succeed)),
+        Ma.fromIO
       )
     )
     return (newResource: Managed<R, E, A>) =>
@@ -49,7 +49,7 @@ export function switchable<R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) =
               pipe(
                 RelMap.replace(rm, key, (_) => I.unit()),
                 I.chain(
-                  O.match(
+                  M.match(
                     () => I.unit(),
                     (fin) => fin(Ex.unit())
                   )

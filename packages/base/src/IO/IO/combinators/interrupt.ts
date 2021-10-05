@@ -1,23 +1,23 @@
 // tracing: off
 
 import type { Either } from '../../../Either'
-import type { Option } from '../../../Option'
+import type { Maybe } from '../../../Maybe'
 import type { InterruptStatus } from '../../Fiber/core'
 import type { FiberId } from '../../Fiber/FiberId'
 import type { Canceler, FIO, IO, UIO } from '../core'
 
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
 
-import * as C from '../../Cause'
 import { left } from '../../../Either'
 import { pipe } from '../../../function'
-import { none, some } from '../../../Option'
+import { just, nothing } from '../../../Maybe'
 import { AtomicReference } from '../../../util/support/AtomicReference'
 import { OneShot } from '../../../util/support/OneShot'
+import * as C from '../../Cause'
 import { join } from '../../Fiber/combinators/join'
 import * as F from '../../Fiber/core'
 import {
-  asyncOption,
+  asyncMaybe,
   chain,
   chain_,
   checkInterruptible,
@@ -266,15 +266,15 @@ export function asyncInterruptEither<R, E, A>(
     succeedLazy(() => [new AtomicReference(false), new OneShot<Canceler<R>>()] as const),
     chain(([started, cancel]) =>
       pipe(
-        asyncOption<R, E, IO<R, E, A>>(
+        asyncMaybe<R, E, IO<R, E, A>>(
           traceAs(register, (k) => {
             started.set(true)
-            const ret = new AtomicReference<Option<UIO<IO<R, E, A>>>>(none())
+            const ret = new AtomicReference<Maybe<UIO<IO<R, E, A>>>>(nothing())
             try {
               const res = register((io) => k(pure(io)))
               switch (res._tag) {
                 case 'Right': {
-                  ret.set(some(pure(res.right)))
+                  ret.set(just(pure(res.right)))
                   break
                 }
                 case 'Left': {

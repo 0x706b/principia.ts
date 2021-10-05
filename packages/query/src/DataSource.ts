@@ -1,7 +1,7 @@
 import type { DataSourceAspect } from './DataSourceAspect'
 import type { AnyRequest, Request } from './Request'
 import type { Chunk } from '@principia/base/Chunk'
-import type * as O from '@principia/base/Option'
+import type * as M from '@principia/base/Maybe'
 import type { _A, _E } from '@principia/base/prelude'
 
 import * as C from '@principia/base/Chunk'
@@ -163,14 +163,14 @@ export function fromFunctionBatched<A extends Request<never, any>>(
 
 export function fromFunctionIOBatchedOption<R, A extends AnyRequest>(
   name: string,
-  f: (a: Chunk<A>) => I.IO<R, _E<A>, Chunk<O.Option<_A<A>>>>
+  f: (a: Chunk<A>) => I.IO<R, _E<A>, Chunk<M.Maybe<_A<A>>>>
 ): DataSource<R, A> {
   return new Batched<R, A>(name, (requests: Chunk<A>) =>
     pipe(
       f(requests),
       I.match(
-        (e): Chunk<readonly [A, E.Either<_E<A>, O.Option<_A<A>>>]> => C.map_(requests, (a) => tuple(a, E.left(e))),
-        (bs): Chunk<readonly [A, E.Either<_E<A>, O.Option<_A<A>>>]> => C.zip_(requests, C.map_(bs, E.right))
+        (e): Chunk<readonly [A, E.Either<_E<A>, M.Maybe<_A<A>>>]> => C.map_(requests, (a) => tuple(a, E.left(e))),
+        (bs): Chunk<readonly [A, E.Either<_E<A>, M.Maybe<_A<A>>>]> => C.zip_(requests, C.map_(bs, E.right))
       ),
       I.map(C.foldl(CompletedRequestMap.empty(), (map, [k, v]) => map.insertOption(k, v)))
     )
@@ -179,7 +179,7 @@ export function fromFunctionIOBatchedOption<R, A extends AnyRequest>(
 
 export function fromFunctionBatchedOption<A extends Request<never, any>>(
   name: string,
-  f: (a: Chunk<A>) => Chunk<O.Option<_A<A>>>
+  f: (a: Chunk<A>) => Chunk<M.Maybe<_A<A>>>
 ): DataSource<unknown, A> {
   return fromFunctionIOBatchedOption(name, flow(f, I.succeed))
 }
@@ -230,7 +230,7 @@ export function fromFunctionIO<R, A extends AnyRequest>(
 
 export function fromFunctionIOOption<R, A extends AnyRequest>(
   name: string,
-  f: (a: A) => I.IO<R, _E<A>, O.Option<_A<A>>>
+  f: (a: A) => I.IO<R, _E<A>, M.Maybe<_A<A>>>
 ): DataSource<R, A> {
   return new Batched<R, A>(
     name,
@@ -249,7 +249,7 @@ export function fromFunctionIOOption<R, A extends AnyRequest>(
 
 export function fromFunctionOption<A extends Request<never, any>>(
   name: string,
-  f: (a: A) => O.Option<_A<A>>
+  f: (a: A) => M.Maybe<_A<A>>
 ): DataSource<unknown, A> {
   return fromFunctionIOOption(name, flow(f, I.succeed))
 }

@@ -11,8 +11,8 @@ import type { Eq, PredicateWithIndex, RefinementWithIndex } from '@principia/bas
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { identity, pipe } from '@principia/base/function'
+import * as M from '@principia/base/Maybe'
 import * as HS from '@principia/base/MutableHashSet'
-import * as O from '@principia/base/Option'
 import { tuple } from '@principia/base/tuple'
 import { isFunction, isIterable, isObject } from '@principia/base/util/predicates'
 
@@ -613,16 +613,16 @@ export function filter<A>(predicate: PredicateWithIndex<number, A>): <E>(fa: Obs
   return (fa) => filter_(fa, predicate)
 }
 
-export function filterMap_<E, A, B>(fa: Observable<E, A>, f: (a: A, i: number) => O.Option<B>): Observable<E, B> {
+export function filterMap_<E, A, B>(fa: Observable<E, A>, f: (a: A, i: number) => M.Maybe<B>): Observable<E, B> {
   return operate_(fa, (source, subscriber) => {
     let index = 0
     source.subscribe(
-      operatorSubscriber(subscriber, { next: (value) => O.match_(f(value, index++), noop, (b) => subscriber.next(b)) })
+      operatorSubscriber(subscriber, { next: (value) => M.match_(f(value, index++), noop, (b) => subscriber.next(b)) })
     )
   })
 }
 
-export function filterMap<A, B>(f: (a: A, i: number) => O.Option<B>): <E>(fa: Observable<E, A>) => Observable<E, B> {
+export function filterMap<A, B>(f: (a: A, i: number) => M.Maybe<B>): <E>(fa: Observable<E, A>) => Observable<E, B> {
   return (fa) => filterMap_(fa, f)
 }
 
@@ -748,17 +748,17 @@ export function foldl<A, B>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function at_<E, A>(fa: Observable<E, A>, index: number): Observable<E, O.Option<A>> {
+export function at_<E, A>(fa: Observable<E, A>, index: number): Observable<E, M.Maybe<A>> {
   return pipe(
     fa,
     filter((_, i) => i === index),
     take(1),
-    map(O.some),
-    onEmpty(() => O.none())
+    map(M.just),
+    onEmpty(() => M.nothing())
   )
 }
 
-export function at(index: number): <E, A>(fa: Observable<E, A>) => Observable<E, O.Option<A>> {
+export function at(index: number): <E, A>(fa: Observable<E, A>) => Observable<E, M.Maybe<A>> {
   return (fa) => at_(fa, index)
 }
 
@@ -767,15 +767,15 @@ export function audit_<E, A, E1>(
   durationSelector: (value: A) => ObservableInput<E1, any>
 ): Observable<E | E1, A> {
   return operate_(fa, (source, subscriber) => {
-    let lastValue: O.Option<A> = O.none()
+    let lastValue: M.Maybe<A> = M.nothing()
     let durationSubscriber: Subscriber<any, any> | null = null
     let isComplete    = false
     const endDuration = () => {
       durationSubscriber?.unsubscribe()
       durationSubscriber = null
-      if (O.isSome(lastValue)) {
+      if (M.isJust(lastValue)) {
         const { value } = lastValue
-        lastValue       = O.none()
+        lastValue       = M.nothing()
         subscriber.next(value)
       }
       isComplete && subscriber.complete()
@@ -789,7 +789,7 @@ export function audit_<E, A, E1>(
     source.subscribe(
       operatorSubscriber(subscriber, {
         next: (value) => {
-          lastValue = O.some(value)
+          lastValue = M.just(value)
           if (!durationSubscriber) {
             from(durationSelector(value)).subscribe(
               (durationSubscriber = operatorSubscriber(subscriber, { next: endDuration, complete: cleanupDuration }))
@@ -798,7 +798,7 @@ export function audit_<E, A, E1>(
         },
         complete: () => {
           isComplete = true
-          ;(O.isNone(lastValue) || !durationSubscriber || durationSubscriber.closed) && subscriber.complete()
+          ;(M.isNothing(lastValue) || !durationSubscriber || durationSubscriber.closed) && subscriber.complete()
         }
       })
     )
@@ -1168,14 +1168,14 @@ export function debounceWith_<E, A, E1>(
   durationSelector: (value: A) => ObservableInput<E1, any>
 ): Observable<E | E1, A> {
   return operate_(fa, (source, subscriber) => {
-    let lastValue: O.Option<A> = O.none()
+    let lastValue: M.Maybe<A> = M.nothing()
     let durationSubscriber: Subscriber<E1, any> | null = null
     const emit = () => {
       durationSubscriber?.unsubscribe()
       durationSubscriber = null
-      if (O.isSome(lastValue)) {
+      if (M.isJust(lastValue)) {
         const { value } = lastValue
-        lastValue       = O.none()
+        lastValue       = M.nothing()
         subscriber.next(value)
       }
     }
@@ -1185,7 +1185,7 @@ export function debounceWith_<E, A, E1>(
         {
           next: (value) => {
             durationSubscriber?.unsubscribe()
-            lastValue          = O.some(value)
+            lastValue          = M.just(value)
             durationSubscriber = operatorSubscriber(subscriber, { next: emit, complete: noop })
             from(durationSelector(value)).subscribe(durationSubscriber)
           },
@@ -1413,24 +1413,21 @@ export function expand<A, E1, B>(
 export function find_<E, A, B extends A>(
   fa: Observable<E, A>,
   refinement: RefinementWithIndex<number, A, B>
-): Observable<E, O.Option<B>>
-export function find_<E, A>(fa: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, O.Option<A>>
-export function find_<E, A>(
-  fa: Observable<E, A>,
-  predicate: PredicateWithIndex<number, A>
-): Observable<E, O.Option<A>> {
+): Observable<E, M.Maybe<B>>
+export function find_<E, A>(fa: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, M.Maybe<A>>
+export function find_<E, A>(fa: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, M.Maybe<A>> {
   return operate_(fa, findInternal(predicate, 'value'))
 }
 
 export function find<A, B extends A>(
   refinement: RefinementWithIndex<number, A, B>
-): <E>(fa: Observable<E, A>) => Observable<E, O.Option<B>>
+): <E>(fa: Observable<E, A>) => Observable<E, M.Maybe<B>>
 export function find<A>(
   predicate: PredicateWithIndex<number, A>
-): <E>(fa: Observable<E, A>) => Observable<E, O.Option<A>>
+): <E>(fa: Observable<E, A>) => Observable<E, M.Maybe<A>>
 export function find<A>(
   predicate: PredicateWithIndex<number, A>
-): <E>(fa: Observable<E, A>) => Observable<E, O.Option<A>> {
+): <E>(fa: Observable<E, A>) => Observable<E, M.Maybe<A>> {
   return (fa) => find_(fa, predicate)
 }
 
@@ -2165,7 +2162,7 @@ export function throttle_<E, A, E1>(
   { leading, trailing }: ThrottleConfig = defaultThrottleConfig
 ): Observable<E | E1, A> {
   return operate_(fa, (source, subscriber) => {
-    let sendValue: O.Option<A>         = O.none()
+    let sendValue: M.Maybe<A>          = M.nothing()
     let throttled: Subscription | null = null
     let isComplete                     = false
 
@@ -2189,9 +2186,9 @@ export function throttle_<E, A, E1>(
       ))
 
     const send = () => {
-      if (O.isSome(sendValue)) {
+      if (M.isJust(sendValue)) {
         const { value } = sendValue
-        sendValue       = O.none()
+        sendValue       = M.nothing()
         subscriber.next(value)
         !isComplete && startThrottling(value)
       }
@@ -2200,12 +2197,12 @@ export function throttle_<E, A, E1>(
     source.subscribe(
       operatorSubscriber(subscriber, {
         next: (value) => {
-          sendValue = O.some(value)
+          sendValue = M.just(value)
           !(throttled && !throttled.closed) && (leading ? send() : startThrottling(value))
         },
         complete: () => {
           isComplete = true
-          !(trailing && O.isSome(sendValue) && throttled && !throttled.closed) && subscriber.complete()
+          !(trailing && M.isJust(sendValue) && throttled && !throttled.closed) && subscriber.complete()
         }
       })
     )
@@ -2249,7 +2246,7 @@ export type TimeoutConfig<A, E, B, M = unknown> = (
 export interface TimeoutInfo<A, M> {
   readonly meta?: M
   readonly seen: number
-  readonly lastValue: O.Option<A>
+  readonly lastValue: M.Maybe<A>
 }
 
 export class TimeoutError<A, M> extends Error {
@@ -2281,9 +2278,9 @@ export function timeout_<E, A, E1, B, M = unknown>(
   return operate_(fa, (source, subscriber) => {
     let originalSourceSubscription: Subscription
     let timerSubscription: Subscription
-    let lastValue: O.Option<A> = O.none()
-    let seen                   = 0
-    const startTimer           = (delay: number) => {
+    let lastValue: M.Maybe<A> = M.nothing()
+    let seen                  = 0
+    const startTimer          = (delay: number) => {
       timerSubscription = caughtSchedule(
         subscriber,
         scheduler,
@@ -2308,7 +2305,7 @@ export function timeout_<E, A, E1, B, M = unknown>(
           next: (value) => {
             timerSubscription?.unsubscribe()
             seen++
-            lastValue = O.some(value)
+            lastValue = M.just(value)
             subscriber.next(value)
             each! > 0 && startTimer(each!)
           }
@@ -2317,7 +2314,7 @@ export function timeout_<E, A, E1, B, M = unknown>(
           if (!timerSubscription?.closed) {
             timerSubscription?.unsubscribe()
           }
-          lastValue = O.none()
+          lastValue = M.nothing()
         }
       )
     )
@@ -2528,12 +2525,12 @@ function findInternal<A>(
         next: (value) => {
           const i = index++
           if (predicate(value, index++)) {
-            subscriber.next(findIndex ? i : O.some(value))
+            subscriber.next(findIndex ? i : M.just(value))
             subscriber.complete()
           }
         },
         complete: () => {
-          subscriber.next(findIndex ? -1 : O.none())
+          subscriber.next(findIndex ? -1 : M.nothing())
           subscriber.complete()
         }
       })

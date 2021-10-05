@@ -11,11 +11,11 @@ import * as AS from '@principia/actors/ActorSystem'
 import * as Su from '@principia/actors/Supervisor'
 import { pipe } from '@principia/base/function'
 import * as T from '@principia/base/IO'
-import * as M from '@principia/base/IO/Managed'
+import * as Ma from '@principia/base/IO/Managed'
 import * as Q from '@principia/base/IO/Queue'
 import * as STM from '@principia/base/IO/stm/STM'
 import * as TRef from '@principia/base/IO/stm/TRef'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 
 import { Cluster } from './Cluster'
 
@@ -31,8 +31,8 @@ export function makeSingleton<R, S, F1 extends AM.AnyMessage, R3, E3>(
   side?: (self: ActorRef<F1>) => T.IO<R3, E3, never>
 ): A.ActorProxy<Has<Cluster> & IOEnv & R & R3, S, F1, E3 | K.ZooError | ActorSystemException> {
   return new A.ActorProxy(stateful.messages, (queue, context, initial: S) =>
-    M.useNow(
-      M.gen(function* (_) {
+    Ma.useNow(
+      Ma.gen(function* (_) {
         const cluster = yield* _(Cluster)
 
         const name = yield* _(
@@ -49,11 +49,11 @@ export function makeSingleton<R, S, F1 extends AM.AnyMessage, R3, E3>(
         yield* _(
           pipe(
             cluster.join(election),
-            M.bracket((p) => cluster.leave(p)['|>'](T.orHalt))
+            Ma.bracket((p) => cluster.leave(p)['|>'](T.orHalt))
           )
         )
 
-        const gate = yield* _(TRef.makeCommit(O.none<ActorRef<F1>>()))
+        const gate = yield* _(TRef.makeCommit(M.nothing<ActorRef<F1>>()))
 
         return yield* _(
           pipe(
@@ -64,10 +64,10 @@ export function makeSingleton<R, S, F1 extends AM.AnyMessage, R3, E3>(
                   STM.commit(
                     pipe(
                       TRef.get(gate),
-                      STM.tap((o) => STM.check(O.isSome(o)))
+                      STM.tap((o) => STM.check(M.isJust(o)))
                     )
                   )
-                )) as O.Some<ActorRef<F1>>
+                )) as M.Just<ActorRef<F1>>
                 yield* _(ref.value.ask(a)['|>'](T.fulfill(p)))
               }
 
@@ -75,31 +75,31 @@ export function makeSingleton<R, S, F1 extends AM.AnyMessage, R3, E3>(
             }),
             T.race(
               cluster.runOnLeader(election)(
-                M.gen(function* (_) {
+                Ma.gen(function* (_) {
                   const ref: ActorRef<F1> = yield* _(context.make('leader', Su.none, stateful, initial))
 
                   yield* _(
-                    STM.commit(TRef.set_(gate, O.some(ref)))['|>'](
-                      M.bracket(() => STM.commit(TRef.set_(gate, O.none())))
+                    STM.commit(TRef.set_(gate, M.just(ref)))['|>'](
+                      Ma.bracket(() => STM.commit(TRef.set_(gate, M.nothing())))
                     )
                   )
 
                   return yield* _(side ? side(ref) : T.never)
-                })['|>'](M.useNow),
+                })['|>'](Ma.useNow),
                 (leader) =>
-                  M.gen(function* (_) {
+                  Ma.gen(function* (_) {
                     const { host, port } = yield* _(cluster.memberHostPort(leader))
                     const recipient      = `zio://${context.actorSystem.actorSystemName}@${host}:${port}/${name}`
                     const ref            = new ActorRefRemote<F1>(recipient, context.actorSystem)
 
                     yield* _(
-                      STM.commit(TRef.set_(gate, O.some(ref)))['|>'](
-                        M.bracket(() => STM.commit(TRef.set_(gate, O.none())))
+                      STM.commit(TRef.set_(gate, M.just(ref)))['|>'](
+                        Ma.bracket(() => STM.commit(TRef.set_(gate, M.nothing())))
                       )
                     )
 
                     return yield* _(T.never)
-                  })['|>'](M.useNow)
+                  })['|>'](Ma.useNow)
               )
             )
           )

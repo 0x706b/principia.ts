@@ -58,7 +58,7 @@ export function forEach<A>(f: (a: A) => void): (set: OrderedSet<A>) => void {
  */
 
 export function has_<A>(set: OrderedSet<A>, a: A): boolean {
-  return OM.get_(set.keyMap, a)._tag === 'Some'
+  return OM.get_(set.keyMap, a)._tag === 'Just'
 }
 
 export function has<A>(a: A): (set: OrderedSet<A>) => boolean {

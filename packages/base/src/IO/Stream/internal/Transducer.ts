@@ -6,10 +6,10 @@
 //   result in empty [].
 
 import type { Chunk } from '../../../Chunk'
-import type { Option } from '../../../Option'
-import type { IO } from '../..'
+import type { Maybe } from '../../../Maybe'
+import type { IO } from '../../IO'
 import type { Managed } from '../../Managed'
 
 export class Transducer<R, E, I, O> {
-  constructor(readonly push: Managed<R, never, (c: Option<Chunk<I>>) => IO<R, E, Chunk<O>>>) {}
+  constructor(readonly push: Managed<R, never, (c: Maybe<Chunk<I>>) => IO<R, E, Chunk<O>>>) {}
 }

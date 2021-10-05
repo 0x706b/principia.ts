@@ -8,9 +8,9 @@
 
 import type { FunctionN } from './function'
 import type { Either, Left, Right } from './internal/Either'
+import type { Maybe } from './Maybe'
 import type { EitherURI } from './Modules'
 import type { NonEmptyArray } from './NonEmptyArray'
-import type { Option } from './Option'
 import type { These } from './These'
 
 import { NoSuchElementError } from './Error'
@@ -18,7 +18,7 @@ import { flow, identity, pipe } from './function'
 import { genF, GenHKT } from './Gen'
 import * as HKT from './HKT'
 import * as _ from './internal/Either'
-import * as O from './Option'
+import * as M from './Maybe'
 import * as P from './prelude'
 import { tailRec_ } from './TailRec'
 import * as T from './These'
@@ -88,16 +88,16 @@ export function fromNullableK<E>(
  * @category Constructors
  * @since 1.0.0
  */
-export function fromOption_<E, A>(fa: Option<A>, onNone: () => E): Either<E, A> {
-  return O.match_(fa, flow(onNone, left), right)
+export function fromMaybe_<E, A>(fa: Maybe<A>, onNothing: () => E): Either<E, A> {
+  return M.match_(fa, flow(onNothing, left), right)
 }
 
 /**
  * @category Constructors
  * @since 1.0.0
  */
-export function fromOption<E>(onNone: () => E): <A>(fa: Option<A>) => Either<E, A> {
-  return (fa) => fromOption_(fa, onNone)
+export function fromMaybe<E>(onNothing: () => E): <A>(fa: Maybe<A>) => Either<E, A> {
+  return (fa) => fromMaybe_(fa, onNothing)
 }
 
 /**
@@ -349,20 +349,18 @@ export function catchAll<E, E1, B>(f: (e: E) => Either<E1, B>): <A>(fa: Either<E
   return (fa) => catchAll_(fa, f)
 }
 
-export function catchSome_<E, A, E1, B>(fa: Either<E, A>, f: (e: E) => Option<Either<E1, B>>): Either<E | E1, A | B> {
+export function catchJust_<E, A, E1, B>(fa: Either<E, A>, f: (e: E) => Maybe<Either<E1, B>>): Either<E | E1, A | B> {
   return catchAll_(
     fa,
     flow(
       f,
-      O.getOrElse((): Either<E | E1, A | B> => fa)
+      M.getOrElse((): Either<E | E1, A | B> => fa)
     )
   )
 }
 
-export function catchSome<E, E1, B>(
-  f: (e: E) => Option<Either<E1, B>>
-): <A>(fa: Either<E, A>) => Either<E | E1, A | B> {
-  return (fa) => catchSome_(fa, f)
+export function catchJust<E, E1, B>(f: (e: E) => Maybe<Either<E1, B>>): <A>(fa: Either<E, A>) => Either<E | E1, A | B> {
+  return (fa) => catchJust_(fa, f)
 }
 
 export function catchMap_<E, A, B>(fa: Either<E, A>, f: (e: E) => B): Either<never, A | B> {
@@ -580,19 +578,19 @@ export function mapLeft<E, G>(f: (e: E) => G): <A>(pab: Either<E, A>) => Either<
  * -------------------------------------------------------------------------------------------------
  */
 
-export function getCompactable<E>(M: P.Monoid<E>) {
+export function getCompactable<E>(Md: P.Monoid<E>) {
   return HKT.instance<P.Compactable<[HKT.URI<EitherURI, V>], HKT.Fix<'E', E>>>({
     compact: match(
       left,
-      O.match(() => left(M.nat), right)
+      M.match(() => left(Md.nat), right)
     ),
     separate: (fa) =>
       match_(
         fa,
         (e) => [left(e), left(e)],
         match(
-          (a) => [right(a), left(M.nat)],
-          (b) => [left(M.nat), right(b)]
+          (a) => [right(a), left(Md.nat)],
+          (b) => [left(Md.nat), right(b)]
         )
       )
   })
@@ -674,10 +672,10 @@ export function duplicate<E, A>(wa: Either<E, A>): Either<E, Either<E, A>> {
  * @category Instances
  * @since 1.0.0
  */
-export function getFilterable<E>(M: P.Monoid<E>) {
+export function getFilterable<E>(Md: P.Monoid<E>) {
   type FixE = HKT.Fix<'E', E>
 
-  const empty = left(M.nat)
+  const empty = left(Md.nat)
 
   const partitionMap_: P.PartitionMapFn_<[HKT.URI<EitherURI, V>], FixE> = (fa, f) =>
     match_(
@@ -702,7 +700,7 @@ export function getFilterable<E>(M: P.Monoid<E>) {
     )
 
   const filterMap_: P.FilterMapFn_<[HKT.URI<EitherURI, V>], FixE> = (fa, f) =>
-    match_(fa, left, (a) => O.match_(f(a), () => empty, right))
+    match_(fa, left, (a) => M.match_(f(a), () => empty, right))
 
   const filter_: P.FilterFn_<[HKT.URI<EitherURI, V>], FixE> = <A>(
     fa: Either<E, A>,
@@ -1338,12 +1336,12 @@ export function getAltValidation<E>(S: P.Semigroup<E>): P.Alt<URI, HKT.Fix<'E', 
  */
 
 const adapter: {
-  <E, A>(_: Option<A>, onNone: () => E): GenHKT<Either<E, A>, A>
-  <A>(_: Option<A>): GenHKT<Either<NoSuchElementError, A>, A>
+  <E, A>(_: Maybe<A>, onNothing: () => E): GenHKT<Either<E, A>, A>
+  <A>(_: Maybe<A>): GenHKT<Either<NoSuchElementError, A>, A>
   <E, A>(_: Either<E, A>): GenHKT<Either<E, A>, A>
 } = (_: any, __?: any) => {
-  if (O.isOption(_)) {
-    return new GenHKT(fromOption_(_, () => (__ ? __() : new NoSuchElementError('Either.gen'))))
+  if (M.isMaybe(_)) {
+    return new GenHKT(fromMaybe_(_, () => (__ ? __() : new NoSuchElementError('Either.gen'))))
   }
   return new GenHKT(_)
 }

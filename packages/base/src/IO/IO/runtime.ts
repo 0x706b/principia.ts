@@ -6,17 +6,17 @@ import type { IOEnv } from '../IOEnv'
 
 import { isTracingEnabled } from '@principia/compile/util'
 
-import * as C from '../Cause'
-import * as Ex from '../Exit/core'
 import { constVoid, flow, identity } from '../../function'
 import { FiberContext } from '../../internal/FiberContext'
 import { Platform } from '../../internal/Platform'
-import * as O from '../../Option'
-import * as Scope from '../Scope'
+import * as M from '../../Maybe'
+import * as C from '../Cause'
 import { ClockTag, LiveClock } from '../Clock'
 import { ConsoleTag, LiveConsole } from '../Console'
+import * as Ex from '../Exit/core'
 import { interruptible, newFiberId, showFiberId } from '../Fiber'
 import { defaultRandom, RandomTag } from '../Random'
+import * as Scope from '../Scope'
 import * as Super from '../Supervisor'
 import * as I from './core'
 
@@ -78,11 +78,11 @@ export class CustomRuntime<R, A> {
       this.platform.maxOp,
       this.platform.reportFailure,
       this.platform,
-      O.none()
+      M.nothing()
     )
 
     if (supervisor !== Super.none) {
-      supervisor.unsafeOnStart(this.env, effect, O.none(), context)
+      supervisor.unsafeOnStart(this.env, effect, M.nothing(), context)
       context.onDone((exit) => supervisor.unsafeOnEnd(Ex.flatten(exit), context))
     }
 

@@ -5,24 +5,24 @@ import type { UIO } from '../IO/IO/core'
 import { constant } from '../function'
 import { FiberDump, fiberName } from '../IO/Fiber/core'
 import { crossPar_ } from '../IO/IO/combinators/apply-par'
-import * as T from '../IO/IO/core'
+import * as I from '../IO/IO/core'
 import * as IT from '../Iterable'
-import * as O from '../Option'
+import * as M from '../Maybe'
 import { tuple } from '../tuple'
 import { parseMs } from '../util/parse-ms'
 
-export function dump<E, A>(fiber: RuntimeFiber<E, A>): T.UIO<FiberDump> {
-  return T.map_(crossPar_(fiber.getRef(fiberName), fiber.status), ([name, status]) => FiberDump(fiber.id, name, status))
+export function dump<E, A>(fiber: RuntimeFiber<E, A>): I.UIO<FiberDump> {
+  return I.map_(crossPar_(fiber.getRef(fiberName), fiber.status), ([name, status]) => FiberDump(fiber.id, name, status))
 }
 
 export function dumpFibers(fibers: Iterable<RuntimeFiber<any, any>>): UIO<Chunk<FiberDump>> {
-  return T.foreach_(fibers, dump)
+  return I.foreach_(fibers, dump)
 }
 
 export function dumpStr(fibers: Iterable<RuntimeFiber<any, any>>, withTrace: false): UIO<string> {
-  const du  = T.foreach_(fibers, dump)
-  const now = T.succeedLazy(() => new Date().getTime())
-  return T.map_(T.crossWith_(du, now, tuple), ([dumps, now]) => {
+  const du  = I.foreach_(fibers, dump)
+  const now = I.succeedLazy(() => new Date().getTime())
+  return I.map_(I.crossWith_(du, now, tuple), ([dumps, now]) => {
     const tree        = renderHierarchy(dumps)
     const dumpStrings = withTrace ? collectTraces(dumps, now) : []
     return IT.foldl_(dumpStrings, tree, (acc, v) => acc + '\n' + v)
@@ -30,7 +30,7 @@ export function dumpStr(fibers: Iterable<RuntimeFiber<any, any>>, withTrace: fal
 }
 
 export function prettyPrintM(dump: FiberDump): UIO<string> {
-  return T.succeed(prettyPrint(dump, new Date().getTime()))
+  return I.succeed(prettyPrint(dump, new Date().getTime()))
 }
 
 /**
@@ -39,7 +39,7 @@ export function prettyPrintM(dump: FiberDump): UIO<string> {
 export function prettyPrint(dump: FiberDump, now: number): string {
   const { days, hours, milliseconds, minutes, seconds } = parseMs(now - dump.fiberId.startTime)
 
-  const name    = O.match_(dump.fiberName, constant(''), (n) => `"${n}" `)
+  const name    = M.match_(dump.fiberName, constant(''), (n) => `"${n}" `)
   const lifeMsg =
     (days === 0 ? '' : `${days}d`) +
     (days === 0 && hours === 0 ? '' : `${hours}h`) +
@@ -67,7 +67,7 @@ export function prettyPrint(dump: FiberDump, now: number): string {
 export function renderOne(tree: FiberDump): string {
   const prefix = ''
 
-  const name      = O.match_(tree.fiberName, constant(''), (n) => '"' + n + '" ')
+  const name      = M.match_(tree.fiberName, constant(''), (n) => '"' + n + '" ')
   const statusMsg = renderStatus(tree.status)
   return `${prefix}+---${name}#${tree.fiberId.seqNumber} Status: ${statusMsg}\n`
 }

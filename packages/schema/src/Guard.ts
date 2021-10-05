@@ -3,8 +3,8 @@ import type * as S from './Schemable'
 import type { TypeOfPrism } from './util'
 import type { Chunk } from '@principia/base/Chunk'
 import type * as _ from '@principia/base/Guard'
+import type { Maybe } from '@principia/base/Maybe'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
-import type { Option } from '@principia/base/Option'
 import type { Predicate, Refinement } from '@principia/base/prelude'
 import type { Primitive, UnionToIntersection } from '@principia/base/util/types'
 
@@ -13,8 +13,8 @@ import * as B from '@principia/base/boolean'
 import * as C from '@principia/base/Chunk'
 import * as E from '@principia/base/Either'
 import { flow, unsafeCoerce } from '@principia/base/function'
+import * as O from '@principia/base/Maybe'
 import * as N from '@principia/base/number'
-import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 import * as str from '@principia/base/string'
 import { isArray, isObject } from '@principia/base/util/predicates'
@@ -53,7 +53,7 @@ export function refine<A>(guard: Guard<A>, predicate: Predicate<A>): Guard<A> {
   return Guard((u): u is A => guard.is(u) && predicate(u))
 }
 
-export function nullable<A>(guard: Guard<A>): Guard<Option<A>> {
+export function nullable<A>(guard: Guard<A>): Guard<Maybe<A>> {
   return O.getGuard(guard)
 }
 
@@ -286,7 +286,7 @@ export const Schemable: S.Schemable<GuardSURI> = {
     }),
   newtypeIso: (guard) => unsafeCoerce(guard),
   newtypePrism: (guard, prism) =>
-    Guard((u): u is TypeOfPrism<typeof prism> => guard.is(u) && prism.getOption(u)._tag === 'Some')
+    Guard((u): u is TypeOfPrism<typeof prism> => guard.is(u) && prism.getMaybe(u)._tag === 'Just')
 }
 
 export const getFor = to(Schemable)

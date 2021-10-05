@@ -24,12 +24,12 @@ import { eqFiberId } from '@principia/base/IO/Fiber'
 import * as Fi from '@principia/base/IO/Fiber'
 import * as F from '@principia/base/IO/Future'
 import * as L from '@principia/base/IO/Layer'
-import * as M from '@principia/base/IO/Managed'
+import * as Ma from '@principia/base/IO/Managed'
 import * as Ref from '@principia/base/IO/Ref'
 import * as RefM from '@principia/base/IO/RefM'
 import * as Li from '@principia/base/List'
+import * as M from '@principia/base/Maybe'
 import * as N from '@principia/base/number'
-import * as O from '@principia/base/Option'
 import * as St from '@principia/base/Structural'
 import { tuple } from '@principia/base/tuple'
 import { matchTag } from '@principia/base/util/match'
@@ -187,17 +187,17 @@ export class TestClock implements Clock {
           return pipe(
             sorted,
             Li.head,
-            O.chain(([duration, promise]) =>
+            M.chain(([duration, promise]) =>
               duration <= end
-                ? O.some(tuple(O.some(tuple(end, promise)), new Data(duration, Li.tail(sorted))))
-                : O.none()
+                ? M.just(tuple(M.just(tuple(end, promise)), new Data(duration, Li.tail(sorted))))
+                : M.nothing()
             ),
-            O.getOrElse(() => tuple(O.none(), new Data(end, data.sleeps)))
+            M.getOrElse(() => tuple(M.nothing(), new Data(end, data.sleeps)))
           )
         })
       ),
       I.chain(
-        O.match(
+        M.match(
           () => I.unit(),
           ([end, promise]) =>
             pipe(F.succeed_(promise, undefined), I.crossSecond(I.yieldNow), I.crossSecond(this.run((_) => end)))
@@ -220,16 +220,16 @@ export class TestClock implements Clock {
     )
   }
 
-  private warningDone: UIO<void> = RefM.updateSomeIO_(
+  private warningDone: UIO<void> = RefM.updateJustIO_(
     this.warningState,
     matchTag({
-      Start: () => O.some(I.succeed(Done)),
-      Pending: ({ fiber }) => O.some(Fi.interrupt(fiber)['$>'](Done)),
-      Done: () => O.none()
+      Start: () => M.just(I.succeed(Done)),
+      Pending: ({ fiber }) => M.just(I.as_(Fi.interrupt(fiber), Done)),
+      Done: () => M.nothing()
     })
   )
 
-  private warningStart: UIO<void> = RefM.updateSomeIO_(
+  private warningStart: UIO<void> = RefM.updateJustIO_(
     this.warningState,
     matchTag(
       {
@@ -239,22 +239,22 @@ export class TestClock implements Clock {
             I.interruptible,
             I.fork,
             I.map(Pending),
-            O.some
+            M.just
           )
       },
-      () => O.none<IO<unknown, never, WarningData>>()
+      () => M.nothing<IO<unknown, never, WarningData>>()
     )
   )
 
   static live(data: Data): Layer<Has<Live> & Has<Annotations>, never, Has<Clock> & Has<TestClock>> {
     return L.fromRawManaged(
       pipe(
-        M.asksServicesManaged({ live: LiveTag, annotations: AnnotationsTag })(({ live, annotations }) =>
-          M.gen(function* (_) {
+        Ma.asksServicesManaged({ live: LiveTag, annotations: AnnotationsTag })(({ live, annotations }) =>
+          Ma.gen(function* (_) {
             const ref  = yield* _(Ref.make(data))
             const refM = yield* _(RefM.make(Start))
             const test = yield* _(
-              M.bracket_(I.succeed(new TestClock(ref, live, annotations, refM)), (tc) => tc.warningDone)
+              Ma.bracket_(I.succeed(new TestClock(ref, live, annotations, refM)), (tc) => tc.warningDone)
             )
             return {
               [ClockTag.key]: new ProxyClock(test.currentTime, test.sleep),

@@ -2,18 +2,18 @@ import type { Gen } from './core'
 import type { Has } from '@principia/base/Has'
 import type { Random } from '@principia/base/IO/Random'
 
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 
 import * as G from './core'
 
-export function some<R, A>(gen: Gen<R, A>): Gen<R, O.Option<A>> {
-  return G.map_(gen, O.some)
+export function just<R, A>(gen: Gen<R, A>): Gen<R, M.Maybe<A>> {
+  return G.map_(gen, M.just)
 }
 
-export function none(): Gen<unknown, O.Option<never>> {
-  return G.constant(O.none())
+export function nothing(): Gen<unknown, M.Maybe<never>> {
+  return G.constant(M.nothing())
 }
 
-export function option<R, A>(gen: Gen<R, A>): Gen<R & Has<Random>, O.Option<A>> {
-  return G.oneOf(none(), some(gen))
+export function option<R, A>(gen: Gen<R, A>): Gen<R & Has<Random>, M.Maybe<A>> {
+  return G.oneOf(nothing(), just(gen))
 }

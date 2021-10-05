@@ -2,7 +2,7 @@ import type { FIO, UIO } from '../IO/core'
 
 import * as E from '../../Either'
 import { flow, identity, pipe } from '../../function'
-import * as O from '../../Option'
+import * as M from '../../Maybe'
 import { tuple } from '../../tuple'
 import { matchTag } from '../../util/match'
 import { AtomicReference } from '../../util/support/AtomicReference'
@@ -333,8 +333,8 @@ export function contramap<A, C>(f: (_: C) => A): <EA, EB, B>(ref: Ref<EA, EB, A,
 export function filterInput_<EA, EB, B, A, A1 extends A>(
   ref: Ref<EA, EB, A, B>,
   f: (_: A1) => boolean
-): Ref<O.Option<EA>, EB, A1, B> {
-  return ref.match(O.some, identity, (a) => (f(a) ? E.right(a) : E.left(O.none())), E.right)
+): Ref<M.Maybe<EA>, EB, A1, B> {
+  return ref.match(M.just, identity, (a) => (f(a) ? E.right(a) : E.left(M.nothing())), E.right)
 }
 
 /**
@@ -344,7 +344,7 @@ export function filterInput_<EA, EB, B, A, A1 extends A>(
  */
 export function filterInput<A, A1 extends A>(
   f: (_: A1) => boolean
-): <EA, EB, B>(ref: Ref<EA, EB, A, B>) => Ref<O.Option<EA>, EB, A1, B> {
+): <EA, EB, B>(ref: Ref<EA, EB, A, B>) => Ref<M.Maybe<EA>, EB, A1, B> {
   return (_) => filterInput_(_, f)
 }
 
@@ -353,8 +353,8 @@ export function filterInput<A, A1 extends A>(
  * returning a `Ref` with a `get` value that succeeds if the predicate is
  * satisfied or else fails with `None`.
  */
-export function filterOutput_<EA, EB, A, B>(ref: Ref<EA, EB, A, B>, f: (_: B) => boolean): Ref<EA, O.Option<EB>, A, B> {
-  return ref.match(identity, O.some, E.right, (b) => (f(b) ? E.right(b) : E.left(O.none())))
+export function filterOutput_<EA, EB, A, B>(ref: Ref<EA, EB, A, B>, f: (_: B) => boolean): Ref<EA, M.Maybe<EB>, A, B> {
+  return ref.match(identity, M.just, E.right, (b) => (f(b) ? E.right(b) : E.left(M.nothing())))
 }
 
 /**
@@ -364,7 +364,7 @@ export function filterOutput_<EA, EB, A, B>(ref: Ref<EA, EB, A, B>, f: (_: B) =>
  */
 export function filterOutput<B>(
   f: (_: B) => boolean
-): <EA, EB, A>(ref: Ref<EA, EB, A, B>) => Ref<EA, O.Option<EB>, A, B> {
+): <EA, EB, A>(ref: Ref<EA, EB, A, B>) => Ref<EA, M.Maybe<EB>, A, B> {
   return (_) => filterOutput_(_, f)
 }
 
@@ -492,9 +492,9 @@ export function map<B, C>(f: (_: B) => C): <EA, EB, A>(ref: Ref<EA, EB, A, B>) =
  */
 export function collect_<EA, EB, A, B, C>(
   ref: Ref<EA, EB, A, B>,
-  pf: (_: B) => O.Option<C>
-): Ref<EA, O.Option<EB>, A, C> {
-  return ref.match(identity, O.some, E.right, (b) => E.fromOption_(pf(b), () => O.none()))
+  pf: (_: B) => M.Maybe<C>
+): Ref<EA, M.Maybe<EB>, A, C> {
+  return ref.match(identity, M.just, E.right, (b) => E.fromMaybe_(pf(b), () => M.nothing()))
 }
 
 /**
@@ -503,8 +503,8 @@ export function collect_<EA, EB, A, B, C>(
  * result of the partial function if it is defined or else fails with `None`.
  */
 export function collect<B, C>(
-  pf: (_: B) => O.Option<C>
-): <EA, EB, A>(ref: Ref<EA, EB, A, B>) => Ref<EA, O.Option<EB>, A, C> {
+  pf: (_: B) => M.Maybe<C>
+): <EA, EB, A>(ref: Ref<EA, EB, A, B>) => Ref<EA, M.Maybe<EB>, A, C> {
   return (ref) => collect_(ref, pf)
 }
 
@@ -684,22 +684,22 @@ export function modify_<EA, EB, B, A>(ref: Ref<EA, EB, A, A>, f: (a: A) => reado
  * Atomically modifies the `Ref` with the specified partial function,
  * which computes a return value for the modification if the function is
  * defined on the current value otherwise it returns a default value. This
- * is a more powerful version of `updateSome`.
+ * is a more powerful version of `updateJust`.
  */
-export function modifySome_<EA, EB, A, B>(
+export function modifyJust_<EA, EB, A, B>(
   ref: Ref<EA, EB, A, A>,
   def: B,
-  f: (a: A) => O.Option<[B, A]>
+  f: (a: A) => M.Maybe<[B, A]>
 ): FIO<EA | EB, B> {
   return pipe(
     ref,
     concrete,
     matchTag(
-      { Atomic: At.modifySome(def)(f) },
+      { Atomic: At.modifyJust(def)(f) },
       modify((a) =>
         pipe(
           f(a),
-          O.getOrElse(() => tuple(def, a))
+          M.getOrElse(() => tuple(def, a))
         )
       )
     )
@@ -710,13 +710,13 @@ export function modifySome_<EA, EB, A, B>(
  * Atomically modifies the `Ref` with the specified partial function,
  * which computes a return value for the modification if the function is
  * defined on the current value otherwise it returns a default value. This
- * is a more powerful version of `updateSome`.
+ * is a more powerful version of `updateJust`.
  */
-export function modifySome<B, A>(
+export function modifyJust<B, A>(
   def: B,
-  f: (a: A) => O.Option<[B, A]>
+  f: (a: A) => M.Maybe<[B, A]>
 ): <EA, EB>(ref: Ref<EA, EB, A, A>) => I.FIO<EA | EB, B> {
-  return (ref) => modifySome_(ref, def, f)
+  return (ref) => modifyJust_(ref, def, f)
 }
 
 export function getAndSet_<EA, EB, A>(ref: Ref<EA, EB, A, A>, a: A): I.FIO<EA | EB, A> {
@@ -766,16 +766,16 @@ export function getAndUpdate<A>(f: (a: A) => A): <EA, EB>(ref: Ref<EA, EB, A, A>
  * returning the value immediately before modification. If the function is
  * undefined on the current value it doesn't change it.
  */
-export function getAndUpdateSome_<EA, EB, A>(ref: Ref<EA, EB, A, A>, f: (a: A) => O.Option<A>) {
+export function getAndUpdateJust_<EA, EB, A>(ref: Ref<EA, EB, A, A>, f: (a: A) => M.Maybe<A>) {
   return pipe(
     ref,
     concrete,
     matchTag(
-      { Atomic: At.getAndUpdateSome(f) },
+      { Atomic: At.getAndUpdateJust(f) },
       modify((v) =>
         pipe(
           f(v),
-          O.getOrElse(() => v),
+          M.getOrElse(() => v),
           (a) => tuple(v, a)
         )
       )
@@ -788,10 +788,10 @@ export function getAndUpdateSome_<EA, EB, A>(ref: Ref<EA, EB, A, A>, f: (a: A) =
  * returning the value immediately before modification. If the function is
  * undefined on the current value it doesn't change it.
  */
-export function getAndUpdateSome<A>(
-  f: (a: A) => O.Option<A>
+export function getAndUpdateJust<A>(
+  f: (a: A) => M.Maybe<A>
 ): <EA, EB>(ref: Ref<EA, EB, A, A>) => UIO<A> | FIO<EA | EB, A> {
-  return (ref) => getAndUpdateSome_(ref, f)
+  return (ref) => getAndUpdateJust_(ref, f)
 }
 
 /**
@@ -845,16 +845,16 @@ export function updateAndGet<A>(f: (a: A) => A) {
  * Atomically modifies the `Ref` with the specified partial function. If
  * the function is undefined on the current value it doesn't change it.
  */
-export function updateSome_<EA, EB, A>(ref: Ref<EA, EB, A, A>, f: (a: A) => O.Option<A>): FIO<EA | EB, void> {
+export function updateJust_<EA, EB, A>(ref: Ref<EA, EB, A, A>, f: (a: A) => M.Maybe<A>): FIO<EA | EB, void> {
   return pipe(
     ref,
     concrete,
     matchTag(
-      { Atomic: At.updateSome(f) },
+      { Atomic: At.updateJust(f) },
       modify((v) =>
         pipe(
           f(v),
-          O.getOrElse(() => v),
+          M.getOrElse(() => v),
           (a) => tuple(undefined, a)
         )
       )
@@ -866,8 +866,8 @@ export function updateSome_<EA, EB, A>(ref: Ref<EA, EB, A, A>, f: (a: A) => O.Op
  * Atomically modifies the `Ref` with the specified partial function. If
  * the function is undefined on the current value it doesn't change it.
  */
-export function updateSome<A>(f: (a: A) => O.Option<A>): <EA, EB>(ref: Ref<EA, EB, A, A>) => FIO<EA | EB, void> {
-  return (ref) => updateSome_(ref, f)
+export function updateJust<A>(f: (a: A) => M.Maybe<A>): <EA, EB>(ref: Ref<EA, EB, A, A>) => FIO<EA | EB, void> {
+  return (ref) => updateJust_(ref, f)
 }
 
 /**
@@ -875,16 +875,16 @@ export function updateSome<A>(f: (a: A) => O.Option<A>): <EA, EB>(ref: Ref<EA, E
  * the function is undefined on the current value it returns the old value
  * without changing it.
  */
-export function updateSomeAndGet_<EA, EB, A>(ref: Ref<EA, EB, A, A>, f: (a: A) => O.Option<A>): FIO<EA | EB, A> {
+export function updateJustAndGet_<EA, EB, A>(ref: Ref<EA, EB, A, A>, f: (a: A) => M.Maybe<A>): FIO<EA | EB, A> {
   return pipe(
     ref,
     concrete,
     matchTag(
-      { Atomic: At.updateSomeAndGet(f) },
+      { Atomic: At.updateJustAndGet(f) },
       modify((v) =>
         pipe(
           f(v),
-          O.getOrElse(() => v),
+          M.getOrElse(() => v),
           (result) => tuple(result, result)
         )
       )
@@ -897,8 +897,8 @@ export function updateSomeAndGet_<EA, EB, A>(ref: Ref<EA, EB, A, A>, f: (a: A) =
  * the function is undefined on the current value it returns the old value
  * without changing it.
  */
-export function updateSomeAndGet<A>(f: (a: A) => O.Option<A>): <EA, EB>(ref: Ref<EA, EB, A, A>) => FIO<EA | EB, A> {
-  return (ref) => updateSomeAndGet_(ref, f)
+export function updateJustAndGet<A>(f: (a: A) => M.Maybe<A>): <EA, EB>(ref: Ref<EA, EB, A, A>) => FIO<EA | EB, A> {
+  return (ref) => updateJustAndGet_(ref, f)
 }
 
 /**

@@ -1,7 +1,7 @@
 import type { Branded } from '@principia/base/Brand'
 
 import { flow, pipe } from '@principia/base/function'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 
 import * as PE from '../ParseError'
 import * as S from './core'
@@ -20,7 +20,7 @@ export function positive<S extends S.Schema<any, any, any, number, any, any, any
     S.refine(
       (a): a is Positive<S.TypeOf<S>> => a >= 0,
       flow(PE.positiveE, PE.leafE),
-      () => O.none(),
+      () => M.nothing(),
       'Positive'
     )
   )

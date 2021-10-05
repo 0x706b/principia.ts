@@ -16,7 +16,7 @@ import * as FS from './FreeSemiring'
 import { flow, identity, pipe } from './function'
 import * as I from './Iterable/core'
 import * as L from './List/core'
-import * as O from './Option'
+import * as M from './Maybe'
 import * as P from './prelude'
 import { tuple } from './tuple'
 import { isObject } from './util/predicates'
@@ -279,12 +279,12 @@ export function fromEitherLazy<E, A>(either: () => E.Either<E, A>): Z<never, unk
   return defer(() => fromEither(either()))
 }
 
-export function fromOption<A>(option: O.Option<A>): Z<never, unknown, never, unknown, O.Option<never>, A> {
-  return O.match_(option, () => fail(O.none()), succeed)
+export function fromMaybe<A>(maybe: M.Maybe<A>): Z<never, unknown, never, unknown, M.Maybe<never>, A> {
+  return M.match_(maybe, () => fail(M.nothing()), succeed)
 }
 
-export function fromOptionLazy<A>(option: () => O.Option<A>): Z<never, unknown, never, unknown, O.Option<never>, A> {
-  return defer(() => fromOption(option()))
+export function fromMaybeLazy<A>(maybe: () => M.Maybe<A>): Z<never, unknown, never, unknown, M.Maybe<never>, A> {
+  return defer(() => fromMaybe(maybe()))
 }
 
 export function failCause<E>(cause: Cause<E>): Z<never, unknown, never, unknown, E, never> {
@@ -1100,23 +1100,23 @@ export function catchAll<W, S1, E, S3, R1, E1, B>(
   return (fa) => catchAll_(fa, onFailure)
 }
 
-export function catchSome_<W, S1, S2, R, E, A, S3, R1, E1, B>(
+export function catchJust_<W, S1, S2, R, E, A, S3, R1, E1, B>(
   fa: Z<W, S1, S2, R, E, A>,
-  f: (e: E) => O.Option<Z<W, S1, S3, R1, E1, B>>
+  f: (e: E) => M.Maybe<Z<W, S1, S3, R1, E1, B>>
 ): Z<W, S1, S2 | S3, R & R1, E | E1, A | B> {
   return catchAll_(
     fa,
     flow(
       f,
-      O.getOrElse((): Z<W, S1, S2 | S3, R & R1, E | E1, A | B> => fa)
+      M.getOrElse((): Z<W, S1, S2 | S3, R & R1, E | E1, A | B> => fa)
     )
   )
 }
 
-export function catchSome<W, S1, E, S3, R1, E1, B>(
-  f: (e: E) => O.Option<Z<W, S1, S3, R1, E1, B>>
+export function catchJust<W, S1, E, S3, R1, E1, B>(
+  f: (e: E) => M.Maybe<Z<W, S1, S3, R1, E1, B>>
 ): <S2, R, A>(fa: Z<W, S1, S2, R, E, A>) => Z<W, S1, S2 | S3, R & R1, E | E1, B | A> {
-  return (fa) => catchSome_(fa, f)
+  return (fa) => catchJust_(fa, f)
 }
 
 /**

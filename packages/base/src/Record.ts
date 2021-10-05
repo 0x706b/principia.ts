@@ -8,7 +8,7 @@ import type { Show } from './Show'
 import * as E from './Either'
 import { identity, pipe } from './function'
 import * as G from './Guard'
-import * as O from './Option'
+import * as M from './Maybe'
 import * as P from './prelude'
 import { tuple } from './tuple'
 
@@ -217,7 +217,7 @@ export function toUnfoldable<F extends HKT.URIS, C = HKT.Auto>(U: P.Unfoldable<F
   > => {
     const arr = toArray(r)
     const len = arr.length
-    return U.unfold(0, (b) => (b < len ? O.some([arr[b], b + 1]) : O.none()))
+    return U.unfold(0, (b) => (b < len ? M.just([arr[b], b + 1]) : M.nothing()))
   }
 }
 
@@ -251,12 +251,12 @@ export function separate<N extends string, A, B>(
 
 /**
  */
-export function compact<N extends string, A>(fa: ReadonlyRecord<N, O.Option<A>>): ReadonlyRecord<string, A> {
+export function compact<N extends string, A>(fa: ReadonlyRecord<N, M.Maybe<A>>): ReadonlyRecord<string, A> {
   const r  = {} as Record<string, any>
   const ks = keys(fa)
   for (const key of ks) {
     const optionA = fa[key]
-    if (O.isSome(optionA)) {
+    if (M.isJust(optionA)) {
       r[key] = optionA.value
     }
   }
@@ -329,14 +329,14 @@ export function filter<A>(
  */
 export function filterMap_<N extends string, A, B>(
   fa: ReadonlyRecord<N, A>,
-  f: (a: A, k: N) => O.Option<B>
+  f: (a: A, k: N) => M.Maybe<B>
 ): ReadonlyRecord<string, B> {
   const r  = {} as Record<string, B>
   const ks = keys(fa)
   for (let i = 0; i < ks.length; i++) {
     const key     = ks[i]
     const optionB = f(fa[key], key)
-    if (O.isSome(optionB)) {
+    if (M.isJust(optionB)) {
       r[key] = optionB.value
     }
   }
@@ -346,7 +346,7 @@ export function filterMap_<N extends string, A, B>(
 /**
  */
 export function filterMap<N extends string, A, B>(
-  f: (a: A, k: N) => O.Option<B>
+  f: (a: A, k: N) => M.Maybe<B>
 ): (fa: ReadonlyRecord<N, A>) => ReadonlyRecord<string, B> {
   return (fa) => filterMap_(fa, f)
 }
@@ -688,24 +688,24 @@ export function deleteAt(k: string): <A>(r: ReadonlyRecord<string, A>) => Readon
   return (r) => deleteAt_(r, k)
 }
 
-export function insertAt_<A>(r: ReadonlyRecord<string, A>, k: string, a: A): O.Option<ReadonlyRecord<string, A>> {
+export function insertAt_<A>(r: ReadonlyRecord<string, A>, k: string, a: A): M.Maybe<ReadonlyRecord<string, A>> {
   if (!has_(r, k)) {
     const out = Object.assign({}, r) as Record<string, A>
     out[k]    = a
-    return O.some(out)
+    return M.just(out)
   }
-  return O.none()
+  return M.nothing()
 }
 
-export function insertAt<A>(k: string, a: A): (r: ReadonlyRecord<string, A>) => O.Option<ReadonlyRecord<string, A>> {
+export function insertAt<A>(k: string, a: A): (r: ReadonlyRecord<string, A>) => M.Maybe<ReadonlyRecord<string, A>> {
   return (r) => insertAt_(r, k, a)
 }
 
-export function lookup_<A>(r: ReadonlyRecord<string, A>, k: string): O.Option<A> {
-  return _hasOwnProperty.call(r, k) ? O.some(r[k]) : O.none()
+export function lookup_<A>(r: ReadonlyRecord<string, A>, k: string): M.Maybe<A> {
+  return _hasOwnProperty.call(r, k) ? M.just(r[k]) : M.nothing()
 }
 
-export function lookup(k: string): <A>(r: ReadonlyRecord<string, A>) => O.Option<A> {
+export function lookup(k: string): <A>(r: ReadonlyRecord<string, A>) => M.Maybe<A> {
   return (r) => lookup_(r, k)
 }
 
@@ -713,37 +713,37 @@ export function modifyAt_<A>(
   r: ReadonlyRecord<string, A>,
   k: string,
   f: (a: A) => A
-): O.Option<ReadonlyRecord<string, A>> {
+): M.Maybe<ReadonlyRecord<string, A>> {
   if (!has_(r, k)) {
-    return O.none()
+    return M.nothing()
   }
   const out = Object.assign({}, r) as Record<string, A>
   out[k]    = f(r[k])
-  return O.some(out)
+  return M.just(out)
 }
 
 export function modifyAt<A>(
   k: string,
   f: (a: A) => A
-): (r: ReadonlyRecord<string, A>) => O.Option<ReadonlyRecord<string, A>> {
+): (r: ReadonlyRecord<string, A>) => M.Maybe<ReadonlyRecord<string, A>> {
   return (r) => modifyAt_(r, k, f)
 }
 
-export function pop_<A>(r: ReadonlyRecord<string, A>, k: string): O.Option<readonly [A, ReadonlyRecord<string, A>]> {
+export function pop_<A>(r: ReadonlyRecord<string, A>, k: string): M.Maybe<readonly [A, ReadonlyRecord<string, A>]> {
   const deleteAtk = deleteAt(k)
   const oa        = lookup(k)(r)
-  return O.match_(oa, O.none, (a) => O.some([a, deleteAtk(r)]))
+  return M.match_(oa, M.nothing, (a) => M.just([a, deleteAtk(r)]))
 }
 
-export function pop(k: string): <A>(r: ReadonlyRecord<string, A>) => O.Option<readonly [A, ReadonlyRecord<string, A>]> {
+export function pop(k: string): <A>(r: ReadonlyRecord<string, A>) => M.Maybe<readonly [A, ReadonlyRecord<string, A>]> {
   return (r) => pop_(r, k)
 }
 
-export function updateAt_<A>(r: ReadonlyRecord<string, A>, k: string, a: A): O.Option<ReadonlyRecord<string, A>> {
+export function updateAt_<A>(r: ReadonlyRecord<string, A>, k: string, a: A): M.Maybe<ReadonlyRecord<string, A>> {
   return modifyAt_(r, k, () => a)
 }
 
-export function updateAt<A>(k: string, a: A): (r: ReadonlyRecord<string, A>) => O.Option<ReadonlyRecord<string, A>> {
+export function updateAt<A>(k: string, a: A): (r: ReadonlyRecord<string, A>) => M.Maybe<ReadonlyRecord<string, A>> {
   return (r) => updateAt_(r, k, a)
 }
 

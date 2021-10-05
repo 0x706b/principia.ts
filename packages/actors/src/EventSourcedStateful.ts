@@ -15,7 +15,7 @@ import * as S from '@principia/base/IO/experimental/Stream'
 import * as F from '@principia/base/IO/Future'
 import * as Q from '@principia/base/IO/Queue'
 import * as Ref from '@principia/base/IO/Ref'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import { tuple } from '@principia/base/tuple'
 
 import * as A from './Actor'
@@ -117,7 +117,7 @@ export class EventSourcedStateful<R, S, F1 extends AM.AnyMessage, EV> extends A.
             : T.gen(function* (_) {
                 const updatedState = self.applyEvents(ev, s)
                 yield* _(
-                  journal.persistEntry(self.persistenceId, self.eventSchema, ev, self.stateSchema, O.some(updatedState))
+                  journal.persistEntry(self.persistenceId, self.eventSchema, ev, self.stateSchema, M.just(updatedState))
                 )
                 yield* _(effectfulCompleter(updatedState, sa(updatedState)))
               })
@@ -152,7 +152,7 @@ export class EventSourcedStateful<R, S, F1 extends AM.AnyMessage, EV> extends A.
                 journal.getEntry(self.persistenceId, self.eventSchema, self.stateSchema)
               )
               yield* _(
-                O.match_(
+                M.match_(
                   persistedState,
                   () => T.unit(),
                   (s) => Ref.set_(state, s)

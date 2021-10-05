@@ -9,8 +9,8 @@ import { tag } from '@principia/base/Has'
 import * as T from '@principia/base/IO'
 import * as F from '@principia/base/IO/Future'
 import * as L from '@principia/base/IO/Layer'
-import * as M from '@principia/base/IO/Managed'
-import * as O from '@principia/base/Option'
+import * as Ma from '@principia/base/IO/Managed'
+import * as M from '@principia/base/Maybe'
 import * as Str from '@principia/base/string'
 import * as Z from 'node-zookeeper-client'
 
@@ -23,7 +23,7 @@ export class ZooError extends Tagged('ZooError')<{
 
 export const KeeperClientSym = Symbol()
 
-export const makeKeeperClient = M.gen(function* (_) {
+export const makeKeeperClient = Ma.gen(function* (_) {
   const { connectionString, options } = yield* _(KeeperConfig)
 
   const monitor = yield* _(F.make<ZooError, never>())
@@ -46,7 +46,7 @@ export const makeKeeperClient = M.gen(function* (_) {
           T.run_(F.fail_(monitor, new ZooError({ op: 'DISCONNECTED', message: JSON.stringify(s) })))
         }
       })
-    })['|>'](M.bracket((cli) => T.succeedLazy(() => cli.close())))
+    })['|>'](Ma.bracket((cli) => T.succeedLazy(() => cli.close())))
   )
 
   function create(
@@ -151,12 +151,12 @@ export const makeKeeperClient = M.gen(function* (_) {
   }
 
   function getData(path: string) {
-    return T.async<unknown, ZooError, O.Option<Buffer>>((cb) => {
+    return T.async<unknown, ZooError, M.Maybe<Buffer>>((cb) => {
       client.getData(path, (e, b) => {
         if (e) {
           cb(T.fail(new ZooError({ op: 'GET_DATA', message: JSON.stringify(e) })))
         } else {
-          cb(T.succeed(O.fromNullable(b)))
+          cb(T.succeed(M.fromNullable(b)))
         }
       })
     })

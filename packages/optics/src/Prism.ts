@@ -2,8 +2,8 @@ import type { PLens } from './Lens'
 import type { PrismURI } from './Modules'
 import type { GetOrModifyFn, Optional, POptional } from './Optional'
 import type { PTraversal, Traversal } from './Traversal'
+import type { Maybe } from '@principia/base/Maybe'
 import type { Newtype } from '@principia/base/Newtype'
-import type { Option } from '@principia/base/Option'
 import type { Predicate } from '@principia/base/Predicate'
 import type { Refinement } from '@principia/base/Refinement'
 
@@ -357,7 +357,7 @@ export function key(key: string): <S, A>(sa: Prism<S, Readonly<Record<string, A>
  * @category Combinators
  * @since 1.0.0
  */
-export function atKey_<S, A>(sa: Prism<S, Readonly<Record<string, A>>>, key: string): Optional<S, Option<A>> {
+export function atKey_<S, A>(sa: Prism<S, Readonly<Record<string, A>>>, key: string): Optional<S, Maybe<A>> {
   return andThenLens_(sa, At.atRecord<A>().at(key))
 }
 
@@ -367,17 +367,17 @@ export function atKey_<S, A>(sa: Prism<S, Readonly<Record<string, A>>>, key: str
  * @category Combinators
  * @since 1.0.0
  */
-export function atKey(key: string): <S, A>(sa: Prism<S, Readonly<Record<string, A>>>) => Optional<S, Option<A>> {
+export function atKey(key: string): <S, A>(sa: Prism<S, Readonly<Record<string, A>>>) => Optional<S, Maybe<A>> {
   return (sa) => atKey_(sa, key)
 }
 
 /**
- * Return a `Prism` from a `Prism` focused on the `Some` of a `Option` type
+ * Return a `Prism` from a `Prism` focused on the `Just` of a `Maybe` type
  *
  * @category Combinators
  * @since 1.0.0
  */
-export const some: <S, A>(soa: Prism<S, Option<A>>) => Prism<S, A> = andThen(_.prismSome())
+export const just: <S, A>(soa: Prism<S, Maybe<A>>) => Prism<S, A> = andThen(_.prismJust())
 
 /**
  * Return a `Prism` from a `Prism` focused on the `Right` of a `Either` type
@@ -416,9 +416,9 @@ export const findFirst: <A>(predicate: Predicate<A>) => <S>(sa: Prism<S, Readonl
   andThenOptional
 )
 
-export function newtype<T extends Newtype<any, any>>(getOption: Predicate<T['_A']>): Prism<T['_A'], T> {
+export function newtype<T extends Newtype<any, any>>(getMaybe: Predicate<T['_A']>): Prism<T['_A'], T> {
   return PPrism({
-    getOrModify: (s) => (getOption(s) ? E.right(s) : E.left(s)),
+    getOrModify: (s) => (getMaybe(s) ? E.right(s) : E.left(s)),
     reverseGet: (a) => a as any
   })
 }

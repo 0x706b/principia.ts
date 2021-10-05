@@ -11,7 +11,7 @@ import { constant, identity, pipe } from './function'
 import { HashSet } from './HashSet'
 import { Empty, fromBitmap, hashFragment, isEmptyNode, SIZE, toBitmap } from './internal/hamt'
 import * as It from './Iterable/core'
-import * as O from './Option'
+import * as M from './Maybe'
 import * as Equ from './Structural/Equatable'
 import * as Ha from './Structural/Hashable'
 import { tuple } from './tuple'
@@ -53,7 +53,7 @@ export class HashMapIterator<K, V, T> implements IterableIterator<T> {
   constructor(readonly map: HashMap<K, V>, readonly f: (node: readonly [K, V]) => T) {}
 
   next(): IteratorResult<T> {
-    if (O.isNone(this.v)) {
+    if (M.isNothing(this.v)) {
       return { done: true, value: undefined }
     }
     const v0 = this.v.value
@@ -109,7 +109,7 @@ export function fromFoldable<F extends HKT.URIS, C, K, A>(C: Config<K>, S: P.Sem
   return <K_, Q, W, X, I, S, R, E>(fka: HKT.Kind<F, C, K_, Q, W, X, I, S, R, E, readonly [K, A]>): HashMap<K, A> => {
     return F.foldl_(fka, make(C), (b, [k, a]) => {
       const oa = get_(b, k)
-      if (O.isSome(oa)) {
+      if (M.isJust(oa)) {
         return set_(b, k, S.combine_(oa.value, a))
       } else {
         return set_(b, k, a)
@@ -121,7 +121,7 @@ export function fromFoldable<F extends HKT.URIS, C, K, A>(C: Config<K>, S: P.Sem
 /**
  * Lookup the value for `key` in `map` using custom hash.
  */
-export function getHash_<K, V>(map: HashMap<K, V>, key: K, hash: number): O.Option<V> {
+export function getHash_<K, V>(map: HashMap<K, V>, key: K, hash: number): M.Maybe<V> {
   return tryGetHash(map, key, hash)
 }
 
@@ -130,14 +130,14 @@ export function getHash_<K, V>(map: HashMap<K, V>, key: K, hash: number): O.Opti
  *
  * @dataFirst getHash_
  */
-export function getHash<K>(key: K, hash: number): <V>(map: HashMap<K, V>) => O.Option<V> {
+export function getHash<K>(key: K, hash: number): <V>(map: HashMap<K, V>) => M.Maybe<V> {
   return (map) => getHash_(map, key, hash)
 }
 
 /**
  * Lookup the value for `key` in `map` using internal hash function.
  */
-export function get_<K, V>(map: HashMap<K, V>, key: K): O.Option<V> {
+export function get_<K, V>(map: HashMap<K, V>, key: K): M.Maybe<V> {
   return tryGetHash(map, key, map.config.hash(key))
 }
 
@@ -154,7 +154,7 @@ export function get<K>(key: K) {
  * Does an entry exist for `key` in `map`? Uses custom `hash`.
  */
 export function hasHash_<K, V>(map: HashMap<K, V>, key: K, hash: number): boolean {
-  return O.isNone(tryGetHash(map, key, hash))
+  return M.isNothing(tryGetHash(map, key, hash))
 }
 
 /**
@@ -170,7 +170,7 @@ export function hasHash<K>(key: K, hash: number): <V>(map: HashMap<K, V>) => boo
  * Does an entry exist for `key` in `map`? Uses internal hash function.
  */
 export function has_<K, V>(map: HashMap<K, V>, key: K): boolean {
-  return O.isSome(tryGetHash(map, key, map.config.hash(key)))
+  return M.isJust(tryGetHash(map, key, map.config.hash(key)))
 }
 
 /**
@@ -229,7 +229,7 @@ export function modify<K, V>(key: K, f: UpdateFn<V>) {
  * Store `value` for `key` in `map` using internal hash function.
  */
 export function set_<K, V>(map: HashMap<K, V>, key: K, value: V) {
-  return modify_(map, key, constant(O.some(value)))
+  return modify_(map, key, constant(M.just(value)))
 }
 
 /**
@@ -245,7 +245,7 @@ export function set<K, V>(key: K, value: V) {
  *  Remove the entry for `key` in `map` using internal hash.
  */
 export function remove_<K, V>(map: HashMap<K, V>, key: K) {
-  return modify_(map, key, constant(O.none()))
+  return modify_(map, key, constant(M.nothing()))
 }
 
 /**
@@ -335,7 +335,7 @@ export function values<K, V>(map: HashMap<K, V>): IterableIterator<V> {
  * Update a value if exists
  */
 export function update_<K, V>(map: HashMap<K, V>, key: K, f: (v: V) => V) {
-  return modify_(map, key, O.map(f))
+  return modify_(map, key, M.map(f))
 }
 
 /**
@@ -429,7 +429,7 @@ export function chain<K, V, A>(f: (v: V, k: K) => HashMap<K, A>): (ma: HashMap<K
 /**
  * Removes None values
  */
-export function compact<K, A>(fa: HashMap<K, O.Option<A>>): HashMap<K, A> {
+export function compact<K, A>(fa: HashMap<K, M.Maybe<A>>): HashMap<K, A> {
   return filterMap_(fa, (a) => a)
 }
 
@@ -446,13 +446,13 @@ export function separate<K, A, B>(fa: HashMap<K, E.Either<A, B>>): readonly [Has
 /**
  * Filter out None and map
  */
-export function filterMap_<K, A, B>(fa: HashMap<K, A>, f: (a: A, k: K) => O.Option<B>): HashMap<K, B> {
+export function filterMap_<K, A, B>(fa: HashMap<K, A>, f: (a: A, k: K) => M.Maybe<B>): HashMap<K, B> {
   const m = make<K, B>(fa.config)
 
   return mutate_(m, (m) => {
     for (const [k, a] of fa) {
       const o = f(a, k)
-      if (O.isSome(o)) {
+      if (M.isJust(o)) {
         set_(m, k, o.value)
       }
     }
@@ -464,7 +464,7 @@ export function filterMap_<K, A, B>(fa: HashMap<K, A>, f: (a: A, k: K) => O.Opti
  *
  * @dataFirst filterMap_
  */
-export function filterMap<K, A, B>(f: (a: A, k: K) => O.Option<B>): (fa: HashMap<K, A>) => HashMap<K, B> {
+export function filterMap<K, A, B>(f: (a: A, k: K) => M.Maybe<B>): (fa: HashMap<K, A>) => HashMap<K, B> {
   return (fa) => filterMap_(fa, f)
 }
 
@@ -593,7 +593,7 @@ export function partition<K, V>(
  */
 export function foldl_<K, V, Z>(map: HashMap<K, V>, z: Z, f: (z: Z, v: V, k: K) => Z): Z {
   const root = map.root
-  if (root._tag === 'LeafNode') return O.isSome(root.value) ? f(z, root.value.value, root.key) : z
+  if (root._tag === 'LeafNode') return M.isJust(root.value) ? f(z, root.value.value, root.key) : z
   if (root._tag === 'Empty') {
     return z
   }
@@ -604,7 +604,7 @@ export function foldl_<K, V, Z>(map: HashMap<K, V>, z: Z, f: (z: Z, v: V, k: K) 
       const child = children[i++]
       if (child && !isEmptyNode(child)) {
         if (child._tag === 'LeafNode') {
-          if (O.isSome(child.value)) {
+          if (M.isJust(child.value)) {
             // eslint-disable-next-line no-param-reassign
             z = f(z, child.value.value, child.key)
           }
@@ -688,9 +688,9 @@ export function concatWith_<K, A>(
       modify_(
         m,
         k,
-        O.match(
-          () => O.some(a),
-          (a0) => O.some(f(a0, a))
+        M.match(
+          () => M.just(a),
+          (a0) => M.just(f(a0, a))
         )
       )
     }
@@ -716,14 +716,14 @@ export function concat<K, A>(ys: Iterable<readonly [K, A]>): (xs: HashMap<K, A>)
   return (xs) => concat_(xs, ys)
 }
 
-export function pop_<K, A>(m: HashMap<K, A>, k: K): O.Option<readonly [A, HashMap<K, A>]> {
+export function pop_<K, A>(m: HashMap<K, A>, k: K): M.Maybe<readonly [A, HashMap<K, A>]> {
   return pipe(
     get_(m, k),
-    O.map((a) => [a, remove_(m, k)])
+    M.map((a) => [a, remove_(m, k)])
   )
 }
 
-export function pop<K>(k: K): <A>(m: HashMap<K, A>) => O.Option<readonly [A, HashMap<K, A>]> {
+export function pop<K>(k: K): <A>(m: HashMap<K, A>) => M.Maybe<readonly [A, HashMap<K, A>]> {
   return (m) => pop_(m, k)
 }
 
@@ -738,7 +738,7 @@ type Cont<K, V, A> =
   | undefined
 
 function applyCont<K, V, A>(cont: Cont<K, V, A>) {
-  return cont ? visitLazyChildren(cont[0], cont[1], cont[2], cont[3], cont[4]) : O.none()
+  return cont ? visitLazyChildren(cont[0], cont[1], cont[2], cont[3], cont[4]) : M.nothing()
 }
 
 function visitLazyChildren<K, V, A>(
@@ -747,7 +747,7 @@ function visitLazyChildren<K, V, A>(
   i: number,
   f: (node: readonly [K, V]) => A,
   cont: Cont<K, V, A>
-): O.Option<VisitResult<K, V, A>> {
+): M.Maybe<VisitResult<K, V, A>> {
   while (i < len) {
     // eslint-disable-next-line no-param-reassign
     const child = children[i++]
@@ -770,11 +770,11 @@ function visitLazy<K, V, A>(
   node: Node<K, V>,
   f: (node: readonly [K, V]) => A,
   cont: Cont<K, V, A> = undefined
-): O.Option<VisitResult<K, V, A>> {
+): M.Maybe<VisitResult<K, V, A>> {
   switch (node._tag) {
     case 'LeafNode': {
-      return O.isSome(node.value)
-        ? O.some({
+      return M.isJust(node.value)
+        ? M.just({
             value: f(tuple(node.key, node.value.value)),
             cont
           })
@@ -807,7 +807,7 @@ function setTree<K, V>(map: HashMap<K, V>, newRoot: Node<K, V>, newSize: number)
 /**
  * Lookup the value for `key` in `map` using custom hash.
  */
-function tryGetHash<K, V>(map: HashMap<K, V>, key: K, hash: number): O.Option<V> {
+function tryGetHash<K, V>(map: HashMap<K, V>, key: K, hash: number): M.Maybe<V> {
   let node    = map.root
   let shift   = 0
   const keyEq = map.config.equals_
@@ -816,7 +816,7 @@ function tryGetHash<K, V>(map: HashMap<K, V>, key: K, hash: number): O.Option<V>
   while (true) {
     switch (node._tag) {
       case 'LeafNode': {
-        return keyEq(node.key, key) ? node.value : O.none()
+        return keyEq(node.key, key) ? node.value : M.nothing()
       }
       case 'CollisionNode': {
         if (hash === node.hash) {
@@ -826,7 +826,7 @@ function tryGetHash<K, V>(map: HashMap<K, V>, key: K, hash: number): O.Option<V>
             if ('key' in child && keyEq(child.key, key)) return child.value
           }
         }
-        return O.none()
+        return M.nothing()
       }
       case 'IndexedNode': {
         const frag = hashFragment(shift, hash)
@@ -836,7 +836,7 @@ function tryGetHash<K, V>(map: HashMap<K, V>, key: K, hash: number): O.Option<V>
           shift += SIZE
           break
         }
-        return O.none()
+        return M.nothing()
       }
       case 'ArrayNode': {
         node = node.children[hashFragment(shift, hash)]
@@ -844,10 +844,10 @@ function tryGetHash<K, V>(map: HashMap<K, V>, key: K, hash: number): O.Option<V>
           shift += SIZE
           break
         }
-        return O.none()
+        return M.nothing()
       }
       default:
-        return O.none()
+        return M.nothing()
     }
   }
 }

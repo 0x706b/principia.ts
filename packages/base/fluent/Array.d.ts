@@ -3,9 +3,9 @@ import type * as A from '@principia/base/Array'
 import type { Byte } from '@principia/base/Byte'
 import type { Either } from '@principia/base/Either'
 import type * as HKT from '@principia/base/HKT'
+import type { Maybe } from '@principia/base/Maybe'
 import type { Monoid } from '@principia/base/Monoid'
 import type { MutableNonEmptyArray, NonEmptyArray } from '@principia/base/NonEmptyArray'
-import type { Option } from '@principia/base/Option'
 import type { Predicate, PredicateWithIndex } from '@principia/base/Predicate'
 import type { Eq } from '@principia/base/prelude'
 import type { ReadonlyRecord } from '@principia/base/Record'
@@ -229,22 +229,22 @@ export interface ArrayOps {
   /**
    * @rewrite collectWhile_ from "@principia/base/Array"
    */
-  collectWhile<A, B>(this: NonEmptyArray<A>, f: (a: A) => Option<B>): ReadonlyArray<B>
+  collectWhile<A, B>(this: NonEmptyArray<A>, f: (a: A) => Maybe<B>): ReadonlyArray<B>
 
   /**
    * @rewrite collectWhile_ from "@principia/base/Array"
    */
-  collectWhile<T, B>(this: ReadonlyArray<T>, f: (a: T) => Option<B>): ReadonlyArray<B>
+  collectWhile<T, B>(this: ReadonlyArray<T>, f: (a: T) => Maybe<B>): ReadonlyArray<B>
 
   /**
    * @rewrite compact from "@principia/base/Array"
    */
-  compact<A>(this: NonEmptyArray<Option<A>>): ReadonlyArray<A>
+  compact<A>(this: NonEmptyArray<Maybe<A>>): ReadonlyArray<A>
 
   /**
    * @rewrite compact from "@principia/base/Array"
    */
-  compact<T>(this: ReadonlyArray<Option<T>>): ReadonlyArray<T>
+  compact<T>(this: ReadonlyArray<Maybe<T>>): ReadonlyArray<T>
 
   /**
    * @rewrite concat_ from "@principia/base/Array"
@@ -284,12 +284,12 @@ export interface ArrayOps {
   /**
    * @rewrite deleteAt_ from "@principia/base/Array"
    */
-  deleteAt<A>(this: NonEmptyArray<A>, i: number): Option<ReadonlyArray<A>>
+  deleteAt<A>(this: NonEmptyArray<A>, i: number): Maybe<ReadonlyArray<A>>
 
   /**
    * @rewrite deleteAt_ from "@principia/base/Array"
    */
-  deleteAt<T>(this: ReadonlyArray<T>, i: number): Option<ReadonlyArray<T>>
+  deleteAt<T>(this: ReadonlyArray<T>, i: number): Maybe<ReadonlyArray<T>>
 
   /**
    * @rewrite drop_ from "@principia/base/Array"
@@ -349,7 +349,7 @@ export interface ArrayOps {
   /**
    * @rewrite filterMap_ from "@principia/base/Array"
    */
-  filterMap<T, B>(this: ReadonlyArray<T>, f: (a: T, i: number) => Option<B>): ReadonlyArray<B>
+  filterMap<T, B>(this: ReadonlyArray<T>, f: (a: T, i: number) => Maybe<B>): ReadonlyArray<B>
 
   /**
    * @rewriteConstraint filterMapA_ from "@principia/base/Array"
@@ -358,58 +358,58 @@ export interface ArrayOps {
     this: ReadonlyArray<T>,
     A: Applicative<F, C>
   ): <K, Q, W, X, I, S, R, E, A>(
-    f: (a: T, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<A>>
+    f: (a: T, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Maybe<A>>
   ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
 
   /**
    * @rewrite findLast_ from "@principia/base/Array"
    */
-  findLast<A>(this: NonEmptyArray<A>, predicate: Predicate<A>): Option<A>
+  findLast<A>(this: NonEmptyArray<A>, predicate: Predicate<A>): Maybe<A>
 
   /**
    * @rewrite findLast_ from "@principia/base/Array"
    */
-  findLast<A, B extends A>(this: NonEmptyArray<A>, refinement: Refinement<A, B>): Option<B>
+  findLast<A, B extends A>(this: NonEmptyArray<A>, refinement: Refinement<A, B>): Maybe<B>
 
   /**
    * @rewrite findLast_ from "@principia/base/Array"
    */
-  findLast<T, B extends T>(this: ReadonlyArray<T>, refinement: Refinement<T, B>): Option<B>
+  findLast<T, B extends T>(this: ReadonlyArray<T>, refinement: Refinement<T, B>): Maybe<B>
 
   /**
    * @rewrite findLast_ from "@principia/base/Array"
    */
-  findLast<T>(this: ReadonlyArray<T>, predicate: Predicate<T>): Option<T>
+  findLast<T>(this: ReadonlyArray<T>, predicate: Predicate<T>): Maybe<T>
 
   /**
    * @rewrite findLastIndex_ from "@principia/base/Array"
    */
-  findLastIndex<A>(this: NonEmptyArray<A>, predicate: Predicate<A>): Option<number>
+  findLastIndex<A>(this: NonEmptyArray<A>, predicate: Predicate<A>): Maybe<number>
 
   /**
    * @rewrite findLastIndex_ from "@principia/base/Array"
    */
-  findLastIndex<T>(this: ReadonlyArray<T>, predicate: Predicate<T>): Option<number>
+  findLastIndex<T>(this: ReadonlyArray<T>, predicate: Predicate<T>): Maybe<number>
 
   /**
    * @rewrite findLastMap_ from "@principia/base/Array"
    */
-  findLastMap<A, B>(this: NonEmptyArray<A>, f: (a: A) => Option<B>): Option<B>
+  findLastMap<A, B>(this: NonEmptyArray<A>, f: (a: A) => Maybe<B>): Maybe<B>
 
   /**
    * @rewrite findLastMap_ from "@principia/base/Array"
    */
-  findLastMap<T, B>(this: ReadonlyArray<T>, f: (a: T) => Option<B>): Option<B>
+  findLastMap<T, B>(this: ReadonlyArray<T>, f: (a: T) => Maybe<B>): Maybe<B>
 
   /**
    * @rewrite findMap_ from "@principia/base/Array"
    */
-  findMap<A, B>(this: NonEmptyArray<A>, f: (a: A, i: number) => Option<B>): Option<B>
+  findMap<A, B>(this: NonEmptyArray<A>, f: (a: A, i: number) => Maybe<B>): Maybe<B>
 
   /**
    * @rewrite findMap_ from "@principia/base/Array"
    */
-  findMap<T, B>(this: ReadonlyArray<T>, f: (a: T, i: number) => Option<B>): Option<B>
+  findMap<T, B>(this: ReadonlyArray<T>, f: (a: T, i: number) => Maybe<B>): Maybe<B>
 
   /**
    * @rewrite flatten from "@principia/base/NonEmptyArray"
@@ -474,7 +474,7 @@ export interface ArrayOps {
   /**
    * @rewriteGetter head from "@principia/base/Array"
    */
-  head<T>(this: ReadonlyArray<T>): Option<T>
+  head<T>(this: ReadonlyArray<T>): Maybe<T>
 
   /**
    * @rewriteGetter init from "@principia/base/NonEmptyArray"
@@ -484,17 +484,17 @@ export interface ArrayOps {
   /**
    * @rewriteGetter init from "@principia/base/Array"
    */
-  init<T>(this: ReadonlyArray<T>): Option<ReadonlyArray<T>>
+  init<T>(this: ReadonlyArray<T>): Maybe<ReadonlyArray<T>>
 
   /**
    * @rewrite insertAt_ from "@principia/base/Array"
    */
-  insertAt<T>(this: NonEmptyArray<T>, i: number, a: T): Option<NonEmptyArray<T>>
+  insertAt<T>(this: NonEmptyArray<T>, i: number, a: T): Maybe<NonEmptyArray<T>>
 
   /**
    * @rewrite insertAt_ from "@principia/base/Array"
    */
-  insertAt<T>(this: ReadonlyArray<T>, i: number, a: T): Option<NonEmptyArray<T>>
+  insertAt<T>(this: ReadonlyArray<T>, i: number, a: T): Maybe<NonEmptyArray<T>>
 
   /**
    * @rewrite intersection_ from "@principia/base/Array"
@@ -524,7 +524,7 @@ export interface ArrayOps {
   /**
    * @rewrite last from "@principia/base/Array"
    */
-  last<T>(this: ReadonlyArray<T>): Option<T>
+  last<T>(this: ReadonlyArray<T>): Maybe<T>
 
   /**
    * @rewrite lefts from "@principia/base/Array"
@@ -534,7 +534,7 @@ export interface ArrayOps {
   /**
    * @rewrite lookup_ from "@principia/base/Array"
    */
-  lookup<T>(this: ReadonlyArray<T>, i: number): Option<T>
+  lookup<T>(this: ReadonlyArray<T>, i: number): Maybe<T>
 
   /**
    * @rewrite _mapA from "@principia/base/Array"
@@ -569,12 +569,12 @@ export interface ArrayOps {
   /**
    * @rewrite modifyAt_ from "@principia/base/Array"
    */
-  modifyAt<A>(this: NonEmptyArray<A>, i: number, f: (a: A) => A): Option<NonEmptyArray<A>>
+  modifyAt<A>(this: NonEmptyArray<A>, i: number, f: (a: A) => A): Maybe<NonEmptyArray<A>>
 
   /**
    * @rewrite modifyAt_ from "@principia/base/Array"
    */
-  modifyAt<T>(this: ReadonlyArray<T>, i: number, f: (a: T) => T): Option<ReadonlyArray<T>>
+  modifyAt<T>(this: ReadonlyArray<T>, i: number, f: (a: T) => T): Maybe<ReadonlyArray<T>>
 
   /**
    * @rewrite mutate_ from "@principia/base/Array"
@@ -742,7 +742,7 @@ export interface ArrayOps {
   /**
    * @rewriteGetter tail from "@principia/base/Array"
    */
-  tail<T>(this: ReadonlyArray<T>): Option<ReadonlyArray<T>>
+  tail<T>(this: ReadonlyArray<T>): Maybe<ReadonlyArray<T>>
 
   /**
    * @rewrite take_ from "@principia/base/Array"
@@ -802,12 +802,12 @@ export interface ArrayOps {
   /**
    * @rewrite updateAt_ from "@principia/base/Array"
    */
-  updateAt<A>(this: NonEmptyArray<A>, i: number, a: A): Option<NonEmptyArray<A>>
+  updateAt<A>(this: NonEmptyArray<A>, i: number, a: A): Maybe<NonEmptyArray<A>>
 
   /**
    * @rewrite updateAt_ from "@principia/base/Array"
    */
-  updateAt<T>(this: ReadonlyArray<T>, i: number, a: T): Option<ReadonlyArray<T>>
+  updateAt<T>(this: ReadonlyArray<T>, i: number, a: T): Maybe<ReadonlyArray<T>>
 
   /**
    * @rewrite zip_ from "@principia/base/Array"
@@ -835,17 +835,17 @@ declare global {
     /**
      * @rewrite find_ from "@principia/base/Array"
      */
-    find<T, B extends T>(this: ReadonlyArray<T>, refinement: Refinement<T, B>): Option<B>
+    find<T, B extends T>(this: ReadonlyArray<T>, refinement: Refinement<T, B>): Maybe<B>
 
     /**
      * @rewrite find_ from "@principia/base/Array"
      */
-    find<T>(this: ReadonlyArray<T>, predicate: Predicate<T>): Option<T>
+    find<T>(this: ReadonlyArray<T>, predicate: Predicate<T>): Maybe<T>
 
     /**
      * @rewrite findIndex_ from "@principia/base/Array"
      */
-    findIndex<T>(this: ReadonlyArray<T>, predicate: Predicate<T>): Option<number>
+    findIndex<T>(this: ReadonlyArray<T>, predicate: Predicate<T>): Maybe<number>
 
     /**
      * @rewrite map_ from "@principia/base/Array"
@@ -881,17 +881,17 @@ declare global {
     /**
      * @rewrite find_ from "@principia/base/Array"
      */
-    find<T, B extends T>(this: ReadonlyArray<T>, refinement: RefinementWithIndex<number, T, B>): Option<B>
+    find<T, B extends T>(this: ReadonlyArray<T>, refinement: RefinementWithIndex<number, T, B>): Maybe<B>
 
     /**
      * @rewrite find_ from "@principia/base/Array"
      */
-    find<T>(this: ReadonlyArray<T>, predicate: PredicateWithIndex<number, T>): Option<T>
+    find<T>(this: ReadonlyArray<T>, predicate: PredicateWithIndex<number, T>): Maybe<T>
 
     /**
      * @rewrite findIndex_ from "@principia/base/Array"
      */
-    findIndex<T>(this: ReadonlyArray<T>, predicate: Predicate<T>): Option<number>
+    findIndex<T>(this: ReadonlyArray<T>, predicate: Predicate<T>): Maybe<number>
 
     /**
      * @rewrite map_ from "@principia/base/Array"

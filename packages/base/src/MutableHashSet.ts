@@ -2,8 +2,8 @@ import type { Eq } from './Eq'
 import type { Hash } from './Hash'
 
 import * as I from './Iterable'
+import * as M from './Maybe'
 import * as MHM from './MutableHashMap'
-import * as O from './Option'
 
 export class HashSet<A> {
   private hashMap: MHM.HashMap<A, boolean>
@@ -21,7 +21,7 @@ export class HashSet<A> {
   }
 
   contains(a: A): boolean {
-    return O.getOrElse_(this.hashMap.get(a), () => false)
+    return M.getOrElse_(this.hashMap.get(a), () => false)
   }
 
   add(a: A): boolean {

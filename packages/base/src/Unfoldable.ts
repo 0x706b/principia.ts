@@ -1,5 +1,5 @@
 import type * as HKT from './HKT'
-import type { Option } from './internal/Option'
+import type { Maybe } from './internal/Maybe'
 
 export interface Unfoldable<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
   readonly unfold: UnfoldFn<F, C>
@@ -19,6 +19,6 @@ export interface UnfoldFn<F extends HKT.URIS, C = HKT.Auto> {
     E = HKT.Initial<C, 'E'>
   >(
     b: B,
-    f: (b: B) => Option<readonly [A, B]>
+    f: (b: B) => Maybe<readonly [A, B]>
   ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
 }

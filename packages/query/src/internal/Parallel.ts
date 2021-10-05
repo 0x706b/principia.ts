@@ -6,7 +6,7 @@ import type { HashMap } from '@principia/base/HashMap'
 import * as C from '@principia/base/Chunk'
 import * as HM from '@principia/base/HashMap'
 import * as It from '@principia/base/Iterable'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 
 import { Sequential } from './Sequential'
 
@@ -21,7 +21,7 @@ export class Parallel<R> {
         HM.set_(
           map,
           k,
-          O.match_(HM.get_(map, k), () => v, C.concat(v))
+          M.match_(HM.get_(map, k), () => v, C.concat(v))
         )
       )
     )

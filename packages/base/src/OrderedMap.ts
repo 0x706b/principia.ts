@@ -4,11 +4,11 @@
  * Forked from https://github.com/mikolalysenko/functional-red-black-tree
  */
 
-import type { Option } from './Option'
+import type { Maybe } from './Maybe'
 import type * as P from './prelude'
 import type { Stack } from './util/support/Stack'
 
-import * as O from './Option'
+import * as M from './Maybe'
 import { makeStack } from './util/support/Stack'
 
 export class OrderedMap<K, V> implements OrderedMapIterable<K, V> {
@@ -181,14 +181,14 @@ export function remove<K>(key: K): <V>(m: OrderedMap<K, V>) => OrderedMap<K, V> 
 /**
  * Searches the map for a given key, returning it's value, if it exists
  */
-export function get_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
+export function get_<K, V>(m: OrderedMap<K, V>, key: K): Maybe<V> {
   const cmp = m.ord.compare_
   let n     = m.root
   while (n) {
     const d = cmp(key, n.key)
     switch (d) {
       case 0: {
-        return O.some(n.value)
+        return M.just(n.value)
       }
       case -1: {
         n = n.left
@@ -200,30 +200,30 @@ export function get_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
       }
     }
   }
-  return O.none()
+  return M.nothing()
 }
 
 /**
  * Searches the map for a given key, returning it's value, if it exists
  */
-export function get<K>(key: K): <V>(m: OrderedMap<K, V>) => Option<V> {
+export function get<K>(key: K): <V>(m: OrderedMap<K, V>) => Maybe<V> {
   return (tree) => get_(tree, key)
 }
 
 /**
  * Searches the map and returns the first value in sorted order that is >= key, if it exists
  */
-export function getGte_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
+export function getGte_<K, V>(m: OrderedMap<K, V>, key: K): Maybe<V> {
   const cmp     = m.ord.compare_
   let n         = m.root
-  let lastValue = O.none<V>()
+  let lastValue = M.nothing<V>()
   while (n) {
     const d = cmp(key, n.key)
     if (d <= 0) {
-      lastValue = O.some(n.value)
+      lastValue = M.just(n.value)
       n         = n.left
     } else {
-      if (lastValue._tag === 'Some') {
+      if (lastValue._tag === 'Just') {
         break
       }
       n = n.right
@@ -235,24 +235,24 @@ export function getGte_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
 /**
  * Searches the map and returns the first value in sorted order that is >= key, if it exists
  */
-export function getGte<K>(key: K): <V>(m: OrderedMap<K, V>) => Option<V> {
+export function getGte<K>(key: K): <V>(m: OrderedMap<K, V>) => Maybe<V> {
   return (tree) => getGte_(tree, key)
 }
 
 /**
  * Searches the map and returns the first value in sorted order that is > key, if it exists
  */
-export function getGt_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
+export function getGt_<K, V>(m: OrderedMap<K, V>, key: K): Maybe<V> {
   const cmp     = m.ord.compare_
   let n         = m.root
-  let lastValue = O.none<V>()
+  let lastValue = M.nothing<V>()
   while (n) {
     const d = cmp(key, n.key)
     if (d < 0) {
-      lastValue = O.some(n.value)
+      lastValue = M.just(n.value)
       n         = n.left
     } else {
-      if (lastValue._tag === 'Some') {
+      if (lastValue._tag === 'Just') {
         break
       }
       n = n.right
@@ -264,26 +264,26 @@ export function getGt_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
 /**
  * Searches the map and returns the first value in sorted order that is > key, if it exists
  */
-export function getGt<K>(key: K): <V>(m: OrderedMap<K, V>) => Option<V> {
+export function getGt<K>(key: K): <V>(m: OrderedMap<K, V>) => Maybe<V> {
   return (m) => getGt_(m, key)
 }
 
 /**
  * Searches the map and returns the first value in sorted order that is <= key, if it exists
  */
-export function getLte_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
+export function getLte_<K, V>(m: OrderedMap<K, V>, key: K): Maybe<V> {
   const cmp     = m.ord.compare_
   let n         = m.root
-  let lastValue = O.none<V>()
+  let lastValue = M.nothing<V>()
   while (n) {
     const d = cmp(key, n.key)
     if (d > 0) {
-      if (lastValue._tag === 'Some') {
+      if (lastValue._tag === 'Just') {
         break
       }
       n = n.right
     } else {
-      lastValue = O.some(n.value)
+      lastValue = M.just(n.value)
       n         = n.left
     }
   }
@@ -293,21 +293,21 @@ export function getLte_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
 /**
  * Searches the map and returns the first value in sorted order that is <= key, if it exists
  */
-export function getLte<K>(key: K): <V>(m: OrderedMap<K, V>) => Option<V> {
+export function getLte<K>(key: K): <V>(m: OrderedMap<K, V>) => Maybe<V> {
   return (m) => getLte_(m, key)
 }
 
 /**
  * Searches the map and returns the first value in sorted order that is < key, if it exists
  */
-export function getLt_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
+export function getLt_<K, V>(m: OrderedMap<K, V>, key: K): Maybe<V> {
   const cmp     = m.ord.compare_
   let n         = m.root
-  let lastValue = O.none<V>()
+  let lastValue = M.nothing<V>()
   while (n) {
     const d = cmp(key, n.key)
     if (d > 0) {
-      lastValue = O.some(n.value)
+      lastValue = M.just(n.value)
     }
     if (d <= 0) {
       n = n.left
@@ -321,11 +321,11 @@ export function getLt_<K, V>(m: OrderedMap<K, V>, key: K): Option<V> {
 /**
  * Searches the map and returns the first value in sorted order that is < key, if it exists
  */
-export function getLt<K>(key: K): <V>(m: OrderedMap<K, V>) => Option<V> {
+export function getLt<K>(key: K): <V>(m: OrderedMap<K, V>) => Maybe<V> {
   return (m) => getLt_(m, key)
 }
 
-export function visitFull<K, V, A>(m: OrderedMap<K, V>, visit: (value: V, key: K) => Option<A>): Option<A> {
+export function visitFull<K, V, A>(m: OrderedMap<K, V>, visit: (value: V, key: K) => Maybe<A>): Maybe<A> {
   let current: RBNode<K, V>                = m.root
   let stack: Stack<Node<K, V>> | undefined = undefined
   let done = false
@@ -336,7 +336,7 @@ export function visitFull<K, V, A>(m: OrderedMap<K, V>, visit: (value: V, key: K
       current = current.left
     } else if (stack) {
       const v = visit(stack.value.value, stack.value.key)
-      if (v._tag === 'Some') {
+      if (v._tag === 'Just') {
         return v
       }
       current = stack.value.right
@@ -345,7 +345,7 @@ export function visitFull<K, V, A>(m: OrderedMap<K, V>, visit: (value: V, key: K
       done = true
     }
   }
-  return O.none()
+  return M.nothing()
 }
 
 /**
@@ -355,7 +355,7 @@ export function forEach_<K, V>(m: OrderedMap<K, V>, visit: (value: V, key: K) =>
   if (m.root) {
     visitFull(m, (v, k) => {
       visit(v, k)
-      return O.none()
+      return M.nothing()
     })
   }
 }
@@ -371,7 +371,7 @@ export function forEachLte_<K, V>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: 
   if (m.root) {
     visitLte(m, max, (k, v) => {
       visit(k, v)
-      return O.none()
+      return M.nothing()
     })
   }
 }
@@ -384,7 +384,7 @@ export function forEachLt_<K, V>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V
   if (m.root) {
     visitLt(m, max, (k, v) => {
       visit(k, v)
-      return O.none()
+      return M.nothing()
     })
   }
 }
@@ -397,7 +397,7 @@ export function forEachGte_<K, V>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: 
   if (m.root) {
     visitGte(m, min, (k, v) => {
       visit(k, v)
-      return O.none()
+      return M.nothing()
     })
   }
 }
@@ -410,7 +410,7 @@ export function forEachGt_<K, V>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V
   if (m.root) {
     visitGt(m, min, (k, v) => {
       visit(k, v)
-      return O.none()
+      return M.nothing()
     })
   }
 }
@@ -423,7 +423,7 @@ export function forEachBetween_<K, V>(m: OrderedMap<K, V>, min: K, max: K, visit
   if (m.root) {
     visitBetween(m, min, max, (k, v) => {
       visit(k, v)
-      return O.none()
+      return M.nothing()
     })
   }
 }
@@ -432,7 +432,7 @@ export function forEachBetween<K, V>(min: K, max: K, visit: (k: K, v: V) => void
   return (m) => forEachBetween_(m, min, max, visit)
 }
 
-export function visitLte<K, V, A>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V) => Option<A>): Option<A> {
+export function visitLte<K, V, A>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V) => Maybe<A>): Maybe<A> {
   let current: RBNode<K, V>                = m.root
   let stack: Stack<Node<K, V>> | undefined = undefined
   let done  = false
@@ -447,7 +447,7 @@ export function visitLte<K, V, A>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: 
         break
       }
       const v = visit(stack.value.key, stack.value.value)
-      if (v._tag === 'Some') {
+      if (v._tag === 'Just') {
         return v
       }
       current = stack.value.right
@@ -456,10 +456,10 @@ export function visitLte<K, V, A>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: 
       done = true
     }
   }
-  return O.none()
+  return M.nothing()
 }
 
-export function visitLt<K, V, A>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V) => Option<A>): Option<A> {
+export function visitLt<K, V, A>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V) => Maybe<A>): Maybe<A> {
   let current: RBNode<K, V>                = m.root
   let stack: Stack<Node<K, V>> | undefined = undefined
   let done  = false
@@ -474,7 +474,7 @@ export function visitLt<K, V, A>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V
         break
       }
       const v = visit(stack.value.key, stack.value.value)
-      if (v._tag === 'Some') {
+      if (v._tag === 'Just') {
         return v
       }
       current = stack.value.right
@@ -483,10 +483,10 @@ export function visitLt<K, V, A>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V
       done = true
     }
   }
-  return O.none()
+  return M.nothing()
 }
 
-export function visitGte<K, V, A>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V) => Option<A>): Option<A> {
+export function visitGte<K, V, A>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V) => Maybe<A>): Maybe<A> {
   let current: RBNode<K, V>                = m.root
   let stack: Stack<Node<K, V>> | undefined = undefined
   let done  = false
@@ -503,7 +503,7 @@ export function visitGte<K, V, A>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: 
     } else if (stack) {
       if (cmp(stack.value.key, min) >= 0) {
         const v = visit(stack.value.key, stack.value.value)
-        if (v._tag === 'Some') {
+        if (v._tag === 'Just') {
           return v
         }
       }
@@ -513,10 +513,10 @@ export function visitGte<K, V, A>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: 
       done = true
     }
   }
-  return O.none()
+  return M.nothing()
 }
 
-export function visitGt<K, V, A>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V) => Option<A>): Option<A> {
+export function visitGt<K, V, A>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V) => Maybe<A>): Maybe<A> {
   let current: RBNode<K, V>                = m.root
   let stack: Stack<Node<K, V>> | undefined = undefined
   let done  = false
@@ -533,7 +533,7 @@ export function visitGt<K, V, A>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V
     } else if (stack) {
       if (cmp(stack.value.key, min) > 0) {
         const v = visit(stack.value.key, stack.value.value)
-        if (v._tag === 'Some') {
+        if (v._tag === 'Just') {
           return v
         }
       }
@@ -543,15 +543,10 @@ export function visitGt<K, V, A>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V
       done = true
     }
   }
-  return O.none()
+  return M.nothing()
 }
 
-export function visitBetween<K, V, A>(
-  m: OrderedMap<K, V>,
-  min: K,
-  max: K,
-  visit: (k: K, v: V) => Option<A>
-): Option<A> {
+export function visitBetween<K, V, A>(m: OrderedMap<K, V>, min: K, max: K, visit: (k: K, v: V) => Maybe<A>): Maybe<A> {
   let current: RBNode<K, V>                = m.root
   let stack: Stack<Node<K, V>> | undefined = undefined
   let done  = false
@@ -570,7 +565,7 @@ export function visitBetween<K, V, A>(
         break
       }
       const v = visit(stack.value.key, stack.value.value)
-      if (v._tag === 'Some') {
+      if (v._tag === 'Just') {
         return v
       }
       current = stack.value.right
@@ -579,7 +574,7 @@ export function visitBetween<K, V, A>(
       done = true
     }
   }
-  return O.none()
+  return M.nothing()
 }
 
 /*
@@ -657,15 +652,15 @@ export function foldl<K, V, Z>(z: Z, f: (z: Z, v: V, k: K) => Z): (fa: OrderedMa
 /**
  * Returns the first ("smallest") element in the map
  */
-export function head<K, V>(m: OrderedMap<K, V>): Option<readonly [K, V]> {
-  return O.map_(headNode(m.root), (n) => [n.key, n.value])
+export function head<K, V>(m: OrderedMap<K, V>): Maybe<readonly [K, V]> {
+  return M.map_(headNode(m.root), (n) => [n.key, n.value])
 }
 
 /**
  * Returns the last ("largest") element in the map
  */
-export function last<K, V>(m: OrderedMap<K, V>): Option<readonly [K, V]> {
-  return O.map_(lastNode(m.root), (n) => [n.key, n.value])
+export function last<K, V>(m: OrderedMap<K, V>): Maybe<readonly [K, V]> {
+  return M.map_(lastNode(m.root), (n) => [n.key, n.value])
 }
 
 export function size<K, V>(m: OrderedMap<K, V>): number {
@@ -978,10 +973,10 @@ export function keys(direction: 0 | 1 = 0): <K, V>(m: OrderedMap<K, V>) => Itera
 /**
  * Returns a range of the map with keys >= min and < max
  */
-export function range_<K, V>(m: OrderedMap<K, V>, min: Option<K>, max: Option<K>): OrderedMap<K, V> {
+export function range_<K, V>(m: OrderedMap<K, V>, min: Maybe<K>, max: Maybe<K>): OrderedMap<K, V> {
   let r = make<K, V>(m.ord)
-  if (min._tag === 'Some') {
-    if (max._tag === 'Some') {
+  if (min._tag === 'Just') {
+    if (max._tag === 'Just') {
       forEachBetween_(m, min.value, max.value, (k, v) => {
         r = insert_(r, k, v)
       })
@@ -990,7 +985,7 @@ export function range_<K, V>(m: OrderedMap<K, V>, min: Option<K>, max: Option<K>
         r = insert_(r, k, v)
       })
     }
-  } else if (max._tag === 'Some') {
+  } else if (max._tag === 'Just') {
     forEachLt_(m, max.value, (k, v) => {
       r = insert_(r, k, v)
     })
@@ -1001,7 +996,7 @@ export function range_<K, V>(m: OrderedMap<K, V>, min: Option<K>, max: Option<K>
 /**
  * Returns a range of the map with keys >= min and < max
  */
-export function range<K>(min: Option<K>, max: Option<K>): <V>(m: OrderedMap<K, V>) => OrderedMap<K, V> {
+export function range<K>(min: Maybe<K>, max: Maybe<K>): <V>(m: OrderedMap<K, V>) => OrderedMap<K, V> {
   return (m) => range_(m, min, max)
 }
 
@@ -1051,31 +1046,31 @@ class OrderedMapIterator<K, V> implements Iterator<readonly [K, V]> {
   /**
    * Returns the current key
    */
-  get key(): O.Option<K> {
+  get key(): M.Maybe<K> {
     if (this.isEmpty) {
-      return O.none()
+      return M.nothing()
     }
-    return O.some(this.node!.key)
+    return M.just(this.node!.key)
   }
 
   /**
    * Returns the current value
    */
-  get value(): O.Option<V> {
+  get value(): M.Maybe<V> {
     if (this.isEmpty) {
-      return O.none()
+      return M.nothing()
     }
-    return O.some(this.node!.value)
+    return M.just(this.node!.value)
   }
 
   /**
    * Returns the current entry
    */
-  get entry(): O.Option<readonly [K, V]> {
+  get entry(): M.Maybe<readonly [K, V]> {
     if (this.isEmpty) {
-      return O.none()
+      return M.nothing()
     }
-    return O.some([this.stack[this.stack.length - 1].key, this.stack[this.stack.length - 1].value])
+    return M.just([this.stack[this.stack.length - 1].key, this.stack[this.stack.length - 1].value])
   }
 
   /**
@@ -1293,26 +1288,26 @@ export function blackHeight<K, V>(root: RBNode<K, V>): number {
   return x
 }
 
-function headNode<K, V>(root: RBNode<K, V>): Option<Node<K, V>> {
+function headNode<K, V>(root: RBNode<K, V>): Maybe<Node<K, V>> {
   if (root === Leaf) {
-    return O.none()
+    return M.nothing()
   }
   let n: Node<K, V> = root
   while (n.left) {
     n = n.left
   }
-  return O.some(n)
+  return M.just(n)
 }
 
-function lastNode<K, V>(root: RBNode<K, V>): Option<Node<K, V>> {
+function lastNode<K, V>(root: RBNode<K, V>): Maybe<Node<K, V>> {
   if (root === Leaf) {
-    return O.none()
+    return M.nothing()
   }
   let n: Node<K, V> = root
   while (n.right) {
     n = n.right
   }
-  return O.some(n)
+  return M.just(n)
 }
 
 type Color = 0 | 1

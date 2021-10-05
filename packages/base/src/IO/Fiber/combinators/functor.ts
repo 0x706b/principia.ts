@@ -1,7 +1,7 @@
 import type { Fiber, SyntheticFiber } from '../core'
 
+import * as M from '../../../Maybe'
 import * as Ex from '../../Exit'
-import * as O from '../../../Option'
 import * as I from '../internal/io'
 
 /**
@@ -16,9 +16,9 @@ export function mapIO_<E, E1, A, B>(fiber: Fiber<E, A>, f: (a: A) => I.FIO<E1, B
     interruptAs: (id) => I.chain_(fiber.interruptAs(id), Ex.foreachIO(f)),
     poll: I.chain_(
       fiber.poll,
-      O.match(
-        () => I.pure(O.none()),
-        (a) => I.map_(Ex.foreachIO_(a, f), O.some)
+      M.match(
+        () => I.pure(M.nothing()),
+        (a) => I.map_(Ex.foreachIO_(a, f), M.just)
       )
     )
   }

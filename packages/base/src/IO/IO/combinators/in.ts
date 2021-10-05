@@ -7,7 +7,7 @@ import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
 import * as A from '../../../Array/core'
 import { pipe } from '../../../function'
-import * as O from '../../../Option'
+import * as M from '../../../Maybe'
 import * as F from '../../Fiber'
 import { chain } from '../core'
 import { forkDaemon } from './core-scope'
@@ -38,7 +38,7 @@ export function in_<R, E, A>(io: IO<R, E, A>, scope: Scope<any>): IO<R, E, A> {
                   pipe(
                     Array.from(interruptors),
                     A.head,
-                    O.match(
+                    M.match(
                       () => F.interrupt(executor),
                       (id) => executor.interruptAs(id)
                     )

@@ -5,10 +5,10 @@ import type { Exit } from '../../Exit'
 
 import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
-import * as Ex from '../../Exit'
 import { pipe } from '../../../function'
+import * as M from '../../../Maybe'
+import * as Ex from '../../Exit'
 import { foreachExec as foreachExecIO } from '../../IO/combinators/foreachExec'
-import * as O from '../../../Option'
 import * as Ref from '../../Ref'
 import * as I from '../internal/io'
 import * as RM from '../ReleaseMap'
@@ -36,7 +36,7 @@ export function releaseAll_(rm: RM.ReleaseMap, exit: Exit<any, any>, execStrateg
               I.chain((e) =>
                 pipe(
                   execStrategy._tag === 'Sequential' ? Ex.collectAll(...e) : Ex.collectAllPar(...e),
-                  O.getOrElse(() => Ex.succeed([])),
+                  M.getOrElse(() => Ex.succeed([])),
                   I.fromExit
                 )
               )

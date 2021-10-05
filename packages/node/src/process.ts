@@ -9,7 +9,7 @@ import * as I from '@principia/base/IO'
 import * as S from '@principia/base/IO/Stream'
 import * as Push from '@principia/base/IO/Stream/Push'
 import * as Sink from '@principia/base/IO/Stream/Sink'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import * as Sy from '@principia/base/Sync'
 import { tuple } from '@principia/base/tuple'
 import { once } from 'events'
@@ -28,7 +28,7 @@ export const stdin: S.FStream<StdinError, Byte> = pipe(
           cb(I.succeed(C.fromBuffer(data)))
         }
         const onError = (err: Error) => {
-          cb(I.fail(O.some(new StdinError(err))))
+          cb(I.fail(M.just(new StdinError(err))))
         }
         cleanup.push(
           () => {
@@ -59,7 +59,7 @@ export class StdoutError {
 }
 
 export const stdout: Sink.Sink<unknown, StdoutError, Buffer, never, void> = Sink.fromPush((is) =>
-  O.match_(
+  M.match_(
     is,
     () => Push.emit(undefined, C.empty()),
     (bufs) =>

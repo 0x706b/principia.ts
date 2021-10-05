@@ -16,9 +16,9 @@ import type {
 import type { TaggedUnionS } from './Schema/taggedUnion'
 import type { CastToNumber } from './util'
 import type { Chunk } from '@principia/base/Chunk'
+import type { Maybe } from '@principia/base/Maybe'
 import type { Newtype } from '@principia/base/Newtype'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
-import type { Option } from '@principia/base/Option'
 import type { Eq, Predicate } from '@principia/base/prelude'
 import type { Refinement } from '@principia/base/Refinement'
 import type { Primitive, UnionToIntersection } from '@principia/base/util/types'
@@ -60,9 +60,9 @@ type EnsureTag<F extends URIS, T extends string, M> = {
 export interface RequiredSchemable<F extends URIS> {
   URI: F
 
-  readonly identity: <U extends Exclude<URIS, IdentityOmitURIS>, A>(
-    identities: { [K in U | IdentityRequireURIS]: Kind<K, A, A, never, never, A, A> }
-  ) => Kind<F, A, A, never, never, A, A>
+  readonly identity: <U extends Exclude<URIS, IdentityOmitURIS>, A>(identities: {
+    [K in U | IdentityRequireURIS]: Kind<K, A, A, never, never, A, A>
+  }) => Kind<F, A, A, never, never, A, A>
 
   /*
    * -------------------------------------------
@@ -97,7 +97,7 @@ export interface RequiredSchemable<F extends URIS> {
   readonly nullable: <I, CI, E, CE, A, O>(
     or: Kind<F, I, CI, E, CE, A, O>,
     _: Schema<CoreURIS | F, I, CI, E, CE, A, O, unknown>
-  ) => Kind<F, null | undefined | I, Option<CI>, PE.NullableE<E>, PE.OptionalE<CE>, Option<A>, null | O>
+  ) => Kind<F, null | undefined | I, Maybe<CI>, PE.NullableE<E>, PE.OptionalE<CE>, Maybe<A>, null | O>
 
   readonly struct: <P extends Record<string, AnyUKind<F>>>(
     properties: P,
@@ -266,7 +266,7 @@ export interface RequiredSchemable<F extends URIS> {
     _: Schema<CoreURIS | F, I, CI, E, CE, A, O, unknown>,
     refinement: Refinement<A, B>,
     error: (a: A) => E1,
-    warn: (a: B) => Option<W>,
+    warn: (a: B) => Maybe<W>,
     label: string
   ) => Kind<F, I, CI, AndThenE<E, PE.RefinementE<E1 | W>>, AndThenE<CE, PE.RefinementE<E1 | W>>, B, O>
 
@@ -281,7 +281,7 @@ export interface RequiredSchemable<F extends URIS> {
     _: Schema<CoreURIS | F, I, CI, E, CE, A, O, unknown>,
     predicate: Predicate<A>,
     error: (a: A) => E1,
-    warn: (a: A) => Option<W>,
+    warn: (a: A) => Maybe<W>,
     label: string
   ) => Kind<F, I, CI, AndThenE<E, PE.RefinementE<E1 | W>>, AndThenE<CE, PE.RefinementE<E1 | W>>, A, O>
 
@@ -540,7 +540,7 @@ export interface WithFromRefinement<F extends URIS> {
   readonly fromRefinement: <E, W, A>(
     refinement: Refinement<unknown, A>,
     error: (u: unknown) => E,
-    warn: (u: unknown) => Option<W>,
+    warn: (u: unknown) => Maybe<W>,
     label: string
   ) => Kind<F, unknown, PE.RefinementE<E | W>, A, A, never, A>
 }
@@ -548,5 +548,5 @@ export interface WithFromRefinement<F extends URIS> {
 export interface WithOptional<F extends URIS> {
   readonly optional: <I, E, A, CI, CE, O>(
     or: Kind<F, I, E, A, CI, CE, O>
-  ) => Kind<F, null | undefined | I, PE.OptionalE<E>, Option<A>, Option<A>, never, null | O>
+  ) => Kind<F, null | undefined | I, PE.OptionalE<E>, Maybe<A>, Maybe<A>, never, null | O>
 }

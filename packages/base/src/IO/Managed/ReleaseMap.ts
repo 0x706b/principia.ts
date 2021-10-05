@@ -1,11 +1,11 @@
+import type { Maybe } from '../../Maybe'
 import type { Exit } from '../Exit'
-import type { Option } from '../../Option'
 import type { URef } from '../Ref/core'
 
 import { absurd, flow, identity, increment, pipe } from '../../function'
-import * as M from '../../Map'
-import * as O from '../../Option'
-import { none, some } from '../../Option'
+import * as Mp from '../../Map'
+import * as M from '../../Maybe'
+import { just, nothing } from '../../Maybe'
 import * as I from '../IO/core'
 import * as XR from '../Ref/core'
 
@@ -41,18 +41,18 @@ export function finalizers(state: Running): ReadonlyMap<number, Finalizer> {
 
 export const noopFinalizer: Finalizer = () => I.unit()
 
-export function addIfOpen(_: ReleaseMap, finalizer: Finalizer): I.UIO<Option<number>> {
+export function addIfOpen(_: ReleaseMap, finalizer: Finalizer): I.UIO<Maybe<number>> {
   return pipe(
     _.ref,
-    XR.modify<I.IO<unknown, never, Option<number>>, State>((s) => {
+    XR.modify<I.IO<unknown, never, Maybe<number>>, State>((s) => {
       switch (s._tag) {
         case 'Exited': {
-          return [I.map_(finalizer(s.exit), () => none()), new Exited(increment(s.nextKey), s.exit, s.update)]
+          return [I.map_(finalizer(s.exit), () => nothing()), new Exited(increment(s.nextKey), s.exit, s.update)]
         }
         case 'Running': {
           return [
-            I.pure(some(s.nextKey)),
-            new Running(increment(s.nextKey), M.insert(s.nextKey, finalizer)(finalizers(s)), s.update)
+            I.pure(just(s.nextKey)),
+            new Running(increment(s.nextKey), Mp.insert(s.nextKey, finalizer)(finalizers(s)), s.update)
           ]
         }
       }
@@ -71,12 +71,12 @@ export function release(_: ReleaseMap, key: number, exit: Exit<any, any>): I.IO<
         }
         case 'Running': {
           return [
-            O.match_(
-              M.lookup_(s.finalizers(), key),
+            M.match_(
+              Mp.lookup_(s.finalizers(), key),
               () => I.unit(),
               (f) => s.update(f)(exit)
             ),
-            new Running(s.nextKey, M.remove_(s.finalizers(), key), s.update)
+            new Running(s.nextKey, Mp.remove_(s.finalizers(), key), s.update)
           ]
         }
       }
@@ -88,7 +88,7 @@ export function release(_: ReleaseMap, key: number, exit: Exit<any, any>): I.IO<
 export function add(_: ReleaseMap, finalizer: Finalizer): I.UIO<Finalizer> {
   return I.map_(
     addIfOpen(_, finalizer),
-    O.match(
+    M.match(
       (): Finalizer => () => I.unit(),
       (k): Finalizer =>
         (e) =>
@@ -97,17 +97,17 @@ export function add(_: ReleaseMap, finalizer: Finalizer): I.UIO<Finalizer> {
   )
 }
 
-export function replace(_: ReleaseMap, key: number, finalizer: Finalizer): I.UIO<Option<Finalizer>> {
+export function replace(_: ReleaseMap, key: number, finalizer: Finalizer): I.UIO<Maybe<Finalizer>> {
   return pipe(
     _.ref,
-    XR.modify<I.IO<unknown, never, Option<Finalizer>>, State>((s) => {
+    XR.modify<I.IO<unknown, never, Maybe<Finalizer>>, State>((s) => {
       switch (s._tag) {
         case 'Exited':
-          return [I.map_(finalizer(s.exit), () => none()), new Exited(s.nextKey, s.exit, s.update)]
+          return [I.map_(finalizer(s.exit), () => nothing()), new Exited(s.nextKey, s.exit, s.update)]
         case 'Running':
           return [
-            I.succeed(M.lookup_(finalizers(s), key)),
-            new Running(s.nextKey, M.insert_(finalizers(s), key, finalizer), s.update)
+            I.succeed(Mp.lookup_(finalizers(s), key)),
+            new Running(s.nextKey, Mp.insert_(finalizers(s), key, finalizer), s.update)
           ]
         default:
           return absurd(s)

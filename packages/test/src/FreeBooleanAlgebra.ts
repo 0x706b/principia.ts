@@ -7,7 +7,7 @@ import * as E from '@principia/base/Either'
 import * as Ev from '@principia/base/Eval'
 import { flow, identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import { Semigroup } from '@principia/base/Semigroup'
 
 /*
@@ -292,7 +292,7 @@ export function isFalse<A>(ba: FreeBooleanAlgebra<A>): boolean {
   return !isTrue(ba)
 }
 
-export function failures<A>(ba: FreeBooleanAlgebra<A>): O.Option<FreeBooleanAlgebra<A>> {
+export function failures<A>(ba: FreeBooleanAlgebra<A>): M.Maybe<FreeBooleanAlgebra<A>> {
   return E.match_(
     fold_<A, E.Either<FreeBooleanAlgebra<A>, FreeBooleanAlgebra<A>>>(
       ba,
@@ -315,8 +315,8 @@ export function failures<A>(ba: FreeBooleanAlgebra<A>): O.Option<FreeBooleanAlge
           : E.left(or_(l.left, r.left)),
       E.swap
     ),
-    O.some,
-    () => O.none()
+    M.just,
+    () => M.nothing()
   )
 }
 

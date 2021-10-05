@@ -3,7 +3,7 @@ import type { Equatable, Hashable } from './Structural'
 import * as E from './Either'
 import * as HM from './HashMap'
 import * as It from './Iterable/core'
-import * as O from './Option'
+import * as M from './Maybe'
 import { not } from './Predicate'
 import * as P from './prelude'
 import * as Eq from './Structural/Equatable'
@@ -261,12 +261,12 @@ export function filter_<A>(set: HashSet<A>, predicate: P.Predicate<A>): HashSet<
   })
 }
 
-export function filterMap_<B>(B: HM.Config<B>): <A>(fa: HashSet<A>, f: (a: A) => O.Option<B>) => HashSet<B> {
+export function filterMap_<B>(B: HM.Config<B>): <A>(fa: HashSet<A>, f: (a: A) => M.Maybe<B>) => HashSet<B> {
   return (fa, f) => {
     const out = beginMutation(make(B))
     for (const a of fa) {
       const ob = f(a)
-      if (O.isSome(ob)) {
+      if (M.isJust(ob)) {
         add_(out, ob.value)
       }
     }
@@ -277,7 +277,7 @@ export function filterMap_<B>(B: HM.Config<B>): <A>(fa: HashSet<A>, f: (a: A) =>
 /**
  * @dataFirst filterMap_
  */
-export function filterMap<B>(B: HM.Config<B>): <A>(f: (a: A) => O.Option<B>) => (fa: HashSet<A>) => HashSet<B> {
+export function filterMap<B>(B: HM.Config<B>): <A>(f: (a: A) => M.Maybe<B>) => (fa: HashSet<A>) => HashSet<B> {
   return (f) => (fa) => filterMap_(B)(fa, f)
 }
 

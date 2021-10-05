@@ -1,6 +1,6 @@
 import type { Fiber } from '../core'
 
-import * as O from '../../../Option'
+import * as M from '../../../Maybe'
 import { syntheticFiber } from '../core'
 import * as I from '../internal/io'
 
@@ -13,5 +13,5 @@ export const never: Fiber<never, never> = syntheticFiber({
   getRef: (fiberRef) => I.succeed(fiberRef.initial),
   interruptAs: () => I.never,
   inheritRefs: I.unit(),
-  poll: I.succeed(O.none())
+  poll: I.succeed(M.nothing())
 })

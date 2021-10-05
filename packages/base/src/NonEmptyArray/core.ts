@@ -12,7 +12,7 @@ import * as G from '../Guard'
 import * as _ from '../internal/Array'
 import * as Th from '../internal/These'
 import { tuple } from '../internal/tuple'
-import * as O from '../Option'
+import * as M from '../Maybe'
 import * as Ord from '../Ord'
 import * as P from '../prelude'
 import * as S from '../Semigroup'
@@ -119,8 +119,8 @@ export function append<B>(last: B): <A>(init: ReadonlyArray<A>) => NonEmptyArray
  * @category Constructors
  * @since 1.0.0
  */
-export function fromArray<A>(as: ReadonlyArray<A>): O.Option<NonEmptyArray<A>> {
-  return _.isNonEmpty(as) ? O.some(as) : O.none()
+export function fromArray<A>(as: ReadonlyArray<A>): M.Maybe<NonEmptyArray<A>> {
+  return _.isNonEmpty(as) ? M.just(as) : M.nothing()
 }
 
 /**
@@ -937,15 +937,15 @@ export function groupBy<A>(f: (a: A) => string): (as: ReadonlyArray<A>) => Reado
  * @category combinators
  * @since 1.0.0
  */
-export function insertAt_<A>(as: NonEmptyArray<A>, i: number, a: A): O.Option<NonEmptyArray<A>> {
-  return isOutOfBound_(as, i) ? O.none() : O.some(unsafeInsertAt_(as, i, a))
+export function insertAt_<A>(as: NonEmptyArray<A>, i: number, a: A): M.Maybe<NonEmptyArray<A>> {
+  return isOutOfBound_(as, i) ? M.nothing() : M.just(unsafeInsertAt_(as, i, a))
 }
 
 /**
  * @category combinators
  * @since 1.0.0
  */
-export function insertAt<A>(i: number, a: A): (as: NonEmptyArray<A>) => O.Option<NonEmptyArray<A>> {
+export function insertAt<A>(i: number, a: A): (as: NonEmptyArray<A>) => M.Maybe<NonEmptyArray<A>> {
   return (as) => insertAt_(as, i, a)
 }
 
@@ -972,8 +972,8 @@ export function intersperce<A>(a: A): (as: NonEmptyArray<A>) => NonEmptyArray<A>
  *
  * @since 1.0.0
  */
-export function modifyAt_<A>(as: NonEmptyArray<A>, i: number, f: (a: A) => A): O.Option<NonEmptyArray<A>> {
-  return isOutOfBound_(as, i) ? O.none() : O.some(unsafeModifyAt_(as, i, f))
+export function modifyAt_<A>(as: NonEmptyArray<A>, i: number, f: (a: A) => A): M.Maybe<NonEmptyArray<A>> {
+  return isOutOfBound_(as, i) ? M.nothing() : M.just(unsafeModifyAt_(as, i, f))
 }
 
 /**
@@ -982,7 +982,7 @@ export function modifyAt_<A>(as: NonEmptyArray<A>, i: number, f: (a: A) => A): O
  *
  * @since 1.0.0
  */
-export function modifyAt<A>(i: number, f: (a: A) => A): (as: NonEmptyArray<A>) => O.Option<NonEmptyArray<A>> {
+export function modifyAt<A>(i: number, f: (a: A) => A): (as: NonEmptyArray<A>) => M.Maybe<NonEmptyArray<A>> {
   return (as) => modifyAt_(as, i, f)
 }
 
@@ -1085,11 +1085,11 @@ export function splitAt(n: number): <A>(as: NonEmptyArray<A>) => readonly [NonEm
   return (as) => splitAt_(as, n)
 }
 
-export function updateAt_<A>(as: NonEmptyArray<A>, i: number, a: A): O.Option<NonEmptyArray<A>> {
-  return isOutOfBound_(as, i) ? O.none() : O.some(unsafeUpdateAt_(as, i, a))
+export function updateAt_<A>(as: NonEmptyArray<A>, i: number, a: A): M.Maybe<NonEmptyArray<A>> {
+  return isOutOfBound_(as, i) ? M.nothing() : M.just(unsafeUpdateAt_(as, i, a))
 }
 
-export function updateAt<A>(i: number, a: A): (as: NonEmptyArray<A>) => O.Option<NonEmptyArray<A>> {
+export function updateAt<A>(i: number, a: A): (as: NonEmptyArray<A>) => M.Maybe<NonEmptyArray<A>> {
   return (as) => updateAt_(as, i, a)
 }
 

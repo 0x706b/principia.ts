@@ -3,7 +3,7 @@ import type { MapURI } from './Modules'
 
 import * as E from './Either'
 import { pipe } from './function'
-import * as O from './Option'
+import * as M from './Maybe'
 import * as P from './prelude'
 
 type URI = [HKT.URI<MapURI>]
@@ -50,7 +50,7 @@ export function fromFoldable<F extends HKT.URIS, K, A, C = HKT.Auto>(
     const lookupWithKeyE_ = lookupWithKey_(E)
     return F.foldl_(fka, new Map<K, A>(), (b, [k, a]) => {
       const oka = lookupWithKeyE_(b, k)
-      if (oka._tag === 'Some') {
+      if (oka._tag === 'Just') {
         b.set(oka.value[0], S.combine_(oka.value[1], a))
       } else {
         b.set(k, a)
@@ -90,7 +90,7 @@ export function isSubmap_<K, A>(EK: P.Eq<K>, EA: P.Eq<A>): (me: ReadonlyMap<K, A
     while (!(e = entries.next()).done) {
       const [k, a] = e.value
       const d2OptA = lookupWithKeyE(k)(that)
-      if (O.isNone(d2OptA) || !EK.equals_(k, d2OptA.value[0]) || !EA.equals_(a, d2OptA.value[1])) {
+      if (M.isNothing(d2OptA) || !EK.equals_(k, d2OptA.value[0]) || !EA.equals_(a, d2OptA.value[1])) {
         return false
       }
     }
@@ -125,16 +125,16 @@ export function toMutable<K, A>(m: ReadonlyMap<K, A>): Map<K, A> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function lookupAt_<K>(E: P.Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => O.Option<A> {
+export function lookupAt_<K>(E: P.Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => M.Maybe<A> {
   const lookupWithKeyE_ = lookupWithKey_(E)
   return (m, k) =>
     pipe(
       lookupWithKeyE_(m, k),
-      O.map(([_, a]) => a)
+      M.map(([_, a]) => a)
     )
 }
 
-export function lookupAt<K>(E: P.Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => O.Option<A> {
+export function lookupAt<K>(E: P.Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => M.Maybe<A> {
   const lookupE_ = lookupAt_(E)
   return (k) => (m) => lookupE_(m, k)
 }
@@ -143,7 +143,7 @@ export function insertAt_<K>(E: P.Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K, a: A) 
   const lookupWithKeyE_ = lookupWithKey_(E)
   return (m, k, a) => {
     const found = lookupWithKeyE_(m, k)
-    if (O.isNone(found)) {
+    if (M.isNothing(found)) {
       const r = new Map(m)
       r.set(k, a)
       return r
@@ -165,7 +165,7 @@ export function deleteAt_<K>(E: P.Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => Rea
   const lookupWithKeyE_ = lookupWithKey_(E)
   return (m, k) => {
     const found = lookupWithKeyE_(m, k)
-    if (O.isSome(found)) {
+    if (M.isJust(found)) {
       const r = new Map(m)
       r.delete(found.value[0])
       return r
@@ -179,57 +179,57 @@ export function deleteAt<K>(E: P.Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => 
   return (k) => (m) => deleteAtE_(m, k)
 }
 
-export function updateAt_<K>(E: P.Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K, a: A) => O.Option<ReadonlyMap<K, A>> {
+export function updateAt_<K>(E: P.Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K, a: A) => M.Maybe<ReadonlyMap<K, A>> {
   const lookupWithKeyE_ = lookupWithKey_(E)
   return (m, k, a) => {
     const found = lookupWithKeyE_(m, k)
-    if (O.isNone(found)) {
-      return O.none()
+    if (M.isNothing(found)) {
+      return M.nothing()
     }
     const r = new Map(m)
     r.set(found.value[0], a)
-    return O.some(r)
+    return M.just(r)
   }
 }
 
-export function updateAt<K>(E: P.Eq<K>): <A>(k: K, a: A) => (m: ReadonlyMap<K, A>) => O.Option<ReadonlyMap<K, A>> {
+export function updateAt<K>(E: P.Eq<K>): <A>(k: K, a: A) => (m: ReadonlyMap<K, A>) => M.Maybe<ReadonlyMap<K, A>> {
   const updateAtE_ = updateAt_(E)
   return (k, a) => (m) => updateAtE_(m, k, a)
 }
 
 export function modifyAt_<K>(
   E: P.Eq<K>
-): <A>(m: ReadonlyMap<K, A>, k: K, f: (a: A) => A) => O.Option<ReadonlyMap<K, A>> {
+): <A>(m: ReadonlyMap<K, A>, k: K, f: (a: A) => A) => M.Maybe<ReadonlyMap<K, A>> {
   const lookupWithKeyE_ = lookupWithKey_(E)
   return (m, k, f) => {
     const found = lookupWithKeyE_(m, k)
-    if (O.isNone(found)) {
-      return O.none()
+    if (M.isNothing(found)) {
+      return M.nothing()
     }
     const r = new Map(m)
     r.set(found.value[0], f(found.value[1]))
-    return O.some(r)
+    return M.just(r)
   }
 }
 
 export function modifyAt<K>(
   E: P.Eq<K>
-): <A>(k: K, f: (a: A) => A) => (m: ReadonlyMap<K, A>) => O.Option<ReadonlyMap<K, A>> {
+): <A>(k: K, f: (a: A) => A) => (m: ReadonlyMap<K, A>) => M.Maybe<ReadonlyMap<K, A>> {
   const modifyAtE_ = modifyAt_(E)
   return (k, f) => (m) => modifyAtE_(m, k, f)
 }
 
-export function pop_<K>(E: P.Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => O.Option<readonly [A, ReadonlyMap<K, A>]> {
+export function pop_<K>(E: P.Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => M.Maybe<readonly [A, ReadonlyMap<K, A>]> {
   const lookupE_   = lookupAt_(E)
   const deleteAtE_ = deleteAt_(E)
   return (m, k) =>
     pipe(
       lookupE_(m, k),
-      O.map((a) => [a, deleteAtE_(m, k)])
+      M.map((a) => [a, deleteAtE_(m, k)])
     )
 }
 
-export function pop<K>(E: P.Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => O.Option<readonly [A, ReadonlyMap<K, A>]> {
+export function pop<K>(E: P.Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => M.Maybe<readonly [A, ReadonlyMap<K, A>]> {
   const popE_ = pop_(E)
   return (k) => (m) => popE_(m, k)
 }
@@ -266,29 +266,29 @@ export function removeMany<K>(ks: Iterable<K>): <A>(m: ReadonlyMap<K, A>) => Rea
   return (m) => removeMany_(m, ks)
 }
 
-export function lookup_<K, A>(m: ReadonlyMap<K, A>, k: K): O.Option<A> {
-  return O.fromNullable(m.get(k))
+export function lookup_<K, A>(m: ReadonlyMap<K, A>, k: K): M.Maybe<A> {
+  return M.fromNullable(m.get(k))
 }
 
-export function lookup<K>(k: K): <A>(m: ReadonlyMap<K, A>) => O.Option<A> {
+export function lookup<K>(k: K): <A>(m: ReadonlyMap<K, A>) => M.Maybe<A> {
   return (m) => lookup_(m, k)
 }
 
 export function lookupWithKey_<K>(E: P.Eq<K>) {
-  return <A>(m: ReadonlyMap<K, A>, k: K): O.Option<readonly [K, A]> => {
+  return <A>(m: ReadonlyMap<K, A>, k: K): M.Maybe<readonly [K, A]> => {
     const entries = m.entries()
     let e: IteratorResult<readonly [K, A]>
     while (!(e = entries.next()).done) {
       const [ka, a] = e.value
       if (E.equals_(ka, k)) {
-        return O.some([ka, a])
+        return M.just([ka, a])
       }
     }
-    return O.none()
+    return M.nothing()
   }
 }
 
-export function lookupWithKey<K>(E: P.Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => O.Option<readonly [K, A]> {
+export function lookupWithKey<K>(E: P.Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => M.Maybe<readonly [K, A]> {
   const lookupWithKeyE_ = lookupWithKey_(E)
   return (k) => (m) => lookupWithKeyE_(m, k)
 }
@@ -303,13 +303,13 @@ export function lookupWithKey<K>(E: P.Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>
  * @category Compactable
  * @since 1.0.0
  */
-export function compact<K, A>(fa: ReadonlyMap<K, O.Option<A>>): ReadonlyMap<K, A> {
+export function compact<K, A>(fa: ReadonlyMap<K, M.Maybe<A>>): ReadonlyMap<K, A> {
   const m       = new Map<K, A>()
   const entries = fa.entries()
-  let e: IteratorResult<readonly [K, O.Option<A>]>
+  let e: IteratorResult<readonly [K, M.Maybe<A>]>
   while (!(e = entries.next()).done) {
     const [k, oa] = e.value
-    if (oa._tag === 'Some') {
+    if (oa._tag === 'Just') {
       m.set(k, oa.value)
     }
   }
@@ -361,14 +361,14 @@ export function getEq<K, A>(EK: P.Eq<K>, EA: P.Eq<A>): P.Eq<ReadonlyMap<K, A>> {
 /**
  * Filter out `None` and map
  */
-export function filterMap_<K, A, B>(fa: ReadonlyMap<K, A>, f: (a: A, k: K) => O.Option<B>): ReadonlyMap<K, B> {
+export function filterMap_<K, A, B>(fa: ReadonlyMap<K, A>, f: (a: A, k: K) => M.Maybe<B>): ReadonlyMap<K, B> {
   const m       = new Map<K, B>()
   const entries = fa.entries()
   let e: IteratorResult<readonly [K, A]>
   while (!(e = entries.next()).done) {
     const [k, a] = e.value
     const o      = f(a, k)
-    if (o._tag === 'Some') {
+    if (o._tag === 'Just') {
       m.set(k, o.value)
     }
   }
@@ -378,7 +378,7 @@ export function filterMap_<K, A, B>(fa: ReadonlyMap<K, A>, f: (a: A, k: K) => O.
 /**
  * Filter out `None` and map
  */
-export function filterMap<K, A, B>(f: (a: A, k: K) => O.Option<B>): (fa: ReadonlyMap<K, A>) => ReadonlyMap<K, B> {
+export function filterMap<K, A, B>(f: (a: A, k: K) => M.Maybe<B>): (fa: ReadonlyMap<K, A>) => ReadonlyMap<K, B> {
   return (fa) => filterMap_(fa, f)
 }
 
@@ -595,7 +595,7 @@ export function getMonoid<K, A>(SK: P.Eq<K>, SA: P.Semigroup<A>): P.Monoid<Reado
     while (!(e = entries.next()).done) {
       const [k, a] = e.value
       const mxOptA = lookupWithKeyK_(mx, k)
-      if (O.isSome(mxOptA)) {
+      if (M.isJust(mxOptA)) {
         r.set(mxOptA.value[0], SA.combine_(mxOptA.value[1], a))
       } else {
         r.set(k, a)

@@ -5,7 +5,7 @@ import type { Future } from '../Future'
 
 import * as C from '../../Chunk/core'
 import { flow, identity, pipe } from '../../function'
-import * as O from '../../Option'
+import * as M from '../../Maybe'
 import { tuple } from '../../tuple'
 import { AtomicBoolean } from '../../util/support/AtomicBoolean'
 import { Bounded, Unbounded } from '../../util/support/MutableQueue'
@@ -689,7 +689,7 @@ export class FilterInputIO<RA, RB, EA, EB, B, A, A1 extends A, R2, E2> extends Q
       I.foreach((a) =>
         pipe(
           this.f(a),
-          I.map((b) => (b ? O.some(a) : O.none()))
+          I.map((b) => (b ? M.just(a) : M.nothing()))
         )
       ),
       I.chain((maybeAs) => {
@@ -872,7 +872,7 @@ export function map<B, C>(
 /**
  * Take the head option of values in the queue.
  */
-export function poll<RA, RB, EA, EB, A, B>(queue: Queue<RA, RB, EA, EB, A, B>): IO<RB, EB, O.Option<B>> {
+export function poll<RA, RB, EA, EB, A, B>(queue: Queue<RA, RB, EA, EB, A, B>): IO<RB, EB, M.Maybe<B>> {
   concrete(queue)
   return I.map_(queue.takeUpTo(1), C.head)
 }

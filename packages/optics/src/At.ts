@@ -1,6 +1,6 @@
 import type { Lens } from './Lens'
 
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import * as R from '@principia/base/Record'
 
 import * as _ from './internal'
@@ -52,13 +52,13 @@ export function fromIso<T, S>(iso: Iso<T, S>): <I, A>(sia: At<S, I, A>) => At<T,
  * @category Constructors
  * @since 1.0.0
  */
-export function atRecord<A = never>(): At<Readonly<Record<string, A>>, string, O.Option<A>> {
+export function atRecord<A = never>(): At<Readonly<Record<string, A>>, string, M.Maybe<A>> {
   return At({
     at: (key) =>
       _.makePLens({
         get: (r) => R.lookup_(r, key),
         replace_: (s, b) =>
-          O.match_(
+          M.match_(
             b,
             () => R.deleteAt_(s, key),
             (a) => R.upsertAt_(s, key, a)

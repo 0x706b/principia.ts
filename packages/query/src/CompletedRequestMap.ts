@@ -4,7 +4,7 @@ import type { HashSet } from '@principia/base/HashSet'
 
 import * as E from '@principia/base/Either'
 import * as HM from '@principia/base/HashMap'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 
 export class CompletedRequestMap {
   constructor(private map: HashMap<AnyRequest, E.Either<any, any>>) {}
@@ -27,18 +27,18 @@ export class CompletedRequestMap {
     return HM.has_(this.map, request)
   }
 
-  insertOption = <E, A>(request: Request<E, A>, result: E.Either<E, O.Option<A>>): CompletedRequestMap => {
+  insertOption = <E, A>(request: Request<E, A>, result: E.Either<E, M.Maybe<A>>): CompletedRequestMap => {
     return E.match_(
       result,
       (e) => this.insert(request, E.left(e)),
-      O.match(
+      M.match(
         () => this,
         (a) => this.insert(request, E.right(a))
       )
     )
   }
 
-  lookup = <E, A>(request: Request<E, A>): O.Option<E.Either<E, A>> => {
+  lookup = <E, A>(request: Request<E, A>): M.Maybe<E.Either<E, A>> => {
     return HM.get_(this.map, request)
   }
 

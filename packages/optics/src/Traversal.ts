@@ -1,6 +1,6 @@
 import type { TraversalURI } from './Modules'
 import type * as HKT from '@principia/base/HKT'
-import type * as O from '@principia/base/Option'
+import type * as M from '@principia/base/Maybe'
 import type { Predicate } from '@principia/base/Predicate'
 import type { Refinement } from '@principia/base/Refinement'
 
@@ -224,17 +224,17 @@ export function key<S, A>(sa: Traversal<S, Readonly<Record<string, A>>>, key: st
  * @category Combinators
  * @since 1.0.0
  */
-export function atKey<S, A>(sa: Traversal<S, Readonly<Record<string, A>>>, key: string): Traversal<S, O.Option<A>> {
+export function atKey<S, A>(sa: Traversal<S, Readonly<Record<string, A>>>, key: string): Traversal<S, M.Maybe<A>> {
   return pipe(sa, andThen(At.atRecord<A>().at(key)))
 }
 
 /**
- * Return a `Traversal` from a `Traversal` focused on the `Some` of a `Option` type
+ * Return a `Traversal` from a `Traversal` focused on the `Just` of a `Maybe` type
  *
  * @category Combinators
  * @since 1.0.0
  */
-export const some: <S, A>(soa: Traversal<S, O.Option<A>>) => Traversal<S, A> = andThen(_.prismSome())
+export const just: <S, A>(soa: Traversal<S, M.Maybe<A>>) => Traversal<S, A> = andThen(_.prismJust())
 
 /**
  * Return a `Traversal` from a `Traversal` focused on the `Right` of a `Either` type

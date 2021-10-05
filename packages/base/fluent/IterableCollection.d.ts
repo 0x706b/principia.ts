@@ -3,7 +3,7 @@ import type { Eval } from '@principia/base/Eval'
 import type * as HKT from '@principia/base/HKT'
 import type * as Iter from '@principia/base/Iterable'
 import type { IterableCollection } from '@principia/base/IterableCollection'
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 import type {
   Applicative,
   Monoid,
@@ -158,17 +158,17 @@ export interface IterableCollectionOps {
   /**
    * @rewrite filterMap_ from "@principia/base/Iterable"
    */
-  filterMap<T, B>(this: IterableCollection<T>, f: (a: T, i: number) => Option<B>): IterableCollection<B>
+  filterMap<T, B>(this: IterableCollection<T>, f: (a: T, i: number) => Maybe<B>): IterableCollection<B>
 
   /**
    * @rewrite find_ from "@principia/base/Iterable"
    */
-  find<T>(this: IterableCollection<T>, predicate: Predicate<T>): Option<T>
+  find<T>(this: IterableCollection<T>, predicate: Predicate<T>): Maybe<T>
 
   /**
    * @rewrite find_ from "@principia/base/Iterable"
    */
-  find<T, B extends T>(this: IterableCollection<T>, refinement: Refinement<T, B>): Option<B>
+  find<T, B extends T>(this: IterableCollection<T>, refinement: Refinement<T, B>): Maybe<B>
   /**
    * @rewriteConstraint foldMap_ from "@principia/base/Iterable"
    */

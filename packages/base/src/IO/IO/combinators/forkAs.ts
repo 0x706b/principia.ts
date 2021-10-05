@@ -5,10 +5,10 @@ import type { IO, URIO } from '../core'
 import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
 import { pipe } from '../../../function'
-import * as O from '../../../Option'
+import * as M from '../../../Maybe'
 import * as Fiber from '../../Fiber'
 import * as FiberRef from '../../FiberRef'
-import { chain, fork } from '../core'
+import * as I from '../core'
 import { uninterruptibleMask } from './interrupt'
 
 /**
@@ -22,8 +22,8 @@ export function forkAs_<R, E, A>(ma: IO<R, E, A>, name: string): URIO<R, Fiber.F
     traceFrom(trace, ({ restore }) =>
       pipe(
         Fiber.fiberName,
-        FiberRef.set(O.some(name)),
-        chain(() => fork(restore(ma)))
+        FiberRef.set(M.just(name)),
+        I.chain(() => I.fork(restore(ma)))
       )
     )
   )

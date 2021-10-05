@@ -4,13 +4,13 @@ import type { Fold, FoldMin } from './Fold'
 import type { Getter, GetterMin } from './Getter'
 import type { PIso, PIsoMin } from './Iso'
 import type { PLens, PLensMin } from './Lens'
-import type { GetOptionFn, ModifyOptionFn_, Optional, POptional, POptionalMin } from './Optional'
+import type { GetMaybeFn, ModifyMaybeFn_, Optional, POptional, POptionalMin } from './Optional'
 import type { PPrism, PPrismMin, Prism } from './Prism'
 import type { PSetter, PSetterMin } from './Setter'
 import type { PTraversal, PTraversalMin } from './Traversal'
 import type { Either } from '@principia/base/Either'
 import type * as HKT from '@principia/base/HKT'
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 import type { Predicate } from '@principia/base/Predicate'
 import type * as P from '@principia/base/prelude'
 
@@ -19,7 +19,7 @@ import * as C from '@principia/base/Const'
 import * as E from '@principia/base/Either'
 import { flow, identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/Identity'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -69,17 +69,17 @@ export function makePTraversal<S, T, A, B>(_: PTraversalMin<S, T, A, B>): PTrave
 }
 
 export function makePOptional<S, T, A, B>(_: POptionalMin<S, T, A, B>): POptional<S, T, A, B> {
-  const getOption: GetOptionFn<S, A>               = flow(_.getOrModify, O.getRight)
-  const modifyOption_: ModifyOptionFn_<S, T, A, B> = (s, f) =>
+  const getOption: GetMaybeFn<S, A>               = flow(_.getOrModify, M.getRight)
+  const modifyOption_: ModifyMaybeFn_<S, T, A, B> = (s, f) =>
     pipe(
       getOption(s),
-      O.map((a) => _.replace_(s, f(a)))
+      M.map((a) => _.replace_(s, f(a)))
     )
   return {
     getOrModify: _.getOrModify,
-    getOption,
-    modifyOption_,
-    modifyOption: (f) => (s) => modifyOption_(s, f),
+    getMaybe: getOption,
+    modifyMaybe_: modifyOption_,
+    modifyMaybe: (f) => (s) => modifyOption_(s, f),
     ...makePTraversal({
       modifyA_: (F) => (s, f) =>
         pipe(
@@ -201,10 +201,10 @@ export function prismFromPredicate<A>(predicate: Predicate<A>): Prism<A, A> {
 }
 
 /** @internal */
-export function prismSome<A>(): Prism<Option<A>, A> {
+export function prismJust<A>(): Prism<Maybe<A>, A> {
   return makePPrism({
-    getOrModify: O.match(() => E.left(O.none()), E.right),
-    reverseGet: O.some
+    getOrModify: M.match(() => E.left(M.nothing()), E.right),
+    reverseGet: M.just
   })
 }
 
@@ -255,12 +255,12 @@ export function findFirst<A>(predicate: Predicate<A>): Optional<ReadonlyArray<A>
       pipe(
         s,
         A.find(predicate),
-        O.match(() => E.left(s), E.right)
+        M.match(() => E.left(s), E.right)
       ),
     replace_: (s, a) =>
       pipe(
         A.findIndex(predicate)(s),
-        O.match(
+        M.match(
           () => s,
           (i) => A.unsafeUpdateAt_(s, i, a)
         )

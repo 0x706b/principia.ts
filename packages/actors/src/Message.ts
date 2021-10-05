@@ -2,7 +2,7 @@ import type { IsEqualTo } from '@principia/base/util/types'
 
 import { identity, pipe } from '@principia/base/function'
 import * as T from '@principia/base/IO'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import * as D from '@principia/base/Record'
 import * as TH from '@principia/base/These'
 import { tuple } from '@principia/base/tuple'
@@ -23,7 +23,7 @@ export interface Message<Tag extends string, Req extends S.AnyUS, Err extends S.
 
   readonly [ResponseSchemaSymbol]: Res
   readonly [RequestSchemaSymbol]: Req
-  readonly [ErrorSchemaSymbol]: O.Option<Err>
+  readonly [ErrorSchemaSymbol]: M.Maybe<Err>
 }
 
 export type TypedMessage<
@@ -55,7 +55,7 @@ export type InstanceOf<A> = [A] extends [{ new (...any: any[]): infer B }] ? B :
 export interface MessageFactory<Tag extends string, Req extends S.AnyUS, Err extends S.AnyUS, Res extends S.AnyUS> {
   readonly Tag: Tag
   readonly RequestSchema: Req
-  readonly ErrorSchema: O.Option<Err>
+  readonly ErrorSchema: M.Maybe<Err>
   readonly ResponseSchema: Res
 
   new (_: IsEqualTo<S.TypeOf<Req>, {}> extends true ? void : S.TypeOf<Req>): TypedMessage<Tag, Req, Err, Res>
@@ -75,14 +75,14 @@ export function Message<Tag extends string, Req extends S.AnyUS, Res extends S.A
   return class {
     static RequestSchema  = Req
     static ResponseSchema = Res
-    static ErrorSchema    = O.fromNullable(Err)
+    static ErrorSchema    = M.fromNullable(Err)
     static Tag            = Tag
 
     readonly _tag = Tag;
 
     readonly [ResponseSchemaSymbol] = Res;
     readonly [RequestSchemaSymbol]  = Req;
-    readonly [ErrorSchemaSymbol]    = O.fromNullable(Err)
+    readonly [ErrorSchemaSymbol]    = M.fromNullable(Err)
 
     constructor(ps?: any) {
       if (ps) {
@@ -130,7 +130,7 @@ export function decodeCommand<F1 extends AnyMessage>(
           ENC.for(registry[t._tag].ResponseSchema),
           ENC.for(
             S.union(
-              O.match_(registry[t._tag].ErrorSchema, () => S.unknown, identity),
+              M.match_(registry[t._tag].ErrorSchema, () => S.unknown, identity),
               ActorSystemException
             )
           )

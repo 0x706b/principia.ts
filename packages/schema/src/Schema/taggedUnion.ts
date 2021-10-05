@@ -1,10 +1,10 @@
 import type * as PE from '../ParseError'
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 import type { EnforceNonEmptyRecord } from '@principia/base/prelude'
 
 import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/function'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import * as R from '@principia/base/Record'
 import { tuple } from '@principia/base/tuple'
 
@@ -27,11 +27,9 @@ export interface MatchS<Props extends Record<PropertyKey, S.AnyUS>, AS> {
       x1: { [K in keyof Props]: S.TypeOf<Props[K]> }[Exclude<keyof Props, keyof M>]
     ) => Result
   ): (ks: AS) => Result
-  <Result>(
-    mat: {
-      [K in keyof Props]: (_: S.TypeOf<Props[K]>, __: S.TypeOf<Props[K]>) => Result
-    }
-  ): (ks: AS) => Result
+  <Result>(mat: {
+    [K in keyof Props]: (_: S.TypeOf<Props[K]>, __: S.TypeOf<Props[K]>) => Result
+  }): (ks: AS) => Result
 }
 
 export interface MatchW<Props extends Record<PropertyKey, S.AnyUS>, AS> {
@@ -84,7 +82,7 @@ export class TaggedUnionS<M extends Record<PropertyKey, S.AnyUS>> extends S.Sche
   TaggedUnionApi<M>
 > {
   readonly _tag = 'TaggedUnion'
-  readonly tag: Option<TagInfo>
+  readonly tag: Maybe<TagInfo>
   readonly entries: ReadonlyArray<readonly [string, S.AnyUS]>
   readonly entriesTags: ReadonlyArray<readonly [string, Record<string, string>]>
   readonly guards = R.map_(this.members, to(G.Schemable))
@@ -106,14 +104,14 @@ export class TaggedUnionS<M extends Record<PropertyKey, S.AnyUS>> extends S.Sche
         this.entriesTags,
         A.filterMap(([member, tags]) => {
           if (tagField in tags) {
-            return O.some(tuple(tags[tagField], member))
+            return M.just(tuple(tags[tagField], member))
           }
-          return O.none()
+          return M.nothing()
         }),
         A.uniq(Eq.Eq((x, y) => x[0] === y[0]))
       )
       if (tags.length === this.entries.length) {
-        return O.some({
+        return M.just({
           key: tagField,
           index: A.foldl_(tags, {}, (b, [tagValue, memberField]) => {
             b[tagValue] = memberField
@@ -122,13 +120,13 @@ export class TaggedUnionS<M extends Record<PropertyKey, S.AnyUS>> extends S.Sche
           values: A.map_(tags, ([tagValue]) => tagValue)
         })
       }
-      return O.none()
+      return M.nothing()
     })
   }
   get api() {
     return {
       matchS: (matcher, def) => (ks) => {
-        if (O.isSome(this.tag)) {
+        if (M.isJust(this.tag)) {
           return (matcher[ks[this.tag.value.key]] ?? def)(ks, ks)
         }
         for (const k in this.members) {
@@ -139,7 +137,7 @@ export class TaggedUnionS<M extends Record<PropertyKey, S.AnyUS>> extends S.Sche
         throw new Error("bug: can't find any valid matcher")
       },
       matchW: (matcher, def) => (ks) => {
-        if (O.isSome(this.tag)) {
+        if (M.isJust(this.tag)) {
           return (matcher[ks[this.tag.value.key]] ?? def)(ks, ks)
         }
         for (const k in this.members) {

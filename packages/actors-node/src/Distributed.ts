@@ -13,13 +13,13 @@ import { pipe } from '@principia/base/function'
 import * as HM from '@principia/base/HashMap'
 import * as I from '@principia/base/IO'
 import { Clock } from '@principia/base/IO/Clock'
-import * as M from '@principia/base/IO/Managed'
+import * as Ma from '@principia/base/IO/Managed'
 import * as Q from '@principia/base/IO/Queue'
 import * as Ref from '@principia/base/IO/Ref'
 import * as Sc from '@principia/base/IO/Schedule'
 import * as STM from '@principia/base/IO/stm/STM'
 import * as TRef from '@principia/base/IO/stm/TRef'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import { KeeperClient } from '@principia/keeper'
 
 import { Cluster } from './Cluster'
@@ -48,11 +48,11 @@ export function runner<R, E, R2, E2, F1 extends Msg.AnyMessage>(
   ) => I.IO<R2, E2, void>,
   opts?: { passivateAfter?: number }
 ) {
-  return M.gen(function* (_) {
+  return Ma.gen(function* (_) {
     const runningMapRef = yield* _(
       pipe(
         Ref.make(HM.makeDefault<string, ActorRef<F1>>()),
-        M.bracket((ref) =>
+        Ma.bracket((ref) =>
           pipe(
             Ref.get(ref),
             I.chain((hm) => I.foreachUnitPar_(hm, ([_, r]) => pipe(r.stop, I.orHalt)))
@@ -73,7 +73,7 @@ export function runner<R, E, R2, E2, F1 extends Msg.AnyMessage>(
             yield* _(
               Ref.update_(statsRef, (hm) => {
                 const stat = HM.get_(hm, path)
-                if (O.isSome(stat)) {
+                if (M.isJust(stat)) {
                   return HM.set_(hm, path, {
                     inFlight: stat.value.inFlight + 1,
                     last
@@ -91,7 +91,7 @@ export function runner<R, E, R2, E2, F1 extends Msg.AnyMessage>(
                 yield* _(
                   Ref.update_(statsRef, (hm) => {
                     const stat = HM.get_(hm, path)
-                    if (O.isSome(stat)) {
+                    if (M.isJust(stat)) {
                       return HM.set_(hm, path, {
                         inFlight: stat.value.inFlight - 1,
                         last
@@ -112,7 +112,7 @@ export function runner<R, E, R2, E2, F1 extends Msg.AnyMessage>(
             const map  = yield* _(Ref.get(gatesRef))
             const gate = HM.get_(map, path)
 
-            if (O.isSome(gate)) {
+            if (M.isJust(gate)) {
               yield* _(
                 STM.commit(
                   pipe(
@@ -139,11 +139,11 @@ export function runner<R, E, R2, E2, F1 extends Msg.AnyMessage>(
               I.gen(function* (_) {
                 const runningMap = yield* _(Ref.get(runningMapRef))
                 const running    = HM.get_(runningMap, path)
-                if (O.isSome(running)) {
+                if (M.isJust(running)) {
                   const statsMap = yield* _(Ref.get(statsRef))
                   const stats    = HM.get_(statsMap, path)
 
-                  if (O.isSome(stats)) {
+                  if (M.isJust(stats)) {
                     if (stats.value.inFlight === 0 && now - stats.value.last >= passivateAfter) {
                       const rem = yield* _(running.value.stop)
                       if (rem.length > 0) {
@@ -205,7 +205,7 @@ export function runner<R, E, R2, E2, F1 extends Msg.AnyMessage>(
               const map  = yield* _(Ref.get(gatesRef))
               const gate = HM.get_(map, path)
 
-              if (O.isSome(gate)) {
+              if (M.isJust(gate)) {
                 yield* _(
                   STM.commit(
                     pipe(
@@ -231,7 +231,7 @@ export function runner<R, E, R2, E2, F1 extends Msg.AnyMessage>(
               () =>
                 I.gen(function* (_) {
                   const isRunning = HM.get_(yield* _(Ref.get(runningMapRef)), path)
-                  if (O.isSome(isRunning)) {
+                  if (M.isJust(isRunning)) {
                     return yield* _(body(proxy(path, isRunning.value)))
                   }
                   const ref = yield* _(factory(path))
@@ -265,8 +265,8 @@ export const distributed = <R, S, F1 extends Msg.AnyMessage>(
 ) =>
   new A.ActorProxy(stateful.messages, (queue, context, initial: (id: string) => S) =>
     I.give(opts?.shards ? ShardConfig.of({ shards: opts.shards }) : {})(
-      M.useNow(
-        M.gen(function* (_) {
+      Ma.useNow(
+        Ma.gen(function* (_) {
           const cluster = yield* _(Cluster)
           const cli     = yield* _(KeeperClient)
 
@@ -309,7 +309,7 @@ export const distributed = <R, S, F1 extends Msg.AnyMessage>(
                   const election   = electionFromNameAndId(name, id)
                   const leaderMap  = yield* _(Ref.get(leadersNodeRef))
                   const leaderPath = HM.get_(leaderMap, election)
-                  if (O.isSome(leaderPath)) {
+                  if (M.isJust(leaderPath)) {
                     yield* _(cluster.leave(leaderPath.value))
                   }
                   yield* _(Ref.update_(leadersRef, HM.remove(election)))
@@ -345,14 +345,14 @@ export const distributed = <R, S, F1 extends Msg.AnyMessage>(
             }
 
             yield* _(
-              M.foreachUnitPar_(Object.keys(slots), (id) =>
-                M.foreachUnit_(slots[id], ([a, p]) => {
-                  return M.gen(function* (_) {
+              Ma.foreachUnitPar_(Object.keys(slots), (id) =>
+                Ma.foreachUnit_(slots[id], ([a, p]) => {
+                  return Ma.gen(function* (_) {
                     const leaders  = yield* _(Ref.get(leadersRef))
                     const election = electionFromNameAndId(name, id)
                     const cached   = HM.get_(leaders, election)
 
-                    if (O.isSome(cached)) {
+                    if (M.isJust(cached)) {
                       yield* _(cached.value((ask) => ask(a)['|>'](I.fulfill(p))['|>'](I.asUnit)))
                     } else {
                       yield* _(cluster.init(election))
@@ -360,7 +360,7 @@ export const distributed = <R, S, F1 extends Msg.AnyMessage>(
                       const leader = yield* _(cluster.leaderId(election))
 
                       // there is a leader
-                      if (O.isSome(leader)) {
+                      if (M.isJust(leader)) {
                         if (leader.value === cluster.nodeId) {
                           // we are the leader
                           yield* _(
@@ -397,7 +397,7 @@ export const distributed = <R, S, F1 extends Msg.AnyMessage>(
                         const leader = yield* _(cluster.leaderId(election))
 
                         // this should never be the case
-                        if (O.isNone(leader)) {
+                        if (M.isNothing(leader)) {
                           yield* _(I.halt('cannot elect a leader'))
                         } else {
                           // we got the leadership

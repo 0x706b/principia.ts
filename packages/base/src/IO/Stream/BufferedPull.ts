@@ -2,7 +2,7 @@ import type { Chunk } from '../../Chunk'
 
 import * as C from '../../Chunk'
 import { pipe } from '../../function'
-import * as O from '../../Option'
+import * as M from '../../Maybe'
 import { tuple } from '../../tuple'
 import * as I from '..'
 import * as R from '../Ref'
@@ -10,15 +10,15 @@ import * as Pull from './Pull'
 
 export class BufferedPull<R, E, A> {
   constructor(
-    readonly upstream: I.IO<R, O.Option<E>, Chunk<A>>,
+    readonly upstream: I.IO<R, M.Maybe<E>, Chunk<A>>,
     readonly done: R.URef<boolean>,
     readonly cursor: R.URef<readonly [Chunk<A>, number]>
   ) {}
 }
 
 export function ifNotDone<R1, E1, A1>(
-  fa: I.IO<R1, O.Option<E1>, A1>
-): <R, E, A>(self: BufferedPull<R, E, A>) => I.IO<R1, O.Option<E1>, A1> {
+  fa: I.IO<R1, M.Maybe<E1>, A1>
+): <R, E, A>(self: BufferedPull<R, E, A>) => I.IO<R1, M.Maybe<E1>, A1> {
   return (self) =>
     pipe(
       self.done.get,
@@ -26,14 +26,14 @@ export function ifNotDone<R1, E1, A1>(
     )
 }
 
-export function update<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Option<E>, void> {
+export function update<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, M.Maybe<E>, void> {
   return pipe(
     self,
     ifNotDone(
       pipe(
         self.upstream,
         I.matchIO(
-          O.match(
+          M.match(
             () =>
               pipe(
                 self.done.set(true),
@@ -48,13 +48,13 @@ export function update<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Option<E
   )
 }
 
-export function pullElement<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Option<E>, A> {
+export function pullElement<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, M.Maybe<E>, A> {
   return pipe(
     self,
     ifNotDone(
       pipe(
         self.cursor,
-        R.modify(([c, i]): [I.IO<R, O.Option<E>, A>, [Chunk<A>, number]] => {
+        R.modify(([c, i]): [I.IO<R, M.Maybe<E>, A>, [Chunk<A>, number]] => {
           if (i >= c.length) {
             return [
               pipe(
@@ -73,13 +73,13 @@ export function pullElement<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Opt
   )
 }
 
-export function pullArray<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Option<E>, Chunk<A>> {
+export function pullArray<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, M.Maybe<E>, Chunk<A>> {
   return pipe(
     self,
     ifNotDone(
       pipe(
         self.cursor,
-        R.modify(([chunk, idx]): [I.IO<R, O.Option<E>, Chunk<A>>, [Chunk<A>, number]] => {
+        R.modify(([chunk, idx]): [I.IO<R, M.Maybe<E>, Chunk<A>>, [Chunk<A>, number]] => {
           if (idx >= chunk.length) {
             return [I.chain_(update(self), () => pullArray(self)), [C.empty(), 0]]
           } else {
@@ -92,7 +92,7 @@ export function pullArray<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, O.Optio
   )
 }
 
-export function make<R, E, A>(pull: I.IO<R, O.Option<E>, Chunk<A>>): I.IO<unknown, never, BufferedPull<R, E, A>> {
+export function make<R, E, A>(pull: I.IO<R, M.Maybe<E>, Chunk<A>>): I.IO<unknown, never, BufferedPull<R, E, A>> {
   return I.gen(function* (_) {
     const done   = yield* _(R.make(false))
     const cursor = yield* _(R.make<readonly [Chunk<A>, number]>(tuple(C.empty(), 0)))

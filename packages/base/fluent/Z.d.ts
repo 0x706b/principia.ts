@@ -1,6 +1,6 @@
 import type { Chunk } from '@principia/base/Chunk'
 import type { Either } from '@principia/base/Either'
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 import type { Eq, Erase, Predicate } from '@principia/base/prelude'
 import type * as Z from '@principia/base/Z'
 
@@ -139,13 +139,13 @@ export interface ZStaticOps {
    */
   fromEitherLazy: typeof Z.fromEitherLazy
   /**
-   * @rewriteStatic fromOption from "@principia/base/Z"
+   * @rewriteStatic fromMaybe from "@principia/base/Z"
    */
-  fromOption: typeof Z.fromOption
+  fromMaybe: typeof Z.fromMaybe
   /**
-   * @rewriteStatic fromOptionLazy from "@principia/base/Z"
+   * @rewriteStatic fromMaybeLazy from "@principia/base/Z"
    */
-  fromOptionLazy: typeof Z.fromOptionLazy
+  fromMaybeLazy: typeof Z.fromMaybeLazy
   /**
    * @rewriteStatic gen from "@principia/base/Z"
    */
@@ -229,11 +229,11 @@ declare module '@principia/base/Z' {
       onFailure: (e: E) => Z<W, S1, S3, R1, E1, B>
     ): Z<W, S1, S3, R & R1, E1, B | A>
     /**
-     * @rewrite catchSome_ from "@principia/base/Z"
+     * @rewrite catchJust_ from "@principia/base/Z"
      */
-    catchSome<W, S1, S2, R, E, A, S3, R1, E1, B>(
+    catchJust<W, S1, S2, R, E, A, S3, R1, E1, B>(
       this: Z<W, S1, S2, R, E, A>,
-      f: (e: E) => Option<Z<W, S1, S3, R1, E1, B>>
+      f: (e: E) => Maybe<Z<W, S1, S3, R1, E1, B>>
     ): Z<W, S1, S2 | S3, R & R1, E | E1, B | A>
     /**
      * @rewrite censor_ from "@principia/base/Z"

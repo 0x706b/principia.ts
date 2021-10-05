@@ -1,14 +1,14 @@
 import type { Either } from '../Either'
 import type * as HKT from '../HKT'
+import type { Maybe } from '../Maybe'
 import type { IterableURI } from '../Modules'
-import type { Option } from '../Option'
 import type * as P from '../prelude'
 
 import * as Ev from '../Eval/core'
 import { identity } from '../function'
 import * as E from '../internal/Either'
 import * as It from '../internal/Iterable'
-import * as O from '../Option'
+import * as M from '../Maybe'
 import { tuple } from '../tuple'
 
 /*
@@ -161,12 +161,12 @@ export function filter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: Iter
   return (fa) => filter_(fa, predicate)
 }
 
-export function filterMap_<A, B>(fa: Iterable<A>, f: (a: A, i: number) => Option<B>): Iterable<B> {
+export function filterMap_<A, B>(fa: Iterable<A>, f: (a: A, i: number) => Maybe<B>): Iterable<B> {
   return iterable(function* () {
     let i = 0
     for (const value of fa) {
       const ob = f(value, i)
-      if (ob._tag === 'Some') {
+      if (ob._tag === 'Just') {
         yield ob.value
       }
       i++
@@ -174,7 +174,7 @@ export function filterMap_<A, B>(fa: Iterable<A>, f: (a: A, i: number) => Option
   })
 }
 
-export function filterMap<A, B>(f: (a: A, i: number) => Option<B>): (fa: Iterable<A>) => Iterable<B> {
+export function filterMap<A, B>(f: (a: A, i: number) => Maybe<B>): (fa: Iterable<A>) => Iterable<B> {
   return (fa) => filterMap_(fa, f)
 }
 
@@ -388,18 +388,18 @@ export function chainRecBreadthFirst_<A, B>(a: A, f: (a: A) => Iterable<Either<A
     const initial = f(a)
     let buffer: Array<Iterable<Either<A, B>>> = []
 
-    function go(e: Either<A, B>): O.Option<B> {
+    function go(e: Either<A, B>): M.Maybe<B> {
       if (e._tag === 'Left') {
         buffer.push(f(e.left))
-        return O.none()
+        return M.nothing()
       } else {
-        return O.some(e.right)
+        return M.just(e.right)
       }
     }
 
     for (const e of initial) {
       const ob = go(e)
-      if (O.isSome(ob)) {
+      if (M.isJust(ob)) {
         yield ob.value
       }
     }
@@ -407,7 +407,7 @@ export function chainRecBreadthFirst_<A, B>(a: A, f: (a: A) => Iterable<Either<A
     while (buffer.length) {
       for (const e of buffer.shift()!) {
         const ob = go(e)
-        if (O.isSome(ob)) {
+        if (M.isJust(ob)) {
           yield ob.value
         }
       }
@@ -475,20 +475,20 @@ export function prepend<A>(element: A): (ia: Iterable<A>) => Iterable<A> {
   return (ia) => prepend_(ia, element)
 }
 
-export function findFirst_<A, B extends A>(ia: Iterable<A>, refinement: P.Refinement<A, B>): Option<B>
-export function findFirst_<A>(ia: Iterable<A>, predicate: P.Predicate<A>): Option<A>
-export function findFirst_<A>(ia: Iterable<A>, predicate: P.Predicate<A>): Option<A> {
+export function findFirst_<A, B extends A>(ia: Iterable<A>, refinement: P.Refinement<A, B>): Maybe<B>
+export function findFirst_<A>(ia: Iterable<A>, predicate: P.Predicate<A>): Maybe<A>
+export function findFirst_<A>(ia: Iterable<A>, predicate: P.Predicate<A>): Maybe<A> {
   for (const value of ia) {
     if (predicate(value)) {
-      return O.some(value)
+      return M.just(value)
     }
   }
-  return O.none()
+  return M.nothing()
 }
 
-export function findFirst<A, B extends A>(refinement: P.Refinement<A, B>): (ia: Iterable<A>) => Option<B>
-export function findFirst<A>(predicate: P.Predicate<A>): (ia: Iterable<A>) => Option<A>
-export function findFirst<A>(predicate: P.Predicate<A>): (ia: Iterable<A>) => Option<A> {
+export function findFirst<A, B extends A>(refinement: P.Refinement<A, B>): (ia: Iterable<A>) => Maybe<B>
+export function findFirst<A>(predicate: P.Predicate<A>): (ia: Iterable<A>) => Maybe<A>
+export function findFirst<A>(predicate: P.Predicate<A>): (ia: Iterable<A>) => Maybe<A> {
   return (ia) => findFirst_(ia, predicate)
 }
 

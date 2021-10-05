@@ -12,11 +12,11 @@ import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as T from '@principia/base/IO'
 import * as L from '@principia/base/IO/Layer'
-import * as M from '@principia/base/IO/Managed'
+import * as Ma from '@principia/base/IO/Managed'
 import * as Q from '@principia/base/IO/Queue'
 import * as Ref from '@principia/base/IO/Ref'
-import * as O from '@principia/base/Option'
-import * as OT from '@principia/base/OptionT'
+import * as M from '@principia/base/Maybe'
+import * as OT from '@principia/base/MaybeT'
 import * as Ord from '@principia/base/Ord'
 import * as OSet from '@principia/base/OrderedSet'
 import * as Str from '@principia/base/string'
@@ -25,13 +25,13 @@ import * as K from '@principia/keeper'
 import * as S from '@principia/schema'
 import * as G from '@principia/schema/Guard'
 
-export const EO = pipe(OT.getOptionT(T.Monad), (M) => ({
-  map: M.map,
-  chain: M.chain,
+export const EO = pipe(OT.getMaybeT(T.Monad), (Monad) => ({
+  map: Monad.map,
+  chain: Monad.chain,
   chainT:
     <R2, E2, A, B>(f: (a: A) => T.IO<R2, E2, B>) =>
-    <R, E>(fa: T.IO<R, E, O.Option<A>>): T.IO<R2 & R, E2 | E, O.Option<B>> =>
-      M.chain_(fa, (a: A) => T.map_(f(a), O.some))
+    <R, E>(fa: T.IO<R, E, M.Maybe<A>>): T.IO<R2 & R, E2 | E, M.Maybe<B>> =>
+      Monad.chain_(fa, (a: A) => T.map_(f(a), M.just))
 }))
 
 export const ClusterSym = Symbol()
@@ -106,13 +106,13 @@ export function fromChunk(u: Chunk.Chunk<Member>): OSet.OrderedSet<Member> {
   return Chunk.foldl_(u, OSet.make(OrdMember), OSet.add_)
 }
 
-export const makeCluster = M.gen(function* (_) {
+export const makeCluster = Ma.gen(function* (_) {
   const cli        = yield* _(K.KeeperClient)
   const system     = yield* _(AS.ActorSystemTag)
   const clusterDir = `/cluster/${system.actorSystemName}`
   const membersDir = `${clusterDir}/members`
 
-  if (O.isNone(system.remoteConfig)) {
+  if (M.isNothing(system.remoteConfig)) {
     return yield* _(T.halt(`actor system ${system.actorSystemName} doesn't support remoting`))
   }
 
@@ -131,7 +131,7 @@ export const makeCluster = M.gen(function* (_) {
           })
         )
       })
-      ['|>'](M.bracket((p) => cli.remove(p)['|>'](T.orHalt)))
+      ['|>'](Ma.bracket((p) => cli.remove(p)['|>'](T.orHalt)))
   )
 
   const nodeId = `member_${nodePath.substr(prefix.length)}` as MemberId
@@ -229,7 +229,7 @@ export const makeCluster = M.gen(function* (_) {
         ),
         {}
       ),
-      M.bracket((s) => s.stop['|>'](T.orHalt))
+      Ma.bracket((s) => s.stop['|>'](T.orHalt))
     )
   )
 
@@ -240,7 +240,7 @@ export const makeCluster = M.gen(function* (_) {
     return T.gen(function* (_) {
       while (1) {
         const leader = Chunk.head(yield* _(cli.getChildren(membersDir)))
-        if (O.isSome(leader)) {
+        if (M.isJust(leader)) {
           if (leader.value === nodeId) {
             yield* _(onLeader)
           } else {
@@ -324,7 +324,7 @@ export const makeCluster = M.gen(function* (_) {
         pipe(
           cli.getData(`${membersDir}/${member}`),
           T.chain(
-            O.match(
+            M.match(
               () =>
                 T.halt(
                   new ClusterException({
@@ -369,7 +369,7 @@ export const makeCluster = M.gen(function* (_) {
       return T.gen(function* (_) {
         while (1) {
           const leader = yield* _(leaderId(scope))
-          if (O.isNone(leader)) {
+          if (M.isNothing(leader)) {
             return yield* _(T.halt('cannot find a leader'))
           }
           if (leader.value === nodeId) {
@@ -388,7 +388,7 @@ export const makeCluster = M.gen(function* (_) {
     pipe(
       leaderPath(scope),
       T.chain((o) =>
-        O.isNone(o) ? T.halt('cannot find a leader') : cli.waitDelete(`${clusterDir}/elections/${scope}/${o.value}`)
+        M.isNothing(o) ? T.halt('cannot find a leader') : cli.waitDelete(`${clusterDir}/elections/${scope}/${o.value}`)
       )
     )
 

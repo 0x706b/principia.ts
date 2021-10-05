@@ -47,9 +47,9 @@ import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 
 import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/function'
+import * as M from '@principia/base/Maybe'
 import * as MHM from '@principia/base/MutableHashMap'
 import * as NA from '@principia/base/NonEmptyArray'
-import * as O from '@principia/base/Option'
 import * as R from '@principia/base/Record'
 
 import { cacheThunk } from '../util'
@@ -132,7 +132,7 @@ export function concrete<U extends URIS>(s: AnyS): asserts s is ConcreteOf<U> {
 
 export type Interpreter = (
   interpreters: ReadonlyArray<Interpreter>
-) => <U extends URIS>(S: Schemable<U>) => <U1 extends URIS>(schema: AnySOf<U1>) => O.Option<AnyKind<U>>
+) => <U extends URIS>(S: Schemable<U>) => <U1 extends URIS>(schema: AnySOf<U1>) => M.Maybe<AnyKind<U>>
 
 const CACHE = MHM.hashMap<URIS, WeakMap<AnyS, any>>()
 
@@ -332,12 +332,12 @@ export const defaultInterpreter: Interpreter =
         }
       }
       if (instance) {
-        return O.some(instance)
+        return M.just(instance)
       }
       if (hasContinuation(schema)) {
-        return O.some(toS(schema[SchemaContinuation]))
+        return M.just(toS(schema[SchemaContinuation]))
       } else {
-        return O.none()
+        return M.nothing()
       }
     }
   }
@@ -346,7 +346,7 @@ export function makeTo(...interpreters: ReadonlyArray<Interpreter>) {
   return <U extends URIS>(S: Schemable<U>) => {
     const map: WeakMap<AnyS, AnyKind<U>> = pipe(
       CACHE.get(S.URI),
-      O.getOrElse(() => {
+      M.getOrElse(() => {
         const m = new WeakMap<AnyS, AnyKind<any>>()
         CACHE.set(S.URI, m)
         return m
@@ -360,7 +360,7 @@ export function makeTo(...interpreters: ReadonlyArray<Interpreter>) {
       }
       for (let i = 0; i < interpreters.length; i++) {
         const interpreted = interpreters[i](interpreters)(S)(schema)
-        if (interpreted._tag === 'Some') {
+        if (interpreted._tag === 'Just') {
           map.set(schema, interpreted.value)
           return interpreted.value
         }

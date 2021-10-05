@@ -1,7 +1,7 @@
 import type { Either } from '@principia/base/Either'
 import type { IO } from '@principia/base/IO'
 import type * as R from '@principia/base/IO/Ref'
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 import type { Predicate } from '@principia/base/prelude'
 
 declare global {
@@ -90,7 +90,7 @@ declare module '@principia/base/IO/Ref' {
     filterInput<EA, EB, A, B, A1 extends A>(
       this: R.Ref<EA, EB, A, B>,
       predicate: Predicate<A1>
-    ): R.Ref<Option<EA>, EB, A1, B>
+    ): R.Ref<Maybe<EA>, EB, A1, B>
 
     /**
      * Maps and filters the `get` value of the `Ref` with the specified partial
@@ -100,7 +100,7 @@ declare module '@principia/base/IO/Ref' {
      * @rewrite collect_ from "@principia/base/IO/Ref"
      * @trace 0
      */
-    filterMap<EA, EB, A, B, C>(this: R.Ref<EA, EB, A, B>, f: (_: B) => Option<C>): R.Ref<EA, Option<EB>, A, C>
+    filterMap<EA, EB, A, B, C>(this: R.Ref<EA, EB, A, B>, f: (_: B) => Maybe<C>): R.Ref<EA, Maybe<EB>, A, C>
 
     /**
      * Filters the `get` value of the `Ref` with the specified predicate,
@@ -110,7 +110,7 @@ declare module '@principia/base/IO/Ref' {
      * @rewrite filterOutput_ from "@principia/base/IO/Ref"
      * @trace 0
      */
-    filterOutput<EA, EB, A, B>(this: R.Ref<EA, EB, A, B>, predicate: Predicate<B>): R.Ref<EA, Option<EB>, A, B>
+    filterOutput<EA, EB, A, B>(this: R.Ref<EA, EB, A, B>, predicate: Predicate<B>): R.Ref<EA, Maybe<EB>, A, B>
 
     /**
      * Reads the value from the `Ref`.
@@ -143,10 +143,10 @@ declare module '@principia/base/IO/Ref' {
      * returning the value immediately before modification. If the function is
      * undefined on the current value it doesn't change it.
      *
-     * @rewrite getAndUpdateSome_ from "@principia/base/IO/Ref"
+     * @rewrite getAndUpdateJust_ from "@principia/base/IO/Ref"
      * @trace 0
      */
-    getAndUpdateSome<EA, EB, A>(this: R.Ref<EA, EB, A, A>, f: (a: A) => Option<A>): IO<unknown, EA | EB, A>
+    getAndUpdateJust<EA, EB, A>(this: R.Ref<EA, EB, A, A>, f: (a: A) => Maybe<A>): IO<unknown, EA | EB, A>
 
     /**
      * Transforms the `get` value of the `Ref` with the specified function.
@@ -179,15 +179,15 @@ declare module '@principia/base/IO/Ref' {
      * Atomically modifies the `Ref` with the specified partial function,
      * which computes a return value for the modification if the function is
      * defined on the current value otherwise it returns a default value. This
-     * is a more powerful version of `updateSome`.
+     * is a more powerful version of `updateJust`.
      *
-     * @rewrite modifySome_ from "@principia/base/IO/Ref"
+     * @rewrite modifyJust_ from "@principia/base/IO/Ref"
      * @trace 1
      */
-    modifySome<EA, EB, A, B>(
+    modifyJust<EA, EB, A, B>(
       this: R.Ref<EA, EB, A, A>,
       def: B,
-      f: (a: A) => Option<readonly [B, A]>
+      f: (a: A) => Maybe<readonly [B, A]>
     ): IO<unknown, EA | EB, B>
 
     /**
@@ -220,19 +220,19 @@ declare module '@principia/base/IO/Ref' {
      * Atomically modifies the `Ref` with the specified partial function. If
      * the function is undefined on the current value it doesn't change it.
      *
-     * @rewrite updateSome_ from "@principia/base/IO/Ref"
+     * @rewrite updateJust_ from "@principia/base/IO/Ref"
      * @trace 0
      */
-    updateSome<EA, EB, A>(this: R.Ref<EA, EB, A, A>, f: (a: A) => Option<A>): IO<unknown, EA | EB, void>
+    updateJust<EA, EB, A>(this: R.Ref<EA, EB, A, A>, f: (a: A) => Maybe<A>): IO<unknown, EA | EB, void>
 
     /**
      * Atomically modifies the `Ref` with the specified partial function. If
      * the function is undefined on the current value it returns the old value
      * without changing it.
      *
-     * @rewrite updateSomeAndGet_ from "@principia/base/IO/Ref"
+     * @rewrite updateJustAndGet_ from "@principia/base/IO/Ref"
      * @trace 0
      */
-    updateSomeAndGet<EA, EB, A>(this: R.Ref<EA, EB, A, A>, f: (a: A) => Option<A>): IO<unknown, EA | EB, A>
+    updateJustAndGet<EA, EB, A>(this: R.Ref<EA, EB, A, A>, f: (a: A) => Maybe<A>): IO<unknown, EA | EB, A>
   }
 }

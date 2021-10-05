@@ -2,8 +2,8 @@
 
 import type { Either } from '../../Either'
 import type * as HKT from '../../HKT'
+import type { Maybe } from '../../Maybe'
 import type { IOURI } from '../../Modules'
-import type { Option } from '../../Option'
 import type { Cause } from '../Cause'
 import type { Exit } from '../Exit'
 import type { Fiber, FiberContext, FiberDescriptor, InterruptStatus, Platform } from '../Fiber'
@@ -157,7 +157,7 @@ export class Async<R, E, A> extends IO<R, E, A> {
   readonly [IOTypeId]: IOTypeId = IOTypeId
   readonly _tag                 = IOTag.Async
   constructor(
-    readonly register: (f: (_: IO<R, E, A>) => void) => Option<IO<R, E, A>>,
+    readonly register: (f: (_: IO<R, E, A>) => void) => Maybe<IO<R, E, A>>,
     readonly blockingOn: ReadonlyArray<FiberId>
   ) {
     super()
@@ -191,8 +191,8 @@ export class Fork<R, E, A> extends IO<R, never, FiberContext<E, A>> {
 
   constructor(
     readonly io: IO<R, E, A>,
-    readonly scope: Option<Scope<Exit<any, any>>>,
-    readonly reportFailure: Option<FailureReporter>,
+    readonly scope: Maybe<Scope<Exit<any, any>>>,
+    readonly reportFailure: Maybe<FailureReporter>,
     readonly trace?: string
   ) {
     super()
@@ -291,7 +291,7 @@ export class Race<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3> extends IO<R & R1
     readonly right: IO<R1, E1, A1>,
     readonly leftWins: (exit: Exit<E, A>, fiber: Fiber<E1, A1>) => IO<R2, E2, A2>,
     readonly rightWins: (exit: Exit<E1, A1>, fiber: Fiber<E, A>) => IO<R3, E3, A3>,
-    readonly scope: Option<Scope<Exit<any, any>>>,
+    readonly scope: Maybe<Scope<Exit<any, any>>>,
     readonly trace?: string
   ) {
     super()
@@ -404,7 +404,7 @@ export class OverrideForkScope<R, E, A> extends IO<R, E, A> {
   readonly [IOTypeId]: IOTypeId = IOTypeId
   readonly _tag                 = IOTag.OverrideForkScope
 
-  constructor(readonly io: IO<R, E, A>, readonly forkScope: Option<Scope<Exit<any, any>>>, readonly trace?: string) {
+  constructor(readonly io: IO<R, E, A>, readonly forkScope: Maybe<Scope<Exit<any, any>>>, readonly trace?: string) {
     super()
   }
 }

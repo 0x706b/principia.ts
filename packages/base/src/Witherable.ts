@@ -1,12 +1,12 @@
 import type { Applicative } from './Applicative'
 import type { FilterableMin } from './Filterable'
 import type { Either } from './internal/Either'
-import type { Option } from './internal/Option'
+import type { Maybe } from './internal/Maybe'
 import type { TraversableMin } from './Traversable'
 
 import { Filterable } from './Filterable'
 import * as HKT from './HKT'
-import * as O from './internal/Option'
+import * as Mb from './internal/Maybe'
 import { Traversable } from './Traversable'
 
 export interface Witherable<F extends HKT.URIS, C = HKT.Auto> extends Filterable<F, C>, Traversable<F, C> {
@@ -41,7 +41,7 @@ export function Witherable<F extends HKT.URIS, C = HKT.Auto>(F: WitherableMin<F,
 
 export interface FilterMapAFn<F extends HKT.URIS, C = HKT.Auto> {
   <G extends HKT.URIS, GC = HKT.Auto>(A: Applicative<G, GC>): <KG, QG, WG, XG, IG, SG, RG, EG, A, B>(
-    f: (a: A) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Option<B>>
+    f: (a: A) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Maybe<B>>
   ) => <KF, QF, WF, XF, IF, SF, RF, EF>(
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>
   ) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>>
@@ -69,7 +69,7 @@ export interface FilterMapAFn_<F extends HKT.URIS, C = HKT.Auto> {
     B
   >(
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>,
-    f: (a: A) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Option<B>>
+    f: (a: A) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Maybe<B>>
   ) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
@@ -89,7 +89,7 @@ export function implementFilterMapA<F extends HKT.URIS, C = HKT.Auto>(): (
   }) => (
     A: Applicative<HKT.UHKT<G>>
   ) => (
-    f: (a: A) => HKT.HKT<G, Option<B>>
+    f: (a: A) => HKT.HKT<G, Maybe<B>>
   ) => (
     wa: HKT.Kind<F, C, FK, FQ, FW, FX, FI, FS, FR, FE, A>
   ) => HKT.HKT<G, HKT.Kind<F, C, FK, FQ, FW, FX, FI, FS, FR, FE, B>>
@@ -115,7 +115,7 @@ export function implementFilterMapA_<F extends HKT.URIS, C = HKT.Auto>(): (
     A: Applicative<HKT.UHKT<G>>
   ) => (
     wa: HKT.Kind<F, C, FK, FQ, FW, FX, FI, FS, FR, FE, A>,
-    f: (a: A) => HKT.HKT<G, Option<B>>
+    f: (a: A) => HKT.HKT<G, Maybe<B>>
   ) => HKT.HKT<G, HKT.Kind<F, C, FK, FQ, FW, FX, FI, FS, FR, FE, B>>
 ) => FilterMapAFn_<F, C>
 export function implementFilterMapA_() {
@@ -236,7 +236,7 @@ export interface FilterAFn_<F extends HKT.URIS, CF = HKT.Auto> {
 }
 
 export function getFilterA_<F extends HKT.URIS, CF = HKT.Auto>(F: WitherableMin<F, CF>): FilterAFn_<F, CF> {
-  return (G) => (fa, p) => F.filterMapA_(G)(fa, (a) => G.map_(p(a), (bb) => (bb ? O.some(a) : O.none())))
+  return (G) => (fa, p) => F.filterMapA_(G)(fa, (a) => G.map_(p(a), (bb) => (bb ? Mb.just(a) : Mb.nothing())))
 }
 
 export interface FilterAFn<F extends HKT.URIS, CF = HKT.Auto> {

@@ -1,12 +1,12 @@
 import type { FunctorMin } from './Functor'
-import type { Option } from './internal/Option'
+import type { Maybe } from './internal/Maybe'
 import type { Semigroup } from './Semigroup'
 import type { These } from './These'
 
 import { identity } from './function'
 import { Functor } from './Functor'
 import * as HKT from './HKT'
-import * as O from './internal/Option'
+import * as M from './internal/Maybe'
 import * as T from './internal/These'
 import { tuple } from './internal/tuple'
 
@@ -316,7 +316,7 @@ export interface PadZipFn_<F extends HKT.URIS, C = HKT.Auto> {
     HKT.Mix<C, 'S', [S, S1]>,
     HKT.Mix<C, 'R', [R, R1]>,
     HKT.Mix<C, 'E', [E, E1]>,
-    readonly [Option<A>, Option<B>]
+    readonly [Maybe<A>, Maybe<B>]
   >
 }
 
@@ -356,7 +356,7 @@ export interface PadZipFn<F extends HKT.URIS, C = HKT.Auto> {
     HKT.Mix<C, 'S', [S1, S]>,
     HKT.Mix<C, 'R', [R1, R]>,
     HKT.Mix<C, 'E', [E1, E]>,
-    readonly [Option<A>, Option<B>]
+    readonly [Maybe<A>, Maybe<B>]
   >
 }
 
@@ -385,7 +385,7 @@ export interface PadZipWithFn_<F extends HKT.URIS, C = HKT.Auto> {
       HKT.Intro<C, 'E', E, E1>,
       B
     >,
-    f: (_: readonly [Option<A>, Option<B>]) => D
+    f: (_: readonly [Maybe<A>, Maybe<B>]) => D
   ): HKT.Kind<
     F,
     C,
@@ -404,7 +404,7 @@ export interface PadZipWithFn_<F extends HKT.URIS, C = HKT.Auto> {
 export interface PadZipWithFn<F extends HKT.URIS, C = HKT.Auto> {
   <A, K1, Q1, W1, X1, I1, S1, R1, E1, B, D>(
     fb: HKT.Kind<F, C, K1, Q1, W1, X1, I1, S1, R1, E1, B>,
-    f: (_: readonly [Option<A>, Option<B>]) => D
+    f: (_: readonly [Maybe<A>, Maybe<B>]) => D
   ): <K, Q, W, X, I, S, R, E, A>(
     fa: HKT.Kind<
       F,
@@ -441,9 +441,9 @@ export function padZipWithF_<F extends HKT.URIS, C = HKT.Auto>(F: SemialignMin<F
       fa,
       fb,
       T.match(
-        (a) => f([O.some(a), O.none()]),
-        (b) => f([O.none(), O.some(b)]),
-        (a, b) => f([O.some(a), O.some(b)])
+        (a) => f([M.just(a), M.nothing()]),
+        (b) => f([M.nothing(), M.just(b)]),
+        (a, b) => f([M.just(a), M.just(b)])
       )
     )
 }

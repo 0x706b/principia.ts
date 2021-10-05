@@ -13,7 +13,7 @@ import { sequential } from '../../ExecutionStrategy'
 import { pipe } from '../../function'
 import { mergeEnvironments, tag } from '../../Has'
 import * as HM from '../../HashMap'
-import * as O from '../../Option'
+import * as M from '../../Maybe'
 import { tuple } from '../../tuple'
 import { AtomicReference } from '../../util/support/AtomicReference'
 import * as Ca from '../Cause'
@@ -23,7 +23,7 @@ import * as RelMap from '../Managed/ReleaseMap'
 import * as Ref from '../Ref'
 import * as RefM from '../RefM'
 import * as I from './internal/io'
-import * as M from './internal/managed'
+import * as Ma from './internal/managed'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -109,7 +109,7 @@ export abstract class Layer<R, E, A> {
   }
 
   use<R1, E1, A1>(io: I.IO<R1 & A, E1, A1>): I.IO<R & R1, E | E1, A1> {
-    return M.use_(build(this['+++'](identity<R1>())), (a) => I.giveAll_(io, a))
+    return Ma.use_(build(this['+++'](identity<R1>())), (a) => I.giveAll_(io, a))
   }
 }
 
@@ -266,52 +266,52 @@ function scope<R, E, A>(l: Layer<R, E, A>): Managed<unknown, never, (_: MemoMap)
 
   switch (l._tag) {
     case LayerTag.Fresh: {
-      return M.succeed(() => build(l.layer))
+      return Ma.succeed(() => build(l.layer))
     }
     case LayerTag.FromManaged: {
-      return M.succeed(() => l.managed)
+      return Ma.succeed(() => l.managed)
     }
     case LayerTag.Defer: {
-      return M.succeed((memo) => memo.getOrElseMemoize(l.factory()))
+      return Ma.succeed((memo) => memo.getOrElseMemoize(l.factory()))
     }
     case LayerTag.Map: {
-      return M.succeed((memo) => M.map_(memo.getOrElseMemoize(l.layer), l.f))
+      return Ma.succeed((memo) => Ma.map_(memo.getOrElseMemoize(l.layer), l.f))
     }
     case LayerTag.Chain: {
-      return M.succeed((memo) => M.chain_(memo.getOrElseMemoize(l.layer), (a) => memo.getOrElseMemoize(l.f(a))))
+      return Ma.succeed((memo) => Ma.chain_(memo.getOrElseMemoize(l.layer), (a) => memo.getOrElseMemoize(l.f(a))))
     }
     case LayerTag.CrossWithPar: {
-      return M.succeed((memo) => M.crossWithPar_(memo.getOrElseMemoize(l.layer), memo.getOrElseMemoize(l.that), l.f))
+      return Ma.succeed((memo) => Ma.crossWithPar_(memo.getOrElseMemoize(l.layer), memo.getOrElseMemoize(l.that), l.f))
     }
     case LayerTag.CrossWithSeq: {
-      return M.succeed((memo) => M.crossWith_(memo.getOrElseMemoize(l.layer), memo.getOrElseMemoize(l.that), l.f))
+      return Ma.succeed((memo) => Ma.crossWith_(memo.getOrElseMemoize(l.layer), memo.getOrElseMemoize(l.that), l.f))
     }
     case LayerTag.AllPar: {
-      return M.succeed((memo) => {
+      return Ma.succeed((memo) => {
         return pipe(
-          M.foreachPar_(l.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
-          M.map(Ch.foldl({} as any, (b, a) => ({ ...b, ...a })))
+          Ma.foreachPar_(l.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
+          Ma.map(Ch.foldl({} as any, (b, a) => ({ ...b, ...a })))
         )
       })
     }
     case LayerTag.AllSeq: {
-      return M.succeed((memo) => {
+      return Ma.succeed((memo) => {
         return pipe(
-          M.foreach_(l.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
-          M.map(Ch.foldl({} as any, (b, a) => ({ ...b, ...a })))
+          Ma.foreach_(l.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
+          Ma.map(Ch.foldl({} as any, (b, a) => ({ ...b, ...a })))
         )
       })
     }
     case LayerTag.Fold: {
-      return M.succeed((memo) =>
-        M.matchCauseManaged_(
+      return Ma.succeed((memo) =>
+        Ma.matchCauseManaged_(
           memo.getOrElseMemoize(l.layer),
           (e) =>
             pipe(
               I.toManaged()(I.ask<any>()),
-              M.chain((r) => M.gives_(memo.getOrElseMemoize(l.onFailure), () => tuple(r, e)))
+              Ma.chain((r) => Ma.gives_(memo.getOrElseMemoize(l.onFailure), () => tuple(r, e)))
             ),
-          (r) => M.giveAll_(memo.getOrElseMemoize(l.onSuccess), r)
+          (r) => Ma.giveAll_(memo.getOrElseMemoize(l.onSuccess), r)
         )
       )
     }
@@ -327,9 +327,9 @@ function scope<R, E, A>(l: Layer<R, E, A>): Managed<unknown, never, (_: MemoMap)
 /**
  * Builds a layer into a managed value.
  */
-export function build<R, E, A>(layer: Layer<R, E, A>): M.Managed<R, E, A> {
-  return M.gen(function* (_) {
-    const memoMap = yield* _(M.fromIO(makeMemoMap()))
+export function build<R, E, A>(layer: Layer<R, E, A>): Ma.Managed<R, E, A> {
+  return Ma.gen(function* (_) {
+    const memoMap = yield* _(Ma.fromIO(makeMemoMap()))
     const run     = yield* _(scope(layer))
     const value   = yield* _(run(memoMap))
     return value
@@ -340,22 +340,22 @@ export function build<R, E, A>(layer: Layer<R, E, A>): M.Managed<R, E, A> {
  * Constructs a layer from the specified value.
  */
 export function succeed_<A>(a: A, tag: H.Tag<A>): Layer<unknown, never, H.Has<A>> {
-  return fromManaged(tag)(M.succeed(a))
+  return fromManaged(tag)(Ma.succeed(a))
 }
 
 /**
  * Constructs a layer from the specified value.
  */
 export function succeed<A>(tag: H.Tag<A>): (a: A) => Layer<unknown, never, H.Has<A>> {
-  return (resource) => fromManaged(tag)(M.succeed(resource))
+  return (resource) => fromManaged(tag)(Ma.succeed(resource))
 }
 
 export function fail<E>(e: E): Layer<unknown, E, never> {
-  return fromRawManaged(M.fail(e))
+  return fromRawManaged(Ma.fail(e))
 }
 
 export function identity<R>(): Layer<R, never, R> {
-  return fromRawManaged(M.ask<R>())
+  return fromRawManaged(Ma.ask<R>())
 }
 
 export function prepare<T>(tag: H.Tag<T>) {
@@ -363,14 +363,14 @@ export function prepare<T>(tag: H.Tag<T>) {
     open: <R1, E1>(open: (_: A) => I.IO<R1, E1, any>) => ({
       release: <R2>(release: (_: A) => I.IO<R2, never, any>) =>
         fromManaged(tag)(
-          M.chain_(
-            M.bracketExit_(acquire, (a) => release(a)),
-            (a) => M.fromIO(I.map_(open(a), () => a))
+          Ma.chain_(
+            Ma.bracketExit_(acquire, (a) => release(a)),
+            (a) => Ma.fromIO(I.map_(open(a), () => a))
           )
         )
     }),
     release: <R2>(release: (_: A) => I.IO<R2, never, any>) =>
-      fromManaged(tag)(M.bracketExit_(acquire, (a) => release(a)))
+      fromManaged(tag)(Ma.bracketExit_(acquire, (a) => release(a)))
   })
 }
 
@@ -387,7 +387,7 @@ export function create<T>(tag: H.Tag<T>) {
  * Constructs a layer from the specified effect.
  */
 export function fromIO_<R, E, T>(resource: I.IO<R, E, T>, tag: H.Tag<T>): Layer<R, E, H.Has<T>> {
-  return fromManaged_(M.fromIO(resource), tag)
+  return fromManaged_(Ma.fromIO(resource), tag)
 }
 
 /**
@@ -400,7 +400,7 @@ export function fromIO<T>(tag: H.Tag<T>): <R, E>(resource: I.IO<R, E, T>) => Lay
 }
 
 export function fromManaged_<R, E, T>(resource: Managed<R, E, T>, has: H.Tag<T>): Layer<R, E, H.Has<T>> {
-  return new FromManaged(M.chain_(resource, (a) => environmentFor(has, a))).setKey(has.key)
+  return new FromManaged(Ma.chain_(resource, (a) => environmentFor(has, a))).setKey(has.key)
 }
 
 /**
@@ -415,7 +415,7 @@ export function fromRawManaged<R, E, A>(resource: Managed<R, E, A>): Layer<R, E,
 }
 
 export function fromRawIO<R, E, A>(resource: I.IO<R, E, A>): Layer<R, E, A> {
-  return new FromManaged(M.fromIO(resource))
+  return new FromManaged(Ma.fromIO(resource))
 }
 
 export function fromRawFunction<A, B>(f: (a: A) => B): Layer<A, never, B> {
@@ -427,14 +427,14 @@ export function fromRawFunctionIO<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): Layer
 }
 
 export function fromRawFunctionManaged<R0, R, E, A>(f: (r0: R0) => Managed<R, E, A>): Layer<R0 & R, E, A> {
-  return fromRawManaged(M.asksManaged(f))
+  return fromRawManaged(Ma.asksManaged(f))
 }
 
 export function fromFunctionManaged_<A, R, E, T>(
   f: (a: A) => Managed<R, E, T>,
   tag: H.Tag<T>
 ): Layer<R & A, E, H.Has<T>> {
-  return fromManaged_(M.asksManaged(f), tag)
+  return fromManaged_(Ma.asksManaged(f), tag)
 }
 
 export function fromFunctionManaged<T>(
@@ -486,7 +486,7 @@ export function fromConstructorIO<S>(
 export function fromConstructorManaged<S>(
   tag: H.Tag<S>
 ): <Services extends any[], R, E>(
-  constructor: (...services: Services) => M.Managed<R, E, S>
+  constructor: (...services: Services) => Ma.Managed<R, E, S>
 ) => (
   ...tags: { [k in keyof Services]: H.Tag<Services[k]> }
 ) => Layer<
@@ -497,8 +497,8 @@ export function fromConstructorManaged<S>(
   return (constructor) =>
     (...tags) =>
       fromManaged(tag)(
-        M.chain_(
-          M.fromIO(
+        Ma.chain_(
+          Ma.fromIO(
             I.asksServicesT(...tags)((...services: any[]) => constructor(...(services as any))) as I.IO<any, any, any>
           ),
           (_) => _
@@ -791,7 +791,7 @@ export function andSeq<R1, E1, A1>(
 
 function environmentFor<T>(has: H.Tag<T>, a: T): Managed<unknown, never, H.Has<T>>
 function environmentFor<T>(has: H.Tag<T>, a: T): Managed<unknown, never, any> {
-  return M.fromIO(
+  return Ma.fromIO(
     I.asks((r) => ({
       [has.key]: mergeEnvironments(has, r, a as any)[has.key]
     }))
@@ -833,7 +833,7 @@ export function catchAll<E, R1, E1, B>(
  * your entire application is a layer, such as an HTTP server.
  */
 export function launch<E, A>(la: Layer<unknown, E, A>): I.FIO<E, never> {
-  return pipe(la, build, M.useForever)
+  return pipe(la, build, Ma.useForever)
 }
 
 export function first<A>(): Layer<readonly [A, unknown], never, A> {
@@ -922,7 +922,7 @@ export function compose<R, E, A>(from: Layer<R, E, A>): <E1, A1>(to: Layer<A, E1
  * computed result of this layer.
  */
 export function memoize<R, E, A>(layer: Layer<R, E, A>): Managed<unknown, never, Layer<R, E, A>> {
-  return M.map_(M.once(build(layer)), (_) => fromRawManaged(_))
+  return Ma.map_(Ma.once(build(layer)), (_) => fromRawManaged(_))
 }
 
 /**
@@ -1022,13 +1022,13 @@ export class MemoMap {
    */
   getOrElseMemoize = <R, E, A>(layer: Layer<R, E, A>) => {
     const self = this
-    return new M.Managed<R, E, A>(
+    return new Ma.Managed<R, E, A>(
       pipe(
         this.ref,
         RefM.modifyIO((m) => {
           const inMap = HM.get_(m, layer.hash.get)
 
-          if (O.isSome(inMap)) {
+          if (M.isJust(inMap)) {
             const [acquire, release] = inMap.value
 
             const cached = I.asksIO(([_, rm]: readonly [R, ReleaseMap]) =>
@@ -1059,7 +1059,7 @@ export class MemoMap {
                   const tp                   = yield* _(
                     pipe(
                       scope(layer),
-                      M.chain((_) => _(self)),
+                      Ma.chain((_) => _(self)),
                       (_) => _.io,
                       I.giveAll(tuple(a, innerReleaseMap)),
                       I.result,
@@ -1069,7 +1069,7 @@ export class MemoMap {
                           (cause): I.IO<unknown, E, readonly [Finalizer, A]> =>
                             pipe(
                               F.failCause_(promise, cause),
-                              I.chain(() => M.releaseAll_(innerReleaseMap, ex, sequential) as I.FIO<E, any>),
+                              I.chain(() => Ma.releaseAll_(innerReleaseMap, ex, sequential) as I.FIO<E, any>),
                               I.chain(() => I.failCause(cause))
                             ),
                           ([, a]) =>
@@ -1077,7 +1077,7 @@ export class MemoMap {
                               yield* _(
                                 finalizerRef.set((e) =>
                                   pipe(
-                                    M.releaseAll_(innerReleaseMap, e, sequential),
+                                    Ma.releaseAll_(innerReleaseMap, e, sequential),
                                     I.whenIO(Ref.modify_(observers, (n) => [n === 1, n - 1]))
                                   )
                                 )

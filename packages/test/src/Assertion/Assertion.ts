@@ -13,8 +13,8 @@ import * as C from '@principia/base/IO/Cause'
 import * as Ex from '@principia/base/IO/Exit'
 import * as It from '@principia/base/Iterable'
 import * as L from '@principia/base/List'
+import * as O from '@principia/base/Maybe'
 import * as N from '@principia/base/number'
-import * as O from '@principia/base/Option'
 import * as S from '@principia/base/Show'
 import * as Str from '@principia/base/string'
 import * as St from '@principia/base/Structural'
@@ -55,11 +55,11 @@ interface Custom<A> {
   show?: Show<A>
 }
 
-function getShow<A>(_?: Custom<A>): O.Option<Show<A>> {
+function getShow<A>(_?: Custom<A>): O.Maybe<Show<A>> {
   return O.fromNullable(_?.show)
 }
 
-function getEq<A>(_?: Custom<A>): O.Option<Eq<A>> {
+function getEq<A>(_?: Custom<A>): O.Maybe<Eq<A>> {
   return O.fromNullable(_?.eq)
 }
 
@@ -105,7 +105,7 @@ export function assertionRec<A, B>(
   name: string,
   params: ReadonlyArray<RenderParam>,
   assertion: Assertion<B>,
-  get: (_: A) => O.Option<B>,
+  get: (_: A) => O.Maybe<B>,
   orElse: (data: AssertionData<A>) => BA.FreeBooleanAlgebra<AssertionValue<A>> = asFailure
 ): Assertion<A> {
   const resultAssertion: Ev.Eval<Assertion<A>> = Ev.later(() =>
@@ -184,7 +184,7 @@ export function halts(assertion0: Assertion<any>): Assertion<Ex.Exit<any, any>> 
     'halts',
     [param(assertion0)],
     assertion0,
-    Ex.match(C.haltOption, () => O.none())
+    Ex.match(C.haltOption, () => O.nothing())
   )
 }
 
@@ -197,7 +197,7 @@ export function fails<E>(assertion: Assertion<E>): Assertion<Exit<E, any>> {
     'fails',
     [param(assertion)],
     assertion,
-    Ex.match(flow(C.failures, A.head), () => O.none())
+    Ex.match(flow(C.failures, A.head), () => O.nothing())
   )
 }
 
@@ -213,12 +213,12 @@ export function forall<A>(assertion: Assertion<A>): Assertion<Iterable<A>> {
 
 export function hasField<A, B>(name: string, proj: (a: A) => B, assertion: Assertion<B>): Assertion<A> {
   return assertionRec('hasField', [param(quoted(name)), param(field(name)), param(assertion)], assertion, (actual) =>
-    O.some(proj(actual))
+    O.just(proj(actual))
   )
 }
 
 export function hasMessage(message: Assertion<string>): Assertion<Error> {
-  return assertionRec('hasMessage', [param(message)], message, (error) => O.some(error.message))
+  return assertionRec('hasMessage', [param(message)], message, (error) => O.just(error.message))
 }
 
 export function endsWith<A>(suffix: ReadonlyArray<A>, custom?: Custom<A>): Assertion<ReadonlyArray<A>> {
@@ -262,23 +262,23 @@ export function isLeft<A>(assertion: Assertion<A>): Assertion<E.Either<A, any>> 
     'isLeft',
     [param(assertion)],
     assertion,
-    E.match(O.some, () => O.none())
+    E.match(O.just, () => O.nothing())
   )
 }
 
-export const isNone: Assertion<O.Option<any>> = assertion('isNone', [], O.isNone)
+export const isNothing: Assertion<O.Maybe<any>> = assertion('isNothing', [], O.isNothing)
 
 export function isRight<A>(assertion: Assertion<A>): Assertion<E.Either<any, A>> {
   return assertionRec(
     'isRight',
     [param(assertion)],
     assertion,
-    E.match(() => O.none(), O.some)
+    E.match(() => O.nothing(), O.just)
   )
 }
 
-export function isSome<A>(assertion: Assertion<A>): Assertion<O.Option<A>> {
-  return assertionRec('isSome', [param(assertion)], assertion, identity)
+export function isJust<A>(assertion: Assertion<A>): Assertion<O.Maybe<A>> {
+  return assertionRec('isJust', [param(assertion)], assertion, identity)
 }
 
 export function not<A>(assertion: Assertion<A>): Assertion<A> {
@@ -290,7 +290,7 @@ export function succeeds<A>(assertion: Assertion<A>): Assertion<Exit<any, A>> {
     'succeeds',
     [param(assertion)],
     assertion,
-    Ex.match(() => O.none(), O.some)
+    Ex.match(() => O.nothing(), O.just)
   )
 }
 

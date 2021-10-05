@@ -3,7 +3,7 @@ import type * as Ca from '../../Cause'
 import type * as SER from './SinkEndReason'
 
 import { pipe } from '../../../function'
-import * as O from '../../../Option'
+import * as M from '../../../Maybe'
 import { tuple } from '../../../tuple'
 import * as I from '../..'
 import * as F from '../../Future'
@@ -73,15 +73,15 @@ export function take<A>(handoff: Handoff<A>): I.UIO<A> {
   })
 }
 
-export function poll<A>(handoff: Handoff<A>): I.UIO<O.Option<A>> {
+export function poll<A>(handoff: Handoff<A>): I.UIO<M.Maybe<A>> {
   return I.chain_(F.make<never, void>(), (p) => {
     return pipe(
       handoff.ref,
       Ref.modify((s) => {
         if (s._typeId === FullTypeId) {
-          return tuple(I.as_(F.succeed_(s.notifyConsumer, undefined), O.some(s.a)), new Empty(p))
+          return tuple(I.as_(F.succeed_(s.notifyConsumer, undefined), M.just(s.a)), new Empty(p))
         } else {
-          return tuple(I.succeed(O.none()), s)
+          return tuple(I.succeed(M.nothing()), s)
         }
       }),
       I.flatten

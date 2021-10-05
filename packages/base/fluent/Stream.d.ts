@@ -14,7 +14,7 @@ import type { Layer } from '@principia/base/IO/Layer'
 import type * as M from '@principia/base/IO/Managed'
 import type { Dequeue, Queue, UQueue } from '@principia/base/IO/Queue'
 import type { Schedule } from '@principia/base/IO/Schedule'
-import type * as O from '@principia/base/Option'
+import type * as O from '@principia/base/Maybe'
 import type * as P from '@principia/base/prelude'
 import type { Erase } from '@principia/base/prelude'
 
@@ -60,9 +60,9 @@ interface StreamStaticOps {
    */
   asyncInterrupt: typeof S.asyncInterrupt
   /**
-   * @rewriteStatic asyncOption from "@principia/base/IO/experimental/Stream"
+   * @rewriteStatic asyncMaybe from "@principia/base/IO/experimental/Stream"
    */
-  asyncOption: typeof S.asyncOption
+  asyncMaybe: typeof S.asyncMaybe
   /**
    * @rewriteStatic fail from "@principia/base/IO/experimental/Stream"
    */
@@ -100,9 +100,9 @@ interface StreamStaticOps {
    */
   fromIO: typeof S.fromIO
   /**
-   * @rewriteStatic fromIOOption from "@principia/base/IO/experimental/Stream"
+   * @rewriteStatic fromIOMaybe from "@principia/base/IO/experimental/Stream"
    */
-  fromIOOption: typeof S.fromIOOption
+  fromIOMaybe: typeof S.fromIOMaybe
   /**
    * @rewriteStatic fromIterable from "@principia/base/IO/experimental/Stream"
    */
@@ -136,13 +136,13 @@ interface StreamStaticOps {
    */
   repeatIOChunk: typeof S.repeatIOChunk
   /**
-   * @rewriteStatic repeatIOChunkOption from "@principia/base/IO/experimental/Stream"
+   * @rewriteStatic repeatIOChunkMaybe from "@principia/base/IO/experimental/Stream"
    */
-  repeatIOChunkOption: typeof S.repeatIOChunkOption
+  repeatIOChunkMaybe: typeof S.repeatIOChunkMaybe
   /**
-   * @rewriteStatic repeatIOOption from "@principia/base/IO/experimental/Stream"
+   * @rewriteStatic repeatIOMaybe from "@principia/base/IO/experimental/Stream"
    */
-  repeatIOOption: typeof S.repeatIOOption
+  repeatIOMaybe: typeof S.repeatIOMaybe
   /**
    * @rewriteStatic repeatIOWith from "@principia/base/IO/experimental/Stream"
    */
@@ -188,7 +188,7 @@ declare module '@principia/base/IO/experimental/Stream/core' {
     aggregateAsyncWithin<R, E extends E1, A extends A1, R1, R2, E1, E2, A1, B, C>(
       this: Stream<R, E, A>,
       sink: Sink<R1, E1, A1, E2, A1, B>,
-      schedule: Schedule<R2, O.Option<B>, C>
+      schedule: Schedule<R2, O.Maybe<B>, C>
     ): Stream<R & R1 & R2 & Has<Clock>, E2, B>
     /**
      * @rewrite aggregateAsyncWithinEither_ from "@principia/base/IO/experimental/Stream"
@@ -196,7 +196,7 @@ declare module '@principia/base/IO/experimental/Stream/core' {
     aggregateAsyncWithinEither<R, E extends E1, A extends A1, R1, R2, E1, E2, A1, B, C>(
       this: Stream<R, E, A>,
       sink: Sink<R1, E1, A1, E2, A1, B>,
-      schedule: Schedule<R2, O.Option<B>, C>
+      schedule: Schedule<R2, O.Maybe<B>, C>
     ): Stream<R & R1 & R2 & Has<Clock>, E2, E.Either<C, B>>
     /**
      * @rewrite as_ from "@principia/base/IO/experimental/Stream"
@@ -273,18 +273,18 @@ declare module '@principia/base/IO/experimental/Stream/core' {
       f: (cause: Cause<E>) => Stream<R1, E1, A1>
     ): Stream<R & R1, E1, A1 | A>
     /**
-     * @rewrite catchSome_ from "@principia/base/IO/experimental/Stream"
+     * @rewrite catchJust_ from "@principia/base/IO/experimental/Stream"
      */
-    catchSome<R, E, A, R1, E1, A1>(
+    catchJust<R, E, A, R1, E1, A1>(
       this: Stream<R, E, A>,
-      pf: (e: E) => O.Option<Stream<R1, E1, A1>>
+      pf: (e: E) => O.Maybe<Stream<R1, E1, A1>>
     ): Stream<R & R1, E | E1, A1 | A>
     /**
-     * @rewrite catchSomeCause_ from "@principia/base/IO/experimental/Stream"
+     * @rewrite catchJustCause_ from "@principia/base/IO/experimental/Stream"
      */
-    catchSomeCause<R, E, A, R1, E1, A1>(
+    catchJustCause<R, E, A, R1, E1, A1>(
       this: Stream<R, E, A>,
-      pf: (e: Cause<E>) => O.Option<Stream<R1, E1, A1>>
+      pf: (e: Cause<E>) => O.Maybe<Stream<R1, E1, A1>>
     ): Stream<R & R1, E | E1, A1 | A>
     /**
      * @rewrite chain_ from "@principia/base/IO/experimental/Stream"
@@ -314,14 +314,18 @@ declare module '@principia/base/IO/experimental/Stream/core' {
     /**
      * @rewrite collect_ from "@principia/base/IO/experimental/Stream"
      */
-    collect<R, E, A, B>(this: Stream<R, E, A>, f: (a: A) => O.Option<B>): Stream<R, E, B>
+    collect<R, E, A, B>(this: Stream<R, E, A>, f: (a: A) => O.Maybe<B>): Stream<R, E, B>
     /**
      * @rewrite collectIO_ from "@principia/base/IO/experimental/Stream"
      */
     collectIO<R, E, A, R1, E1, A1>(
       this: Stream<R, E, A>,
-      pf: (a: A) => O.Option<I.IO<R1, E1, A1>>
+      pf: (a: A) => O.Maybe<I.IO<R1, E1, A1>>
     ): Stream<R & R1, E1 | E, A1>
+    /**
+     * @rewrite collectJust from "@principia/base/IO/experimental/Stream"
+     */
+    collectJust<R, E, A>(this: Stream<R, E, O.Maybe<A>>): Stream<R, E, A>
     /**
      * @rewrite collectLeft from "@principia/base/IO/experimental/Stream"
      */
@@ -331,24 +335,24 @@ declare module '@principia/base/IO/experimental/Stream/core' {
      */
     collectRight<R, E, A, R1>(this: Stream<R, E, E.Either<A, R1>>): Stream<R, E, R1>
     /**
-     * @rewrite collectSome from "@principia/base/IO/experimental/Stream"
-     */
-    collectSome<R, E, A>(this: Stream<R, E, O.Option<A>>): Stream<R, E, A>
-    /**
      * @rewrite collectSuccess from "@principia/base/IO/experimental/Stream"
      */
     collectSuccess<R, E, A, L1>(this: Stream<R, E, Ex.Exit<L1, A>>): Stream<R, E, A>
     /**
      * @rewrite collectWhile_ from "@principia/base/IO/experimental/Stream"
      */
-    collectWhile<R, E, A, A1>(this: Stream<R, E, A>, pf: (a: A) => O.Option<A1>): Stream<R, E, A1>
+    collectWhile<R, E, A, A1>(this: Stream<R, E, A>, pf: (a: A) => O.Maybe<A1>): Stream<R, E, A1>
     /**
      * @rewrite collectWhileIO_ from "@principia/base/IO/experimental/Stream"
      */
     collectWhileIO<R, E, A, R1, E1, A1>(
       this: Stream<R, E, A>,
-      pf: (a: A) => O.Option<I.IO<R1, E1, A1>>
+      pf: (a: A) => O.Maybe<I.IO<R1, E1, A1>>
     ): Stream<R & R1, E1 | E, A1>
+    /**
+     * @rewrite collectWhileJust from "@principia/base/IO/experimental/Stream"
+     */
+    collectWhileJust<R, E, A>(this: Stream<R, E, O.Maybe<A>>): Stream<R, E, A>
     /**
      * @rewrite collectWhileLeft from "@principia/base/IO/experimental/Stream"
      */
@@ -357,10 +361,6 @@ declare module '@principia/base/IO/experimental/Stream/core' {
      * @rewrite collectWhileRight from "@principia/base/IO/experimental/Stream"
      */
     collectWhileRight<R, E, A1, L1>(this: Stream<R, E, E.Either<L1, A1>>): Stream<R, E, A1>
-    /**
-     * @rewrite collectWhileSome from "@principia/base/IO/experimental/Stream"
-     */
-    collectWhileSome<R, E, A>(this: Stream<R, E, O.Option<A>>): Stream<R, E, A>
     /**
      * @rewrite collectWhileSuccess from "@principia/base/IO/experimental/Stream"
      */
@@ -374,9 +374,9 @@ declare module '@principia/base/IO/experimental/Stream/core' {
       s: S,
       f: (
         s: S,
-        eff1: I.IO<R, O.Option<E>, A>,
-        eff2: I.IO<R1, O.Option<E1>, A1>
-      ) => I.IO<R2, never, Ex.Exit<O.Option<E | E1>, readonly [A2, S]>>
+        eff1: I.IO<R, O.Maybe<E>, A>,
+        eff2: I.IO<R1, O.Maybe<E1>, A1>
+      ) => I.IO<R2, never, Ex.Exit<O.Maybe<E | E1>, readonly [A2, S]>>
     ): Stream<R & R1 & R2, E | E1, A2>
     /**
      * @rewrite combineChunks_ from "@principia/base/IO/experimental/Stream"
@@ -387,9 +387,9 @@ declare module '@principia/base/IO/experimental/Stream/core' {
       s: S,
       f: (
         s: S,
-        l: I.IO<R, O.Option<E>, C.Chunk<A>>,
-        r: I.IO<R1, O.Option<E1>, C.Chunk<A1>>
-      ) => I.IO<R2, never, Ex.Exit<O.Option<E | E1>, readonly [C.Chunk<A2>, S]>>
+        l: I.IO<R, O.Maybe<E>, C.Chunk<A>>,
+        r: I.IO<R1, O.Maybe<E1>, C.Chunk<A1>>
+      ) => I.IO<R2, never, Ex.Exit<O.Maybe<E | E1>, readonly [C.Chunk<A2>, S]>>
     ): Stream<R1 & R & R2, E | E1, A2>
     /**
      * @rewrite concat_ from "@principia/base/IO/experimental/Stream"
@@ -430,7 +430,7 @@ declare module '@principia/base/IO/experimental/Stream/core' {
       n: number,
       maximumLag: number,
       decide: (_: A) => I.UIO<(_: number) => boolean>
-    ): M.Managed<R, never, C.Chunk<Dequeue<Ex.Exit<O.Option<E>, A>>>>
+    ): M.Managed<R, never, C.Chunk<Dequeue<Ex.Exit<O.Maybe<E>, A>>>>
     /**
      * @rewrite distributedWithDynamic_ from "@principia/base/IO/experimental/Stream"
      */
@@ -438,8 +438,8 @@ declare module '@principia/base/IO/experimental/Stream/core' {
       this: Stream<R, E, A>,
       maximumLag: number,
       decide: (_: A) => I.UIO<(_: symbol) => boolean>,
-      done?: (_: Ex.Exit<O.Option<E>, never>) => I.UIO<any>
-    ): M.Managed<R, never, I.UIO<readonly [symbol, Dequeue<Ex.Exit<O.Option<E>, A>>]>>
+      done?: (_: Ex.Exit<O.Maybe<E>, never>) => I.UIO<any>
+    ): M.Managed<R, never, I.UIO<readonly [symbol, Dequeue<Ex.Exit<O.Maybe<E>, A>>]>>
     /**
      * @rewrite drop_ from "@principia/base/IO/experimental/Stream"
      */
@@ -479,13 +479,13 @@ declare module '@principia/base/IO/experimental/Stream/core' {
     /**
      * @rewrite filterMap_ from "@principia/base/IO/experimental/Stream"
      */
-    filterMap<R, E, A, B>(this: Stream<R, E, A>, f: (a: A) => O.Option<B>): Stream<R, E, B>
+    filterMap<R, E, A, B>(this: Stream<R, E, A>, f: (a: A) => O.Maybe<B>): Stream<R, E, B>
     /**
      * @rewrite filterMapIO_ from "@principia/base/IO/experimental/Stream"
      */
     filterMapIO<R, E, A, R1, E1, B>(
       this: Stream<R, E, A>,
-      f: (a: A) => I.IO<R1, E1, O.Option<B>>
+      f: (a: A) => I.IO<R1, E1, O.Maybe<B>>
     ): Stream<R & R1, E | E1, B>
     /**
      * @rewrite find_ from "@principia/base/IO/experimental/Stream"
@@ -500,9 +500,9 @@ declare module '@principia/base/IO/experimental/Stream/core' {
      */
     flattenChunks<R, E, A>(this: Stream<R, E, C.Chunk<A>>): Stream<R, E, A>
     /**
-     * @rewrite flattenExitOption from "@principia/base/IO/experimental/Stream"
+     * @rewrite flattenExitMaybe from "@principia/base/IO/experimental/Stream"
      */
-    flattenExitOption<R, E, E1, A>(this: Stream<R, E, Ex.Exit<O.Option<E1>, A>>): Stream<R, E | E1, A>
+    flattenExitMaybe<R, E, E1, A>(this: Stream<R, E, Ex.Exit<O.Maybe<E1>, A>>): Stream<R, E | E1, A>
     /**
      * @rewrite flattenTake from "@principia/base/IO/experimental/Stream"
      */
@@ -704,9 +704,9 @@ declare module '@principia/base/IO/experimental/Stream/core' {
      * @rewrite orElseOptional_ from "@principia/base/IO/experimental/Stream"
      */
     orElseOptional<R, E, A, R1, E1, A1>(
-      this: Stream<R, O.Option<E>, A>,
-      that: () => Stream<R1, O.Option<E1>, A1>
-    ): Stream<R & R1, O.Option<E | E1>, A | A1>
+      this: Stream<R, O.Maybe<E>, A>,
+      that: () => Stream<R1, O.Maybe<E1>, A1>
+    ): Stream<R & R1, O.Maybe<E | E1>, A | A1>
     /**
      * @rewrite orElseSucceed_ from "@principia/base/IO/experimental/Stream"
      */
@@ -760,13 +760,13 @@ declare module '@principia/base/IO/experimental/Stream/core' {
     /**
      * @rewrite refineOrHalt_ from "@principia/base/IO/experimental/Stream"
      */
-    refineOrHalt<R, E, A, E1>(this: Stream<R, E, A>, pf: (e: E) => O.Option<E1>): Stream<R, E1, A>
+    refineOrHalt<R, E, A, E1>(this: Stream<R, E, A>, pf: (e: E) => O.Maybe<E1>): Stream<R, E1, A>
     /**
      * @rewrite refineOrHaltWith_ from "@principia/base/IO/experimental/Stream"
      */
     refineOrHaltWith<R, E, A, E1>(
       this: Stream<R, E, A>,
-      pf: (e: E) => O.Option<E1>,
+      pf: (e: E) => O.Maybe<E1>,
       f: (e: E) => unknown
     ): Stream<R, E1, A>
     /**
@@ -815,7 +815,7 @@ declare module '@principia/base/IO/experimental/Stream/core' {
     /**
      * @rewrite right from "@principia/base/IO/experimental/Stream"
      */
-    right<R, E, A, B>(this: Stream<R, E, E.Either<A, B>>): Stream<R, O.Option<E>, B>
+    right<R, E, A, B>(this: Stream<R, E, E.Either<A, B>>): Stream<R, O.Maybe<E>, B>
     /**
      * @rewrite rightOrFail_ from "@principia/base/IO/experimental/Stream"
      */
@@ -862,7 +862,7 @@ declare module '@principia/base/IO/experimental/Stream/core' {
      */
     runIntoElementsManaged<R, E, A, R1, E1>(
       this: Stream<R, E, A>,
-      queue: Queue<R1, unknown, never, never, Ex.Exit<O.Option<E | E1>, A>, unknown>
+      queue: Queue<R1, unknown, never, never, Ex.Exit<O.Maybe<E | E1>, A>, unknown>
     ): M.Managed<R & R1, E | E1, void>
     /**
      * @rewrite runIntoHubManaged_ from "@principia/base/IO/experimental/Stream"
@@ -925,7 +925,7 @@ declare module '@principia/base/IO/experimental/Stream/core' {
     /**
      * @rewriteGetter toPull from "@principia/base/IO/experimental/Stream"
      */
-    toPull: M.Managed<R, never, I.IO<R, O.Option<E>, C.Chunk<A>>>
+    toPull: M.Managed<R, never, I.IO<R, O.Maybe<E>, C.Chunk<A>>>
     /**
      * @rewrite toQueue_ from "@principia/base/IO/experimental/Stream"
      */
@@ -940,7 +940,7 @@ declare module '@principia/base/IO/experimental/Stream/core' {
     toQueueOfElements<R, E, A>(
       this: Stream<R, E, A>,
       capacity?: number
-    ): M.Managed<R, never, Dequeue<Ex.Exit<O.Option<E>, A>>>
+    ): M.Managed<R, never, Dequeue<Ex.Exit<O.Maybe<E>, A>>>
     /**
      * @rewrite toQueueSliding_ from "@principia/base/IO/experimental/Stream"
      */

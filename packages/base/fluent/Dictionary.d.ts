@@ -3,7 +3,7 @@ import type * as Dict from '@principia/base/Dictionary'
 import type { Either } from '@principia/base/Either'
 import type { HashMap } from '@principia/base/HashMap'
 import type * as HKT from '@principia/base/HKT'
-import type { Option } from '@principia/base/Option'
+import type { Maybe } from '@principia/base/Maybe'
 import type {
   Applicative,
   Eq,
@@ -61,7 +61,7 @@ declare module '@principia/base/Dictionary' {
     /**
      * @rewrite compact from "@principia/base/Dictionary"
      */
-    compact<A>(this: Dictionary<Option<A>>): Dictionary<A>
+    compact<A>(this: Dictionary<Maybe<A>>): Dictionary<A>
     /**
      * @rewrite deleteAt_ from "@principia/base/Dictionary"
      */
@@ -89,7 +89,7 @@ declare module '@principia/base/Dictionary' {
     /**
      * @rewrite filterMap_ from "@principia/base/Dictionary"
      */
-    filterMap<A, B>(this: Dictionary<A>, f: (a: A, k: string) => Option<B>): Dictionary<B>
+    filterMap<A, B>(this: Dictionary<A>, f: (a: A, k: string) => Maybe<B>): Dictionary<B>
     /**
      * @rewriteConstraint filterMapA_ from "@principia/base/Dictionary"
      */
@@ -97,7 +97,7 @@ declare module '@principia/base/Dictionary' {
       this: Dictionary<A>,
       A: Applicative<F, C>
     ): <K, Q, W, X, I, S, R, E, A>(
-      f: (a: A, k: string) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Option<A>>
+      f: (a: A, k: string) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Maybe<A>>
     ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Dictionary<A>>
     /**
      * @rewriteConstraint foldMap_ from "@principia/base/Dictionary"
@@ -118,7 +118,7 @@ declare module '@principia/base/Dictionary' {
     /**
      * @rewrite insertAt_ from "@principia/base/Dictionary"
      */
-    insertAt<A>(this: Dictionary<A>, k: string, a: A): Option<Dictionary<A>>
+    insertAt<A>(this: Dictionary<A>, k: string, a: A): Maybe<Dictionary<A>>
     /**
      * @rewriteConstraint isSubrecord_ from "@principia/base/Dictionary"
      */
@@ -130,7 +130,7 @@ declare module '@principia/base/Dictionary' {
     /**
      * @rewrite lookup_ from "@principia/base/Dictionary"
      */
-    lookup<A>(this: Dictionary<A>, k: string): Option<A>
+    lookup<A>(this: Dictionary<A>, k: string): Maybe<A>
     /**
      * @rewrite map_ from "@principia/base/Dictionary"
      */
@@ -147,7 +147,7 @@ declare module '@principia/base/Dictionary' {
     /**
      * @rewrite modifyAt_ from "@principia/base/Dictionary"
      */
-    modifyAt<A>(this: Dictionary<A>, k: string, f: (a: A) => A): Option<Dictionary<A>>
+    modifyAt<A>(this: Dictionary<A>, k: string, f: (a: A) => A): Maybe<Dictionary<A>>
     /**
      * @rewrite partition_ from "@principia/base/Dictionary"
      */
@@ -178,7 +178,7 @@ declare module '@principia/base/Dictionary' {
     /**
      * @rewrite pop_ from "@principia/base/Dictionary"
      */
-    pop<A>(this: Dictionary<A>, k: string): Option<readonly [A, Dictionary<A>]>
+    pop<A>(this: Dictionary<A>, k: string): Maybe<readonly [A, Dictionary<A>]>
     /**
      * @rewrite separate from "@principia/base/Dictionary"
      */
@@ -194,7 +194,7 @@ declare module '@principia/base/Dictionary' {
     /**
      * @rewrite updateAt_ from "@principia/base/Dictionary"
      */
-    updateAt<A>(this: Dictionary<A>, k: string, a: A): Option<Dictionary<A>>
+    updateAt<A>(this: Dictionary<A>, k: string, a: A): Maybe<Dictionary<A>>
     /**
      * @rewrite upsertAt_ from "@principia/base/Dictionary"
      */

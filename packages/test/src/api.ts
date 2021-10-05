@@ -20,10 +20,10 @@ import * as E from '@principia/base/Either'
 import * as Ev from '@principia/base/Eval'
 import { flow, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
-import * as M from '@principia/base/IO/Managed'
+import * as Ma from '@principia/base/IO/Managed'
 import * as S from '@principia/base/IO/Stream'
+import * as M from '@principia/base/Maybe'
 import * as NA from '@principia/base/NonEmptyArray'
-import * as O from '@principia/base/Option'
 
 import { TestAnnotationMap } from './Annotation'
 import { anything, AssertionValue, isTrue } from './Assertion'
@@ -146,7 +146,7 @@ export function suite<Specs extends ReadonlyArray<Spec.XSpec<any, any>>>(
   label: string,
   ...specs: Specs
 ): Spec.XSpec<MergeR<Specs>, MergeE<Specs>> {
-  return Spec.suite(label, M.succeed(specs), O.none())
+  return Spec.suite(label, Ma.succeed(specs), M.nothing())
 }
 
 export function testIO<R, E>(label: string, assertion: () => IO<R, E, TestResult>): Spec.XSpec<R, E> {
@@ -157,7 +157,7 @@ export function testIO<R, E>(label: string, assertion: () => IO<R, E, TestResult
       flow(TF.failCause, I.fail),
       flow(
         BA.failures,
-        O.match(
+        M.match(
           () => I.succeed(new TS.Succeeded(BA.success(undefined))),
           (failures) => I.fail(TF.assertion(failures))
         )
@@ -209,7 +209,7 @@ function checkStream<R, A, R1, E>(
                 pipe(
                   test(input),
                   I.map(
-                    BA.map((fd) => FailureDetails(fd.assertion, O.some(GenFailureDetails(initial.value, input, index))))
+                    BA.map((fd) => FailureDetails(fd.assertion, M.just(GenFailureDetails(initial.value, input, index))))
                   ),
                   I.either
                 )
@@ -236,7 +236,7 @@ function shrinkStream<R, R1, E, A>(
         flow(
           C.filter(E.match(() => true, BA.isFalse)),
           C.last,
-          O.match(
+          M.match(
             () =>
               I.succeed(
                 BA.success(

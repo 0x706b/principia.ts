@@ -1,5 +1,5 @@
 import type { Eval } from './Eval'
-import type { Option } from './internal/Option'
+import type { Maybe } from './internal/Maybe'
 import type { Monad } from './Monad'
 import type { Monoid } from './Monoid'
 import type { Predicate } from './Predicate'
@@ -10,7 +10,7 @@ import * as Ev from './Eval/core'
 import * as HKT from './HKT'
 import * as E from './internal/Either'
 import * as It from './internal/Iterable'
-import * as O from './internal/Option'
+import * as Mb from './internal/Maybe'
 
 export interface Foldable<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
   readonly foldl_: FoldLeftFn_<F, C>
@@ -157,22 +157,22 @@ export interface FindFn_<F extends HKT.URIS, C = HKT.Auto> {
   <K, Q, W, X, I, S, R, E, A, B extends A>(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     refinement: Refinement<A, B>
-  ): Option<B>
-  <K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>, predicate: Predicate<A>): Option<A>
+  ): Maybe<B>
+  <K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>, predicate: Predicate<A>): Maybe<A>
 }
 
 export function getFind_<F extends HKT.URIS, C = HKT.Auto>(F: FoldableMin<F, C>): FindFn_<F, C> {
   return <K, Q, W, X, I, S, R, E, A>(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     predicate: Predicate<A>
-  ): Option<A> => F.foldr_(fa, Ev.now(O.none<A>()), (a, b) => (predicate(a) ? Ev.now(O.some(a)) : b)).value
+  ): Maybe<A> => F.foldr_(fa, Ev.now(Mb.nothing<A>()), (a, b) => (predicate(a) ? Ev.now(Mb.just(a)) : b)).value
 }
 
 export interface FindFn<F extends HKT.URIS, C = HKT.Auto> {
   <A, B extends A>(refinement: Refinement<A, B>): <K, Q, W, X, I, S, R, E>(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
-  ) => Option<B>
-  <A>(predicate: Predicate<A>): <K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>) => Option<A>
+  ) => Maybe<B>
+  <A>(predicate: Predicate<A>): <K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>) => Maybe<A>
 }
 
 export function getFind<F extends HKT.URIS, C = HKT.Auto>(F: FoldableMin<F, C>): FindFn<F, C> {
@@ -203,16 +203,16 @@ export interface FindFnM_<F extends HKT.URIS, CF = HKT.Auto> {
   >(
     fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>,
     p: (a: AF) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
-  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, Option<AF>>
+  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, Maybe<AF>>
 }
 
 export function getFindM_<F extends HKT.URIS, CF = HKT.Auto>(F: FoldableMin<F, CF>): FindFnM_<F, CF> {
   return (M) => (fa, p) =>
     M.chainRec_(
       fromFoldable(F)(fa),
-      O.match(
-        () => M.pure(E.right(O.none())),
-        ([a, src]) => M.map_(p(a), (b) => (b ? E.right(O.some(a)) : E.left(src.value)))
+      Mb.match(
+        () => M.pure(E.right(Mb.nothing())),
+        ([a, src]) => M.map_(p(a), (b) => (b ? E.right(Mb.just(a)) : E.left(src.value)))
       )
     )
 }
@@ -222,7 +222,7 @@ export interface FindMFn<F extends HKT.URIS, CF = HKT.Auto> {
     p: (a: AF) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, boolean>
   ) => <KF, QF, WF, XF, IF, SF, RF, EF>(
     fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>
-  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, Option<AF>>
+  ) => HKT.Kind<M, CM, KM, QM, WM, XM, IM, SM, RM, EM, Maybe<AF>>
 }
 
 export function getFindM<F extends HKT.URIS, CF = HKT.Auto>(F: FoldableMin<F, CF>): FindMFn<F, CF> {
@@ -309,7 +309,7 @@ export function getFoldrM_<F extends HKT.URIS, CF = HKT.Auto>(F: FoldableMin<F, 
     ) => {
       const source = fromFoldable(F)(fa)
       return M.chainRec_([b, source] as const, ([z, src]) =>
-        O.match_(
+        Mb.match_(
           src,
           () => M.pure(E.right(z)),
           ([a, src]) => M.map_(f(a, z), (b) => E.left([b, src.value]))
@@ -428,7 +428,7 @@ export function getExistsM_<F extends HKT.URIS, CF = HKT.Auto>(F: FoldableMin<F,
   return (M) => (fa, p) =>
     M.chainRec_(
       fromFoldable(F)(fa),
-      O.match(
+      Mb.match(
         () => M.pure(E.right(false)),
         ([a, src]) => M.map_(p(a), (bb) => (bb ? E.right(true) : E.left(src.value)))
       )
@@ -507,7 +507,7 @@ export function getEveryM_<F extends HKT.URIS, CF = HKT.Auto>(F: FoldableMin<F, 
   return (M) => (fa, p) =>
     M.chainRec_(
       fromFoldable(F)(fa),
-      O.match(
+      Mb.match(
         () => M.pure(E.right(true)),
         ([a, src]) => M.map_(p(a), (bb) => (!bb ? E.right(false) : E.left(src.value)))
       )
@@ -541,9 +541,9 @@ export function getToIterable<F extends HKT.URIS, C = HKT.Auto>(F: FoldableMin<F
  * -------------------------------------------------------------------------------------------------
  */
 
-type Source<A> = Option<readonly [A, Eval<Source<A>>]>
+type Source<A> = Maybe<readonly [A, Eval<Source<A>>]>
 
 function fromFoldable<F extends HKT.URIS, C>(F: FoldableMin<F, C>) {
   return <K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>): Source<A> =>
-    F.foldr_(fa, Ev.now<Source<A>>(O.none()), (a, evalSrc) => Ev.later(() => O.some([a, evalSrc] as const))).value
+    F.foldr_(fa, Ev.now<Source<A>>(Mb.nothing()), (a, evalSrc) => Ev.later(() => Mb.just([a, evalSrc] as const))).value
 }

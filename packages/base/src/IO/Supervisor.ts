@@ -3,8 +3,8 @@
  *
  * Copyright 2020 Michael Arnaldi and the Matechs Garage Contributors.
  */
+import type * as M from '../Maybe'
 import type { Exit } from './Exit'
-import type * as O from '../Option'
 import type { RuntimeFiber } from './Fiber'
 import type { Atomic } from './Ref'
 
@@ -53,7 +53,7 @@ export class Supervisor<A> {
     readonly unsafeOnStart: <R, E, A>(
       environment: R,
       effect: I.IO<R, E, A>,
-      parent: O.Option<RuntimeFiber<any, any>>,
+      parent: M.Maybe<RuntimeFiber<any, any>>,
       fiber: RuntimeFiber<E, A>
     ) => Propagation,
     readonly unsafeOnEnd: <E, A>(value: Exit<E, A>, fiber: RuntimeFiber<E, A>) => Propagation

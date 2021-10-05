@@ -2,7 +2,7 @@ import type { Chunk, ChunkBuilder } from './core'
 
 import { identity, pipe } from '../function'
 import * as I from '../IO'
-import * as O from '../Option'
+import * as M from '../Maybe'
 import * as C from './core'
 
 /*
@@ -59,10 +59,10 @@ function findIOLoop_<R, E, A>(
   array: ArrayLike<A>,
   i: number,
   length: number
-): I.IO<R, E, O.Option<A>> {
+): I.IO<R, E, M.Maybe<A>> {
   if (i < length) {
     const a = array[i]
-    return I.chain_(f(a), (b) => (b ? I.succeed(O.some(a)) : findIOLoop_(iterator, f, array, i + 1, length)))
+    return I.chain_(f(a), (b) => (b ? I.succeed(M.just(a)) : findIOLoop_(iterator, f, array, i + 1, length)))
   }
   let result
   if (!(result = iterator.next()).done) {
@@ -70,10 +70,10 @@ function findIOLoop_<R, E, A>(
     const len = arr.length
     return findIOLoop_(iterator, f, arr, 0, len)
   }
-  return I.succeed(O.none())
+  return I.succeed(M.nothing())
 }
 
-export function findIO_<R, E, A>(as: Chunk<A>, f: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, O.Option<A>> {
+export function findIO_<R, E, A>(as: Chunk<A>, f: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, M.Maybe<A>> {
   C.concrete(as)
   const iterator = as.arrayIterator()
   let result
@@ -82,11 +82,11 @@ export function findIO_<R, E, A>(as: Chunk<A>, f: (a: A) => I.IO<R, E, boolean>)
     const length = array.length
     return findIOLoop_(iterator, f, array, 0, length)
   } else {
-    return I.succeed(O.none())
+    return I.succeed(M.nothing())
   }
 }
 
-export function findIO<R, E, A>(f: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, O.Option<A>> {
+export function findIO<R, E, A>(f: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, M.Maybe<A>> {
   return (as) => findIO_(as, f)
 }
 

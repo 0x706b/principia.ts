@@ -6,7 +6,7 @@ import type { TxnId } from './TxnId'
 
 import * as E from '../../Either'
 import { identity } from '../../function'
-import * as O from '../../Option'
+import * as M from '../../Maybe'
 import { AtomicReference } from '../../util/support/AtomicReference'
 import { makeEntry } from './Entry'
 import { emptyTodoMap } from './Journal'
@@ -324,25 +324,25 @@ export function modify<A, B>(f: (a: A) => readonly [B, A]): <E>(self: ETRef<E, A
  * Updates the value of the variable, returning a function of the specified
  * value.
  */
-export function modifySome_<E, A, B>(
+export function modifyJust_<E, A, B>(
   self: ETRef<E, A>,
   b: B,
-  f: (a: A) => O.Option<readonly [B, A]>
+  f: (a: A) => M.Maybe<readonly [B, A]>
 ): _.STM<unknown, E, B> {
-  return modify_(self, (a) => O.match_(f(a), () => [b, a], identity))
+  return modify_(self, (a) => M.match_(f(a), () => [b, a], identity))
 }
 
 /**
  * Updates the value of the variable, returning a function of the specified
  * value.
  *
- * @dataFirst modifySome_
+ * @dataFirst modifyJust_
  */
-export function modifySome<A, B>(
+export function modifyJust<A, B>(
   b: B,
-  f: (a: A) => O.Option<readonly [B, A]>
+  f: (a: A) => M.Maybe<readonly [B, A]>
 ): <E>(self: ETRef<E, A>) => _.STM<unknown, E, B> {
-  return (self) => modifySome_(self, b, f)
+  return (self) => modifyJust_(self, b, f)
 }
 
 /**
@@ -407,7 +407,7 @@ export function getAndUpdate<A>(f: (a: A) => A): <EA>(self: ETRef<EA, A>) => _.S
  * Updates some values of the variable but leaves others alone, returning the
  * old value.
  */
-export function getAndUpdateSome_<EA, A>(self: ETRef<EA, A>, f: (a: A) => O.Option<A>): _.STM<unknown, EA, A> {
+export function getAndUpdateJust_<EA, A>(self: ETRef<EA, A>, f: (a: A) => M.Maybe<A>): _.STM<unknown, EA, A> {
   concrete(self)
   switch (self._tag) {
     case 'Atomic': {
@@ -415,7 +415,7 @@ export function getAndUpdateSome_<EA, A>(self: ETRef<EA, A>, f: (a: A) => O.Opti
         const entry    = getOrMakeEntry(self, journal)
         const oldValue = entry.use((_) => _.unsafeGet<A>())
         const v        = f(oldValue)
-        if (O.isSome(v)) {
+        if (M.isJust(v)) {
           entry.use((_) => _.unsafeSet(v.value))
         }
         return oldValue
@@ -423,7 +423,7 @@ export function getAndUpdateSome_<EA, A>(self: ETRef<EA, A>, f: (a: A) => O.Opti
     }
     default: {
       return modify_(self, (_) =>
-        O.match_(
+        M.match_(
           f(_),
           () => [_, _],
           (v) => [_, v]
@@ -437,10 +437,10 @@ export function getAndUpdateSome_<EA, A>(self: ETRef<EA, A>, f: (a: A) => O.Opti
  * Updates some values of the variable but leaves others alone, returning the
  * old value.
  *
- * @dataFirst getAndUpdateSome_
+ * @dataFirst getAndUpdateJust_
  */
-export function getAndUpdateSome<A>(f: (a: A) => O.Option<A>): <EA>(self: ETRef<EA, A>) => _.STM<unknown, EA, A> {
-  return (self) => getAndUpdateSome_(self, f)
+export function getAndUpdateJust<A>(f: (a: A) => M.Maybe<A>): <EA>(self: ETRef<EA, A>) => _.STM<unknown, EA, A> {
+  return (self) => getAndUpdateJust_(self, f)
 }
 
 /**
@@ -482,33 +482,33 @@ export function update<A>(f: (a: A) => A): <E>(self: ETRef<E, A>) => _.STM<unkno
 /**
  * Updates some values of the variable but leaves others alone.
  */
-export function updateSome_<E, A>(self: ETRef<E, A>, f: (a: A) => O.Option<A>): _.STM<unknown, E, void> {
-  return update_(self, (a) => O.match_(f(a), () => a, identity))
+export function updateJust_<E, A>(self: ETRef<E, A>, f: (a: A) => M.Maybe<A>): _.STM<unknown, E, void> {
+  return update_(self, (a) => M.match_(f(a), () => a, identity))
 }
 
 /**
  * Updates some values of the variable but leaves others alone.
  *
- * @dataFirst updateSome_
+ * @dataFirst updateJust_
  */
-export function updateSome<A>(f: (a: A) => O.Option<A>): <E>(self: ETRef<E, A>) => _.STM<unknown, E, void> {
-  return (self) => updateSome_(self, f)
+export function updateJust<A>(f: (a: A) => M.Maybe<A>): <E>(self: ETRef<E, A>) => _.STM<unknown, E, void> {
+  return (self) => updateJust_(self, f)
 }
 
 /**
  * Updates some values of the variable but leaves others alone.
  */
-export function updateSomeAndGet_<E, A>(self: ETRef<E, A>, f: (a: A) => O.Option<A>): _.STM<unknown, E, A> {
-  return updateAndGet_(self, (a) => O.match_(f(a), () => a, identity))
+export function updateJustAndGet_<E, A>(self: ETRef<E, A>, f: (a: A) => M.Maybe<A>): _.STM<unknown, E, A> {
+  return updateAndGet_(self, (a) => M.match_(f(a), () => a, identity))
 }
 
 /**
  * Updates some values of the variable but leaves others alone.
  *
- * @dataFirst updateSomeAndGet_
+ * @dataFirst updateJustAndGet_
  */
-export function updateSomeAndGet<A>(f: (a: A) => O.Option<A>): <E>(self: ETRef<E, A>) => _.STM<unknown, E, A> {
-  return (self) => updateSomeAndGet_(self, f)
+export function updateJustAndGet<A>(f: (a: A) => M.Maybe<A>): <E>(self: ETRef<E, A>) => _.STM<unknown, E, A> {
+  return (self) => updateJustAndGet_(self, f)
 }
 
 /**
