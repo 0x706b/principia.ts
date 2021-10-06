@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.22.3](https://github.com/0x706b/principia.ts/compare/@principia/base@0.22.2...@principia/base@0.22.3) (2021-10-06)
+
+
+### Bug Fixes
+
+* **base/managed:** invalid import ([60681d4](https://github.com/0x706b/principia.ts/commit/60681d4851127702a5ef15a0ab293b6a66a6173f))
+
+
+
+
+
 ## [0.22.2](https://github.com/0x706b/principia.ts/compare/@principia/base@0.22.1...@principia/base@0.22.2) (2021-10-06)
 
 

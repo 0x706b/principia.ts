@@ -1,6 +1,6 @@
 {
   "name": "@principia/laws",
-  "version": "0.17.8",
+  "version": "0.17.9",
   "description": "Laws",
   "repository": {
     "type": "git",
@@ -48,7 +48,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@principia/base": "^0.22.2",
+    "@principia/base": "^0.22.3",
     "fast-check": "^2.17.0"
   },
   "publishConfig": {

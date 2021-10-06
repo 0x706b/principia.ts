@@ -1,6 +1,6 @@
 {
   "name": "@principia/http",
-  "version": "0.18.2",
+  "version": "0.18.3",
   "description": "HTTP",
   "repository": {
     "type": "git",
@@ -48,9 +48,9 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@principia/base": "^0.22.2",
-    "@principia/node": "^0.18.2",
-    "@principia/schema": "^0.18.2",
+    "@principia/base": "^0.22.3",
+    "@principia/node": "^0.18.3",
+    "@principia/schema": "^0.18.3",
     "path-to-regexp": "^6.2.0",
     "qs": "^6.10.1"
   },
