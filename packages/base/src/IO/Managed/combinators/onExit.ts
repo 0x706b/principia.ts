@@ -1,5 +1,4 @@
-import { sequential } from 'packages/base/src/ExecutionStrategy'
-
+import { sequential } from '../../../ExecutionStrategy'
 import { pipe } from '../../../function'
 import * as Ex from '../../Exit'
 import * as Ma from '../core'
