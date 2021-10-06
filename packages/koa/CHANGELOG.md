@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.10](https://github.com/0x706b/principia.ts/compare/@principia/koa@0.17.9...@principia/koa@0.17.10) (2021-10-06)
+
+**Note:** Version bump only for package @principia/koa
+
+
+
+
+
 ## [0.17.9](https://github.com/0x706b/principia.ts/compare/@principia/koa@0.17.8...@principia/koa@0.17.9) (2021-10-06)
 
 **Note:** Version bump only for package @principia/koa

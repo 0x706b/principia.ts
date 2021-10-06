@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.19.0](https://github.com/0x706b/principia.ts/compare/@principia/schema@0.18.3...@principia/schema@0.19.0) (2021-10-06)
+
+
+### Features
+
+* **schema:** add fluent definitions for `Schema` ([417fc92](https://github.com/0x706b/principia.ts/commit/417fc9282d015ad049224ac5b848ff8076475814))
+
+
+
+
+
 ## [0.18.3](https://github.com/0x706b/principia.ts/compare/@principia/schema@0.18.2...@principia/schema@0.18.3) (2021-10-06)
 
 **Note:** Version bump only for package @principia/schema

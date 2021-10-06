@@ -1,6 +1,6 @@
 {
   "name": "@principia/graphql",
-  "version": "0.18.3",
+  "version": "0.18.4",
   "description": "GraphQL",
   "repository": {
     "type": "git",
@@ -57,8 +57,8 @@
   },
   "dependencies": {
     "@principia/base": "^0.22.3",
-    "@principia/http": "^0.18.3",
-    "@principia/koa": "^0.17.9",
+    "@principia/http": "^0.18.4",
+    "@principia/koa": "^0.17.10",
     "@principia/query": "^0.18.3",
     "apollo-server-koa": "2.25.2",
     "graphql": "15.6.0",
