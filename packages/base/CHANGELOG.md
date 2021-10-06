@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.22.0](https://github.com/0x706b/principia.ts/compare/@principia/base@0.21.0...@principia/base@0.22.0) (2021-10-06)
+
+
+### Bug Fixes
+
+* **base/experimental/channel:** fix `Exit` value propagation for `Channels` (from ZIO) ([9c72af8](https://github.com/0x706b/principia.ts/commit/9c72af8586d9c53260bdc61c78a1d93a7a87ddef))
+* **base/managed:** fix `chain` finalizers ([63b6d6c](https://github.com/0x706b/principia.ts/commit/63b6d6cd82712334a45112b0002871d2b78d1c31))
+* **base/support:** fix `MutableQueue.pollUpTo` ([56534e2](https://github.com/0x706b/principia.ts/commit/56534e2c1726bb4ba2ae788af075c5fc2f91fc4f))
+
+
+### Features
+
+* **base/managed:** add `onExit` and `onExitFirst` ([627a1fe](https://github.com/0x706b/principia.ts/commit/627a1fe370593b5dd5c8f8c9cab41c7a876e27fc))
+* **base/maybe:** rename `Option` -> `Maybe` ([5ab6f0e](https://github.com/0x706b/principia.ts/commit/5ab6f0ee8b8ba03bc839dead064498d018667ebb))
+* **node:** use experimental `Stream` in `node` package ([ade264d](https://github.com/0x706b/principia.ts/commit/ade264d3a13df7855a977535121c8f29cb2ab3b5))
+
+
+
+
+
 # [0.21.0](https://github.com/0x706b/principia.ts/compare/@principia/base@0.20.0...@principia/base@0.21.0) (2021-10-04)
 
 

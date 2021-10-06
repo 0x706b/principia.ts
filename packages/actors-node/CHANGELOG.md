@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.19.0](https://github.com/0x706b/principia.ts/compare/@principia/actors-node@0.18.3...@principia/actors-node@0.19.0) (2021-10-06)
+
+
+### Features
+
+* **base/maybe:** rename `Option` -> `Maybe` ([5ab6f0e](https://github.com/0x706b/principia.ts/commit/5ab6f0ee8b8ba03bc839dead064498d018667ebb))
+
+
+
+
+
 ## [0.18.3](https://github.com/0x706b/principia.ts/compare/@principia/actors-node@0.18.2...@principia/actors-node@0.18.3) (2021-10-04)
 
 **Note:** Version bump only for package @principia/actors-node
