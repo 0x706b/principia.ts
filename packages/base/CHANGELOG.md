@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.22.1](https://github.com/0x706b/principia.ts/compare/@principia/base@0.22.0...@principia/base@0.22.1) (2021-10-06)
+
+
+### Bug Fixes
+
+* **base/fluent:** export global unions correctly ([d75ea6c](https://github.com/0x706b/principia.ts/commit/d75ea6c1527f39e0a7e058e21671a6daa8dd5be8))
+
+
+
+
+
 # [0.22.0](https://github.com/0x706b/principia.ts/compare/@principia/base@0.21.0...@principia/base@0.22.0) (2021-10-06)
 
 
