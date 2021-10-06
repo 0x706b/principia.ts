@@ -1,6 +1,6 @@
 {
   "name": "@principia/keeper",
-  "version": "0.19.4",
+  "version": "0.19.5",
   "description": "Keeper",
   "repository": {
     "type": "git",
@@ -49,7 +49,7 @@
   },
   "dependencies": {
     "@principia/base": "^0.22.3",
-    "@principia/schema": "^0.19.0",
+    "@principia/schema": "^0.19.1",
     "node-zookeeper-client": "^1.1.1"
   },
   "devDependencies": {

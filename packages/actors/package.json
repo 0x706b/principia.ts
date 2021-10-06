@@ -1,6 +1,6 @@
 {
   "name": "@principia/actors",
-  "version": "0.19.4",
+  "version": "0.19.5",
   "description": "Actors",
   "repository": {
     "type": "git",
@@ -50,7 +50,7 @@
   },
   "dependencies": {
     "@principia/base": "^0.22.3",
-    "@principia/schema": "^0.19.0",
+    "@principia/schema": "^0.19.1",
     "isomorphic-fetch": "^3.0.0"
   },
   "publishConfig": {

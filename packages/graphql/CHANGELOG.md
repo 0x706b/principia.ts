@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.18.5](https://github.com/0x706b/principia.ts/compare/@principia/graphql@0.18.4...@principia/graphql@0.18.5) (2021-10-06)
+
+**Note:** Version bump only for package @principia/graphql
+
+
+
+
+
 ## [0.18.4](https://github.com/0x706b/principia.ts/compare/@principia/graphql@0.18.3...@principia/graphql@0.18.4) (2021-10-06)
 
 **Note:** Version bump only for package @principia/graphql

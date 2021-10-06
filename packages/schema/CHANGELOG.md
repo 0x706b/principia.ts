@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.1](https://github.com/0x706b/principia.ts/compare/@principia/schema@0.19.0...@principia/schema@0.19.1) (2021-10-06)
+
+
+### Bug Fixes
+
+* **schema:** copy fluent definitions to build ([c2e33fd](https://github.com/0x706b/principia.ts/commit/c2e33fd3ea13aebe923bac4a420f5d3cef36da37))
+
+
+
+
+
 # [0.19.0](https://github.com/0x706b/principia.ts/compare/@principia/schema@0.18.3...@principia/schema@0.19.0) (2021-10-06)
 
 

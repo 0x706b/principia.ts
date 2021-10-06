@@ -1,6 +1,6 @@
 {
   "name": "@principia/koa",
-  "version": "0.17.10",
+  "version": "0.17.11",
   "description": "Koa Adapter",
   "repository": {
     "type": "git",
@@ -50,7 +50,7 @@
   "dependencies": {
     "@koa/router": "^10.1.1",
     "@principia/base": "^0.22.3",
-    "@principia/http": "^0.18.4",
+    "@principia/http": "^0.18.5",
     "@types/koa": "^2.13.4",
     "@types/koa-bodyparser": "^4.3.3",
     "@types/koa-compose": "^3.2.5",
