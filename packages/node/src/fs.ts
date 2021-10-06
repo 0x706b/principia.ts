@@ -11,11 +11,9 @@ import * as I from '@principia/base/IO'
 import * as Ch from '@principia/base/IO/experimental/Channel'
 import * as Sink from '@principia/base/IO/experimental/Sink'
 import * as S from '@principia/base/IO/experimental/Stream'
-import { chunk } from '@principia/base/IO/experimental/Stream/Take'
 import * as Ma from '@principia/base/IO/Managed'
 import * as Queue from '@principia/base/IO/Queue'
 import * as Ref from '@principia/base/IO/Ref'
-import * as Push from '@principia/base/IO/Stream/Push'
 import * as M from '@principia/base/Maybe'
 import * as N from '@principia/base/Newtype'
 import * as fs from 'fs'
@@ -328,6 +326,26 @@ export function read(
   })
 }
 
+export function readFile(
+  file: fs.PathOrFileDescriptor,
+  options: { flag?: string, encoding: BufferEncoding }
+): I.FIO<ErrnoException, string>
+export function readFile(file: fs.PathOrFileDescriptor, options?: { flag?: string }): I.FIO<ErrnoException, Buffer>
+export function readFile(
+  file: fs.PathOrFileDescriptor,
+  options: { flag?: string, encoding?: BufferEncoding | null | undefined } = {}
+): I.FIO<ErrnoException, string | Buffer> {
+  return I.asyncInterrupt((cb) => {
+    const abortController = new AbortController()
+    fs.readFile(file, { ...options, signal: abortController.signal }, (err, data) =>
+      err ? cb(I.fail(err)) : cb(I.succeed(data))
+    )
+    return I.succeedLazy(() => {
+      abortController.abort()
+    })
+  })
+}
+
 export function readdir(
   path: fs.PathLike,
   options?: {
@@ -464,6 +482,28 @@ export function write(fd: FileDescriptor, buffer: Chunk<Byte>, position?: number
     fs.write(FileDescriptor.unwrap(fd), b, position ?? null, b.byteLength, (err, bytesWritten) =>
       err ? cb(I.fail(err)) : cb(I.succeed(bytesWritten))
     )
+  })
+}
+
+export interface WriteFileOptions {
+  readonly encoding?: BufferEncoding
+  readonly mode?: fs.Mode
+  readonly flag?: string
+}
+
+export function writeFile(
+  file: fs.PathOrFileDescriptor,
+  data: string | NodeJS.ArrayBufferView,
+  options: WriteFileOptions = {}
+): I.IO<unknown, ErrnoException, void> {
+  return I.asyncInterrupt((cb) => {
+    const abortController = new AbortController()
+    fs.writeFile(file, data, { ...options, signal: abortController.signal }, (err) =>
+      err ? cb(I.fail(err)) : I.unit()
+    )
+    return I.succeedLazy(() => {
+      abortController.abort()
+    })
   })
 }
 
