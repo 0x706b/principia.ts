@@ -8,6 +8,25 @@ import type { Predicate } from '@principia/base/prelude'
 
 /* eslint typescript-sort-keys/interface: "error" */
 
+declare global {
+  export const PCause: CauseStaticOps
+  export type PCause<Id, E> =
+    | C.Empty
+    | C.Fail<E>
+    | C.Halt
+    | C.Interrupt<Id>
+    | C.Then<Id, E>
+    | C.Both<Id, E>
+    | C.Traced<Id, E>
+  export interface Empty extends C.Empty {}
+  export interface Fail<E> extends C.Fail<E> {}
+  export interface Halt extends C.Halt {}
+  export interface Interrupt<Id> extends C.Interrupt<Id> {}
+  export interface Then<Id, E> extends C.Then<Id, E> {}
+  export interface Both<Id, E> extends C.Both<Id, E> {}
+  export interface Traced<Id, E> extends C.Traced<Id, E> {}
+}
+
 interface CauseStaticOps {
   /**
    * @rewriteStatic both from "@principia/base/Cause"

@@ -8,7 +8,7 @@ import type * as P from '@principia/base/prelude'
 
 declare global {
   export const Either: EitherStaticOps
-  export interface Either<E, A> extends E.Either<E, A> {}
+  export type Either<E, A> = E.Left<E> | E.Right<A>
   export interface Left<E> extends E.Left<E> {}
   export interface Right<A> extends E.Right<A> {}
 }

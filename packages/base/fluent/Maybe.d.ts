@@ -9,7 +9,7 @@ import type { These } from '@principia/base/These'
 
 declare global {
   export const Maybe: MaybeStaticOps
-  export interface Maybe<A> extends M.Maybe<A> {}
+  export type Maybe<A> = M.Nothing | M.Just<A>
   export interface Nothing extends M.Nothing {}
   export interface Just<A> extends M.Just<A> {}
 }
