@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.22.2](https://github.com/0x706b/principia.ts/compare/@principia/base@0.22.1...@principia/base@0.22.2) (2021-10-06)
+
+
+### Bug Fixes
+
+* **base/fluent:** fix fluent types on aliases ([a6c50c1](https://github.com/0x706b/principia.ts/commit/a6c50c1f6a77baf6388ed20e32e7648035fee5f4))
+
+
+
+
+
 ## [0.22.1](https://github.com/0x706b/principia.ts/compare/@principia/base@0.22.0...@principia/base@0.22.1) (2021-10-06)
 
 
