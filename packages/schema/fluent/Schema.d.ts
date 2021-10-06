@@ -118,6 +118,11 @@ export interface SchemaStaticOps {
    * @rewriteStatic taggedUnion from "@principia/schema/Schema"
    */
   taggedUnion: typeof s.taggedUnion
+
+  /**
+   * @rewriteStatic Model from "@principia/schema/Schema"
+   */
+  Model: typeof s.Model
 }
 
 export interface SchemaOps {
