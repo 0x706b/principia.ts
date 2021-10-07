@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.20.0](https://github.com/0x706b/principia.ts/compare/@principia/schema@0.19.1...@principia/schema@0.20.0) (2021-10-07)
+
+
+### Features
+
+* **schema:** add `Model` to fluent definitions ([fa97feb](https://github.com/0x706b/principia.ts/commit/fa97febf5f378cc2e293aa24d00dc6132515c04a))
+
+
+
+
+
 ## [0.19.1](https://github.com/0x706b/principia.ts/compare/@principia/schema@0.19.0...@principia/schema@0.19.1) (2021-10-06)
 
 

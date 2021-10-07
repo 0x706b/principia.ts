@@ -1,6 +1,6 @@
 {
   "name": "@principia/base",
-  "version": "0.22.3",
+  "version": "0.23.0",
   "description": "Base datatypes",
   "repository": {
     "type": "git",

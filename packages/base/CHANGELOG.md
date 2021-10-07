@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.23.0](https://github.com/0x706b/principia.ts/compare/@principia/base@0.22.3...@principia/base@0.23.0) (2021-10-07)
+
+
+### Features
+
+* **base/these:** add fluent definitions for `These` ([429dd1c](https://github.com/0x706b/principia.ts/commit/429dd1ca023b228553855168dd94a07187b1cb56))
+
+
+
+
+
 ## [0.22.3](https://github.com/0x706b/principia.ts/compare/@principia/base@0.22.2...@principia/base@0.22.3) (2021-10-06)
 
 
