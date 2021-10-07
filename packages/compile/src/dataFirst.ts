@@ -72,20 +72,22 @@ export default function dataFirst(program: ts.Program) {
               .filter((x) => x.includes('dataFirst'))
               .map((x) => x.replace('dataFirst ', ''))?.[0]
 
-            return ts.visitEachChild(
-              factory.createCallExpression(
-                dataFirstTag === 'self'
-                  ? node.expression.expression
-                  : factory.createPropertyAccessExpression(
-                      node.expression.expression.expression,
-                      factory.createIdentifier(dataFirstTag)
-                    ),
-                undefined,
-                [node.arguments[0]!, ...node.expression.arguments]
-              ),
-              visitor,
-              ctx
-            )
+            if (dataFirstTag) {
+              return ts.visitEachChild(
+                factory.createCallExpression(
+                  dataFirstTag === 'self'
+                    ? node.expression.expression
+                    : factory.createPropertyAccessExpression(
+                        node.expression.expression.expression,
+                        factory.createIdentifier(dataFirstTag)
+                      ),
+                  undefined,
+                  [node.arguments[0]!, ...node.expression.arguments]
+                ),
+                visitor,
+                ctx
+              )
+            }
           } else if (
             ts.isCallExpression(node) &&
             ts.isCallExpression(node.expression) &&
