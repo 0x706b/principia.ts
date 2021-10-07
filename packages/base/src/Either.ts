@@ -63,6 +63,8 @@ export function fromNullable_<E, A>(a: A, e: () => E): Either<E, NonNullable<A>>
  *
  * @category Constructors
  * @since 1.0.0
+ *
+ * @dataFirst fromNullable_
  */
 export function fromNullable<E>(e: () => E): <A>(a: A) => Either<E, NonNullable<A>> {
   return <A>(a: A): Either<E, NonNullable<A>> => (a == null ? left(e()) : right(a as NonNullable<A>))
@@ -76,6 +78,9 @@ export function fromNullableK_<E, A extends ReadonlyArray<unknown>, B>(
   return (...args) => from(f(...args))
 }
 
+/**
+ * @dataFirst fromNullableK_
+ */
 export function fromNullableK<E>(
   e: () => E
 ): <A extends readonly unknown[], B>(
@@ -95,6 +100,8 @@ export function fromMaybe_<E, A>(fa: Maybe<A>, onNothing: () => E): Either<E, A>
 /**
  * @category Constructors
  * @since 1.0.0
+ *
+ * @dataFirst fromMaybe_
  */
 export function fromMaybe<E>(onNothing: () => E): <A>(fa: Maybe<A>) => Either<E, A> {
   return (fa) => fromMaybe_(fa, onNothing)
@@ -117,6 +124,8 @@ export function fromPredicate_<E, A>(a: A, predicate: P.Predicate<A>, onFalse: (
 /**
  * @category Constructors
  * @since 1.0.0
+ *
+ * @dataFirst fromPredicate_
  */
 export function fromPredicate<E, A, B extends A>(
   refinement: P.Refinement<A, B>,
@@ -173,6 +182,8 @@ export function tryCatchK_<A extends ReadonlyArray<unknown>, B, E>(
 /**
  * @category Constructors
  * @since 1.0.0
+ *
+ * @dataFirst tryCatchK_
  */
 export function tryCatchK<E>(
   onThrow: (reason: unknown) => E
@@ -231,6 +242,8 @@ export const match_ = _.match_
  *
  * @category Destructors
  * @since 1.0.0
+ *
+ * @dataFirst match_
  */
 export const match = _.match
 
@@ -245,6 +258,8 @@ export function getOrElse_<E, A, B>(pab: Either<E, A>, onLeft: (e: E) => B): A |
 /**
  * @category Destructors
  * @since 1.0.0
+ *
+ * @dataFirst getOrElse_
  */
 export function getOrElse<E, A, B>(f: (e: E) => B): (pab: Either<E, A>) => A | B {
   return (pab) => getOrElse_(pab, f)
@@ -278,6 +293,9 @@ export function alignWith_<E, A, E1, B, C>(
     : right(f(T.both(fa.right, fb.right)))
 }
 
+/**
+ * @dataFirst alignWith_
+ */
 export function alignWith<A, E1, B, C>(
   fb: Either<E1, B>,
   f: (_: These<A, B>) => C
@@ -289,6 +307,9 @@ export function align_<E, A, E1, B>(fa: Either<E, A>, fb: Either<E1, B>): Either
   return alignWith_(fa, fb, identity)
 }
 
+/**
+ * @dataFirst align_
+ */
 export function align<E1, B>(fb: Either<E1, B>): <E, A>(fa: Either<E, A>) => Either<E | E1, These<A, B>> {
   return (fa) => align_(fa, fb)
 }
@@ -316,6 +337,8 @@ export function alt_<E, A, G>(fa: Either<E, A>, that: () => Either<G, A>): Eithe
  *
  * @category Alt
  * @since 1.0.0
+ *
+ * @dataFirst alt_
  */
 export function alt<G, A>(that: () => Either<G, A>): <E>(fa: Either<E, A>) => Either<G | E, A> {
   return (fa) => alt_(fa, that)
@@ -345,6 +368,9 @@ export function catchAll_<E, A, E1, B>(fa: Either<E, A>, f: (e: E) => Either<E1,
   return match_(fa, f, right)
 }
 
+/**
+ * @dataFirst catchAll_
+ */
 export function catchAll<E, E1, B>(f: (e: E) => Either<E1, B>): <A>(fa: Either<E, A>) => Either<E1, A | B> {
   return (fa) => catchAll_(fa, f)
 }
@@ -359,6 +385,9 @@ export function catchJust_<E, A, E1, B>(fa: Either<E, A>, f: (e: E) => Maybe<Eit
   )
 }
 
+/**
+ * @dataFirst catchJust_
+ */
 export function catchJust<E, E1, B>(f: (e: E) => Maybe<Either<E1, B>>): <A>(fa: Either<E, A>) => Either<E | E1, A | B> {
   return (fa) => catchJust_(fa, f)
 }
@@ -367,6 +396,9 @@ export function catchMap_<E, A, B>(fa: Either<E, A>, f: (e: E) => B): Either<nev
   return catchAll_(fa, flow(f, right))
 }
 
+/**
+ * @dataFirst catchMap_
+ */
 export function catchMap<E, B>(f: (e: E) => B): <A>(fa: Either<E, A>) => Either<never, A | B> {
   return (fa) => catchMap_(fa, f)
 }
@@ -406,6 +438,8 @@ export function ap_<E, A, G, B>(fab: Either<G, (a: A) => B>, fa: Either<E, A>): 
  *
  * @category Apply
  * @since 1.0.0
+ *
+ * @dataFirst ap_
  */
 export function ap<E, A>(fa: Either<E, A>): <G, B>(fab: Either<G, (a: A) => B>) => Either<E | G, B> {
   return (fab) => ap_(fab, fa)
@@ -429,6 +463,8 @@ export function crossFirst_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Eit
  *
  * @category Apply
  * @since 1.0.0
+ *
+ * @dataFirst crossFirst_
  */
 export function crossFirst<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<G | E, A> {
   return (fa) => crossFirst_(fa, fb)
@@ -452,6 +488,8 @@ export function crossSecond_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Ei
  *
  * @category Apply
  * @since 1.0.0
+ *
+ * @dataFirst crossSecond_
  */
 export function crossSecond<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<G | E, B> {
   return (fa) => crossSecond_(fa, fb)
@@ -474,6 +512,8 @@ export function cross_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E
  *
  * @category Apply
  * @since 1.0.0
+ *
+ * @dataFirst cross_
  */
 export function cross<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<G | E, readonly [A, B]> {
   return (fa) => cross_(fa, fb)
@@ -496,6 +536,8 @@ export function crossWith_<E, A, G, B, C>(fa: Either<E, A>, fb: Either<G, B>, f:
  *
  * @category Apply
  * @since 1.0.0
+ *
+ * @dataFirst crossWith_
  */
 export function crossWith<A, G, B, C>(
   fb: Either<G, B>,
@@ -547,6 +589,8 @@ export function bimap_<E, A, G, B>(pab: Either<E, A>, f: (e: E) => G, g: (a: A) 
  *
  * @category Bifunctor
  * @since 1.0.0
+ *
+ * @dataFirst bimap_
  */
 export function bimap<E, A, G, B>(f: (e: E) => G, g: (a: A) => B): (pab: Either<E, A>) => Either<G, B> {
   return (pab) => bimap_(pab, f, g)
@@ -567,6 +611,8 @@ export function mapLeft_<E, A, G>(pab: Either<E, A>, f: (e: E) => G): Either<G, 
  *
  * @category Bifunctor
  * @since 1.0.0
+ *
+ * @dataFirst mapLeft_
  */
 export function mapLeft<E, G>(f: (e: E) => G): <A>(pab: Either<E, A>) => Either<G, A> {
   return (pab) => mapLeft_(pab, f)
@@ -647,6 +693,8 @@ export function extend_<E, A, B>(wa: Either<E, A>, f: (wa: Either<E, A>) => B): 
 /**
  * @category Extend
  * @since 1.0.0
+ *
+ * @dataFirst extend_
  */
 export function extend<E, A, B>(f: (wa: Either<E, A>) => B): (wa: Either<E, A>) => Either<E, B> {
   return (wa) => extend_(wa, f)
@@ -730,6 +778,9 @@ export function foldl_<E, A, B>(fa: Either<E, A>, b: B, f: (b: B, a: A) => B): B
   )
 }
 
+/**
+ * @dataFirst foldl_
+ */
 export function foldl<A, B>(b: B, f: (b: B, a: A) => B): <E>(fa: Either<E, A>) => B {
   return (fa) => foldl_(fa, b, f)
 }
@@ -738,6 +789,9 @@ export function foldMap_<M>(M: P.Monoid<M>): <E, A>(fa: Either<E, A>, f: (a: A) 
   return (fa, f) => match_(fa, () => M.nat, f)
 }
 
+/**
+ * @dataFirst foldMap_
+ */
 export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => <E>(fa: Either<E, A>) => M {
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
@@ -750,6 +804,9 @@ export function foldr_<E, A, B>(fa: Either<E, A>, b: B, f: (a: A, b: B) => B): B
   )
 }
 
+/**
+ * @dataFirst foldr_
+ */
 export function foldr<A, B>(b: B, f: (a: A, b: B) => B): <E>(fa: Either<E, A>) => B {
   return (fa) => foldr_(fa, b, f)
 }
@@ -775,6 +832,8 @@ export function map_<E, A, B>(fa: Either<E, A>, f: (a: A) => B): Either<E, B> {
  *
  * @category Functor
  * @since 1.0.0
+ *
+ * @dataFirst map_
  */
 export function map<A, B>(f: (a: A) => B): <E>(fa: Either<E, A>) => Either<E, B> {
   return (fa) => map_(fa, f)
@@ -830,6 +889,8 @@ export function tap_<E, A, G, B>(ma: Either<E, A>, f: (a: A) => Either<G, B>): E
  *
  * @category Monad
  * @since 1.0.0
+ *
+ * @dataFirst chain_
  */
 export function tap<A, G, B>(f: (a: A) => Either<G, B>): <E>(ma: Either<E, A>) => Either<G | E, A> {
   return (ma) => tap_(ma, f)
@@ -923,6 +984,9 @@ export function chainRec_<E, A, B>(a: A, f: (a: A) => Either<E, Either<A, B>>): 
   )
 }
 
+/**
+ * @dataFirst chainRec_
+ */
 export function chainRec<E, A, B>(f: (a: A) => Either<E, Either<A, B>>): (a: A) => Either<E, B> {
   return (a) => chainRec_(a, f)
 }
@@ -946,6 +1010,8 @@ export const mapA_: P.MapAFn_<URI, V> = (AG) => (ta, f) => match_(ta, flow(left,
  *
  * @category Traversable
  * @since 1.0.0
+ *
+ * @dataFirst mapA_
  */
 export const mapA: P.MapAFn<URI, V> = (AG) => (f) => (ta) => mapA_(AG)(ta, f)
 
@@ -1024,16 +1090,25 @@ export const Functor = P.Functor<URI, V>({
 
 export const flap_: <E, A, B>(fa: Either<E, (a: A) => B>, a: A) => Either<E, B> = P.flapF_<URI, V>(Functor)
 
+/**
+ * @dataFirst flap_
+ */
 export const flap: <A>(a: A) => <E, B>(fab: Either<E, (a: A) => B>) => Either<E, B> = P.flapF<URI, V>(Functor)
 
 export const as_: <E, A, B>(fa: Either<E, A>, b: () => B) => Either<E, B> = P.asF_<URI, V>(Functor)
 
+/**
+ * @dataFirst as_
+ */
 export const as: <B>(b: () => B) => <E, A>(fa: Either<E, A>) => Either<E, B> = P.asF<URI, V>(Functor)
 
 export const fcross_: <E, A, B>(fa: Either<E, A>, f: (a: A) => B) => Either<E, readonly [A, B]> = P.fcrossF_<URI, V>(
   Functor
 )
 
+/**
+ * @dataFirst fcross_
+ */
 export const fcross: <A, B>(f: (a: A) => B) => <E>(fa: Either<E, A>) => Either<E, readonly [A, B]> = P.fcrossF<URI, V>(
   Functor
 )
@@ -1066,13 +1141,22 @@ export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({
 })
 
 export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
-export const mapN      = P.mapNF(SemimonoidalFunctor)
 export const mapN_     = P.mapNF_(SemimonoidalFunctor)
+/**
+ * @dataFirst mapN_
+ */
+export const mapN      = P.mapNF(SemimonoidalFunctor)
 export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
 export const crossS_   = P.crossSF_(SemimonoidalFunctor)
-export const crossS    = P.crossSF(SemimonoidalFunctor)
-export const crossT_   = P.crossTF_(SemimonoidalFunctor)
-export const crossT    = P.crossTF(SemimonoidalFunctor)
+/**
+ * @dataFirst crossS_
+ */
+export const crossS  = P.crossSF(SemimonoidalFunctor)
+export const crossT_ = P.crossTF_(SemimonoidalFunctor)
+/**
+ * @dataFirst crossT_
+ */
+export const crossT = P.crossTF(SemimonoidalFunctor)
 
 export const Apply = P.Apply<URI, V>({
   map_,
@@ -1180,13 +1264,25 @@ export const Semialign = P.Semialign<URI, V>({
 })
 
 export const alignCombine_ = P.alignCombineF_<URI, V>({ map_, align_, alignWith_ })
-export const alignCombine  = P.alignCombineF<URI, V>({ map_, align_, alignWith_ })
-export const padZip_       = P.padZipF_<URI, V>({ map_, align_, alignWith_ })
-export const padZip        = P.padZipF<URI, V>({ map_, align_, alignWith_ })
-export const padZipWith_   = P.padZipWithF_<URI, V>({ map_, align_, alignWith_ })
-export const padZipWith    = P.padZipWithF<URI, V>({ map_, align_, alignWith_ })
-export const zipAll_       = P.zipAllF_<URI, V>({ map_, align_, alignWith_ })
-export const zipAll        = P.zipAllF<URI, V>({ map_, align_, alignWith_ })
+/**
+ * @dataFirst alignCombine_
+ */
+export const alignCombine = P.alignCombineF<URI, V>({ map_, align_, alignWith_ })
+export const padZip_      = P.padZipF_<URI, V>({ map_, align_, alignWith_ })
+/**
+ * @dataFirst padZip_
+ */
+export const padZip      = P.padZipF<URI, V>({ map_, align_, alignWith_ })
+export const padZipWith_ = P.padZipWithF_<URI, V>({ map_, align_, alignWith_ })
+/**
+ * @dataFirst padZipWith_
+ */
+export const padZipWith = P.padZipWithF<URI, V>({ map_, align_, alignWith_ })
+export const zipAll_    = P.zipAllF_<URI, V>({ map_, align_, alignWith_ })
+/**
+ * @dataFirst zipAll_
+ */
+export const zipAll = P.zipAllF<URI, V>({ map_, align_, alignWith_ })
 
 /**
  * @category Instances
@@ -1232,6 +1328,8 @@ export const chainS_ = P.chainSF_(Monad)
  *
  * @category Do
  * @since 1.0.0
+ *
+ * @dataFirst chainS_
  */
 export const chainS = P.chainSF(Monad)
 
@@ -1248,6 +1346,8 @@ export const pureS_ = P.pureSF_(Monad)
  *
  * @category Do
  * @since 1.0.0
+ *
+ * @dataFirst pureS_
  */
 export const pureS = P.pureSF(Monad)
 
@@ -1264,6 +1364,8 @@ export const toS_ = P.toSF_(Monad)
  *
  * @category Do
  * @since 1.0.0
+ *
+ * @dataFirst toS_
  */
 export const toS = P.toSF(Monad)
 
