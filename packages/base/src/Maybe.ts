@@ -107,6 +107,8 @@ export const fromPredicate_ = M.fromPredicate_
  *
  * @category Constructors
  * @since 1.0.0
+ *
+ * @dataFirst fromPredicate_
  */
 export const fromPredicate = M.fromPredicate
 
@@ -155,6 +157,8 @@ export const match_ = M.match_
  *
  * @category Destructors
  * @since 1.0.0
+ *
+ * @dataFirst match_
  */
 export const match = M.match
 
@@ -191,6 +195,8 @@ export const getOrElse_ = M.getOrElse_
  *
  * @category Destructors
  * @since 1.0.0
+ *
+ * @dataFirst getOrElse_
  */
 export const getOrElse = M.getOrElse
 
@@ -213,6 +219,9 @@ export function alignWith_<A, B, C>(fa: Maybe<A>, fb: Maybe<B>, f: (_: These<A, 
   )
 }
 
+/**
+ * @dataFirst alignWith_
+ */
 export function alignWith<A, B, C>(fb: Maybe<B>, f: (_: These<A, B>) => C): (fa: Maybe<A>) => Maybe<C> {
   return (fa) => alignWith_(fa, fb, f)
 }
@@ -221,6 +230,9 @@ export function align_<A, B>(fa: Maybe<A>, fb: Maybe<B>): Maybe<These<A, B>> {
   return alignWith_(fa, fb, identity)
 }
 
+/**
+ * @dataFirst align_
+ */
 export function align<B>(fb: Maybe<B>): <A>(fa: Maybe<A>) => Maybe<These<A, B>> {
   return (fa) => align_(fa, fb)
 }
@@ -246,6 +258,8 @@ export function alt_<A>(fa1: Maybe<A>, fa2: () => Maybe<A>): Maybe<A> {
  *
  * @category Alt
  * @since 1.0.0
+ *
+ * @dataFirst alt_
  */
 export function alt<A>(fa2: () => Maybe<A>): (fa1: Maybe<A>) => Maybe<A> {
   return (fa1) => alt_(fa1, fa2)
@@ -281,6 +295,9 @@ export function catchAll_<A, B>(fa: Maybe<A>, f: () => Maybe<B>): Maybe<A | B> {
   return orElse_(fa, f)
 }
 
+/**
+ * @dataFirst catchAll_
+ */
 export function catchAll<B>(f: () => Maybe<B>): <A>(fa: Maybe<A>) => Maybe<A | B> {
   return (fa) => catchAll_(fa, f)
 }
@@ -295,6 +312,9 @@ export function catchJust_<A, B>(fa: Maybe<A>, f: () => Maybe<Maybe<B>>): Maybe<
   )
 }
 
+/**
+ * @dataFirst catchJust_
+ */
 export function catchJust<B>(f: () => Maybe<Maybe<B>>): <A>(fa: Maybe<A>) => Maybe<A | B> {
   return (fa) => catchJust_(fa, f)
 }
@@ -303,6 +323,9 @@ export function catchMap_<A, B>(fa: Maybe<A>, f: () => B): Maybe<A | B> {
   return catchAll_(fa, () => just(f()))
 }
 
+/**
+ * @dataFirst catchMap_
+ */
 export function catchMap<B>(f: () => B): <A>(fa: Maybe<A>) => Maybe<A | B> {
   return (fa) => catchMap_(fa, f)
 }
@@ -335,6 +358,8 @@ export function cross_<A, B>(fa: Maybe<A>, fb: Maybe<B>): Maybe<readonly [A, B]>
  *
  * @category Apply
  * @since 1.0.0
+ *
+ * @dataFirst cross_
  */
 export function cross<B>(fb: Maybe<B>): <A>(fa: Maybe<A>) => Maybe<readonly [A, B]> {
   return (fa) => cross_(fa, fb)
@@ -365,6 +390,8 @@ export function ap_<A, B>(fab: Maybe<(a: A) => B>, fa: Maybe<A>): Maybe<B> {
  *
  * @category Apply
  * @since 1.0.0
+ *
+ * @dataFirst ap_
  */
 export function ap<A>(fa: Maybe<A>): <B>(fab: Maybe<(a: A) => B>) => Maybe<B> {
   return (fab) => ap_(fab, fa)
@@ -374,6 +401,9 @@ export function crossFirst_<A, B>(fa: Maybe<A>, fb: Maybe<B>): Maybe<A> {
   return crossWith_(fa, fb, (a, _) => a)
 }
 
+/**
+ * @dataFirst crossFirst_
+ */
 export function crossFirst<B>(fb: Maybe<B>): <A>(fa: Maybe<A>) => Maybe<A> {
   return (fa) => crossFirst_(fa, fb)
 }
@@ -382,6 +412,9 @@ export function crossSecond_<A, B>(fa: Maybe<A>, fb: Maybe<B>): Maybe<B> {
   return crossWith_(fa, fb, (_, b) => b)
 }
 
+/**
+ * @dataFirst crossSecond_
+ */
 export function crossSecond<B>(fb: Maybe<B>): <A>(fa: Maybe<A>) => Maybe<B> {
   return (fa) => crossSecond_(fa, fb)
 }
@@ -401,8 +434,9 @@ export function crossWith_<A, B, C>(fa: Maybe<A>, fb: Maybe<B>, f: (a: A, b: B) 
  *
  * @category Apply
  * @since 1.0.0
+ *
+ * @dataFirst crossWith_
  */
-
 export function crossWith<A, B, C>(fb: Maybe<B>, f: (a: A, b: B) => C): (fa: Maybe<A>) => Maybe<C> {
   return (fa) => crossWith_(fa, fb, f)
 }
@@ -466,13 +500,12 @@ export function extend_<A, B>(wa: Maybe<A>, f: (wa: Maybe<A>) => B): Maybe<B> {
 }
 
 /**
+ * @dataFrist extend_
  */
 export function extend<A, B>(f: (wa: Maybe<A>) => B): (wa: Maybe<A>) => Maybe<B> {
   return (wa) => extend_(wa, f)
 }
 
-/**
- */
 export function duplicate<A>(wa: Maybe<A>): Maybe<Maybe<A>> {
   return extend_(wa, identity)
 }
@@ -489,6 +522,9 @@ export function filter_<A>(fa: Maybe<A>, predicate: P.Predicate<A>): Maybe<A> {
   return match_(fa, nothing, (a) => (predicate(a) ? fa : nothing()))
 }
 
+/**
+ * @dataFirst filter_
+ */
 export function filter<A, B extends A>(refinement: P.Refinement<A, B>): (fa: Maybe<A>) => Maybe<B>
 export function filter<A>(predicate: P.Predicate<A>): (fa: Maybe<A>) => Maybe<A>
 export function filter<A>(predicate: P.Predicate<A>): (fa: Maybe<A>) => Maybe<A> {
@@ -501,6 +537,9 @@ export function partition_<A>(fa: Maybe<A>, predicate: P.Predicate<A>): readonly
   return [filter_(fa, (a) => !predicate(a)), filter_(fa, predicate)]
 }
 
+/**
+ * @dataFirst partition_
+ */
 export function partition<A, B extends A>(
   refinement: P.Refinement<A, B>
 ): (fa: Maybe<A>) => readonly [Maybe<A>, Maybe<B>]
@@ -513,6 +552,9 @@ export function partitionMap_<A, B, C>(fa: Maybe<A>, f: (a: A) => Either<B, C>):
   return separate(map_(fa, f))
 }
 
+/**
+ * @dataFirst partitionMap_
+ */
 export function partitionMap<A, B, C>(f: (a: A) => Either<B, C>): (fa: Maybe<A>) => readonly [Maybe<B>, Maybe<C>] {
   return (fa) => partitionMap_(fa, f)
 }
@@ -524,6 +566,7 @@ export function filterMap_<A, B>(fa: Maybe<A>, f: (a: A) => Maybe<B>): Maybe<B> 
 }
 
 /**
+ * @dataFirst filterMap_
  */
 export function filterMap<A, B>(f: (a: A) => Maybe<B>): (fa: Maybe<A>) => Maybe<B> {
   return (fa) => filterMap_(fa, f)
@@ -540,6 +583,7 @@ export function foldl_<A, B>(fa: Maybe<A>, b: B, f: (b: B, a: A) => B): B {
 }
 
 /**
+ * @dataFirst foldl_
  */
 export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: Maybe<A>) => B {
   return (fa) => foldl_(fa, b, f)
@@ -556,6 +600,7 @@ export function foldr_<A, B>(fa: Maybe<A>, b: B, f: (a: A, b: B) => B): B {
 }
 
 /**
+ * @dataFirst foldr_
  */
 export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: Maybe<A>) => B {
   return (fa) => foldr_(fa, b, f)
@@ -568,6 +613,7 @@ export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: Maybe<A>, f: (a: A) => M) =
 }
 
 /**
+ * @dataFirst foldMap_
  */
 export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: Maybe<A>) => M {
   return (f) => (fa) => foldMap_(M)(fa, f)
@@ -594,6 +640,8 @@ export function map_<A, B>(fa: Maybe<A>, f: (a: A) => B): Maybe<B> {
  *
  * @category Functor
  * @since 1.0.0
+ *
+ * @dataFirst map_
  */
 export function map<A, B>(f: (a: A) => B): (fa: Maybe<A>) => Maybe<B> {
   return (fa) => map_(fa, f)
@@ -620,6 +668,8 @@ export function chain_<A, B>(ma: Maybe<A>, f: (a: A) => Maybe<B>): Maybe<B> {
  *
  * @category Monad
  * @since 1.0.0
+ *
+ * @dataFirst chain_
  */
 export function chain<A, B>(f: (a: A) => Maybe<B>): (ma: Maybe<A>) => Maybe<B> {
   return (ma) => chain_(ma, f)
@@ -647,6 +697,8 @@ export function tap_<A, B>(ma: Maybe<A>, f: (a: A) => Maybe<B>): Maybe<A> {
  *
  * @category Monad
  * @since 1.0.0
+ *
+ * @dataFirst tap_
  */
 export function tap<A, B>(f: (a: A) => Maybe<B>): (ma: Maybe<A>) => Maybe<A> {
   return (ma) => tap_(ma, f)
@@ -764,6 +816,9 @@ export function chainRec_<A, B>(a: A, f: (a: A) => Maybe<Either<A, B>>): Maybe<B
   )
 }
 
+/**
+ * @dataFirst chainRec_
+ */
 export function chainRec<A, B>(f: (a: A) => Maybe<Either<A, B>>): (a: A) => Maybe<B> {
   return (a) => chainRec_(a, f)
 }
@@ -787,6 +842,8 @@ export const mapA_: P.MapAFn_<URI> = (G) => (ta, f) => match_(ta, flow(nothing, 
  *
  * @category Traversable
  * @since 1.0.0
+ *
+ * @dataFirst mapA_
  */
 export const mapA: P.MapAFn<URI> = (G) => (f) => (ta) => mapA_(G)(ta, f)
 
@@ -816,6 +873,9 @@ export function unit(): Maybe<void> {
 
 export const filterMapA_: P.FilterMapAFn_<URI> = (A) => (wa, f) => match_(wa, flow(nothing, A.pure), f)
 
+/**
+ * @dataFirst filterMapA_
+ */
 export const filterMapA: P.FilterMapAFn<URI> = (A) => (f) => (wa) => filterMapA_(A)(wa, f)
 
 export const partitionMapA_: P.PartitionMapAFn_<URI> = (A) => (wa, f) =>
@@ -830,6 +890,9 @@ export const partitionMapA_: P.PartitionMapAFn_<URI> = (A) => (wa, f) =>
     getOrElse(() => A.pure(tuple(nothing(), nothing())))
   )
 
+/**
+ * @dataFirst partitionMapA_
+ */
 export const partitionMapA: P.PartitionMapAFn<URI> = (A) => (f) => (wa) => partitionMapA_(A)(wa, f)
 
 /*
@@ -853,6 +916,8 @@ export function chainNullableK_<A, B>(fa: Maybe<A>, f: (a: A) => B | null | unde
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @dataFirst chainNullableK_
  */
 export function chainNullableK<A, B>(f: (a: A) => B | null | undefined): (fa: Maybe<A>) => Maybe<B> {
   return (fa) => chainNullableK_(fa, f)
@@ -873,6 +938,8 @@ export function orElse_<A, B>(fa: Maybe<A>, onNothing: () => Maybe<B>): Maybe<A 
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @dataFirst orElse_
  */
 export function orElse<B>(onNothing: () => Maybe<B>): <A>(fa: Maybe<A>) => Maybe<B | A> {
   return (fa) => orElse_(fa, onNothing)
@@ -939,9 +1006,15 @@ export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
 export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
 export const mapN      = P.mapNF(SemimonoidalFunctor)
 export const crossT_   = P.crossTF_(SemimonoidalFunctor)
-export const crossT    = P.crossTF(SemimonoidalFunctor)
-export const crossS_   = P.crossSF_(SemimonoidalFunctor)
-export const crossS    = P.crossSF(SemimonoidalFunctor)
+/**
+ * @dataFirst crossT_
+ */
+export const crossT  = P.crossTF(SemimonoidalFunctor)
+export const crossS_ = P.crossSF_(SemimonoidalFunctor)
+/**
+ * @dataFirst crossS_
+ */
+export const crossS = P.crossSF(SemimonoidalFunctor)
 
 export const Apply = P.Apply<URI>({
   map_,
@@ -1034,6 +1107,8 @@ export const chainS_ = P.chainSF_(Monad)
  *
  * @category Do
  * @since 1.0.0
+ *
+ * @dataFirst chainS_
  */
 export const chainS = P.chainSF(Monad)
 
@@ -1050,6 +1125,8 @@ export const pureS_ = P.pureSF_(Monad)
  *
  * @category Do
  * @since 1.0.0
+ *
+ * @dataFirst pureS_
  */
 export const pureS = P.pureSF(Monad)
 
@@ -1066,6 +1143,8 @@ export const toS_ = P.toSF_(Monad)
  *
  * @category Do
  * @since 1.0.0
+ *
+ * @dataFirst toS_
  */
 export const toS = P.toSF(Monad)
 
