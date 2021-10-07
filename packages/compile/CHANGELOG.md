@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.1](https://github.com/0x706b/principia.ts/compare/@principia/compile@0.19.0...@principia/compile@0.19.1) (2021-10-07)
+
+
+### Bug Fixes
+
+* **compile:** check for dataFirstTag ([fd52dbb](https://github.com/0x706b/principia.ts/commit/fd52dbba2f89c0ea2211312f32b5b4d82f0a0074))
+
+
+
+
+
 # [0.19.0](https://github.com/0x706b/principia.ts/compare/@principia/compile@0.18.0...@principia/compile@0.19.0) (2021-09-26)
 
 

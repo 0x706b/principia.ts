@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.7](https://github.com/0x706b/principia.ts/compare/@principia/actors@0.19.6...@principia/actors@0.19.7) (2021-10-07)
+
+**Note:** Version bump only for package @principia/actors
+
+
+
+
+
 ## [0.19.6](https://github.com/0x706b/principia.ts/compare/@principia/actors@0.19.5...@principia/actors@0.19.6) (2021-10-07)
 
 **Note:** Version bump only for package @principia/actors
