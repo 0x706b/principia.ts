@@ -70,23 +70,12 @@ export function fromNullable<E>(e: () => E): <A>(a: A) => Either<E, NonNullable<
   return <A>(a: A): Either<E, NonNullable<A>> => (a == null ? left(e()) : right(a as NonNullable<A>))
 }
 
-export function fromNullableK_<E, A extends ReadonlyArray<unknown>, B>(
+export function fromNullableK<E, A extends ReadonlyArray<unknown>, B>(
   f: (...args: A) => B | null | undefined,
   e: () => E
 ): (...args: A) => Either<E, NonNullable<B>> {
   const from = fromNullable(e)
   return (...args) => from(f(...args))
-}
-
-/**
- * @dataFirst fromNullableK_
- */
-export function fromNullableK<E>(
-  e: () => E
-): <A extends readonly unknown[], B>(
-  f: (...args: A) => B | null | undefined
-) => (...args: A) => Either<E, NonNullable<B>> {
-  return (f) => fromNullableK_(f, e)
 }
 
 /**
@@ -789,9 +778,6 @@ export function foldMap_<M>(M: P.Monoid<M>): <E, A>(fa: Either<E, A>, f: (a: A) 
   return (fa, f) => match_(fa, () => M.nat, f)
 }
 
-/**
- * @dataFirst foldMap_
- */
 export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => <E>(fa: Either<E, A>) => M {
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
@@ -1010,8 +996,6 @@ export const mapA_: P.MapAFn_<URI, V> = (AG) => (ta, f) => match_(ta, flow(left,
  *
  * @category Traversable
  * @since 1.0.0
- *
- * @dataFirst mapA_
  */
 export const mapA: P.MapAFn<URI, V> = (AG) => (f) => (ta) => mapA_(AG)(ta, f)
 

@@ -130,6 +130,7 @@ export function alt_<A>(fa: ReadonlyArray<A>, that: () => ReadonlyArray<A>): Rea
  *
  * @category Alt
  * @since 1.0.0
+ *
  * @dataFirst alt_
  */
 export function alt<A>(that: () => ReadonlyArray<A>): (fa: ReadonlyArray<A>) => ReadonlyArray<A> {
@@ -181,6 +182,7 @@ export function ap_<A, B>(fab: ReadonlyArray<(a: A) => B>, fa: ReadonlyArray<A>)
  *
  * @category Apply
  * @since 1.0.0
+ *
  * @dataFirst ap_
  */
 export function ap<A>(fa: ReadonlyArray<A>): <B>(fab: ReadonlyArray<(a: A) => B>) => ReadonlyArray<B> {
@@ -206,6 +208,7 @@ export function crossWith_<A, B, C>(
  *
  * @category MonoidalFunctor
  * @since 1.0.0
+ *
  * @dataFirst crossWith_
  */
 export function crossWith<A, B, C>(
@@ -230,6 +233,7 @@ export function cross_<A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>): Readon
  *
  * @category MonoidalFunctor
  * @since 1.0.0
+ * 
  * @dataFirst cross_
  */
 export function cross<B>(fb: ReadonlyArray<B>): <A>(fa: ReadonlyArray<A>) => ReadonlyArray<readonly [A, B]> {
@@ -256,6 +260,7 @@ export function zipWith_<A, B, C>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>, f:
  *
  * @category Zip
  * @since 1.0.0
+ *
  * @dataFirst zipWith_
  */
 export function zipWith<A, B, C>(
@@ -280,6 +285,7 @@ export function zip_<A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>): Readonly
  *
  * @category Zip
  * @since 1.0.0
+ *
  * @dataFirst zip_
  */
 export function zip<B>(fb: ReadonlyArray<B>): <A>(fa: ReadonlyArray<A>) => ReadonlyArray<readonly [A, B]> {
@@ -359,6 +365,8 @@ export function extend_<A, B>(wa: ReadonlyArray<A>, f: (as: ReadonlyArray<A>) =>
 /**
  * @category Extend
  * @since 1.0.0
+ *
+ * @dataFirst extend_
  */
 export function extend<A, B>(f: (as: ReadonlyArray<A>) => B): (wa: ReadonlyArray<A>) => ReadonlyArray<B> {
   return (wa) => extend_(wa, f)
@@ -398,6 +406,8 @@ export function filter_<A>(fa: ReadonlyArray<A>, f: P.PredicateWithIndex<number,
 /**
  * @category FilterableWithIndex
  * @since 1.0.0
+ *
+ * @dataFirst filter_
  */
 export function filter<A, B extends A>(
   f: P.RefinementWithIndex<number, A, B>
@@ -425,6 +435,8 @@ export function filterMap_<A, B>(fa: ReadonlyArray<A>, f: (a: A, i: number) => M
 /**
  * @category FilterableWithIndex
  * @since 1.0.0
+ *
+ * @dataFirst filterMap_
  */
 export function filterMap<A, B>(f: (a: A, i: number) => Maybe<B>): (fa: ReadonlyArray<A>) => ReadonlyArray<B> {
   return (fa) => filterMap_(fa, f)
@@ -462,6 +474,8 @@ export function partition_<A>(
 /**
  * @category Filterable
  * @since 1.0.0
+ *
+ * @dataFirst partition_
  */
 export function partition<A, B extends A>(
   refinement: P.RefinementWithIndex<number, A, B>
@@ -503,6 +517,8 @@ export function partitionMap_<A, B, C>(
 /**
  * @category FilterableWithIndex
  * @since 1.0.0
+ *
+ * @dataFirst partitionMap_
  */
 export function partitionMap<A, B, C>(
   f: (a: A, i: number) => Either<B, C>
@@ -525,6 +541,8 @@ export const foldl_: <A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, a: A, i: numbe
 /**
  * @category FoldableWithIndex
  * @since 1.0.0
+ *
+ * @dataFirst foldl_
  */
 export function foldl<A, B>(b: B, f: (b: B, a: A, i: number) => B): (fa: ReadonlyArray<A>) => B {
   return (fa) => foldl_(fa, b, f)
@@ -539,6 +557,8 @@ export const foldr_: <A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, b: B, i: numbe
 /**
  * @category FoldableWithIndex
  * @since 1.0.0
+ *
+ * @dataFirst foldr_
  */
 export function foldr<A, B>(b: B, f: (a: A, b: B, i: number) => B): (fa: ReadonlyArray<A>) => B {
   return (fa) => foldr_(fa, b, f)
@@ -571,6 +591,8 @@ export function fold_<M>(fa: ReadonlyArray<M>, M: P.Monoid<M>): M {
 /**
  * @category Foldable
  * @since 1.0.0
+ *
+ * @dataFirst fold_
  */
 export function fold<M>(M: P.Monoid<M>): (fa: ReadonlyArray<M>) => M {
   return (fa) => foldl_(fa, M.nat, (b, a) => M.combine_(b, a))
@@ -750,6 +772,8 @@ export function alignWith_<A, B, C>(
 /**
  * @category Align
  * @since 1.0.0
+ *
+ * @dataFirst alignWith_
  */
 export function alignWith<A, B, C>(
   fb: ReadonlyArray<B>,
@@ -769,6 +793,8 @@ export function align_<A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>): Readon
 /**
  * @category Align
  * @since 1.0.0
+ *
+ * @dataFirst align_
  */
 export function align<B>(fb: ReadonlyArray<B>): <A>(fa: ReadonlyArray<A>) => ReadonlyArray<These<A, B>> {
   return (fa) => align_(fa, fb)
@@ -812,6 +838,9 @@ export function chainRecDepthFirst_<A, B>(a: A, f: (a: A) => ReadonlyArray<E.Eit
   return out
 }
 
+/**
+ * @dataFirst chainRecDepthFirst_
+ */
 export function chainRecDepthFirst<A, B>(f: (a: A) => ReadonlyArray<E.Either<A, B>>): (a: A) => ReadonlyArray<B> {
   return (a) => chainRecDepthFirst_(a, f)
 }
@@ -840,6 +869,9 @@ export function chainRecBreadthFirst_<A, B>(a: A, f: (a: A) => ReadonlyArray<E.E
   return out
 }
 
+/**
+ * @dataFirst chainRecBreadthFirst_
+ */
 export function chainRecBreadthFirst<A, B>(f: (a: A) => ReadonlyArray<E.Either<A, B>>): (a: A) => ReadonlyArray<B> {
   return (a) => chainRecBreadthFirst_(a, f)
 }
@@ -1024,6 +1056,8 @@ export function chop_<A, B>(
  *
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst chop_
  */
 export function chop<A, B>(
   f: (as: NonEmptyArray<A>) => readonly [B, ReadonlyArray<A>]
@@ -1042,6 +1076,8 @@ export function chunksOf_<A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<Rea
 /**
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst chunksOf_
  */
 export function chunksOf(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<ReadonlyArray<A>> {
   return chop(splitAt(n))
@@ -1067,6 +1103,8 @@ export function collectWhile_<A, B>(as: ReadonlyArray<A>, f: (a: A) => Maybe<B>)
 /**
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst collectWhile_
  */
 export function collectWhile<A, B>(f: (a: A) => Maybe<B>): (as: ReadonlyArray<A>) => ReadonlyArray<B> {
   return (as) => collectWhile_(as, f)
@@ -1374,7 +1412,7 @@ export function findIndex_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): 
  *
  * @category combinators
  * @since 1.0.0
- * @dataFirst findFirstIndex_
+ * @dataFirst findIndex_
  */
 export function findIndex<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Maybe<number> {
   return (as) => findIndex_(as, predicate)
@@ -1399,7 +1437,7 @@ export function find_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Maybe
 /**
  * @category combinators
  * @since 1.0.0
- * @dataFirst findFirst_
+ * @dataFirst find_
  */
 export function find<A, B extends A>(refinement: P.Refinement<A, B>): (as: ReadonlyArray<A>) => Maybe<B>
 export function find<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Maybe<A>
@@ -1484,6 +1522,8 @@ export function foldlWhile_<A, B>(
  *
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst foldlWhile_
  */
 export function foldlWhile<A, B>(
   b: B,
@@ -1519,6 +1559,8 @@ export function foldrWhile_<A, B>(
  *
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst foldrWhile_
  */
 export function foldrWhile<A, B>(
   b: B,
@@ -1575,6 +1617,8 @@ export function groupBy_<A>(as: ReadonlyArray<A>, f: (a: A) => string): Readonly
 /**
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst groupBy_
  */
 export function groupBy<A>(f: (a: A) => string): (as: ReadonlyArray<A>) => ReadonlyRecord<string, NonEmptyArray<A>> {
   return (as) => groupBy_(as, f)
@@ -1629,6 +1673,7 @@ export function intersperse_<A>(as: ReadonlyArray<A>, a: A): ReadonlyArray<A> {
 /**
  * @category combinators
  * @since 1.0.0
+ *
  * @dataFirst intersperse_
  */
 export function intersperse<A>(a: A): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
@@ -1646,6 +1691,7 @@ export function lookup_<A>(as: ReadonlyArray<A>, i: number): Maybe<A> {
 /**
  * @category combinators
  * @since 1.0.0
+ *
  * @dataFirst lookup_
  */
 export function lookup(i: number): <A>(as: ReadonlyArray<A>) => Maybe<A> {
@@ -1695,6 +1741,8 @@ export function mapAccum_<A, S, B>(
  *
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst mapAccum_
  */
 export function mapAccum<A, S, B>(
   s: S,
@@ -1720,6 +1768,8 @@ export function modifyAt_<A>(as: ReadonlyArray<A>, i: number, f: (a: A) => A): M
  *
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst modifyAt_
  */
 export function modifyAt<A>(i: number, f: (a: A) => A): (as: ReadonlyArray<A>) => Maybe<ReadonlyArray<A>> {
   return (as) => modifyAt_(as, i, f)
@@ -1734,6 +1784,8 @@ export const prependW_: <A, B>(tail: ReadonlyArray<A>, head: B) => NonEmptyArray
 /**
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst prependW_
  */
 export const prependW: <B>(head: B) => <A>(tail: ReadonlyArray<A>) => NonEmptyArray<A | B> = NEA.prependW
 
@@ -1746,6 +1798,7 @@ export const prepend_: <A>(tail: ReadonlyArray<A>, head: A) => NonEmptyArray<A> 
 /**
  * @category combinators
  * @since 1.0.0
+ *
  * @dataFirst prepend_
  */
 export const prepend: <A>(head: A) => (tail: ReadonlyArray<A>) => NonEmptyArray<A> = NEA.prepend
@@ -1765,6 +1818,7 @@ export function prependAll_<A>(as: ReadonlyArray<A>, a: A): ReadonlyArray<A> {
 /**
  * @category combinators
  * @since 1.0.0
+ *
  * @dataFirst prependAll_
  */
 export function prependAll<A>(a: A): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
@@ -1826,6 +1880,8 @@ export function rotate_<A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<A> {
 /**
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst rotate_
  */
 export function rotate(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<A> {
   return (as) => rotate_(as, n)
@@ -1848,6 +1904,7 @@ export function scanl_<A, B>(as: ReadonlyArray<A>, b: B, f: (b: B, a: A) => B): 
 /**
  * @category combinators
  * @since 1.0.0
+ *
  * @dataFirst scanl_
  */
 export function scanl<A, B>(b: B, f: (b: B, a: A) => B): (as: ReadonlyArray<A>) => NonEmptyArray<B> {
@@ -1871,7 +1928,8 @@ export function scanr_<A, B>(as: ReadonlyArray<A>, b: B, f: (a: A, b: B) => B): 
 /**
  * @category combinators
  * @since 1.0.0
- * @dataFirst scanl_
+ *
+ * @dataFirst scanr_
  */
 export function scanr<A, B>(b: B, f: (a: A, b: B) => B): (as: ReadonlyArray<A>) => NonEmptyArray<B> {
   return (as) => scanr_(as, b, f)
@@ -1888,6 +1946,8 @@ export function slice_<A>(as: ReadonlyArray<A>, start?: number, end?: number): R
 /**
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst slice_
  */
 export function slice(start?: number, end?: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<A> {
   return (as) => as.slice(start, end)
@@ -1949,6 +2009,8 @@ export function spanl_<A>(
 /**
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst spanl_
  */
 export function spanl<A, B extends A>(
   refinement: P.Refinement<A, B>
@@ -1994,6 +2056,8 @@ export function spanr_<A>(
 /**
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst spanr_
  */
 export function spanr<A, B extends A>(
   refinement: P.Refinement<A, B>
@@ -2022,6 +2086,8 @@ export function splitAt_<A>(as: ReadonlyArray<A>, n: number): readonly [Readonly
  *
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst splitAt_
  */
 export function splitAt(n: number): <A>(as: ReadonlyArray<A>) => readonly [ReadonlyArray<A>, ReadonlyArray<A>] {
   return (as) => splitAt_(as, n)
@@ -2051,6 +2117,8 @@ export function splitWhere_<A>(as: ReadonlyArray<A>, f: P.Predicate<A>): readonl
  *
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst splitWhere_
  */
 export function splitWhere<A>(
   predicate: P.Predicate<A>
@@ -2069,6 +2137,7 @@ export function take_<A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<A> {
 /**
  * @category combinators
  * @since 1.0.0
+ *
  * @dataFirst take_
  */
 export function take(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<A> {
@@ -2086,6 +2155,7 @@ export function takeLast_<A>(as: ReadonlyArray<A>, n: number): ReadonlyArray<A> 
 /**
  * @category combinators
  * @since 1.0.0
+ *
  * @dataFirst takeLast_
  */
 export function takeLast(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<A> {
@@ -2110,6 +2180,7 @@ export function takeWhile_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): 
 /**
  * @category combinators
  * @since 1.0.0
+ *
  * @dataFirst takeWhile_
  */
 export function takeWhile<A, B extends A>(refinement: P.Refinement<A, B>): (as: ReadonlyArray<A>) => ReadonlyArray<B>
@@ -2133,6 +2204,7 @@ export function updateAt_<A>(as: ReadonlyArray<A>, i: number, a: A): Maybe<Reado
  *
  * @category combinators
  * @since 1.0.0
+ *
  * @dataFirst updateAt_
  */
 export function updateAt<A>(i: number, a: A): (as: ReadonlyArray<A>) => Maybe<ReadonlyArray<A>> {
@@ -2333,7 +2405,7 @@ export const Monad = P.Monad<URI>({
 
 export const Traversable = P.Traversable<URI>({
   map_,
-  mapA_: mapA_,
+  mapA_,
   foldl_,
   foldr_,
   foldMap_
@@ -2360,7 +2432,7 @@ export const Witherable = P.Witherable<URI>({
   filterMap_,
   partition_,
   partitionMap_,
-  mapA_: mapA_,
+  mapA_,
   filterMapA_,
   partitionMapA_
 })
@@ -2390,6 +2462,9 @@ export { of as do }
 
 export const chainS_ = P.chainSF_(Monad)
 
+/**
+ * @dataFirst chainS_
+ */
 export const chainS: <A, K, N extends string>(
   name: Exclude<N, keyof K>,
   f: (_: K) => ReadonlyArray<A>
@@ -2399,6 +2474,9 @@ export const chainS: <A, K, N extends string>(
 
 export const pureS_ = P.pureSF_(Monad)
 
+/**
+ * @dataFirst pureS_
+ */
 export const pureS: <K, N extends string, A>(
   name: Exclude<N, keyof K>,
   f: (_: K) => A
@@ -2406,6 +2484,9 @@ export const pureS: <K, N extends string, A>(
 
 export const toS_ = P.toSF_(Monad)
 
+/**
+ * @dataFirst toS_
+ */
 export const toS: <K, N extends string>(
   name: Exclude<N, keyof K>
 ) => <A>(fa: ReadonlyArray<A>) => ReadonlyArray<{
@@ -2448,6 +2529,9 @@ export function unsafeModifyAt_<A>(as: ReadonlyArray<A>, i: number, f: (a: A) =>
   })
 }
 
+/**
+ * @dataFirst unsafeModifyAt_
+ */
 export function unsafeModifyAt<A>(i: number, f: (a: A) => A): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
   return (as) => unsafeModifyAt_(as, i, f)
 }
@@ -2458,6 +2542,9 @@ export function unsafeInsertAt_<A>(as: ReadonlyArray<A>, i: number, a: A): NonEm
   }) as unknown as NonEmptyArray<A>
 }
 
+/**
+ * @dataFirst unsafeInsertAt_
+ */
 export function unsafeInsertAt<A>(i: number, a: A): (as: ReadonlyArray<A>) => NonEmptyArray<A> {
   return (as) => unsafeInsertAt_(as, i, a)
 }
@@ -2472,6 +2559,9 @@ export function unsafeUpdateAt_<A>(as: ReadonlyArray<A>, i: number, a: A): Reado
   }
 }
 
+/**
+ * @dataFirst unsafeUpdateAt_
+ */
 export function unsafeUpdateAt<A>(i: number, a: A): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
   return (as) => unsafeUpdateAt_(as, i, a)
 }
@@ -2505,6 +2595,9 @@ export function every_<A>(as: ReadonlyArray<A>, predicate: P.PredicateWithIndex<
   return result
 }
 
+/**
+ * @dataFirst every_
+ */
 export function every<A, B extends A>(
   refinement: P.RefinementWithIndex<number, A, B>
 ): (as: ReadonlyArray<A>) => as is ReadonlyArray<B>
@@ -2534,6 +2627,8 @@ export function exists_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): as 
  *
  * @category utils
  * @since 1.0.0
+ *
+ * @dataFirst exists_
  */
 export function exists<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => as is NonEmptyArray<A> {
   return (as): as is NonEmptyArray<A> => exists_(as, predicate)
@@ -2567,6 +2662,8 @@ export function mutate_<A>(as: ReadonlyArray<A>, f: (as: Array<A>) => void): Rea
 
 /**
  * Transiently mutate the Array. Copies the input array, then exececutes `f` on it
+ *
+ * @dataFirst mutate_
  */
 export function mutate<A>(f: (as: Array<A>) => void): (as: ReadonlyArray<A>) => ReadonlyArray<A> {
   return (as) => mutate_(as, f)
@@ -2576,6 +2673,9 @@ export function join_(as: ReadonlyArray<string>, s: string): string {
   return as.join(s)
 }
 
+/**
+ * @dataFirst join_
+ */
 export function join(s: string): (as: ReadonlyArray<string>) => string {
   return (as) => as.join(s)
 }

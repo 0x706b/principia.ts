@@ -606,15 +606,10 @@ export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: Maybe<A>) => B {
   return (fa) => foldr_(fa, b, f)
 }
 
-/**
- */
 export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: Maybe<A>, f: (a: A) => M) => M {
   return (fa, f) => match_(fa, () => M.nat, f)
 }
 
-/**
- * @dataFirst foldMap_
- */
 export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: Maybe<A>) => M {
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
@@ -842,8 +837,6 @@ export const mapA_: P.MapAFn_<URI> = (G) => (ta, f) => match_(ta, flow(nothing, 
  *
  * @category Traversable
  * @since 1.0.0
- *
- * @dataFirst mapA_
  */
 export const mapA: P.MapAFn<URI> = (G) => (f) => (ta) => mapA_(G)(ta, f)
 
