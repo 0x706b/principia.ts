@@ -995,6 +995,9 @@ export function corresponds_<A, B>(as: Chunk<A>, bs: Chunk<B>, f: (a: A, b: B) =
   return equal
 }
 
+/**
+ * @dataFirst corresponds_
+ */
 export function corresponds<A, B>(bs: Chunk<B>, f: (a: A, b: B) => boolean): (as: Chunk<A>) => boolean {
   return (as) => corresponds_(as, bs, f)
 }
@@ -1061,6 +1064,9 @@ export function append_<A, A1>(chunk: Chunk<A>, a1: A1): Chunk<A | A1> {
   return chunk.append(a1)
 }
 
+/**
+ * @dataFirst append_
+ */
 export function append<A>(a: A): (chunk: Chunk<A>) => Chunk<A> {
   return (chunk) => append_(chunk, a)
 }
@@ -1071,6 +1077,9 @@ export function concatW_<A, B>(as: Chunk<A>, bs: Chunk<B>): Chunk<A | B> {
   return as.concat(bs as any)
 }
 
+/**
+ * @dataFirst concatW_
+ */
 export function concatW<B>(bs: Chunk<B>): <A>(as: Chunk<A>) => Chunk<A | B> {
   return (as) => concatW_(as, bs)
 }
@@ -1081,6 +1090,9 @@ export function concat_<A>(xs: Chunk<A>, ys: Chunk<A>): Chunk<A> {
   return xs.concat(ys)
 }
 
+/**
+ * @dataFirst concat_
+ */
 export function concat<A>(ys: Chunk<A>): (xs: Chunk<A>) => Chunk<A> {
   return (xs) => concat_(xs, ys)
 }
@@ -1090,6 +1102,9 @@ export function foreach_<A, B>(chunk: Chunk<A>, f: (a: A) => B): void {
   chunk.foreach(f)
 }
 
+/**
+ * @dataFirst foreach_
+ */
 export function foreach<A, B>(f: (a: A) => B): (chunk: Chunk<A>) => void {
   return (chunk) => foreach_(chunk, f)
 }
@@ -1099,6 +1114,9 @@ export function prepend_<A>(chunk: Chunk<A>, a: A): Chunk<A> {
   return chunk.prepend(a)
 }
 
+/**
+ * @dataFirst prepend_
+ */
 export function prepend<A>(a: A): (chunk: Chunk<A>) => Chunk<A> {
   return (chunk) => prepend_(chunk, a)
 }
@@ -1132,6 +1150,9 @@ export function alignWith_<A, B, C>(fa: Chunk<A>, fb: Chunk<B>, f: (_: These<A, 
   return out.result()
 }
 
+/**
+ * @dataFirst alignWith_
+ */
 export function alignWith<A, B, C>(fb: Chunk<B>, f: (_: These<A, B>) => C): (fa: Chunk<A>) => Chunk<C> {
   return (fa) => alignWith_(fa, fb, f)
 }
@@ -1140,6 +1161,9 @@ export function align_<A, B>(fa: Chunk<A>, fb: Chunk<B>): Chunk<These<A, B>> {
   return alignWith_(fa, fb, identity)
 }
 
+/**
+ * @dataFirst align_
+ */
 export function align<B>(fb: Chunk<B>): <A>(fa: Chunk<A>) => Chunk<These<A, B>> {
   return (fa) => align_(fa, fb)
 }
@@ -1165,6 +1189,9 @@ export function ap_<A, B>(fab: Chunk<(a: A) => B>, fa: Chunk<A>): Chunk<B> {
   return crossWith_(fab, fa, (f, a) => f(a))
 }
 
+/**
+ * @dataFirst ap_
+ */
 export function ap<A>(fa: Chunk<A>): <B>(fab: Chunk<(a: A) => B>) => Chunk<B> {
   return (fab) => ap_(fab, fa)
 }
@@ -1173,6 +1200,9 @@ export function cross_<A, B>(as: Chunk<A>, bs: Chunk<B>): Chunk<readonly [A, B]>
   return crossWith_(as, bs, tuple)
 }
 
+/**
+ * @dataFirst cross_
+ */
 export function cross<B>(bs: Chunk<B>): <A>(as: Chunk<A>) => Chunk<readonly [A, B]> {
   return (as) => cross_(as, bs)
 }
@@ -1181,6 +1211,9 @@ export function crossWith_<A, B, C>(as: Chunk<A>, bs: Chunk<B>, f: (a: A, b: B) 
   return chain_(as, (a) => map_(bs, (b) => f(a, b)))
 }
 
+/**
+ * @dataFirst crossWith_
+ */
 export function crossWith<A, B, C>(bs: Chunk<B>, f: (a: A, b: B) => C): (as: Chunk<A>) => Chunk<C> {
   return (as) => crossWith_(as, bs, f)
 }
@@ -1220,6 +1253,9 @@ export function map_<A, B>(chunk: Chunk<A>, f: (a: A, i: number) => B): Chunk<B>
   return b.result()
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<A, B>(f: (a: A) => B): (chunk: Chunk<A>) => Chunk<B> {
   return (chunk) => map_(chunk, f)
 }
@@ -1246,6 +1282,9 @@ export function chain_<A, B>(ma: Chunk<A>, f: (a: A) => Chunk<B>): Chunk<B> {
   return out
 }
 
+/**
+ * @dataFirst chain_
+ */
 export function chain<A, B>(f: (a: A) => Chunk<B>): (ma: Chunk<A>) => Chunk<B> {
   return (ma) => chain_(ma, f)
 }
@@ -1264,6 +1303,9 @@ export function alt_<A>(fa: Chunk<A>, that: () => Chunk<A>): Chunk<A> {
   return concat_(fa, that())
 }
 
+/**
+ * @dataFirst alt_
+ */
 export function alt<A>(that: () => Chunk<A>): (fa: Chunk<A>) => Chunk<A> {
   return (fa) => alt_(fa, that)
 }
@@ -1312,6 +1354,9 @@ export function zipWith_<A, B, C>(as: Chunk<A>, bs: Chunk<B>, f: (a: A, b: B) =>
   }
 }
 
+/**
+ * @dataFirst zipWith_
+ */
 export function zipWith<A, B, C>(bs: Chunk<B>, f: (a: A, b: B) => C): (as: Chunk<A>) => Chunk<C> {
   return (as) => zipWith_(as, bs, f)
 }
@@ -1320,6 +1365,9 @@ export function zip_<A, B>(as: Chunk<A>, bs: Chunk<B>): Chunk<readonly [A, B]> {
   return zipWith_(as, bs, tuple)
 }
 
+/**
+ * @dataFirst zip_
+ */
 export function zip<B>(bs: Chunk<B>): <A>(as: Chunk<A>) => Chunk<readonly [A, B]> {
   return (as) => zip_(as, bs)
 }
@@ -1351,6 +1399,9 @@ export function filter_<A>(fa: Chunk<A>, predicate: P.PredicateWithIndex<number,
   return out.result()
 }
 
+/**
+ * @dataFirst filter_
+ */
 export function filter<A, B extends A>(refinement: P.RefinementWithIndex<number, A, B>): (fa: Chunk<A>) => Chunk<B>
 export function filter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: Chunk<A>) => Chunk<A>
 export function filter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: Chunk<A>) => Chunk<A> {
@@ -1376,6 +1427,9 @@ export function filterMap_<A, B>(fa: Chunk<A>, f: (a: A, i: number) => M.Maybe<B
   return out.result()
 }
 
+/**
+ * @dataFirst filterMap_
+ */
 export function filterMap<A, B>(f: (a: A, i: number) => M.Maybe<B>): (fa: Chunk<A>) => Chunk<B> {
   return (self) => filterMap_(self, f)
 }
@@ -1407,6 +1461,9 @@ export function partition_<A>(fa: Chunk<A>, predicate: P.PredicateWithIndex<numb
   return [left.result(), right.result()]
 }
 
+/**
+ * @dataFirst partition_
+ */
 export function partition<A, B extends A>(
   refinement: P.RefinementWithIndex<number, A, B>
 ): (fa: Chunk<A>) => readonly [Chunk<A>, Chunk<B>]
@@ -1444,6 +1501,9 @@ export function partitionMap_<A, B, C>(
   return [left.result(), right.result()]
 }
 
+/**
+ * @dataFirst partitionMap_
+ */
 export function partitionMap<A, B, C>(
   f: (a: A, i: number) => Either<B, C>
 ): (fa: Chunk<A>) => readonly [Chunk<B>, Chunk<C>] {
@@ -1472,6 +1532,9 @@ export function foldl_<A, B>(fa: Chunk<A>, b: B, f: (b: B, a: A, i: number) => B
   return out
 }
 
+/**
+ * @dataFirst foldl_
+ */
 export function foldl<A, B>(b: B, f: (b: B, a: A, i: number) => B): (fa: Chunk<A>) => B {
   return (fa) => foldl_(fa, b, f)
 }
@@ -1492,6 +1555,9 @@ export function foldr_<A, B>(fa: Chunk<A>, b: B, f: (a: A, b: B, i: number) => B
   return out
 }
 
+/**
+ * @dataFirst foldr_
+ */
 export function foldr<A, B>(b: B, f: (a: A, b: B, i: number) => B): (fa: Chunk<A>) => B {
   return (fa) => foldr_(fa, b, f)
 }
@@ -1500,6 +1566,9 @@ export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: Chunk<A>, f: (a: A, i: numb
   return (fa, f) => foldl_(fa, M.nat, (b, a, i) => M.combine_(b, f(a, i)))
 }
 
+/**
+ * @dataFirst foldMap_
+ */
 export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A, i: number) => M) => (fa: Chunk<A>) => M {
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
@@ -1614,6 +1683,9 @@ export function chainRecDepthFirst_<A, B>(a: A, f: (a: A) => Chunk<Either<A, B>>
   return out
 }
 
+/**
+ * @dataFirst chainRecDepthFirst_
+ */
 export function chainRecDepthFirst<A, B>(f: (a: A) => Chunk<Either<A, B>>): (a: A) => Chunk<B> {
   return (a) => chainRecDepthFirst_(a, f)
 }
@@ -1644,6 +1716,9 @@ export function chainRecBreadthFirst_<A, B>(a: A, f: (a: A) => Chunk<Either<A, B
   return out
 }
 
+/**
+ * @dataFirst chainRecBreadthFirst_
+ */
 export function chainRecBreadthFirst<A, B>(f: (a: A) => Chunk<Either<A, B>>): (a: A) => Chunk<B> {
   return (a) => chainRecBreadthFirst_(a, f)
 }
@@ -1748,6 +1823,9 @@ export function chop_<A, B>(as: Chunk<A>, f: (as: Chunk<A>) => readonly [B, Chun
   return out.result()
 }
 
+/**
+ * @dataFirst chop_
+ */
 export function chop<A, B>(f: (as: Chunk<A>) => readonly [B, Chunk<A>]): (as: Chunk<A>) => Chunk<B> {
   return (as) => chop_(as, f)
 }
@@ -1756,6 +1834,9 @@ export function chunksOf_<A>(as: Chunk<A>, n: number): Chunk<Chunk<A>> {
   return chop_(as, splitAt(n))
 }
 
+/**
+ * @dataFirst chunksOf_
+ */
 export function chunksOf(n: number): <A>(as: Chunk<A>) => Chunk<Chunk<A>> {
   return chop(splitAt(n))
 }
@@ -1819,6 +1900,9 @@ export function drop_<A>(as: Chunk<A>, n: number): Chunk<A> {
   }
 }
 
+/**
+ * @dataFirst drop_
+ */
 export function drop(n: number): <A>(as: Chunk<A>) => Chunk<A> {
   return (as) => drop_(as, n)
 }
@@ -1856,6 +1940,9 @@ export function dropWhile_<A>(as: Chunk<A>, predicate: Predicate<A>): Chunk<A> {
   }
 }
 
+/**
+ * @dataFirst dropWhile_
+ */
 export function dropWhile<A>(predicate: Predicate<A>): (as: Chunk<A>) => Chunk<A> {
   return (as) => dropWhile_(as, predicate)
 }
@@ -1892,6 +1979,9 @@ export function find_<A>(as: Chunk<A>, f: (a: A) => boolean): M.Maybe<A> {
   return out
 }
 
+/**
+ * @dataFirst find_
+ */
 export function find<A>(f: (a: A) => boolean): (as: Chunk<A>) => M.Maybe<A> {
   return (as) => find_(as, f)
 }
@@ -1925,6 +2015,8 @@ export function foldlWhile_<A, B>(as: Chunk<A>, b: B, predicate: Predicate<B>, f
  *
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst foldlWhile_
  */
 export function foldlWhile<A, B>(b: B, predicate: Predicate<B>, f: (b: B, a: A) => B): (as: Chunk<A>) => B {
   return (as) => foldlWhile_(as, b, predicate, f)
@@ -1934,6 +2026,9 @@ export function get_<A>(as: Chunk<A>, n: number): M.Maybe<A> {
   return M.tryCatch(() => unsafeGet_(as, n))
 }
 
+/**
+ * @dataFirst get_
+ */
 export function get(n: number): <A>(as: Chunk<A>) => M.Maybe<A> {
   return (as) => get_(as, n)
 }
@@ -1945,6 +2040,9 @@ export function join_(chunk: Chunk<string>, separator: string): string {
   return foldl_(unsafeTail(chunk), unsafeGet_(chunk, 0), (b, s) => b + separator + s)
 }
 
+/**
+ * @dataFirst join_
+ */
 export function join(separator: string): (chunk: Chunk<string>) => string {
   return (chunk) => join_(chunk, separator)
 }
@@ -1979,6 +2077,8 @@ export function mapAccum_<A, S, B>(as: Chunk<A>, s: S, f: (s: S, a: A) => readon
  *
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst mapAccum_
  */
 export function mapAccum<A, S, B>(s: S, f: (s: S, a: A) => readonly [B, S]): (as: Chunk<A>) => readonly [Chunk<B>, S] {
   return (as) => mapAccum_(as, s, f)
@@ -2013,6 +2113,9 @@ export function splitAt_<A>(as: Chunk<A>, n: number): readonly [Chunk<A>, Chunk<
   return [take_(as, n), drop_(as, n)]
 }
 
+/**
+ * @dataFirst splitAt_
+ */
 export function splitAt(n: number): <A>(as: Chunk<A>) => readonly [Chunk<A>, Chunk<A>] {
   return (as) => splitAt_(as, n)
 }
@@ -2059,6 +2162,9 @@ export function take_<A>(as: Chunk<A>, n: number): Chunk<A> {
   return as.take(n)
 }
 
+/**
+ * @dataFirst take_
+ */
 export function take(n: number): <A>(as: Chunk<A>) => Chunk<A> {
   return (as) => take_(as, n)
 }
@@ -2096,6 +2202,9 @@ export function takeWhile_<A>(as: Chunk<A>, predicate: Predicate<A>): Chunk<A> {
   }
 }
 
+/**
+ * @dataFirst takeWhile_
+ */
 export function takeWhile<A>(predicate: Predicate<A>): (as: Chunk<A>) => Chunk<A> {
   return (as) => takeWhile_(as, predicate)
 }
@@ -2105,6 +2214,9 @@ export function unsafeGet_<A>(as: Chunk<A>, n: number): A {
   return as.get(n)
 }
 
+/**
+ * @dataFirst unsafeGet_
+ */
 export function unsafeGet(n: number): <A>(as: Chunk<A>) => A {
   return (as) => unsafeGet_(as, n)
 }
@@ -2151,6 +2263,9 @@ export function zipWithIndexOffset_<A>(as: Chunk<A>, offset: number): Chunk<read
   return out.result()
 }
 
+/**
+ * @dataFirst zipWithIndexOffset_
+ */
 export function zipWithIndexOffset(offset: number): <A>(as: Chunk<A>) => Chunk<readonly [A, number]> {
   return (as) => zipWithIndexOffset_(as, offset)
 }
@@ -2172,25 +2287,52 @@ export const Align = P.Align<URI>({
 })
 
 export const alignCombine_ = P.alignCombineF_<URI>({ map_, align_, alignWith_ })
-export const alignCombine  = P.alignCombineF<URI>({ map_, align_, alignWith_ })
-export const padZip_       = P.padZipF_<URI>({ map_, align_, alignWith_ })
-export const padZip        = P.padZipF<URI>({ map_, align_, alignWith_ })
-export const padZipWith_   = P.padZipWithF_<URI>({ map_, align_, alignWith_ })
-export const padZipWith    = P.padZipWithF<URI>({ map_, align_, alignWith_ })
-export const zipAll_       = P.zipAllF_<URI>({ map_, align_, alignWith_ })
-export const zipAll        = P.zipAllF<URI>({ map_, align_, alignWith_ })
+/**
+ * @dataFirst alignCombine_
+ */
+export const alignCombine = P.alignCombineF<URI>({ map_, align_, alignWith_ })
+
+export const padZip_ = P.padZipF_<URI>({ map_, align_, alignWith_ })
+/**
+ * @dataFirst padZip_
+ */
+export const padZip = P.padZipF<URI>({ map_, align_, alignWith_ })
+
+export const padZipWith_ = P.padZipWithF_<URI>({ map_, align_, alignWith_ })
+/**
+ * @dataFirst padZipWith_
+ */
+export const padZipWith = P.padZipWithF<URI>({ map_, align_, alignWith_ })
+
+export const zipAll_ = P.zipAllF_<URI>({ map_, align_, alignWith_ })
+/**
+ * @dataFirst zipAll_
+ */
+export const zipAll = P.zipAllF<URI>({ map_, align_, alignWith_ })
 
 export const Functor = P.Functor<URI>({
   map_
 })
 
-export const flap_   = P.flapF_<URI>({ map_ })
-export const flap    = P.flapF<URI>({ map_ })
-export const as_     = P.asF_<URI>({ map_ })
-export const as      = P.asF<URI>({ map_ })
+export const flap_ = P.flapF_<URI>({ map_ })
+/**
+ * @dataFirst flap_
+ */
+export const flap = P.flapF<URI>({ map_ })
+
+export const as_ = P.asF_<URI>({ map_ })
+/**
+ * @dataFirst as_
+ */
+export const as = P.asF<URI>({ map_ })
+
 export const fcross_ = P.fcrossF_<URI>({ map_ })
-export const fcross  = P.fcrossF<URI>({ map_ })
-export const tupled  = P.tupledF<URI>({ map_ })
+/**
+ * @dataFirst fcross_
+ */
+export const fcross = P.fcrossF<URI>({ map_ })
+
+export const tupled = P.tupledF<URI>({ map_ })
 
 export const FunctorWithIndex = P.FunctorWithIndex<URI>({
   imap_: map_
@@ -2359,6 +2501,8 @@ export function elem_<A>(E: Eq<A>): (as: Chunk<A>, a: A) => boolean {
  *
  * @category utils
  * @since 1.0.0
+ *
+ * @dataFirst elem_
  */
 export function elem<A>(E: Eq<A>): (a: A) => (as: Chunk<A>) => boolean {
   const elemE = elem_(E)
@@ -2392,6 +2536,8 @@ export function every_<A>(as: Chunk<A>, predicate: P.Predicate<A>): boolean {
  *
  * @category utils
  * @since 1.0.0
+ *
+ * @dataFirst every_
  */
 export function every<A, B extends A>(refinement: P.Refinement<A, B>): (as: Chunk<A>) => as is Chunk<B>
 export function every<A>(predicate: P.Predicate<A>): (as: Chunk<A>) => boolean
@@ -2424,6 +2570,8 @@ export function exists_<A>(as: Chunk<A>, predicate: P.Predicate<A>): boolean {
  *
  * @category utils
  * @since 1.0.0
+ *
+ * @dataFirst exists_
  */
 export function exists<A>(predicate: P.Predicate<A>): (as: Chunk<A>) => boolean {
   return (as) => exists_(as, predicate)
