@@ -107,9 +107,9 @@ export interface AsyncStaticOps {
    */
   interrupt: typeof As.interrupt
   /**
-   * @rewriteStatic promise_ from "@principia/base/Async"
+   * @rewriteStatic promise from "@principia/base/Async"
    */
-  promise: typeof As.promise_
+  promise: typeof As.promise
   /**
    * @rewriteStatic succeed from "@principia/base/Async"
    */
@@ -119,9 +119,9 @@ export interface AsyncStaticOps {
    */
   succeedLazy: typeof As.succeedLazy
   /**
-   * @rewriteStatic tryCatch_ from "@principia/base/Async"
+   * @rewriteStatic tryCatch from "@principia/base/Async"
    */
-  tryCatch: typeof As.tryCatch_
+  tryCatch: typeof As.tryCatch
   /**
    * @rewriteStatic unit from "@principia/base/Async"
    */

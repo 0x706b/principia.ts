@@ -254,17 +254,11 @@ export function promiseUnfailable<A>(
   return new LiftPromise(promise, () => undefined as never)
 }
 
-export function promise_<E, A>(
+export function promise<E, A>(
   promise: (onInterrupt: (f: () => void) => void) => Promise<A>,
   onError: (u: unknown) => E
 ): Async<unknown, E, A> {
   return new LiftPromise(promise, onError)
-}
-
-export function promise<E>(
-  onError: (u: unknown) => E
-): <A>(promise: (onInterrupt: (f: () => void) => void) => Promise<A>) => Async<unknown, E, A> {
-  return (promise) => new LiftPromise(promise, onError)
 }
 
 export function async<E, A>(
@@ -284,12 +278,8 @@ export function succeedLazy<A>(thunk: () => A): Async<unknown, never, A> {
   return new Total(thunk)
 }
 
-export function tryCatch_<E, A>(thunk: () => A, onThrow: (error: unknown) => E): Async<unknown, E, A> {
+export function tryCatch<E, A>(thunk: () => A, onThrow: (error: unknown) => E): Async<unknown, E, A> {
   return new Partial(thunk, onThrow)
-}
-
-export function tryCatch<E>(onThrow: (error: unknown) => E): <A>(thunk: () => A) => Async<unknown, E, A> {
-  return (thunk) => tryCatch_(thunk, onThrow)
 }
 
 export function interrupt(): Async<unknown, never, never> {
@@ -310,6 +300,9 @@ export function matchCauseAsync_<R, E, A, R1, E1, A1, R2, E2, A2>(
   return new Match(ma, onFailure, onSuccess)
 }
 
+/**
+ * @dataFirst matchCauseAsync_
+ */
 export function matchCauseAsync<E, A, R1, E1, A1, R2, E2, A2>(
   f: (e: Cause<E>) => Async<R1, E1, A1>,
   g: (a: A) => Async<R2, E2, A2>
@@ -325,6 +318,9 @@ export function matchAsync_<R, E, A, R1, E1, A1, R2, E2, A2>(
   return matchCauseAsync_(async, (cause) => E.match_(C.failureOrCause(cause), f, failCause), g)
 }
 
+/**
+ * @dataFirst matchAsync_
+ */
 export function matchAsync<E, A, R1, E1, A1, R2, E2, A2>(
   f: (e: E) => Async<R1, E1, A1>,
   g: (a: A) => Async<R2, E2, A2>
@@ -336,6 +332,9 @@ export function match_<R, E, A, B, C>(async: Async<R, E, A>, f: (e: E) => B, g: 
   return matchAsync_(async, flow(f, succeed), flow(g, succeed))
 }
 
+/**
+ * @dataFirst match_
+ */
 export function match<E, A, B, C>(
   f: (e: E) => B,
   g: (a: A) => C
@@ -350,6 +349,9 @@ export function catchAllCause_<R, E, A, R1, E1, A1>(
   return matchCauseAsync_(ma, f, succeed)
 }
 
+/**
+ * @dataFirst catchAllCause_
+ */
 export function catchAllCause<E, R1, E1, A1>(
   f: (cause: Cause<E>) => Async<R1, E1, A1>
 ): <R, A>(ma: Async<R, E, A>) => Async<R & R1, E1, A | A1> {
@@ -363,6 +365,9 @@ export function catchAll_<R, E, A, R1, E1, A1>(
   return matchAsync_(async, f, succeed)
 }
 
+/**
+ * @dataFirst catchAll_
+ */
 export function catchAll<E, R1, E1, A1>(
   f: (e: E) => Async<R1, E1, A1>
 ): <R, A>(async: Async<R, E, A>) => Async<R & R1, E1, A1 | A> {
@@ -404,6 +409,9 @@ export function crossPar_<R, E, A, R1, E1, A1>(
   return crossWithPar_(fa, fb, tuple)
 }
 
+/**
+ * @dataFirst crossPar_
+ */
 export function crossPar<R1, E1, A1>(
   fb: Async<R1, E1, A1>
 ): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, readonly [A, A1]> {
@@ -418,6 +426,9 @@ export function crossWithPar_<R, E, A, R1, E1, B, C>(
   return map_(sequenceTPar(fa, fb), ([a, b]) => f(a, b))
 }
 
+/**
+ * @dataFirst crossWithPar_
+ */
 export function crossWithPar<A, R1, E1, B, C>(
   fb: Async<R1, E1, B>,
   f: (a: A, b: B) => C
@@ -432,6 +443,9 @@ export function apPar_<R, E, A, R1, E1, B>(
   return crossWithPar_(fab, fa, (f, a) => f(a))
 }
 
+/**
+ * @dataFirst apPar_
+ */
 export function apPar<R, E, A>(
   fa: Async<R, E, A>
 ): <R1, E1, B>(fab: Async<R1, E1, (a: A) => B>) => Async<R & R1, E1 | E, B> {
@@ -445,6 +459,9 @@ export function crossFirstPar_<R, E, A, R1, E1, A1>(
   return crossWithPar_(fa, fb, (a, _) => a)
 }
 
+/**
+ * @dataFirst crossFirstPar_
+ */
 export function crossFirstPar<R1, E1, A1>(
   fb: Async<R1, E1, A1>
 ): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A> {
@@ -458,6 +475,9 @@ export function crossSecondPar_<R, E, A, R1, E1, A1>(
   return crossWithPar_(fa, fb, (_, b) => b)
 }
 
+/**
+ * @dataFirst crossSecondPar_
+ */
 export function crossSecondPar<R1, E1, A1>(
   fb: Async<R1, E1, A1>
 ): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A1> {
@@ -487,6 +507,9 @@ export function cross_<R, E, A, R1, E1, A1>(
   return crossWith_(fa, fb, tuple)
 }
 
+/**
+ * @dataFirst cross_
+ */
 export function cross<R1, E1, A1>(
   fb: Async<R1, E1, A1>
 ): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, readonly [A, A1]> {
@@ -501,6 +524,9 @@ export function crossWith_<R, E, A, R1, E1, B, C>(
   return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
+/**
+ * @dataFirst crossWith_
+ */
 export function crossWith<A, R1, E1, B, C>(
   fb: Async<R1, E1, B>,
   f: (a: A, b: B) => C
@@ -512,6 +538,9 @@ export function ap_<R, E, A, R1, E1, B>(fab: Async<R1, E1, (a: A) => B>, fa: Asy
   return crossWith_(fab, fa, (f, a) => f(a))
 }
 
+/**
+ * @dataFirst ap_
+ */
 export function ap<R, E, A>(
   fa: Async<R, E, A>
 ): <R1, E1, B>(fab: Async<R1, E1, (a: A) => B>) => Async<R & R1, E | E1, B> {
@@ -522,6 +551,9 @@ export function crossFirst_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R
   return crossWith_(fa, fb, (a, _) => a)
 }
 
+/**
+ * @dataFirst crossFirst_
+ */
 export function crossFirst<R1, E1, A1>(
   fb: Async<R1, E1, A1>
 ): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A> {
@@ -535,6 +567,9 @@ export function crossSecond_<R, E, A, R1, E1, A1>(
   return crossWith_(fa, fb, (_, b) => b)
 }
 
+/**
+ * @dataFirst crossSecond_
+ */
 export function crossSecond<R1, E1, A1>(
   fb: Async<R1, E1, A1>
 ): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A1> {
@@ -551,6 +586,9 @@ export function mapError_<R, E, A, B>(pab: Async<R, E, A>, f: (e: E) => B): Asyn
   return matchAsync_(pab, flow(f, fail), succeed)
 }
 
+/**
+ * @dataFirst mapError_
+ */
 export function mapError<E, B>(f: (e: E) => B): <R, A>(pab: Async<R, E, A>) => Async<R, B, A> {
   return (pab) => mapError_(pab, f)
 }
@@ -559,6 +597,9 @@ export function bimap_<R, E, A, B, C>(pab: Async<R, E, A>, f: (e: E) => B, g: (a
   return matchAsync_(pab, flow(f, fail), flow(g, succeed))
 }
 
+/**
+ * @dataFirst bimap_
+ */
 export function bimap<E, A, B, C>(f: (e: E) => B, g: (a: A) => C): <R>(pab: Async<R, E, A>) => Async<R, B, C> {
   return (pab) => bimap_(pab, f, g)
 }
@@ -587,6 +628,9 @@ export function map_<R, E, A, B>(fa: Async<R, E, A>, f: (a: A) => B): Async<R, E
   return chain_(fa, (a) => succeed(f(a)))
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<A, B>(f: (a: A) => B): <R, E>(fa: Async<R, E, A>) => Async<R, E, B> {
   return (fa) => map_(fa, f)
 }
@@ -601,6 +645,9 @@ export function chain_<R, E, A, Q, D, B>(ma: Async<R, E, A>, f: (a: A) => Async<
   return new Chain(ma, f)
 }
 
+/**
+ * @dataFirst chain_
+ */
 export function chain<A, Q, D, B>(f: (a: A) => Async<Q, D, B>): <R, E>(ma: Async<R, E, A>) => Async<Q & R, D | E, B> {
   return (ma) => new Chain(ma, f)
 }
@@ -613,6 +660,9 @@ export function tap_<R, E, A, Q, D, B>(ma: Async<R, E, A>, f: (a: A) => Async<Q,
   return chain_(ma, (a) => chain_(f(a), (_) => succeed(a)))
 }
 
+/**
+ * @dataFirst tap_
+ */
 export function tap<A, Q, D, B>(f: (a: A) => Async<Q, D, B>): <R, E>(ma: Async<R, E, A>) => Async<Q & R, D | E, A> {
   return (ma) => tap_(ma, f)
 }
@@ -624,6 +674,9 @@ export function tapError_<R, E, A, R1, E1, B>(
   return catchAll_(async, (e) => chain_(f(e), (_) => fail(e)))
 }
 
+/**
+ * @dataFirst tapError_
+ */
 export function tapError<E, R1, E1, B>(
   f: (e: E) => Async<R1, E1, B>
 ): <R, A>(async: Async<R, E, A>) => Async<R & R1, E | E1, A> {
@@ -652,6 +705,9 @@ export function giveAll_<R, E, A>(ra: Async<R, E, A>, env: R): Async<unknown, E,
   return new Give(ra, env)
 }
 
+/**
+ * @dataFirst giveAll_
+ */
 export function giveAll<R>(env: R): <E, A>(ra: Async<R, E, A>) => Async<unknown, E, A> {
   return (ra) => new Give(ra, env)
 }
@@ -660,6 +716,9 @@ export function gives_<R0, R, E, A>(ra: Async<R, E, A>, f: (_: R0) => R): Async<
   return asksAsync((_: R0) => giveAll_(ra, f(_)))
 }
 
+/**
+ * @dataFirst gives_
+ */
 export function gives<R0, R>(f: (_: R0) => R): <E, A>(ra: Async<R, E, A>) => Async<R0, E, A> {
   return (ra) => gives_(ra, f)
 }
@@ -668,6 +727,9 @@ export function give_<R0, R, E, A>(ra: Async<R & R0, E, A>, env: R): Async<R0, E
   return gives_(ra, (r0) => ({ ...env, ...r0 }))
 }
 
+/**
+ * @dataFirst give_
+ */
 export function give<R>(env: R): <R0, E, A>(ra: Async<R & R0, E, A>) => Async<R0, E, A> {
   return (ra) => give_(ra, env)
 }
@@ -809,6 +871,8 @@ export function giveService<T>(_: Tag<T>): (f: T) => <R1, E1, A1>(ma: Async<R1 &
 
 /**
  * Replaces the service with the required Service Entry, depends on global HasRegistry
+ *
+ * @dataFrist replaceServiceAsync_
  */
 export function replaceServiceAsync<R, E, T>(
   _: Tag<T>,
@@ -830,6 +894,8 @@ export function replaceServiceAsync_<R, E, T, R1, E1, A1>(
 
 /**
  * Replaces the service with the required Service Entry, depends on global HasRegistry
+ *
+ * @dataFrist replaceService_
  */
 export function replaceService<T>(
   _: Tag<T>,
@@ -895,6 +961,9 @@ export function bracket_<R, E, A, R1, E1, A1, R2, E2>(
   )
 }
 
+/**
+ * @dataFirst bracket_
+ */
 export function bracket<A, R1, E1, A1, R2, E2>(
   use: (a: A) => Async<R1, E1, A1>,
   release: (a: A, exit: Exit<E1, A1>) => Async<R2, E2, any>
@@ -906,6 +975,9 @@ export function ensuring_<R, E, A, R1>(ma: Async<R, E, A>, finalizer: Async<R1, 
   return new Finalize(ma, finalizer)
 }
 
+/**
+ * @dataFirst ensuring_
+ */
 export function ensuring<R1>(finalizer: Async<R1, never, void>): <R, E, A>(ma: Async<R, E, A>) => Async<R & R1, E, A> {
   return (ma) => ensuring_(ma, finalizer)
 }
