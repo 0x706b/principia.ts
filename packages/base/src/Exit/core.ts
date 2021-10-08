@@ -86,6 +86,9 @@ export function fromMaybe_<E, A>(fa: M.Maybe<A>, onNothing: () => E): PExit<neve
   return fa._tag === 'Nothing' ? fail(onNothing()) : succeed(fa.value)
 }
 
+/**
+ * @dataFirst fromMaybe_
+ */
 export function fromMaybe<E>(onNothing: () => E): <A>(fa: M.Maybe<A>) => PExit<never, E, A> {
   return (fa) => fromMaybe_(fa, onNothing)
 }
@@ -141,6 +144,9 @@ export function match_<Id, E, A, B, C>(
   }
 }
 
+/**
+ * @dataFirst match_
+ */
 export function match<Id, E, A, B, C>(
   onFailure: (e: C.PCause<Id, E>) => B,
   onSuccess: (a: A) => C
@@ -166,6 +172,9 @@ export function matchIO_<Id, E, A, R1, E1, A1, R2, E2, A2>(
   }
 }
 
+/**
+ * @dataFirst matchIO_
+ */
 export function matchIO<Id, E, A, R1, E1, A1, R2, E2, A2>(
   onFailure: (e: C.PCause<Id, E>) => IO<R1, E1, A1>,
   onSuccess: (a: A) => IO<R2, E2, A2>
@@ -196,6 +205,9 @@ export function ap_<Id, E, A, Id1, G, B>(
   return chain_(fab, (f) => map_(fa, (a) => f(a)))
 }
 
+/**
+ * @dataFirst ap_
+ */
 export function ap<Id, E, A>(
   fa: PExit<Id, E, A>
 ): <Id1, G, B>(fab: PExit<Id1, G, (a: A) => B>) => PExit<Id | Id1, E | G, B> {
@@ -206,6 +218,9 @@ export function crossFirst_<Id, E, Id1, G, A, B>(fa: PExit<Id, E, A>, fb: PExit<
   return crossWithCause_(fa, fb, (a, _) => a, C.then)
 }
 
+/**
+ * @dataFirst crossFirst_
+ */
 export function crossFirst<Id1, G, B>(
   fb: PExit<Id1, G, B>
 ): <Id, E, A>(fa: PExit<Id, E, A>) => PExit<Id | Id1, G | E, A> {
@@ -219,6 +234,9 @@ export function crossSecond_<Id, E, A, Id1, G, B>(
   return crossWithCause_(fa, fb, (_, b) => b, C.then)
 }
 
+/**
+ * @dataFirst crossSecond_
+ */
 export function crossSecond<Id1, G, B>(
   fb: PExit<Id1, G, B>
 ): <Id, E, A>(fa: PExit<Id, E, A>) => PExit<Id | Id1, G | E, B> {
@@ -232,6 +250,9 @@ export function crossFirstPar_<Id, E, Id1, G, A, B>(
   return crossWithCause_(fa, fb, (a, _) => a, C.both)
 }
 
+/**
+ * @dataFirst crossFirstPar_
+ */
 export function crossFirstPar<Id1, G, B>(
   fb: PExit<Id1, G, B>
 ): <Id, E, A>(fa: PExit<Id, E, A>) => PExit<Id | Id1, G | E, A> {
@@ -245,6 +266,9 @@ export function crossSecondPar_<Id, E, A, Id1, G, B>(
   return crossWithCause_(fa, fb, (_, b) => b, C.both)
 }
 
+/**
+ * @dataFirst crossSecondPar_
+ */
 export function crossSecondPar<Id1, G, B>(
   fb: PExit<Id1, G, B>
 ): <Id, E, A>(fa: PExit<Id, E, A>) => PExit<Id | Id1, G | E, B> {
@@ -258,6 +282,9 @@ export function cross_<Id, E, Id1, G, A, B>(
   return crossWithCause_(fa, fb, tuple, C.then)
 }
 
+/**
+ * @dataFirst cross_
+ */
 export function cross<Id1, G, B>(
   fb: PExit<Id1, G, B>
 ): <Id, E, A>(fa: PExit<Id, E, A>) => PExit<Id | Id1, G | E, readonly [A, B]> {
@@ -271,6 +298,9 @@ export function crossPar_<Id, E, Id1, G, A, B>(
   return crossWithCause_(fa, fb, tuple, C.both)
 }
 
+/**
+ * @dataFirst crossPar_
+ */
 export function crossPar<Id1, G, B>(
   fb: PExit<Id1, G, B>
 ): <Id, E, A>(fa: PExit<Id, E, A>) => PExit<Id | Id1, G | E, readonly [A, B]> {
@@ -308,6 +338,9 @@ export function crossWithCause_<Id, E, A, Id1, G, B, C>(
   }
 }
 
+/**
+ * @dataFirst crossWithCause_
+ */
 export function crossWithCause<Id, E, A, Id1, G, B, C>(
   fb: PExit<Id1, G, B>,
   f: (a: A, b: B) => C,
@@ -324,6 +357,9 @@ export function crossWith_<Id, EA, A, Id1, EB, B, C>(
   return crossWithCause_(fa, fb, f, C.then)
 }
 
+/**
+ * @dataFirst crossWith_
+ */
 export function crossWith<A, Id1, G, B, C>(
   fb: PExit<Id1, G, B>,
   f: (a: A, b: B) => C
@@ -341,6 +377,9 @@ export function bimap_<Id, E, A, G, B>(pab: PExit<Id, E, A>, f: (e: E) => G, g: 
   return isFailure(pab) ? mapError_(pab, f) : map_(pab, g)
 }
 
+/**
+ * @dataFirst bimap_
+ */
 export function bimap<E, A, G, B>(f: (e: E) => G, g: (a: A) => B): <Id>(pab: PExit<Id, E, A>) => PExit<Id, G, B> {
   return (pab) => bimap_(pab, f, g)
 }
@@ -349,6 +388,9 @@ export function mapError_<Id, E, A, G>(pab: PExit<Id, E, A>, f: (e: E) => G): PE
   return isFailure(pab) ? failCause(C.map_(pab.cause, f)) : pab
 }
 
+/**
+ * @dataFirst mapError_
+ */
 export function mapError<E, G>(f: (e: E) => G): <Id, A>(pab: PExit<Id, E, A>) => PExit<Id, G, A> {
   return (pab) => mapError_(pab, f)
 }
@@ -360,6 +402,9 @@ export function mapErrorCause_<Id, E, A, Id1, G>(
   return isFailure(pab) ? failCause(f(pab.cause)) : pab
 }
 
+/**
+ * @dataFirst mapErrorCause_
+ */
 export function mapErrorCause<Id, E, Id1, G>(
   f: (e: C.PCause<Id, E>) => C.PCause<Id1, G>
 ): <A>(pab: PExit<Id, E, A>) => PExit<Id1, G, A> {
@@ -376,6 +421,9 @@ export function as_<Id, E, A, B>(fa: PExit<Id, E, A>, b: B): PExit<Id, E, B> {
   return map_(fa, () => b)
 }
 
+/**
+ * @dataFirst as_
+ */
 export function as<B>(b: B): <Id, E, A>(fa: PExit<Id, E, A>) => PExit<Id, E, B> {
   return map(() => b)
 }
@@ -384,6 +432,9 @@ export function map_<Id, E, A, B>(fa: PExit<Id, E, A>, f: (a: A) => B): PExit<Id
   return isFailure(fa) ? fa : succeed(f(fa.value))
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<A, B>(f: (a: A) => B): <Id, E>(fa: PExit<Id, E, A>) => PExit<Id, E, B> {
   return (fa) => map_(fa, f)
 }
@@ -401,6 +452,9 @@ export function chain_<Id, E, A, Id1, G, B>(
   return isFailure(ma) ? ma : f(ma.value)
 }
 
+/**
+ * @dataFirst chain_
+ */
 export function chain<A, Id1, G, B>(
   f: (a: A) => PExit<Id1, G, B>
 ): <Id, E>(fa: PExit<Id, E, A>) => PExit<Id | Id1, G | E, B> {
@@ -423,6 +477,9 @@ export function tap_<Id, E, A, Id1, G, B>(
   )
 }
 
+/**
+ * @dataFirst tap_
+ */
 export function tap<A, Id1, G, B>(
   f: (a: A) => PExit<Id1, G, B>
 ): <Id, E>(ma: PExit<Id, E, A>) => PExit<Id | Id1, G | E, A> {
@@ -448,6 +505,9 @@ export function chainRec_<Id, E, A, B>(a: A, f: (a: A) => PExit<Id, E, E.Either<
   )
 }
 
+/**
+ * @dataFirst chainRec_
+ */
 export function chainRec<Id, E, A, B>(f: (a: A) => PExit<Id, E, E.Either<A, B>>): (a: A) => PExit<Id, E, B> {
   return (a) => chainRec_(a, f)
 }
@@ -512,6 +572,9 @@ export function exists_<Id, E, A>(exit: PExit<Id, E, A>, predicate: Predicate<A>
   return match_(exit, () => false, predicate)
 }
 
+/**
+ * @dataFirst exists_
+ */
 export function exists<A>(predicate: Predicate<A>): <Id, E>(exit: PExit<Id, E, A>) => boolean {
   return (exit) => exists_(exit, predicate)
 }
@@ -520,6 +583,9 @@ export function orElseFail_<Id, E, A, E1>(exit: PExit<Id, E, A>, orElse: () => E
   return mapError_(exit, orElse)
 }
 
+/**
+ * @dataFirst orElseFail_
+ */
 export function orElseFail<E1>(orElse: () => E1): <Id, E, A>(exit: PExit<Id, E, A>) => PExit<Id, E1, A> {
   return (exit) => orElseFail_(exit, orElse)
 }
