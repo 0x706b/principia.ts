@@ -352,21 +352,25 @@ export function both<Id, E, Id1, E1>(left: PCause<Id, E>, right: PCause<Id1, E1>
  * @category guards
  * @since 1.0.0
  */
-export function containsEval<Id1, E, E1 extends E = E>(
+export function containsEval<Id, E, Id1, E1 extends E = E>(
+  cause: PCause<Id, E>,
   that: PCause<Id1, E1>
-): <Id>(cause: PCause<Id, E>) => Ev.Eval<boolean> {
-  return (cause) =>
-    Ev.gen(function* (_) {
-      if (yield* _(cause.equalsEval(that))) {
-        return true
-      }
-      return yield* _(
-        pipe(
-          cause,
-          foldl(Ev.now(false), (_, c) => M.just(Ev.chain_(_, (b) => (b ? Ev.now(b) : c.equalsEval(that)))))
-        )
+): Ev.Eval<boolean> {
+  return Ev.gen(function* (_) {
+    if (yield* _(cause.equalsEval(that))) {
+      return true
+    }
+    return yield* _(
+      pipe(
+        cause,
+        foldl(Ev.now(false), (_, c) => M.just(Ev.chain_(_, (b) => (b ? Ev.now(b) : c.equalsEval(that)))))
       )
-    })
+    )
+  })
+}
+
+export function contains_<Id, E, Id1, E1 extends E = E>(cause: PCause<Id, E>, that: PCause<Id1, E1>): boolean {
+  return containsEval(cause, that).value
 }
 
 /**
@@ -374,9 +378,11 @@ export function containsEval<Id1, E, E1 extends E = E>(
  *
  * @category guards
  * @since 1.0.0
+ *
+ * @dataFirst contains_
  */
 export function contains<Id1, E, E1 extends E = E>(that: PCause<Id1, E1>): <Id>(cause: PCause<Id, E>) => boolean {
-  return flow(containsEval(that), Ev.evaluate)
+  return (cause) => contains_(cause, that)
 }
 
 /**
@@ -1023,14 +1029,20 @@ export function unit(): PCause<never, void> {
  * -------------------------------------------------------------------------------------------------
  */
 
+export function as_<Id, E, E1>(fa: PCause<Id, E>, e: E1): PCause<Id, E1> {
+  return map_(fa, () => e)
+}
+
 /**
  * Substitutes a value under a type constructor
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @dataFirst as_
  */
 export function as<Id, E1>(e: E1): <E>(fa: PCause<Id, E>) => PCause<Id, E1> {
-  return map(() => e)
+  return (fa) => as_(fa, e)
 }
 
 /**
@@ -1463,8 +1475,8 @@ export function failureTraceOrCause<Id, E>(
  * Squashes a `Cause` down to a single `Error`, chosen to be the
  * "most important" `Error`.
  */
-export function squash<Id>(S: P.Show<Id>): <E>(f: (e: E) => unknown) => (cause: PCause<Id, E>) => unknown {
-  return (f) => (cause) =>
+export function squash_<Id>(S: P.Show<Id>): <E>(cause: PCause<Id, E>, f: (e: E) => unknown) => unknown {
+  return (cause, f) =>
     pipe(
       cause,
       failureOption,
@@ -1486,6 +1498,16 @@ export function squash<Id>(S: P.Show<Id>): <E>(f: (e: E) => unknown) => (cause: 
       M.alt(() => A.head(defects(cause))),
       M.getOrElse(() => new InterruptedException('Interrupted'))
     )
+}
+
+/**
+ * Squashes a `Cause` down to a single `Error`, chosen to be the
+ * "most important" `Error`.
+ *
+ * @dataFirst squash_
+ */
+export function squash<Id>(S: P.Show<Id>): <E>(f: (e: E) => unknown) => (cause: PCause<Id, E>) => unknown {
+  return (f) => (cause) => squash_(S)(cause, f)
 }
 
 export function untracedEval<Id, E>(cause: PCause<Id, E>): Ev.Eval<PCause<Id, E>> {
