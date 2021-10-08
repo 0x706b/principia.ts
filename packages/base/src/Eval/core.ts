@@ -219,6 +219,9 @@ export function crossWith_<A, B, C>(ma: Eval<A>, mb: Eval<B>, f: (a: A, b: B) =>
   return chain_(ma, (a) => map_(mb, (b) => f(a, b)))
 }
 
+/**
+ * @dataFirst crossWith_
+ */
 export function crossWith<A, B, C>(mb: Eval<B>, f: (a: A, b: B) => C): (ma: Eval<A>) => Eval<C> {
   return (ma) => crossWith_(ma, mb, f)
 }
@@ -227,6 +230,9 @@ export function cross_<A, B>(ma: Eval<A>, mb: Eval<B>): Eval<readonly [A, B]> {
   return crossWith_(ma, mb, tuple)
 }
 
+/**
+ * @dataFirst cross_
+ */
 export function cross<B>(mb: Eval<B>): <A>(ma: Eval<A>) => Eval<readonly [A, B]> {
   return (ma) => cross_(ma, mb)
 }
@@ -235,6 +241,9 @@ export function ap_<A, B>(mab: Eval<(a: A) => B>, ma: Eval<A>): Eval<B> {
   return crossWith_(mab, ma, (f, a) => f(a))
 }
 
+/**
+ * @dataFirst ap_
+ */
 export function ap<A>(ma: Eval<A>): <B>(mab: Eval<(a: A) => B>) => Eval<B> {
   return (mab) => ap_(mab, ma)
 }
@@ -249,6 +258,9 @@ export function map_<A, B>(fa: Eval<A>, f: (a: A) => B): Eval<B> {
   return chain_(fa, (a) => now(f(a)))
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<A, B>(f: (a: A) => B): (fa: Eval<A>) => Eval<B> {
   return (fa) => map_(fa, f)
 }
@@ -263,6 +275,9 @@ export function chain_<A, B>(ma: Eval<A>, f: (a: A) => Eval<B>): Eval<B> {
   return new Chain(ma, f)
 }
 
+/**
+ * @dataFirst chain_
+ */
 export function chain<A, B>(f: (a: A) => Eval<B>): (ma: Eval<A>) => Eval<B> {
   return (ma) => chain_(ma, f)
 }

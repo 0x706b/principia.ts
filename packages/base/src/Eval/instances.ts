@@ -20,8 +20,13 @@ export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({ map_, crossWith_
 
 export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
 export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
-export const mapN_     = P.mapNF_(SemimonoidalFunctor)
-export const mapN      = P.mapNF(SemimonoidalFunctor)
+
+export const mapN_ = P.mapNF_(SemimonoidalFunctor)
+
+/**
+ * @dataFirst mapN_
+ */
+export const mapN = P.mapNF(SemimonoidalFunctor)
 
 export const Apply = P.Apply<URI>({
   map_,
@@ -66,6 +71,9 @@ export const chainRec_: <A, B>(a: A, f: (a: A) => Eval<E.Either<A, B>>) => Eval<
   chain_
 })
 
+/**
+ * @dataFirst chainRec_
+ */
 export const chainRec: <A, B>(f: (a: A) => Eval<E.Either<A, B>>) => (a: A) => Eval<B> = P.getChainRec<URI>({
   map_,
   crossWith_,
