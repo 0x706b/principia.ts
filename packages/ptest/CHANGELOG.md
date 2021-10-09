@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.2](https://github.com/0x706b/principia.ts/compare/@principia/ptest@0.19.1...@principia/ptest@0.19.2) (2021-10-09)
+
+
+### Bug Fixes
+
+* `Function.if` parameter order ([2689827](https://github.com/0x706b/principia.ts/commit/2689827e45e3cb1a15d7fe16e6553c756a0c53fe))
+
+
+
+
+
 ## [0.19.1](https://github.com/0x706b/principia.ts/compare/@principia/ptest@0.19.0...@principia/ptest@0.19.1) (2021-10-09)
 
 
