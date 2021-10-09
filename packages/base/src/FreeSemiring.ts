@@ -264,6 +264,9 @@ export function fold_<Z, A, B>(
   ).head!.value!
 }
 
+/**
+ * @dataFirst fold_
+ */
 export function fold<A, B>(
   onEmpty: B,
   onSingle: (a: A) => B,
@@ -287,6 +290,9 @@ export function crossWith_<Z, A, Z1, B, C>(
   return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
+/**
+ * @dataFirst crossWith_
+ */
 export function crossWith<A, Z1, B, C>(
   fb: FreeSemiring<Z1, B>,
   f: (a: A, b: B) => C
@@ -301,6 +307,9 @@ export function cross_<Z, A, Z1, B>(
   return crossWith_(fa, fb, tuple)
 }
 
+/**
+ * @dataFirst cross_
+ */
 export function cross<Z1, B>(
   fb: FreeSemiring<Z1, B>
 ): <Z, A>(fa: FreeSemiring<Z, A>) => FreeSemiring<Z | Z1, readonly [A, B]> {
@@ -311,6 +320,9 @@ export function crossFirst_<Z, A, Z1, B>(fa: FreeSemiring<Z, A>, fb: FreeSemirin
   return crossWith_(fa, fb, (a, _) => a)
 }
 
+/**
+ * @dataFirst crossFirst_
+ */
 export function crossFirst<Z1, B>(fb: FreeSemiring<Z1, B>): <Z, A>(fa: FreeSemiring<Z, A>) => FreeSemiring<Z | Z1, A> {
   return (fa) => crossFirst_(fa, fb)
 }
@@ -319,6 +331,9 @@ export function crossSecond_<Z, A, Z1, B>(fa: FreeSemiring<Z, A>, fb: FreeSemiri
   return crossWith_(fa, fb, (_, b) => b)
 }
 
+/**
+ * @dataFirst crossSecond_
+ */
 export function crossSecond<Z1, B>(fb: FreeSemiring<Z1, B>): <Z, A>(fa: FreeSemiring<Z, A>) => FreeSemiring<Z | Z1, B> {
   return (fa) => crossSecond_(fa, fb)
 }
@@ -333,6 +348,9 @@ export function ap_<Z, A, Z1, B>(fab: FreeSemiring<Z, (a: A) => B>, fa: FreeSemi
   return crossWith_(fab, fa, (f, a) => f(a))
 }
 
+/**
+ * @dataFirst ap_
+ */
 export function ap<Z1, A>(
   fa: FreeSemiring<Z1, A>
 ): <Z, B>(fab: FreeSemiring<Z, (a: A) => B>) => FreeSemiring<Z | Z1, B> {
@@ -367,6 +385,9 @@ export function map_<Z, A, B>(fa: FreeSemiring<Z, A>, f: (a: A) => B): FreeSemir
   return chain_(fa, (a) => single(f(a)))
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<A, B>(f: (a: A) => B): <Z>(fa: FreeSemiring<Z, A>) => FreeSemiring<Z, B> {
   return (fa) => map_(fa, f)
 }
@@ -375,6 +396,9 @@ export function as_<Z, A, B>(fa: FreeSemiring<Z, A>, b: B): FreeSemiring<Z, B> {
   return map_(fa, () => b)
 }
 
+/**
+ * @dataFirst as_
+ */
 export function as<B>(b: B): <Z, A>(fa: FreeSemiring<Z, A>) => FreeSemiring<Z, B> {
   return (fa) => as_(fa, b)
 }
@@ -389,6 +413,9 @@ export function chain_<Z, A, Z1, B>(ma: FreeSemiring<Z, A>, f: (a: A) => FreeSem
   return fold_(ma, empty(), f, then, both)
 }
 
+/**
+ * @dataFirst chain_
+ */
 export function chain<A, Z1, B>(
   f: (a: A) => FreeSemiring<Z1, B>
 ): <Z>(ma: FreeSemiring<Z, A>) => FreeSemiring<Z | Z1, B> {
@@ -414,6 +441,9 @@ export const mapA_: P.MapAFn_<[HKT.URI<FreeSemiringURI>]> = (AG) => (ta, f) =>
     (gb1, gb2) => AG.crossWith_(gb1, gb2, both)
   )
 
+/**
+ * @dataFirst mapA_
+ */
 export const mapA: P.MapAFn<[HKT.URI<FreeSemiringURI>]> = (AG) => {
   const mapA__ = mapA_(AG)
   return (f) => (ta) => mapA__(ta, f)
