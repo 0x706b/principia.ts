@@ -53,6 +53,9 @@ export function listens_<W, A, B>(fa: Writer<W, A>, f: (w: W) => B): Writer<W, r
   }
 }
 
+/**
+ * @dataFirst listens_
+ */
 export function listens<W, B>(f: (w: W) => B): <A>(fa: Writer<W, A>) => Writer<W, readonly [A, B]> {
   return (fa) => listens_(fa, f)
 }
@@ -64,6 +67,9 @@ export function censor_<W, A>(fa: Writer<W, A>, f: Endomorphism<W>): Writer<W, A
   }
 }
 
+/**
+ * @dataFirst censor_
+ */
 export function censor<W>(f: Endomorphism<W>): <A>(fa: Writer<W, A>) => Writer<W, A> {
   return (fa) => censor_(fa, f)
 }
@@ -81,6 +87,9 @@ export function map_<W, A, B>(fa: Writer<W, A>, f: (a: A) => B): Writer<W, B> {
   }
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<A, B>(f: (a: A) => B): <W>(fa: Writer<W, A>) => Writer<W, B> {
   return (fa) => map_(fa, f)
 }
