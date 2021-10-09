@@ -39,6 +39,9 @@ export function leftOrThese_<E, A>(me: M.Maybe<A>, e: E): These<E, A> {
   return me._tag === 'Nothing' ? left(e) : both(e, me.value)
 }
 
+/**
+ * @dataFirst leftOrThese_
+ */
 export function leftOrThese<E>(e: E): <A>(me: M.Maybe<A>) => These<E, A> {
   return (me) => leftOrThese_(me, e)
 }
@@ -52,6 +55,9 @@ export function rightOrThese_<E, A>(me: M.Maybe<E>, a: A): These<E, A> {
   return me._tag === 'Nothing' ? right(a) : both(me.value, a)
 }
 
+/**
+ * @dataFirst rightOrThese_
+ */
 export function rightOrThese<A>(a: A): <E>(me: M.Maybe<E>) => These<E, A> {
   return (me) => rightOrThese_(me, a)
 }
@@ -113,12 +119,18 @@ export function getRightOnly<E, A>(fa: These<E, A>): M.Maybe<A> {
 
 export const match_ = T.match_
 
+/**
+ * @dataFirst match_
+ */
 export const match = T.match
 
 export function toTuple_<E, A>(fa: These<E, A>, e: E, a: A): readonly [E, A] {
   return isLeft(fa) ? [fa.left, a] : isRight(fa) ? [e, fa.right] : [fa.left, fa.right]
 }
 
+/**
+ * @dataFirst toTuple_
+ */
 export function toTuple<E, A>(e: E, a: A): (fa: These<E, A>) => readonly [E, A] {
   return (fa) => toTuple_(fa, e, a)
 }
@@ -218,6 +230,9 @@ export function bimap_<E, A, G, B>(pab: These<E, A>, f: (e: E) => G, g: (a: A) =
   return isLeft(pab) ? left(f(pab.left)) : isRight(pab) ? right(g(pab.right)) : both(f(pab.left), g(pab.right))
 }
 
+/**
+ * @dataFirst bimap_
+ */
 export function bimap<E, A, G, B>(f: (e: E) => G, g: (a: A) => B): (pab: These<E, A>) => These<G, B> {
   return (pab) => bimap_(pab, f, g)
 }
@@ -226,6 +241,9 @@ export function mapLeft_<E, A, G>(pab: These<E, A>, f: (e: E) => G): These<G, A>
   return isLeft(pab) ? left(f(pab.left)) : isBoth(pab) ? both(f(pab.left), pab.right) : pab
 }
 
+/**
+ * @dataFirst mapLeft_
+ */
 export function mapLeft<E, G>(f: (e: E) => G): <A>(pab: These<E, A>) => These<G, A> {
   return (pab) => mapLeft_(pab, f)
 }
@@ -260,6 +278,9 @@ export function foldl_<E, A, B>(fa: These<E, A>, b: B, f: (b: B, a: A) => B): B 
   return isLeft(fa) ? b : f(b, fa.right)
 }
 
+/**
+ * @dataFirst foldl_
+ */
 export function foldl<A, B>(b: B, f: (b: B, a: A) => B): <E>(fa: These<E, A>) => B {
   return (fa) => foldl_(fa, b, f)
 }
@@ -268,6 +289,9 @@ export function foldMap_<M>(M: P.Monoid<M>): <E, A>(fa: These<E, A>, f: (a: A) =
   return (fa, f) => (isLeft(fa) ? M.nat : f(fa.right))
 }
 
+/**
+ * @dataFirst foldMap_
+ */
 export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => <E>(fa: These<E, A>) => M {
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
@@ -276,6 +300,9 @@ export function foldr_<E, A, B>(fa: These<E, A>, b: B, f: (a: A, b: B) => B): B 
   return isLeft(fa) ? b : f(fa.right, b)
 }
 
+/**
+ * @dataFirst foldr_
+ */
 export function foldr<A, B>(b: B, f: (a: A, b: B) => B): <E>(fa: These<E, A>) => B {
   return (fa) => foldr_(fa, b, f)
 }
@@ -290,6 +317,9 @@ export function map_<E, A, B>(fa: These<E, A>, f: (a: A) => B): These<E, B> {
   return isLeft(fa) ? fa : isRight(fa) ? right(f(fa.right)) : both(fa.left, f(fa.right))
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<A, B>(f: (a: A) => B): <E>(fa: These<E, A>) => These<E, B> {
   return (fa) => map_(fa, f)
 }
@@ -427,6 +457,9 @@ export function getTailRec<E>(SE: P.Semigroup<E>): P.TailRec<URI, HKT.Fix<'E', E
 export const mapA_: P.MapAFn_<URI, V> = (AG) => (ta, f) =>
   isLeft(ta) ? AG.pure(ta) : isRight(ta) ? AG.map_(f(ta.right), right) : AG.map_(f(ta.right), (b) => both(ta.left, b))
 
+/**
+ * @dataFirst mapA_
+ */
 export const mapA: P.MapAFn<URI, V> = (AG) => {
   const mapA__ = mapA_(AG)
   return (f) => (ta) => mapA__(ta, f)
@@ -461,6 +494,9 @@ export function condemnWhen_<E, A>(ma: These<E, A>, predicate: P.Predicate<E>): 
   return ma
 }
 
+/**
+ * @dataFirst condemnWhen_
+ */
 export function condemnWhen<E>(predicate: P.Predicate<E>): <A>(ma: These<E, A>) => These<E, A> {
   return (ma) => condemnWhen_(ma, predicate)
 }
