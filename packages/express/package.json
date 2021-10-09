@@ -1,6 +1,6 @@
 {
   "name": "@principia/express",
-  "version": "0.19.0",
+  "version": "0.19.1",
   "description": "Express Adapter",
   "repository": {
     "type": "git",
@@ -48,8 +48,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@principia/base": "^0.25.0",
-    "@principia/http": "^0.19.0",
+    "@principia/base": "^0.25.1",
+    "@principia/http": "^0.19.1",
     "express": "^4.17.1"
   },
   "devDependencies": {

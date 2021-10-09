@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.21.1](https://github.com/0x706b/principia.ts/compare/@principia/schema@0.21.0...@principia/schema@0.21.1) (2021-10-09)
+
+
+### Bug Fixes
+
+* **test/assertion:** `Iterable.findFirst` no longer exists ([4557703](https://github.com/0x706b/principia.ts/commit/45577031d470df43abb922081e805458e1f97544))
+
+
+
+
+
 # [0.21.0](https://github.com/0x706b/principia.ts/compare/@principia/schema@0.20.2...@principia/schema@0.21.0) (2021-10-09)
 
 
