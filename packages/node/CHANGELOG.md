@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.19.0](https://github.com/0x706b/principia.ts/compare/@principia/node@0.18.6...@principia/node@0.19.0) (2021-10-09)
+
+
+### Bug Fixes
+
+* **node:** `Sync.tryCatch_` no longer exists ([80a0376](https://github.com/0x706b/principia.ts/commit/80a037691fa1a3b903724cd76e2837e2aab08c52))
+
+
+### Features
+
+* **base/these:** add `dataFirst` annotations ([77e1fdd](https://github.com/0x706b/principia.ts/commit/77e1fdda4d4d4e7a2542bde78655589597441d50))
+
+
+
+
+
 ## [0.18.6](https://github.com/0x706b/principia.ts/compare/@principia/node@0.18.5...@principia/node@0.18.6) (2021-10-09)
 
 **Note:** Version bump only for package @principia/node

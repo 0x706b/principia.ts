@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.25.0](https://github.com/0x706b/principia.ts/compare/@principia/observable@0.24.6...@principia/observable@0.25.0) (2021-10-09)
+
+
+### Features
+
+* **base/these:** add `dataFirst` annotations ([77e1fdd](https://github.com/0x706b/principia.ts/commit/77e1fdda4d4d4e7a2542bde78655589597441d50))
+
+
+
+
+
 ## [0.24.6](https://github.com/0x706b/principia.ts/compare/@principia/observable@0.24.5...@principia/observable@0.24.6) (2021-10-09)
 
 **Note:** Version bump only for package @principia/observable

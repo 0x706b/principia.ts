@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.19.0](https://github.com/0x706b/principia.ts/compare/@principia/http@0.18.8...@principia/http@0.19.0) (2021-10-09)
+
+
+### Features
+
+* **base/these:** add `dataFirst` annotations ([77e1fdd](https://github.com/0x706b/principia.ts/commit/77e1fdda4d4d4e7a2542bde78655589597441d50))
+
+
+
+
+
 ## [0.18.8](https://github.com/0x706b/principia.ts/compare/@principia/http@0.18.7...@principia/http@0.18.8) (2021-10-09)
 
 **Note:** Version bump only for package @principia/http
