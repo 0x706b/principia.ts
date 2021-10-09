@@ -31,6 +31,9 @@ export function add_<A>(set: OrderedSet<A>, a: A): OrderedSet<A> {
   return new OrderedSet(OM.insert_(set.keyMap, a, null))
 }
 
+/**
+ * @dataFirst add_
+ */
 export function add<A>(a: A): (set: OrderedSet<A>) => OrderedSet<A> {
   return (set) => add_(set, a)
 }
@@ -39,6 +42,9 @@ export function remove_<A>(set: OrderedSet<A>, a: A): OrderedSet<A> {
   return new OrderedSet(OM.remove_(set.keyMap, a))
 }
 
+/**
+ * @dataFirst remove_
+ */
 export function remove<A>(a: A): (set: OrderedSet<A>) => OrderedSet<A> {
   return (set) => new OrderedSet(OM.remove_(set.keyMap, a))
 }
@@ -47,6 +53,9 @@ export function forEach_<A>(set: OrderedSet<A>, f: (a: A) => void): void {
   return OM.forEach_(set.keyMap, (_, a) => f(a))
 }
 
+/**
+ * @dataFirst forEach_
+ */
 export function forEach<A>(f: (a: A) => void): (set: OrderedSet<A>) => void {
   return (set) => forEach_(set, f)
 }
@@ -61,6 +70,9 @@ export function has_<A>(set: OrderedSet<A>, a: A): boolean {
   return OM.get_(set.keyMap, a)._tag === 'Just'
 }
 
+/**
+ * @dataFirst has_
+ */
 export function has<A>(a: A): (set: OrderedSet<A>) => boolean {
   return (set) => has_(set, a)
 }
@@ -77,6 +89,9 @@ export function isSubset_<A>(x: OrderedSet<A>, y: OrderedSet<A>): boolean {
   return every_(x, (a) => has_(y, a))
 }
 
+/**
+ * @dataFirst isSubset_
+ */
 export function isSubset<A>(y: OrderedSet<A>): (x: OrderedSet<A>) => boolean {
   return (x) => isSubset_(x, y)
 }
@@ -90,12 +105,22 @@ export function some_<A>(set: OrderedSet<A>, predicate: P.Predicate<A>): boolean
   return found
 }
 
+/**
+ * @dataFirst some_
+ */
 export function some<A>(predicate: P.Predicate<A>): (set: OrderedSet<A>) => boolean {
   return (set) => some_(set, predicate)
 }
 
 export function every_<A>(set: OrderedSet<A>, predicate: P.Predicate<A>): boolean {
   return not(some(not(predicate)))(set)
+}
+
+/**
+ * @dataFirst every_
+ */
+export function every<A>(predicate: P.Predicate<A>): (set: OrderedSet<A>) => boolean {
+  return (set) => every_(set, predicate)
 }
 
 /*
@@ -114,6 +139,9 @@ export function map_<B>(O: P.Ord<B>): <A>(fa: OrderedSet<A>, f: (a: A) => B) => 
   }
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<B>(O: P.Ord<B>): <A>(f: (a: A) => B) => (fa: OrderedSet<A>) => OrderedSet<B> {
   return (f) => (fa) => map_(O)(fa, f)
 }
@@ -130,6 +158,9 @@ export function filter_<A>(set: OrderedSet<A>, predicate: P.Predicate<A>): Order
   return new OrderedSet(OM.filter_(set.keyMap, (_, a) => predicate(a)))
 }
 
+/**
+ * @dataFirst filter_
+ */
 export function filter<A, B extends A>(refinement: P.Refinement<A, B>): (set: OrderedSet<A>) => OrderedSet<B>
 export function filter<A>(predicate: P.Predicate<A>): (set: OrderedSet<A>) => OrderedSet<A>
 export function filter<A>(predicate: P.Predicate<A>): (set: OrderedSet<A>) => OrderedSet<A> {
@@ -146,6 +177,9 @@ export function foldl_<A, Z>(fa: OrderedSet<A>, z: Z, f: (z: Z, a: A) => Z): Z {
   return OM.foldl_(fa.keyMap, z, (z, _, a) => f(z, a))
 }
 
+/**
+ * @dataFirst foldl_
+ */
 export function foldl<A, Z>(z: Z, f: (z: Z, a: A) => Z): (fa: OrderedSet<A>) => Z {
   return (fa) => foldl_(fa, z, f)
 }
@@ -170,6 +204,9 @@ export function chain_<B>(O: P.Ord<B>): <A>(ma: OrderedSet<A>, f: (a: A) => Iter
   }
 }
 
+/**
+ * @dataFirst chain_
+ */
 export function chain<B>(O: P.Ord<B>): <A>(f: (A: A) => Iterable<B>) => (ma: OrderedSet<A>) => OrderedSet<B> {
   return (f) => (ma) => chain_(O)(ma, f)
 }
@@ -190,6 +227,9 @@ export function intersection_<A>(x: OrderedSet<A>, y: Iterable<A>): OrderedSet<A
   return r
 }
 
+/**
+ * @dataFirst intersection_
+ */
 export function intersection<A>(y: Iterable<A>): (x: OrderedSet<A>) => OrderedSet<A> {
   return (x) => intersection_(x, y)
 }
@@ -202,6 +242,9 @@ export function difference_<A>(x: OrderedSet<A>, y: Iterable<A>): OrderedSet<A> 
   return r
 }
 
+/**
+ * @dataFirst difference_
+ */
 export function difference<A>(y: Iterable<A>): (x: OrderedSet<A>) => OrderedSet<A> {
   return (x) => difference_(x, y)
 }
@@ -217,6 +260,9 @@ export function union_<A>(x: OrderedSet<A>, y: Iterable<A>): OrderedSet<A> {
   return r
 }
 
+/**
+ * @dataFirst union_
+ */
 export function union<A>(y: Iterable<A>): (x: OrderedSet<A>) => OrderedSet<A> {
   return (x) => union_(x, y)
 }
@@ -231,6 +277,9 @@ export function values_<A>(set: OrderedSet<A>, direction: 0 | 1 = 0): Iterable<A
   return OM.keys_(set.keyMap, direction)
 }
 
+/**
+ * @dataFirst values_
+ */
 export function values(direction: 0 | 1 = 0): <A>(set: OrderedSet<A>) => Iterable<A> {
   return (set) => values_(set, direction)
 }
