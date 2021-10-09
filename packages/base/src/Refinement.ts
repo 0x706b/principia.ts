@@ -30,12 +30,15 @@ export function fromMaybeK<A, B extends A>(pf: (a: A) => O.Maybe<B>): Refinement
  * -------------------------------------------------------------------------------------------------
  */
 
-export function compose_<A, B extends A, C extends B>(ab: Refinement<A, B>, bc: Refinement<B, C>): Refinement<A, C> {
+export function andThen_<A, B extends A, C extends B>(ab: Refinement<A, B>, bc: Refinement<B, C>): Refinement<A, C> {
   return (i): i is C => ab(i) && bc(i)
 }
 
-export function compose<A, B extends A, C extends B>(bc: Refinement<B, C>): (ab: Refinement<A, B>) => Refinement<A, C> {
-  return (ab) => compose_(ab, bc)
+/**
+ * @dataFirst andThen_
+ */
+export function andThen<A, B extends A, C extends B>(bc: Refinement<B, C>): (ab: Refinement<A, B>) => Refinement<A, C> {
+  return (ab) => andThen_(ab, bc)
 }
 
 export function id<A>(): Refinement<A, A> {
@@ -59,6 +62,9 @@ export function or_<A, B extends A, C extends A>(
   return (a): a is B | C => first(a) || second(a)
 }
 
+/**
+ * @dataFirst or_
+ */
 export function or<A, C extends A>(
   second: Refinement<A, C>
 ): <B extends A>(first: Refinement<A, B>) => Refinement<A, B | C> {
@@ -72,6 +78,9 @@ export function and_<A, B extends A, C extends A>(
   return (a): a is B & C => first(a) && second(a)
 }
 
+/**
+ * @dataFirst and_
+ */
 export function and<A, C extends A>(
   second: Refinement<A, C>
 ): <B extends A>(first: Refinement<A, B>) => Refinement<A, B & C> {
