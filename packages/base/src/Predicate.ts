@@ -1,3 +1,4 @@
+import * as A from './Array/core'
 import { constFalse, constTrue } from './function'
 import { Monoid } from './Monoid'
 import { Semigroup } from './Semigroup'
@@ -75,4 +76,12 @@ export function and_<A>(first: Predicate<A>, second: Predicate<A>): Predicate<A>
 
 export function and<A>(second: Predicate<A>): (first: Predicate<A>) => Predicate<A> {
   return (first) => and_(first, second)
+}
+
+export function all<A>(ps: ReadonlyArray<Predicate<A>>): Predicate<A> {
+  return A.fold(getMonoidAll<A>())(ps)
+}
+
+export function any<A>(ps: ReadonlyArray<Predicate<A>>): Predicate<A> {
+  return A.fold(getMonoidAny<A>())(ps)
 }
