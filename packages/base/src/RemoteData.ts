@@ -91,6 +91,9 @@ export function fromMaybe_<E = never, A = never>(option: Maybe<A>, error?: () =>
   return M.match_(option, () => (error ? fail(error()) : initial()), succeed)
 }
 
+/**
+ * @dataFirst fromMaybe_
+ */
 export function fromMaybe<E = never>(error?: () => E): <A>(option: Maybe<A>) => RemoteData<E, A> {
   return (option) => fromMaybe_(option, error)
 }
@@ -109,6 +112,9 @@ export function fromPredicate_<E, A>(value: A, predicate: Predicate<A>, onFalse:
   return predicate(value) ? succeed(value) : fail(onFalse(value))
 }
 
+/**
+ * @dataFirst fromPredicate_
+ */
 export function fromPredicate<E, A, B extends A>(
   refinement: Refinement<A, B>,
   onFalse: (value: A) => E
@@ -169,6 +175,9 @@ export function match_<E, A, B, C, D, F>(
   }
 }
 
+/**
+ * @dataFirst match_
+ */
 export function match<E, A, B, C, D, F>(
   onInitial: () => B,
   onLoading: (progress: Maybe<Progress>) => C,
@@ -187,6 +196,9 @@ export function matchNone_<E, A, B, C, D>(
   return match_(rd, () => onNone(M.nothing()), onNone, onFailure, onSuccess)
 }
 
+/**
+ * @dataFirst matchNone_
+ */
 export function matchNone<E, A, B, C, D>(
   onNone: (progress: Maybe<Progress>) => B,
   onFailure: (error: E) => C,
@@ -213,6 +225,9 @@ export function matchRemoteData_<E, A, E1, B, E2, C>(
   }
 }
 
+/**
+ * @dataFirst matchRemoteData_
+ */
 export function matchRemoteData<E, A, E1, B, E2, C>(
   onError: (error: E) => RemoteData<E1, B>,
   onSuccess: (value: A) => RemoteData<E2, C>
@@ -260,6 +275,9 @@ export function ap_<E, A, E1, B>(fab: RemoteData<E, (a: A) => B>, fa: RemoteData
   return crossWith_(fab, fa, (f, a) => f(a))
 }
 
+/**
+ * @dataFirst ap_
+ */
 export function ap<E1, A>(fa: RemoteData<E1, A>): <E, B>(fab: RemoteData<E1, (a: A) => B>) => RemoteData<E | E1, B> {
   return (fab) => ap_(fab, fa)
 }
@@ -281,6 +299,9 @@ export function crossWith_<E, A, E1, B, C>(
   }
 }
 
+/**
+ * @dataFirst crossWith_
+ */
 export function crossWith<A, E1, B, C>(
   fb: RemoteData<E1, B>,
   f: (a: A, b: B) => C
@@ -292,6 +313,9 @@ export function cross_<E, A, E1, B>(fa: RemoteData<E, A>, fb: RemoteData<E1, B>)
   return crossWith_(fa, fb, tuple)
 }
 
+/**
+ * @dataFirst cross_
+ */
 export function cross<E1, B>(
   fb: RemoteData<E1, B>
 ): <E, A>(fa: RemoteData<E, A>) => RemoteData<E | E1, readonly [A, B]> {
@@ -302,6 +326,9 @@ export function crossFirst_<E, A, E1, B>(fa: RemoteData<E, A>, fb: RemoteData<E1
   return crossWith_(fa, fb, (a) => a)
 }
 
+/**
+ * @dataFirst crossFirst_
+ */
 export function crossFirst<E1, B>(fb: RemoteData<E1, B>): <E, A>(fa: RemoteData<E, A>) => RemoteData<E | E1, A> {
   return (fa) => crossFirst_(fa, fb)
 }
@@ -310,6 +337,9 @@ export function crossSecond_<E, A, E1, B>(fa: RemoteData<E, A>, fb: RemoteData<E
   return crossWith_(fa, fb, (_, b) => b)
 }
 
+/**
+ * @dataFirst crossSecond_
+ */
 export function crossSecond<E1, B>(fb: RemoteData<E1, B>): <E, A>(fa: RemoteData<E, A>) => RemoteData<E | E1, B> {
   return (fa) => crossSecond_(fa, fb)
 }
@@ -324,6 +354,9 @@ export function bimap_<E, A, E1, B>(pab: RemoteData<E, A>, f: (error: E) => E1, 
   return pipe(pab, mapLeft(f), map(g))
 }
 
+/**
+ * @dataFirst bimap_
+ */
 export function bimap<E, A, E1, B>(
   f: (error: E) => E1,
   g: (value: A) => B
@@ -335,6 +368,9 @@ export function mapLeft_<E, A, E1>(pab: RemoteData<E, A>, f: (error: E) => E1): 
   return pab._tag === 'Failure' ? fail(f(pab.error)) : pab
 }
 
+/**
+ * @dataFirst mapLeft_
+ */
 export function mapLeft<E, E1>(f: (error: E) => E1): <A>(pab: RemoteData<E, A>) => RemoteData<E1, A> {
   return (pab) => mapLeft_(pab, f)
 }
@@ -375,6 +411,9 @@ export function foldl_<E, A, B>(fa: RemoteData<E, A>, b: B, f: (b: B, a: A) => B
   )
 }
 
+/**
+ * @dataFirst foldl_
+ */
 export function foldl<A, B>(b: B, f: (b: B, a: A) => B): <E>(fa: RemoteData<E, A>) => B {
   return (fa) => foldl_(fa, b, f)
 }
@@ -383,6 +422,9 @@ export function foldr_<E, A, B>(fa: RemoteData<E, A>, b: B, f: (a: A, b: B) => B
   return isSuccess(fa) ? f(fa.value, b) : b
 }
 
+/**
+ * @dataFirst foldr_
+ */
 export function foldr<A, B>(b: B, f: (a: A, b: B) => B): <E>(fa: RemoteData<E, A>) => B {
   return (fa) => foldr_(fa, b, f)
 }
@@ -391,6 +433,9 @@ export function foldMap_<M>(M: Monoid<M>): <E, A>(fa: RemoteData<E, A>, f: (valu
   return (fa, f) => (isSuccess(fa) ? f(fa.value) : M.nat)
 }
 
+/**
+ * @dataFirst foldMap_
+ */
 export function foldMap<M>(M: Monoid<M>): <A>(f: (value: A) => M) => <E>(fa: RemoteData<E, A>) => M {
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
@@ -405,6 +450,9 @@ export function map_<E, A, B>(fa: RemoteData<E, A>, f: (a: A) => B): RemoteData<
   return fa._tag === 'Success' ? succeed(f(fa.value)) : fa
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<A, B>(f: (a: A) => B): <E>(fa: RemoteData<E, A>) => RemoteData<E, B> {
   return (fa) => map_(fa, f)
 }
@@ -419,6 +467,9 @@ export function chain_<E, A, E1, B>(ma: RemoteData<E, A>, f: (a: A) => RemoteDat
   return ma._tag === 'Success' ? f(ma.value) : ma
 }
 
+/**
+ * @dataFirst chain_
+ */
 export function chain<A, E1, B>(f: (a: A) => RemoteData<E1, B>): <E>(ma: RemoteData<E, A>) => RemoteData<E | E1, B> {
   return (ma) => chain_(ma, f)
 }
@@ -440,6 +491,9 @@ export function catchAll_<E, A, E1, B>(
   return ma._tag === 'Failure' ? f(ma.error) : ma
 }
 
+/**
+ * @dataFirst catchAll_
+ */
 export function catchAll<E, E1, B>(
   f: (error: E) => RemoteData<E1, B>
 ): <A>(ma: RemoteData<E, A>) => RemoteData<E1, A | B> {
@@ -459,6 +513,9 @@ export function catchJust_<E, A, E1, B>(
   )
 }
 
+/**
+ * @dataFirst catchJust_
+ */
 export function catchJust<E, E1, B>(
   f: (error: E) => Maybe<RemoteData<E1, B>>
 ): <A>(ma: RemoteData<E, A>) => RemoteData<E | E1, A | B> {
@@ -534,6 +591,9 @@ export function getShow<E, A>(SE: P.Show<E>, SA: P.Show<A>): P.Show<RemoteData<E
 
 export const mapA_: P.MapAFn_<URI, V> = (A) => (ta, f) => isSuccess(ta) ? A.map_(f(ta.value), succeed) : A.pure(ta)
 
+/**
+ * @dataFirst mapA_
+ */
 export const mapA: P.MapAFn<URI, V> = (A) => {
   const mapAA_ = mapA_(A)
   return (f) => (ta) => mapAA_(ta, f)
@@ -564,6 +624,9 @@ export function elem_<A>(E: P.Eq<A>): <E>(fa: RemoteData<E, A>, a: A) => boolean
   return (fa, a) => fa._tag === 'Success' && E.equals_(a, fa.value)
 }
 
+/**
+ * @dataFirst elem_
+ */
 export function elem<A>(E: P.Eq<A>): (a: A) => <E>(fa: RemoteData<E, A>) => boolean {
   return (a) => (fa) => elem_(E)(fa, a)
 }
@@ -572,6 +635,9 @@ export function exists_<E, A>(fa: RemoteData<E, A>, predicate: P.Predicate<A>): 
   return fa._tag === 'Success' && predicate(fa.value)
 }
 
+/**
+ * @dataFirst exists_
+ */
 export function exists<A>(predicate: P.Predicate<A>): <E>(fa: RemoteData<E, A>) => boolean {
   return (fa) => exists_(fa, predicate)
 }
