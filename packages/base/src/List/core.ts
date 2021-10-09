@@ -146,7 +146,6 @@ export function from<A>(sequence: any): List<A> {
   } else if (Symbol.iterator in sequence) {
     const iterator = sequence[Symbol.iterator]()
     let cur
-    // tslint:disable-next-line:no-conditional-assignment
     while (!(cur = iterator.next()).done) {
       push(cur.value, l)
     }
@@ -175,11 +174,11 @@ export function range(start: number, end: number): List<number> {
  * @complexity O(n)
  * @category Constructors
  */
-export function repeat<A>(value: A, times: number): List<A> {
-  let t   = times
+export function replicate<A>(n: number, a: A): List<A> {
+  let t   = n
   const l = emptyPushable<A>()
   while (--t >= 0) {
-    push(value, l)
+    push(a, l)
   }
   return l
 }
@@ -191,10 +190,10 @@ export function repeat<A>(value: A, times: number): List<A> {
  * @complexity O(n)
  * @category Constructors
  */
-export function times<A>(func: (index: number) => A, times: number): List<A> {
+export function makeBy<A>(n: number, f: (index: number) => A): List<A> {
   const l = emptyPushable<A>()
-  for (let i = 0; i < times; i++) {
-    push(func(i), l)
+  for (let i = 0; i < n; i++) {
+    push(f(i), l)
   }
   return l
 }
@@ -274,6 +273,7 @@ export function unsafeGet_<A>(l: List<A>, index: number): A | undefined {
  * `undefined` is returned.
  *
  * @complexity O(log(n))
+ * @dataFirst unsafeGet_
  */
 export function unsafeGet(index: number): <A>(l: List<A>) => A | undefined {
   return (l) => unsafeGet_(l, index)
@@ -294,6 +294,7 @@ export function get_<A>(l: List<A>, index: number): M.Maybe<A> {
  * `undefined` is returned.
  *
  * @complexity O(log(n))
+ * @dataFirst get_
  */
 export function get(index: number): <A>(l: List<A>) => M.Maybe<A> {
   return (l) => get_(l, index)
@@ -390,6 +391,8 @@ export function alignWith_<A, B, C>(fa: List<A>, fb: List<B>, f: (_: These<A, B>
 /**
  * @category Align
  * @since 1.0.0
+ *
+ * @dataFirst alignWith_
  */
 export function alignWith<A, B, C>(fb: List<B>, f: (_: These<A, B>) => C): (fa: List<A>) => List<C> {
   return (fa) => alignWith_(fa, fb, f)
@@ -406,6 +409,8 @@ export function align_<A, B>(fa: List<A>, fb: List<B>): List<These<A, B>> {
 /**
  * @category Align
  * @since 1.0.0
+ *
+ * @dataFirst align_
  */
 export function align<B>(fb: List<B>): <A>(fa: List<A>) => List<These<A, B>> {
   return (fa) => align_(fa, fb)
@@ -421,6 +426,9 @@ export function alt_<A>(fa: List<A>, f: () => List<A>): List<A> {
   return concat_(fa, f())
 }
 
+/**
+ * @dataFirst alt_
+ */
 export function alt<A>(f: () => List<A>): (fa: List<A>) => List<A> {
   return (fa) => alt_(fa, f)
 }
@@ -464,6 +472,8 @@ export function ap_<A, B>(fab: List<(a: A) => B>, fa: List<A>): List<B> {
 
 /**
  * Applies a list of functions to a list of values.
+ *
+ * @dataFirst ap_
  */
 export function ap<A, B>(fa: List<A>): (fab: List<(a: A) => B>) => List<B> {
   return (fab) => ap_(fab, fa)
@@ -473,6 +483,9 @@ export function crossWith_<A, B, C>(fa: List<A>, fb: List<B>, f: (a: A, b: B) =>
   return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
+/**
+ * @dataFirst crossWith_
+ */
 export function crossWith<A, B, C>(fb: List<B>, f: (a: A, b: B) => C): (fa: List<A>) => List<C> {
   return (fa) => crossWith_(fa, fb, f)
 }
@@ -481,6 +494,9 @@ export function cross_<A, B>(fa: List<A>, fb: List<B>): List<readonly [A, B]> {
   return crossWith_(fa, fb, tuple)
 }
 
+/**
+ * @dataFirst cross_
+ */
 export function cross<B>(fb: List<B>): <A>(fa: List<A>) => List<readonly [A, B]> {
   return (fa) => cross_(fa, fb)
 }
@@ -519,6 +535,7 @@ export function zipWith_<A, B, C>(as: List<A>, bs: List<B>, f: (a: A, b: B) => C
  *
  * @complexity `O(log(n))` where `n` is the length of the smallest
  * list.
+ * @dataFirst zipWith_
  */
 export function zipWith<A, B, C>(bs: List<B>, f: (a: A, b: B) => C): (as: List<A>) => List<C> {
   return (as) => zipWith_(as, bs, f)
@@ -539,6 +556,7 @@ export function zip_<A, B>(as: List<A>, bs: List<B>): List<readonly [A, B]> {
  *
  * @complexity `O(log(n))`, where `n` is the length of the smallest
  * list.
+ * @dataFirst zip_
  */
 export function zip<B>(bs: List<B>): <A>(as: List<A>) => List<readonly [A, B]> {
   return (as) => zip_(as, bs)
@@ -599,6 +617,7 @@ export function filter_<A>(fa: List<A>, predicate: P.PredicateWithIndex<number, 
  * list for which the predicate returns `true`.
  *
  * @complexity O(n)
+ * @dataFirst filter_
  */
 export function filter<A, B extends A>(refinement: P.RefinementWithIndex<number, A, B>): (fa: List<A>) => List<B>
 export function filter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: List<A>) => List<A>
@@ -627,6 +646,7 @@ export function filterMap_<A, B>(fa: List<A>, f: (a: A, i: number) => M.Maybe<B>
  * list for which the f returns `Just`.
  *
  * @complexity O(n)
+ * @dataFirst filterMap_
  */
 export function filterMap<A, B>(f: (a: A, i: number) => M.Maybe<B>): (fa: List<A>) => List<B> {
   return (fa) => filterMap_(fa, f)
@@ -658,6 +678,7 @@ export function partition_<A>(fa: List<A>, predicate: P.PredicateWithIndex<numbe
  * the values for which it returns `false`.
  *
  * @complexity O(n)
+ * @dataFirst partition_
  */
 export function partition<A, B extends A>(
   refinement: P.RefinementWithIndex<number, A, B>
@@ -690,6 +711,7 @@ export function partitionMap_<A, B, C>(fa: List<A>, f: (a: A, i: number) => Eith
  * and one contains the rights
  *
  * @complexity O(n)
+ * @dataFirst partitionMap_
  */
 export function partitionMap<A, B, C>(
   f: (a: A, i: number) => Either<B, C>
@@ -713,6 +735,9 @@ export function foldl_<A, B>(fa: List<A>, b: B, f: (b: B, a: A, i: number) => B)
   return foldlSuffix(f, acc, fa.suffix, suffixSize, index)[0]
 }
 
+/**
+ * @dataFirst foldl_
+ */
 export function foldl<A, B>(b: B, f: (b: B, a: A, i: number) => B): (fa: List<A>) => B {
   return (fa) => foldl_(fa, b, f)
 }
@@ -732,6 +757,9 @@ export function foldr_<A, B>(fa: List<A>, b: B, f: (a: A, b: B, i: number) => B)
   return foldrPrefix(f, acc, fa.prefix, prefixSize, j)[0]
 }
 
+/**
+ * @dataFirst foldr_
+ */
 export function foldr<A, B>(b: B, f: (a: A, b: B, i: number) => B): (fa: List<A>) => B {
   return (fa) => foldr_(fa, b, f)
 }
@@ -740,6 +768,9 @@ export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: List<A>, f: (a: A, i: numbe
   return (fa, f) => foldl_(fa, M.nat, (b, i, a) => M.combine_(b, f(i, a)))
 }
 
+/**
+ * @dataFirst foldMap_
+ */
 export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A, i: number) => M) => (fa: List<A>) => M {
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
@@ -772,6 +803,7 @@ export function map_<A, B>(fa: List<A>, f: (a: A, i: number) => B): List<B> {
  * new list of the values that the function return.
  *
  * @complexity O(n)
+ * @dataFirst map_
  */
 export function map<A, B>(f: (a: A, i: number) => B): (fa: List<A>) => List<B> {
   return (fa) => map_(fa, f)
@@ -804,6 +836,8 @@ export function chain_<A, B>(ma: List<A>, f: (a: A) => List<B>): List<B> {
 /**
  * Maps a function over a list and concatenates all the resulting
  * lists together.
+ *
+ * @dataFirst chain_
  */
 export function chain<A, B>(f: (a: A) => List<B>): (ma: List<A>) => List<B> {
   return (ma) => chain_(ma, f)
@@ -832,6 +866,9 @@ export function chainRecDepthFirst_<A, B>(a: A, f: (a: A) => List<Either<A, B>>)
   return out
 }
 
+/**
+ * @dataFirst chainRecDepthFirst_
+ */
 export function chainRecDepthFirst<A, B>(f: (a: A) => List<Either<A, B>>): (a: A) => List<B> {
   return (a) => chainRecDepthFirst_(a, f)
 }
@@ -859,6 +896,9 @@ export function chainRecBreadthFirst_<A, B>(a: A, f: (a: A) => List<Either<A, B>
   return out
 }
 
+/**
+ * @dataFirst chainRecBreadthFirst_
+ */
 export function chainRecBreadthFirst<A, B>(f: (a: A) => List<Either<A, B>>): (a: A) => List<B> {
   return (a) => chainRecBreadthFirst_(a, f)
 }
@@ -872,6 +912,9 @@ export function chainRecBreadthFirst<A, B>(f: (a: A) => List<Either<A, B>>): (a:
 export const mapA_: P.MapWithIndexAFn_<[HKT.URI<ListURI>]> = (A) => (ta, f) =>
   foldr_(ta, A.pure(empty()), (a, fb, i) => A.crossWith_(f(a, i), fb, (b, l) => prepend_(l, b)))
 
+/**
+ * @dataFirst mapA_
+ */
 export const mapA: P.MapWithIndexAFn<[HKT.URI<ListURI>]> = (A) => {
   const imapAG_ = mapA_(A)
   return (f) => (ta) => imapAG_(ta, f)
@@ -908,44 +951,30 @@ export function unfold<A, B>(b: B, f: (b: B) => M.Maybe<readonly [A, B]>): List<
  * -------------------------------------------------------------------------------------------------
  */
 
-export const ifilterMapA_: P.FilterMapWithIndexAFn_<[HKT.URI<ListURI>]> = (A) => {
+export const filterMapA_: P.FilterMapWithIndexAFn_<[HKT.URI<ListURI>]> = (A) => {
   const itraverseA_ = mapA_(A)
   return (wa, f) => A.map_(itraverseA_(wa, f), compact)
 }
 
-export const ifilterMapA: P.FilterMapWithIndexAFn<[HKT.URI<ListURI>]> = (A) => {
+/**
+ * @dataFirst filterMapA_
+ */
+export const filterMapA: P.FilterMapWithIndexAFn<[HKT.URI<ListURI>]> = (A) => {
   const itraverseA_ = mapA_(A)
   return (f) => (wa) => A.map_(itraverseA_(wa, f), compact)
 }
 
-export const filterMapA_: P.FilterMapAFn_<[HKT.URI<ListURI>]> = (A) => {
-  const traverseG_ = mapA_(A)
-  return (wa, f) => A.map_(traverseG_(wa, f), compact)
-}
-
-export const filterMapA: P.FilterMapAFn<[HKT.URI<ListURI>]> = (A) => {
-  const compactAA_ = filterMapA_(A)
-  return (f) => (wa) => compactAA_(wa, f)
-}
-
-export const ipartitionMapA_: P.PartitionMapWithIndexAFn_<[HKT.URI<ListURI>]> = (A) => {
+export const partitionMapA_: P.PartitionMapWithIndexAFn_<[HKT.URI<ListURI>]> = (A) => {
   const itraverseA_ = mapA_(A)
   return (wa, f) => A.map_(itraverseA_(wa, f), separate)
 }
 
-export const ipartitionMapA: P.PartitionMapWithIndexAFn<[HKT.URI<ListURI>]> = (A) => {
+/**
+ * @dataFirst partitionMapA_
+ */
+export const partitionMapA: P.PartitionMapWithIndexAFn<[HKT.URI<ListURI>]> = (A) => {
   const itraverseA_ = mapA_(A)
   return (f) => (wa) => A.map_(itraverseA_(wa, f), separate)
-}
-
-export const partitionMapA_: P.PartitionMapAFn_<[HKT.URI<ListURI>]> = (A) => {
-  const traverseA_ = mapA_(A)
-  return (wa, f) => A.map_(traverseA_(wa, f), separate)
-}
-
-export const partitionMapA: P.PartitionMapAFn<[HKT.URI<ListURI>]> = (A) => {
-  const separateAA_ = partitionMapA_(A)
-  return (f) => (wa) => separateAA_(wa, f)
 }
 
 /*
@@ -984,6 +1013,7 @@ export function append_<A>(as: List<A>, a: A): List<A> {
  * Appends an element to the end of a list and returns the new list.
  *
  * @complexity O(n)
+ * @dataFirst append_
  */
 export function append<A>(a: A): (as: List<A>) => List<A> {
   return (as) => append_(as, a)
@@ -1010,6 +1040,8 @@ export function chunksOf_<A>(as: List<A>, size: number): List<List<A>> {
 
 /**
  * Splits the list into chunks of the given size.
+ *
+ * @dataFirst chunksOf_
  */
 export function chunksOf(size: number): <A>(as: List<A>) => List<List<A>> {
   return (as) => chunksOf_(as, size)
@@ -1066,6 +1098,7 @@ export function concat_<A>(xs: List<A>, ys: List<A>): List<A> {
  * Concatenates two lists.
  *
  * @complexity O(log(n))
+ * @dataFirst concat_
  */
 export function concat<A>(xs: List<A>): (ys: List<A>) => List<A> {
   return (left) => concat_(left, xs)
@@ -1084,6 +1117,7 @@ export function concatW_<A, B>(as: List<A>, bs: List<B>): List<A | B> {
  * Concatenates two lists and widens the type
  *
  * @complexity O(log(n))
+ * @dataFirst concatW_
  */
 export function concatW<B>(bs: List<B>): <A>(as: List<A>) => List<A | B> {
   return (as) => concatW_(as, bs)
@@ -1106,6 +1140,7 @@ export function contains_<A>(as: List<A>, element: A): boolean {
  * Otherwise it returns `false`.
  *
  * @complexity O(n)
+ * @dataFirst contains_
  */
 export function contains<A>(element: A): (as: List<A>) => boolean {
   return (as) => contains_(as, element)
@@ -1124,6 +1159,7 @@ export function deleteAt_<A>(as: List<A>, i: number): List<A> {
  * Delete an element at the specified index
  *
  * @complexity `O(log(n))`
+ * @dataFirst deleteAt_
  */
 export function deleteAt(i: number): <A>(as: List<A>) => List<A> {
   return (as) => deleteAt_(as, i)
@@ -1142,6 +1178,7 @@ export function drop_<A>(as: List<A>, n: number): List<A> {
  * Returns a new list without the first `n` elements.
  *
  * @complexity `O(log(n))`
+ * @dataFirst drop_
  */
 export function drop(n: number): <A>(as: List<A>) => List<A> {
   return (as) => drop_(as, n)
@@ -1160,6 +1197,7 @@ export function dropLast_<A>(as: List<A>, n: number): List<A> {
  * Returns a new list without the last `n` elements.
  *
  * @complexity `O(log(n))`
+ * @dataFirst dropLast_
  */
 export function dropLast<A>(n: number): (as: List<A>) => List<A> {
   return (as) => dropLast_(as, n)
@@ -1191,6 +1229,7 @@ export function dropRepeatsWith_<A>(as: List<A>, predicate: (a: A, b: A) => bool
  * function to determine when elements are equal.
  *
  * @complexity `O(n)`
+ * @dataFirst dropRepeatsWith_
  */
 export function dropRepeatsWith<A>(predicate: (a: A, b: A) => boolean): (as: List<A>) => List<A> {
   return (as) => dropRepeatsWith_(as, predicate)
@@ -1214,6 +1253,7 @@ export function dropWhile_<A>(as: List<A>, predicate: Predicate<A>): List<A> {
  *
  * @complexity `O(k + log(n))` where `k` is the number of elements
  * satisfying the predicate.
+ * @dataFirst dropWhile_
  */
 export function dropWhile<A>(predicate: Predicate<A>): (as: List<A>) => List<A> {
   return (as) => dropWhile_(as, predicate)
@@ -1227,6 +1267,9 @@ export function elem_<A>(E: P.Eq<A>): (as: List<A>, a: A) => boolean {
   }
 }
 
+/**
+ * @dataFirst elem_
+ */
 export function elem<A>(E: P.Eq<A>): (a: A) => (as: List<A>) => boolean {
   const elemE_ = elem_(E)
   return (a) => (as) => elemE_(as, a)
@@ -1245,6 +1288,7 @@ export function equals_<A>(xs: List<A>, yx: List<A>): boolean {
  * Returns true if the two lists are equivalent.
  *
  * @complexity O(n)
+ * @dataFirst equals_
  */
 export function equals<A>(ys: List<A>): (xs: List<A>) => boolean {
   return (l1) => equals_(l1, ys)
@@ -1270,6 +1314,7 @@ export function corresponds_<A, B>(as: List<A>, bs: List<B>, f: (a: A, b: B) => 
  * pair of elements with the given comparison function.
  *
  * @complexity O(n)
+ * @dataFirst corresponds_
  */
 export function corresponds<A, B>(bs: List<B>, f: (a: A, b: B) => boolean): (as: List<A>) => boolean {
   return (as) => corresponds_(as, bs, f)
@@ -1292,6 +1337,7 @@ export function every_<A>(as: List<A>, predicate: Predicate<A>): boolean {
  * for all elements in the given list.
  *
  * @complexity O(n)
+ * @dataFirst every_
  */
 export function every<A, B extends A>(refinement: Refinement<A, B>): (as: List<A>) => as is List<B>
 export function every<A>(predicate: Predicate<A>): (as: List<A>) => boolean
@@ -1314,6 +1360,7 @@ export function find_<A>(as: List<A>, predicate: Predicate<A>): M.Maybe<A> {
  * If no such element is found the function returns `undefined`.
  *
  * @complexity O(n)
+ * @dataFirst find_
  */
 export function find<A>(predicate: Predicate<A>): (as: List<A>) => M.Maybe<A> {
   return (as) => find_(as, predicate)
@@ -1337,6 +1384,7 @@ export function findIndex_<A>(as: List<A>, predicate: Predicate<A>): number {
  * `-1`.
  *
  * @complexity O(n)
+ * @dataFirst findIndex_
  */
 export function findIndex<A>(predicate: Predicate<A>): (as: List<A>) => number {
   return (as) => findIndex_(as, predicate)
@@ -1357,6 +1405,7 @@ export function findLast_<A>(as: List<A>, predicate: Predicate<A>): M.Maybe<A> {
  * If no such element is found the function returns `undefined`.
  *
  * @complexity O(n)
+ * @dataFirst findLast_
  */
 export function findLast<A>(predicate: Predicate<A>): (as: List<A>) => M.Maybe<A> {
   return (as) => findLast_(as, predicate)
@@ -1380,6 +1429,7 @@ export function findLastIndex_<A>(as: List<A>, predicate: Predicate<A>): number 
  * `-1`.
  *
  * @complexity O(n)
+ * @dataFirst findLastIndex_
  */
 export function findLastIndex<A>(predicate: Predicate<A>): (as: List<A>) => number {
   return (as) => findLastIndex_(as, predicate)
@@ -1410,6 +1460,7 @@ export function forEach_<A>(as: List<A>, f: (a: A) => void): void {
  * makes `forEach` faster when the new list is unneeded.
  *
  * @complexity O(n)
+ * @dataFirst forEach_
  */
 export function forEach<A>(f: (a: A) => void): (as: List<A>) => void {
   return (l) => forEach_(l, f)
@@ -1451,6 +1502,8 @@ export function groupWith_<A>(as: List<A>, f: (a: A, b: A) => boolean): List<Lis
  * Note that only adjacent elements are compared for equality. If all
  * equal elements should be grouped together the list should be sorted
  * before grouping.
+ *
+ * @dataFirst groupWith_
  */
 export function groupWith<A>(f: (a: A, b: A) => boolean): (as: List<A>) => List<List<A>> {
   return (l) => groupWith_(l, f)
@@ -1463,6 +1516,9 @@ export function foldlWhile_<A, B>(fa: List<A>, b: B, cont: Predicate<B>, f: (b: 
   return foldlCb<A, FoldWhileState<A, B>>(foldWhileCb, { predicate: cont, f, result: b }, fa).result
 }
 
+/**
+ * @dataFirst foldlWhile_
+ */
 export function foldlWhile<A, B>(b: B, cont: Predicate<B>, f: (b: B, a: A, i: number) => B): (fa: List<A>) => B {
   return (fa) => foldlWhile_(fa, b, cont, f)
 }
@@ -1472,6 +1528,9 @@ export function foldrWhile_<A, B>(fa: List<A>, b: B, cont: Predicate<B>, f: (a: 
     .result
 }
 
+/**
+ * @dataFirst foldrWhile_
+ */
 export function foldrWhile<A, B>(b: B, cont: Predicate<B>, f: (a: A, b: B, i: number) => B): (fa: List<A>) => B {
   return (fa) => foldrWhile_(fa, b, cont, f)
 }
@@ -1493,6 +1552,7 @@ export function indexOf_<A>(as: List<A>, element: A): number {
  * to the given element. If no such element is found `-1` is returned.
  *
  * @complexity O(n)
+ * @dataFirst indexOf_
  */
 export function indexOf<A>(element: A): (as: List<A>) => number {
   return (as) => indexOf_(as, element)
@@ -1511,6 +1571,7 @@ export function insertAt_<A>(as: List<A>, index: number, element: A): List<A> {
  * Inserts the given element at the given index in the list.
  *
  * @complexity O(log(n))
+ * @dataFirst insertAt_
  */
 export function insertAt<A>(index: number, element: A): (as: List<A>) => List<A> {
   return (as) => insertAt_(as, index, element)
@@ -1529,6 +1590,7 @@ export function insertAllAt_<A>(as: List<A>, index: number, elements: List<A>): 
  * Inserts the given list of elements at the given index in the list.
  *
  * @complexity `O(log(n))`
+ * @dataFirst insertAllAt_
  */
 export function insertAllAt<A>(index: number, elements: List<A>): (as: List<A>) => List<A> {
   return (as) => insertAllAt_(as, index, elements)
@@ -1543,6 +1605,8 @@ export function intersperse_<A>(as: List<A>, separator: A): List<A> {
 
 /**
  * Inserts a separator between each element in a list.
+ *
+ * @dataFirst intersperse_
  */
 export function intersperse<A>(separator: A): (as: List<A>) => List<A> {
   return (as) => intersperse_(as, separator)
@@ -1557,6 +1621,8 @@ export function join_(as: List<string>, separator: string): string {
 
 /**
  * Concatenates the strings in the list separated by a specified separator.
+ *
+ * @dataFirst join_
  */
 export function join(separator: string): (as: List<string>) => string {
   return (as) => join_(as, separator)
@@ -1579,6 +1645,7 @@ export function lastIndexOf_<A>(as: List<A>, element: A): number {
  * to the given element. If no such element is found `-1` is returned.
  *
  * @complexity O(n)
+ * @dataFirst lastIndexOf_
  */
 export function lastIndexOf<A>(element: A): (as: List<A>) => number {
   return (as) => lastIndexOf_(as, element)
@@ -1617,6 +1684,7 @@ export function modifyAt_<A>(as: List<A>, i: number, f: (a: A) => A): List<A> {
  * returned unchanged.
  *
  * @complexity `O(log(n))`
+ * @dataFirst modifyAt_
  */
 export function modifyAt<A>(i: number, f: (a: A) => A): (as: List<A>) => List<A> {
   return (as) => modifyAt_(as, i, f)
@@ -1641,6 +1709,7 @@ export function none_<A>(as: List<A>, predicate: Predicate<A>): boolean {
  * `false` for every element in the given list.
  *
  * @complexity O(n)
+ * @dataFirst none_
  */
 export function none<A>(predicate: Predicate<A>): (as: List<A>) => boolean {
   return (as) => none_(as, predicate)
@@ -1655,6 +1724,8 @@ export function pluck_<A, K extends keyof A>(as: List<A>, k: K): List<A[K]> {
 
 /**
  * Extracts the specified property from each object in the list.
+ *
+ * @dataFirst pluck_
  */
 export function pluck<A, K extends keyof A>(k: K): (as: List<A>) => List<A[K]> {
   return (as) => pluck_(as, k)
@@ -1701,6 +1772,7 @@ export function prepend_<A>(as: List<A>, a: A): List<A> {
  * Prepends an element to the front of a list and returns the new list.
  *
  * @complexity O(1)
+ * @dataFirst prepend_
  */
 export function prepend<A>(a: A): (as: List<A>) => List<A> {
   return (as) => prepend_(as, a)
@@ -1723,6 +1795,7 @@ export function remove_<A>(as: List<A>, from: number, amount: number): List<A> {
  * index.
  *
  * @complexity `O(log(n))`
+ * @dataFirst remove_
  */
 export function remove(from: number, amount: number): <A>(as: List<A>) => List<A> {
   return (as) => remove_(as, from, amount)
@@ -1747,6 +1820,8 @@ export function scanl_<A, B>(as: List<A>, initial: B, f: (acc: B, value: A) => B
 /**
  * Folds a function over a list from left to right while collecting
  * all the intermediate steps in a resulting list.
+ *
+ * @dataFirst scanl_
  */
 export function scanl<A, B>(initial: B, f: (acc: B, value: A) => B): (as: List<A>) => List<B> {
   return (as) => scanl_(as, initial, f)
@@ -1870,6 +1945,18 @@ export function slice_<A>(as: List<A>, from: number, to: number): List<A> {
 }
 
 /**
+ * Returns a slice of a list. Elements are removed from the beginning and
+ * end. Both the indices can be negative in which case they will count
+ * from the right end of the list.
+ *
+ * @complexity `O(log(n))`
+ * @dataFirst slice_
+ */
+export function slice(from: number, to: number): <A>(as: List<A>) => List<A> {
+  return (as) => slice_(as, from, to)
+}
+
+/**
  * Returns true if and only if there exists an element in the list for
  * which the predicate returns true.
  *
@@ -1884,6 +1971,7 @@ export function some_<A>(as: List<A>, predicate: Predicate<A>): boolean {
  * which the predicate returns true.
  *
  * @complexity O(n)
+ * @dataFirst some_
  */
 export function some<A>(predicate: Predicate<A>): (as: List<A>) => boolean {
   return (as) => some_(as, predicate)
@@ -1930,20 +2018,10 @@ export function sortWith_<A>(as: List<A>, compare: (a: A, b: A) => Ordering): Li
  * second.
  *
  * @complexity O(n * log(n))
+ * @dataFirst sortWith_
  */
 export function sortWith<A>(compare: (a: A, b: A) => Ordering): (as: List<A>) => List<A> {
   return (as) => sortWith_(as, compare)
-}
-
-/**
- * Returns a slice of a list. Elements are removed from the beginning and
- * end. Both the indices can be negative in which case they will count
- * from the right end of the list.
- *
- * @complexity `O(log(n))`
- */
-export function slice(from: number, to: number): <A>(as: List<A>) => List<A> {
-  return (as) => slice_(as, from, to)
 }
 
 /**
@@ -1965,6 +2043,7 @@ export function splitAt_<A>(as: List<A>, index: number): [List<A>, List<A>] {
  * index and all elements after it.
  *
  * @complexity `O(log(n))`
+ * @dataFirst splitAt_
  */
 export function splitAt(index: number): <A>(as: List<A>) => [List<A>, List<A>] {
   return (as) => splitAt_(as, index)
@@ -1986,6 +2065,7 @@ export function splitWhen_<A>(as: List<A>, predicate: Predicate<A>): [List<A>, L
  * predicate returns `true`.
  *
  * @complexity `O(n)`
+ * @dataFirst splitWhen_
  */
 export function splitWhen<A>(predicate: Predicate<A>): (as: List<A>) => [List<A>, List<A>] {
   return (as) => splitWhen_(as, predicate)
@@ -2014,6 +2094,7 @@ export function take_<A>(as: List<A>, n: number): List<A> {
  * Takes the first `n` elements from a list and returns them in a new list.
  *
  * @complexity `O(log(n))`
+ * @dataFirst take_
  */
 export function take(n: number): <A>(as: List<A>) => List<A> {
   return (as) => take_(as, n)
@@ -2037,6 +2118,7 @@ export function takeWhile_<A>(as: List<A>, predicate: Predicate<A>): List<A> {
  *
  * @complexity `O(k + log(n))` where `k` is the number of elements satisfying
  * the predicate.
+ * @dataFirst takeWhile_
  */
 export function takeWhile<A>(predicate: Predicate<A>): (as: List<A>) => List<A> {
   return (as) => takeWhile_(as, predicate)
@@ -2060,6 +2142,7 @@ export function takeLastWhile_<A>(as: List<A>, predicate: Predicate<A>): List<A>
  *
  * @complexity `O(k + log(n))` where `k` is the number of elements
  * satisfying the predicate.
+ * @dataFirst takeLastWhile_
  */
 export function takeLastWhile<A>(predicate: Predicate<A>): (as: List<A>) => List<A> {
   return (as) => takeLastWhile_(as, predicate)
@@ -2080,6 +2163,7 @@ export function takeLast_<A>(as: List<A>, n: number): List<A> {
  * list.
  *
  * @complexity `O(log(n))`
+ * @dataFirst takeLast_
  */
 export function takeLast<A>(n: number): (as: List<A>) => List<A> {
   return (as) => takeLast_(as, n)
@@ -2114,6 +2198,18 @@ export function updateAt_<A>(as: List<A>, i: number, a: A): List<A> {
 }
 
 /**
+ * Returns a list that has the entry specified by the index replaced with the given value.
+ *
+ * If the index is out of bounds the given list is returned unchanged.
+ *
+ * @complexity O(log(n))
+ * @dataFirst updateAt_
+ */
+export function updateAt<A>(i: number, a: A): (as: List<A>) => List<A> {
+  return (as) => updateAt_(as, i, a)
+}
+
+/**
  * Returns a new list without repeated elements by using the given
  * Eq instance to determine when elements are equal
  *
@@ -2121,17 +2217,6 @@ export function updateAt_<A>(as: List<A>, i: number, a: A): List<A> {
  */
 export function uniq<A>(E: P.Eq<A>): (as: List<A>) => List<A> {
   return (as) => dropRepeatsWith_(as, E.equals_)
-}
-
-/**
- * Returns a list that has the entry specified by the index replaced with the given value.
- *
- * If the index is out of bounds the given list is returned unchanged.
- *
- * @complexity O(log(n))
- */
-export function updateAt<A>(i: number, a: A): (as: List<A>) => List<A> {
-  return (as) => updateAt_(as, i, a)
 }
 
 /**
@@ -2149,6 +2234,7 @@ export function unsafeFind_<A>(as: List<A>, predicate: Predicate<A>): A | undefi
  * If no such element is found the function returns `undefined`.
  *
  * @complexity O(n)
+ * @dataFirst unsafeFind_
  */
 export function unsafeFind<A>(predicate: Predicate<A>): (as: List<A>) => A | undefined {
   return (as) => unsafeFind_(as, predicate)
@@ -2169,6 +2255,7 @@ export function unsafeFindLast_<A>(as: List<A>, predicate: Predicate<A>): A | un
  * If no such element is found the function returns `undefined`.
  *
  * @complexity O(n)
+ * @dataFirst unsafeFindLast_
  */
 export function unsafeFindLast<A>(predicate: Predicate<A>): (as: List<A>) => A | undefined {
   return (as) => unsafeFindLast_(as, predicate)
@@ -2282,7 +2369,10 @@ export const Traversable = P.Traversable<URI>({
 })
 
 export const mapAccumM_ = P.getMapAccumM_(Traversable)
-export const mapAccumM  = P.getMapAccumM(Traversable)
+/**
+ * @dataFirst mapAccumM_
+ */
+export const mapAccumM = P.getMapAccumM(Traversable)
 
 export const Witherable = P.Witherable<URI>({
   map_,
