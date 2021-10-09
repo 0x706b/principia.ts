@@ -73,6 +73,9 @@ export function evaluate_<S, A>(ma: State<S, A>, s: S): A {
   return ma(s)[0]
 }
 
+/**
+ * @dataFirst evaluate_
+ */
 export function evaluate<S>(s: S): <A>(ma: State<S, A>) => A {
   return (ma) => ma(s)[0]
 }
@@ -81,6 +84,9 @@ export function execute_<S, A>(ma: State<S, A>, s: S): S {
   return ma(s)[1]
 }
 
+/**
+ * @dataFirst execute_
+ */
 export function execute<S>(s: S): <A>(ma: State<S, A>) => S {
   return (ma) => ma(s)[1]
 }
@@ -105,6 +111,9 @@ export function cross_<S, A, B>(fa: State<S, A>, fb: State<S, B>): State<S, read
   return crossWith_(fa, fb, tuple)
 }
 
+/**
+ * @dataFirst cross_
+ */
 export function cross<S, B>(fb: State<S, B>): <A>(fa: State<S, A>) => State<S, readonly [A, B]> {
   return (fa) => cross_(fa, fb)
 }
@@ -117,6 +126,9 @@ export function crossWith_<S, A, B, C>(fa: State<S, A>, fb: State<S, B>, f: (a: 
   }
 }
 
+/**
+ * @dataFirst crossWith_
+ */
 export function crossWith<S, A, B, C>(fb: State<S, B>, f: (a: A, b: B) => C): (fa: State<S, A>) => State<S, C> {
   return (fa) => crossWith_(fa, fb, f)
 }
@@ -125,6 +137,9 @@ export function ap_<S, A, B>(fab: State<S, (a: A) => B>, fa: State<S, A>): State
   return crossWith_(fab, fa, (f, a) => f(a))
 }
 
+/**
+ * @dataFirst ap_
+ */
 export function ap<S, A>(fa: State<S, A>): <B>(fab: State<S, (a: A) => B>) => State<S, B> {
   return (fab) => ap_(fab, fa)
 }
@@ -133,6 +148,9 @@ export function crossFirst_<S, A, B>(fa: State<S, A>, fb: State<S, B>): State<S,
   return crossWith_(fa, fb, (a, _) => a)
 }
 
+/**
+ * @dataFirst crossWith_
+ */
 export function crossFirst<S, B>(fb: State<S, B>): <A>(fa: State<S, A>) => State<S, A> {
   return (fa) => crossFirst_(fa, fb)
 }
@@ -141,6 +159,9 @@ export function crossSecond_<S, A, B>(fa: State<S, A>, fb: State<S, B>): State<S
   return crossWith_(fa, fb, (_, b) => b)
 }
 
+/**
+ * @dataFirst crossSecond_
+ */
 export function crossSecond<S, B>(fb: State<S, B>): <A>(fa: State<S, A>) => State<S, B> {
   return (fa) => crossSecond_(fa, fb)
 }
@@ -158,6 +179,9 @@ export function map_<S, A, B>(fa: State<S, A>, f: (a: A) => B): State<S, B> {
   }
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<A, B>(f: (a: A) => B): <S>(fa: State<S, A>) => State<S, B> {
   return (fa) => map_(fa, f)
 }
@@ -175,6 +199,9 @@ export function chain_<S, A, B>(ma: State<S, A>, f: (a: A) => State<S, B>): Stat
   }
 }
 
+/**
+ * @dataFirst chain_
+ */
 export function chain<S, A, B>(f: (a: A) => State<S, B>): (ma: State<S, A>) => State<S, B> {
   return (ma) => chain_(ma, f)
 }
@@ -183,6 +210,9 @@ export function tap_<S, A, B>(ma: State<S, A>, f: (a: A) => State<S, B>): State<
   return chain_(ma, (a) => map_(f(a), () => a))
 }
 
+/**
+ * @dataFirst tap_
+ */
 export function tap<S, A, B>(f: (a: A) => State<S, B>): (ma: State<S, A>) => State<S, A> {
   return (ma) => tap_(ma, f)
 }
