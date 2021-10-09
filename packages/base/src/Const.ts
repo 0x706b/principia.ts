@@ -76,6 +76,9 @@ export function bimap_<E, A, D, B>(pab: Const<E, A>, f: (e: E) => D, _: (a: A) =
   return make(f(pab))
 }
 
+/**
+ * @dataFirst bimap_
+ */
 export function bimap<E, A, D, B>(f: (e: E) => D, g: (a: A) => B): (pab: Const<E, A>) => Const<D, B> {
   return (pab) => bimap_(pab, f, g)
 }
@@ -84,6 +87,9 @@ export function mapLeft_<E, A, D>(pab: Const<E, A>, f: (e: E) => D): Const<D, A>
   return make(f(pab))
 }
 
+/**
+ * @dataFirst mapLeft_
+ */
 export function mapLeft<E, D>(f: (e: E) => D): <A>(pab: Const<E, A>) => Const<D, A> {
   return (pab) => make(f(pab))
 }
@@ -112,6 +118,9 @@ export function contramap_<E, A, B>(fa: Const<E, A>, _: (b: B) => A): Const<E, B
   return unsafeCoerce(fa)
 }
 
+/**
+ * @dataFirst contramap_
+ */
 export function contramap<A, B>(_: (b: B) => A): <E>(fa: Const<E, A>) => Const<E, B> {
   return unsafeCoerce
 }
@@ -140,6 +149,9 @@ export function map_<E, A, B>(fa: Const<E, A>, _: (a: A) => B): Const<E, B> {
   return unsafeCoerce(fa)
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<A, B>(_: (a: A) => B): <E>(fa: Const<E, A>) => Const<E, B> {
   return unsafeCoerce
 }
