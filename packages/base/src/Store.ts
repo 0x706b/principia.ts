@@ -22,6 +22,9 @@ export function seek_<S, A>(wa: Store<S, A>, s: S): Store<S, A> {
   }
 }
 
+/**
+ * @dataFirst seek_
+ */
 export function seek<S>(s: S): <A>(wa: Store<S, A>) => Store<S, A> {
   return (wa) => seek_(wa, s)
 }
@@ -33,6 +36,9 @@ export function seeks_<S, A>(wa: Store<S, A>, f: P.Endomorphism<S>): Store<S, A>
   }
 }
 
+/**
+ * @dataFirst seeks
+ */
 export function seeks<S>(f: P.Endomorphism<S>): <A>(wa: Store<S, A>) => Store<S, A> {
   return (wa) => seeks_(wa, f)
 }
@@ -41,6 +47,9 @@ export function peeks_<S, A>(wa: Store<S, A>, f: P.Endomorphism<S>): A {
   return wa.peek(f(wa.pos))
 }
 
+/**
+ * @dataFirst peeks
+ */
 export function peeks<S>(f: P.Endomorphism<S>): <A>(wa: Store<S, A>) => A {
   return (wa) => peeks_(wa, f)
 }
@@ -58,6 +67,9 @@ export function map_<S, A, B>(fa: Store<S, A>, f: (a: A) => B): Store<S, B> {
   }
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<A, B>(f: (a: A) => B): <S>(fa: Store<S, A>) => Store<S, B> {
   return (fa) => map_(fa, f)
 }
@@ -75,6 +87,9 @@ export function extend_<S, A, B>(wa: Store<S, A>, f: (wa: Store<S, A>) => B): St
   }
 }
 
+/**
+ * @dataFirst extend_
+ */
 export function extend<S, A, B>(f: (wa: Store<S, A>) => B): (wa: Store<S, A>) => Store<S, B> {
   return (wa) => extend_(wa, f)
 }
