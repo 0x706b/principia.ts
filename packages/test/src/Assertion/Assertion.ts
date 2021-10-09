@@ -189,7 +189,7 @@ export function halts(assertion0: Assertion<any>): Assertion<Ex.Exit<any, any>> 
 }
 
 export function exists<A>(assertion: Assertion<A>): Assertion<Iterable<A>> {
-  return assertionRec('exists', [param(assertion)], assertion, It.findFirst(assertion.test))
+  return assertionRec('exists', [param(assertion)], assertion, It.find(assertion.test))
 }
 
 export function fails<E>(assertion: Assertion<E>): Assertion<Exit<E, any>> {
@@ -206,7 +206,7 @@ export function forall<A>(assertion: Assertion<A>): Assertion<Iterable<A>> {
     'forall',
     [param(assertion)],
     assertion,
-    It.findFirst((a) => !assertion.test(a)),
+    It.find((a) => !assertion.test(a)),
     asSuccess
   )
 }
