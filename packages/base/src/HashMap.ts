@@ -697,6 +697,9 @@ export function concatWith_<K, A>(
   })
 }
 
+/**
+ * @dataFirst concatWith_
+ */
 export function concatWith<K, A>(
   ys: Iterable<readonly [K, A]>,
   f: (x: A, y: A) => A
@@ -712,6 +715,9 @@ export function concat_<K, A>(xs: HashMap<K, A>, ys: Iterable<readonly [K, A]>):
   })
 }
 
+/**
+ * @dataFirst concat_
+ */
 export function concat<K, A>(ys: Iterable<readonly [K, A]>): (xs: HashMap<K, A>) => HashMap<K, A> {
   return (xs) => concat_(xs, ys)
 }
@@ -723,6 +729,9 @@ export function pop_<K, A>(m: HashMap<K, A>, k: K): M.Maybe<readonly [A, HashMap
   )
 }
 
+/**
+ * @dataFirst pop_
+ */
 export function pop<K>(k: K): <A>(m: HashMap<K, A>) => M.Maybe<readonly [A, HashMap<K, A>]> {
   return (m) => pop_(m, k)
 }
