@@ -27,7 +27,7 @@ type URI = [HKT.URI<IdentityURI>]
 export const alt_: <A>(fa: A, that: () => A) => A = identity
 
 /**
- * @optimize identity
+ * @dataFirst alt_
  */
 export function alt<A>(that: () => A): (fa: A) => A {
   return (fa) => alt_(fa, that)
@@ -54,6 +54,9 @@ export function pure<A>(a: A): A {
 
 export const cross_: <A, B>(fa: A, fb: B) => readonly [A, B] = tuple
 
+/**
+ * @dataFirst cross_
+ */
 export function cross<B>(fb: B): <A>(fa: A) => readonly [A, B] {
   return (fa) => cross_(fa, fb)
 }
@@ -62,6 +65,9 @@ export function ap_<A, B>(fab: (a: A) => B, fa: A): B {
   return fab(fa)
 }
 
+/**
+ * @dataFirst ap_
+ */
 export function ap<A>(fa: A): <B>(fab: (a: A) => B) => B {
   return (fab) => fab(fa)
 }
@@ -73,6 +79,9 @@ export function crossFirst_<A, B>(fa: A, fb: B): A {
   )
 }
 
+/**
+ * @dataFirst crossFirst_
+ */
 export function crossFirst<B>(fb: B): <A>(fa: A) => A {
   return (fa) => crossFirst_(fa, fb)
 }
@@ -84,6 +93,9 @@ export function crossSecond_<A, B>(fa: A, fb: B): B {
   )
 }
 
+/**
+ * @dataFirst crossSecond_
+ */
 export function crossSecond<B>(fb: B): <A>(fa: A) => B {
   return (fa) => crossSecond_(fa, fb)
 }
@@ -92,6 +104,9 @@ export function crossWith_<A, B, C>(fa: A, fb: B, f: (a: A, b: B) => C): C {
   return f(fa, fb)
 }
 
+/**
+ * @dataFirst crossWith_
+ */
 export function crossWith<A, B, C>(fb: B, f: (a: A, b: B) => C): (fa: A) => C {
   return (fa) => f(fa, fb)
 }
@@ -106,6 +121,9 @@ export function extend_<A, B>(wa: A, f: (wa: A) => B): B {
   return f(wa)
 }
 
+/**
+ * @dataFirst extend_
+ */
 export function extend<A, B>(f: (wa: A) => B): (wa: A) => B {
   return (wa) => f(wa)
 }
@@ -127,6 +145,9 @@ export function foldl_<A, B>(fa: A, b: B, f: (b: B, a: A) => B): B {
   return f(b, fa)
 }
 
+/**
+ * @dataFirst foldl_
+ */
 export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: A) => B {
   return (fa) => f(b, fa)
 }
@@ -135,6 +156,9 @@ export function foldMap_<M>(_: P.Monoid<M>): <A>(fa: A, f: (a: A) => M) => M {
   return (fa, f) => f(fa)
 }
 
+/**
+ * @dataFirst foldMap_
+ */
 export function foldMap<M>(_: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: A) => M {
   return (f) => (fa) => f(fa)
 }
@@ -143,6 +167,9 @@ export function foldr_<A, B>(fa: A, b: B, f: (a: A, b: B) => B): B {
   return f(fa, b)
 }
 
+/**
+ * @dataFirst foldr_
+ */
 export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: A) => B {
   return (fa) => f(fa, b)
 }
@@ -157,6 +184,9 @@ export function map_<A, B>(fa: A, f: (a: A) => B) {
   return f(fa)
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<A, B>(f: (a: A) => B): (fa: A) => B {
   return (fa) => f(fa)
 }
@@ -171,6 +201,9 @@ export function chain_<A, B>(ma: A, f: (a: A) => B): B {
   return f(ma)
 }
 
+/**
+ * @dataFirst chain_
+ */
 export function chain<A, B>(f: (a: A) => B): (ma: A) => B {
   return (ma) => f(ma)
 }
@@ -179,6 +212,9 @@ export function tap_<A, B>(ma: A, f: (a: A) => B): A {
   return chain_(ma, (a) => map_(f(a), () => a))
 }
 
+/**
+ * @dataFirst tap_
+ */
 export function tap<A, B>(f: (a: A) => B): (ma: A) => A {
   return (ma) => tap_(ma, f)
 }
@@ -193,11 +229,14 @@ export function flatten<A>(mma: A): A {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const mapA_: P.MapAFn_<URI> = (AG) => (ta, f) => pipe(f(ta), AG.map(identity))
+export const mapA_: P.MapAFn_<URI> = (_) => (ta, f) => f(ta)
 
+/**
+ * @dataFirst mapA_
+ */
 export const mapA: P.MapAFn<URI> = (AG) => (f) => (ta) => mapA_(AG)(ta, f)
 
-export const sequence: P.SequenceFn<URI> = (AG) => (ta) => pipe(ta, AG.map(identity))
+export const sequence: P.SequenceFn<URI> = (_) => (ta) => ta
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -260,10 +299,19 @@ export const Monad = P.Monad<URI>({
 export const Do = P.Do(Monad)
 
 export const chainS_ = P.chainSF_(Monad)
-export const chainS  = P.chainSF(Monad)
-export const pureS_  = P.pureSF_(Monad)
-export const pureS   = P.pureSF(Monad)
-export const toS_    = P.toSF_(Monad)
-export const toS     = P.toSF(Monad)
+/**
+ * @dataFirst chainS_
+ */
+export const chainS = P.chainSF(Monad)
+export const pureS_ = P.pureSF_(Monad)
+/**
+ * @dataFirst pureS_
+ */
+export const pureS = P.pureSF(Monad)
+export const toS_  = P.toSF_(Monad)
+/**
+ * @dataFirst toS_
+ */
+export const toS = P.toSF(Monad)
 
 export { IdentityURI } from './Modules'
