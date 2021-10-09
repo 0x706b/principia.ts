@@ -223,17 +223,11 @@ export function deferTry<W, S1, S2, R, E, A>(ma: () => Z<W, S1, S2, R, E, A>): Z
   return new DeferPartial(ma, identity)
 }
 
-export function deferTryCatch_<W, S1, S2, R, E, A, E1>(
+export function deferTryCatch<W, S1, S2, R, E, A, E1>(
   ma: () => Z<W, S1, S2, R, E, A>,
   f: (e: unknown) => E1
 ): Z<W, S1, S2, R, E | E1, A> {
   return new DeferPartial(ma, f)
-}
-
-export function deferTryCatch<E1>(
-  onThrow: (e: unknown) => E1
-): <W, S1, S2, R, E, A>(ma: () => Z<W, S1, S2, R, E, A>) => Z<W, S1, S2, R, E | E1, A> {
-  return (ma) => deferTryCatch_(ma, onThrow)
 }
 
 export function defer<W, S1, S2, R, E, A>(ma: () => Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, E, A> {
@@ -250,17 +244,11 @@ export function succeedLazy<A, W = never, S1 = unknown, S2 = never>(effect: () =
   return new EffectTotal(effect)
 }
 
-export function tryCatch_<A, E>(
+export function tryCatch<A, E>(
   effect: () => A,
   onThrow: (reason: unknown) => E
 ): Z<never, unknown, never, unknown, E, A> {
   return new EffectPartial(effect, onThrow)
-}
-
-export function tryCatch<E>(
-  onThrow: (reason: unknown) => E
-): <A>(effect: () => A) => Z<never, unknown, never, unknown, E, A> {
-  return (effect) => tryCatch_(effect, onThrow)
 }
 
 export function fail<E>(e: E): Z<never, unknown, never, unknown, E, never> {
@@ -344,6 +332,8 @@ export function transform_<W, S1, S2, R, E, A, S3, B>(
 
 /**
  * Like `map`, but also allows the state to be modified.
+ *
+ * @dataFirst transform_
  */
 export function transform<S2, A, S3, B>(
   f: (s: S2, a: A) => readonly [B, S3]
@@ -403,6 +393,8 @@ export function contramapState_<S0, W, S1, S2, R, E, A>(
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @dataFirst contramapState_
  */
 export function contramapState<S0, S1>(
   f: (s: S0) => S1
@@ -419,6 +411,8 @@ export function mapState_<W, S1, S2, R, E, A, S3>(ma: Z<W, S1, S2, R, E, A>, f: 
 
 /**
  * Modifies the current state with the specified function
+ *
+ * @dataFirst mapState_
  */
 export function mapState<S2, S3>(
   f: (s: S2) => S3
@@ -435,6 +429,8 @@ export function giveState_<W, S1, S2, R, E, A>(ma: Z<W, S1, S2, R, E, A>, s: S1)
 
 /**
  * Provides this computation with its initial state.
+ *
+ * @dataFirst giveState_
  */
 export function giveState<S1>(s: S1): <W, S2, R, E, A>(ma: Z<W, S1, S2, R, E, A>) => Z<W, unknown, S2, R, E, A> {
   return (ma) => giveState_(ma, s)
@@ -469,6 +465,8 @@ export function matchLogCauseZ_<W, S1, S2, R, E, A, W1, S0, S3, R1, E1, B, W2, S
  * each case
  *
  * @note the log is cleared after being provided
+ *
+ * @dataFirst matchLogCauseZ_
  */
 export function matchLogCauseZ<W, S1, S2, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
   onFailure: (ws: C.Chunk<W>, e: Cause<E>) => Z<W1, S0, S3, R1, E1, B>,
@@ -497,6 +495,9 @@ export function matchCauseZ_<W, S1, S2, R, E, A, W1, S0, S3, R1, E1, B, W2, S4, 
   )
 }
 
+/**
+ * @dataFirst matchCauseZ_
+ */
 export function matchCauseZ<S1, S2, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
   onFailure: (e: Cause<E>) => Z<W1, S0, S3, R1, E1, B>,
   onSuccess: (a: A) => Z<W2, S2, S4, R2, E2, C>
@@ -512,6 +513,9 @@ export function matchLogZ_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2
   return matchLogCauseZ_(fa, (ws, e) => onFailure(ws, FS.first(e)), onSuccess)
 }
 
+/**
+ * @dataFirst matchLogZ_
+ */
 export function matchLogZ<W, S1, S2, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
   onFailure: (ws: C.Chunk<W>, e: E) => Z<W1, S1, S3, R1, E1, B>,
   onSuccess: (ws: C.Chunk<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
@@ -540,6 +544,8 @@ export function matchZ_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @dataFirst matchZ_
  */
 export function matchZ<S1, S2, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
   onFailure: (e: E) => Z<W1, S1, S3, R1, E1, B>,
@@ -575,6 +581,8 @@ export function match_<W, S1, S2, R, E, A, B, C>(
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @dataFirst match_
  */
 export function match<E, A, B, C>(
   onFailure: (e: E) => B,
@@ -596,6 +604,9 @@ export function alt_<W, S1, S2, R, E, A, W1, S3, R1, E1, A1>(
   return matchZ_(fa, () => fb(), succeed)
 }
 
+/**
+ * @dataFirst alt_
+ */
 export function alt<W1, S1, S3, R1, E1, A1>(
   fb: () => Z<W1, S1, S3, R1, E1, A1>
 ): <W, S2, R, E, A>(fa: Z<W, S1, S2, R, E, A>) => Z<W | W1, S1, S2 | S3, R & R1, E | E1, A | A1> {
@@ -625,6 +636,9 @@ export function cross_<W, S, R, E, A, R1, E1, B>(
   return crossWith_(fa, fb, tuple)
 }
 
+/**
+ * @dataFirst cross_
+ */
 export function cross<W, S, R1, E1, B>(
   fb: Z<W, S, S, R1, E1, B>
 ): <R, E, A>(fa: Z<W, S, S, R, E, A>) => Z<W, S, S, R & R1, E | E1, readonly [A, B]> {
@@ -638,6 +652,9 @@ export function crossPar_<W, S, R, E, A, R1, E1, B>(
   return crossWithPar_(fa, fb, tuple)
 }
 
+/**
+ * @dataFirst crossPar_
+ */
 export function crossPar<W, S, R1, E1, B>(
   fb: Z<W, S, S, R1, E1, B>
 ): <R, E, A>(fa: Z<W, S, S, R, E, A>) => Z<W, S, S, R & R1, E | E1, readonly [A, B]> {
@@ -652,6 +669,9 @@ export function crossWith_<W, S, R, E, A, R1, E1, B, C>(
   return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
+/**
+ * @dataFirst crossWith_
+ */
 export function crossWith<W, S, A, R1, E1, B, C>(
   fb: Z<W, S, S, R1, E1, B>,
   f: (a: A, b: B) => C
@@ -680,6 +700,9 @@ export function crossWithPar_<W, S, R, E, A, R1, E1, B, C>(
   )
 }
 
+/**
+ * @dataFirst crossWithPar_
+ */
 export function crossWithPar<W, S, A, R1, E1, B, C>(
   fb: Z<W, S, S, R1, E1, B>,
   f: (a: A, b: B) => C
@@ -694,6 +717,9 @@ export function ap_<W, S, R, E, A, R1, E1, B>(
   return crossWith_(fab, fa, (f, a) => f(a))
 }
 
+/**
+ * @dataFirst ap_
+ */
 export function ap<W, S, R1, E1, A>(
   fa: Z<W, S, S, R1, E1, A>
 ): <R, E, B>(fab: Z<W, S, S, R, E, (a: A) => B>) => Z<W, S, S, R1 & R, E1 | E, B> {
@@ -707,6 +733,9 @@ export function crossFirst_<W, S, R, E, A, R1, E1, B>(
   return crossWith_(fa, fb, (a, _) => a)
 }
 
+/**
+ * @dataFirst crossFirst_
+ */
 export function crossFirst<W, S, R1, E1, B>(
   fb: Z<W, S, S, R1, E1, B>
 ): <R, E, A>(fa: Z<W, S, S, R, E, A>) => Z<W, S, S, R & R1, E | E1, A> {
@@ -720,6 +749,9 @@ export function crossSecond_<W, S, R, E, A, R1, E1, B>(
   return crossWith_(fa, fb, (_, b) => b)
 }
 
+/**
+ * @dataFirst crossSecond_
+ */
 export function crossSecond<W, S, R1, E1, B>(
   fb: Z<W, S, S, R1, E1, B>
 ): <R, E, A>(fa: Z<W, S, S, R, E, A>) => Z<W, S, S, R & R1, E | E1, B> {
@@ -739,6 +771,9 @@ export function andThen_<W, S1, S2, A, E, B, W1, S3, E1, C>(
   return chain_(ab, (b) => giveAll_(bc, b))
 }
 
+/**
+ * @dataFirst andThen_
+ */
 export function andThen<S2, B, W1, S3, E1, C>(
   bc: Z<W1, S2, S3, B, E1, C>
 ): <W, S1, A, E>(ab: Z<W, S1, S2, A, E, B>) => Z<W | W1, S1, S3, A, E | E1, C> {
@@ -752,6 +787,9 @@ export function compose_<W, S1, S2, A, E, B, W1, S3, E1, C>(
   return andThen_(ab, bc)
 }
 
+/**
+ * @dataFirst compose_
+ */
 export function compose<S1, S2, B, W1, A, E1>(
   ab: Z<W1, S1, S2, A, E1, B>
 ): <W, S3, E, C>(bc: Z<W, S2, S3, B, E, C>) => Z<W | W1, S1, S3, A, E | E1, C> {
@@ -771,6 +809,9 @@ export function zip_<W, S1, S2, R, E, A, W1, S3, Q, D, B>(
   return zipWith_(fa, fb, tuple)
 }
 
+/**
+ * @dataFirst zip_
+ */
 export function zip<W1, S2, S3, Q, D, B>(
   fb: Z<W1, S2, S3, Q, D, B>
 ): <W, S1, R, E, A>(fa: Z<W, S1, S2, R, E, A>) => Z<W | W1, S1, S3, Q & R, D | E, readonly [A, B]> {
@@ -785,6 +826,9 @@ export function zipWith_<W, S1, S2, R, E, A, W1, S3, Q, D, B, C>(
   return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
+/**
+ * @dataFirst zipWith_
+ */
 export function zipWith<W1, A, S2, S3, R1, E1, B, C>(
   fb: Z<W1, S2, S3, R1, E1, B>,
   f: (a: A, b: B) => C
@@ -799,6 +843,9 @@ export function zap_<W, S1, S2, R, E, A, W1, S3, R1, E1, B>(
   return zipWith_(fab, fa, (f, a) => f(a))
 }
 
+/**
+ * @dataFirst zap_
+ */
 export function zap<W1, S2, S3, R1, E1, A>(
   fa: Z<W1, S2, S3, R1, E1, A>
 ): <W, S1, R, E, B>(fab: Z<W, S1, S2, R, E, (a: A) => B>) => Z<W | W1, S1, S3, R1 & R, E1 | E, B> {
@@ -812,6 +859,9 @@ export function zipFirst_<W, S1, S2, R, E, A, W1, S3, Q, D, B>(
   return zipWith_(fa, fb, (a, _) => a)
 }
 
+/**
+ * @dataFirst zipFirst_
+ */
 export function zipFirst<W1, S2, S3, Q, D, B>(
   fb: Z<W1, S2, S3, Q, D, B>
 ): <W, S1, R, E, A>(fa: Z<W, S1, S2, R, E, A>) => Z<W | W1, S1, S3, Q & R, D | E, A> {
@@ -825,6 +875,9 @@ export function zipSecond_<W, S1, S2, R, E, A, W1, S3, Q, D, B>(
   return zipWith_(fa, fb, (_, b) => b)
 }
 
+/**
+ * @dataFirst zipSecond_
+ */
 export function zipSecond<W1, S2, S3, Q, D, B>(
   fb: Z<W1, S2, S3, Q, D, B>
 ): <W, S1, R, E, A>(fa: Z<W, S1, S2, R, E, A>) => Z<W | W1, S1, S3, Q & R, D | E, B> {
@@ -849,6 +902,9 @@ export function bimap_<W, S1, S2, R, E, A, G, B>(
   )
 }
 
+/**
+ * @dataFirst bimap_
+ */
 export function bimap<E, A, G, B>(
   f: (e: E) => G,
   g: (a: A) => B
@@ -860,6 +916,9 @@ export function mapError_<W, S1, S2, R, E, A, G>(pab: Z<W, S1, S2, R, E, A>, f: 
   return matchZ_(pab, (e) => fail(f(e)), succeed)
 }
 
+/**
+ * @dataFirst mapError_
+ */
 export function mapError<E, G>(f: (e: E) => G): <W, S1, S2, R, A>(pab: Z<W, S1, S2, R, E, A>) => Z<W, S1, S2, R, G, A> {
   return (pab) => mapError_(pab, f)
 }
@@ -886,6 +945,9 @@ export function map_<W, S1, S2, R, E, A, B>(fa: Z<W, S1, S2, R, E, A>, f: (a: A)
   return chain_(fa, (a) => succeed(f(a)))
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<A, B>(f: (a: A) => B): <W, S1, S2, R, E>(fa: Z<W, S1, S2, R, E, A>) => Z<W, S1, S2, R, E, B> {
   return (fa) => map_(fa, f)
 }
@@ -903,6 +965,9 @@ export function chain_<W, S1, S2, R, E, A, W1, S3, R1, E1, B>(
   return new Chain(ma, f)
 }
 
+/**
+ * @dataFirst chain_
+ */
 export function chain<A, W1, S2, S3, R1, E1, B>(
   f: (a: A) => Z<W1, S2, S3, R1, E1, B>
 ): <W, S1, R, E>(ma: Z<W, S1, S2, R, E, A>) => Z<W | W1, S1, S3, R1 & R, E1 | E, B> {
@@ -916,6 +981,9 @@ export function tap_<W, S1, S2, R, E, A, W1, S3, R1, E1, B>(
   return chain_(ma, (a) => map_(f(a), () => a))
 }
 
+/**
+ * @dataFirst tap_
+ */
 export function tap<S2, A, W1, S3, R1, E1, B>(
   f: (a: A) => Z<W1, S2, S3, R1, E1, B>
 ): <W, S1, R, E>(ma: Z<W, S1, S2, R, E, A>) => Z<W | W1, S1, S3, R1 & R, E1 | E, A> {
@@ -950,6 +1018,9 @@ export function giveAll_<W, S1, S2, R, E, A>(fa: Z<W, S1, S2, R, E, A>, r: R): Z
   return new Give(fa, r)
 }
 
+/**
+ * @dataFirst giveAll_
+ */
 export function giveAll<R>(r: R): <W, S1, S2, E, A>(fa: Z<W, S1, S2, R, E, A>) => Z<W, S1, S2, unknown, E, A> {
   return (fa) => giveAll_(fa, r)
 }
@@ -958,6 +1029,9 @@ export function gives_<R0, W, S1, S2, R, E, A>(ma: Z<W, S1, S2, R, E, A>, f: (r0
   return asksZ((r: R0) => giveAll_(ma, f(r)))
 }
 
+/**
+ * @dataFirst gives_
+ */
 export function gives<R0, R>(f: (r0: R0) => R): <W, S1, S2, E, A>(ma: Z<W, S1, S2, R, E, A>) => Z<W, S1, S2, R0, E, A> {
   return (ma) => gives_(ma, f)
 }
@@ -966,6 +1040,9 @@ export function give_<W, S1, S2, R, E, A, R0>(ma: Z<W, S1, S2, R & R0, E, A>, r:
   return gives_(ma, (r0) => ({ ...r, ...r0 }))
 }
 
+/**
+ * @dataFirst give_
+ */
 export function give<R>(r: R): <W, S1, S2, R0, E, A>(ma: Z<W, S1, S2, R & R0, E, A>) => Z<W, S1, S2, R0, E, A> {
   return (ma) => give_(ma, r)
 }
@@ -1005,6 +1082,8 @@ export function censor_<W, S1, S2, R, E, A, W1>(
 
 /**
  * Modifies the current log with the specified function
+ *
+ * @dataFirst censor_
  */
 export function censor<W, W1>(
   f: (ws: C.Chunk<W>) => C.Chunk<W1>
@@ -1030,6 +1109,9 @@ export function writeAll_<W, S1, S2, R, E, A, W1>(
   return censor_(ma, C.concatW(ws))
 }
 
+/**
+ * @dataFirst writeAll_
+ */
 export function writeAll<W1>(
   ws: C.Chunk<W1>
 ): <W, S1, S2, R, E, A>(ma: Z<W, S1, S2, R, E, A>) => Z<W | W1, S1, S2, R, E, A> {
@@ -1040,6 +1122,9 @@ export function write_<W, S1, S2, R, E, A, W1>(ma: Z<W, S1, S2, R, E, A>, w: W1)
   return writeAll_(ma, C.single(w))
 }
 
+/**
+ * @dataFirst write_
+ */
 export function write<W1>(w: W1): <W, S1, S2, R, E, A>(ma: Z<W, S1, S2, R, E, A>) => Z<W | W1, S1, S2, R, E, A> {
   return (ma) => write_(ma, w)
 }
@@ -1063,6 +1148,9 @@ export function listens_<W, S1, S2, R, E, A, B>(
   )
 }
 
+/**
+ * @dataFirst listens_
+ */
 export function listens<W, B>(
   f: (l: C.Chunk<W>) => B
 ): <S1, S2, R, E, A>(wa: Z<W, S1, S2, R, E, A>) => Z<W, S1, S2, R, E, readonly [A, B]> {
@@ -1093,6 +1181,8 @@ export function catchAll_<W, S1, S2, R, E, A, S3, R1, E1, B>(
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @dataFirst catchAll_
  */
 export function catchAll<W, S1, E, S3, R1, E1, B>(
   onFailure: (e: E) => Z<W, S1, S3, R1, E1, B>
@@ -1113,6 +1203,9 @@ export function catchJust_<W, S1, S2, R, E, A, S3, R1, E1, B>(
   )
 }
 
+/**
+ * @dataFirst catchJust_
+ */
 export function catchJust<W, S1, E, S3, R1, E1, B>(
   f: (e: E) => M.Maybe<Z<W, S1, S3, R1, E1, B>>
 ): <S2, R, A>(fa: Z<W, S1, S2, R, E, A>) => Z<W, S1, S2 | S3, R & R1, E | E1, B | A> {
@@ -1136,6 +1229,8 @@ export function repeatN_<W, S1, S2 extends S1, R, E, A>(ma: Z<W, S1, S2, R, E, A
  *
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst repeatN_
  */
 export function repeatN(
   n: number
@@ -1163,6 +1258,8 @@ export function repeatUntil_<W, S1, S2 extends S1, R, E, A>(
  *
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst repeatUntil_
  */
 export function repeatUntil<A>(
   predicate: Predicate<A>
@@ -1189,6 +1286,8 @@ export function repeatUntilEquals_<A>(
  *
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst repeatUntilEquals_
  */
 export function repeatUntilEquals<A>(
   E: Eq<A>
@@ -1216,6 +1315,9 @@ export function orElse_<W, S1, S2, R, E, A, S3, S4, R1, E1>(
   return matchZ_(fa, onFailure, succeed)
 }
 
+/**
+ * @dataFirst orElse_
+ */
 export function orElse<W, E, A, S3, S4, R1, E1>(
   onFailure: (e: E) => Z<W, S3, S4, R1, E1, A>
 ): <S1, S2, R>(fa: Z<W, S1, S2, R, E, A>) => Z<W, S1 & S3, S4 | S2, R & R1, E1, A> {
@@ -1246,6 +1348,8 @@ export function orElseEither_<W, S1, S2, R, E, A, S3, S4, R1, E1, A1>(
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @dataFirst orElseEither_
  */
 export function orElseEither<W, S3, S4, R1, E1, A1>(
   that: Z<W, S3, S4, R1, E1, A1>
@@ -1270,6 +1374,9 @@ export function foreachUnit_<A, W, S, R, E>(
   return I.foldMap_(_MonoidBindUnit<W, S, R, E>())(as, f)
 }
 
+/**
+ * @dataFirst foreachUnit_
+ */
 export function foreachUnit<A, W, S, R, E>(
   f: (a: A, i: number) => Z<W, S, S, R, E, void>
 ): (as: Iterable<A>) => Z<W, S, S, R, E, void> {
@@ -1289,6 +1396,9 @@ export function foreach_<W, S, R, E, A, B>(
   )
 }
 
+/**
+ * @dataFirst foreach_
+ */
 export function foreach<A, W, S, R, E, B>(
   f: (a: A, i: number) => Z<W, S, S, R, E, B>
 ): (as: Iterable<A>) => Z<W, S, S, R, E, C.Chunk<B>> {
@@ -1302,6 +1412,9 @@ export function foreachArrayUnit_<A, W, S, R, E>(
   return A.foldMap_(_MonoidBindUnit<W, S, R, E>())(as, f)
 }
 
+/**
+ * @dataFirst foreachArrayUnit_
+ */
 export function foreachArrayUnit<A, W, S, R, E>(
   f: (a: A, i: number) => Z<W, S, S, R, E, void>
 ): (as: ReadonlyArray<A>) => Z<W, S, S, R, E, void> {
@@ -1324,6 +1437,9 @@ export function foreachArray_<A, W, S, R, E, B>(
   )
 }
 
+/**
+ * @dataFirst foreachArray_
+ */
 export function foreachArray<A, W, S, R, E, B>(
   f: (a: A, i: number) => Z<W, S, S, R, E, B>
 ): (as: ReadonlyArray<A>) => Z<W, S, S, R, E, ReadonlyArray<B>> {
@@ -1346,6 +1462,9 @@ export function foreachList_<A, W, S, R, E, B>(
   )
 }
 
+/**
+ * @dataFirst foreachList_
+ */
 export function foreachList<A, W, S, R, E, B>(
   f: (a: A, i: number) => Z<W, S, S, R, E, B>
 ): (as: Iterable<A>) => Z<W, S, S, R, E, L.List<B>> {
@@ -1570,6 +1689,8 @@ export function runAll_<W, S1, S2, E, A>(
 /**
  * Runs this computation with the specified initial state, returning either a
  * failure or the updated state and the result
+ *
+ * @dataFirst runAll_
  */
 export function runAll<S1>(
   s: S1
@@ -1588,6 +1709,8 @@ export function run_<W, S1, S2, A>(ma: Z<W, S1, S2, unknown, never, A>, s: S1): 
 /**
  * Runs this computation with the specified initial state, returning both
  * updated state and the result
+ *
+ * @dataFirst run_
  */
 export function run<S1>(s: S1): <W, S2, A>(ma: Z<W, S1, S2, unknown, never, A>) => readonly [S2, A] {
   return (ma) => run_(ma, s)
@@ -1609,6 +1732,8 @@ export function runReader_<W, R, A>(ma: Z<W, unknown, never, R, never, A>, r: R)
 
 /**
  * Runs this computation with the given environment, returning the result.
+ *
+ * @dataFirst runReader_
  */
 export function runReader<R>(r: R): <W, A>(ma: Z<W, unknown, never, R, never, A>) => A {
   return (ma) => runReader_(ma, r)
@@ -1625,6 +1750,8 @@ export function runState_<W, S1, S2, A>(ma: Z<W, S1, S2, unknown, never, A>, s: 
 /**
  * Runs this computation with the specified initial state, returning the
  * updated state and discarding the result.
+ *
+ * @dataFirst runState_
  */
 export function runState<S1>(s: S1): <W, S2, A>(ma: Z<W, S1, S2, unknown, never, A>) => S2 {
   return (ma) => runState_(ma, s)
@@ -1641,6 +1768,8 @@ export function runStateResult_<W, S1, S2, A>(ma: Z<W, S1, S2, unknown, never, A
 /**
  * Runs this computation with the specified initial state, returning the
  * result and discarding the updated state.
+ *
+ * @dataFirst runStateResult_
  */
 export function runStateResult<S1>(s: S1): <W, S2, A>(ma: Z<W, S1, S2, unknown, never, A>) => A {
   return (ma) => runStateResult_(ma, s)
@@ -1661,6 +1790,9 @@ export function runReaderEither_<R, E, A>(ma: Z<never, unknown, unknown, R, E, A
   return runEither(giveAll_(ma, env))
 }
 
+/**
+ * @dataFirst runReaderEither_
+ */
 export function runReaderEither<R>(env: R): <E, A>(ma: Z<never, unknown, unknown, R, E, A>) => E.Either<E, A> {
   return (ma) => runReaderEither_(ma, env)
 }
@@ -1717,6 +1849,9 @@ export const Monad = P.Monad<URI, V>({ map_, crossWith_, cross_, ap_, unit, pure
 export const chainRec_: <A, W, S, R, E, B>(a: A, f: (a: A) => Z<W, S, S, R, E, E.Either<A, B>>) => Z<W, S, S, R, E, B> =
   P.getChainRec_<URI, V>({ map_, crossWith_, cross_, ap_, unit, pure, chain_, flatten })
 
+/**
+ * @dataFirst chainRec_
+ */
 export const chainRec: <A, W, S, R, E, B>(
   f: (a: A) => Z<W, S, S, R, E, E.Either<A, B>>
 ) => (a: A) => Z<W, S, S, R, E, B> = P.getChainRec<URI, V>({
@@ -1786,11 +1921,25 @@ export const StateCategory = P.Category<SCURI, V>({
 export const Do = P.Do(Monad)
 
 export const chainS_ = P.chainSF_(Monad)
-export const chainS  = P.chainSF(Monad)
-export const pureS_  = P.pureSF_(Monad)
-export const pureS   = P.pureSF(Monad)
-export const toS_    = P.toSF_(Monad)
-export const toS     = P.toSF(Monad)
+
+/**
+ * @dataFirst chainS_
+ */
+export const chainS = P.chainSF(Monad)
+
+export const pureS_ = P.pureSF_(Monad)
+
+/**
+ * @dataFirst pureS_
+ */
+export const pureS = P.pureSF(Monad)
+
+export const toS_ = P.toSF_(Monad)
+
+/**
+ * @dataFirst toS_
+ */
+export const toS = P.toSF(Monad)
 
 export class GenZ<W, S, R, E, A> {
   readonly _W!: () => W

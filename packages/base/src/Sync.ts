@@ -47,22 +47,16 @@ export { _try as try }
 
 export const succeedLazy: <A>(effect: () => A) => Sync<unknown, never, A> = Z.succeedLazy
 
-export const tryCatch_: <E, A>(effect: () => A, onThrow: (error: unknown) => E) => Sync<unknown, E, A> = Z.tryCatch_
-
-export const tryCatch: <E>(onThrow: (error: unknown) => E) => <A>(effect: () => A) => Sync<unknown, E, A> = Z.tryCatch
+export const tryCatch: <E, A>(effect: () => A, onThrow: (error: unknown) => E) => Sync<unknown, E, A> = Z.tryCatch
 
 export const deferTry: <R, E, A>(effect: () => Sync<R, E, A>) => Sync<R, unknown, A> = Z.deferTry
 
 export const defer: <R, E, A>(effect: () => Sync<R, E, A>) => Sync<R, E, A> = Z.defer
 
-export const deferTryCatch_: <R, E, A, E1>(
+export const deferTryCatch: <R, E, A, E1>(
   effect: () => Sync<R, E, A>,
   nThrow: (u: unknown) => E1
-) => Sync<R, E | E1, A> = Z.deferTryCatch_
-
-export const deferTryCatch: <E1>(
-  onThrow: (u: unknown) => E1
-) => <R, E, A>(sync: () => Sync<R, E, A>) => Sync<R, E | E1, A> = Z.deferTryCatch
+) => Sync<R, E | E1, A> = Z.deferTryCatch
 
 export const fromEither: <E, A>(either: E.Either<E, A>) => Sync<unknown, E, A> = E.match(fail, succeed)
 
