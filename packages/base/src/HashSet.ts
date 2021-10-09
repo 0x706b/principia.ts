@@ -28,6 +28,9 @@ export function add_<V>(set: HashSet<V>, v: V) {
   return set.keyMap.editable ? (HM.set_(set.keyMap, v, true), set) : new HashSet(HM.set_(set.keyMap, v, true))
 }
 
+/**
+ * @dataFirst add_
+ */
 export function add<V>(v: V) {
   return (set: HashSet<V>) => add_(set, v)
 }
@@ -58,6 +61,8 @@ export function forEach_<V>(map: HashSet<V>, f: (v: V, m: HashSet<V>) => void): 
 
 /**
  * Appy f to each element
+ *
+ * @dataFirst forEach_
  */
 export function forEach<V>(f: (v: V, m: HashSet<V>) => void): (map: HashSet<V>) => void {
   return (map) => forEach_(map, f)
@@ -67,6 +72,9 @@ export function has_<V>(set: HashSet<V>, v: V): boolean {
   return HM.has_(set.keyMap, v)
 }
 
+/**
+ * @dataFirst has_
+ */
 export function has<V>(v: V): (set: HashSet<V>) => boolean {
   return (set) => has_(set, v)
 }
@@ -88,6 +96,9 @@ export function mutate_<V>(set: HashSet<V>, transient: (set: HashSet<V>) => void
   return endMutation(s)
 }
 
+/**
+ * @dataFirst mutate_
+ */
 export function mutate<V>(transient: (set: HashSet<V>) => void): (set: HashSet<V>) => HashSet<V> {
   return (set) => mutate_(set, transient)
 }
@@ -96,6 +107,9 @@ export function remove_<V>(set: HashSet<V>, v: V) {
   return set.keyMap.editable ? (HM.remove_(set.keyMap, v), set) : new HashSet(HM.remove_(set.keyMap, v))
 }
 
+/**
+ * @dataFirst remove_
+ */
 export function remove<V>(v: V) {
   return (set: HashSet<V>) => remove_(set, v)
 }
@@ -519,6 +533,9 @@ export function toArray_<A>(set: HashSet<A>, O: P.Ord<A>): ReadonlyArray<A> {
   return r.sort(O.compare_)
 }
 
+/**
+ * @dataFirst toArray_
+ */
 export function toArray<A>(O: P.Ord<A>): (set: HashSet<A>) => ReadonlyArray<A> {
   return (set) => toArray_(set, O)
 }
