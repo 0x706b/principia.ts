@@ -64,8 +64,6 @@ export function isEmpty<A>(self: HashSet<A>): boolean {
 
 /**
  * Creates a new set
- *
- * @dataFirst contains_
  */
 export function contains_<A>(self: HashSet<A>, a: A): boolean {
   return self.contains(a)

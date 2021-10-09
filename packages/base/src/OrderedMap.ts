@@ -100,6 +100,8 @@ export function insert_<K, V>(m: OrderedMap<K, V>, key: K, value: V): OrderedMap
  * Inserts an element into the correct position in the map.
  * This function ignores duplicate keys. For one that combines duplicate key's values,
  * see `insertWith_`
+ *
+ * @dataFirst insert_
  */
 export function insert<K, V>(key: K, value: V): (m: OrderedMap<K, V>) => OrderedMap<K, V> {
   return (m) => insert_(m, key, value)
@@ -157,6 +159,8 @@ export function insertWith_<V>(S: P.Semigroup<V>) {
 /**
  * Inserts an element into the correct position in the map, combining euqal key's values
  * with a `Semigroup` instance
+ *
+ * @dataFirst insertWith_
  */
 export function insertWith<V>(S: P.Semigroup<V>): <K>(key: K, value: V) => (m: OrderedMap<K, V>) => OrderedMap<K, V> {
   const insertWithS_ = insertWith_(S)
@@ -173,6 +177,8 @@ export function remove_<K, V>(m: OrderedMap<K, V>, key: K): OrderedMap<K, V> {
 
 /**
  * Removes an element from the map
+ *
+ * @dataFirst remove_
  */
 export function remove<K>(key: K): <V>(m: OrderedMap<K, V>) => OrderedMap<K, V> {
   return (m) => remove_(m, key)
@@ -205,6 +211,8 @@ export function get_<K, V>(m: OrderedMap<K, V>, key: K): Maybe<V> {
 
 /**
  * Searches the map for a given key, returning it's value, if it exists
+ *
+ * @dataFirst get_
  */
 export function get<K>(key: K): <V>(m: OrderedMap<K, V>) => Maybe<V> {
   return (tree) => get_(tree, key)
@@ -234,6 +242,8 @@ export function getGte_<K, V>(m: OrderedMap<K, V>, key: K): Maybe<V> {
 
 /**
  * Searches the map and returns the first value in sorted order that is >= key, if it exists
+ *
+ * @dataFirst getGte_
  */
 export function getGte<K>(key: K): <V>(m: OrderedMap<K, V>) => Maybe<V> {
   return (tree) => getGte_(tree, key)
@@ -263,6 +273,8 @@ export function getGt_<K, V>(m: OrderedMap<K, V>, key: K): Maybe<V> {
 
 /**
  * Searches the map and returns the first value in sorted order that is > key, if it exists
+ *
+ * @dataFirst getGt_
  */
 export function getGt<K>(key: K): <V>(m: OrderedMap<K, V>) => Maybe<V> {
   return (m) => getGt_(m, key)
@@ -292,6 +304,8 @@ export function getLte_<K, V>(m: OrderedMap<K, V>, key: K): Maybe<V> {
 
 /**
  * Searches the map and returns the first value in sorted order that is <= key, if it exists
+ *
+ * @dataFirst getLte_
  */
 export function getLte<K>(key: K): <V>(m: OrderedMap<K, V>) => Maybe<V> {
   return (m) => getLte_(m, key)
@@ -320,6 +334,8 @@ export function getLt_<K, V>(m: OrderedMap<K, V>, key: K): Maybe<V> {
 
 /**
  * Searches the map and returns the first value in sorted order that is < key, if it exists
+ *
+ * @dataFirst getLt_
  */
 export function getLt<K>(key: K): <V>(m: OrderedMap<K, V>) => Maybe<V> {
   return (m) => getLt_(m, key)
@@ -362,6 +378,8 @@ export function forEach_<K, V>(m: OrderedMap<K, V>, visit: (value: V, key: K) =>
 
 /**
  * Iterates through the elements of the map inorder, performing the given function for each element
+ *
+ * @dataFirst forEach_
  */
 export function forEach<K, V>(visit: (value: V, key: K) => void): (m: OrderedMap<K, V>) => void {
   return (m) => forEach_(m, visit)
@@ -376,6 +394,9 @@ export function forEachLte_<K, V>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: 
   }
 }
 
+/**
+ * @dataFirst forEachLte_
+ */
 export function forEachLte<K, V>(max: K, visit: (k: K, v: V) => void): (m: OrderedMap<K, V>) => void {
   return (m) => forEachLte_(m, max, visit)
 }
@@ -389,6 +410,9 @@ export function forEachLt_<K, V>(m: OrderedMap<K, V>, max: K, visit: (k: K, v: V
   }
 }
 
+/**
+ * @dataFirst forEachLt_
+ */
 export function forEachLt<K, V>(max: K, visit: (k: K, v: V) => void): (m: OrderedMap<K, V>) => void {
   return (m) => forEachLt_(m, max, visit)
 }
@@ -402,6 +426,9 @@ export function forEachGte_<K, V>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: 
   }
 }
 
+/**
+ * @dataFirst forEachGte_
+ */
 export function forEachGte<K, V>(min: K, visit: (k: K, v: V) => void): (m: OrderedMap<K, V>) => void {
   return (m) => forEachGte_(m, min, visit)
 }
@@ -415,6 +442,9 @@ export function forEachGt_<K, V>(m: OrderedMap<K, V>, min: K, visit: (k: K, v: V
   }
 }
 
+/**
+ * @dataFirst forEachGt_
+ */
 export function forEachGt<K, V>(min: K, visit: (k: K, v: V) => void): (m: OrderedMap<K, V>) => void {
   return (m) => forEachGt_(m, min, visit)
 }
@@ -428,6 +458,9 @@ export function forEachBetween_<K, V>(m: OrderedMap<K, V>, min: K, max: K, visit
   }
 }
 
+/**
+ * @dataFirst forEachBetween_
+ */
 export function forEachBetween<K, V>(min: K, max: K, visit: (k: K, v: V) => void): (m: OrderedMap<K, V>) => void {
   return (m) => forEachBetween_(m, min, max, visit)
 }
@@ -591,6 +624,9 @@ export function map_<K, A, B>(fa: OrderedMap<K, A>, f: (a: A) => B): OrderedMap<
   return tree
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<A, B>(f: (a: A) => B): <K>(fa: OrderedMap<K, A>) => OrderedMap<K, B> {
   return (fa) => map_(fa, f)
 }
@@ -617,6 +653,9 @@ export function filter_<K, A>(m: OrderedMap<K, A>, predicate: P.PredicateWithInd
   return r
 }
 
+/**
+ * @dataFirst filter_
+ */
 export function filter<K, A, B extends A>(
   refinement: P.RefinementWithIndex<K, A, B>
 ): (m: OrderedMap<K, A>) => OrderedMap<K, B>
@@ -639,6 +678,9 @@ export function foldl_<K, V, Z>(fa: OrderedMap<K, V>, z: Z, f: (z: Z, v: V, k: K
   return r
 }
 
+/**
+ * @dataFirst foldl_
+ */
 export function foldl<K, V, Z>(z: Z, f: (z: Z, v: V, k: K) => Z): (fa: OrderedMap<K, V>) => Z {
   return (fa) => foldl_(fa, z, f)
 }
@@ -737,6 +779,13 @@ export function find_<K, V>(m: OrderedMap<K, V>, key: K, direction: 0 | 1 = 0): 
   }
 }
 
+/**
+ * @dataFirst find_
+ */
+export function find<K>(key: K, direction: 0 | 1 = 0): <V>(m: OrderedMap<K, V>) => OrderedMapIterable<K, V> {
+  return (m) => find_(m, key, direction)
+}
+
 export function at_<K, V>(m: OrderedMap<K, V>, index: number, direction: 0 | 1 = 0): OrderedMapIterable<K, V> {
   return {
     ord: m.ord,
@@ -774,6 +823,9 @@ export function at_<K, V>(m: OrderedMap<K, V>, index: number, direction: 0 | 1 =
   }
 }
 
+/**
+ * @dataFirst at_
+ */
 export function at(index: number, direction: 0 | 1 = 0): <K, V>(tree: OrderedMap<K, V>) => OrderedMapIterable<K, V> {
   return (tree) => at_(tree, index, direction)
 }
@@ -809,6 +861,8 @@ export function gte_<K, V>(m: OrderedMap<K, V>, key: K, direction: 0 | 1 = 0): O
 /**
  * Finds the first element in the map whose key is >= the given key
  * @returns An iterator at the found element
+ *
+ * @dataFirst gte_
  */
 export function gte<K>(key: K, direction: 0 | 1 = 0): <V>(m: OrderedMap<K, V>) => OrderedMapIterable<K, V> {
   return (m) => gte_(m, key, direction)
@@ -845,6 +899,8 @@ export function gt_<K, V>(m: OrderedMap<K, V>, key: K, direction: 0 | 1 = 0): Or
 /**
  * Finds the first element in the map whose key is > the given key
  * @returns An iterator at the found element
+ *
+ * @dataFirst gt_
  */
 export function gt<K>(key: K, direction: 0 | 1 = 0): <V>(m: OrderedMap<K, V>) => OrderedMapIterable<K, V> {
   return (m) => gt_(m, key, direction)
@@ -883,6 +939,8 @@ export function lte_<K, V>(m: OrderedMap<K, V>, key: K, direction: 0 | 1 = 0): O
 /**
  * Finds the first element in the map whose key is <= the given key
  * @returns An iterator at the found element
+ *
+ * @dataFirst lte_
  */
 export function lte<K>(key: K, direction: 0 | 1 = 0): <V>(m: OrderedMap<K, V>) => OrderedMapIterable<K, V> {
   return (m) => lte_(m, key, direction)
@@ -921,6 +979,8 @@ export function lt_<K, V>(m: OrderedMap<K, V>, key: K, direction: 0 | 1 = 0): Or
 /**
  * Finds the first element in the map whose key is < the given key
  * @returns An iterator at the found element
+ *
+ * @dataFirst lt_
  */
 export function lt<K>(key: K, direction: 0 | 1 = 0): <V>(m: OrderedMap<K, V>) => OrderedMapIterable<K, V> {
   return (m) => lt_(m, key, direction)
@@ -943,6 +1003,8 @@ export function values_<K, V>(m: OrderedMap<K, V>, direction: 0 | 1 = 0): Iterab
 
 /**
  * Returns an iterable of all the values in the map in sorted order
+ *
+ * @dataFirst values_
  */
 export function values(direction: 0 | 1 = 0): <K, V>(m: OrderedMap<K, V>) => Iterable<V> {
   return (m) => values_(m, direction)
@@ -965,6 +1027,8 @@ export function keys_<K, V>(m: OrderedMap<K, V>, direction: 0 | 1 = 0): Iterable
 
 /**
  * Returns an iterable of all the keys in the map in sorted order
+ *
+ * @dataFirst keys_
  */
 export function keys(direction: 0 | 1 = 0): <K, V>(m: OrderedMap<K, V>) => Iterable<K> {
   return (m) => keys_(m, direction)
@@ -995,6 +1059,8 @@ export function range_<K, V>(m: OrderedMap<K, V>, min: Maybe<K>, max: Maybe<K>):
 
 /**
  * Returns a range of the map with keys >= min and < max
+ *
+ * @dataFirst range_
  */
 export function range<K>(min: Maybe<K>, max: Maybe<K>): <V>(m: OrderedMap<K, V>) => OrderedMap<K, V> {
   return (m) => range_(m, min, max)
