@@ -65,6 +65,9 @@ export function zipWith_<A, B, C>(fa: AsyncIterable<A>, fb: AsyncIterable<B>, f:
   })
 }
 
+/**
+ * @dataFirst zipWith_
+ */
 export function zipWith<A, B, C>(
   fb: AsyncIterable<B>,
   f: (a: A, b: B) => C
@@ -76,6 +79,9 @@ export function zip_<A, B>(fa: AsyncIterable<A>, fb: AsyncIterable<B>): AsyncIte
   return zipWith_(fa, fb, tuple)
 }
 
+/**
+ * @dataFirst zip_
+ */
 export function zip<B>(fb: AsyncIterable<B>): <A>(fa: AsyncIterable<A>) => AsyncIterable<readonly [A, B]> {
   return (fa) => zip_(fa, fb)
 }
@@ -118,6 +124,9 @@ export function zipWithPromise_<A, B, C>(
   })
 }
 
+/**
+ * @dataFirst zipWithPromise_
+ */
 export function zipWithPromise<A, B, C>(
   fb: AsyncIterable<B>,
   f: (a: A, b: B) => Promise<C>
@@ -133,6 +142,9 @@ export function crossWith_<A, B, C>(
   return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
+/**
+ * @dataFirst crossWith_
+ */
 export function crossWith<A, B, C>(
   fb: AsyncIterable<B>,
   f: (a: A, b: B) => C
@@ -148,10 +160,23 @@ export function crossWithPromise_<A, B, C>(
   return chain_(fa, (a) => mapPromise_(fb, (b) => f(a, b)))
 }
 
+/**
+ * @dataFirst crossWithPromise_
+ */
+export function crossWithPromise<A, B, C>(
+  fb: AsyncIterable<B>,
+  f: (a: A, b: B) => Promise<C>
+): (fa: AsyncIterable<A>) => AsyncIterable<C> {
+  return (fa) => crossWithPromise_(fa, fb, f)
+}
+
 export function cross_<A, B>(fa: AsyncIterable<A>, fb: AsyncIterable<B>): AsyncIterable<readonly [A, B]> {
   return crossWith_(fa, fb, tuple)
 }
 
+/**
+ * @dataFirst cross_
+ */
 export function cross<B>(fb: AsyncIterable<B>): <A>(fa: AsyncIterable<A>) => AsyncIterable<readonly [A, B]> {
   return (fa) => cross_(fa, fb)
 }
@@ -160,6 +185,9 @@ export function ap_<A, B>(fab: AsyncIterable<(a: A) => B>, fa: AsyncIterable<A>)
   return chain_(fab, (f) => map_(fa, (a) => f(a)))
 }
 
+/**
+ * @dataFirst ap_
+ */
 export function ap<A>(fa: AsyncIterable<A>): <B>(fab: AsyncIterable<(a: A) => B>) => AsyncIterable<B> {
   return (fab) => ap_(fab, fa)
 }
@@ -168,6 +196,9 @@ export function apPromise_<A, B>(fab: AsyncIterable<(a: A) => Promise<B>>, fa: A
   return chain_(fab, (f) => mapPromise_(fa, (a) => f(a)))
 }
 
+/**
+ * @dataFirst apPromise_
+ */
 export function apPromise<A>(fa: AsyncIterable<A>): <B>(fab: AsyncIterable<(a: A) => Promise<B>>) => AsyncIterable<B> {
   return (fab) => apPromise_(fab, fa)
 }
@@ -212,6 +243,9 @@ export function filter_<A>(fa: AsyncIterable<A>, predicate: P.PredicateWithIndex
   })
 }
 
+/**
+ * @dataFirst filter_
+ */
 export function filter<A, B extends A>(
   refinement: P.RefinementWithIndex<number, A, B>
 ): (fa: AsyncIterable<A>) => AsyncIterable<B>
@@ -233,6 +267,9 @@ export function filterMap_<A, B>(fa: AsyncIterable<A>, f: (a: A, i: number) => M
   })
 }
 
+/**
+ * @dataFirst filterMap_
+ */
 export function filterMap<A, B>(f: (a: A, i: number) => Maybe<B>): (fa: AsyncIterable<A>) => AsyncIterable<B> {
   return (fa) => filterMap_(fa, f)
 }
@@ -271,6 +308,9 @@ export function partition_<A>(
   )
 }
 
+/**
+ * @dataFirst partition_
+ */
 export function partition<A, B extends A>(
   refinement: P.RefinementWithIndex<number, A, B>
 ): (fa: AsyncIterable<A>) => readonly [AsyncIterable<A>, AsyncIterable<B>]
@@ -307,6 +347,9 @@ export function partitionMap_<A, B, C>(
   )
 }
 
+/**
+ * @dataFirst partitionMap_
+ */
 export function partitionMap<A, B, C>(
   f: (a: A, i: number) => Either<B, C>
 ): (fa: AsyncIterable<A>) => readonly [AsyncIterable<B>, AsyncIterable<C>] {
@@ -331,6 +374,9 @@ export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: AsyncIterable<A>, f: (a: A,
   }
 }
 
+/**
+ * @dataFirst foldMap_
+ */
 export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A, i: number) => M) => (fa: AsyncIterable<A>) => Promise<M> {
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
@@ -345,6 +391,9 @@ export async function foldl_<A, B>(fa: AsyncIterable<A>, b: B, f: (b: B, a: A, i
   return res
 }
 
+/**
+ * @dataFirst foldl_
+ */
 export function foldl<A, B>(b: B, f: (b: B, a: A, i: number) => B): (fa: AsyncIterable<A>) => Promise<B> {
   return (fa) => foldl_(fa, b, f)
 }
@@ -365,6 +414,9 @@ export function map_<A, B>(fa: AsyncIterable<A>, f: (a: A, i: number) => B): Asy
   })
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<A, B>(f: (a: A, i: number) => B): (fa: AsyncIterable<A>) => AsyncIterable<B> {
   return (fa) => map_(fa, f)
 }
@@ -379,6 +431,9 @@ export function mapPromise_<A, B>(fa: AsyncIterable<A>, f: (a: A, i: number) => 
   })
 }
 
+/**
+ * @dataFirst mapPromise_
+ */
 export function mapPromise<A, B>(f: (a: A, i: number) => Promise<B>): (fa: AsyncIterable<A>) => AsyncIterable<B> {
   return (fa) => mapPromise_(fa, f)
 }
@@ -397,6 +452,9 @@ export function chain_<A, B>(ma: AsyncIterable<A>, f: (a: A) => AsyncIterable<B>
   })
 }
 
+/**
+ * @dataFirst chain_
+ */
 export function chain<A, B>(f: (a: A) => AsyncIterable<B>): (ma: AsyncIterable<A>) => AsyncIterable<B> {
   return (ma) => chain_(ma, f)
 }
@@ -418,6 +476,9 @@ export function concat_<A>(fa: AsyncIterable<A>, fb: AsyncIterable<A>): AsyncIte
   })
 }
 
+/**
+ * @dataFirst concat_
+ */
 export function concat<A>(fb: AsyncIterable<A>): (fa: AsyncIterable<A>) => AsyncIterable<A> {
   return (fa) => concat_(fa, fb)
 }
@@ -429,6 +490,9 @@ export function append_<A>(fa: AsyncIterable<A>, element: A): AsyncIterable<A> {
   })
 }
 
+/**
+ * @dataFirst append_
+ */
 export function append<A>(element: A): (fa: AsyncIterable<A>) => AsyncIterable<A> {
   return (fa) => append_(fa, element)
 }
@@ -440,6 +504,9 @@ export function prepend_<A>(fa: AsyncIterable<A>, element: A): AsyncIterable<A> 
   })
 }
 
+/**
+ * @dataFirst prepend_
+ */
 export function prepend<A>(element: A): (fa: AsyncIterable<A>) => AsyncIterable<A> {
   return (fa) => prepend_(fa, element)
 }
@@ -457,6 +524,9 @@ export function take_<A>(fa: AsyncIterable<A>, n: number): AsyncIterable<A> {
   })
 }
 
+/**
+ * @dataFirst take_
+ */
 export function take(n: number): <A>(fa: AsyncIterable<A>) => AsyncIterable<A> {
   return (fa) => take_(fa, n)
 }
