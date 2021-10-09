@@ -3,6 +3,60 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.24.0](https://github.com/0x706b/principia.ts/compare/@principia/base@0.23.1...@principia/base@0.24.0) (2021-10-09)
+
+
+### Features
+
+* **base/array:** add more `dataFirst` annotations ([eeb556f](https://github.com/0x706b/principia.ts/commit/eeb556ffc222f3f04ec6b50008439838824e1a0a))
+* **base/async:** add `dataFirst` annotations ([5769dc7](https://github.com/0x706b/principia.ts/commit/5769dc776a0a814a4722e6f717555ccc006db381))
+* **base/asynciterable:** add `dataFirst` annotations ([918ae28](https://github.com/0x706b/principia.ts/commit/918ae28eb94e6e7e507b8a62647e2cc9b9cd2c0f))
+* **base/boolean:** add `dataFirst` annotations ([1b213c8](https://github.com/0x706b/principia.ts/commit/1b213c818d889de3f15206ee7993e60dddb74c63))
+* **base/boolean:** add `match` ([84a9edd](https://github.com/0x706b/principia.ts/commit/84a9eddd64cc0706c6548d77e62a9cdf17afd2fb))
+* **base/cause:** add `dataFirst` annotations ([df5a8df](https://github.com/0x706b/principia.ts/commit/df5a8dfe83d50457bf1c6dde4724c8766aa8757f))
+* **base/chunk:** add `dataFirst` annotations ([ab1f0f3](https://github.com/0x706b/principia.ts/commit/ab1f0f3cb6a59b28d9b8329e5e12fc9a822185b2))
+* **base/const:** add `dataFirst` annotations ([ff5da5b](https://github.com/0x706b/principia.ts/commit/ff5da5b8d205ab2b5355b9a4c1c2a465a6f8a65a))
+* **base/either:** add `dataFirst` annotations ([6257c28](https://github.com/0x706b/principia.ts/commit/6257c282ae0a1c5fe0106286fa34b91de051305d))
+* **base/eq:** add `dataFirst` annotations ([abaf38c](https://github.com/0x706b/principia.ts/commit/abaf38c141950380e1cff1edbf49876da9f7425f))
+* **base/eval:** add `dataFirst` annotations ([c6b1df9](https://github.com/0x706b/principia.ts/commit/c6b1df9c1bde370efc722c7ba7937550361ebed5))
+* **base/exit:** add `dataFirst` annotations ([5b8b24e](https://github.com/0x706b/principia.ts/commit/5b8b24ef2605c2e969e9c324ab4d23d22f1dcae7))
+* **base/fluent:** add `if` to `Object` fluent definitions ([f5f412c](https://github.com/0x706b/principia.ts/commit/f5f412ceef5a5510f0cf90923789a71f82963592))
+* **base/freelist:** add `dataFirst` annotations ([867b5d3](https://github.com/0x706b/principia.ts/commit/867b5d3f30eb42272f8c6112fb4f299ad343036e))
+* **base/freesemigroup:** add `dataFirst` annotations ([e65f08a](https://github.com/0x706b/principia.ts/commit/e65f08a735bd5477fa181f76dd894a47070defd1))
+* **base/freesemiring:** add `dataFirst` annotations ([f32fc90](https://github.com/0x706b/principia.ts/commit/f32fc9004ca0cbcb0ab090357f203408d060eb22))
+* **base/function:** add `dataFirst` annotations ([e8d6191](https://github.com/0x706b/principia.ts/commit/e8d619113174b19b68144ece6fc501d037a9db56))
+* **base/hashmap:** add `dataFirst` annotations ([456dfd9](https://github.com/0x706b/principia.ts/commit/456dfd98d8de9b466f88df877e908f9b3db3d102))
+* **base/hashset:** add `dataFirst` annotations ([e4e1ef8](https://github.com/0x706b/principia.ts/commit/e4e1ef8e7e58e39471b606947774670ef0817b38))
+* **base/heterogeneousrecord:** add `dataFirst` annotations ([3b57486](https://github.com/0x706b/principia.ts/commit/3b57486f42278914adf2f1ad9ccc318f67571680))
+* **base/identity:** add `dataFirst` annotations ([2e82751](https://github.com/0x706b/principia.ts/commit/2e82751b03462fabbdc5a174a52c61e6ca97b5cb))
+* **base/iterator:** add dataFirst annotations ([dd45bd8](https://github.com/0x706b/principia.ts/commit/dd45bd8acf7dba18e2ad11d68c52611b5997de49))
+* **base/list:** add dataFirst annotations ([80eddd6](https://github.com/0x706b/principia.ts/commit/80eddd6470ec873bfd81f1f7c46e1301e8d54475))
+* **base/map:** add `dataFirst` annotations ([af72247](https://github.com/0x706b/principia.ts/commit/af72247a8099526fed6244bb59b6e96e0a8aabbe))
+* **base/maybe:** add `dataFirst` annotations ([9ecdd98](https://github.com/0x706b/principia.ts/commit/9ecdd98eeb220502e21da645564c93d176ea99f0))
+* **base/orderedmap:** add `dataFirst` annotations ([1d29ae0](https://github.com/0x706b/principia.ts/commit/1d29ae02366044ea661da56d33fc1baf1d2c10f1))
+* **base/orderedset:** add `dataFirst` annotations ([a63666e](https://github.com/0x706b/principia.ts/commit/a63666e75c621cb7462996ce2e8c51fb6e8b73f6))
+* **base/predicate:** add `dataFirst` annotations ([b201c13](https://github.com/0x706b/principia.ts/commit/b201c13f9ecfb33c71d42623ec101460bec66f15))
+* **base/reader:** add `dataFirst` annotations ([c317910](https://github.com/0x706b/principia.ts/commit/c317910f632bca61843bf8c764045e0371de7cbb))
+* **base/record:** add `dataFirst` annotations ([6a9bc91](https://github.com/0x706b/principia.ts/commit/6a9bc9153122e1cfaec4d98915e28d63dffba509))
+* **base/refinement:** add `dataFirst` annotations ([f37c190](https://github.com/0x706b/principia.ts/commit/f37c190e248d9a0b82fbe5f07a2a7b048c7bf256))
+* **base/remotedata:** add `dataFirst` annotations ([4e94e4d](https://github.com/0x706b/principia.ts/commit/4e94e4d6ec884ad2bd6a1fa76fad92807b99a67a))
+* **base/rosetree:** add `dataFirst` annotations ([375afd8](https://github.com/0x706b/principia.ts/commit/375afd83d901df7f83706e38184f0778153c28cf))
+* **base/safefunction:** add `dataFirst` annotations ([ad402af](https://github.com/0x706b/principia.ts/commit/ad402af4c4117d2690e780a2918302807047e841))
+* **base/set:** add `dataFirst` annotations ([5a01fc1](https://github.com/0x706b/principia.ts/commit/5a01fc1459b60e65f8054f4e3e64a789591caaf6))
+* **base/state:** add `dataFirst` annotations ([4da4270](https://github.com/0x706b/principia.ts/commit/4da4270318cabb06fea6cf976b5d49feba4276e7))
+* **base/store:** add `dataFirst` annotations ([0780a96](https://github.com/0x706b/principia.ts/commit/0780a96ba3e430169cd9b7411221d9487dc7f454))
+* **base/struct:** add `dataFirst` annotations ([a15e1e4](https://github.com/0x706b/principia.ts/commit/a15e1e4e729d9bcfd34b7a47aec7bb61252eed16))
+* **base/sync:** add `dataFirst` annotations ([981a19e](https://github.com/0x706b/principia.ts/commit/981a19e5dc69c15930c30ce3f51c7f053c9f9f1d))
+* **base/writer:** add `dataFirst` annotations ([9193c19](https://github.com/0x706b/principia.ts/commit/9193c19a9b83ca82876ffa9e6425206a47f9782a))
+* **base/z:** add `dataFirst` annotations ([adf74ec](https://github.com/0x706b/principia.ts/commit/adf74ec1be022c02b369def4a7c01b85c0651231))
+* **base/zreader:** add `dataFirst` annotations ([6a23edd](https://github.com/0x706b/principia.ts/commit/6a23edd7a8946a5851350b49a32b6d5c2b038e20))
+* **base/zstate:** add `dataFirst` annotations ([ce6d6d5](https://github.com/0x706b/principia.ts/commit/ce6d6d5262310e4f976668de13869a0c9b7f78b5))
+* **base:** add *mapA dataFirst annotations ([0bd083e](https://github.com/0x706b/principia.ts/commit/0bd083ef5d68e02caa9015a55fc720d9cdc620bf))
+
+
+
+
+
 ## [0.23.1](https://github.com/0x706b/principia.ts/compare/@principia/base@0.23.0...@principia/base@0.23.1) (2021-10-07)
 
 **Note:** Version bump only for package @principia/base
