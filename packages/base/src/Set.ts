@@ -38,6 +38,9 @@ export function fromArray_<A>(as: ReadonlyArray<A>, E: P.Eq<A>): ReadonlySet<A> 
   return r
 }
 
+/**
+ * @dataFirst fromArray_
+ */
 export function fromArray<A>(E: P.Eq<A>): (as: ReadonlyArray<A>) => ReadonlySet<A> {
   return (as) => fromArray_(as, E)
 }
@@ -79,6 +82,9 @@ export function insert_<A>(E: P.Eq<A>) {
   }
 }
 
+/**
+ * @dataFirst insert_
+ */
 export function insert<A>(E: P.Eq<A>) {
   const insertE_ = insert_(E)
   return (a: A) => (set: ReadonlySet<A>) => insertE_(set, a)
@@ -88,6 +94,9 @@ export function remove_<A>(E: P.Eq<A>): (set: ReadonlySet<A>, a: A) => ReadonlyS
   return (set, a) => filter_(set, (ax) => !E.equals(a)(ax))
 }
 
+/**
+ * @dataFirst remove_
+ */
 export function remove<A>(E: P.Eq<A>): (a: A) => (set: ReadonlySet<A>) => ReadonlySet<A> {
   return (a) => (set) => remove_(E)(set, a)
 }
@@ -113,6 +122,8 @@ export function some_<A>(set: ReadonlySet<A>, predicate: P.Predicate<A>): boolea
 
 /**
  * @since 1.0.0
+ *
+ * @dataFirst some_
  */
 export function some<A>(predicate: P.Predicate<A>): (set: ReadonlySet<A>) => boolean {
   return (set) => some_(set, predicate)
@@ -127,6 +138,8 @@ export function every_<A>(set: ReadonlySet<A>, predicate: P.Predicate<A>) {
 
 /**
  * @since 1.0.0
+ *
+ * @dataFirst every_
  */
 export function every<A>(predicate: P.Predicate<A>): (set: ReadonlySet<A>) => boolean {
   return (set) => every_(set, predicate)
@@ -153,6 +166,8 @@ export function elem_<A>(E: P.Eq<A>): (set: ReadonlySet<A>, a: A) => boolean {
  * Test if a value is a member of a set
  *
  * @since 1.0.0
+ *
+ * @dataFirst elem_
  */
 export function elem<A>(E: P.Eq<A>): (a: A) => (set: ReadonlySet<A>) => boolean {
   return (a) => (set) => elem_(E)(set, a)
@@ -250,6 +265,17 @@ export function filter_<A>(fa: ReadonlySet<A>, predicate: P.Predicate<A>) {
 
 /**
  * @since 1.0.0
+ *
+ * @dataFirst filter_
+ */
+export function filter<A, B extends A>(refinement: P.Refinement<A, B>): (fa: ReadonlySet<A>) => ReadonlySet<B>
+export function filter<A>(predicate: P.Predicate<A>): (fa: ReadonlySet<A>) => ReadonlySet<A>
+export function filter<A>(predicate: P.Predicate<A>): (fa: ReadonlySet<A>) => ReadonlySet<A> {
+  return (fa) => filter_(fa, predicate)
+}
+
+/**
+ * @since 1.0.0
  */
 export function partition_<A, B extends A>(
   fa: ReadonlySet<A>,
@@ -274,6 +300,8 @@ export function partition_<A>(fa: ReadonlySet<A>, predicate: P.Predicate<A>) {
 
 /**
  * @since 1.0.0
+ *
+ * @dataFirst partition_
  */
 export function partition<A, B extends A>(
   refinement: P.Refinement<A, B>
@@ -319,6 +347,8 @@ export function partitionMap_<B, C>(EB: P.Eq<B>, EC: P.Eq<C>) {
 
 /**
  * @since 1.0.0
+ *
+ * @dataFirst partitionMap_
  */
 export function partitionMap<B, C>(
   EB: P.Eq<B>,
@@ -346,6 +376,8 @@ export function filterMap_<B>(E: P.Eq<B>) {
 
 /**
  * @since 1.0.0
+ *
+ * @dataFirst filterMap_
  */
 export function filterMap<B>(E: P.Eq<B>) {
   const filterMapE_ = filterMap_(E)
@@ -365,6 +397,9 @@ export function foldl_<A>(O: P.Ord<A>) {
   return <B>(set: ReadonlySet<A>, b: B, f: (b: B, a: A) => B): B => A.foldl_(toArrayO(set), b, f)
 }
 
+/**
+ * @dataFirst foldl_
+ */
 export function foldl<A>(O: P.Ord<A>): <B>(b: B, f: (b: B, a: A) => B) => (set: ReadonlySet<A>) => B {
   return (b, f) => (set) => foldl_(O)(set, b, f)
 }
@@ -374,6 +409,9 @@ export function foldMap_<A, M>(O: P.Ord<A>, M: P.Monoid<M>) {
   return (fa: ReadonlySet<A>, f: (a: A) => M) => A.foldl_(toArrayO(fa), M.nat, (b, a) => M.combine_(b, f(a)))
 }
 
+/**
+ * @dataFirst foldMap_
+ */
 export function foldMap<A, M>(O: P.Ord<A>, M: P.Monoid<M>) {
   const foldMapOM_ = foldMap_(O, M)
   return (f: (a: A) => M) => (fa: ReadonlySet<A>) => foldMapOM_(fa, f)
@@ -399,6 +437,9 @@ export function map_<B>(E: P.Eq<B>) {
   }
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<B>(E: P.Eq<B>): <A>(f: (a: A) => B) => (set: ReadonlySet<A>) => Set<B> {
   return (f) => (set) => map_(E)(set, f)
 }
@@ -424,6 +465,9 @@ export function chain_<B>(E: P.Eq<B>): <A>(set: ReadonlySet<A>, f: (a: A) => Rea
   }
 }
 
+/**
+ * @dataFirst chain_
+ */
 export function chain<B>(E: P.Eq<B>): <A>(f: (a: A) => ReadonlySet<B>) => (set: ReadonlySet<A>) => ReadonlySet<B> {
   return (f) => (set) => chain_(E)(set, f)
 }
@@ -512,6 +556,8 @@ export function union_<A>(E: P.Eq<A>) {
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @dataFirst union_
  */
 export function union<A>(E: P.Eq<A>) {
   const unionE_ = union_(E)
@@ -545,6 +591,8 @@ export function intersection_<A>(E: P.Eq<A>): (me: ReadonlySet<A>, that: Readonl
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @dataFirst intersection_
  */
 export function intersection<A>(E: P.Eq<A>) {
   const intersectionE_ = intersection_(E)
@@ -556,6 +604,9 @@ export function difference_<A>(E: P.Eq<A>) {
   return (me: ReadonlySet<A>, that: ReadonlySet<A>) => filter_(me, (a) => !elemE_(that, a))
 }
 
+/**
+ * @dataFirst difference_
+ */
 export function difference<A>(E: P.Eq<A>) {
   const differenceE_ = difference_(E)
   return (that: ReadonlySet<A>) => (me: ReadonlySet<A>) => differenceE_(me, that)
