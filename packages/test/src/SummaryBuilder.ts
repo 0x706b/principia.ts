@@ -69,8 +69,8 @@ function extractFailures<E>(executedSpec: ExecutedSpec<E>): ReadonlyArray<Execut
           A.flatten,
           F.if(
             A.isNonEmpty,
-            (newSpecs) => [ExSpec.suite(label, newSpecs)],
-            () => A.empty<ExecutedSpec<E>>()
+            () => A.empty<ExecutedSpec<E>>(),
+            (newSpecs) => [ExSpec.suite(label, newSpecs)]
           )
         )
     })

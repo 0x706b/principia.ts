@@ -57,7 +57,7 @@
     "access": "public",
     "directory": "dist"
   },
-  "gitHead": "44a7688760d5952c72c8546c9459a4925b7e22a1",
+  "gitHead": "450312aae828b332a7d7a48a99796db0ff98d35d",
   "devDependencies": {
     "@types/isomorphic-fetch": "^0.0.35"
   }

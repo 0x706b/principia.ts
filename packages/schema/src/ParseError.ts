@@ -940,13 +940,13 @@ function prune(prunable: Prunable, anticollision: string): (de: AnyError) => M.M
           ? pipe(
               de.error.indices,
               A.filter((index) => prunable.indexOf(anticollision + String(index)) !== -1),
-              F.if(A.isNonEmpty, flow(unexpectedIndicesE, leafE, M.just), () => M.nothing())
+              F.if(A.isNonEmpty, () => M.nothing(), flow(unexpectedIndicesE, leafE, M.just))
             )
           : isUnexpectedKeysE(de.error)
           ? pipe(
               de.error.keys,
               A.filter((key) => prunable.indexOf(anticollision + key) !== -1),
-              F.if(A.isNonEmpty, flow(unexpectedKeysE, leafE, M.just), () => M.nothing())
+              F.if(A.isNonEmpty, () => M.nothing(), flow(unexpectedKeysE, leafE, M.just))
             )
           : M.just(de)
       case 'NamedE':
