@@ -45,6 +45,9 @@ export function gives_<Q, R, A>(ra: Reader<R, A>, f: (q: Q) => R): Reader<Q, A> 
   return (q) => ra(f(q))
 }
 
+/**
+ * @dataFirst gives_
+ */
 export function gives<Q, R>(f: (q: Q) => R): <A>(ra: Reader<R, A>) => Reader<Q, A> {
   return (ra) => gives_(ra, f)
 }
@@ -53,6 +56,9 @@ export function giveAll_<R, A>(ra: Reader<R, A>, r: R): Reader<unknown, A> {
   return () => ra(r)
 }
 
+/**
+ * @dataFirst giveAll_
+ */
 export function giveAll<R>(r: R): <A>(ra: Reader<R, A>) => Reader<unknown, A> {
   return (ra) => giveAll_(ra, r)
 }
@@ -63,6 +69,9 @@ export function runReader_<R, A>(ra: Reader<R, A>, r?: R): A {
   return r ? ra(r) : ra(undefined as any)
 }
 
+/**
+ * @dataFirst runReader_
+ */
 export function runReader(): <A>(ra: Reader<unknown, A>) => A
 export function runReader<R>(r: R): <A>(ra: Reader<R, A>) => A
 export function runReader<R>(r?: R): <A>(ra: Reader<R, A>) => A {
@@ -89,6 +98,9 @@ export function ap_<R, A, R1, B>(fab: Reader<R1, (a: A) => B>, fa: Reader<R, A>)
   return (r) => fab(r)(fa(r))
 }
 
+/**
+ * @dataFirst ap_
+ */
 export function ap<R, A>(fa: Reader<R, A>): <R1, B>(fab: Reader<R1, (a: A) => B>) => Reader<R & R1, B> {
   return (fab) => ap_(fab, fa)
 }
@@ -97,6 +109,9 @@ export function crossFirst_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): R
   return crossWith_(fa, fb, (a, _) => a)
 }
 
+/**
+ * @dataFirst crossFirst_
+ */
 export function crossFirst<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, A> {
   return (fa) => crossFirst_(fa, fb)
 }
@@ -105,6 +120,9 @@ export function crossSecond_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): 
   return crossWith_(fa, fb, (_, b) => b)
 }
 
+/**
+ * @dataFirst crossSecond_
+ */
 export function crossSecond<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, B> {
   return (fa) => crossSecond_(fa, fb)
 }
@@ -113,6 +131,9 @@ export function cross_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader
   return crossWith_(fa, fb, tuple)
 }
 
+/**
+ * @dataFirst cross_
+ */
 export function cross<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, readonly [A, B]> {
   return (fa) => cross_(fa, fb)
 }
@@ -125,6 +146,9 @@ export function crossWith_<R, A, R1, B, C>(
   return (r) => f(fa(r), fb(r))
 }
 
+/**
+ * @dataFirst crossWith_
+ */
 export function crossWith<A, R1, B, C>(
   fb: Reader<R1, B>,
   f: (a: A, b: B) => C
@@ -141,6 +165,9 @@ export function andThen_<A, B, C>(ab: Reader<A, B>, bc: Reader<B, C>): Reader<A,
   return flow(ab, bc)
 }
 
+/**
+ * @dataFirst andThen_
+ */
 export function andThen<B, C>(bc: Reader<B, C>): <A>(ab: Reader<A, B>) => Reader<A, C> {
   return (ab) => andThen_(ab, bc)
 }
@@ -149,6 +176,9 @@ export function compose_<A, B, C>(bc: Reader<B, C>, ab: Reader<A, B>): Reader<A,
   return andThen_(ab, bc)
 }
 
+/**
+ * @dataFirst compose_
+ */
 export function compose<A, B>(ab: Reader<A, B>): <C>(bc: Reader<B, C>) => Reader<A, C> {
   return (bc) => andThen_(ab, bc)
 }
@@ -167,6 +197,9 @@ export function map_<R, A, B>(fa: Reader<R, A>, f: (a: A) => B): Reader<R, B> {
   return flow(fa, f)
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<A, B>(f: (a: A) => B): <R>(fa: Reader<R, A>) => Reader<R, B> {
   return (fa) => map_(fa, f)
 }
@@ -181,6 +214,9 @@ export function chain_<R, A, R1, B>(ma: Reader<R, A>, f: (a: A) => Reader<R1, B>
   return (r) => f(ma(r))(r)
 }
 
+/**
+ * @dataFirst chain_
+ */
 export function chain<A, R1, B>(f: (a: A) => Reader<R1, B>): <R>(ma: Reader<R, A>) => Reader<R & R1, B> {
   return (ma) => chain_(ma, f)
 }
@@ -197,6 +233,9 @@ export function tap_<R, A, R1, B>(ma: Reader<R, A>, f: (a: A) => Reader<R1, B>):
   }
 }
 
+/**
+ * @dataFirst tap_
+ */
 export function tap<A, R1, B>(f: (a: A) => Reader<R1, B>): <R>(ma: Reader<R, A>) => Reader<R & R1, A> {
   return (ma) => tap_(ma, f)
 }
@@ -211,6 +250,9 @@ export function dimap_<R, A, Q, B>(pa: Reader<R, A>, f: (q: Q) => R, g: (a: A) =
   return flow(f, pa, g)
 }
 
+/**
+ * @dataFirst dimap_
+ */
 export function dimap<R, A, Q, B>(f: (q: Q) => R, g: (a: A) => B): (pa: Reader<R, A>) => Reader<Q, B> {
   return (pa) => dimap_(pa, f, g)
 }
