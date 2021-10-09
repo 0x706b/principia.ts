@@ -49,6 +49,9 @@ export function andThen_<A, B, C>(ab: SafeFunction<A, B>, bc: (b: B) => C): Safe
   return concat(ab, single(bc, 0))
 }
 
+/**
+ * @dataFirst andThen_
+ */
 export function andThen<B, C>(bc: (b: B) => C): <A>(ab: SafeFunction<A, B>) => SafeFunction<A, C> {
   return (ab) => andThen_(ab, bc)
 }
@@ -92,6 +95,9 @@ export function pipeTo_<A, B, C>(ab: SafeFunction<A, B>, bc: SafeFunction<B, C>)
   return concat(ab, bc)
 }
 
+/**
+ * @dataFirst pipeTo_
+ */
 export function pipeTo<B, C>(bc: SafeFunction<B, C>): <A>(ab: SafeFunction<A, B>) => SafeFunction<A, C> {
   return (ab) => pipeTo_(ab, bc)
 }
