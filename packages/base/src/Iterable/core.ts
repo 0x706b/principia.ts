@@ -482,6 +482,9 @@ export function chainRecBreadthFirst<A, B>(f: (a: A) => Iterable<Either<A, B>>):
 export const mapA_: P.MapWithIndexAFn_<[HKT.URI<IterableURI>]> = (AG) => (ta, f) =>
   foldl_(ta, AG.pure(never as Iterable<any>), (b, a, i) => AG.crossWith_(b, f(a, i), append_))
 
+/**
+ * @dataFirst mapA_
+ */
 export const mapA: P.MapWithIndexAFn<[HKT.URI<IterableURI>]> = (AG) => {
   const _ = mapA_(AG)
   return (f) => (ta) => _(ta, f)

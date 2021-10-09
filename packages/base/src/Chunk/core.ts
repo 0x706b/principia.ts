@@ -1732,6 +1732,9 @@ export function chainRecBreadthFirst<A, B>(f: (a: A) => Chunk<Either<A, B>>): (a
 export const mapA_: P.MapWithIndexAFn_<URI> = (A) => (ta, f) =>
   foldl_(ta, A.pure(empty()), (fbs, a, i) => A.crossWith_(fbs, f(a, i), append_))
 
+/**
+ * @dataFirst mapA_
+ */
 export const mapA: P.MapWithIndexAFn<URI> = (G) => {
   const itraverseG_ = mapA_(G)
   return (f) => (ta) => itraverseG_(ta, f)
@@ -1782,6 +1785,8 @@ export const filterMapA_: P.FilterMapWithIndexAFn_<URI> = (A) => {
 /**
  * @category WitherableWithIndex
  * @since 1.0.0
+ *
+ * @dataFirst filterMapA_
  */
 export const filterMapA: P.FilterMapWithIndexAFn<URI> = (A) => {
   const _ = filterMapA_(A)
@@ -1800,6 +1805,8 @@ export const partitionMapA_: P.PartitionMapWithIndexAFn_<URI> = (A) => {
 /**
  * @category WitherableWithIndex
  * @since 1.0.0
+ *
+ * @dataFirst partitionMapA_
  */
 export const partitionMapA: P.PartitionMapWithIndexAFn<URI> = (A) => {
   const _ = partitionMapA_(A)

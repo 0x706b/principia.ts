@@ -233,7 +233,7 @@ export function cross_<A, B>(fa: ReadonlyArray<A>, fb: ReadonlyArray<B>): Readon
  *
  * @category MonoidalFunctor
  * @since 1.0.0
- * 
+ *
  * @dataFirst cross_
  */
 export function cross<B>(fb: ReadonlyArray<B>): <A>(fa: ReadonlyArray<A>) => ReadonlyArray<readonly [A, B]> {
@@ -893,6 +893,8 @@ export const mapA_ = P.implementMapWithIndexA_<[HKT.URI<ArrayURI>]>()((_) => (G)
 /**
  * @category TraversableWithIndex
  * @since 1.0.0
+ *
+ * @dataFirst mapA_
  */
 export const mapA: P.MapWithIndexAFn<[HKT.URI<ArrayURI>]> = (G) => {
   const mapAG_ = mapA_(G)
@@ -904,6 +906,9 @@ export const mapAccumM_: P.MapAccumWithIndexMFn_<[HKT.URI<ArrayURI>]> = (M) => (
     M.chain_(b, ([bs, s]) => M.map_(f(s, a, i), ([b, s]) => [append_(bs, b), s]))
   )
 
+/**
+ * @dataFirst mapAccumM_
+ */
 export const mapAccumM: P.MapAccumWithIndexMFn<[HKT.URI<ArrayURI>]> = (M) => {
   const imapAccum_ = mapAccumM_(M)
   return (s, f) => (ta) => imapAccum_(ta, s, f)
@@ -979,6 +984,8 @@ export const filterMapA_: P.FilterMapWithIndexAFn_<[HKT.URI<ArrayURI>]> = (G) =>
 /**
  * @category WitherableWithIndex
  * @since 1.0.0
+ *
+ * @dataFirst filterMapA_
  */
 export const filterMapA: P.FilterMapWithIndexAFn<[HKT.URI<ArrayURI>]> = (G) => (f) => (wa) => filterMapA_(G)(wa, f)
 
@@ -994,6 +1001,8 @@ export const partitionMapA_: P.PartitionMapWithIndexAFn_<[HKT.URI<ArrayURI>]> = 
 /**
  * @category WitherableWithIndex
  * @since 1.0.0
+ *
+ * @dataFirst partitionMapA_
  */
 export const partitionMapA: P.PartitionMapWithIndexAFn<[HKT.URI<ArrayURI>]> = (G) => (f) => (wa) =>
   partitionMapA_(G)(wa, f)
