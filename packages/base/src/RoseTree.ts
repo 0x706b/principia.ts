@@ -115,6 +115,9 @@ export function cross_<A, B>(fa: RoseTree<A>, fb: RoseTree<B>): RoseTree<readonl
   }
 }
 
+/**
+ * @dataFirst cross_
+ */
 export function cross<B>(fb: RoseTree<B>): <A>(fa: RoseTree<A>) => RoseTree<readonly [A, B]> {
   return (fa) => cross_(fa, fb)
 }
@@ -126,6 +129,9 @@ export function crossWith_<A, B, C>(fa: RoseTree<A>, fb: RoseTree<B>, f: (a: A, 
   }
 }
 
+/**
+ * @dataFirst crossWith_
+ */
 export function crossWith<A, B, C>(fb: RoseTree<B>, f: (a: A, b: B) => C): (fa: RoseTree<A>) => RoseTree<C> {
   return (fa) => crossWith_(fa, fb, f)
 }
@@ -134,6 +140,9 @@ export function ap_<A, B>(fab: RoseTree<(a: A) => B>, fa: RoseTree<A>): RoseTree
   return chain_(fab, (f) => map_(fa, (a) => f(a)))
 }
 
+/**
+ * @dataFirst ap_
+ */
 export function ap<A>(fa: RoseTree<A>): <B>(fab: RoseTree<(a: A) => B>) => RoseTree<B> {
   return (fab) => ap_(fab, fa)
 }
@@ -142,12 +151,22 @@ export function crossFirst_<A, B>(fa: RoseTree<A>, fb: RoseTree<B>): RoseTree<A>
   return crossWith_(fa, fb, (a, _) => a)
 }
 
+/**
+ * @dataFirst crossFirst_
+ */
 export function crossFirst<B>(fb: RoseTree<B>): <A>(fa: RoseTree<A>) => RoseTree<A> {
   return (fa) => crossFirst_(fa, fb)
 }
 
 export function crossSecond_<A, B>(fa: RoseTree<A>, fb: RoseTree<B>): RoseTree<B> {
   return crossWith_(fa, fb, (_, b) => b)
+}
+
+/**
+ * @dataFirst crossSecond_
+ */
+export function crossSecond<B>(fb: RoseTree<B>): <A>(fa: RoseTree<A>) => RoseTree<B> {
+  return (fa) => crossSecond_(fa, fb)
 }
 
 /*
@@ -163,6 +182,9 @@ export function extend_<A, B>(wa: RoseTree<A>, f: (wa: RoseTree<A>) => B): RoseT
   }
 }
 
+/**
+ * @dataFirst extend_
+ */
 export function extend<A, B>(f: (wa: RoseTree<A>) => B): (wa: RoseTree<A>) => RoseTree<B> {
   return (wa) => extend_(wa, f)
 }
@@ -188,6 +210,9 @@ export function foldl_<A, B>(fa: RoseTree<A>, b: B, f: (b: B, a: A) => B): B {
   return r
 }
 
+/**
+ * @dataFirst foldl_
+ */
 export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: RoseTree<A>) => B {
   return (fa) => foldl_(fa, b, f)
 }
@@ -197,6 +222,9 @@ export function foldr_<A, B>(fa: RoseTree<A>, b: Ev.Eval<B>, f: (a: A, b: Ev.Eva
   return f(fa.value, r)
 }
 
+/**
+ * @dataFirst foldr_
+ */
 export function foldr<A, B>(b: Ev.Eval<B>, f: (a: A, b: Ev.Eval<B>) => Ev.Eval<B>): (fa: RoseTree<A>) => Ev.Eval<B> {
   return (fa) => foldr_(fa, b, f)
 }
@@ -205,6 +233,9 @@ export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: RoseTree<A>, f: (a: A) => M
   return (fa, f) => foldl_(fa, M.nat, (acc, a) => M.combine_(acc, f(a)))
 }
 
+/**
+ * @dataFirst foldMap_
+ */
 export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: RoseTree<A>) => M {
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
@@ -222,6 +253,9 @@ export function map_<A, B>(fa: RoseTree<A>, f: (a: A) => B): RoseTree<B> {
   }
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<A, B>(f: (a: A) => B): (fa: RoseTree<A>) => RoseTree<B> {
   return (fa) => map_(fa, f)
 }
@@ -244,6 +278,9 @@ export function chain_<A, B>(ma: RoseTree<A>, f: (a: A) => RoseTree<B>): RoseTre
   }
 }
 
+/**
+ * @dataFirst chain_
+ */
 export function chain<A, B>(f: (a: A) => RoseTree<B>): (ma: RoseTree<A>) => RoseTree<B> {
   return (ma) => chain_(ma, f)
 }
@@ -254,6 +291,9 @@ export function tap_<A, B>(ma: RoseTree<A>, f: (a: A) => RoseTree<B>): RoseTree<
   return chain_(ma, (a) => map_(f(a), () => a))
 }
 
+/**
+ * @dataFirst tap_
+ */
 export function tap<A, B>(f: (a: A) => RoseTree<B>): (ma: RoseTree<A>) => RoseTree<A> {
   return (ma) => tap_(ma, f)
 }
@@ -311,6 +351,9 @@ export const mapA_: P.MapAFn_<URI, V> = P.implementMapA_<URI, V>()((_) => (AG) =
   return out
 })
 
+/**
+ * @dataFirst mapA_
+ */
 export const mapA: P.MapAFn<URI, V> = (AG) => (f) => (ta) => mapA_(AG)(ta, f)
 
 export const sequence: P.SequenceFn<URI, V> = (AG) => (ta) => mapA_(AG)(ta, identity)
