@@ -1,6 +1,17 @@
 import * as G from './Guard'
 import * as P from './prelude'
 
+export function match_<A, B>(value: boolean, onFalse: () => A, onTrue: () => B): A | B {
+  return value ? onTrue() : onFalse()
+}
+
+/**
+ * @dataFirst match_
+ */
+export function match<A, B>(onFalse: () => A, onTrue: () => B): (value: boolean) => A | B {
+  return (value) => match_(value, onFalse, onTrue)
+}
+
 export function and_(x: boolean, y: boolean): boolean {
   return x && y
 }
