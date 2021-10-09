@@ -54,6 +54,8 @@ export function elem_<A>(E: Eq<A>): <N extends string>(r: Readonly<Record<N, A>>
 /**
  * @category Guards
  * @since 1.0.0
+ *
+ * @dataFirst elem_
  */
 export function elem<A>(E: Eq<A>): (a: A) => <N extends string>(r: Readonly<Record<N, A>>) => boolean {
   return (a) => (r) => elem_(E)(r, a)
@@ -80,6 +82,8 @@ export function every_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: 
 /**
  * @category Guards
  * @since 1.0.0
+ *
+ * @dataFirst every_
  */
 export function every<N extends string, A, B extends A>(
   predicate: RefinementWithIndex<N, A, B>
@@ -104,6 +108,8 @@ export function has_<N extends string>(r: ReadonlyRecord<N, unknown>, k: string)
  *
  * @category Guards
  * @since 1.0.0
+ *
+ * @dataFirst has_
  */
 export function has<N extends string>(k: string): (r: ReadonlyRecord<N, unknown>) => boolean {
   return (r) => has_(r, k)
@@ -131,6 +137,8 @@ export function isSubrecord_<A>(E: Eq<A>): (me: ReadonlyRecord<string, A>, that:
  *
  * @category Guards
  * @since 1.0.0
+ *
+ * @dataFirst isSubrecord_
  */
 export function isSubrecord<A>(
   E: Eq<A>
@@ -154,6 +162,8 @@ export function some_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: P
 /**
  * @category Guards
  * @since 1.0.0
+ *
+ * @dataFirst some_
  */
 export function some<N extends string, A>(predicate: PredicateWithIndex<N, A>): (r: Readonly<Record<N, A>>) => boolean {
   return (r) => some_(r, predicate)
@@ -312,6 +322,7 @@ export function filter_<A>(
 }
 
 /**
+ * @dataFirst filter_
  */
 export function filter<N extends string, A, B extends A>(
   refinement: RefinementWithIndex<N, A, B>
@@ -344,6 +355,7 @@ export function filterMap_<N extends string, A, B>(
 }
 
 /**
+ * @dataFirst filterMap_
  */
 export function filterMap<N extends string, A, B>(
   f: (a: A, k: N) => M.Maybe<B>
@@ -378,6 +390,7 @@ export function partition_<A>(fa: ReadonlyRecord<string, A>, predicate: Predicat
 }
 
 /**
+ * @dataFirst partition_
  */
 export function partition<N extends string, A, B extends A>(
   refinement: RefinementWithIndex<N, A, B>
@@ -417,6 +430,7 @@ export function partitionMap_<N extends string, A, B, C>(
 }
 
 /**
+ * @dataFirst partitionMap_
  */
 export function partitionMap<N extends string, A, B, C>(
   f: (a: A, k: N) => E.Either<B, C>
@@ -444,6 +458,7 @@ export function foldl_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, b: B, f
 }
 
 /**
+ * @dataFirst foldl_
  */
 export function foldl<N extends string, A, B>(b: B, f: (b: B, a: A, k: N) => B): (fa: ReadonlyRecord<N, A>) => B {
   return (fa) => foldl_(fa, b, f)
@@ -463,6 +478,7 @@ export function foldr_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, b: B, f
 }
 
 /**
+ * @dataFirst foldr_
  */
 export function foldr<N extends string, A, B>(b: B, f: (a: A, b: B, k: N) => B): (fa: ReadonlyRecord<N, A>) => B {
   return (fa) => foldr_(fa, b, f)
@@ -483,6 +499,9 @@ export function foldMap_<M>(
   }
 }
 
+/**
+ * @dataFirst foldMap_
+ */
 export function foldMap<M>(
   M: P.Monoid<M>
 ): <N extends string, A>(f: (a: A, k: N) => M) => (fa: Readonly<Record<N, A>>) => M {
@@ -538,6 +557,8 @@ export function map_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, f: (a: A,
  *
  * @category FunctorWithIndex
  * @since 1.0.0
+ *
+ * @dataFirst map_
  */
 export function map<N extends string, A, B>(f: (a: A, k: N) => B): (fa: ReadonlyRecord<N, A>) => ReadonlyRecord<N, B> {
   return (fa) => map_(fa, f)
@@ -617,6 +638,7 @@ export const mapA_: P.MapWithIndexAFn_<[HKT.URI<RecordURI>]> = P.implementMapWit
 )
 
 /**
+ * @dataFirst mapA_
  */
 export const mapA: P.MapWithIndexAFn<[HKT.URI<RecordURI>]> = (G) => (f) => (ta) => mapA_(G)(ta, f)
 
@@ -633,11 +655,17 @@ export const sequence: P.SequenceFn<[HKT.URI<RecordURI>]> = (G) => (ta) => mapA_
 export const filterMapA_: P.FilterMapWithIndexAFn_<[HKT.URI<RecordURI>]> = (A) => (wa, f) =>
   pipe(mapA_(A)(wa, f), A.map(compact))
 
+/**
+ * @dataFirst filterMapA_
+ */
 export const filterMapA: P.FilterMapWithIndexAFn<[HKT.URI<RecordURI>]> = (A) => (f) => (wa) => filterMapA_(A)(wa, f)
 
 export const partitionMapA_: P.PartitionMapWithIndexAFn_<[HKT.URI<RecordURI>]> = (A) => (wa, f) =>
   pipe(mapA_(A)(wa, f), A.map(separate))
 
+/**
+ * @dataFirst partitionMapA_
+ */
 export const partitionMapA: P.PartitionMapWithIndexAFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) =>
   partitionMapA_(G)(wa, f)
 
@@ -671,6 +699,9 @@ export function collect_<N extends string, A, B>(r: ReadonlyRecord<N, A>, f: (a:
   return out
 }
 
+/**
+ * @dataFirst collect_
+ */
 export function collect<N extends string, A, B>(f: (a: A, k: N) => B): (r: ReadonlyRecord<N, A>) => ReadonlyArray<B> {
   return (r) => collect_(r, f)
 }
@@ -684,6 +715,9 @@ export function deleteAt_<A>(r: ReadonlyRecord<string, A>, k: string): ReadonlyR
   return out as any
 }
 
+/**
+ * @dataFirst deleteAt_
+ */
 export function deleteAt(k: string): <A>(r: ReadonlyRecord<string, A>) => ReadonlyRecord<string, A> {
   return (r) => deleteAt_(r, k)
 }
@@ -697,6 +731,9 @@ export function insertAt_<A>(r: ReadonlyRecord<string, A>, k: string, a: A): M.M
   return M.nothing()
 }
 
+/**
+ * @dataFirst insertAt_
+ */
 export function insertAt<A>(k: string, a: A): (r: ReadonlyRecord<string, A>) => M.Maybe<ReadonlyRecord<string, A>> {
   return (r) => insertAt_(r, k, a)
 }
@@ -705,6 +742,9 @@ export function lookup_<A>(r: ReadonlyRecord<string, A>, k: string): M.Maybe<A> 
   return _hasOwnProperty.call(r, k) ? M.just(r[k]) : M.nothing()
 }
 
+/**
+ * @dataFirst lookup_
+ */
 export function lookup(k: string): <A>(r: ReadonlyRecord<string, A>) => M.Maybe<A> {
   return (r) => lookup_(r, k)
 }
@@ -722,6 +762,9 @@ export function modifyAt_<A>(
   return M.just(out)
 }
 
+/**
+ * @dataFirst modifyAt_
+ */
 export function modifyAt<A>(
   k: string,
   f: (a: A) => A
@@ -735,6 +778,9 @@ export function pop_<A>(r: ReadonlyRecord<string, A>, k: string): M.Maybe<readon
   return M.match_(oa, M.nothing, (a) => M.just([a, deleteAtk(r)]))
 }
 
+/**
+ * @dataFirst pop_
+ */
 export function pop(k: string): <A>(r: ReadonlyRecord<string, A>) => M.Maybe<readonly [A, ReadonlyRecord<string, A>]> {
   return (r) => pop_(r, k)
 }
@@ -743,6 +789,9 @@ export function updateAt_<A>(r: ReadonlyRecord<string, A>, k: string, a: A): M.M
   return modifyAt_(r, k, () => a)
 }
 
+/**
+ * @dataFirst updateAt_
+ */
 export function updateAt<A>(k: string, a: A): (r: ReadonlyRecord<string, A>) => M.Maybe<ReadonlyRecord<string, A>> {
   return (r) => updateAt_(r, k, a)
 }
@@ -756,6 +805,9 @@ export function upsertAt_<A>(r: ReadonlyRecord<string, A>, k: string, a: A): Rea
   return out
 }
 
+/**
+ * @dataFirst upsertAt_
+ */
 export function upsertAt<A>(k: string, a: A): (r: ReadonlyRecord<string, A>) => ReadonlyRecord<string, A> {
   return (r) => upsertAt_(r, k, a)
 }
