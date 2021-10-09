@@ -94,6 +94,8 @@ export function filter_<A>(fa: FreeList<A>, f: P.Predicate<A>): FreeList<A> {
 /**
  * @category Constructors
  * @since 1.0.0
+ *
+ * @dataFirst filter_
  */
 export function filter<A, B extends A>(f: P.Refinement<A, B>): (fa: FreeList<A>) => FreeList<B>
 export function filter<A>(f: P.Predicate<A>): (fa: FreeList<A>) => FreeList<A>
@@ -142,6 +144,8 @@ export function match_<A, R>(
 /**
  * @category Destructors
  * @since 1.0.0
+ *
+ * @dataFirst match_
  */
 export function match<A, R>(patterns: {
   Empty: () => R
@@ -245,6 +249,9 @@ export function map_<A>(fa: FreeList<A>, f: (a: A) => A): FreeList<A> {
   }
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<A>(f: (a: A) => A): (fa: FreeList<A>) => FreeList<A> {
   return (fa) => ({
     _tag: 'Map',
@@ -263,6 +270,9 @@ export function append_<A>(fs: FreeList<A>, a: A): FreeList<A> {
   return Combine(fs, Element(a))
 }
 
+/**
+ * @dataFirst append_
+ */
 export function append<A>(a: A): (fs: FreeList<A>) => FreeList<A> {
   return (fs) => append_(fs, a)
 }
@@ -271,6 +281,9 @@ export function prepend_<A>(fs: FreeList<A>, a: A): FreeList<A> {
   return Combine(Element(a), fs)
 }
 
+/**
+ * @dataFirst prepend_
+ */
 export function prepend<A>(a: A): (fs: FreeList<A>) => FreeList<A> {
   return (fs) => prepend_(fs, a)
 }
