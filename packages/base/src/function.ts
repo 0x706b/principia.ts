@@ -600,11 +600,11 @@ export const hole: <T>() => T = absurd as any
 export function if_<A, B extends A, C, D>(
   a: A,
   refinement: Refinement<A, B>,
-  onTrue: (a: B) => C,
-  onFalse: (a: A) => D
+  onFalse: (a: A) => C,
+  onTrue: (a: B) => D
 ): C | D
-export function if_<A, B, C>(a: A, predicate: Predicate<A>, onTrue: (a: A) => B, onFalse: (a: A) => C): B | C
-export function if_<A, B, C>(a: A, predicate: Predicate<A>, onTrue: (a: A) => B, onFalse: (a: A) => C): B | C {
+export function if_<A, B, C>(a: A, predicate: Predicate<A>, onFalse: (a: A) => B, onTrue: (a: A) => C): B | C
+export function if_<A, B, C>(a: A, predicate: Predicate<A>, onFalse: (a: A) => B, onTrue: (a: A) => C): B | C {
   return predicate(a) ? onTrue(a) : onFalse(a)
 }
 
@@ -618,12 +618,12 @@ export function if_<A, B, C>(a: A, predicate: Predicate<A>, onTrue: (a: A) => B,
  */
 function _if<A, B extends A, C, D>(
   refinement: Refinement<A, B>,
-  onTrue: (a: B) => C,
-  onFalse: (a: A) => D
+  onFalse: (a: A) => C,
+  onTrue: (a: B) => D
 ): (a: A) => C | D
-function _if<A, B, C>(predicate: Predicate<A>, onTrue: (a: A) => B, onFalse: (a: A) => C): (a: A) => B | C
-function _if<A, B, C>(predicate: Predicate<A>, onTrue: (a: A) => B, onFalse: (a: A) => C): (a: A) => B | C {
-  return (a) => if_(a, predicate, onTrue, onFalse)
+function _if<A, B, C>(predicate: Predicate<A>, onFalse: (a: A) => B, onTrue: (a: A) => C): (a: A) => B | C
+function _if<A, B, C>(predicate: Predicate<A>, onFalse: (a: A) => B, onTrue: (a: A) => C): (a: A) => B | C {
+  return (a) => if_(a, predicate, onFalse, onTrue)
 }
 
 export { _if as if }

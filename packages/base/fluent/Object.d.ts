@@ -1,5 +1,17 @@
+import type { Predicate } from '@principia/base/prelude'
+import type { Refinement } from '@principia/base/Refinement'
+
 declare global {
   interface Object {
+    /**
+     * @rewrite if_ from "@principia/base/function"
+     */
+    if<A, B extends A, C, D>(this: A, refinement: Refinement<A, B>, onFalse: (a: A) => C, onTrue: (a: B) => D): C | D
+    /**
+     * @rewrite if_ from "@principia/base/function"
+     */
+    if<A, B, C>(this: A, refinement: Predicate<A>, onFalse: (a: A) => B, onTrue: (a: A) => C): B | C
+
     /**
      * @rewrite pipe from "smart:pipe"
      */
