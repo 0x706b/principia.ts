@@ -51,6 +51,9 @@ export function crossWith_<A, B, C>(fa: Iterable<A>, fb: Iterable<B>, f: (a: A, 
   return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
+/**
+ * @dataFirst crossWith_
+ */
 export function crossWith<A, B, C>(fb: Iterable<B>, f: (a: A, b: B) => C): (fa: Iterable<A>) => Iterable<C> {
   return (fa) => crossWith_(fa, fb, f)
 }
@@ -59,6 +62,9 @@ export function cross_<A, B>(fa: Iterable<A>, fb: Iterable<B>): Iterable<readonl
   return crossWith_(fa, fb, tuple)
 }
 
+/**
+ * @dataFirst cross_
+ */
 export function cross<B>(fb: Iterable<B>): <A>(fa: Iterable<A>) => Iterable<readonly [A, B]> {
   return (fa) => cross_(fa, fb)
 }
@@ -101,6 +107,9 @@ export function zipWith_<A, B, C>(fa: Iterable<A>, fb: Iterable<B>, f: (a: A, b:
   })
 }
 
+/**
+ * @dataFirst zipWith_
+ */
 export function zipWith<A, B, C>(fb: Iterable<B>, f: (a: A, b: B) => C): (fa: Iterable<A>) => Iterable<C> {
   return (fa) => zipWith_(fa, fb, f)
 }
@@ -109,16 +118,22 @@ export function ap_<A, B>(fab: Iterable<(a: A) => B>, fa: Iterable<A>): Iterable
   return chain_(fab, (f) => map_(fa, f))
 }
 
+/**
+ * @dataFirst ap_
+ */
 export function ap<A>(fa: Iterable<A>): <B>(fab: Iterable<(a: A) => B>) => Iterable<B> {
   return (fab) => ap_(fab, fa)
 }
 
-export function zip<B>(fb: Iterable<B>): <A>(fa: Iterable<A>) => Iterable<readonly [A, B]> {
-  return (fa) => zipWith_(fa, fb, (a, b) => [a, b] as const)
-}
-
 export function zip_<A, B>(fa: Iterable<A>, fb: Iterable<B>): Iterable<readonly [A, B]> {
   return zipWith_(fa, fb, (a, b) => [a, b] as const)
+}
+
+/**
+ * @dataFirst zip_
+ */
+export function zip<B>(fb: Iterable<B>): <A>(fa: Iterable<A>) => Iterable<readonly [A, B]> {
+  return (fa) => zipWith_(fa, fb, (a, b) => [a, b] as const)
 }
 
 /*
@@ -153,9 +168,15 @@ export function filter_<A>(fa: Iterable<A>, predicate: P.PredicateWithIndex<numb
   })
 }
 
+/**
+ * @dataFirst filter_
+ */
 export function filter<A, B extends A>(
   refinement: P.RefinementWithIndex<number, A, B>
 ): (fa: Iterable<A>) => Iterable<B>
+/**
+ * @dataFirst filter_
+ */
 export function filter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: Iterable<A>) => Iterable<A>
 export function filter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: Iterable<A>) => Iterable<A> {
   return (fa) => filter_(fa, predicate)
@@ -174,6 +195,9 @@ export function filterMap_<A, B>(fa: Iterable<A>, f: (a: A, i: number) => Maybe<
   })
 }
 
+/**
+ * @dataFirst filterMap_
+ */
 export function filterMap<A, B>(f: (a: A, i: number) => Maybe<B>): (fa: Iterable<A>) => Iterable<B> {
   return (fa) => filterMap_(fa, f)
 }
@@ -212,9 +236,15 @@ export function partition_<A>(
   )
 }
 
+/**
+ * @dataFirst partition_
+ */
 export function partition<A, B extends A>(
   refinement: P.RefinementWithIndex<number, A, B>
 ): (fa: Iterable<A>) => readonly [Iterable<A>, Iterable<B>]
+/**
+ * @dataFirst partition_
+ */
 export function partition<A>(
   predicate: P.PredicateWithIndex<number, A>
 ): (fa: Iterable<A>) => readonly [Iterable<A>, Iterable<A>]
@@ -252,6 +282,9 @@ export function partitionMap_<A, B, C>(
   )
 }
 
+/**
+ * @dataFirst partitionMap_
+ */
 export function partitionMap<A, B, C>(
   f: (a: A, i: number) => Either<B, C>
 ): (fa: Iterable<A>) => readonly [Iterable<B>, Iterable<C>] {
@@ -276,6 +309,9 @@ export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: Iterable<A>, f: (a: A, i: n
   }
 }
 
+/**
+ * @dataFirst foldMap_
+ */
 export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A, i: number) => M) => (fa: Iterable<A>) => M {
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
@@ -290,6 +326,9 @@ export function foldl_<A, B>(fa: Iterable<A>, b: B, f: (b: B, a: A, i: number) =
   return res
 }
 
+/**
+ * @dataFirst foldl_
+ */
 export function foldl<A, B>(b: B, f: (b: B, a: A, i: number) => B): (fa: Iterable<A>) => B {
   return (fa) => foldl_(fa, b, f)
 }
@@ -312,6 +351,9 @@ export function foldr_<A, B>(
   return go
 }
 
+/**
+ * @dataFirst foldr_
+ */
 export function foldr<A, B>(
   b: Ev.Eval<B>,
   f: (a: A, b: Ev.Eval<B>, i: number) => Ev.Eval<B>
@@ -335,6 +377,9 @@ export function map_<A, B>(fa: Iterable<A>, f: (a: A, i: number) => B): Iterable
   })
 }
 
+/**
+ * @dataFirst map_
+ */
 export function map<A, B>(f: (a: A, i: number) => B): (fa: Iterable<A>) => Iterable<B> {
   return (fa) => map_(fa, f)
 }
@@ -345,16 +390,19 @@ export function map<A, B>(f: (a: A, i: number) => B): (fa: Iterable<A>) => Itera
  * -------------------------------------------------------------------------------------------------
  */
 
-export function chain<A, B>(f: (a: A) => Iterable<B>): (ma: Iterable<A>) => Iterable<B> {
-  return (ma) => chain_(ma, f)
-}
-
 export function chain_<A, B>(ma: Iterable<A>, f: (a: A) => Iterable<B>): Iterable<B> {
   return iterable(function* () {
     for (const outer of ma) {
       yield* f(outer)
     }
   })
+}
+
+/**
+ * @dataFirst chain_
+ */
+export function chain<A, B>(f: (a: A) => Iterable<B>): (ma: Iterable<A>) => Iterable<B> {
+  return (ma) => chain_(ma, f)
 }
 
 export function flatten<A>(mma: Iterable<Iterable<A>>): Iterable<A> {
@@ -379,6 +427,9 @@ export function chainRecDepthFirst_<A, B>(a: A, f: (a: A) => Iterable<Either<A, 
   })
 }
 
+/**
+ * @dataFirst chainRecDepthFirst_
+ */
 export function chainRecDepthFirst<A, B>(f: (a: A) => Iterable<Either<A, B>>): (a: A) => Iterable<B> {
   return (a) => chainRecDepthFirst_(a, f)
 }
@@ -415,6 +466,9 @@ export function chainRecBreadthFirst_<A, B>(a: A, f: (a: A) => Iterable<Either<A
   })
 }
 
+/**
+ * @dataFirst chainRecBreadthFirst_
+ */
 export function chainRecBreadthFirst<A, B>(f: (a: A) => Iterable<Either<A, B>>): (a: A) => Iterable<B> {
   return (a) => chainRecBreadthFirst_(a, f)
 }
@@ -456,12 +510,18 @@ export function concat_<A>(ia: Iterable<A>, ib: Iterable<A>): Iterable<A> {
   })
 }
 
+/**
+ * @dataFirst concat_
+ */
 export function concat<A>(ib: Iterable<A>): (ia: Iterable<A>) => Iterable<A> {
   return (ia) => concat_(ia, ib)
 }
 
 export const append_: <A>(ia: Iterable<A>, element: A) => Iterable<A> = It.append_
 
+/**
+ * @dataFirst append_
+ */
 export const append: <A>(element: A) => (ia: Iterable<A>) => Iterable<A> = It.append
 
 export function prepend_<A>(ia: Iterable<A>, element: A): Iterable<A> {
@@ -471,13 +531,16 @@ export function prepend_<A>(ia: Iterable<A>, element: A): Iterable<A> {
   })
 }
 
+/**
+ * @dataFirst prepend_
+ */
 export function prepend<A>(element: A): (ia: Iterable<A>) => Iterable<A> {
   return (ia) => prepend_(ia, element)
 }
 
-export function findFirst_<A, B extends A>(ia: Iterable<A>, refinement: P.Refinement<A, B>): Maybe<B>
-export function findFirst_<A>(ia: Iterable<A>, predicate: P.Predicate<A>): Maybe<A>
-export function findFirst_<A>(ia: Iterable<A>, predicate: P.Predicate<A>): Maybe<A> {
+export function find_<A, B extends A>(ia: Iterable<A>, refinement: P.Refinement<A, B>): Maybe<B>
+export function find_<A>(ia: Iterable<A>, predicate: P.Predicate<A>): Maybe<A>
+export function find_<A>(ia: Iterable<A>, predicate: P.Predicate<A>): Maybe<A> {
   for (const value of ia) {
     if (predicate(value)) {
       return M.just(value)
@@ -486,10 +549,13 @@ export function findFirst_<A>(ia: Iterable<A>, predicate: P.Predicate<A>): Maybe
   return M.nothing()
 }
 
-export function findFirst<A, B extends A>(refinement: P.Refinement<A, B>): (ia: Iterable<A>) => Maybe<B>
-export function findFirst<A>(predicate: P.Predicate<A>): (ia: Iterable<A>) => Maybe<A>
-export function findFirst<A>(predicate: P.Predicate<A>): (ia: Iterable<A>) => Maybe<A> {
-  return (ia) => findFirst_(ia, predicate)
+/**
+ * @dataFirst find_
+ */
+export function find<A, B extends A>(refinement: P.Refinement<A, B>): (ia: Iterable<A>) => Maybe<B>
+export function find<A>(predicate: P.Predicate<A>): (ia: Iterable<A>) => Maybe<A>
+export function find<A>(predicate: P.Predicate<A>): (ia: Iterable<A>) => Maybe<A> {
+  return (ia) => find_(ia, predicate)
 }
 
 export function take_<A>(ia: Iterable<A>, n: number): Iterable<A> {
@@ -503,6 +569,9 @@ export function take_<A>(ia: Iterable<A>, n: number): Iterable<A> {
   })
 }
 
+/**
+ * @dataFirst take_
+ */
 export function take(n: number): <A>(fa: Iterable<A>) => Iterable<A> {
   return (fa) => take_(fa, n)
 }
@@ -557,6 +626,9 @@ export function every_<A>(as: Iterable<A>, predicate: P.PredicateWithIndex<numbe
   return result
 }
 
+/**
+ * @dataFirst every_
+ */
 export function every<A, B extends A>(
   refinement: P.RefinementWithIndex<number, A, B>
 ): (as: Iterable<A>) => as is Iterable<B>
