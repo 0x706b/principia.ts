@@ -88,6 +88,8 @@ export const matchSync_: <R, E, A, R1, E1, B, R2, E2, C>(
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @dataFirst matchSync_
  */
 export const matchSync: <E, A, R1, E1, B, R2, E2, C>(
   onFailure: (e: E) => Sync<R1, E1, B>,
@@ -115,6 +117,8 @@ export const match_: <R, E, A, B, C>(
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @dataFirst match_
  */
 export const match: <E, A, B, C>(
   onFailure: (e: E) => B,
@@ -137,6 +141,8 @@ export const catchAll_: <R, E, A, R1, E1, B>(
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @dataFirst catchAll_
  */
 export const catchAll: <E, R1, E1, B>(
   onFailure: (e: E) => Sync<R1, E1, B>
@@ -147,6 +153,9 @@ export const catchJust_: <R, E, A, R1, E1, B>(
   onFailure: (e: E) => M.Maybe<Sync<R1, E1, B>>
 ) => Sync<R1 & R, E | E1, A | B> = Z.catchJust_
 
+/**
+ * @dataFirst catchJust_
+ */
 export const catchJust: <E, R1, E1, B>(
   onFailure: (e: E) => M.Maybe<Sync<R1, E1, B>>
 ) => <R, A>(fa: Sync<R, E, A>) => Sync<R1 & R, E | E1, A | B> = Z.catchJust
@@ -200,6 +209,8 @@ export function matchTogetherSync_<R, E, A, R1, E1, B, R2, E2, C, R3, E3, D, R4,
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @dataFirst matchTogetherSync_
  */
 export function matchTogetherSync<E, A, R1, E1, B, R2, E2, C, R3, E3, D, R4, E4, F, R5, E5, G>(
   right: Sync<R1, E1, B>,
@@ -240,6 +251,8 @@ export function matchTogether_<R, E, A, R1, E1, B, C, D, F, G>(
  *
  * @category Combinators
  * @since 1.0.0
+ *
+ * @dataFirst matchTogether_
  */
 export function matchTogether<E, A, R1, E1, B, C, D, F, G>(
   right: Sync<R1, E1, B>,
@@ -262,6 +275,9 @@ export const alt_: <R, E, A, R1, E1, A1>(
   fb: () => Sync<R1, E1, A1>
 ) => Sync<R & R1, E | E1, A | A1> = Z.alt_
 
+/**
+ * @dataFirst alt_
+ */
 export const alt: <R1, E1, A1>(
   fb: () => Sync<R1, E1, A1>
 ) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, A | A1> = Z.alt
@@ -283,6 +299,9 @@ export const pure: <A>(a: A) => Sync<unknown, never, A> = Z.pure
 export const cross_: <R, E, A, Q, D, B>(fa: Sync<R, E, A>, fb: Sync<Q, D, B>) => Sync<Q & R, D | E, readonly [A, B]> =
   Z.zip_
 
+/**
+ * @dataFirst cross_
+ */
 export const cross: <Q, D, B>(
   fb: Sync<Q, D, B>
 ) => <R, E, A>(fa: Sync<R, E, A>) => Sync<Q & R, D | E, readonly [A, B]> = Z.zip
@@ -293,6 +312,9 @@ export const crossWith_: <R, E, A, Q, D, B, C>(
   f: (a: A, b: B) => C
 ) => Sync<Q & R, D | E, C> = Z.zipWith_
 
+/**
+ * @dataFirst crossWith_
+ */
 export const crossWith: <A, Q, D, B, C>(
   fb: Sync<Q, D, B>,
   f: (a: A, b: B) => C
@@ -300,18 +322,27 @@ export const crossWith: <A, Q, D, B, C>(
 
 export const ap_: <R, E, A, Q, D, B>(fab: Sync<R, E, (a: A) => B>, fa: Sync<Q, D, A>) => Sync<Q & R, D | E, B> = Z.zap_
 
+/**
+ * @dataFirst ap_
+ */
 export const ap: <Q, D, A>(fa: Sync<Q, D, A>) => <R, E, B>(fab: Sync<R, E, (a: A) => B>) => Sync<Q & R, D | E, B> =
   Z.zap
 
 export const crossFirst_: <R, E, A, R1, E1, B>(fa: Sync<R, E, A>, fb: Sync<R1, E1, B>) => Sync<R & R1, E | E1, A> =
   Z.zipFirst_
 
+/**
+ * @dataFirst crossFirst_
+ */
 export const crossFirst: <R1, E1, B>(fb: Sync<R1, E1, B>) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, A> =
   Z.zipFirst
 
 export const crossSecond_: <R, E, A, R1, E1, B>(fa: Sync<R, E, A>, fb: Sync<R1, E1, B>) => Sync<R & R1, E | E1, B> =
   Z.zipSecond_
 
+/**
+ * @dataFirst crossSecond_
+ */
 export const crossSecond: <R1, E1, B>(fb: Sync<R1, E1, B>) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, B> =
   Z.zipSecond
 
@@ -337,10 +368,16 @@ export function liftK<A extends [unknown, ...ReadonlyArray<unknown>], B>(
 
 export const bimap_: <R, E, A, B, C>(pab: Sync<R, E, A>, f: (e: E) => B, g: (a: A) => C) => Sync<R, B, C> = Z.bimap_
 
+/**
+ * @dataFirst bimap_
+ */
 export const bimap: <E, A, B, C>(f: (e: E) => B, g: (a: A) => C) => <R>(pab: Sync<R, E, A>) => Sync<R, B, C> = Z.bimap
 
 export const mapError_: <R, E, A, B>(pab: Sync<R, E, A>, f: (e: E) => B) => Sync<R, B, A> = Z.mapError_
 
+/**
+ * @dataFirst mapError_
+ */
 export const mapError: <E, B>(f: (e: E) => B) => <R, A>(pab: Sync<R, E, A>) => Sync<R, B, A> = Z.mapError
 
 /*
@@ -361,6 +398,9 @@ export const subsumeEither: <R, E, E1, A>(fa: Sync<R, E1, E.Either<E, A>>) => Sy
 
 export const map_: <R, E, A, B>(fa: Sync<R, E, A>, f: (a: A) => B) => Sync<R, E, B> = Z.map_
 
+/**
+ * @dataFirst map_
+ */
 export const map: <A, B>(f: (a: A) => B) => <R, E>(fa: Sync<R, E, A>) => Sync<R, E, B> = Z.map
 
 /*
@@ -372,6 +412,9 @@ export const map: <A, B>(f: (a: A) => B) => <R, E>(fa: Sync<R, E, A>) => Sync<R,
 export const chain_: <R, E, A, Q, D, B>(ma: Sync<R, E, A>, f: (a: A) => Sync<Q, D, B>) => Sync<Q & R, D | E, B> =
   Z.chain_
 
+/**
+ * @dataFirst chain_
+ */
 export const chain: <A, Q, D, B>(f: (a: A) => Sync<Q, D, B>) => <R, E>(ma: Sync<R, E, A>) => Sync<Q & R, D | E, B> =
   Z.chain
 
@@ -379,6 +422,9 @@ export const flatten: <R, E, R1, E1, A>(mma: Sync<R, E, Sync<R1, E1, A>>) => Syn
 
 export const tap_: <R, E, A, Q, D, B>(ma: Sync<R, E, A>, f: (a: A) => Sync<Q, D, B>) => Sync<Q & R, D | E, A> = Z.tap_
 
+/**
+ * @dataFirst tap_
+ */
 export const tap: <A, Q, D, B>(f: (a: A) => Sync<Q, D, B>) => <R, E>(ma: Sync<R, E, A>) => Sync<Q & R, D | E, A> = Z.tap
 
 /*
@@ -415,14 +461,23 @@ export const asks: <R0, A>(f: (r0: R0) => A) => Sync<R0, never, A> = Z.asks
 
 export const gives_: <R0, R, E, A>(ra: Sync<R, E, A>, f: (r0: R0) => R) => Sync<R0, E, A> = Z.gives_
 
+/**
+ * @dataFirst gives_
+ */
 export const gives: <R0, R>(f: (r0: R0) => R) => <E, A>(ra: Sync<R, E, A>) => Sync<R0, E, A> = Z.gives
 
 export const giveAll_: <R, E, A>(ra: Sync<R, E, A>, env: R) => Sync<unknown, E, A> = Z.giveAll_
 
+/**
+ * @dataFirst giveAll_
+ */
 export const giveAll: <R>(env: R) => <E, A>(ra: Sync<R, E, A>) => Sync<unknown, E, A> = Z.giveAll
 
 export const give_: <R0, R, E, A>(ra: Sync<R & R0, E, A>, env: R) => Sync<R0, E, A> = Z.give_
 
+/**
+ * @dataFirst give_
+ */
 export const give: <R>(env: R) => <R0, E, A>(ra: Sync<R & R0, E, A>) => Sync<R0, E, A> = Z.give
 
 /*
@@ -456,6 +511,9 @@ export function getFailableSemigroup<E, A>(SA: P.Semigroup<A>, SE: P.Semigroup<E
 
 export const chainRec_: <A, R, E, B>(a: A, f: (a: A) => Sync<R, E, E.Either<A, B>>) => Sync<R, E, B> = Z.chainRec_
 
+/**
+ * @dataFirst chainRec_
+ */
 export const chainRec: <A, R, E, B>(f: (a: A) => Sync<R, E, E.Either<A, B>>) => (a: A) => Sync<R, E, B> = Z.chainRec
 
 /*
@@ -598,6 +656,8 @@ export function giveService<T>(_: Tag<T>): (f: T) => <R1, E1, A1>(ma: Sync<R1 & 
 
 /**
  * Replaces the service with the required Service Entry
+ *
+ * @dataFirst updateServiceSync_
  */
 export function updateServiceSync<R, E, T>(
   _: Tag<T>,
@@ -619,6 +679,8 @@ export function updateServiceSync_<R, E, T, R1, E1, A1>(
 
 /**
  * Replaces the service with the required Service Entry
+ *
+ * @dataFirst updateService_
  */
 export function updateService<T>(
   _: Tag<T>,
@@ -655,6 +717,9 @@ export const runEither: <E, A>(sync: Sync<unknown, E, A>) => E.Either<E, A> = Z.
 
 export const runEitherEnv_: <R, E, A>(sync: Sync<R, E, A>, env: R) => E.Either<E, A> = Z.runReaderEither_
 
+/**
+ * @dataFirst runEitherEnv_
+ */
 export const runEitherEnv: <R>(env: R) => <E, A>(sync: Sync<R, E, A>) => E.Either<E, A> = Z.runReaderEither
 
 export const run: <A>(sync: Sync<unknown, never, A>) => A = Z.runResult
@@ -668,12 +733,18 @@ export const run: <A>(sync: Sync<unknown, never, A>) => A = Z.runResult
 export const foreachUnit_: <A, R, E>(as: Iterable<A>, f: (a: A, i: number) => Sync<R, E, void>) => Sync<R, E, void> =
   Z.foreachUnit_
 
+/**
+ * @dataFirst foreachUnit_
+ */
 export const foreachUnit: <A, R, E>(f: (a: A, i: number) => Sync<R, E, void>) => (as: Iterable<A>) => Sync<R, E, void> =
   Z.foreachUnit
 
 export const foreach_: <A, R, E, B>(as: Iterable<A>, f: (a: A, i: number) => Sync<R, E, B>) => Sync<R, E, Chunk<B>> =
   Z.foreach_
 
+/**
+ * @dataFirst foreach_
+ */
 export const foreach: <A, R, E, B>(f: (a: A, i: number) => Sync<R, E, B>) => (as: Iterable<A>) => Sync<R, E, Chunk<B>> =
   Z.foreach
 
@@ -682,6 +753,9 @@ export const foreachArrayUnit_: <A, R, E>(
   f: (a: A, i: number) => Sync<R, E, void>
 ) => Sync<R, E, void> = Z.foreachArrayUnit_
 
+/**
+ * @dataFirst foreachArrayUnit_
+ */
 export const foreachArrayUnit: <A, R, E>(
   f: (a: A, i: number) => Sync<R, E, void>
 ) => (as: ReadonlyArray<A>) => Sync<R, E, void> = Z.foreachArrayUnit
@@ -691,6 +765,9 @@ export const foreachArray_: <A, R, E, B>(
   f: (a: A, i: number) => Sync<R, E, B>
 ) => Sync<R, E, ReadonlyArray<B>> = Z.foreachArray_
 
+/**
+ * @dataFirst foreachArray_
+ */
 export const foreachArray: <A, R, E, B>(
   f: (a: A, i: number) => Sync<R, E, B>
 ) => (as: ReadonlyArray<A>) => Sync<R, E, ReadonlyArray<B>> = Z.foreachArray
@@ -698,6 +775,9 @@ export const foreachArray: <A, R, E, B>(
 export const foreachList_: <A, R, E, B>(as: Iterable<A>, f: (a: A, i: number) => Sync<R, E, B>) => Sync<R, E, List<B>> =
   Z.foreachList_
 
+/**
+ * @dataFirst foreachList_
+ */
 export const foreachList: <A, R, E, B>(
   f: (a: A, i: number) => Sync<R, E, B>
 ) => (as: Iterable<A>) => Sync<R, E, List<B>> = Z.foreachList
@@ -742,9 +822,15 @@ export const Bifunctor = P.Bifunctor<URI, V>({
 export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({ map_, crossWith_, cross_ })
 
 export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
+
 export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
-export const mapN_     = P.mapNF_(SemimonoidalFunctor)
-export const mapN      = P.mapNF(SemimonoidalFunctor)
+
+export const mapN_ = P.mapNF_(SemimonoidalFunctor)
+
+/**
+ * @dataFirst mapN_
+ */
+export const mapN = P.mapNF(SemimonoidalFunctor)
 
 export const Apply = P.Apply<URI, V>({
   map_,
@@ -807,6 +893,9 @@ export const Do = P.Do(Monad)
 const of: Sync<unknown, never, {}> = succeed({})
 export { of as do }
 
+/**
+ * @dataFirst pureS_
+ */
 export const pureS: <K, N extends string, A>(
   name: Exclude<N, keyof K>,
   f: (_: K) => A
@@ -824,6 +913,9 @@ export const pureS_ = P.pureSF_(Monad)
 
 export const chainS_ = P.chainSF_(Monad)
 
+/**
+ * @dataFirst chainS_
+ */
 export const chainS: <R, E, A, K, N extends string>(
   name: Exclude<N, keyof K>,
   f: (_: K) => Sync<R, E, A>
@@ -839,6 +931,9 @@ export const chainS: <R, E, A, K, N extends string>(
 
 export const toS_ = P.toSF_(Monad)
 
+/**
+ * @dataFirst toS_
+ */
 export const toS: <K, N extends string>(
   name: Exclude<N, keyof K>
 ) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R, E, { [k in Exclude<N, keyof K>]: A }> = P.toSF(Monad)
