@@ -577,6 +577,8 @@ export function flip_<A, B, C>(f: (a: A, b: B) => C): (b: B, a: A) => C {
  *
  * @section utils
  * @since 1.0.0
+ *
+ * @dataFirst flip_
  */
 export function flip<A, B, C>(f: (a: A) => (b: B) => C): (b: B) => (a: A) => C {
   return (b) => (a) => f(a)(b)
@@ -611,6 +613,8 @@ export function if_<A, B, C>(a: A, predicate: Predicate<A>, onTrue: (a: A) => B,
  *
  * @section utils
  * @since 1.0.0
+ *
+ * @dataFirst if_
  */
 function _if<A, B extends A, C, D>(
   refinement: Refinement<A, B>,
