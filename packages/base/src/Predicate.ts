@@ -26,6 +26,9 @@ export function contramap_<A, B>(fa: Predicate<A>, f: (b: B) => A): Predicate<B>
   return (b) => fa(f(b))
 }
 
+/**
+ * @dataFirst contramap_
+ */
 export function contramap<A, B>(f: (b: B) => A): (fa: Predicate<A>) => Predicate<B> {
   return (fa) => contramap_(fa, f)
 }
@@ -66,6 +69,9 @@ export function or_<A>(first: Predicate<A>, second: Predicate<A>): Predicate<A> 
   return (a) => first(a) || second(a)
 }
 
+/**
+ * @dataFirst or_
+ */
 export function or<A>(second: Predicate<A>): (first: Predicate<A>) => Predicate<A> {
   return (first) => or_(first, second)
 }
@@ -74,6 +80,9 @@ export function and_<A>(first: Predicate<A>, second: Predicate<A>): Predicate<A>
   return (a) => first(a) && second(a)
 }
 
+/**
+ * @dataFirst and_
+ */
 export function and<A>(second: Predicate<A>): (first: Predicate<A>) => Predicate<A> {
   return (first) => and_(first, second)
 }
