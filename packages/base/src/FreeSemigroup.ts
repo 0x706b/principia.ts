@@ -80,6 +80,9 @@ export function fold_<A, B>(fs: FreeSemigroup<A>, onElement: (value: A) => B, on
   return foldSafe_(fs, onElement, onCombine).value
 }
 
+/**
+ * @dataFirst fold_
+ */
 export function fold<A, B>(
   onElement: (value: A) => B,
   onCombine: (left: B, right: B) => B
