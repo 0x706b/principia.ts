@@ -56,6 +56,8 @@ export function contains_(s: string, substr: string): boolean {
 
 /**
  * Check if a string contains the given substring
+ *
+ * @dataFirst contains_
  */
 export function contains(substr: string): (s: string) => boolean {
   return (s) => s.includes(substr)
@@ -70,6 +72,8 @@ export function endsWith_(s: string, substr: string): boolean {
 
 /**
  * Check if a string ends with the given substring
+ *
+ * @dataFirst endsWith_
  */
 export function endsWith(substr: string): (s: string) => boolean {
   return (s) => endsWith_(s, substr)
@@ -98,6 +102,8 @@ export function startsWith_(s: string, substr: string): boolean {
 
 /**
  * Check if a string starts with the given substring
+ *
+ * @dataFirst startsWith_
  */
 export function startsWith(substr: string): (s: string) => boolean {
   return (s) => startsWith_(s, substr)
@@ -118,6 +124,8 @@ export function append_(s: string, x: string): string {
 
 /**
  * Append one string to another.
+ *
+ * @dataFirst append_
  */
 export function append(x: string): (s: string) => string {
   return (s) => s + x
@@ -153,6 +161,8 @@ export function match_(s: string, r: RegExp): M.Maybe<RegExpMatchArray> {
 
 /**
  * Match a string with a RegExp
+ *
+ * @dataFirst match_
  */
 export function match(r: RegExp): (s: string) => M.Maybe<RegExpMatchArray> {
   return (s) => match_(s, r)
@@ -170,6 +180,8 @@ export function matchAll_(s: string, r: RegExp): M.Maybe<NonEmptyArray<RegExpMat
 
 /**
  * Matches a string with a global RegExp
+ *
+ * @dataFirst matchAll_
  */
 export function matchAll(r: RegExp): (s: string) => M.Maybe<NonEmptyArray<RegExpMatchArray>> {
   return (s) => matchAll_(s, r)
@@ -184,6 +196,8 @@ export function prepend_(s: string, prepend: string): string {
 
 /**
  * Prepend one string to another
+ *
+ * @dataFirst prepend_
  */
 export function prepend(prepend: string): (s: string) => string {
   return (s) => prepend + s
@@ -198,6 +212,8 @@ export function replace_(s: string, test: string | RegExp, r: string): string {
 
 /**
  * Replace the first (or all, with a global RegExp) occurrence of a matched substring with a replacement.
+ *
+ * @dataFirst replace_
  */
 export function replace(test: string | RegExp, r: string): (s: string) => string {
   return (s) => s.replace(test, r)
@@ -221,6 +237,8 @@ export function slice_(s: string, start: number, end: number): string {
 /**
  * Returns the substring between the start index (inclusive) and the end index
  * (exclusive).
+ *
+ * @dataFirst slice_
  */
 export function slice(start: number, end: number): (s: string) => string {
   return (s) => s.slice(start, end)
@@ -237,6 +255,8 @@ export function split_(s: string, on: string | RegExp): ReadonlyArray<string> {
 /**
  * Split a string into substrings using the specified separator and return them
  * as an array.
+ *
+ * @dataFirst split_
  */
 export function split(on: string | RegExp): (s: string) => ReadonlyArray<string> {
   return (s) => s.split(on)
@@ -253,6 +273,8 @@ export function surround_(s: string, x: string): string {
 /**
  * Surround a string. Equivalent to calling `prepend` and `append` with the
  * same outer value.
+ *
+ * @dataFirst surround_
  */
 export function surround(x: string): (s: string) => string {
   return (s) => surround_(s, x)
@@ -281,6 +303,8 @@ export function take_(s: string, n: number): string {
  * If `n` is not a positive number, an empty string will be returned.
  *
  * If `n` is a float, it will be rounded down to the nearest integer.
+ *
+ * @dataFirst take_
  */
 export function take(n: number): (s: string) => string {
   return (s) => take_(s, n)
@@ -309,6 +333,8 @@ export function takeLast_(s: string, n: number): string {
  * If `n` is not a positive number, an empty string will be returned.
  *
  * If `n` is a float, it will be rounded down to the nearest integer.
+ *
+ * @dataFirst takeLast_
  */
 export function takeLast(n: number): (s: string) => string {
   return (s) => takeLast_(s, n)
@@ -323,6 +349,8 @@ export function test_(s: string, r: RegExp): boolean {
 
 /**
  * Test a string with a RegExp
+ *
+ * @dataFirst test_
  */
 export function test(r: RegExp): (s: string) => boolean {
   return (s) => r.test(s)
@@ -358,6 +386,8 @@ export function unprepend_(s: string, s1: string): string {
 
 /**
  * Removes the given string from the beginning, if it exists
+ *
+ * @dataFirst unprepend_
  */
 export function unprepend(s1: string): (s: string) => string {
   return (s) => unprepend_(s, s1)
@@ -372,6 +402,8 @@ export function unappend_(s: string, x: string): string {
 
 /**
  * Remove the end of a string, if it exists.
+ *
+ * @dataFirst unappend_
  */
 export function unappend(x: string): (s: string) => string {
   return (s) => unappend_(s, x)
@@ -386,6 +418,8 @@ export function unsurround_(s: string, x: string): string {
 
 /**
  * Remove the start and end of a string, if they both exist.
+ *
+ * @dataFirst unsurround_
  */
 export function unsurround(x: string): (s: string) => string {
   return (s) => unsurround_(s, x)
@@ -404,6 +438,8 @@ export function under_(s: string, f: (chars: ReadonlyArray<string>) => ReadonlyA
  * Apply an endomorphism upon an array of characters against a string.
  * This is useful as it allows you to run many polymorphic functions targeting
  * arrays against strings without having to rewrite them.
+ *
+ * @dataFirst under_
  */
 export function under(f: (chars: ReadonlyArray<string>) => ReadonlyArray<string>): (s: string) => string {
   return (s) => under_(s, f)
