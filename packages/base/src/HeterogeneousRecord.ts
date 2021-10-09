@@ -66,6 +66,8 @@ export function insertAt_<O extends ReadonlyRecord<string, any>, N extends strin
  *
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst insertAt_
  */
 export function insertAt<N extends string, A>(
   k: EnsureLiteral<N>,
@@ -101,6 +103,8 @@ export function upsertAt_<O extends ReadonlyRecord<string, any>, N extends strin
  *
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst upsertAt_
  */
 export function upsertAt<N extends string, A>(
   k: EnsureLiteral<N>,
@@ -133,6 +137,8 @@ export function modifyAt_<O extends ReadonlyRecord<string, any>, N extends keyof
  *
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst modifyAt_
  */
 export function modifyAt<O, N extends keyof O extends never ? string : keyof O, A, B>(
   k: keyof O extends never ? EnsureLiteral<N> : N,
@@ -177,6 +183,9 @@ export function modifyAtE_<F extends HKT.URIS, C = HKT.Auto>(
     }))
 }
 
+/**
+ * @dataFirst modifyAtE_
+ */
 export function modifyAtE<F extends HKT.URIS, C = HKT.Auto>(
   F: P.Functor<F, C>
 ): <O, N extends keyof O extends never ? string : keyof S, K, Q, W, X, I, S, R, E, A, B>(
@@ -224,6 +233,8 @@ export function updateAt_<O extends ReadonlyRecord<string, any>, N extends keyof
  *
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst updateAt_
  */
 export function updateAt<O, N extends keyof O extends never ? string : keyof O, B>(
   k: keyof O extends never ? EnsureLiteral<N> : N,
@@ -260,6 +271,8 @@ export function hmap_<O extends ReadonlyRecord<string, any>, F extends { [N in k
  *
  * @category combinators
  * @since 1.0.0
+ *
+ * @dataFirst hmap_
  */
 export function hmap<
   O,
@@ -283,6 +296,9 @@ export function pick_<O extends ReadonlyRecord<string, any>>(s: O) {
   }
 }
 
+/**
+ * @dataFirst pick_
+ */
 export function pick<O, N extends ReadonlyArray<keyof O extends never ? string : keyof O>>(
   ...keys: keyof O extends never ? EnsureLiteralTuple<N> : N
 ): <S1 extends { [P in N[number]]: any }>(
@@ -303,6 +319,9 @@ export function omit_<O extends ReadonlyRecord<string, any>>(s: O) {
   }
 }
 
+/**
+ * @dataFirst omit_
+ */
 export function omit<O, Ns extends ReadonlyArray<keyof O extends never ? string : keyof O>>(
   ...keys: keyof O extends never ? EnsureLiteralTuple<Ns> : Ns
 ): <S1 extends { [P in Ns[number]]: any }>(
