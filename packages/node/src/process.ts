@@ -79,7 +79,7 @@ export function abort(): USync<never> {
 }
 
 export function chdir(directory: string): FSync<Error, void> {
-  return Sy.tryCatch_(
+  return Sy.tryCatch(
     () => process.chdir(directory),
     (err) => err as Error
   )

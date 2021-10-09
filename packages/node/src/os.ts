@@ -24,7 +24,7 @@ export const platform = Sy.succeedLazy(os.platform)
 export const release = Sy.succeedLazy(os.release)
 
 export function setPriority(pid: number, priority: number): FSync<Error, void> {
-  return Sy.tryCatch_(
+  return Sy.tryCatch(
     () => os.setPriority(pid, priority),
     (err) => err as Error
   )
