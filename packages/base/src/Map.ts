@@ -98,6 +98,9 @@ export function isSubmap_<K, A>(EK: P.Eq<K>, EA: P.Eq<A>): (me: ReadonlyMap<K, A
   }
 }
 
+/**
+ * @dataFirst isSubmap_
+ */
 export function isSubmap<K, A>(
   EK: P.Eq<K>,
   EA: P.Eq<A>
@@ -134,6 +137,9 @@ export function lookupAt_<K>(E: P.Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => M.M
     )
 }
 
+/**
+ * @dataFirst lookupAt_
+ */
 export function lookupAt<K>(E: P.Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => M.Maybe<A> {
   const lookupE_ = lookupAt_(E)
   return (k) => (m) => lookupE_(m, k)
@@ -156,6 +162,9 @@ export function insertAt_<K>(E: P.Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K, a: A) 
   }
 }
 
+/**
+ * @dataFirst insertAt_
+ */
 export function insertAt<K>(E: P.Eq<K>): <A>(k: K, a: A) => (m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
   const insertAtE_ = insertAt_(E)
   return (k, a) => (m) => insertAtE_(m, k, a)
@@ -174,6 +183,9 @@ export function deleteAt_<K>(E: P.Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => Rea
   }
 }
 
+/**
+ * @dataFrist deleteAt_
+ */
 export function deleteAt<K>(E: P.Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
   const deleteAtE_ = deleteAt_(E)
   return (k) => (m) => deleteAtE_(m, k)
@@ -192,6 +204,9 @@ export function updateAt_<K>(E: P.Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K, a: A) 
   }
 }
 
+/**
+ * @dataFirst updateAt_
+ */
 export function updateAt<K>(E: P.Eq<K>): <A>(k: K, a: A) => (m: ReadonlyMap<K, A>) => M.Maybe<ReadonlyMap<K, A>> {
   const updateAtE_ = updateAt_(E)
   return (k, a) => (m) => updateAtE_(m, k, a)
@@ -212,6 +227,9 @@ export function modifyAt_<K>(
   }
 }
 
+/**
+ * @dataFirst modifyAt_
+ */
 export function modifyAt<K>(
   E: P.Eq<K>
 ): <A>(k: K, f: (a: A) => A) => (m: ReadonlyMap<K, A>) => M.Maybe<ReadonlyMap<K, A>> {
@@ -229,6 +247,9 @@ export function pop_<K>(E: P.Eq<K>): <A>(m: ReadonlyMap<K, A>, k: K) => M.Maybe<
     )
 }
 
+/**
+ * @dataFirst pop_
+ */
 export function pop<K>(E: P.Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => M.Maybe<readonly [A, ReadonlyMap<K, A>]> {
   const popE_ = pop_(E)
   return (k) => (m) => popE_(m, k)
@@ -240,6 +261,9 @@ export function insert_<K, A>(me: ReadonlyMap<K, A>, k: K, a: A): ReadonlyMap<K,
   return m
 }
 
+/**
+ * @dataFirst insert_
+ */
 export function insert<K, A>(k: K, a: A): (me: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
   return (me) => insert_(me, k, a)
 }
@@ -250,6 +274,9 @@ export function remove_<K, A>(m: ReadonlyMap<K, A>, k: K): ReadonlyMap<K, A> {
   return m
 }
 
+/**
+ * @dataFirst remove_
+ */
 export function remove<K>(k: K): <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
   return (m) => remove_(m, k)
 }
@@ -262,6 +289,9 @@ export function removeMany_<K, A>(m: ReadonlyMap<K, A>, ks: Iterable<K>): Readon
   return r
 }
 
+/**
+ * @dataFirst removeMany_
+ */
 export function removeMany<K>(ks: Iterable<K>): <A>(m: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
   return (m) => removeMany_(m, ks)
 }
@@ -270,6 +300,9 @@ export function lookup_<K, A>(m: ReadonlyMap<K, A>, k: K): M.Maybe<A> {
   return M.fromNullable(m.get(k))
 }
 
+/**
+ * @dataFirst lookup_
+ */
 export function lookup<K>(k: K): <A>(m: ReadonlyMap<K, A>) => M.Maybe<A> {
   return (m) => lookup_(m, k)
 }
@@ -288,6 +321,9 @@ export function lookupWithKey_<K>(E: P.Eq<K>) {
   }
 }
 
+/**
+ * @dataFirst lookupWithKey_
+ */
 export function lookupWithKey<K>(E: P.Eq<K>): (k: K) => <A>(m: ReadonlyMap<K, A>) => M.Maybe<readonly [K, A]> {
   const lookupWithKeyE_ = lookupWithKey_(E)
   return (k) => (m) => lookupWithKeyE_(m, k)
@@ -377,6 +413,8 @@ export function filterMap_<K, A, B>(fa: ReadonlyMap<K, A>, f: (a: A, k: K) => M.
 
 /**
  * Filter out `None` and map
+ *
+ * @dataFirst filterMap_
  */
 export function filterMap<K, A, B>(f: (a: A, k: K) => M.Maybe<B>): (fa: ReadonlyMap<K, A>) => ReadonlyMap<K, B> {
   return (fa) => filterMap_(fa, f)
@@ -401,7 +439,7 @@ export function filter_<K, A>(fa: ReadonlyMap<K, A>, predicate: P.PredicateWithI
 }
 
 /**
- *
+ * @dataFirst filter_
  */
 export function filter<K, A, B extends A>(
   refinement: P.RefinementWithIndex<K, A, B>
@@ -438,6 +476,9 @@ export function partition_<K, A>(
   return [left, right]
 }
 
+/**
+ * @dataFirst partition_
+ */
 export function partition<K, A, B extends A>(
   refinement: P.RefinementWithIndex<K, A, B>
 ): (fa: ReadonlyMap<K, A>) => readonly [ReadonlyMap<K, A>, ReadonlyMap<K, B>]
@@ -470,6 +511,9 @@ export function partitionMap_<K, A, B, C>(
   return [left, right]
 }
 
+/**
+ * @dataFirst partitionMap_
+ */
 export function partitionMap<K, A, B, C>(
   f: (a: A, k: K) => E.Either<B, C>
 ): (fa: ReadonlyMap<K, A>) => readonly [ReadonlyMap<K, B>, ReadonlyMap<K, C>] {
@@ -563,6 +607,8 @@ export function map_<K, A, B>(fa: ReadonlyMap<K, A>, f: (a: A, k: K) => B): Read
 
 /**
  * Maps values using f
+ *
+ * @dataFirst map_
  */
 export function map<K, A, B>(f: (a: A, k: K) => B): (fa: ReadonlyMap<K, A>) => ReadonlyMap<K, B> {
   return (fa) => map_(fa, f)
@@ -734,6 +780,9 @@ export function concat_<K>(E: P.Eq<K>): <A>(xs: ReadonlyMap<K, A>, ys: ReadonlyM
   }
 }
 
+/**
+ * @dataFirst concat_
+ */
 export function concat<K>(E: P.Eq<K>): <A>(ys: ReadonlyMap<K, A>) => (xs: ReadonlyMap<K, A>) => ReadonlyMap<K, A> {
   const concatE_ = concat_(E)
   return (ys) => (xs) => concatE_(xs, ys)
