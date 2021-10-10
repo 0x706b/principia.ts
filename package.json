@@ -4,7 +4,7 @@
     "packages/*"
   ],
   "scripts": {
-    "prepare": "ts-patch install -s",
+    "prepare": "ts-patch install -s && husky install",
     "build": "ultra -r --build buildAll",
     "clean": "ultra -r clean",
     "lint": "ultra -r lint",
@@ -20,7 +20,6 @@
     "version:prepatch": "lerna version prepatch --conventional-commits",
     "version:patch": "lerna version patch --conventional-commits",
     "version:graduate": "lerna version --conventional-commits --conventional-graduate",
-    "commit": "cz",
     "ci": "yarn clean && yarn build && yarn test"
   },
   "devDependencies": {
@@ -48,6 +47,7 @@
     "eslint-plugin-typescript-sort-keys": "^1.8.0",
     "fp-ts": "^2.11.3",
     "glob": "^7.1.7",
+    "husky": "^7.0.2",
     "lerna": "^4.0.0",
     "madge": "^5.0.1",
     "prettier-eslint": "^13.0.0",
