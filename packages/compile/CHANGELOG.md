@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.2](https://github.com/0x706b/principia.ts/compare/@principia/compile@0.19.1...@principia/compile@0.19.2) (2021-10-10)
+
+
+### Bug Fixes
+
+* **compile:** add a no-op condition for `dataFirstConstraint` tag ([19337b9](https://github.com/0x706b/principia.ts/commit/19337b956db3e13e831fe7e6eebfe63814dc7e8e))
+
+
+
+
+
 ## [0.19.1](https://github.com/0x706b/principia.ts/compare/@principia/compile@0.19.0...@principia/compile@0.19.1) (2021-10-07)
 
 

@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.20.0](https://github.com/0x706b/principia.ts/compare/@principia/ptest@0.19.2...@principia/ptest@0.20.0) (2021-10-10)
+
+
+### Features
+
+* **repo:** add CI workflow ([b915130](https://github.com/0x706b/principia.ts/commit/b9151308d2cc41f89364731ef5b3c03d574e567e))
+
+
+
+
+
 ## [0.19.2](https://github.com/0x706b/principia.ts/compare/@principia/ptest@0.19.1...@principia/ptest@0.19.2) (2021-10-09)
 
 

@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.26.0](https://github.com/0x706b/principia.ts/compare/@principia/base@0.25.2...@principia/base@0.26.0) (2021-10-10)
+
+
+### Bug Fixes
+
+* **base:** case mismatch in git ([8264846](https://github.com/0x706b/principia.ts/commit/826484631cf6abde66502dc6c1f3410a24042361))
+* **compile:** add a no-op condition for `dataFirstConstraint` tag ([19337b9](https://github.com/0x706b/principia.ts/commit/19337b956db3e13e831fe7e6eebfe63814dc7e8e))
+
+
+### Features
+
+* **repo:** add CI workflow ([b915130](https://github.com/0x706b/principia.ts/commit/b9151308d2cc41f89364731ef5b3c03d574e567e))
+
+
+
+
+
 ## [0.25.2](https://github.com/0x706b/principia.ts/compare/@principia/base@0.25.1...@principia/base@0.25.2) (2021-10-09)
 
 
