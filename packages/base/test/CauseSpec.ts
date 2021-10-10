@@ -23,8 +23,8 @@ class CauseSpec extends DefaultRunnableSpec {
         )
       ),
       testIO('Associativity', () => {
-        const afb = (s: string): C.GenericCause<string, number> => C.fail(s.length + 1)
-        const bfc = (n: number): C.GenericCause<string, string> => C.fail(n.toString())
+        const afb = (s: string): C.PCause<string, number> => C.fail(s.length + 1)
+        const bfc = (n: number): C.PCause<string, string> => C.fail(n.toString())
         return check(causes, (c) =>
           pipe(
             c,

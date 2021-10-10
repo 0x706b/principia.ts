@@ -2,8 +2,8 @@ import { apTF } from '@principia/base/Apply'
 import * as E from '@principia/base/Either'
 import { identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
+import * as M from '@principia/base/Maybe'
 import * as N from '@principia/base/number'
-import * as O from '@principia/base/Option'
 import { gt } from '@principia/base/Ord'
 import * as S from '@principia/base/string'
 import {
@@ -114,11 +114,11 @@ class EitherSpec extends DefaultRunnableSpec {
     }),
 
     test('mapA', () => {
-      const mapA = E.mapA(O.Applicative)((n: number) => (n >= 2 ? O.some(n) : O.none()))
+      const mapA = E.mapA(M.Applicative)((n: number) => (n >= 2 ? M.just(n) : M.nothing()))
       return all(
-        pipe(E.left('a'), mapA, assert(deepStrictEqualTo(O.some(E.left('a'))))),
-        pipe(E.right(1), mapA, assert(deepStrictEqualTo(O.none()))),
-        pipe(E.right(3), mapA, assert(deepStrictEqualTo(O.some(E.right(3)))))
+        pipe(E.left('a'), mapA, assert(deepStrictEqualTo(M.just(E.left('a'))))),
+        pipe(E.right(1), mapA, assert(deepStrictEqualTo(M.nothing()))),
+        pipe(E.right(3), mapA, assert(deepStrictEqualTo(M.just(E.right(3)))))
       )
     }),
 
@@ -171,7 +171,7 @@ class EitherSpec extends DefaultRunnableSpec {
       )),
 
     test('fromNullableK', () => {
-      const f = E.fromNullableK_(
+      const f = E.fromNullableK(
         (n: number) => (n > 0 ? n : null),
         () => 'error'
       )
@@ -204,8 +204,8 @@ class EitherSpec extends DefaultRunnableSpec {
         const C = E.getCompactable(S.Monoid)
         return all(
           pipe(C.compact(E.left('1')), assert(deepStrictEqualTo(E.left('1')))),
-          pipe(C.compact(E.right(O.none())), assert(deepStrictEqualTo(E.left(S.Monoid.nat)))),
-          pipe(C.compact(E.right(O.some(123))), assert(deepStrictEqualTo(E.right(123))))
+          pipe(C.compact(E.right(M.nothing())), assert(deepStrictEqualTo(E.left(S.Monoid.nat)))),
+          pipe(C.compact(E.right(M.just(123))), assert(deepStrictEqualTo(E.right(123))))
         )
       }),
       test('separate', () => {
@@ -251,7 +251,7 @@ class EitherSpec extends DefaultRunnableSpec {
       test('filterMap', () => {
         const F = E.getFilterable(S.Monoid)
         const p = (n: number) => n > 2
-        const f = (n: number) => (p(n) ? O.some(n + 1) : O.none())
+        const f = (n: number) => (p(n) ? M.just(n + 1) : M.nothing())
         return all(
           pipe(E.left('123'), F.filterMap(f), assert(deepStrictEqualTo(E.left('123')))),
           pipe(E.right(1), F.filterMap(f), assert(deepStrictEqualTo(E.left(S.Monoid.nat)))),
@@ -265,7 +265,7 @@ class EitherSpec extends DefaultRunnableSpec {
       testIO('filterMapA', () => {
         const filterMapA = E.getWitherable(S.Monoid).filterMapA(I.ApplicativePar)
         const p          = (n: number) => n > 2
-        const f          = (n: number) => I.succeed(p(n) ? O.some(n + 1) : O.none())
+        const f          = (n: number) => I.succeed(p(n) ? M.just(n + 1) : M.nothing())
         return allIO(
           pipe(E.left('foo'), filterMapA(f), assertIO(deepStrictEqualTo(E.left('foo')))),
           pipe(E.right(1), filterMapA(f), assertIO(deepStrictEqualTo(E.left(S.Monoid.nat)))),
@@ -335,10 +335,19 @@ class EitherSpec extends DefaultRunnableSpec {
       )
     }),
 
-    test('fromOption', () => all(
-      pipe(O.none(), E.fromOption(() => 'none'), assert(deepStrictEqualTo(E.left('none')))),
-      pipe(O.some(1), E.fromOption(() => 'none'), assert(deepStrictEqualTo(E.right(1))))
-    )),
+    test('fromOption', () =>
+      all(
+        pipe(
+          M.nothing(),
+          E.fromMaybe(() => 'none'),
+          assert(deepStrictEqualTo(E.left('none')))
+        ),
+        pipe(
+          M.just(1),
+          E.fromMaybe(() => 'none'),
+          assert(deepStrictEqualTo(E.right(1)))
+        )
+      )),
 
     test('do notation', () =>
       assert_(
@@ -369,7 +378,7 @@ class EitherSpec extends DefaultRunnableSpec {
         pipe(
           E.right(1),
           E.chain((n) => E.left(`error: ${n}`)),
-          E.catchSome((s) => (s === 'error: 1' ? O.some(E.right('not ' + s)) : O.none()))
+          E.catchJust((s) => (s === 'error: 1' ? M.just(E.right('not ' + s)) : M.nothing()))
         ),
         deepStrictEqualTo(E.right('not error: 1'))
       )),

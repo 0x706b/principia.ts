@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - trunk
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js 16.x
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16.x
+          cache: 'yarn'
+      - name: install yarn
+        run: |
+          npm install -g yarn
+          yarn
+      - name: build
+        run: |
+          yarn clean
+          yarn build
+      - name: test
+        run: yarn test

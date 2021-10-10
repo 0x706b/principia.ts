@@ -1,11 +1,11 @@
 import * as E from '@principia/base/Either'
 import { flow, pipe } from '@principia/base/function'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import { all, assert, deepStrictEqualTo, DefaultRunnableSpec, equalTo, suite, test } from '@principia/test'
 
 const double = (n: number) => n * 2
 
-const doubleSome = flow(double, O.some)
+const doubleSome = flow(double, M.just)
 
 const sum = (x: number, y: number) => x + y
 
@@ -15,102 +15,102 @@ class OptionSpec extends DefaultRunnableSpec {
 
     test('map', () =>
       all(
-        pipe(O.some(1), O.map(double), assert(deepStrictEqualTo(O.some(2)))),
-        pipe(O.none(), O.map(double), assert(deepStrictEqualTo(O.none())))
+        pipe(M.just(1), M.map(double), assert(deepStrictEqualTo(M.just(2)))),
+        pipe(M.nothing(), M.map(double), assert(deepStrictEqualTo(M.nothing())))
       )),
 
     test('chain', () =>
       all(
-        pipe(O.some(1), O.chain(doubleSome), assert(deepStrictEqualTo(O.some(2)))),
+        pipe(M.just(1), M.chain(doubleSome), assert(deepStrictEqualTo(M.just(2)))),
         pipe(
-          O.some(1),
-          O.chain((_) => O.none()),
-          assert(deepStrictEqualTo(O.none()))
+          M.just(1),
+          M.chain((_) => M.nothing()),
+          assert(deepStrictEqualTo(M.nothing()))
         ),
-        pipe(O.none(), O.chain(doubleSome), assert(deepStrictEqualTo(O.none())))
+        pipe(M.nothing(), M.chain(doubleSome), assert(deepStrictEqualTo(M.nothing())))
       )),
 
     test('crossWith', () =>
       all(
-        pipe(O.some(1), O.crossWith(O.some(2), sum), assert(deepStrictEqualTo(O.some(3)))),
-        pipe(O.none(), O.crossWith(O.some(2), sum), assert(deepStrictEqualTo(O.none()))),
-        pipe(O.some(1), O.crossWith(O.none(), sum), assert(deepStrictEqualTo(O.none())))
+        pipe(M.just(1), M.crossWith(M.just(2), sum), assert(deepStrictEqualTo(M.just(3)))),
+        pipe(M.nothing(), M.crossWith(M.just(2), sum), assert(deepStrictEqualTo(M.nothing()))),
+        pipe(M.just(1), M.crossWith(M.nothing(), sum), assert(deepStrictEqualTo(M.nothing())))
       )),
 
     test('fromNullable', () =>
       all(
-        pipe(1, O.fromNullable, assert(deepStrictEqualTo(O.some(1)))),
-        pipe(undefined, O.fromNullable, assert(deepStrictEqualTo(O.none()))),
-        pipe(null, O.fromNullable, assert(deepStrictEqualTo(O.none())))
+        pipe(1, M.fromNullable, assert(deepStrictEqualTo(M.just(1)))),
+        pipe(undefined, M.fromNullable, assert(deepStrictEqualTo(M.nothing()))),
+        pipe(null, M.fromNullable, assert(deepStrictEqualTo(M.nothing())))
       )),
 
     test('fromNullableK', () => {
-      const f = O.fromNullableK((n: number) => n + 1)
-      const g = O.fromNullableK((_: number): number | undefined => undefined)
-      return all(pipe(f(0), assert(deepStrictEqualTo(O.some(1)))), pipe(g(0), assert(deepStrictEqualTo(O.none()))))
+      const f = M.fromNullableK((n: number) => n + 1)
+      const g = M.fromNullableK((_: number): number | undefined => undefined)
+      return all(pipe(f(0), assert(deepStrictEqualTo(M.just(1)))), pipe(g(0), assert(deepStrictEqualTo(M.nothing()))))
     }),
 
     test('tryCatch', () =>
       all(
         pipe(
-          O.tryCatch(() => 1),
-          assert(deepStrictEqualTo(O.some(1)))
+          M.tryCatch(() => 1),
+          assert(deepStrictEqualTo(M.just(1)))
         ),
         pipe(
-          O.tryCatch(() => {
+          M.tryCatch(() => {
             throw 'error'
           }),
-          assert(deepStrictEqualTo(O.none()))
+          assert(deepStrictEqualTo(M.nothing()))
         )
       )),
 
     test('tryCatchK', () => {
-      const f = O.tryCatchK((n: number) => n + 1)
-      const g = O.tryCatchK((_: number): number => {
+      const f = M.tryCatchK((n: number) => n + 1)
+      const g = M.tryCatchK((_: number): number => {
         throw 'error'
       })
 
-      return all(pipe(f(0), assert(deepStrictEqualTo(O.some(1)))), pipe(g(0), assert(deepStrictEqualTo(O.none()))))
+      return all(pipe(f(0), assert(deepStrictEqualTo(M.just(1)))), pipe(g(0), assert(deepStrictEqualTo(M.nothing()))))
     }),
 
     test('fromPredicate', () => {
-      const f = O.fromPredicate((n: number) => n === 1)
+      const f = M.fromPredicate((n: number) => n === 1)
 
-      return all(pipe(f(1), assert(deepStrictEqualTo(O.some(1)))), pipe(f(0), assert(deepStrictEqualTo(O.none()))))
+      return all(pipe(f(1), assert(deepStrictEqualTo(M.just(1)))), pipe(f(0), assert(deepStrictEqualTo(M.nothing()))))
     }),
 
     test('fromEither', () =>
       all(
-        pipe(E.right(1), O.fromEither, assert(deepStrictEqualTo(O.some(1)))),
-        pipe(E.left('error'), O.fromEither, assert(deepStrictEqualTo(O.none())))
+        pipe(E.right(1), M.fromEither, assert(deepStrictEqualTo(M.just(1)))),
+        pipe(E.left('error'), M.fromEither, assert(deepStrictEqualTo(M.nothing())))
       )),
 
-    test('isNone', () =>
-      all(pipe(O.some(1), O.isNone, assert(equalTo(false))), pipe(O.none(), O.isNone, assert(equalTo(true))))),
+    test('isNothing', () =>
+      all(pipe(M.just(1), M.isNothing, assert(equalTo(false))), pipe(M.nothing(), M.isNothing, assert(equalTo(true))))),
 
-    test('isSome', () =>
-      all(pipe(O.some(1), O.isSome, assert(equalTo(true))), pipe(O.none(), O.isSome, assert(equalTo(false))))),
+    test('isJust', () =>
+      all(pipe(M.just(1), M.isJust, assert(equalTo(true))), pipe(M.nothing(), M.isJust, assert(equalTo(false))))),
 
-    test('isOption', () =>
+    test('isMaybe', () =>
       all(
-        pipe(O.some(1), O.isOption, assert(equalTo(true))),
-        pipe(O.none(), O.isOption, assert(equalTo(true))),
-        pipe(E.left('no'), O.isOption, assert(equalTo(false)))
+        pipe(M.just(1), M.isMaybe, assert(equalTo(true))),
+        pipe(M.nothing(), M.isMaybe, assert(equalTo(true))),
+        pipe(E.left('no'), M.isMaybe, assert(equalTo(false)))
       )),
 
     test('match', () =>
       all(
         pipe(
-          O.some(1),
-          O.match(
+          M.just(1),
+          M.match(
             () => 0,
             (n) => n + 1
           ),
           assert(equalTo(2))
         ),
         pipe(
-          O.none(),
-          O.match(
+          M.nothing(),
+          M.match(
             () => 0,
             (n: number) => n + 1
           ),
@@ -118,31 +118,31 @@ class OptionSpec extends DefaultRunnableSpec {
         )
       )),
 
-    test('catchSome', () =>
+    test('catchJust', () =>
       all(
         pipe(
-          O.some(1),
-          O.catchSome(() => O.some(O.some(2))),
-          assert(deepStrictEqualTo(O.some(1)))
+          M.just(1),
+          M.catchJust(() => M.just(M.just(2))),
+          assert(deepStrictEqualTo(M.just(1)))
         ),
         pipe(
-          O.none(),
-          O.catchSome(() => O.some(O.some(2))),
-          assert(deepStrictEqualTo(O.some(2)))
+          M.nothing(),
+          M.catchJust(() => M.just(M.just(2))),
+          assert(deepStrictEqualTo(M.just(2)))
         )
       )),
 
     test('either', () =>
       all(
-        pipe(O.some(1), O.either, assert(deepStrictEqualTo(O.some(E.right(1))))),
-        pipe(O.none(), O.either, assert(deepStrictEqualTo(O.some(E.left(undefined)))))
+        pipe(M.just(1), M.either, assert(deepStrictEqualTo(M.just(E.right(1))))),
+        pipe(M.nothing(), M.either, assert(deepStrictEqualTo(M.just(E.left(undefined)))))
       )),
 
     test('separate', () =>
       all(
-        pipe(O.some(E.right(1)), O.separate, assert(deepStrictEqualTo([O.none(), O.some(1)]))),
-        pipe(O.some(E.left(2)), O.separate, assert(deepStrictEqualTo([O.some(2), O.none()]))),
-        pipe(O.none(), O.separate, assert(deepStrictEqualTo([O.none(), O.none()])))
+        pipe(M.just(E.right(1)), M.separate, assert(deepStrictEqualTo([M.nothing(), M.just(1)]))),
+        pipe(M.just(E.left(2)), M.separate, assert(deepStrictEqualTo([M.just(2), M.nothing()]))),
+        pipe(M.nothing(), M.separate, assert(deepStrictEqualTo([M.nothing(), M.nothing()])))
       ))
   )
 }

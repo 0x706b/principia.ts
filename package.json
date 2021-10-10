@@ -11,6 +11,7 @@
     "build:test": "ultra -r build:test",
     "format": "node ./scripts/format.js",
     "postinstall": "ts-patch install --persist",
+    "test": "node ./node_modules/@principia/ptest/dist/bin/ptest.js",
     "prepublishOnly": "yarn build",
     "version:alpha": "lerna version prerelease --conventional-commits --preid=alpha",
     "version:preminor": "lerna version preminor --conventional-commits",
@@ -18,7 +19,8 @@
     "version:prepatch": "lerna version prepatch --conventional-commits",
     "version:patch": "lerna version patch --conventional-commits",
     "version:graduate": "lerna version --conventional-commits --conventional-graduate",
-    "commit": "cz"
+    "commit": "cz",
+    "ci": "yarn clean && yarn build && yarn test"
   },
   "devDependencies": {
     "@0x706b/eslint-plugin-align-assignments": "^0.0.3",

@@ -16,7 +16,7 @@ import { TestLogger } from './TestLogger'
 
 export abstract class RunnableSpec<R, E> extends AbstractRunnableSpec<R, E> {
   readonly _tag = 'RunnableSpec'
-  private run(spec: XSpec<R, E>): URIO<Has<TestLogger> & Has<Clock>, number> {
+  run(spec: XSpec<R, E>): URIO<Has<TestLogger> & Has<Clock>, number> {
     const self = this
     return I.gen(function* (_) {
       const results     = yield* _(self.runSpec(spec))

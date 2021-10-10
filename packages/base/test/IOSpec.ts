@@ -7,7 +7,7 @@ import * as Ex from '@principia/base/Exit'
 import { identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as Ref from '@principia/base/IO/Ref'
-import * as O from '@principia/base/Option'
+import * as M from '@principia/base/Maybe'
 import {
   assert,
   assert_,
@@ -23,7 +23,8 @@ import {
   isTrue,
   not,
   suite,
-  testIO } from '@principia/test'
+  testIO
+} from '@principia/test'
 import { TestClock } from '@principia/test/environment/TestClock'
 import * as Gen from '@principia/test/Gen'
 
@@ -270,12 +271,12 @@ class IOSpec extends DefaultRunnableSpec {
       })
     ),
     suite(
-      'catchSomeCause',
+      'catchJustCause',
       testIO('catches matching cause', () =>
         pipe(
           I.interrupt,
-          I.catchSomeCause(
-            (c): O.Option<I.IO<unknown, never, boolean>> => (Ca.interrupted(c) ? O.some(I.succeed(true)) : O.none())
+          I.catchJustCause(
+            (c): M.Maybe<I.IO<unknown, never, boolean>> => (Ca.interrupted(c) ? M.just(I.succeed(true)) : M.nothing())
           ),
           I.sandbox,
           I.map((b) => assert_(b, isTrue))
@@ -287,8 +288,9 @@ class IOSpec extends DefaultRunnableSpec {
           I.chain((fiberId) =>
             pipe(
               I.interrupt,
-              I.catchSomeCause(
-                (c): O.Option<I.IO<unknown, never, boolean>> => (Ca.interrupted(c) ? O.none() : O.some(I.succeed(true)))
+              I.catchJustCause(
+                (c): M.Maybe<I.IO<unknown, never, boolean>> =>
+                  Ca.interrupted(c) ? M.nothing() : M.just(I.succeed(true))
               ),
               I.sandbox,
               I.either,
@@ -299,14 +301,14 @@ class IOSpec extends DefaultRunnableSpec {
       )
     ),
     suite(
-      'catchSomeDefect',
+      'catchJustDefect',
       testIO('recovers from some defects', () => {
         const s  = 'division by zero'
         const io = I.halt(new IllegalArgumentError(s, '#'))
         return pipe(
           io,
-          I.catchSomeDefect((e) =>
-            isIllegalArgumentError(e) ? O.some(I.succeed(e.message)) : O.none<I.IO<unknown, never, string>>()
+          I.catchJustDefect((e) =>
+            isIllegalArgumentError(e) ? M.just(I.succeed(e.message)) : M.nothing<I.IO<unknown, never, string>>()
           ),
           I.map(assert(equalTo(s)))
         )
@@ -316,8 +318,8 @@ class IOSpec extends DefaultRunnableSpec {
         const io = I.halt(t)
         return pipe(
           io,
-          I.catchSomeDefect((e) =>
-            isIllegalStateError(e) ? O.some(I.succeed(e.message)) : O.none<I.IO<unknown, never, string>>()
+          I.catchJustDefect((e) =>
+            isIllegalStateError(e) ? M.just(I.succeed(e.message)) : M.nothing<I.IO<unknown, never, string>>()
           ),
           I.result,
           I.map(assert(halts(deepStrictEqualTo(t))))
@@ -328,8 +330,8 @@ class IOSpec extends DefaultRunnableSpec {
         const io = I.fail(t)
         return pipe(
           io,
-          I.catchSomeDefect((e) =>
-            isIllegalArgumentError(e) ? O.some(I.succeed(e.message)) : O.none<I.IO<unknown, never, string>>()
+          I.catchJustDefect((e) =>
+            isIllegalArgumentError(e) ? M.just(I.succeed(e.message)) : M.nothing<I.IO<unknown, never, string>>()
           ),
           I.result,
           I.map(assert(fails(deepStrictEqualTo(t))))
@@ -340,8 +342,8 @@ class IOSpec extends DefaultRunnableSpec {
         const io = I.succeed(t)
         return pipe(
           io,
-          I.catchSomeDefect((e) =>
-            isIllegalArgumentError(e) ? O.some(I.succeed(e.message)) : O.none<I.IO<unknown, never, string>>()
+          I.catchJustDefect((e) =>
+            isIllegalArgumentError(e) ? M.just(I.succeed(e.message)) : M.nothing<I.IO<unknown, never, string>>()
           ),
           I.map(assert(deepStrictEqualTo(t)))
         )

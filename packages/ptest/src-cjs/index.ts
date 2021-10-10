@@ -1,12 +1,13 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import * as A from '@principia/base/Array'
-import { constVoid, pipe } from '@principia/base/function'
+import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as C from '@principia/base/IO/Cause'
 import * as Ex from '@principia/base/IO/Exit'
 import { showFiberId } from '@principia/base/IO/Fiber'
 import * as Mb from '@principia/base/Maybe'
 import { isRunnableSpec } from '@principia/test/RunnableSpec'
+import * as S from '@principia/test/Spec'
 import { TestArgs } from '@principia/test/TestArgs'
 import path from 'path'
 import yargs from 'yargs'
@@ -36,7 +37,16 @@ const program = pipe(
     })
   ),
   I.chain(I.foreach((path) => I.try(() => require(path).default))),
-  I.chain(I.foreach((test) => (isRunnableSpec(test) ? I.succeedLazy(() => test.main(testArgs)) : I.unit())))
+  I.chain(
+    I.foreachPar((test) => {
+      if (isRunnableSpec(test)) {
+        const filteredSpec = S.filterByArgs_(test.spec, testArgs)
+        return I.giveLayer_(test.run(filteredSpec), test.runner.bootstrap)
+      } else {
+        return I.succeed(0)
+      }
+    })
+  )
 )
 
 I.run_(
@@ -48,7 +58,15 @@ I.run_(
       } else {
         console.log(`ptest encountered an error: ${JSON.stringify(e)}`)
       }
+      process.exit(1)
     }),
-    constVoid
+    (exitCodes) => {
+      for (const code of exitCodes) {
+        if (code > 0) {
+          process.exit(1)
+        }
+        process.exit(0)
+      }
+    }
   )
 )
