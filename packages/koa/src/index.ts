@@ -8,8 +8,7 @@ import type { Exit } from '@principia/base/IO/Exit'
 import type { RuntimeFiber } from '@principia/base/IO/Fiber'
 import type { IOEnv } from '@principia/base/IO/IOEnv'
 import type { Supervisor } from '@principia/base/IO/Supervisor'
-import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
-import type { _R } from '@principia/base/util/types'
+import type { _R, Erase, UnionToIntersection } from '@principia/base/util/types'
 import type * as http from 'http'
 import type { DefaultContext, DefaultState, Middleware, Next, ParameterizedContext } from 'koa'
 
@@ -35,13 +34,48 @@ import * as Status from '@principia/http/StatusCode'
 import koa from 'koa'
 import koaCompose from 'koa-compose'
 
-export type Context<S = DefaultState, C = DefaultContext, B = unknown> = ParameterizedContext<S, C, B> &
-  RouterParamContext & {
+export type ParamsDictionary = Record<string, string>
+
+type RemoveTail<S extends string, Tail extends string> = S extends `${infer P}${Tail}` ? P : S
+type GetRouteParameter<S extends string> = RemoveTail<
+  RemoveTail<RemoveTail<S, `/${string}`>, `-${string}`>,
+  `.${string}`
+>
+
+export type RouteParameters<Route> = string extends Route
+  ? ParamsDictionary
+  : Route extends `${string}(${string}`
+  ? ParamsDictionary //TODO: handling for regex parameters
+  : Route extends `${string}:${infer Rest}`
+  ? (GetRouteParameter<Rest> extends never
+      ? ParamsDictionary
+      : GetRouteParameter<Rest> extends `${infer ParamName}?`
+      ? { [P in ParamName]?: string }
+      : { [P in GetRouteParameter<Rest>]: string }) &
+      (Rest extends `${GetRouteParameter<Rest>}${infer Next}` ? RouteParameters<Next> : unknown)
+  : {}
+
+export type RouterContext<P> = Omit<RouterParamContext, 'params'> & {
+  params: P extends Array<any>
+    ? UnionToIntersection<
+        {
+          [K in number]: RouteParameters<P[K]>
+        }[number]
+      >
+    : RouteParameters<P>
+}
+
+export type Context<P extends Path = any, S = DefaultState, C = DefaultContext, B = unknown> = ParameterizedContext<
+  S,
+  C,
+  B
+> &
+  RouterContext<P> & {
     connection: HttpConnection
   }
 
 export interface ExitHandler<R, S = DefaultState, C = DefaultContext, B = unknown> {
-  (ctx: Context<S, C, B>, next: Next): (cause: Cause<never>) => URIO<R & IOEnv, void>
+  (ctx: Context<any, S, C, B>, next: Next): (cause: Cause<never>) => URIO<R & IOEnv, void>
 }
 
 export const KoaAppConfigTag = tag<KoaAppConfig>()
@@ -199,18 +233,33 @@ export abstract class KoaRuntime {
 
 export type KoaEnv = Has<KoaAppConfig> & Has<KoaApp>
 
-export function Koa(host: string, port: number): L.Layer<Has<KoaRouterConfig>, never, KoaEnv>
-export function Koa<R>(
+export function Koa<Routes extends Array<Layer<any, any, Has<KoaRouterConfig>>>>(
   host: string,
   port: number,
+  routes: Routes
+): L.Layer<Erase<L.MergeR<Routes>, Has<KoaRouterConfig> & Has<KoaRuntime> & Has<KoaAppConfig>>, never, KoaEnv>
+export function Koa<R, Routes extends Array<Layer<Has<KoaRouterConfig>, any, Has<KoaRouterConfig>>>>(
+  host: string,
+  port: number,
+  routes: Routes,
   exitHandler: ExitHandler<R>
-): L.Layer<R & Has<KoaRouterConfig>, never, KoaEnv>
-export function Koa<R>(
+): L.Layer<R & Erase<L.MergeR<Routes>, Has<KoaRouterConfig> & Has<KoaRuntime> & Has<KoaAppConfig>>, never, KoaEnv>
+export function Koa<R, Routes extends Array<Layer<Has<KoaRouterConfig>, any, Has<KoaRouterConfig>>>>(
   host: string,
   port: number,
+  routes: Routes,
   exitHandler?: ExitHandler<R>
-): L.Layer<R & Has<KoaRouterConfig>, never, KoaEnv> {
-  return KoaAppConfig.live(host, port, exitHandler ?? defaultExitHandler)['>+>'](KoaApp.live)
+): L.Layer<
+  Erase<L.MergeR<Routes>, Has<KoaRouterConfig> & Has<KoaRuntime> & Has<KoaAppConfig>> & R,
+  L.MergeE<Routes>,
+  KoaEnv
+> {
+  const freshRoutes = L.all(L.identity<Has<KoaRouterConfig>>(), ...routes.map((r) => r.fresh))
+  // @ts-expect-error
+  return freshRoutes['<<<'](KoaRuntime.live)
+    ['<+<'](KoaAppConfig.live(host, port, exitHandler ?? defaultExitHandler))
+    ['<<<'](KoaRouterConfig.empty)
+    ['>+>'](KoaApp.live)
 }
 
 export function defaultExitHandler(
@@ -243,16 +292,16 @@ export abstract class KoaRouterConfig {
   )
 }
 
-export interface RequestHandler<R, S = DefaultState, C = Context, B = unknown> {
-  (ctx: ParameterizedContext<S, C, B>, next: Next): URIO<R, void>
+export interface RequestHandler<R, P extends Path = any, S = DefaultState, C = DefaultContext, B = unknown> {
+  (ctx: Context<P, S, C, B>, next: Next): URIO<R, void>
 }
 
 export type Path = string | RegExp | Array<string | RegExp>
 
 export function route(
   method: Methods
-): <Handlers extends [RequestHandler<any>, ...RequestHandler<any>[]]>(
-  path: Path,
+): <P extends Path, Handlers extends Array<RequestHandler<any, P>>>(
+  path: P,
   ...handlers: Handlers
 ) => L.Layer<Has<KoaRuntime> & Has<KoaAppConfig> & Has<KoaRouterConfig>, never, Has<KoaRouterConfig>> {
   return (path, ...handlers) =>
@@ -269,6 +318,7 @@ export function route(
               ...handlers.map(
                 (h): Middleware<DefaultState, Context> =>
                   async (ctx, next) => {
+                    // @ts-expect-error UnionToIntersection
                     await run(h(ctx, next).onTermination(exitHandler(ctx, next)))
                   }
               )
@@ -280,7 +330,7 @@ export function route(
     )
 }
 
-type RequestHandlersEnv<Hs extends NonEmptyArray<RequestHandler<any, any, any, any>>> = _R<
+type RequestHandlersEnv<Hs extends Array<RequestHandler<any, any, any, any>>> = _R<
   {
     [i in keyof Hs]: [Hs[i]] extends [RequestHandler<infer R, any, any, any>] ? URIO<R, void> : never
   }[number]
@@ -293,8 +343,8 @@ export function use<Handlers extends [RequestHandler<any>, ...RequestHandler<any
   never,
   Has<KoaRouterConfig>
 >
-export function use<Handlers extends [RequestHandler<any>, ...RequestHandler<any>[]]>(
-  path: Path,
+export function use<P extends Path, Handlers extends Array<RequestHandler<any, P>>>(
+  path: P,
   ...handlers: Handlers
 ): L.Layer<
   Has<KoaRuntime> & Has<KoaAppConfig> & Has<KoaRouterConfig> & RequestHandlersEnv<Handlers>,

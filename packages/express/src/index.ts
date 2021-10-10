@@ -69,7 +69,7 @@ export type ManagedExpressApp = Ma.Managed<
     readonly app: Express
     readonly supervisor: Supervisor.Supervisor<readonly Fi.RuntimeFiber<any, any>[]>
     readonly server: Server
-    readonly runtime: <Handlers extends IORequestHandlerArray>(
+    readonly runtime: <Handlers extends Array<IORequestHandlerRoute>>(
       handlers: Handlers
     ) => IO.IO<
       _R<
@@ -128,7 +128,7 @@ export const makeExpressApp: ManagedExpressApp = Ma.gen(function* (_) {
     )
   )
 
-  function runtime<Handlers extends IORequestHandlerArray>(handlers: Handlers) {
+  function runtime<Handlers extends Array<IORequestHandlerRoute>>(handlers: Handlers) {
     return pipe(
       IO.runtime<
         _R<
@@ -245,12 +245,14 @@ export interface IORequestHandler<
 
 type AnyIORequestHandler<R> = IORequestHandler<R, any, any, any, any, any, any>
 
-export type IORequestHandlerArray<R = any, Route extends string = any> = Array<
-  IORequestHandler<R, Route, RouteParameters<Route>>
+export type IORequestHandlerRoute<R = any, Route extends string = any> = IORequestHandler<
+  R,
+  Route,
+  RouteParameters<Route>
 >
 
-export function expressRuntime<Handlers extends IORequestHandlerArray>(
-  handlers: never extends Handlers ? IORequestHandlerArray : Handlers
+export function expressRuntime<Handlers extends Array<IORequestHandlerRoute>>(
+  handlers: never extends Handlers ? Array<IORequestHandlerRoute> : Handlers
 ): IO.IO<
   _R<
     {
@@ -265,7 +267,7 @@ export function expressRuntime<Handlers extends IORequestHandlerArray>(
 }
 
 export function match(method: Methods): {
-  <Route extends string, Handlers extends IORequestHandlerArray<any, Route>>(
+  <Route extends string, Handlers extends Array<IORequestHandlerRoute<any, Route>>>(
     path: Route,
     ...handlers: never extends Handlers ? Array<IORequestHandler<any, Route, RouteParameters<Route>>> : Handlers
   ): IO.URIO<
@@ -306,7 +308,7 @@ export function defaultExitHandler(
     })
 }
 
-export function use<Handlers extends IORequestHandlerArray>(
+export function use<Handlers extends Array<IORequestHandlerRoute>>(
   ...handlers: Handlers
 ): IO.URIO<
   ExpressEnv &
@@ -317,9 +319,9 @@ export function use<Handlers extends IORequestHandlerArray>(
     >,
   void
 >
-export function use<Route extends string, Handlers extends IORequestHandlerArray<any, Route>>(
+export function use<Route extends string, Handlers extends Array<IORequestHandlerRoute<any, Route>>>(
   path: Route,
-  ...handlers: never extends Handlers ? IORequestHandlerArray<any, Route> : Handlers
+  ...handlers: never extends Handlers ? Array<IORequestHandlerRoute<any, Route>> : Handlers
 ): IO.URIO<
   ExpressEnv &
     _R<
