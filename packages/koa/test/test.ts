@@ -43,4 +43,10 @@ const file = Koa.route('get')('/file/:name', ({ connection: { res }, params }) =
   })
 )
 
-I.run_(I.never.give(Koa.Koa('localhost', 4000, [home, file])), (ex) => console.log(inspect(ex, { depth: 10 })))
+const program = I.gen(function* (_) {
+  yield* _(home)
+  yield* _(file)
+  yield* _(IO.never)
+})
+
+I.run_(program.give(Koa.Koa('localhost', 4000)), (ex) => console.log(inspect(ex, { depth: 10 })))

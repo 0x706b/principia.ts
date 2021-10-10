@@ -231,34 +231,15 @@ export abstract class KoaRuntime {
   )
 }
 
-export type KoaEnv = Has<KoaAppConfig> & Has<KoaApp>
+export type KoaEnv = Has<KoaRouterConfig> & Has<KoaAppConfig> & Has<KoaApp> & Has<KoaRuntime>
 
-export function Koa<Routes extends Array<Layer<any, any, Has<KoaRouterConfig>>>>(
-  host: string,
-  port: number,
-  routes: Routes
-): L.Layer<Erase<L.MergeR<Routes>, Has<KoaRouterConfig> & Has<KoaRuntime> & Has<KoaAppConfig>>, never, KoaEnv>
-export function Koa<R, Routes extends Array<Layer<Has<KoaRouterConfig>, any, Has<KoaRouterConfig>>>>(
-  host: string,
-  port: number,
-  routes: Routes,
-  exitHandler: ExitHandler<R>
-): L.Layer<R & Erase<L.MergeR<Routes>, Has<KoaRouterConfig> & Has<KoaRuntime> & Has<KoaAppConfig>>, never, KoaEnv>
-export function Koa<R, Routes extends Array<Layer<Has<KoaRouterConfig>, any, Has<KoaRouterConfig>>>>(
-  host: string,
-  port: number,
-  routes: Routes,
-  exitHandler?: ExitHandler<R>
-): L.Layer<
-  Erase<L.MergeR<Routes>, Has<KoaRouterConfig> & Has<KoaRuntime> & Has<KoaAppConfig>> & R,
-  L.MergeE<Routes>,
-  KoaEnv
-> {
-  const freshRoutes = L.all(L.identity<Has<KoaRouterConfig>>(), ...routes.map((r) => r.fresh))
+export function Koa(host: string, port: number): L.Layer<unknown, never, KoaEnv>
+export function Koa<R>(host: string, port: number, exitHandler: ExitHandler<R>): L.Layer<R, never, KoaEnv>
+export function Koa<R>(host: string, port: number, exitHandler?: ExitHandler<R>): L.Layer<R, never, KoaEnv> {
   // @ts-expect-error
-  return freshRoutes['<<<'](KoaRuntime.live)
-    ['<+<'](KoaAppConfig.live(host, port, exitHandler ?? defaultExitHandler))
-    ['<<<'](KoaRouterConfig.empty)
+  return KoaAppConfig.live(host, port, exitHandler ?? defaultExitHandler)
+    ['<+<'](KoaRouterConfig.empty)
+    ['>+>'](KoaRuntime.live)
     ['>+>'](KoaApp.live)
 }
 
@@ -303,31 +284,29 @@ export function route(
 ): <P extends Path, Handlers extends Array<RequestHandler<any, P>>>(
   path: P,
   ...handlers: Handlers
-) => L.Layer<Has<KoaRuntime> & Has<KoaAppConfig> & Has<KoaRouterConfig>, never, Has<KoaRouterConfig>> {
+) => I.IO<Has<KoaRuntime> & Has<KoaAppConfig> & Has<KoaRouterConfig>, never, void> {
   return (path, ...handlers) =>
-    L.fromIO(KoaRouterConfigTag)(
-      I.gen(function* (_) {
-        const { runtime }     = yield* _(KoaRuntimeTag)
-        const config          = yield* _(KoaRouterConfigTag)
-        const { exitHandler } = yield* _(KoaAppConfigTag)
-        const run             = yield* _(runtime())
-        return yield* _(
-          I.succeedLazy(() => {
-            config.router[method](
-              path,
-              ...handlers.map(
-                (h): Middleware<DefaultState, Context> =>
-                  async (ctx, next) => {
-                    // @ts-expect-error UnionToIntersection
-                    await run(h(ctx, next).onTermination(exitHandler(ctx, next)))
-                  }
-              )
+    I.gen(function* (_) {
+      const { runtime }     = yield* _(KoaRuntimeTag)
+      const config          = yield* _(KoaRouterConfigTag)
+      const { exitHandler } = yield* _(KoaAppConfigTag)
+      const run             = yield* _(runtime())
+      yield* _(
+        I.succeedLazy(() => {
+          config.router[method](
+            path,
+            ...handlers.map(
+              (h): Middleware<DefaultState, Context> =>
+                async (ctx, next) => {
+                  // @ts-expect-error UnionToIntersection
+                  await run(h(ctx, next).onTermination(exitHandler(ctx, next)))
+                }
             )
-            return config
-          })
-        )
-      })
-    )
+          )
+          return config
+        })
+      )
+    })
 }
 
 type RequestHandlersEnv<Hs extends Array<RequestHandler<any, any, any, any>>> = _R<
@@ -338,53 +317,40 @@ type RequestHandlersEnv<Hs extends Array<RequestHandler<any, any, any, any>>> = 
 
 export function use<Handlers extends [RequestHandler<any>, ...RequestHandler<any>[]]>(
   ...handlers: Handlers
-): L.Layer<
-  Has<KoaRuntime> & Has<KoaAppConfig> & Has<KoaRouterConfig> & RequestHandlersEnv<Handlers>,
-  never,
-  Has<KoaRouterConfig>
->
+): I.IO<Has<KoaRuntime> & Has<KoaAppConfig> & Has<KoaRouterConfig> & RequestHandlersEnv<Handlers>, never, void>
 export function use<P extends Path, Handlers extends Array<RequestHandler<any, P>>>(
   path: P,
   ...handlers: Handlers
-): L.Layer<
-  Has<KoaRuntime> & Has<KoaAppConfig> & Has<KoaRouterConfig> & RequestHandlersEnv<Handlers>,
-  never,
-  Has<KoaRouterConfig>
->
-export function use(
-  ...args: any[]
-): L.Layer<Has<KoaRuntime> & Has<KoaAppConfig> & Has<KoaRouterConfig>, never, Has<KoaRouterConfig>> {
-  return L.fromIO(KoaRouterConfigTag)(
-    I.gen(function* (_) {
-      const { runtime }     = yield* _(KoaRuntimeTag)
-      const config          = yield* _(KoaRouterConfigTag)
-      const { exitHandler } = yield* _(KoaAppConfigTag)
-      const run             = yield* _(runtime())
-      return yield* _(
-        I.succeedLazy(() => {
-          if (typeof args[0] === 'function') {
-            config.router.use(
-              ...args.map(
-                (h: RequestHandler<unknown>): Middleware<DefaultState, Context> =>
-                  async (ctx, next) =>
-                    await run(h(ctx, next).onTermination(exitHandler(ctx, next)))
-              )
+): I.IO<Has<KoaRuntime> & Has<KoaAppConfig> & Has<KoaRouterConfig> & RequestHandlersEnv<Handlers>, never, void>
+export function use(...args: any[]): I.IO<Has<KoaRuntime> & Has<KoaAppConfig> & Has<KoaRouterConfig>, never, void> {
+  return I.gen(function* (_) {
+    const { runtime }     = yield* _(KoaRuntimeTag)
+    const config          = yield* _(KoaRouterConfigTag)
+    const { exitHandler } = yield* _(KoaAppConfigTag)
+    const run             = yield* _(runtime())
+    yield* _(
+      I.succeedLazy(() => {
+        if (typeof args[0] === 'function') {
+          config.router.use(
+            ...args.map(
+              (h: RequestHandler<unknown>): Middleware<DefaultState, Context> =>
+                async (ctx, next) =>
+                  await run(h(ctx, next).onTermination(exitHandler(ctx, next)))
             )
-          } else {
-            config.router.use(
-              args[0],
-              ...args.slice(1).map(
-                (h: RequestHandler<unknown>): Middleware<DefaultState, Context> =>
-                  async (ctx, next) =>
-                    await run(h(ctx, next).onTermination(exitHandler(ctx, next)))
-              )
+          )
+        } else {
+          config.router.use(
+            args[0],
+            ...args.slice(1).map(
+              (h: RequestHandler<unknown>): Middleware<DefaultState, Context> =>
+                async (ctx, next) =>
+                  await run(h(ctx, next).onTermination(exitHandler(ctx, next)))
             )
-          }
-          return config
-        })
-      )
-    })
-  )
+          )
+        }
+      })
+    )
+  })
 }
 
 export function classic(_: koa.Middleware): RequestHandler<unknown> {
