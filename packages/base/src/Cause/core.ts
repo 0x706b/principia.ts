@@ -1504,7 +1504,7 @@ export function squash_<Id>(S: P.Show<Id>): <E>(cause: PCause<Id, E>, f: (e: E) 
  * Squashes a `Cause` down to a single `Error`, chosen to be the
  * "most important" `Error`.
  *
- * @dataFirst squash_
+ * @dataFirstConstraint squash_
  */
 export function squash<Id>(S: P.Show<Id>): <E>(f: (e: E) => unknown) => (cause: PCause<Id, E>) => unknown {
   return (f) => (cause) => squash_(S)(cause, f)

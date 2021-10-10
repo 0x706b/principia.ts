@@ -68,11 +68,17 @@ export default function dataFirst(program: ts.Program) {
             ts.isPropertyAccessExpression(node.expression.expression) &&
             isInternal(node.expression)
           ) {
+            const dataFirstConstraintTag = node.expression.__sig_tags
+              .filter((x) => x.includes('dataFirstConstraint'))
+              .map((x) => x.replace('dataFirstConstraint ', ''))?.[0]
+
             const dataFirstTag = node.expression.__sig_tags
               .filter((x) => x.includes('dataFirst'))
               .map((x) => x.replace('dataFirst ', ''))?.[0]
 
-            if (dataFirstTag) {
+            if (dataFirstConstraintTag) {
+              // no transform
+            } else if (dataFirstTag) {
               return ts.visitEachChild(
                 factory.createCallExpression(
                   dataFirstTag === 'self'

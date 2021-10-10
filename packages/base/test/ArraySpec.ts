@@ -2,8 +2,8 @@ import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { identity, pipe } from '@principia/base/function'
 import * as Id from '@principia/base/Identity'
+import * as M from '@principia/base/Maybe'
 import * as N from '@principia/base/number'
-import * as O from '@principia/base/Option'
 import * as Ord from '@principia/base/Ord'
 import { tuple } from '@principia/base/prelude'
 import * as Str from '@principia/base/string'
@@ -91,7 +91,7 @@ class ArraySpec extends DefaultRunnableSpec {
       test('binary', () =>
         pipe(
           [1, 2, 3, 4],
-          A.filterMap((n, i) => (i !== 2 ? doubleIfOdd(n) : O.none())),
+          A.filterMap((n, i) => (i !== 2 ? doubleIfOdd(n) : M.nothing())),
           assert(deepStrictEqualTo([2]))
         ))
     ),
@@ -218,26 +218,26 @@ class ArraySpec extends DefaultRunnableSpec {
         ))
     ),
     test('mapA', () => {
-      const f = (n: number) => (isOdd(n) ? O.some(n) : O.none())
+      const f = (n: number) => (isOdd(n) ? M.just(n) : M.nothing())
       return all(
-        pipe([1, 2], A.mapA(O.Applicative)(f), assert(deepStrictEqualTo(O.none()))),
-        pipe([1, 3], A.mapA(O.Applicative)(f), assert(deepStrictEqualTo(O.some([1, 3]))))
+        pipe([1, 2], A.mapA(M.Applicative)(f), assert(deepStrictEqualTo(M.nothing()))),
+        pipe([1, 3], A.mapA(M.Applicative)(f), assert(deepStrictEqualTo(M.just([1, 3]))))
       )
     }),
     test('mapAccumM', () => {
-      const f = (s: string, a: number) => (isOdd(a) ? O.some([a, s + a] as const) : O.none())
+      const f = (s: string, a: number) => (isOdd(a) ? M.just([a, s + a] as const) : M.nothing())
       return all(
-        pipe([1, 2, 3], A.mapAccumM(O.Monad)('', f), assert(deepStrictEqualTo(O.none()))),
-        pipe([1, 3, 5], A.mapAccumM(O.Monad)('', f), assert(deepStrictEqualTo(O.some([[1, 3, 5], '135']))))
+        pipe([1, 2, 3], A.mapAccumM(M.Monad)('', f), assert(deepStrictEqualTo(M.nothing()))),
+        pipe([1, 3, 5], A.mapAccumM(M.Monad)('', f), assert(deepStrictEqualTo(M.just([[1, 3, 5], '135']))))
       )
     }),
     test('unfold', () =>
       assert_(
-        A.unfold(5, (n) => (n > 0 ? O.some([n, n - 1]) : O.none())),
+        A.unfold(5, (n) => (n > 0 ? M.just([n, n - 1]) : M.nothing())),
         deepStrictEqualTo([5, 4, 3, 2, 1])
       )),
     test('filterMapA', () => {
-      const filterMapA = A.filterMapA(Id.Applicative)((n: number) => (n > 2 ? O.some(n + 1) : O.none()))
+      const filterMapA = A.filterMapA(Id.Applicative)((n: number) => (n > 2 ? M.just(n + 1) : M.nothing()))
       return all(
         pipe([], filterMapA, assert(deepStrictEqualTo([]))),
         pipe([1, 3], filterMapA, assert(deepStrictEqualTo([4])))
@@ -274,7 +274,7 @@ class ArraySpec extends DefaultRunnableSpec {
     test('collectWhile', () =>
       pipe(
         [1, 2, 3, 4, 5, 6],
-        A.collectWhile((n) => (n < 5 ? O.some(n * 2) : O.none())),
+        A.collectWhile((n) => (n < 5 ? M.just(n * 2) : M.nothing())),
         assert(deepStrictEqualTo([2, 4, 6, 8]))
       )),
     test('comprehension', () =>
@@ -304,7 +304,7 @@ class ArraySpec extends DefaultRunnableSpec {
         )
       )),
     test('concat', () => pipe([1, 2, 3], A.concat([4, 5, 6]), assert(deepStrictEqualTo([1, 2, 3, 4, 5, 6])))),
-    test('deleteAt', () => pipe([1, 2, 3], A.deleteAt(1), assert(deepStrictEqualTo(O.some([1, 3]))))),
+    test('deleteAt', () => pipe([1, 2, 3], A.deleteAt(1), assert(deepStrictEqualTo(M.just([1, 3]))))),
     test('difference', () => pipe([1, 2, 3], A.difference(N.Eq)([1, 2]), assert(deepStrictEqualTo([3])))),
     test('drop', () => pipe([1, 2, 3], A.drop(1), assert(deepStrictEqualTo([2, 3])))),
     test('dropLast', () => pipe([1, 2, 3], A.dropLast(1), assert(deepStrictEqualTo([1, 2])))),
@@ -325,37 +325,37 @@ class ArraySpec extends DefaultRunnableSpec {
       pipe(
         ['ab', 'c', 'de'],
         A.findLast((s) => s.length === 2),
-        assert(deepStrictEqualTo(O.some('de')))
+        assert(deepStrictEqualTo(M.just('de')))
       )),
     test('findLastMap', () =>
       pipe(
         ['ab', 'c', 'de'],
-        A.findLastMap((s) => (s.length === 2 ? O.some(s + 'f') : O.none())),
-        assert(deepStrictEqualTo(O.some('def')))
+        A.findLastMap((s) => (s.length === 2 ? M.just(s + 'f') : M.nothing())),
+        assert(deepStrictEqualTo(M.just('def')))
       )),
     test('findLastIndex', () =>
       pipe(
         ['ab', 'c', 'de'],
         A.findLastIndex((s) => s.length === 2),
-        assert(deepStrictEqualTo(O.some(2)))
+        assert(deepStrictEqualTo(M.just(2)))
       )),
     test('find', () =>
       pipe(
         ['ab', 'c', 'de'],
         A.find((s) => s.length === 2),
-        assert(deepStrictEqualTo(O.some('ab')))
+        assert(deepStrictEqualTo(M.just('ab')))
       )),
     test('findMap', () =>
       pipe(
         ['ab', 'c', 'de'],
-        A.findMap((s) => (s.length === 2 ? O.some(s + 'c') : O.none())),
-        assert(deepStrictEqualTo(O.some('abc')))
+        A.findMap((s) => (s.length === 2 ? M.just(s + 'c') : M.nothing())),
+        assert(deepStrictEqualTo(M.just('abc')))
       )),
     test('findIndex', () =>
       pipe(
         ['ab', 'c', 'de'],
         A.findIndex((s) => s.length === 2),
-        assert(deepStrictEqualTo(O.some(0)))
+        assert(deepStrictEqualTo(M.just(0)))
       )),
     test('foldlWhile', () =>
       pipe(
@@ -392,12 +392,12 @@ class ArraySpec extends DefaultRunnableSpec {
       )),
     test('insertAt', () =>
       all(
-        pipe([1, 2, 3], A.insertAt(0, 0), assert(deepStrictEqualTo(O.some([0, 1, 2, 3])))),
-        pipe([1, 2, 3], A.insertAt(3, 4), assert(deepStrictEqualTo(O.none())))
+        pipe([1, 2, 3], A.insertAt(0, 0), assert(deepStrictEqualTo(M.just([0, 1, 2, 3])))),
+        pipe([1, 2, 3], A.insertAt(3, 4), assert(deepStrictEqualTo(M.nothing())))
       )),
     test('intersection', () => pipe([1, 2, 3], A.intersection(N.Eq)([2, 3]), assert(deepStrictEqualTo([2, 3])))),
     test('intersperse', () => pipe([1, 2, 3], A.intersperse(0), assert(deepStrictEqualTo([1, 0, 2, 0, 3])))),
-    test('lookup', () => pipe([1, 2, 3], A.lookup(1), assert(deepStrictEqualTo(O.some(2))))),
+    test('lookup', () => pipe([1, 2, 3], A.lookup(1), assert(deepStrictEqualTo(M.just(2))))),
     test('lefts', () =>
       pipe([E.right(1), E.left(2), E.right(3), E.left(4)], A.lefts, assert(deepStrictEqualTo([2, 4])))),
     test('mapAccum', () =>
@@ -410,7 +410,7 @@ class ArraySpec extends DefaultRunnableSpec {
       pipe(
         [1, 2, 3],
         A.modifyAt(1, (n) => n * 2),
-        assert(deepStrictEqualTo(O.some([1, 4, 3])))
+        assert(deepStrictEqualTo(M.just([1, 4, 3])))
       )),
     test('prepend', () => pipe([1, 2, 3], A.prepend(0), assert(deepStrictEqualTo([0, 1, 2, 3])))),
     test('prependAll', () => pipe([1, 2, 3], A.prependAll(0), assert(deepStrictEqualTo([0, 1, 0, 2, 0, 3])))),
@@ -515,7 +515,7 @@ class ArraySpec extends DefaultRunnableSpec {
         A.takeWhile((n) => n < 4),
         assert(deepStrictEqualTo([1, 2]))
       )),
-    test('updateAt', () => pipe([1, 2, 3, 4], A.updateAt(3, 5), assert(deepStrictEqualTo(O.some([1, 2, 3, 5]))))),
+    test('updateAt', () => pipe([1, 2, 3, 4], A.updateAt(3, 5), assert(deepStrictEqualTo(M.just([1, 2, 3, 5]))))),
     test('unzip', () =>
       pipe(
         [
@@ -546,8 +546,8 @@ class ArraySpec extends DefaultRunnableSpec {
         A.exists((n) => n === 5),
         assert(equalTo(true))
       )),
-    test('head', () => pipe([1, 2, 3, 4], A.head, assert(deepStrictEqualTo(O.some(1))))),
-    test('tail', () => pipe([1, 2, 3, 4], A.tail, assert(deepStrictEqualTo(O.some([2, 3, 4])))))
+    test('head', () => pipe([1, 2, 3, 4], A.head, assert(deepStrictEqualTo(M.just(1))))),
+    test('tail', () => pipe([1, 2, 3, 4], A.tail, assert(deepStrictEqualTo(M.just([2, 3, 4])))))
   )
 }
 
@@ -555,8 +555,8 @@ function isOdd(n: number): boolean {
   return n % 2 === 1
 }
 
-function doubleIfOdd(n: number): O.Option<number> {
-  return isOdd(n) ? O.some(n * 2) : O.none()
+function doubleIfOdd(n: number): M.Maybe<number> {
+  return isOdd(n) ? M.just(n * 2) : M.nothing()
 }
 
 function doubleIfOddStringifyIfEven(n: number): E.Either<string, number> {
