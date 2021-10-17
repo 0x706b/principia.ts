@@ -59,7 +59,7 @@
     "@principia/base": "^0.26.0",
     "@principia/optics": "^0.19.3",
     "@principia/test": "^0.21.0",
-    "fast-check": "^2.17.0"
+    "fast-check": "^2.18.0"
   },
   "publishConfig": {
     "access": "public",

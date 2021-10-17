@@ -59,7 +59,7 @@
   },
   "devDependencies": {
     "@types/isomorphic-fetch": "^0.0.35",
-    "testcontainers": "^7.20.5"
+    "testcontainers": "^7.21.0"
   },
   "publishConfig": {
     "access": "public",
