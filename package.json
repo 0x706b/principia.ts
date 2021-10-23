@@ -50,6 +50,7 @@
     "husky": "^7.0.2",
     "lerna": "^4.0.0",
     "madge": "^5.0.1",
+    "prettier": "^2.4.1",
     "prettier-eslint": "^13.0.0",
     "prettier-eslint-cli": "^5.0.1",
     "rimraf": "^3.0.2",
@@ -65,5 +66,8 @@
     "commitizen": {
       "path": "cz-conventional-changelog"
     }
+  },
+  "dependencies": {
+    "@0x706b/prettier-eslint-8": "^0.0.2"
   }
 }
