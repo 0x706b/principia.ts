@@ -1,0 +1,43 @@
+{
+  "name": "@principia/fastify",
+  "version": "0.0.1",
+  "description": "Description",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0x706b/principia.ts.git",
+    "directory": "packages/fastify"
+  },
+  "license": "MIT",
+  "author": "Peter Krol <peter@peterkrol.com>",
+  "exports": {},
+  "main": "./dist/dist/cjs/index.js",
+  "module": "./dist/dist/esm/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "autofix": "yarn lint --fix",
+    "build": "concurrently \"yarn build:types\" \"yarn build:esm\" \"yarn build:cjs\"",
+    "build:cjs": "tsc --build ./config/tsconfig.cjs.json",
+    "build:esm": "tsc --build ./config/tsconfig.esm.json && babel dist/dist/esm/ -d dist/dist/esm/ -s --plugins annotate-pure-calls",
+    "build:postprocess": "yarn ts-node ../../scripts/rewrite-source-maps.ts && yarn ts-node ../../scripts/package.ts && yarn sort-package-json ./dist/package.json && yarn prettier --write ./dist/package.json && cpx ./fluent/**/*.d.ts ./dist/fluent",
+    "build:test": "tsc --build ./config/tsconfig.test.json --verbose",
+    "build:traced": "concurrently \"yarn build:traced:esm\" \"yarn build:traced:cjs\"",
+    "build:traced:cjs": "tsc --build ./config/tsconfig.traced.cjs.json",
+    "build:traced:esm": "tsc --build ./config/tsconfig.traced.esm.json && babel dist/dist-traced/esm/ -d dist/dist-traced/esm/ -s --plugins annotate-pure-calls",
+    "build:types": "tsc --build ./config/tsconfig.types.json",
+    "buildAll": "concurrently \"yarn build\" \"yarn build:traced\" && yarn build:postprocess",
+    "clean": "rimraf dist build tsbuildinfo",
+    "clean:test": "rimraf build",
+    "generateSubpaths": "ts-node ../../scripts/subpath.ts && sort-package-json && prettier --write package.json",
+    "lint": "eslint ."
+  },
+  "config": {},
+  "dependencies": {
+    "@principia/base": "^0.26.0",
+    "@principia/http": "^0.19.3",
+    "fastify": "^3.22.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
+  }
+}
