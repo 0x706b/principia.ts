@@ -1,3 +1,6 @@
+import type { Equatable } from '../Structural/Equatable'
+import type { Hashable } from '../Structural/Hashable'
+
 import { $equals, equals } from '../Structural/Equatable'
 import { $hash, combineHash, hash, hashString } from '../Structural/Hashable'
 import { isObject } from '../util/predicates'
@@ -9,7 +12,14 @@ const _bothHash  = hashString('@principia/base/These/Both')
 const _leftHash  = hashString('@principia/base/These/Left')
 const _rightHash = hashString('@principia/base/These/Right')
 
-export class Both<E, A> {
+export interface Both<E, A> extends Equatable, Hashable {
+  readonly [TheseTypeId]: TheseTypeId
+  readonly _tag: 'Both'
+  readonly left: E
+  readonly right: A
+}
+
+export const BothConstructor = class Both<E, A> implements Both<E, A> {
   readonly [TheseTypeId]: TheseTypeId = TheseTypeId
   readonly _tag = 'Both'
   constructor(readonly left: E, readonly right: A) {}
@@ -21,7 +31,17 @@ export class Both<E, A> {
   }
 }
 
-export class Left<E> {
+export function Both<E, A>(left: E, right: A): Both<E, A> {
+  return new BothConstructor(left, right)
+}
+
+export interface Left<E> extends Equatable, Hashable {
+  readonly [TheseTypeId]: TheseTypeId
+  readonly _tag: 'Left'
+  readonly left: E
+}
+
+export const LeftConstructor = class Left<E> implements Left<E> {
   readonly [TheseTypeId]: TheseTypeId = TheseTypeId
   readonly _tag = 'Left'
   constructor(readonly left: E) {}
@@ -33,7 +53,17 @@ export class Left<E> {
   }
 }
 
-export class Right<A> {
+export function Left<E>(left: E): Left<E> {
+  return new LeftConstructor(left)
+}
+
+export interface Right<A> extends Equatable, Hashable {
+  readonly [TheseTypeId]: TheseTypeId
+  readonly _tag: 'Right'
+  readonly right: A
+}
+
+export const RightConstructor = class Right<A> implements Right<A> {
   readonly [TheseTypeId]: TheseTypeId = TheseTypeId
   readonly _tag = 'Right'
   constructor(readonly right: A) {}
@@ -43,6 +73,10 @@ export class Right<A> {
   get [$hash](): number {
     return combineHash(_rightHash, hash(this.right))
   }
+}
+
+export function Right<A>(right: A): Right<A> {
+  return new RightConstructor(right)
 }
 
 export function isThese(u: unknown): u is These<unknown, unknown> {
@@ -64,15 +98,15 @@ function isRight(u: unknown): u is Right<unknown> {
 export type These<E, A> = Left<E> | Right<A> | Both<E, A>
 
 export function left<E, A = never>(e: E): These<E, A> {
-  return new Left(e)
+  return Left(e)
 }
 
 export function right<E = never, A = never>(a: A): These<E, A> {
-  return new Right(a)
+  return Right(a)
 }
 
 export function both<E, A>(e: E, a: A): These<E, A> {
-  return new Both(e, a)
+  return Both(e, a)
 }
 
 export function match_<E, A, B, C, D>(

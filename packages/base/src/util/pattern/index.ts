@@ -165,13 +165,15 @@ const matchPattern = <I, P extends Pattern<I>>(
     if (isGuardPattern(pattern)) return Boolean(pattern[symbols.Guard](value))
 
     if (isNamedSelectPattern(pattern)) {
-      select(pattern[symbols.NamedSelect], value)
-      return true
+      const matches = Object.keys(pattern).every((k) => k in value && matchPattern(pattern[k], value[k], select))
+      if (matches) select(pattern[symbols.NamedSelect], value)
+      return matches
     }
 
     if (isAnonymousSelectPattern(pattern)) {
-      select(ANONYMOUS_SELECT_KEY, value)
-      return true
+      const matches = Object.keys(pattern).every((k) => k in value && matchPattern(pattern[k], value[k], select))
+      if (matches) select(ANONYMOUS_SELECT_KEY, value)
+      return matches
     }
 
     if (isNotPattern(pattern)) {

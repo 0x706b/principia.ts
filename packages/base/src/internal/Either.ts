@@ -1,3 +1,6 @@
+import type { Equatable } from '../Structural/Equatable'
+import type { Hashable } from '../Structural/Hashable'
+
 import { $equals, equals } from '../Structural/Equatable'
 import { $hash, combineHash, hash, hashString } from '../Structural/Hashable'
 import { isObject } from '../util/predicates'
@@ -8,7 +11,13 @@ export type EitherTypeId = typeof EitherTypeId
 const _leftHash  = hashString('@principia/base/Either/Left')
 const _rightHash = hashString('@principia/base/Either/Right')
 
-export class Left<E> {
+export interface Left<E> extends Equatable, Hashable {
+  readonly [EitherTypeId]: EitherTypeId
+  readonly _tag: 'Left'
+  readonly left: E
+}
+
+export const LeftConstructor = class Left<E> implements Left<E> {
   readonly [EitherTypeId]: EitherTypeId = EitherTypeId
   readonly _tag = 'Left'
   constructor(readonly left: E) {}
@@ -20,7 +29,17 @@ export class Left<E> {
   }
 }
 
-export class Right<A> {
+export function Left<E>(left: E): Left<E> {
+  return new LeftConstructor(left)
+}
+
+export interface Right<A> extends Equatable, Hashable {
+  readonly [EitherTypeId]: EitherTypeId
+  readonly _tag: 'Right'
+  readonly right: A
+}
+
+export const RightConstructor = class Right<A> {
   readonly [EitherTypeId]: EitherTypeId = EitherTypeId
   readonly _tag = 'Right'
   constructor(readonly right: A) {}
@@ -30,6 +49,10 @@ export class Right<A> {
   get [$hash]() {
     return combineHash(_rightHash, hash(this.right))
   }
+}
+
+export function Right<A>(right: A): Right<A> {
+  return new RightConstructor(right)
 }
 
 export type Either<E, A> = Left<E> | Right<A>
@@ -59,14 +82,14 @@ export function isRight<E, A>(u: Either<E, A>): u is Right<A> {
  * @internal
  */
 export function left<E = never, A = never>(e: E): Either<E, A> {
-  return new Left(e)
+  return Left(e)
 }
 
 /**
  * @internal
  */
 export function right<E = never, A = never>(a: A): Either<E, A> {
-  return new Right(a)
+  return Right(a)
 }
 
 /**

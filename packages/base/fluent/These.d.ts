@@ -15,17 +15,29 @@ declare module '@principia/base/internal/These' {
 
 export interface TheseStaticOps {
   /**
+   * @rewriteStatic Left from "@principia/base/These"
+   */
+  Left: typeof Th.Left
+  /**
    * @rewriteStatic left from "@principia/base/These"
    */
-  Left: typeof Th.left
+  left: typeof Th.left
+  /**
+   * @rewriteStatic Right from "@principia/base/These"
+   */
+  Right: typeof Th.Right
   /**
    * @rewriteStatic right from "@principia/base/These"
    */
-  Right: typeof Th.right
+  right: typeof Th.right
+  /**
+   * @rewriteStatic Both from "@principia/base/These"
+   */
+  Both: typeof Th.Both
   /**
    * @rewriteStatic both from "@principia/base/These"
    */
-  Both: typeof Th.both
+  both: typeof Th.both
   /**
    * @rewriteStatic unit from "@principia/base/These"
    */

@@ -42,7 +42,7 @@ interface MaybeStaticOps {
   /**
    * @rewriteStatic just from "@principia/base/Maybe"
    */
-  Just: typeof M.just
+  Just: typeof M.Just
   /**
    * @rewriteStatic Monad from "@principia/base/Maybe"
    */
@@ -58,7 +58,7 @@ interface MaybeStaticOps {
   /**
    * @rewriteStatic nothing from "@principia/base/Maybe"
    */
-  Nothing: typeof M.nothing
+  Nothing: typeof M.Nothing
   /**
    * @rewriteStatic SemimonoidalFunctor from "@principia/base/Maybe"
    */
@@ -125,6 +125,14 @@ interface MaybeStaticOps {
    * @rewriteStatic getShow from "@principia/base/Maybe"
    */
   getShow: typeof M.getShow
+  /**
+   * @rewriteStatic just from "@principia/base/Maybe"
+   */
+  just: typeof M.just
+  /**
+   * @rewriteStatic nothing from "@principia/base/Maybe"
+   */
+  nothing: typeof M.nothing
   /**
    * @rewriteStatic pure from "@principia/base/Maybe"
    */

@@ -47,9 +47,9 @@ interface EitherStaticOps {
    */
   Functor: typeof E.Functor
   /**
-   * @rewriteStatic left from "@prinipia/base/Either"
+   * @rewriteStatic Left from "@prinipia/base/Either"
    */
-  Left: typeof E.left
+  Left: typeof E.Left
   /**
    * @rewriteStatic Monad from "@prinipia/base/Either"
    */
@@ -63,9 +63,9 @@ interface EitherStaticOps {
    */
   MonoidalFunctor: typeof E.MonoidalFunctor
   /**
-   * @rewriteStatic right from "@prinipia/base/Either"
+   * @rewriteStatic Right from "@prinipia/base/Either"
    */
-  Right: typeof E.right
+  Right: typeof E.Right
   /**
    * @rewriteStatic Semialign from "@prinipia/base/Either"
    */
@@ -154,9 +154,17 @@ interface EitherStaticOps {
    */
   getWitherable: typeof E.getWitherable
   /**
+   * @rewriteStatic left from "@prinipia/base/Either"
+   */
+  left: typeof E.left
+  /**
    * @rewriteStatic mapN_ from "@prinipia/base/Either"
    */
   mapN: typeof E.mapN_
+  /**
+   * @rewriteStatic right from "@prinipia/base/Either"
+   */
+  right: typeof E.right
   /**
    * @rewriteStatic sequenceS from "@prinipia/base/Either"
    */

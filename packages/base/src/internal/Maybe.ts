@@ -1,5 +1,7 @@
 import type { Predicate } from '../Predicate'
 import type { Refinement } from '../Refinement'
+import type { Equatable } from '../Structural/Equatable'
+import type { Hashable } from '../Structural/Hashable'
 
 import { identity } from '../function'
 import { $equals, equals } from '../Structural/Equatable'
@@ -13,7 +15,12 @@ const _nothingHash = hashString('@principia/base/Maybe/Nothing')
 
 const _justHash = hashString('@principia/base/Maybe/Just')
 
-export class Nothing {
+export interface Nothing extends Equatable, Hashable {
+  readonly [MaybeTypeId]: MaybeTypeId
+  readonly _tag: 'Nothing'
+}
+
+const NothingConstructor = class Nothing implements Nothing {
   readonly [MaybeTypeId]: MaybeTypeId = MaybeTypeId
   readonly _tag = 'Nothing'
   // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -26,9 +33,19 @@ export class Nothing {
   }
 }
 
-const _Nothing = new Nothing()
+const _Nothing = new NothingConstructor()
 
-export class Just<A> {
+export function Nothing(): Nothing {
+  return _Nothing
+}
+
+export interface Just<A> extends Equatable, Hashable {
+  readonly [MaybeTypeId]: MaybeTypeId
+  readonly _tag: 'Just'
+  readonly value: A
+}
+
+const JustConstructor = class Just<A> implements Just<A> {
   readonly [MaybeTypeId]: MaybeTypeId = MaybeTypeId
   readonly _tag = 'Just'
   constructor(readonly value: A) {}
@@ -38,6 +55,10 @@ export class Just<A> {
   get [$hash]() {
     return combineHash(_justHash, hash(this.value))
   }
+}
+
+export function Just<A>(value: A): Just<A> {
+  return new JustConstructor(value)
 }
 
 export type Maybe<A> = Nothing | Just<A>
@@ -58,7 +79,7 @@ export function isJust<A>(u: Maybe<A>): u is Just<A> {
  * @internal
  */
 export function just<A>(a: A): Maybe<A> {
-  return new Just(a)
+  return Just(a)
 }
 
 /**

@@ -2,6 +2,7 @@ import type { HashSet } from '../HashSet'
 import type { Trace } from '../IO/Fiber/trace'
 import type { Predicate } from '../Predicate'
 import type * as P from '../prelude'
+import type { Equatable, Hashable } from '../Structural'
 import type { Stack } from '../util/support/Stack'
 
 import * as A from '../Array/core'
@@ -41,8 +42,15 @@ export const CauseTag = {
 
 const _emptyHash = St.opt(St.randomInt())
 
-export class Empty {
-  readonly _E!: () => never;
+export interface Empty extends Equatable, Hashable {
+  readonly _E: () => never
+  readonly [CauseTypeId]: CauseTypeId
+  readonly _tag: typeof CauseTag.Empty
+  equalsEval(that: PCause<unknown, unknown>): Ev.Eval<boolean>
+}
+
+export const EmptyConstructor = class Empty {
+  readonly _E!: () => never
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
   readonly _tag = CauseTag.Empty
@@ -69,8 +77,22 @@ export class Empty {
   }
 }
 
-export class Fail<E> {
-  readonly _E!: () => E;
+export const _Empty = new EmptyConstructor()
+
+export function Empty(): Empty {
+  return _Empty
+}
+
+export interface Fail<E> extends Equatable, Hashable {
+  readonly _E: () => E
+  readonly [CauseTypeId]: CauseTypeId
+  readonly _tag: typeof CauseTag.Fail
+  readonly value: E
+  equalsEval(that: PCause<unknown, unknown>): Ev.Eval<boolean>
+}
+
+export const FailConstructor = class Fail<E> implements Fail<E> {
+  readonly _E!: () => E
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
   readonly _tag = CauseTag.Fail
@@ -102,8 +124,20 @@ export class Fail<E> {
   }
 }
 
-export class Halt {
-  readonly _E!: () => never;
+export function Fail<E>(value: E): Fail<E> {
+  return new FailConstructor(value)
+}
+
+export interface Halt extends Equatable, Hashable {
+  readonly _E: () => never
+  readonly [CauseTypeId]: CauseTypeId
+  readonly _tag: typeof CauseTag.Halt
+  readonly value: unknown
+  equalsEval(that: PCause<unknown, unknown>): Ev.Eval<boolean>
+}
+
+export const HaltConstructor = class Halt implements Halt {
+  readonly _E!: () => never
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
   readonly _tag = CauseTag.Halt
@@ -135,8 +169,20 @@ export class Halt {
   }
 }
 
-export class Interrupt<Id> {
-  readonly _E!: () => never;
+export function Halt(value: unknown): Halt {
+  return new HaltConstructor(value)
+}
+
+export interface Interrupt<Id> extends Equatable, Hashable {
+  readonly _E: () => never
+  readonly [CauseTypeId]: CauseTypeId
+  readonly _tag: typeof CauseTag.Interrupt
+  readonly id: Id
+  equalsEval(that: PCause<unknown, unknown>): Ev.Eval<boolean>
+}
+
+export const InterruptConstructor = class Interrupt<Id> implements Interrupt<Id> {
+  readonly _E!: () => never
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
   readonly _tag = CauseTag.Interrupt
@@ -169,8 +215,21 @@ export class Interrupt<Id> {
   }
 }
 
-export class Then<Id, E> {
-  readonly _E!: () => E;
+export function Interrupt<Id>(id: Id): Interrupt<Id> {
+  return new InterruptConstructor(id)
+}
+
+export interface Then<Id, E> {
+  readonly _E: () => E
+  readonly [CauseTypeId]: CauseTypeId
+  readonly _tag: typeof CauseTag.Then
+  readonly left: PCause<Id, E>
+  readonly right: PCause<Id, E>
+  equalsEval(that: PCause<unknown, unknown>): Ev.Eval<boolean>
+}
+
+export const ThenConstructor = class Then<Id, E> {
+  readonly _E!: () => E
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
   readonly _tag = CauseTag.Then
@@ -201,8 +260,21 @@ export class Then<Id, E> {
   }
 }
 
-export class Both<Id, E> {
-  readonly _E!: () => E;
+export function Then<Id, E>(left: PCause<Id, E>, right: PCause<Id, E>): PCause<Id, E> {
+  return new ThenConstructor(left, right)
+}
+
+export interface Both<Id, E> {
+  readonly _E: () => E
+  readonly [CauseTypeId]: CauseTypeId
+  readonly _tag: typeof CauseTag.Both
+  readonly left: PCause<Id, E>
+  readonly right: PCause<Id, E>
+  equalsEval(that: PCause<unknown, unknown>): Ev.Eval<boolean>
+}
+
+export const BothConstructor = class Both<Id, E> {
+  readonly _E!: () => E
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
   readonly _tag = CauseTag.Both
@@ -233,8 +305,21 @@ export class Both<Id, E> {
   }
 }
 
-export class Traced<Id, E> {
-  readonly _E!: () => E;
+export function Both<Id, E>(left: PCause<Id, E>, right: PCause<Id, E>): Both<Id, E> {
+  return new BothConstructor(left, right)
+}
+
+export interface Traced<Id, E> extends Equatable, Hashable {
+  readonly _E: () => E
+  readonly [CauseTypeId]: CauseTypeId
+  readonly _tag: typeof CauseTag.Traced
+  readonly cause: PCause<Id, E>
+  readonly trace: Trace
+  equalsEval(that: PCause<unknown, unknown>): Ev.Eval<boolean>
+}
+
+export const TracedConstructor = class Traced<Id, E> {
+  readonly _E!: () => E
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
   readonly _tag = CauseTag.Traced
@@ -259,6 +344,10 @@ export class Traced<Id, E> {
   }
 }
 
+export function Traced<Id, E>(cause: PCause<Id, E>, trace: Trace): Traced<Id, E> {
+  return new TracedConstructor(cause, trace)
+}
+
 /*
  * -------------------------------------------------------------------------------------------------
  * Constructors
@@ -271,7 +360,7 @@ export class Traced<Id, E> {
  * @category constructors
  * @since 1.0.0
  */
-export const empty: PCause<never, never> = new Empty()
+export const empty: PCause<never, never> = _Empty
 
 /**
  * Constructs a `Cause` from a single value, representing a typed failure
@@ -280,7 +369,7 @@ export const empty: PCause<never, never> = new Empty()
  * @since 1.0.0
  */
 export function fail<Id = never, E = never>(value: E): PCause<Id, E> {
-  return new Fail(value)
+  return Fail(value)
 }
 
 /**
@@ -295,7 +384,7 @@ export function traced<Id, E>(cause: PCause<Id, E>, trace: Trace): PCause<Id, E>
   if (L.isEmpty(trace.executionTrace) && L.isEmpty(trace.stackTrace) && M.isNothing(trace.parentTrace)) {
     return cause
   }
-  return new Traced(cause, trace)
+  return Traced(cause, trace)
 }
 
 /**
@@ -305,7 +394,7 @@ export function traced<Id, E>(cause: PCause<Id, E>, trace: Trace): PCause<Id, E>
  * @since 1.0.0
  */
 export function halt<Id = never>(value: unknown): PCause<Id, never> {
-  return new Halt(value)
+  return Halt(value)
 }
 
 /**
@@ -315,7 +404,7 @@ export function halt<Id = never>(value: unknown): PCause<Id, never> {
  * @since 1.0.0
  */
 export function interrupt<Id>(id: Id): PCause<Id, never> {
-  return new Interrupt(id)
+  return Interrupt(id)
 }
 
 /**
@@ -327,7 +416,7 @@ export function interrupt<Id>(id: Id): PCause<Id, never> {
  * @since 1.0.0
  */
 export function then<Id, E, Id1, E1>(left: PCause<Id, E>, right: PCause<Id1, E1>): PCause<Id | Id1, E | E1> {
-  return isEmpty(left) ? right : isEmpty(right) ? left : new Then<Id | Id1, E | E1>(left, right)
+  return isEmpty(left) ? right : isEmpty(right) ? left : Then<Id | Id1, E | E1>(left, right)
 }
 
 /**
@@ -339,7 +428,7 @@ export function then<Id, E, Id1, E1>(left: PCause<Id, E>, right: PCause<Id1, E1>
  * @since 1.0.0
  */
 export function both<Id, E, Id1, E1>(left: PCause<Id, E>, right: PCause<Id1, E1>): PCause<Id | Id1, E | E1> {
-  return isEmpty(left) ? right : isEmpty(right) ? left : new Both<Id | Id1, E | E1>(left, right)
+  return isEmpty(left) ? right : isEmpty(right) ? left : Both<Id | Id1, E | E1>(left, right)
 }
 
 /*

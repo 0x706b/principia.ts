@@ -1,3 +1,4 @@
+import type { PCause } from '../Cause'
 import type { IO } from '../IO/IO/core'
 import type { Predicate } from '../prelude'
 import type { Equatable, Hashable } from '../Structural'
@@ -28,12 +29,20 @@ export const ExitTag = {
   Failure: 'Failure'
 } as const
 
-export class Failure<Id, E> {
+export interface Failure<Id, E> extends Equatable, Hashable {
+  readonly _E: () => E
+  readonly _A: () => never
+  readonly [ExitTypeId]: ExitTypeId
+  readonly _tag: typeof ExitTag.Failure
+  readonly cause: C.PCause<Id, E>
+}
+
+export const FailureConstructor = class Failure<Id, E> {
   readonly _E!: () => E
-  readonly _A!: () => never;
+  readonly _A!: () => never
 
   readonly [ExitTypeId]: ExitTypeId = ExitTypeId
-  readonly _tag                     = ExitTag.Failure
+  readonly _tag = ExitTag.Failure
   constructor(readonly cause: C.PCause<Id, E>) {}
 
   get [St.$hash](): number {
@@ -44,12 +53,24 @@ export class Failure<Id, E> {
   }
 }
 
-export class Success<A> implements Hashable, Equatable {
+export function Failure<Id, E>(cause: PCause<Id, E>): Failure<Id, E> {
+  return new FailureConstructor(cause)
+}
+
+export interface Success<A> extends Equatable, Hashable {
+  readonly _E: () => never
+  readonly _A: () => A
+  readonly [ExitTypeId]: ExitTypeId
+  readonly _tag: typeof ExitTag.Success
+  readonly value: A
+}
+
+export const SuccessConstructor = class Success<A> implements Hashable, Equatable {
   readonly _E!: () => never
-  readonly _A!: () => A;
+  readonly _A!: () => A
 
   readonly [ExitTypeId]: ExitTypeId = ExitTypeId
-  readonly _tag                     = ExitTag.Success
+  readonly _tag = ExitTag.Success
   constructor(readonly value: A) {}
 
   get [St.$hash](): number {
@@ -58,6 +79,10 @@ export class Success<A> implements Hashable, Equatable {
   [St.$equals](that: unknown): boolean {
     return isExit(that) && isSuccess(that) && St.equals(this.value, that.value)
   }
+}
+
+export function Success<A>(value: A): Success<A> {
+  return new SuccessConstructor(value)
 }
 
 export function isExit(u: unknown): u is PExit<unknown, unknown, unknown> {
@@ -94,7 +119,7 @@ export function fromMaybe<E>(onNothing: () => E): <A>(fa: M.Maybe<A>) => PExit<n
 }
 
 export function failCause<Id = never, E = never, A = never>(cause: C.PCause<Id, E>): PExit<Id, E, A> {
-  return new Failure(cause)
+  return Failure(cause)
 }
 
 export function interrupt<Id>(id: Id) {
@@ -102,7 +127,7 @@ export function interrupt<Id>(id: Id) {
 }
 
 export function succeed<E = never, A = never>(value: A): PExit<never, E, A> {
-  return new Success(value)
+  return Success(value)
 }
 
 /*

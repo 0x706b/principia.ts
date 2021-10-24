@@ -29,37 +29,65 @@ declare global {
 
 interface CauseStaticOps {
   /**
+   * @rewriteStatic Both from "@principia/base/Cause"
+   */
+  Both: typeof C.Both
+  /**
+   * @rewriteStatic Empty from "@principia/base/Cause"
+   */
+  Empty: typeof C.Empty
+  /**
+   * @rewriteStatic Fail from "@principia/base/Cause"
+   */
+  Fail: typeof C.Fail
+  /**
+   * @rewriteStatic Halt from "@principia/base/Cause"
+   */
+  Halt: typeof C.Halt
+  /**
+   * @rewriteStatic Interrupt from "@principia/base/Cause"
+   */
+  Interrupt: typeof C.Interrupt
+  /**
+   * @rewriteStatic Then from "@principia/base/Cause"
+   */
+  Then: typeof C.Then
+  /**
+   * @rewriteStatic Traced from "@principia/base/Cause"
+   */
+  Traced: typeof C.Traced
+  /**
    * @rewriteStatic both from "@principia/base/Cause"
    */
-  Both: typeof C.both
+  both: typeof C.both
   /**
    * @rewriteStatic empty from "@principia/base/Cause"
    */
-  Empty: typeof C.empty
+  empty: typeof C.empty
   /**
    * @rewriteStatic fail from "@principia/base/Cause"
    */
-  Fail: typeof C.fail
+  fail: typeof C.fail
   /**
    * @rewriteStatic halt from "@principia/base/Cause"
    */
-  Halt: typeof C.halt
+  halt: typeof C.halt
   /**
    * @rewriteStatic interrupt from "@principia/base/Cause"
    */
-  Interrupt: typeof C.interrupt
-  /**
-   * @rewriteStatic then from "@principia/base/Cause"
-   */
-  Then: typeof C.then
-  /**
-   * @rewriteStatic traced from "@principia/base/Cause"
-   */
-  Traced: typeof C.traced
+  interrupt: typeof C.interrupt
   /**
    * @rewriteStatic pure from "@principia/base/Cause"
    */
   pure: typeof C.pure
+  /**
+   * @rewriteStatic then from "@principia/base/Cause"
+   */
+  then: typeof C.then
+  /**
+   * @rewriteStatic traced from "@principia/base/Cause"
+   */
+  traced: typeof C.traced
 }
 
 export interface CauseOps {
