@@ -26,6 +26,8 @@ export class Nothing {
   }
 }
 
+const _Nothing = new Nothing()
+
 export class Just<A> {
   readonly [MaybeTypeId]: MaybeTypeId = MaybeTypeId
   readonly _tag = 'Just'
@@ -63,7 +65,7 @@ export function just<A>(a: A): Maybe<A> {
  * @internal
  */
 export function nothing<A = never>(): Maybe<A> {
-  return new Nothing()
+  return _Nothing
 }
 
 /**
