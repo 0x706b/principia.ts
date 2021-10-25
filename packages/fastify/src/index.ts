@@ -9,6 +9,7 @@ import type {
   FastifyReply,
   FastifyRequest,
   FastifyServerOptions,
+  HTTPMethods,
   RawReplyDefaultExpression,
   RawRequestDefaultExpression,
   RawServerBase
@@ -171,6 +172,12 @@ export type RouteParameters<Route> = string extends Route
       (Rest extends `${GetRouteParameter<Rest>}${infer Next}` ? RouteParameters<Next> : unknown)
   : {}
 
+export type FastifyRouteFunction<Server extends RawServerBase> = <R, Url extends string>(
+  url: Url,
+  handler: IORequestHandler<R, Server, Url>,
+  options: Omit<RouteOptions<Server>, 'url' | 'handler' | 'method'>
+) => IO.URIO<Has<ConfigForServer<Server>> & Has<ServerInstance<Server>> & R, void>
+
 export type IORequestHandler<R, Server extends RawServerBase, Url extends string> = (
   request: FastifyRequest<RouteGenericInterface & { Params: RouteParameters<Url> }, Server>,
   reply: FastifyReply<Server>
@@ -204,9 +211,13 @@ export interface FastifyRouteOptions<R, Server extends RawServerBase, Url extend
 }
 
 export interface FastifyServerInstance<Server extends RawServerBase> {
-  readonly route: <R, Url extends string>(
-    opts: FastifyRouteOptions<R, Server, Url>
-  ) => IO.URIO<Has<ConfigForServer<Server>> & R, void>
+  readonly route: (method: HTTPMethods | ReadonlyArray<HTTPMethods>) => FastifyRouteFunction<Server>
+  readonly get: FastifyRouteFunction<Server>
+  readonly delete: FastifyRouteFunction<Server>
+  readonly head: FastifyRouteFunction<Server>
+  readonly put: FastifyRouteFunction<Server>
+  readonly post: FastifyRouteFunction<Server>
+  readonly options: FastifyRouteFunction<Server>
   readonly live: L.Layer<Has<ConfigForServer<Server>>, never, Has<ServerInstance<Server>>>
 }
 
@@ -242,23 +253,33 @@ export const FastifyHttp2SecureServer = tag<ServerInstance<http2.Http2SecureServ
 const AnyFastifyServer = tag<ServerInstance<http.Server>>().setKey(FastifyServerTag)
 
 export function makeFastify<Server extends RawServerBase>(): FastifyServerInstance<Server> {
-  return {
-    // @ts-expect-error
-    route: <R>(opts: Omit<RouteOptions<Server>, 'handler'>, handler: IORequestHandler<R, http.Server>) =>
+  const route =
+    (method: HTTPMethods | ReadonlyArray<HTTPMethods>): FastifyRouteFunction<Server> =>
+    (url, handler, options) =>
+      // @ts-expect-error
       IO.gen(function* (_) {
         const { runtime, fastify } = yield* _(AnyFastifyServer)
         yield* _(
           pipe(
+            // @ts-expect-error
             runtime(handler),
             IO.chain((handler) =>
               IO.succeedLazy(() => {
                 // @ts-expect-error
-                fastify.route({ ...opts, handler })
+                fastify.route({ method, url, handler, ...options })
               })
             )
           )
         )
-      }),
+      })
+  return {
+    route,
+    get: route('GET'),
+    delete: route('DELETE'),
+    post: route('POST'),
+    put: route('PUT'),
+    head: route('HEAD'),
+    options: route('OPTIONS'),
     // @ts-expect-error
     live: L.fromManaged(AnyFastifyServer)(
       Ma.gen(function* (_) {
