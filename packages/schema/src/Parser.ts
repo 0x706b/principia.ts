@@ -502,6 +502,7 @@ export function andThen_<From extends Parser<any, any, any>, To extends Parser<T
 export function andThen<From extends Parser<any, any, any>, To extends Parser<TypeOf<From>, any, any>>(
   ab: To
 ): (ia: From) => AndThenP<From, To>
+// @ts-expect-error incompatible implementation signature since typescript@4.5
 export function andThen<A, E1, B>(ab: Parser<A, E1, B>): <I, E>(ia: Parser<I, E, A>) => Parser<I, AndThenE<E, E1>, B>
 export function andThen<From extends Parser<any, any, any>, To extends Parser<TypeOf<From>, any, any>>(
   ab: To

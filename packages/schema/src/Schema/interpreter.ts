@@ -46,7 +46,7 @@ import type { Newtype } from '@principia/base/Newtype'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 
 import * as A from '@principia/base/Array'
-import { pipe } from '@principia/base/function'
+import { pipe, unsafeCoerce } from '@principia/base/function'
 import * as M from '@principia/base/Maybe'
 import * as MHM from '@principia/base/MutableHashMap'
 import * as NA from '@principia/base/NonEmptyArray'
@@ -139,7 +139,8 @@ const CACHE = MHM.hashMap<URIS, WeakMap<AnyS, any>>()
 export const defaultInterpreter: Interpreter =
   (interpreters) =>
   <U extends URIS>(S: Schemable<U>) => {
-    const toS = makeTo(...interpreters)(S)
+    const toS: (schema: Schema<U, any, any, any, any, any, any, any>) => Kind<U, any, any, any, any, any, any> =
+      unsafeCoerce(makeTo(...interpreters)(S))
     return (schema) => {
       concrete<U>(schema)
       let instance: Kind<U, any, any, any, any, any, any> | undefined = undefined

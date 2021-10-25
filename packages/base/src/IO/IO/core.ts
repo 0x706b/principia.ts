@@ -4533,11 +4533,12 @@ export function deriveLifted<T>(
     const ret = {} as any
 
     for (const k of functions) {
-      ret[k] = (...args: any[]) => asksServiceIO(H)((h) => h[k](...args))
+      ret[k] = (...args: any[]) =>
+        asksServiceIO(H)((h) => (h[k] as unknown as (...args: unknown[]) => IO<unknown, unknown, unknown>)(...args))
     }
 
     for (const k of constants) {
-      ret[k] = asksServiceIO(H)((h) => h[k])
+      ret[k] = asksServiceIO(H)((h) => h[k] as unknown as IO<unknown, unknown, unknown>)
     }
 
     for (const k of values) {

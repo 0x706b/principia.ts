@@ -71,8 +71,10 @@ export interface QueryTypeBuilder<FieldURI extends FieldAURIS, InputURI extends 
 export function makeQueryTypeBuilder<FieldURI extends FieldAURIS, InputURI extends InputAURIS>(
   interpreters: AURItoFieldAlgebra<any, any>[FieldURI] & AURItoInputAlgebra[InputURI]
 ) {
-  return <Ctx>(): QueryTypeBuilder<FieldURI, InputURI, Ctx> => (fields) =>
-    makeExtendObjectTypeBuilder(interpreters)(() => BaseQuery, fields as any)
+  return <Ctx>(): QueryTypeBuilder<FieldURI, InputURI, Ctx> =>
+    (fields) =>
+      // @ts-expect-error too much generic complexity for typescript@4.5
+      makeExtendObjectTypeBuilder(interpreters)(() => BaseQuery, fields as any)
 }
 
 export interface MutationTypeBuilder<FieldURI extends FieldAURIS, InputURI extends InputAURIS, Ctx> {
@@ -84,6 +86,7 @@ export interface MutationTypeBuilder<FieldURI extends FieldAURIS, InputURI exten
 export function makeMutationTypeBuilder<FieldURI extends FieldAURIS, InputURI extends InputAURIS>(
   interpreters: AURItoFieldAlgebra<any, any>[FieldURI] & AURItoInputAlgebra[InputURI]
 ): <Ctx>() => MutationTypeBuilder<FieldURI, InputURI, Ctx> {
+  // @ts-expect-error too much generic complexity for typescript@4.5
   return () => (fields) => makeExtendObjectTypeBuilder(interpreters)(() => BaseMutation, fields as any)
 }
 
@@ -97,7 +100,9 @@ export interface UnionTypeBuilder<Ctx> {
 }
 
 export function makeUnionTypeBuilder<Ctx>(): UnionTypeBuilder<Ctx> {
-  return (...types) => (name, resolveType) => new GQLUnion(name, types, resolveType)
+  return (...types) =>
+    (name, resolveType) =>
+      new GQLUnion(name, types, resolveType)
 }
 
 export interface InterfaceTypeBuilder<FieldURI extends FieldAURIS, InputURI extends InputAURIS, Ctx> {

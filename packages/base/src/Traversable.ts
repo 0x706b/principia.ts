@@ -341,6 +341,7 @@ export function getMapAccumM_<F extends HKT.URIS, C = HKT.Auto>(T: Traversable<F
   return (M) => {
     const StateM          = getStateT(M)
     const traverseStateM_ = T.mapA_(StateM)
+    // @ts-expect-error too much generic complexity to TS to handle
     return (ta, s0, f) => traverseStateM_(ta, (a) => F.single((s: typeof s0) => f(s, a)))(s0 as any)
   }
 }

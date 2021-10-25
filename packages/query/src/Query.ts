@@ -306,7 +306,7 @@ export function crossWith_<R, E, A, R1, E1, B, C>(
   fb: Query<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Query<R & R1, E | E1, C> {
-  return new Query(
+  return new Query<R & R1, E | E1, C>(
     I.chain_(
       fa.step,
       matchTag({
@@ -415,7 +415,7 @@ export function crossWithPar_<R, E, A, R1, E1, B, C>(
   fb: Query<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Query<R & R1, E | E1, C> {
-  return new Query(
+  return new Query<R & R1, E | E1, C>(
     I.crossWithPar_(fa.step, fb.step, (ra, rb) => {
       return ra._tag === 'Blocked'
         ? rb._tag === 'Blocked'
@@ -512,7 +512,7 @@ export function crossWithBatched_<R, E, A, R1, E1, B, C>(
   fb: Query<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Query<R & R1, E | E1, C> {
-  return new Query(
+  return new Query<R & R1, E | E1, C>(
     I.crossWith_(fa.step, fb.step, (ra, rb) => {
       return ra._tag === 'Blocked'
         ? rb._tag === 'Blocked'
@@ -754,7 +754,7 @@ export function chain_<R, E, A, R1, E1, B>(
   ma: Query<R, E, A>,
   f: (a: A) => Query<R1, E1, B>
 ): Query<R & R1, E | E1, B> {
-  return new Query(
+  return new Query<R & R1, E | E1, B>(
     I.chain_(
       ma.step,
       matchTag({
