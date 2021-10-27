@@ -7,6 +7,7 @@ import type { These } from '../These'
 
 import * as A from '../Array/core'
 import * as E from '../Either'
+import { IndexOutOfBoundsError } from '../Error'
 import { identity, pipe, unsafeCoerce } from '../function'
 import * as HKT from '../HKT'
 import * as It from '../Iterable/core'
@@ -25,6 +26,8 @@ type URI = [HKT.URI<ChunkURI>]
 
 const BUFFER_SIZE = 64
 
+const UPDATE_BUFFER_SIZE = 256
+
 export const ChunkTypeId = Symbol.for('@principia/base/Chunk')
 export type ChunkTypeId = typeof ChunkTypeId
 
@@ -33,6 +36,7 @@ export const ChunkTag = {
   Concat: 'Concat',
   AppendN: 'AppendN',
   PrependN: 'PrependN',
+  Update: 'Update',
   Slice: 'Slice',
   Singleton: 'Singleton',
   Arr: 'Arr',
@@ -75,16 +79,29 @@ export abstract class Chunk<A> implements Iterable<A>, Ha.Hashable, Equ.Equatabl
 
 abstract class ChunkImplementation<A> extends Chunk<A> implements Iterable<A> {
   abstract readonly length: number
-  abstract readonly depth: number
-  abstract readonly left: Chunk<A>
-  abstract readonly right: Chunk<A>
   abstract readonly binary: boolean
   abstract get(n: number): A
-  abstract foreach<B>(f: (a: A) => B): void
   abstract toArray(n: number, dest: Array<A> | Uint8Array): void
-  abstract arrayIterator(): Iterator<ArrayLike<A>>
-  abstract reverseArrayIterator(): Iterator<ArrayLike<A>>
-  abstract [Symbol.iterator](): Iterator<A>
+  abstract readonly left: ChunkImplementation<A>
+  abstract readonly right: ChunkImplementation<A>
+
+  readonly depth: number = 0
+
+  arrayIterator(): Iterator<ArrayLike<A>> {
+    return this.materialize().arrayIterator()
+  }
+
+  reverseArrayIterator(): Iterator<ArrayLike<A>> {
+    return this.materialize().reverseArrayIterator()
+  }
+
+  [Symbol.iterator](): Iterator<A> {
+    return this.materialize()[Symbol.iterator]()
+  }
+
+  foreach<B>(f: (a: A) => B): void {
+    this.materialize().foreach(f)
+  }
 
   private arrayLikeCache: ArrayLike<unknown> | undefined
   arrayLike(): ArrayLike<A> {
@@ -204,6 +221,18 @@ abstract class ChunkImplementation<A> extends Chunk<A> implements Iterable<A> {
     )
   }
 
+  update<A1>(index: number, a1: A1): ChunkImplementation<A | A1> {
+    if (index < 0 || index >= this.length) {
+      throw new IndexOutOfBoundsError(`Update chunk access to ${index}`)
+    }
+    const binary        = this.binary && isByte(a1)
+    const bufferIndices = Array<number>(UPDATE_BUFFER_SIZE)
+    const bufferValues  = binary ? alloc(UPDATE_BUFFER_SIZE) : new Array<any>(UPDATE_BUFFER_SIZE)
+    bufferIndices[0]    = index
+    bufferValues[0]     = a1
+    return new Update(this, bufferIndices, bufferValues, 1, new AtomicNumber(1), binary)
+  }
+
   /**
    * Materializes a chunk into a chunk backed by an array. This method can
    * improve the performance of bulk operations.
@@ -233,9 +262,9 @@ class Empty<A> extends ChunkImplementation<A> {
   readonly _chunkTag = ChunkTag.Empty
 
   length = 0
-  depth  = 0
-  left   = this
-  right  = this
+  depth = 0
+  left = this
+  right = this
   binary = false
   get(_: number): A {
     throw new ArrayIndexOutOfBoundsException(_)
@@ -256,22 +285,6 @@ class Empty<A> extends ChunkImplementation<A> {
       }
     }
   }
-  arrayIterator(): Iterator<Array<A>> {
-    return {
-      next: () => ({
-        value: undefined,
-        done: true
-      })
-    }
-  }
-  reverseArrayIterator(): Iterator<Array<A>> {
-    return {
-      next: () => ({
-        value: undefined,
-        done: true
-      })
-    }
-  }
 }
 const _Empty = new Empty<any>()
 
@@ -279,7 +292,7 @@ class Concat<A> extends ChunkImplementation<A> {
   readonly _chunkTag = ChunkTag.Concat
 
   length = this.left.length + this.right.length
-  depth  = 1 + Math.max(this.left.depth, this.right.depth)
+  depth = 1 + Math.max(this.left.depth, this.right.depth)
   binary = this.left.binary && this.right.binary
   constructor(readonly left: ChunkImplementation<A>, readonly right: ChunkImplementation<A>) {
     super()
@@ -316,9 +329,9 @@ class AppendN<A> extends ChunkImplementation<A> {
   readonly _chunkTag = ChunkTag.AppendN
 
   length = this.start.length + this.bufferUsed
-  depth  = 0
-  left   = _Empty
-  right  = _Empty
+  depth = 0
+  left = _Empty
+  right = _Empty
   constructor(
     readonly start: ChunkImplementation<A>,
     readonly buffer: Array<unknown> | Uint8Array,
@@ -383,59 +396,14 @@ class AppendN<A> extends ChunkImplementation<A> {
       f(this.buffer[i] as A)
     }
   }
-  [Symbol.iterator](): Iterator<A> {
-    const arr = this.arrayLike()
-    return arr[Symbol.iterator]()
-  }
-  arrayIterator(): Iterator<ArrayLike<A>> {
-    const array = this.arrayLike()
-    let done    = false
-    return {
-      next: () => {
-        if (!done) {
-          done = true
-          return {
-            value: array,
-            done: false
-          }
-        } else {
-          return {
-            value: null,
-            done: true
-          }
-        }
-      }
-    }
-  }
-  reverseArrayIterator(): Iterator<ArrayLike<A>> {
-    const array = this.arrayLike()
-    let done    = true
-    return {
-      next: () => {
-        if (!done) {
-          done = true
-          return {
-            value: array,
-            done: false
-          }
-        } else {
-          return {
-            value: null,
-            done: true
-          }
-        }
-      }
-    }
-  }
 }
-
 class PrependN<A> extends ChunkImplementation<A> {
   readonly _chunkTag = ChunkTag.PrependN
 
   length = this.end.length + this.bufferUsed
-  depth  = 0
-  left   = _Empty
-  right  = _Empty
+  left = _Empty
+  right = _Empty
+
   constructor(
     readonly end: ChunkImplementation<A>,
     readonly buffer: Array<unknown> | Uint8Array,
@@ -503,46 +471,78 @@ class PrependN<A> extends ChunkImplementation<A> {
     }
     this.end.foreach(f)
   }
-  [Symbol.iterator](): Iterator<A> {
-    const arr = this.arrayLike()
-    return arr[Symbol.iterator]()
+}
+
+class Update<A> extends ChunkImplementation<A> {
+  readonly _chunkTag = ChunkTag.Update
+
+  length = this.chunk.length
+  left = _Empty
+  right = _Empty
+
+  constructor(
+    readonly chunk: ChunkImplementation<A>,
+    readonly bufferIndices: Array<number>,
+    readonly bufferValues: Array<any> | Uint8Array,
+    readonly used: number,
+    readonly chain: AtomicNumber,
+    readonly binary: boolean
+  ) {
+    super()
   }
-  arrayIterator(): Iterator<ArrayLike<A>> {
-    let done = false
-    return {
-      next: () => {
-        if (!done) {
-          done = true
-          return {
-            value: this.arrayLike(),
-            done: false
-          }
-        } else {
-          return {
-            value: null,
-            done: true
-          }
-        }
+
+  get(n: number): A {
+    let a: A = null!
+    for (let j = this.used; j >= 0; j--) {
+      if (this.bufferIndices[j] === n) {
+        a = this.bufferValues[j]
+        break
       }
     }
+    return a !== null ? a : this.chunk.get(n)
   }
-  reverseArrayIterator(): Iterator<ArrayLike<A>> {
-    let done = false
-    return {
-      next: () => {
-        if (!done) {
-          done = true
-          return {
-            value: this.arrayLike(),
-            done: false
-          }
-        } else {
-          return {
-            value: null,
-            done: true
-          }
+
+  update<A1>(i: number, a: A1): ChunkImplementation<A | A1> {
+    if (i < 0 || i >= this.length) {
+      throw new IndexOutOfBoundsError(`Update chunk access to ${i}`)
+    }
+    const binary = this.binary && isByte(a)
+    if (this.used < UPDATE_BUFFER_SIZE && this.chain.compareAndSet(this.used, this.used + 1)) {
+      if (this.binary && !binary) {
+        const buffer = new Array(UPDATE_BUFFER_SIZE)
+        for (let j = 0; j < UPDATE_BUFFER_SIZE; j++) {
+          buffer[j] = this.bufferValues[j]
         }
+        this.bufferIndices[this.used] = i
+        buffer[this.used]             = a
+        return new Update(this.chunk, this.bufferIndices, buffer, this.used + 1, this.chain, this.binary && binary)
       }
+      this.bufferIndices[this.used] = i
+      this.bufferValues[this.used]  = a
+      return new Update(
+        this.chunk,
+        this.bufferIndices,
+        this.bufferValues,
+        this.used + 1,
+        this.chain,
+        this.binary && binary
+      )
+    } else {
+      const bufferIndices = Array<number>(UPDATE_BUFFER_SIZE)
+      const bufferValues  = this.binary && binary ? alloc(UPDATE_BUFFER_SIZE) : Array<any>(UPDATE_BUFFER_SIZE)
+      bufferIndices[0]    = i
+      bufferValues[0]     = a
+      const array         = toArray(this.chunk)
+      return new Update(fromArray(array), bufferIndices, bufferValues, 1, new AtomicNumber(1), this.binary && binary)
+    }
+  }
+
+  toArray(n: number, dest: Array<A>): void {
+    this.chunk.toArray(n, dest)
+    for (let i = 0; i < this.used; i++) {
+      const index = this.bufferIndices[i]
+      const value = this.bufferValues[i]
+      dest[index] = value
     }
   }
 }
@@ -551,9 +551,9 @@ class Singleton<A> extends ChunkImplementation<A> {
   readonly _chunkTag = ChunkTag.Singleton
 
   length = 1
-  depth  = 0
-  left   = _Empty
-  right  = _Empty
+  depth = 0
+  left = _Empty
+  right = _Empty
   binary = isByte(this.value)
   constructor(readonly value: A) {
     super()
@@ -570,72 +570,18 @@ class Singleton<A> extends ChunkImplementation<A> {
   toArray(n: number, dest: Array<A> | Uint8Array) {
     dest[n] = this.value
   }
-  [Symbol.iterator](): Iterator<A> {
-    let done = false
-    return {
-      next: () => {
-        if (!done) {
-          done = true
-          return {
-            value: this.value,
-            done: false
-          }
-        } else {
-          return {
-            value: null,
-            done: true
-          }
-        }
-      }
-    }
-  }
-  arrayIterator(): Iterator<ArrayLike<A>> {
-    let done = false
-    return {
-      next: () => {
-        if (!done) {
-          done = true
-          return {
-            value: [this.value],
-            done: false
-          }
-        } else {
-          return {
-            value: null,
-            done: true
-          }
-        }
-      }
-    }
-  }
-  reverseArrayIterator(): Iterator<ArrayLike<A>> {
-    let done = false
-    return {
-      next: () => {
-        if (!done) {
-          done = true
-          return {
-            value: [this.value],
-            done: false
-          }
-        } else {
-          return {
-            value: null,
-            done: true
-          }
-        }
-      }
-    }
-  }
+  [Symbol.iterator] = It.singleton(this.value)[Symbol.iterator]
+  arrayIterator = It.singleton([this.value])[Symbol.iterator]
+  reverseArrayIterator = this.arrayIterator
 }
 
 class Slice<A> extends ChunkImplementation<A> {
   readonly _chunkTag = ChunkTag.Slice
 
   length = this.l
-  depth  = 0
-  left   = _Empty
-  right  = _Empty
+  depth = 0
+  left = _Empty
+  right = _Empty
   binary = this.chunk.binary
   constructor(readonly chunk: ChunkImplementation<A>, readonly offset: number, readonly l: number) {
     super()
@@ -659,57 +605,15 @@ class Slice<A> extends ChunkImplementation<A> {
       j++
     }
   }
-  [Symbol.iterator](): Iterator<A> {
-    const arr = this.arrayLike()
-    return arr[Symbol.iterator]()
-  }
-  arrayIterator(): Iterator<ArrayLike<A>> {
-    let done = false
-    return {
-      next: () => {
-        if (!done) {
-          done = true
-          return {
-            value: this.arrayLike(),
-            done: false
-          }
-        } else {
-          return {
-            value: null,
-            done: true
-          }
-        }
-      }
-    }
-  }
-  reverseArrayIterator(): Iterator<ArrayLike<A>> {
-    let done = false
-    return {
-      next: () => {
-        if (!done) {
-          done = true
-          return {
-            value: this.arrayLike(),
-            done: false
-          }
-        } else {
-          return {
-            value: null,
-            done: true
-          }
-        }
-      }
-    }
-  }
 }
 
 class Arr<A> extends ChunkImplementation<A> {
   readonly _chunkTag = ChunkTag.Arr
 
   length = this._array.length
-  depth  = 0
-  left   = _Empty
-  right  = _Empty
+  depth = 0
+  left = _Empty
+  right = _Empty
   binary = false
   constructor(readonly _array: ReadonlyArray<A>) {
     super()
@@ -731,53 +635,17 @@ class Arr<A> extends ChunkImplementation<A> {
   [Symbol.iterator](): Iterator<A> {
     return this._array[Symbol.iterator]()
   }
-  arrayIterator(): Iterator<ReadonlyArray<A>> {
-    let done = false
-    return {
-      next: () => {
-        if (!done) {
-          done = true
-          return {
-            value: this._array,
-            done: false
-          }
-        } else {
-          return {
-            value: null,
-            done: true
-          }
-        }
-      }
-    }
-  }
-  reverseArrayIterator(): Iterator<ReadonlyArray<A>> {
-    let done = false
-    return {
-      next: () => {
-        if (!done) {
-          done = true
-          return {
-            value: this._array,
-            done: false
-          }
-        } else {
-          return {
-            value: null,
-            done: true
-          }
-        }
-      }
-    }
-  }
+  arrayIterator = It.singleton(this._array)[Symbol.iterator]
+  reverseArrayIterator = this.arrayIterator
 }
 
 class BinArr extends ChunkImplementation<Byte> {
   readonly _chunkTag = ChunkTag.BinArr
 
   length = this._array.length
-  depth  = 0
-  left   = _Empty
-  right  = _Empty
+  depth = 0
+  left = _Empty
+  right = _Empty
   binary = true
   constructor(readonly _array: ByteArray) {
     super()
@@ -799,44 +667,8 @@ class BinArr extends ChunkImplementation<Byte> {
   toArray(n: number, dest: Array<Byte> | Uint8Array): void {
     copyArray(this._array, 0, dest, n, this.length)
   }
-  arrayIterator(): Iterator<ArrayLike<Byte>> {
-    let done = false
-    return {
-      next: () => {
-        if (!done) {
-          done = true
-          return {
-            value: this._array,
-            done: false
-          }
-        } else {
-          return {
-            value: null,
-            done: true
-          }
-        }
-      }
-    }
-  }
-  reverseArrayIterator(): Iterator<ArrayLike<Byte>> {
-    let done = false
-    return {
-      next: () => {
-        if (!done) {
-          done = true
-          return {
-            value: this._array,
-            done: false
-          }
-        } else {
-          return {
-            value: null,
-            done: true
-          }
-        }
-      }
-    }
-  }
+  arrayIterator = It.singleton(this._array)[Symbol.iterator]
+  reverseArrayIterator = this.arrayIterator
 }
 
 /**
@@ -2252,6 +2084,27 @@ export function unsafeTail<A>(self: Chunk<A>): Chunk<A> {
   }
 
   return drop_(self, 1)
+}
+
+export function unsafeUpdateAt_<A, A1>(chunk: Chunk<A>, index: number, elem: A1): Chunk<A | A1> {
+  concrete(chunk)
+  return chunk.update(index, elem)
+}
+
+export function unsafeUpdateAt<A1>(index: number, elem: A1): <A>(chunk: Chunk<A>) => Chunk<A | A1> {
+  return (chunk) => unsafeUpdateAt_(chunk, index, elem)
+}
+
+export function updateAt_<A, A1>(chunk: Chunk<A>, index: number, elem: A1): M.Maybe<Chunk<A | A1>> {
+  try {
+    return M.just(unsafeUpdateAt_(chunk, index, elem))
+  } catch {
+    return M.nothing()
+  }
+}
+
+export function updateAt<A1>(index: number, elem: A1): <A>(chunk: Chunk<A>) => M.Maybe<Chunk<A | A1>> {
+  return (chunk) => updateAt_(chunk, index, elem)
 }
 
 export function zipWithIndexOffset_<A>(as: Chunk<A>, offset: number): Chunk<readonly [A, number]> {

@@ -38,3 +38,19 @@ export class PrematureGeneratorExitError extends Error {
     this.name = this._tag
   }
 }
+
+export class IndexOutOfBoundsError extends Error {
+  readonly _tag = 'IndexOutOfBoundsError'
+  constructor(message: string) {
+    super(message)
+    this.name = this._tag
+  }
+}
+
+export class ArrayIndexOutOfBoundsError extends Error {
+  readonly _tag = 'ArrayIndexOutOfBoundsError'
+  constructor(message: string) {
+    super(message)
+    this.name = this._tag
+  }
+}
