@@ -26,7 +26,7 @@ import * as C from '../Cause'
 import * as Ex from '../Exit/core'
 import * as Ref from '../Ref/core'
 import * as I from './internal/io'
-import { add, addIfOpen, noopFinalizer, release, updateAll } from './ReleaseMap'
+import { add, addIfOpen, noopFinalizer, release, updateAll, make } from './ReleaseMap'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -401,7 +401,7 @@ export function makeReservation<R2>(
  *
  * @trace call
  */
-export function reserve<R, E, A>(reservation: Reservation<R, E, A>): Managed<R, E, A> {
+export function fromReservation<R, E, A>(reservation: Reservation<R, E, A>): Managed<R, E, A> {
   const trace = accessCallTrace()
   return traceCall(makeReserve, trace)(I.pure(reservation))
 }
