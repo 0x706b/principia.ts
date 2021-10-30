@@ -1,28 +1,24 @@
-import { Suite } from 'benchmark'
-
-import * as Iter from '../../src/Iterable'
+import * as Iter from '@principia/base/Iterable'
+import * as b from 'benny'
 
 const x = Iter.range(0, 100)
 
-new Suite('forof vs. plain loop')
-  .add('forof', () => {
+b.suite(
+  'forof vs. plain loop',
+  b.add('forof', () => {
     const ns = []
     for (const n of x) {
       ns.push(n)
     }
-  })
-  .add('while', () => {
+  }),
+  b.add('while', () => {
     const iterator = x[Symbol.iterator]()
     const ns       = []
     let result
     while (!(result = iterator.next()).done) {
       ns.push(result.value)
     }
-  })
-  .on('cycle', function (event: any) {
-    console.log(String(event.target))
-  })
-  .on('complete', function (this: any) {
-    console.log('Fastest is ' + this.filter('fastest').map('name'))
-  })
-  .run()
+  }),
+  b.cycle(),
+  b.complete()
+)

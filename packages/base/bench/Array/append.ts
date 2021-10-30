@@ -2,7 +2,7 @@ import type { NonEmptyArray } from 'packages/base/src/NonEmptyArray'
 
 import * as A from '@principia/base/Array'
 import * as C from '@principia/base/Chunk'
-import { Suite } from 'benchmark'
+import * as b from 'benny'
 
 const appendArray = (n: number) => {
   let out: NonEmptyArray<number> = [0]
@@ -28,14 +28,11 @@ const appendNative = (n: number) => {
   return out
 }
 
-new Suite('copy methods')
-  .add('array', () => appendArray(10000))
-  .add('chunk', () => appendChunk(10000))
-  .add('native', () => appendNative(10000))
-  .on('cycle', function (event: any) {
-    console.log(String(event.target))
-  })
-  .on('complete', function (this: any) {
-    console.log('Fastest is ' + this.filter('fastest').map('name'))
-  })
-  .run()
+b.suite(
+  'append',
+  b.add('array', () => appendArray(10000)),
+  b.add('chunk', () => appendChunk(10000)),
+  b.add('native', () => appendNative(10000)),
+  b.cycle(),
+  b.complete()
+)

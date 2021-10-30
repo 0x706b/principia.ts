@@ -1,9 +1,8 @@
-import { Suite } from 'benchmark'
-
-import * as A from '../../src/Array'
-import { pipe } from '../../src/function'
-import { tuple } from '../../src/tuple'
-import * as Z from '../../src/Z'
+import * as A from '@principia/base/Array'
+import { pipe } from '@principia/base/function'
+import { tuple } from '@principia/base/tuple'
+import * as Z from '@principia/base/Z'
+import * as b from 'benny'
 
 export function iforeachArrayAlloc_<A, W, S, R, E, B>(
   as: ReadonlyArray<A>,
@@ -11,7 +10,7 @@ export function iforeachArrayAlloc_<A, W, S, R, E, B>(
 ): Z.Z<W, S, S, R, E, ReadonlyArray<B>> {
   return pipe(
     as,
-    A.ifoldl(Z.succeed([0, Array(as.length)]) as Z.Z<W, S, S, R, E, readonly [number, Array<B>]>, (b, i, a) =>
+    A.foldl(Z.succeed([0, Array(as.length)]) as Z.Z<W, S, S, R, E, readonly [number, Array<B>]>, (b, a, i) =>
       Z.crossWith_(
         b,
         Z.defer(() => f(i, a)),
@@ -31,7 +30,7 @@ export function iforeachArrayPush_<A, W, S, R, E, B>(
 ): Z.Z<W, S, S, R, E, ReadonlyArray<B>> {
   return pipe(
     as,
-    A.ifoldl(Z.succeed([]) as Z.Z<W, S, S, R, E, Array<B>>, (b, i, a) =>
+    A.foldl(Z.succeed([]) as Z.Z<W, S, S, R, E, Array<B>>, (b, a, i) =>
       Z.crossWith_(
         b,
         Z.defer(() => f(i, a)),
@@ -46,17 +45,14 @@ export function iforeachArrayPush_<A, W, S, R, E, B>(
 
 const test = A.range(1, 100)
 
-new Suite('name')
-  .add('alloc', () => {
+b.suite(
+  'name',
+  b.add('alloc', () => {
     Z.runResult(iforeachArrayAlloc_(test, (i, n) => Z.succeed(i + n)))
-  })
-  .add('push', () => {
+  }),
+  b.add('push', () => {
     Z.runResult(iforeachArrayPush_(test, (i, n) => Z.succeed(i + n)))
-  })
-  .on('cycle', function (event: any) {
-    console.log(String(event.target))
-  })
-  .on('complete', function (this: any) {
-    console.log('Fastest is ' + this.filter('fastest').map('name'))
-  })
-  .run()
+  }),
+  b.cycle(),
+  b.complete()
+)

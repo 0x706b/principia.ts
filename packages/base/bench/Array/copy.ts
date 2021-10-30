@@ -1,5 +1,5 @@
 import * as A from '@principia/base/Array'
-import { Suite } from 'benchmark'
+import * as b from 'benny'
 
 const copyLoop = <A>(xs: ReadonlyArray<A>): ReadonlyArray<A> => {
   const mut_out = Array(xs.length)
@@ -19,14 +19,11 @@ const copyFrom = <A>(xs: ReadonlyArray<A>): ReadonlyArray<A> => {
 
 const testArray = A.range(0, 1000)
 
-new Suite('copy methods')
-  .add('for loop', () => copyLoop(testArray))
-  .add('Array.prototype.slice', () => copySlice(testArray))
-  .add('Array.from', () => copyFrom(testArray))
-  .on('cycle', function (event: any) {
-    console.log(String(event.target))
-  })
-  .on('complete', function (this: any) {
-    console.log('Fastest is ' + this.filter('fastest').map('name'))
-  })
-  .run()
+b.suite(
+  'copy',
+  b.add('for loop', () => copyLoop(testArray)),
+  b.add('Array.prototype.slice', () => copySlice(testArray)),
+  b.add('Array.from', () => copyFrom(testArray)),
+  b.cycle(),
+  b.complete()
+)
