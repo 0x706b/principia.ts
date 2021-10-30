@@ -1,5 +1,9 @@
+import type { Has } from '../../Has'
+import type { Clock } from '../Clock'
+
 import { flow, identity, pipe } from '../../function'
 import * as HS from '../../HashSet'
+import { ClockTag } from '../Clock'
 import * as Ex from '../Exit'
 import * as Fi from '../Fiber'
 import * as IO from '../IO'
@@ -28,135 +32,329 @@ export interface Pool<E, A> {
   readonly invalidate: (item: A) => IO.UIO<void>
 }
 
-export class DefaultPool<E, A> implements Pool<E, A> {
+interface State {
+  readonly size: number
+  readonly free: number
+}
+
+export class DefaultPool<R, E, A, S> implements Pool<E, A> {
   constructor(
     readonly creator: Ma.Managed<unknown, E, A>,
     readonly min: number,
     readonly max: number,
     readonly isShuttingDown: Ref.URef<boolean>,
-    readonly size: Ref.URef<number>,
-    readonly free: Q.UQueue<At.Attempted<E, A>>,
-    readonly allocating: Ref.URef<number>,
-    readonly invalidated: Ref.URef<HS.HashSet<A>>
+    readonly state: Ref.URef<State>,
+    readonly items: Q.UQueue<At.Attempted<E, A>>,
+    readonly invalidated: Ref.URef<HS.HashSet<A>>,
+    readonly track: (exit: Ex.Exit<E, A>) => IO.UIO<void>
   ) {}
-  private allocate(): IO.UIO<void> {
+  excess: IO.UIO<number> = pipe(
+    Ref.get(this.state),
+    IO.map(({ free, size }) => Math.min(size - this.min, free))
+  )
+
+  initialize(): IO.UIO<void> {
     const self = this
-    return IO.whenIO(IO.not(this.isShuttingDown.get))(
-      IO.uninterruptibleMask(({ restore }) =>
-        pipe(
-          IO.gen(function* (_) {
-            yield* _(Ref.update_(self.allocating, (n) => n + 1))
-            const reservation = yield* _(Ma.reserve(self.creator))
-            const exit        = yield* _(IO.result(restore(reservation.acquire)))
-            const attempted   = yield* _(IO.succeed(new At.Attempted(exit, reservation.release(Ex.unit()))))
-            yield* _(
-              IO.crossSecond_(
-                Q.offer_(self.free, attempted),
-                Ref.update_(self.size, (n) => n + 1)
-              )
-            )
-            return attempted
-          }),
-          IO.ensuring(Ref.update_(this.allocating, (n) => n - 1))
+    return pipe(
+      IO.whenIO(IO.not(this.isShuttingDown.get))(
+        IO.uninterruptibleMask(({ restore }) =>
+          Ref.modify_(this.state, ({ size, free }) => {
+            if (size < this.min) {
+              return [
+                pipe(
+                  IO.gen(function* (_) {
+                    const reservation = yield* _(Ma.reserve(self.creator))
+                    const exit        = yield* _(IO.result(restore(reservation.acquire)))
+                    const attempted   = yield* _(IO.succeed(new At.Attempted(exit, reservation.release(Ex.unit()))))
+                    yield* _(Q.offer_(self.items, attempted))
+                    yield* _(self.track(attempted.result))
+                    yield* _(IO.whenIO(Ref.get(self.isShuttingDown))(self.getAndShutdown))
+                    return attempted
+                  })
+                ),
+                {
+                  size: size + 1,
+                  free: free + 1
+                }
+              ]
+            } else {
+              return [IO.unit(), { size, free }]
+            }
+          })
         )
-      )
+      ),
+      IO.replicate(this.min),
+      IO.collectAllUnit
+    )
+  }
+
+  shrink: IO.UIO<void> = IO.uninterruptible(
+    IO.flatten(
+      Ref.modify_(this.state, ({ size, free }) => {
+        if (size > this.min && free > 0) {
+          return [
+            pipe(
+              Q.take(this.items),
+              IO.chain((attempted) =>
+                At.foreach_(attempted, (a) =>
+                  pipe(
+                    this.invalidated,
+                    Ref.update(HS.remove(a)),
+                    IO.crossSecond(attempted.finalizer),
+                    IO.crossSecond(
+                      pipe(
+                        this.state,
+                        Ref.update((state) => ({ free: state.free, size: state.size - 1 }))
+                      )
+                    )
+                  )
+                )
+              )
+            ),
+            { size, free: free - 1 }
+          ]
+        } else {
+          return [IO.unit(), { size, free }]
+        }
+      })
+    )
+  )
+
+  allocate(): IO.UIO<void> {
+    const self = this
+    return IO.uninterruptibleMask(({ restore }) =>
+      IO.gen(function* (_) {
+        const reservation = yield* _(Ma.reserve(self.creator))
+        const exit        = yield* _(IO.result(restore(reservation.acquire)))
+        const attempted   = yield* _(IO.succeed(new At.Attempted(exit, reservation.release(Ex.unit()))))
+        yield* _(Q.offer_(self.items, attempted))
+        yield* _(self.track(attempted.result))
+        yield* _(IO.whenIO(Ref.get(self.isShuttingDown))(self.getAndShutdown))
+      })
     )
   }
 
   get get() {
     const acquire: IO.UIO<At.Attempted<E, A>> = pipe(
-      this.free,
-      Q.take,
-      IO.chain((acquired) =>
-        Ex.match_(
-          acquired.result,
-          () => IO.succeed(acquired),
-          (item) =>
-            pipe(
-              this.invalidated,
-              Ref.get,
-              IO.chain((set) => {
-                if (HS.has_(set, item)) {
-                  return pipe(
-                    this.size,
-                    Ref.update((n) => n - 1),
-                    IO.crossSecond(this.allocate()),
-                    IO.crossSecond(acquire)
-                  )
-                } else {
-                  return IO.succeed(acquired)
-                }
-              })
-            )
-        )
-      )
-    )
-    return pipe(
-      acquire,
-      Ma.bracket((attempted) => {
-        if (At.isFailure(attempted)) {
-          return pipe(
-            this.size,
-            Ref.update((n) => n - 1),
-            IO.crossSecond(this.allocate())
-          )
+      Ref.get(this.isShuttingDown),
+      IO.chain((down) => {
+        if (down) {
+          return IO.interrupt
         } else {
-          return Q.offer_(this.free, attempted)
+          return IO.flatten(
+            Ref.modify_(this.state, ({ size, free }) => {
+              if (free > 0 || size >= this.max) {
+                return [
+                  pipe(
+                    Q.take(this.items),
+                    IO.chain((acquired) =>
+                      Ex.match_(
+                        acquired.result,
+                        () => IO.succeed(acquired),
+                        (item) =>
+                          pipe(
+                            Ref.get(this.invalidated),
+                            IO.chain((set) => {
+                              if (HS.has_(set, item)) {
+                                return pipe(
+                                  this.state,
+                                  Ref.update((state) => ({ size: state.size, free: state.free + 1 })),
+                                  IO.crossSecond(this.allocate()),
+                                  IO.crossSecond(acquire)
+                                )
+                              } else {
+                                return IO.succeed(acquired)
+                              }
+                            })
+                          )
+                      )
+                    )
+                  ),
+                  { size, free: free - 1 }
+                ]
+              } else {
+                return [pipe(this.allocate(), IO.crossSecond(acquire)), { size: size + 1, free: free + 1 }]
+              }
+            })
+          )
         }
-      }),
-      Ma.chain(At.toManaged)
+      })
     )
+
+    const release = (attempted: At.Attempted<E, A>): IO.UIO<void> => {
+      if (At.isFailure(attempted)) {
+        return IO.flatten(
+          Ref.modify_(this.state, ({ size, free }) => {
+            if (size <= this.min) {
+              return [this.allocate(), { size, free: free + 1 }]
+            } else {
+              return [IO.unit(), { size: size - 1, free }]
+            }
+          })
+        )
+      } else {
+        return pipe(
+          this.state,
+          Ref.update((state) => ({ size: state.size, free: state.free + 1 })),
+          IO.crossSecond(Q.offer_(this.items, attempted)),
+          IO.crossSecond(this.track(attempted.result)),
+          IO.crossSecond(IO.whenIO(Ref.get(this.isShuttingDown))(this.getAndShutdown))
+        )
+      }
+    }
+    return pipe(acquire, Ma.bracket(release), Ma.chain(At.toManaged))
   }
 
-  private getAndShutdown = pipe(
-    this.size,
-    Ref.get,
-    IO.map((n) => n > 0),
-    IO.tap((more) =>
-      IO.when(() => more)(
-        pipe(
-          this.free,
-          Q.take,
-          IO.chain((attempted) =>
-            At.foreach_(attempted, (a) =>
-              pipe(
-                this.invalidated,
-                Ref.update(HS.remove(a)),
-                IO.crossSecond(Ref.update_(this.size, (n) => n - 1)),
-                IO.crossSecond(attempted.finalizer)
-              )
+  private getAndShutdown: IO.UIO<void> = IO.flatten(
+    Ref.modify_(this.state, ({ size, free }) => {
+      if (free > 0) {
+        return [
+          pipe(
+            Q.take(this.items),
+            IO.matchCauseIO(
+              () => IO.unit(),
+              (attempted) =>
+                At.foreach_(attempted, (a) =>
+                  pipe(
+                    this.invalidated,
+                    Ref.update(HS.remove(a)),
+                    IO.crossSecond(attempted.finalizer),
+                    IO.crossSecond(
+                      pipe(
+                        this.state,
+                        Ref.update((state) => ({ free: state.free, size: state.size - 1 }))
+                      )
+                    ),
+                    IO.crossSecond(this.getAndShutdown)
+                  )
+                )
             )
-          )
-        )
-      )
-    )
+          ),
+          { size, free: free - 1 }
+        ]
+      } else if (size > 0) {
+        return [IO.unit(), { size, free }]
+      } else {
+        return [Q.shutdown(this.items), { size, free }]
+      }
+    })
   )
-
-  initialize = pipe(this.allocate(), IO.replicate(this.min), IO.collectAllUnit)
 
   invalidate(a: A) {
     return Ref.update_(this.invalidated, HS.add(a))
   }
 
-  shutdown = pipe(
-    this.isShuttingDown,
-    Ref.set(true),
-    IO.crossSecond(IO.repeatWhile_(this.getAndShutdown, identity)),
-    IO.crossSecond(Q.shutdown(this.free)),
-    IO.crossSecond(Q.awaitShutdown(this.free))
+  shutdown = IO.flatten(
+    pipe(
+      this.isShuttingDown,
+      Ref.modify((down) => {
+        if (down) {
+          return [IO.unit(), true]
+        } else {
+          return [pipe(this.getAndShutdown, IO.crossSecond(Q.awaitShutdown(this.items))), true]
+        }
+      })
+    )
   )
 }
 
-export function make<E, A>(get: Ma.Managed<unknown, E, A>, min: number, max: number): Ma.UManaged<Pool<E, A>> {
+export function makeWith<R, E, A, S, R1>(
+  get: Ma.Managed<R, E, A>,
+  min: number,
+  max: number,
+  strategy: Strategy<S, R1, E, A>
+): Ma.Managed<R & R1, never, Pool<E, A>> {
   return Ma.gen(function* (_) {
-    const down  = yield* _(Ref.make(false))
-    const size  = yield* _(Ref.make(0))
-    const free  = yield* _(Q.makeBounded<At.Attempted<E, A>>(min))
-    const alloc = yield* _(Ref.make(0))
-    const inv   = yield* _(Ref.make(HS.makeDefault<A>()))
-    const pool  = new DefaultPool(get, min, max, down, size, free, alloc, inv)
-    const fiber = yield* _(IO.forkDaemon(pool.initialize))
-    yield* _(Ma.finalizer(pipe(Fi.interrupt(fiber), IO.crossSecond(pool.shutdown))))
+    const env     = yield* _(Ma.ask<R>())
+    const down    = yield* _(Ref.make(false))
+    const state   = yield* _(Ref.make<State>({ free: 0, size: 0 }))
+    const items   = yield* _(Q.makeBounded<At.Attempted<E, A>>(max))
+    const inv     = yield* _(Ref.make(HS.makeDefault<A>()))
+    const initial = yield* _(strategy.initial)
+    const pool    = new DefaultPool(Ma.give_(get, env), min, max, down, state, items, inv, strategy.track(initial))
+    const fiber   = yield* _(IO.forkDaemon(pool.initialize()))
+    const shrink  = yield* _(IO.forkDaemon(strategy.run(initial, pool.excess, pool.shrink)))
+    yield* _(
+      Ma.finalizer(pipe(Fi.interrupt(fiber), IO.crossSecond(Fi.interrupt(shrink)), IO.crossSecond(pool.shutdown)))
+    )
     return pool
   })
+}
+
+export function makeTimeToLive<R, E, A>(
+  get: Ma.Managed<R, E, A>,
+  min: number,
+  max: number,
+  timeToLive: number
+): Ma.Managed<R & Has<Clock>, never, Pool<E, A>> {
+  return makeWith(get, min, max, new TimeToLive(timeToLive))
+}
+
+export function make<R, E, A>(get: Ma.Managed<R, E, A>, size: number): Ma.URManaged<R, Pool<E, A>> {
+  return makeWith(get, size, size, new None())
+}
+
+abstract class Strategy<S, R, E, A> {
+  readonly _S!: S
+  readonly _R!: (_: R) => void
+  readonly _E!: (_: E) => void
+  readonly _A!: (_: A) => void
+  abstract readonly initial: IO.URIO<R, S>
+  abstract track(state: S): (item: Ex.Exit<E, A>) => IO.UIO<void>
+  abstract run(state: S, getExcess: IO.UIO<number>, shrink: IO.UIO<void>): IO.UIO<void>
+}
+
+class None extends Strategy<void, unknown, unknown, unknown> {
+  initial = IO.unit()
+  track(state: void): (attempted: Ex.Exit<unknown, unknown>) => IO.UIO<void> {
+    return () => IO.unit()
+  }
+  run(state: void, getExcess: IO.UIO<number>, shrink: IO.UIO<void>) {
+    return IO.unit()
+  }
+}
+
+class TimeToLive extends Strategy<[Clock, Ref.URef<number>], Has<Clock>, unknown, unknown> {
+  constructor(readonly timeToLive: number) {
+    super()
+  }
+
+  initial: IO.URIO<Has<Clock>, [Clock, Ref.URef<number>]> = IO.gen(function* (_) {
+    const clock = yield* _(ClockTag)
+    const now   = yield* _(clock.currentTime)
+    const ref   = yield* _(Ref.make(now))
+    return [clock, ref]
+  })
+  track(state: [Clock, Ref.URef<number>]): (item: Ex.Exit<unknown, unknown>) => IO.UIO<void> {
+    return (item) => {
+      const [clock, ref] = state
+      return IO.gen(function* (_) {
+        const now = yield* _(clock.currentTime)
+        yield* _(Ref.set_(ref, now))
+      })
+    }
+  }
+  run(state: [Clock, Ref.URef<number>], getExcess: IO.UIO<number>, shrink: IO.UIO<void>): IO.UIO<void> {
+    const [clock, ref] = state
+    return pipe(
+      getExcess,
+      IO.chain((excess) => {
+        if (excess <= 0) {
+          return pipe(clock.sleep(this.timeToLive), IO.crossSecond(this.run(state, getExcess, shrink)))
+        } else {
+          return pipe(
+            Ref.get(ref),
+            IO.crossWith(clock.currentTime, (start, end) => {
+              const duration = end - start
+              if (duration >= this.timeToLive) {
+                return pipe(shrink, IO.crossSecond(this.run(state, getExcess, shrink)))
+              } else {
+                return pipe(clock.sleep(this.timeToLive), IO.crossSecond(this.run(state, getExcess, shrink)))
+              }
+            })
+          )
+        }
+      })
+    )
+  }
 }
