@@ -58,7 +58,7 @@
     "syncpack": "^5.8.15",
     "ts-node": "^10.3.0",
     "ts-patch": "^1.4.4",
-    "typescript": "next",
+    "typescript": "4.5.0-dev.20211030",
     "ultra-runner": "^3.10.5",
     "yargs": "^17.2.1"
   },
@@ -69,5 +69,6 @@
   },
   "dependencies": {
     "@0x706b/prettier-eslint-8": "^0.0.2"
-  }
+  },
+  "packageManager": "yarn@3.1.0"
 }
