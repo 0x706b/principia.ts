@@ -688,7 +688,7 @@ export function getTraversableWithindex<K>(O: P.Ord<K>) {
 
   const keysO = keys(O)
 
-  const imapA_ = P.implementMapWithIndexA_<URI, FixK>()((_) => (AG) => (ta, f) => {
+  const itraverse_ = P.implementTraverseWithIndex_<URI, FixK>()((_) => (AG) => (ta, f) => {
     type _ = typeof _
     let gm: HKT.HKT<_['G'], ReadonlyMap<_['K'], _['B']>> = AG.pure(empty())
     const ks  = keysO(ta)
@@ -705,7 +705,7 @@ export function getTraversableWithindex<K>(O: P.Ord<K>) {
   return P.TraversableWithIndex({
     imap_: map_,
     ...getFoldableWithIndex(O),
-    imapA_
+    itraverse_
   })
 }
 
@@ -724,12 +724,12 @@ export function getWitherableWithIndex<K>(O: P.Ord<K>) {
 
   const TraversableWithIndex = getTraversableWithindex(O)
 
-  const icompactA_ = P.implementWitherWithIndex_<URI, CK>()(
-    (_) => (G) => (wa, f) => pipe(TraversableWithIndex.imapA_(G)(wa, f), G.map(compact))
+  const iwither_ = P.implementWitherWithIndex_<URI, CK>()(
+    (_) => (G) => (wa, f) => pipe(TraversableWithIndex.itraverse_(G)(wa, f), G.map(compact))
   )
 
-  const iseparateA_ = P.implementPartitionMapWithIndexA_<URI, CK>()(
-    (_) => (G) => (wa, f) => pipe(TraversableWithIndex.imapA_(G)(wa, f), G.map(separate))
+  const iwilt_ = P.implementPartitionMapWithIndexA_<URI, CK>()(
+    (_) => (G) => (wa, f) => pipe(TraversableWithIndex.itraverse_(G)(wa, f), G.map(separate))
   )
 
   return P.WitherableWithIndex<URI, CK>({
@@ -738,8 +738,8 @@ export function getWitherableWithIndex<K>(O: P.Ord<K>) {
     ifilterMap_: filterMap_,
     ipartition_: partition_,
     ipartitionMap_: partitionMap_,
-    ipartitionMapA_: iseparateA_,
-    ifilterMapA_: icompactA_
+    iwilt_,
+    iwither_
   })
 }
 

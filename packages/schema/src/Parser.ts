@@ -1755,7 +1755,7 @@ function keyOfEval<P extends AnyParser>(parser: P): Ev.Eval<ReadonlyArray<RoseTr
     case 'Struct': {
       return pipe(
         d.properties,
-        R.mapA(Ev.Applicative)((d: AnyParser) => Ev.defer(() => keyOfEval(d))),
+        R.traverse(Ev.Applicative)((d: AnyParser) => Ev.defer(() => keyOfEval(d))),
         Ev.map(
           R.foldl([] as Array<RoseTree<string | number>>, (b, a, k) => {
             b.push(RT.roseTree(k, a))
@@ -1768,7 +1768,7 @@ function keyOfEval<P extends AnyParser>(parser: P): Ev.Eval<ReadonlyArray<RoseTr
     case 'Tuple': {
       return pipe(
         d.components,
-        A.mapA(Ev.Applicative)((d: AnyParser) => Ev.defer(() => keyOfEval(d))),
+        A.traverse(Ev.Applicative)((d: AnyParser) => Ev.defer(() => keyOfEval(d))),
         Ev.map(
           A.foldl([] as Array<RoseTree<string | number>>, (b, a, i) => {
             b.push(RT.roseTree(i, a))
@@ -1781,7 +1781,7 @@ function keyOfEval<P extends AnyParser>(parser: P): Ev.Eval<ReadonlyArray<RoseTr
     case 'Union': {
       return pipe(
         d.members,
-        A.mapA(Ev.Applicative)((d: AnyParser) => Ev.defer(() => keyOfEval(d))),
+        A.traverse(Ev.Applicative)((d: AnyParser) => Ev.defer(() => keyOfEval(d))),
         Ev.map(A.flatten)
       )
     }

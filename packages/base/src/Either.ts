@@ -989,7 +989,8 @@ export function chainRec<E, A, B>(f: (a: A) => Either<E, Either<A, B>>): (a: A) 
  * @category Traversable
  * @since 1.0.0
  */
-export const mapA_: P.MapAFn_<URI, V> = (AG) => (ta, f) => match_(ta, flow(left, AG.pure), flow(f, AG.map(right)))
+export const traverse_: P.TraverseFn_<URI, V> = (AG) => (ta, f) =>
+  match_(ta, flow(left, AG.pure), flow(f, AG.map(right)))
 
 /**
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
@@ -997,7 +998,7 @@ export const mapA_: P.MapAFn_<URI, V> = (AG) => (ta, f) => match_(ta, flow(left,
  * @category Traversable
  * @since 1.0.0
  */
-export const mapA: P.MapAFn<URI, V> = (AG) => (f) => (ta) => mapA_(AG)(ta, f)
+export const traverse: P.TraverseFn<URI, V> = (AG) => (f) => (ta) => traverse_(AG)(ta, f)
 
 /**
  * Evaluate each action in the structure from left to right, and collect the results.
@@ -1005,7 +1006,7 @@ export const mapA: P.MapAFn<URI, V> = (AG) => (f) => (ta) => mapA_(AG)(ta, f)
  * @category Traversable
  * @since 1.0.0
  */
-export const sequence: P.SequenceFn<URI, V> = (AG) => (ta) => mapA_(AG)(ta, identity)
+export const sequence: P.SequenceFn<URI, V> = (AG) => (ta) => traverse_(AG)(ta, identity)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -1037,13 +1038,13 @@ export function getWitherable<E>(M: P.Monoid<E>) {
 
   const Compactable = getCompactable(M)
 
-  const filterMapA_: P.FilterMapAFn_<URI, V_> = (G) => (wa, f) => {
-    const traverseF = mapA_(G)
+  const wither_: P.WitherFn_<URI, V_> = (G) => (wa, f) => {
+    const traverseF = traverse_(G)
     return pipe(traverseF(wa, f), G.map(Compactable.compact))
   }
 
-  const partitionMapA_: P.PartitionMapAFn_<URI, V_> = (G) => (wa, f) => {
-    const traverseF = mapA_(G)
+  const wilt_: P.WiltFn_<URI, V_> = (G) => (wa, f) => {
+    const traverseF = traverse_(G)
     return pipe(traverseF(wa, f), G.map(Compactable.separate))
   }
 
@@ -1052,9 +1053,9 @@ export function getWitherable<E>(M: P.Monoid<E>) {
     foldl_,
     foldr_,
     foldMap_,
-    mapA_: mapA_,
-    filterMapA_,
-    partitionMapA_
+    traverse_,
+    wither_,
+    wilt_
   })
 }
 
@@ -1277,7 +1278,7 @@ export const Traversable = P.Traversable<URI, V>({
   foldl_,
   foldr_,
   foldMap_,
-  mapA_: mapA_
+  traverse_
 })
 
 /*
@@ -1440,29 +1441,29 @@ export const gen = genF(Monad, { adapter })
  * -------------------------------------------------------------------------------------------------
  */
 
-export function itraverseArray_<A, E, B>(
+export function traverseArray_<A, E, B>(
   as: NonEmptyArray<A>,
-  f: (i: number, a: A) => Either<E, B>
+  f: (a: A, i: number) => Either<E, B>
 ): Either<E, NonEmptyArray<B>>
-export function itraverseArray_<A, E, B>(
+export function traverseArray_<A, E, B>(
   as: ReadonlyArray<A>,
-  f: (i: number, a: A) => Either<E, B>
+  f: (a: A, i: number) => Either<E, B>
 ): Either<E, ReadonlyArray<B>>
-export function itraverseArray_<A, E, B>(
+export function traverseArray_<A, E, B>(
   as: ReadonlyArray<A>,
-  f: (i: number, a: A) => Either<E, B>
+  f: (a: A, i: number) => Either<E, B>
 ): Either<E, ReadonlyArray<B>> {
   if (as.length === 0) {
     return right([])
   }
 
-  const e = f(0, as[0])
+  const e = f(as[0], 0)
   if (e._tag === 'Left') {
     return e
   }
   const out: P.Mutable<NonEmptyArray<B>> = [e.right]
   for (let i = 1; i < as.length; i++) {
-    const e = f(i, as[i])
+    const e = f(as[i], i)
     if (e._tag === 'Left') {
       return e
     }
@@ -1471,28 +1472,14 @@ export function itraverseArray_<A, E, B>(
   return right(out)
 }
 
-export function itraverseArray<A, E, B>(
-  f: (i: number, a: A) => Either<E, B>
-): (as: NonEmptyArray<A>) => Either<E, NonEmptyArray<B>>
-export function itraverseArray<A, E, B>(
-  f: (i: number, a: A) => Either<E, B>
-): (as: ReadonlyArray<A>) => Either<E, ReadonlyArray<B>>
-export function itraverseArray<A, E, B>(
-  f: (i: number, a: A) => Either<E, B>
-): (as: NonEmptyArray<A>) => Either<E, ReadonlyArray<B>> {
-  return (as) => itraverseArray_(as, f)
-}
-
-export function traverseArray_<A, E, B>(as: NonEmptyArray<A>, f: (a: A) => Either<E, B>): Either<E, NonEmptyArray<B>>
-export function traverseArray_<A, E, B>(as: ReadonlyArray<A>, f: (a: A) => Either<E, B>): Either<E, ReadonlyArray<B>>
-export function traverseArray_<A, E, B>(as: ReadonlyArray<A>, f: (a: A) => Either<E, B>): Either<E, ReadonlyArray<B>> {
-  return itraverseArray_(as, (_, a) => f(a))
-}
-
-export function traverseArray<A, E, B>(f: (a: A) => Either<E, B>): (as: NonEmptyArray<A>) => Either<E, NonEmptyArray<B>>
-export function traverseArray<A, E, B>(f: (a: A) => Either<E, B>): (as: ReadonlyArray<A>) => Either<E, ReadonlyArray<B>>
 export function traverseArray<A, E, B>(
-  f: (a: A) => Either<E, B>
+  f: (a: A, i: number) => Either<E, B>
+): (as: NonEmptyArray<A>) => Either<E, NonEmptyArray<B>>
+export function traverseArray<A, E, B>(
+  f: (a: A, i: number) => Either<E, B>
+): (as: ReadonlyArray<A>) => Either<E, ReadonlyArray<B>>
+export function traverseArray<A, E, B>(
+  f: (a: A, i: number) => Either<E, B>
 ): (as: NonEmptyArray<A>) => Either<E, ReadonlyArray<B>> {
   return (as) => traverseArray_(as, f)
 }

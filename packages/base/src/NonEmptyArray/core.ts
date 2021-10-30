@@ -596,16 +596,16 @@ export function chain<A, B>(f: (a: A, i: number) => NonEmptyArray<B>): (ma: NonE
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const mapA_: P.MapWithIndexAFn_<[HKT.URI<NonEmptyArrayURI>]> = (AG) => (ta, f) =>
+export const traverse_: P.TraverseIndexFn_<[HKT.URI<NonEmptyArrayURI>]> = (AG) => (ta, f) =>
   _.foldl_(tail(ta), AG.map_(f(ta[0], 0), pure), (fbs, a, i) => AG.crossWith_(fbs, f(a, i + 1), appendW_))
 
 /**
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const mapA: P.MapWithIndexAFn<[HKT.URI<NonEmptyArrayURI>]> = (AG) => {
-  const imapAG_ = mapA_(AG)
-  return (f) => (ta) => imapAG_(ta, f)
+export const traverse: P.MapWithIndexAFn<[HKT.URI<NonEmptyArrayURI>]> = (AG) => {
+  const traverseG_ = traverse_(AG)
+  return (f) => (ta) => traverseG_(ta, f)
 }
 
 export const mapAccumM_: P.MapAccumWithIndexMFn_<[HKT.URI<NonEmptyArrayURI>]> = (M) => (ta, s, f) =>
@@ -627,7 +627,7 @@ export const mapAccumM: P.MapAccumWithIndexMFn<[HKT.URI<NonEmptyArrayURI>]> = (M
  * @category Traversable
  * @since 1.0.0
  */
-export const sequence: P.SequenceFn<[HKT.URI<NonEmptyArrayURI>]> = (AG) => mapA(AG)(identity)
+export const sequence: P.SequenceFn<[HKT.URI<NonEmptyArrayURI>]> = (AG) => traverse(AG)(identity)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -1371,7 +1371,7 @@ export const Traversable = P.Traversable<URI>({
   foldl_,
   foldr_,
   foldMap_,
-  mapA_: mapA_
+  traverse_
 })
 
 export const TraversableWithIndex = P.TraversableWithIndex<URI>({
@@ -1379,7 +1379,7 @@ export const TraversableWithIndex = P.TraversableWithIndex<URI>({
   ifoldl_: foldl_,
   ifoldr_: foldr_,
   ifoldMap_: foldMap_,
-  imapA_: mapA_
+  itraverse_: traverse_
 })
 
 /*

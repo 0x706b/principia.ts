@@ -22,7 +22,7 @@ export const DictionaryOperate = Symbol.for('@principia/base/Dictionary#operate'
 export type URI = [HKT.URI<DictionaryURI>]
 
 export class Dictionary<A> implements Iterable<readonly [string, A]> {
-  readonly [DictionaryTypeId]: DictionaryTypeId = DictionaryTypeId;
+  readonly [DictionaryTypeId]: DictionaryTypeId = DictionaryTypeId
   readonly [DictionaryStore]: ReadonlyRecord<string, A>
   constructor(store: Record<string, A>) {
     this[DictionaryStore] = store
@@ -328,11 +328,12 @@ export function getShow<A>(S: P.Show<A>): P.Show<Dictionary<A>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const mapA_: P.MapWithIndexAFn_<URI> = (A) => (ta, f) => A.map_(R.mapA_(A)(ta[DictionaryStore], f), fromRecord)
+export const traverse_: P.TraverseIndexFn_<URI> = (A) => (ta, f) =>
+  A.map_(R.traverse_(A)(ta[DictionaryStore], f), fromRecord)
 
-export const mapA: P.MapWithIndexAFn<URI> = (A) => (f) => (ta) => mapA_(A)(ta, f)
+export const traverse: P.MapWithIndexAFn<URI> = (A) => (f) => (ta) => traverse_(A)(ta, f)
 
-export const sequence: P.SequenceFn<URI> = (A) => (ta) => mapA_(A)(ta, (_) => _)
+export const sequence: P.SequenceFn<URI> = (A) => (ta) => traverse_(A)(ta, (_) => _)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -340,15 +341,15 @@ export const sequence: P.SequenceFn<URI> = (A) => (ta) => mapA_(A)(ta, (_) => _)
  * -------------------------------------------------------------------------------------------------
  */
 
-export const filterMapA_: P.FilterMapWithIndexAFn_<URI> = (A) => (wa, f) =>
-  A.map_(R.filterMapA_(A)(wa[DictionaryStore], f), fromRecord)
+export const wither_: P.WitherWithIndexFn_<URI> = (A) => (wa, f) =>
+  A.map_(R.wither_(A)(wa[DictionaryStore], f), fromRecord)
 
-export const filterMapA: P.FilterMapWithIndexAFn<URI> = (A) => (f) => (wa) => filterMapA_(A)(wa, f)
+export const wither: P.WitherWithIndexFn<URI> = (A) => (f) => (wa) => wither_(A)(wa, f)
 
-export const partitionMapA_: P.PartitionMapWithIndexAFn_<URI> = (A) => (wa, f) =>
-  A.map_(R.partitionMapA_(A)(wa[DictionaryStore], f), ([left, right]) => [fromRecord(left), fromRecord(right)])
+export const wilt_: P.WiltWithIndexFn_<URI> = (A) => (wa, f) =>
+  A.map_(R.wilt_(A)(wa[DictionaryStore], f), ([left, right]) => [fromRecord(left), fromRecord(right)])
 
-export const partitionMapA: P.PartitionMapAFn<URI> = (A) => (f) => (wa) => partitionMapA_(A)(wa, f)
+export const wilt: P.WiltFn<URI> = (A) => (f) => (wa) => wilt_(A)(wa, f)
 
 /*
  * -------------------------------------------------------------------------------------------------

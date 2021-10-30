@@ -9,7 +9,7 @@ import * as C from '../Chunk/core'
  * -------------------------------------------------------------------------------------------------
  */
 
-export function mapAChunk_<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
+export function traverseChunk_<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
   return <A, K, Q, W, X, I, S, R, E, B>(
     ta: Iterable<A>,
     f: (a: A, i: number) => HKT.Kind<G, CG, K, Q, W, X, I, S, R, E, B>
@@ -27,8 +27,8 @@ export function mapAChunk_<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
   }
 }
 
-export function mapAChunk<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
+export function traverseChunk<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
   return <A, K, Q, W, X, I, S, R, E, B>(f: (a: A, i: number) => HKT.Kind<G, CG, K, Q, W, X, I, S, R, E, B>) =>
     (ta: Iterable<A>): HKT.Kind<G, CG, K, Q, W, X, I, S, R, E, C.Chunk<B>> =>
-      mapAChunk_(G)(ta, f)
+      traverseChunk_(G)(ta, f)
 }

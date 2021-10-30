@@ -632,14 +632,14 @@ export function foldl<K, V, Z>(z: Z, f: (z: Z, v: V, k: K) => Z) {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const mapA_: P.MapWithIndexAFn_<URI> = (A) => (ta, f) =>
+export const traverse_: P.TraverseIndexFn_<URI> = (A) => (ta, f) =>
   foldl_(ta, A.pure(make(ta.config)), (b, a, k) => A.crossWith_(b, f(a, k), (map, b) => set_(map, k, b)))
 
 /**
- * @dataFirst mapA_
+ * @dataFirst traverse_
  */
-export const mapA: P.MapWithIndexAFn<URI> = (A) => {
-  const _ = mapA_(A)
+export const traverse: P.MapWithIndexAFn<URI> = (A) => {
+  const _ = traverse_(A)
   return (f) => (ta) => _(ta, f)
 }
 
@@ -649,26 +649,26 @@ export const mapA: P.MapWithIndexAFn<URI> = (A) => {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const filterMapA_: P.FilterMapWithIndexAFn_<URI> = (A) => (wa, f) => pipe(mapA_(A)(wa, f), A.map(compact))
+export const wither_: P.WitherWithIndexFn_<URI> = (A) => (wa, f) => pipe(traverse_(A)(wa, f), A.map(compact))
 
 /**
- * @dataFirst filterMapA_
+ * @dataFirst wither_
  */
-export const filterMapA: P.FilterMapWithIndexAFn<URI> = (A) => {
-  const _ = filterMapA_(A)
+export const wither: P.WitherWithIndexFn<URI> = (A) => {
+  const _ = wither_(A)
   return (f) => (ta) => _(ta, f)
 }
 
-export const partitionMapA_: P.PartitionMapWithIndexAFn_<URI> = (A) => {
-  const _ = mapA_(A)
+export const wilt_: P.WiltWithIndexFn_<URI> = (A) => {
+  const _ = traverse_(A)
   return (wa, f) => pipe(_(wa, f), A.map(separate))
 }
 
 /**
- * @dataFirst partitionMapA_
+ * @dataFirst wilt_
  */
-export const partitionMapA: P.PartitionMapWithIndexAFn<URI> = (A) => {
-  const _ = partitionMapA_(A)
+export const wilt: P.WiltWithIndexFn<URI> = (A) => {
+  const _ = wilt_(A)
   return (f) => (wa) => _(wa, f)
 }
 

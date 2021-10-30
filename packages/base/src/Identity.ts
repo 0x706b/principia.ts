@@ -229,12 +229,12 @@ export function flatten<A>(mma: A): A {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const mapA_: P.MapAFn_<URI> = (_) => (ta, f) => f(ta)
+export const traverse_: P.TraverseFn_<URI> = (_) => (ta, f) => f(ta)
 
 /**
- * @dataFirst mapA_
+ * @dataFirst traverse_
  */
-export const mapA: P.MapAFn<URI> = (AG) => (f) => (ta) => mapA_(AG)(ta, f)
+export const traverse: P.TraverseFn<URI> = (AG) => (f) => (ta) => traverse_(AG)(ta, f)
 
 export const sequence: P.SequenceFn<URI> = (_) => (ta) => ta
 

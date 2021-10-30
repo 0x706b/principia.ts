@@ -432,7 +432,7 @@ export function flatten<Z, Z1, A>(ma: FreeSemiring<Z, FreeSemiring<Z1, A>>): Fre
  * -------------------------------------------------------------------------------------------------
  */
 
-export const mapA_: P.MapAFn_<[HKT.URI<FreeSemiringURI>]> = (AG) => (ta, f) =>
+export const traverse_: P.TraverseFn_<[HKT.URI<FreeSemiringURI>]> = (AG) => (ta, f) =>
   fold_(
     ta,
     AG.pure(empty()),
@@ -442,16 +442,16 @@ export const mapA_: P.MapAFn_<[HKT.URI<FreeSemiringURI>]> = (AG) => (ta, f) =>
   )
 
 /**
- * @dataFirst mapA_
+ * @dataFirst traverse_
  */
-export const mapA: P.MapAFn<[HKT.URI<FreeSemiringURI>]> = (AG) => {
-  const mapA__ = mapA_(AG)
-  return (f) => (ta) => mapA__(ta, f)
+export const traverse: P.TraverseFn<[HKT.URI<FreeSemiringURI>]> = (AG) => {
+  const traverseG_ = traverse_(AG)
+  return (f) => (ta) => traverseG_(ta, f)
 }
 
 export const sequence: P.SequenceFn<[HKT.URI<FreeSemiringURI>]> = (AG) => {
-  const mapA__ = mapA_(AG)
-  return (ta) => mapA__(ta, identity)
+  const traverseG_ = traverse_(AG)
+  return (ta) => traverseG_(ta, identity)
 }
 
 /*

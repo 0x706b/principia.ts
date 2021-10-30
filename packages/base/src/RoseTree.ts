@@ -85,7 +85,7 @@ export function unfoldForestM<M extends HKT.URIS, C = HKT.Auto>(
 export function unfoldForestM<M>(
   M: P.Monad<HKT.UHKT<M>>
 ): <A, B>(bs: ReadonlyArray<B>, f: (b: B) => HKT.HKT<M, readonly [A, ReadonlyArray<B>]>) => HKT.HKT<M, Forest<A>> {
-  const traverseM = A.mapA_(M)
+  const traverseM = A.traverse_(M)
   return (bs, f) => traverseM(bs, (b) => unfoldTreeM(M)(b, f))
 }
 
@@ -339,12 +339,12 @@ export function getShow<A>(S: Show<A>): Show<RoseTree<A>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const mapA_: P.MapAFn_<URI, V> = P.implementMapA_<URI, V>()((_) => (AG) => {
-  const mapArrayA_ = A.mapA_(AG)
+export const traverse_: P.TraverseFn_<URI, V> = P.implementTraverse_<URI, V>()((_) => (AG) => {
+  const traverseArrayG_ = A.traverse_(AG)
 
   const out = <A, B>(ta: RoseTree<A>, f: (a: A) => HKT.HKT<typeof _.G, B>): HKT.HKT<typeof _.G, RoseTree<B>> =>
     AG.crossWith_(
-      mapArrayA_(ta.forest, (a) => out(a, f)),
+      traverseArrayG_(ta.forest, (a) => out(a, f)),
       f(ta.value),
       (forest, value) => ({ value, forest })
     )
@@ -352,11 +352,11 @@ export const mapA_: P.MapAFn_<URI, V> = P.implementMapA_<URI, V>()((_) => (AG) =
 })
 
 /**
- * @dataFirst mapA_
+ * @dataFirst traverse_
  */
-export const mapA: P.MapAFn<URI, V> = (AG) => (f) => (ta) => mapA_(AG)(ta, f)
+export const traverse: P.TraverseFn<URI, V> = (AG) => (f) => (ta) => traverse_(AG)(ta, f)
 
-export const sequence: P.SequenceFn<URI, V> = (AG) => (ta) => mapA_(AG)(ta, identity)
+export const sequence: P.SequenceFn<URI, V> = (AG) => (ta) => traverse_(AG)(ta, identity)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -389,4 +389,4 @@ export const Applicative = P.Applicative<URI>({ map_, cross_, crossWith_, unit, 
 
 export const Monad = P.Monad<URI>({ map_, cross_, crossWith_, unit, pure, chain_, flatten })
 
-export const Traversable = P.Traversable<URI>({ map_, foldl_, foldr_, foldMap_, mapA_ })
+export const Traversable = P.Traversable<URI>({ map_, foldl_, foldr_, foldMap_, traverse_ })

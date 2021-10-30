@@ -454,18 +454,18 @@ export function getTailRec<E>(SE: P.Semigroup<E>): P.TailRec<URI, HKT.Fix<'E', E
  * -------------------------------------------------------------------------------------------------
  */
 
-export const mapA_: P.MapAFn_<URI, V> = (AG) => (ta, f) =>
+export const traverse_: P.TraverseFn_<URI, V> = (AG) => (ta, f) =>
   isLeft(ta) ? AG.pure(ta) : isRight(ta) ? AG.map_(f(ta.right), right) : AG.map_(f(ta.right), (b) => both(ta.left, b))
 
 /**
- * @dataFirst mapA_
+ * @dataFirst traverse_
  */
-export const mapA: P.MapAFn<URI, V> = (AG) => {
-  const mapA__ = mapA_(AG)
-  return (f) => (ta) => mapA__(ta, f)
+export const traverse: P.TraverseFn<URI, V> = (AG) => {
+  const traverseG_ = traverse_(AG)
+  return (f) => (ta) => traverseG_(ta, f)
 }
 
-export const sequence: P.SequenceFn<URI, V> = (AG) => mapA(AG)(identity)
+export const sequence: P.SequenceFn<URI, V> = (AG) => traverse(AG)(identity)
 
 /*
  * -------------------------------------------------------------------------------------------------

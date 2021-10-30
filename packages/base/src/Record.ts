@@ -617,34 +617,34 @@ export function getShow<A>(S: Show<A>): Show<ReadonlyRecord<string, A>> {
 
 /**
  */
-export const mapA_: P.MapWithIndexAFn_<[HKT.URI<RecordURI>]> = P.implementMapWithIndexA_<[HKT.URI<RecordURI>]>()(
-  (_) => (G) => (ta, f) => {
-    type _ = typeof _
+export const traverse_: P.TraverseIndexFn_<[HKT.URI<RecordURI>]> = P.implementTraverseWithIndex_<
+  [HKT.URI<RecordURI>]
+>()((_) => (G) => (ta, f) => {
+  type _ = typeof _
 
-    const ks = keys(ta)
-    if (ks.length === 0) {
-      return G.pure(empty)
-    }
-    let gr: HKT.HKT<_['G'], Record<string, _['B']>> = G.pure({}) as any
-    for (let i = 0; i < ks.length; i++) {
-      const key = ks[i]
-      gr        = G.crossWith_(gr, f(ta[key], key), (r, b) => {
-        r[key] = b
-        return r
-      })
-    }
-    return gr
+  const ks = keys(ta)
+  if (ks.length === 0) {
+    return G.pure(empty)
   }
-)
+  let gr: HKT.HKT<_['G'], Record<string, _['B']>> = G.pure({}) as any
+  for (let i = 0; i < ks.length; i++) {
+    const key = ks[i]
+    gr        = G.crossWith_(gr, f(ta[key], key), (r, b) => {
+      r[key] = b
+      return r
+    })
+  }
+  return gr
+})
 
 /**
- * @dataFirst mapA_
+ * @dataFirst traverse_
  */
-export const mapA: P.MapWithIndexAFn<[HKT.URI<RecordURI>]> = (G) => (f) => (ta) => mapA_(G)(ta, f)
+export const traverse: P.MapWithIndexAFn<[HKT.URI<RecordURI>]> = (G) => (f) => (ta) => traverse_(G)(ta, f)
 
 /**
  */
-export const sequence: P.SequenceFn<[HKT.URI<RecordURI>]> = (G) => (ta) => mapA_(G)(ta, (a) => a)
+export const sequence: P.SequenceFn<[HKT.URI<RecordURI>]> = (G) => (ta) => traverse_(G)(ta, (a) => a)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -652,22 +652,21 @@ export const sequence: P.SequenceFn<[HKT.URI<RecordURI>]> = (G) => (ta) => mapA_
  * -------------------------------------------------------------------------------------------------
  */
 
-export const filterMapA_: P.FilterMapWithIndexAFn_<[HKT.URI<RecordURI>]> = (A) => (wa, f) =>
-  pipe(mapA_(A)(wa, f), A.map(compact))
+export const wither_: P.WitherWithIndexFn_<[HKT.URI<RecordURI>]> = (A) => (wa, f) =>
+  pipe(traverse_(A)(wa, f), A.map(compact))
 
 /**
- * @dataFirst filterMapA_
+ * @dataFirst wither_
  */
-export const filterMapA: P.FilterMapWithIndexAFn<[HKT.URI<RecordURI>]> = (A) => (f) => (wa) => filterMapA_(A)(wa, f)
+export const wither: P.WitherWithIndexFn<[HKT.URI<RecordURI>]> = (A) => (f) => (wa) => wither_(A)(wa, f)
 
-export const partitionMapA_: P.PartitionMapWithIndexAFn_<[HKT.URI<RecordURI>]> = (A) => (wa, f) =>
-  pipe(mapA_(A)(wa, f), A.map(separate))
+export const wilt_: P.WiltWithIndexFn_<[HKT.URI<RecordURI>]> = (A) => (wa, f) =>
+  pipe(traverse_(A)(wa, f), A.map(separate))
 
 /**
- * @dataFirst partitionMapA_
+ * @dataFirst wilt_
  */
-export const partitionMapA: P.PartitionMapWithIndexAFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) =>
-  partitionMapA_(G)(wa, f)
+export const wilt: P.WiltWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => wilt_(G)(wa, f)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -891,7 +890,7 @@ export const Traversable = P.Traversable<URI>({
   foldl_,
   foldr_,
   foldMap_,
-  mapA_
+  traverse_
 })
 
 export const TraversableWithIndex = P.TraversableWithIndex<URI>({
@@ -899,7 +898,7 @@ export const TraversableWithIndex = P.TraversableWithIndex<URI>({
   ifoldl_: foldl_,
   ifoldr_: foldr_,
   ifoldMap_: foldMap_,
-  imapA_: mapA_
+  itraverse_: traverse_
 })
 
 export const Witherable = P.Witherable<URI>({
@@ -911,9 +910,9 @@ export const Witherable = P.Witherable<URI>({
   filterMap_,
   partition_,
   partitionMap_,
-  mapA_,
-  filterMapA_,
-  partitionMapA_
+  traverse_,
+  wither_,
+  wilt_
 })
 
 export const WitherableWithIndex = P.WitherableWithIndex<URI>({
@@ -925,9 +924,9 @@ export const WitherableWithIndex = P.WitherableWithIndex<URI>({
   ifilterMap_: filterMap_,
   ipartition_: partition_,
   ipartitionMap_: partitionMap_,
-  imapA_: mapA_,
-  ifilterMapA_: filterMapA_,
-  ipartitionMapA_: partitionMapA_
+  itraverse_: traverse_,
+  iwither_: wither_,
+  iwilt_: wilt_
 })
 
 export { RecordURI } from './Modules'

@@ -10,13 +10,13 @@ import * as HKT from './HKT'
 export interface TraversableWithIndex<F extends HKT.URIS, C = HKT.Auto>
   extends FunctorWithIndex<F, C>,
     FoldableWithIndex<F, C> {
-  readonly imapA_: MapWithIndexAFn_<F, C>
-  readonly imapA: MapWithIndexAFn<F, C>
+  readonly itraverse_: TraverseIndexFn_<F, C>
+  readonly itraverse: MapWithIndexAFn<F, C>
 }
 
 export type TraversableWithIndexMin<F extends HKT.URIS, C = HKT.Auto> = FunctorWithIndexMin<F, C> &
   FoldableWithIndexMin<F, C> & {
-    readonly imapA_: MapWithIndexAFn_<F, C>
+    readonly itraverse_: TraverseIndexFn_<F, C>
   }
 
 export function TraversableWithIndex<F extends HKT.URIS, C = HKT.Auto>(
@@ -25,10 +25,10 @@ export function TraversableWithIndex<F extends HKT.URIS, C = HKT.Auto>(
   return HKT.instance({
     ...FunctorWithIndex(F),
     ...FoldableWithIndex(F),
-    imapA_: F.imapA_,
-    imapA: (AG) => {
-      const imapAG_ = F.imapA_(AG)
-      return (f) => (ta) => imapAG_(ta, f)
+    itraverse_: F.itraverse_,
+    itraverse: (AG) => {
+      const itraverseG_ = F.itraverse_(AG)
+      return (f) => (ta) => itraverseG_(ta, f)
     }
   })
 }
@@ -41,7 +41,7 @@ export interface MapWithIndexAFn<F extends HKT.URIS, CF = HKT.Auto> {
   ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
-export interface MapWithIndexAFn_<F extends HKT.URIS, CF = HKT.Auto> {
+export interface TraverseIndexFn_<F extends HKT.URIS, CF = HKT.Auto> {
   <G extends HKT.URIS, CG = HKT.Auto>(A: Applicative<G, CG>): <
     KG,
     QG,
@@ -67,7 +67,7 @@ export interface MapWithIndexAFn_<F extends HKT.URIS, CF = HKT.Auto> {
   ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
-export interface MapWithIndexAFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface TraverseWithIndexFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <H extends HKT.URIS, CH = HKT.Auto>(A: Applicative<H, CH>): <FK, GK, HK, HQ, HW, HX, HI, HS, HR, HE, A, B>(
     f: (
       a: A,
@@ -90,7 +90,7 @@ export interface MapWithIndexAFnComposition<F extends HKT.URIS, G extends HKT.UR
   >
 }
 
-export interface MapWithIndexAFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface TraverseWithIndexFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
   <H extends HKT.URIS, CH = HKT.Auto>(A: Applicative<H, CH>): <
     FK,
     FQ,
@@ -139,7 +139,7 @@ export interface MapWithIndexAFnComposition_<F extends HKT.URIS, G extends HKT.U
   >
 }
 
-export function implementMapWithIndexA<F extends HKT.URIS, C = HKT.Auto>(): (
+export function implementTraverseWithIndex<F extends HKT.URIS, C = HKT.Auto>(): (
   i: <K, Q, W, X, I, S, R, E, A, B, G>(_: {
     A: A
     B: B
@@ -158,11 +158,11 @@ export function implementMapWithIndexA<F extends HKT.URIS, C = HKT.Auto>(): (
     f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', C, K>>) => HKT.HKT<G, B>
   ) => (ta: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>) => HKT.HKT<G, HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>>
 ) => MapWithIndexAFn<F, C>
-export function implementMapWithIndexA() {
+export function implementTraverseWithIndex() {
   return (i: any) => i()
 }
 
-export function implementMapWithIndexA_<F extends HKT.URIS, C = HKT.Auto>(): (
+export function implementTraverseWithIndex_<F extends HKT.URIS, C = HKT.Auto>(): (
   i: <K, Q, W, X, I, S, R, E, A, B, G>(_: {
     A: A
     B: B
@@ -181,8 +181,8 @@ export function implementMapWithIndexA_<F extends HKT.URIS, C = HKT.Auto>(): (
     ta: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', C, K>>) => HKT.HKT<G, B>
   ) => HKT.HKT<G, HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>>
-) => MapWithIndexAFn_<F, C>
-export function implementMapWithIndexA_() {
+) => TraverseIndexFn_<F, C>
+export function implementTraverseWithIndex_() {
   return (i: any) => i()
 }
 

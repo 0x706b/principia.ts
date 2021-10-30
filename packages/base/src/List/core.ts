@@ -909,18 +909,18 @@ export function chainRecBreadthFirst<A, B>(f: (a: A) => List<Either<A, B>>): (a:
  * -------------------------------------------------------------------------------------------------
  */
 
-export const mapA_: P.MapWithIndexAFn_<[HKT.URI<ListURI>]> = (A) => (ta, f) =>
+export const traverse_: P.TraverseIndexFn_<[HKT.URI<ListURI>]> = (A) => (ta, f) =>
   foldr_(ta, A.pure(empty()), (a, fb, i) => A.crossWith_(f(a, i), fb, (b, l) => prepend_(l, b)))
 
 /**
- * @dataFirst mapA_
+ * @dataFirst traverse_
  */
-export const mapA: P.MapWithIndexAFn<[HKT.URI<ListURI>]> = (A) => {
-  const imapAG_ = mapA_(A)
+export const traverse: P.MapWithIndexAFn<[HKT.URI<ListURI>]> = (A) => {
+  const imapAG_ = traverse_(A)
   return (f) => (ta) => imapAG_(ta, f)
 }
 
-export const sequence: P.SequenceFn<[HKT.URI<ListURI>]> = (A) => mapA(A)(identity)
+export const sequence: P.SequenceFn<[HKT.URI<ListURI>]> = (A) => traverse(A)(identity)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -951,29 +951,29 @@ export function unfold<A, B>(b: B, f: (b: B) => M.Maybe<readonly [A, B]>): List<
  * -------------------------------------------------------------------------------------------------
  */
 
-export const filterMapA_: P.FilterMapWithIndexAFn_<[HKT.URI<ListURI>]> = (A) => {
-  const itraverseA_ = mapA_(A)
+export const wither_: P.WitherWithIndexFn_<[HKT.URI<ListURI>]> = (A) => {
+  const itraverseA_ = traverse_(A)
   return (wa, f) => A.map_(itraverseA_(wa, f), compact)
 }
 
 /**
- * @dataFirst filterMapA_
+ * @dataFirst wither_
  */
-export const filterMapA: P.FilterMapWithIndexAFn<[HKT.URI<ListURI>]> = (A) => {
-  const itraverseA_ = mapA_(A)
+export const wither: P.WitherWithIndexFn<[HKT.URI<ListURI>]> = (A) => {
+  const itraverseA_ = traverse_(A)
   return (f) => (wa) => A.map_(itraverseA_(wa, f), compact)
 }
 
-export const partitionMapA_: P.PartitionMapWithIndexAFn_<[HKT.URI<ListURI>]> = (A) => {
-  const itraverseA_ = mapA_(A)
+export const wilt_: P.WiltWithIndexFn_<[HKT.URI<ListURI>]> = (A) => {
+  const itraverseA_ = traverse_(A)
   return (wa, f) => A.map_(itraverseA_(wa, f), separate)
 }
 
 /**
- * @dataFirst partitionMapA_
+ * @dataFirst wilt_
  */
-export const partitionMapA: P.PartitionMapWithIndexAFn<[HKT.URI<ListURI>]> = (A) => {
-  const itraverseA_ = mapA_(A)
+export const wilt: P.WiltWithIndexFn<[HKT.URI<ListURI>]> = (A) => {
+  const itraverseA_ = traverse_(A)
   return (f) => (wa) => A.map_(itraverseA_(wa, f), separate)
 }
 
@@ -2365,7 +2365,7 @@ export const Traversable = P.Traversable<URI>({
   foldl_,
   foldr_,
   foldMap_,
-  mapA_: mapA_
+  traverse_
 })
 
 export const mapAccumM_ = P.getMapAccumM_(Traversable)
@@ -2383,9 +2383,9 @@ export const Witherable = P.Witherable<URI>({
   filterMap_,
   partition_,
   partitionMap_,
-  mapA_: mapA_,
-  filterMapA_: filterMapA_,
-  partitionMapA_: partitionMapA_
+  traverse_,
+  wither_,
+  wilt_
 })
 
 export const Unfolable = HKT.instance<P.Unfoldable<URI>>({

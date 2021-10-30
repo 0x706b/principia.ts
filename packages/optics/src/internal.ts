@@ -315,8 +315,8 @@ export function fromTraversable<T extends HKT.URIS, C = HKT.Auto>(
   return () =>
     makePTraversal({
       modifyA_: (F) => {
-        const mapA_ = T.mapA_(F)
-        return (s, f) => mapA_(s, f)
+        const traverseF_ = T.traverse_(F)
+        return (s, f) => traverseF_(s, f)
       }
     })
 }

@@ -830,7 +830,7 @@ export function chainRec<A, B>(f: (a: A) => Maybe<Either<A, B>>): (a: A) => Mayb
  * @category Traversable
  * @since 1.0.0
  */
-export const mapA_: P.MapAFn_<URI> = (G) => (ta, f) => match_(ta, flow(nothing, G.pure), flow(f, G.map(just)))
+export const traverse_: P.TraverseFn_<URI> = (G) => (ta, f) => match_(ta, flow(nothing, G.pure), flow(f, G.map(just)))
 
 /**
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
@@ -838,7 +838,7 @@ export const mapA_: P.MapAFn_<URI> = (G) => (ta, f) => match_(ta, flow(nothing, 
  * @category Traversable
  * @since 1.0.0
  */
-export const mapA: P.MapAFn<URI> = (G) => (f) => (ta) => mapA_(G)(ta, f)
+export const traverse: P.TraverseFn<URI> = (G) => (f) => (ta) => traverse_(G)(ta, f)
 
 /**
  * Evaluate each action in the structure from left to right, and collect the results.
@@ -846,7 +846,7 @@ export const mapA: P.MapAFn<URI> = (G) => (f) => (ta) => mapA_(G)(ta, f)
  * @category Traversable
  * @since 1.0.0
  */
-export const sequence: P.SequenceFn<URI> = (G) => (fa) => mapA_(G)(fa, identity)
+export const sequence: P.SequenceFn<URI> = (G) => (fa) => traverse_(G)(fa, identity)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -864,14 +864,14 @@ export function unit(): Maybe<void> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const filterMapA_: P.FilterMapAFn_<URI> = (A) => (wa, f) => match_(wa, flow(nothing, A.pure), f)
+export const wither_: P.WitherFn_<URI> = (A) => (wa, f) => match_(wa, flow(nothing, A.pure), f)
 
 /**
- * @dataFirst filterMapA_
+ * @dataFirst wither_
  */
-export const filterMapA: P.FilterMapAFn<URI> = (A) => (f) => (wa) => filterMapA_(A)(wa, f)
+export const wither: P.WitherFn<URI> = (A) => (f) => (wa) => wither_(A)(wa, f)
 
-export const partitionMapA_: P.PartitionMapAFn_<URI> = (A) => (wa, f) =>
+export const wilt_: P.WiltFn_<URI> = (A) => (wa, f) =>
   pipe(
     wa,
     map(
@@ -884,9 +884,9 @@ export const partitionMapA_: P.PartitionMapAFn_<URI> = (A) => (wa, f) =>
   )
 
 /**
- * @dataFirst partitionMapA_
+ * @dataFirst wilt_
  */
-export const partitionMapA: P.PartitionMapAFn<URI> = (A) => (f) => (wa) => partitionMapA_(A)(wa, f)
+export const wilt: P.WiltFn<URI> = (A) => (f) => (wa) => wilt_(A)(wa, f)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -1160,7 +1160,7 @@ export const Traversable = P.Traversable<URI>({
   foldl_,
   foldr_,
   foldMap_,
-  mapA_
+  traverse_
 })
 
 export const Witherable = P.Witherable<URI>({
@@ -1172,9 +1172,9 @@ export const Witherable = P.Witherable<URI>({
   filterMap_,
   partition_,
   partitionMap_,
-  mapA_,
-  filterMapA_,
-  partitionMapA_
+  traverse_,
+  wither_,
+  wilt_
 })
 
 export { MaybeURI } from './Modules'

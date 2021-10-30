@@ -91,7 +91,7 @@ export function isDefaultLeaf<T extends object>(t: T): t is T & DefaultLeafE<T> 
 export const CompositionETypeId = Symbol()
 export type CompositionETypeId = typeof CompositionETypeId
 export class CompositionE<E> extends CaseClass<{ errors: NonEmptyArray<E> }> {
-  readonly _tag = 'CompositionE';
+  readonly _tag = 'CompositionE'
 
   readonly [CompositionETypeId]: CompositionETypeId = CompositionETypeId
 }
@@ -541,14 +541,14 @@ function foldEval<E, B>(
       case 'CompoundE': {
         return pipe(
           de.errors,
-          NA.mapA(Ev.Applicative)((e) => foldEval(e, leaf, patterns)),
+          NA.traverse(Ev.Applicative)((e) => foldEval(e, leaf, patterns)),
           Ev.map((bs) => patterns.CompoundE(de.name, bs))
         )
       }
       case 'CompositionE': {
         return pipe(
           de.errors,
-          NA.mapA(Ev.Applicative)((e) => foldEval(e, leaf, patterns)),
+          NA.traverse(Ev.Applicative)((e) => foldEval(e, leaf, patterns)),
           Ev.map((bs) => patterns.CompositionE(bs))
         )
       }
