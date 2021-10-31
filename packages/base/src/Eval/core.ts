@@ -53,22 +53,22 @@ class Now<A> extends Eval<A> {
   }
 }
 
+const UNSET = Symbol.for('@principia/base/Eval/UNSET')
+
 class Later<A> extends Eval<A> {
   readonly [EvalTypeId]: EvalTypeId = EvalTypeId
-  readonly _evalTag                 = EvalTag.Later
-  private thunk                     = new AtomicReference<null | (() => A)>(null)
-  private result: A | null          = null
-  constructor(f: () => A) {
+  readonly _evalTag = EvalTag.Later
+  private result: A | typeof UNSET = UNSET
+  constructor(private thunk: () => A) {
     super()
-    this.thunk.set(f)
   }
   get value() {
-    if (!this.thunk.get) {
-      return this.result!
+    if (this.result !== UNSET) {
+      return this.result
     } else {
-      const result = this.thunk.get()
-      this.thunk.set(null)
-      this.result = result
+      const result = this.thunk()
+      this.thunk   = null!
+      this.result  = result
       return result
     }
   }
@@ -79,7 +79,7 @@ class Later<A> extends Eval<A> {
 
 class Always<A> extends Eval<A> {
   readonly [EvalTypeId]: EvalTypeId = EvalTypeId
-  readonly _evalTag                 = EvalTag.Always
+  readonly _evalTag = EvalTag.Always
   constructor(readonly thunk: () => A) {
     super()
   }
@@ -93,7 +93,7 @@ class Always<A> extends Eval<A> {
 
 class Defer<A> extends Eval<A> {
   readonly [EvalTypeId]: EvalTypeId = EvalTypeId
-  readonly _evalTag                 = EvalTag.Defer
+  readonly _evalTag = EvalTag.Defer
   constructor(readonly thunk: () => Eval<A>) {
     super()
   }
@@ -107,7 +107,7 @@ class Defer<A> extends Eval<A> {
 
 class Chain<A, B> extends Eval<B> {
   readonly [EvalTypeId]: EvalTypeId = EvalTypeId
-  readonly _evalTag                 = EvalTag.Bind
+  readonly _evalTag = EvalTag.Bind
   constructor(readonly ma: Eval<A>, readonly f: (a: A) => Eval<B>) {
     super()
   }
@@ -121,22 +121,24 @@ class Chain<A, B> extends Eval<B> {
 
 class Memoize<A> extends Eval<A> {
   readonly [EvalTypeId]: EvalTypeId = EvalTypeId
-  readonly _evalTag                 = EvalTag.Memoize
+  readonly _evalTag = EvalTag.Memoize
   constructor(readonly ma: Eval<A>) {
     super()
   }
-  public result: M.Maybe<A> = M.nothing<A>()
+  public result: A | typeof UNSET = UNSET
 
   get memoize() {
     return this
   }
 
   get value(): A {
-    return M.getOrElse_(this.result, () => {
+    if (this.result !== UNSET) {
+      return this.result
+    } else {
       const a     = evaluate(this)
-      this.result = M.just(a)
-      return a
-    })
+      this.result = a
+      return this.result
+    }
   }
 }
 
@@ -308,7 +310,7 @@ export function evaluate<A>(e: Eval<A>): A {
   const addToMemo =
     <A1>(m: Memoize<A1>) =>
     (a: A1): Eval<A1> => {
-      m.result = M.just(a)
+      m.result = a
       return new Now(a)
     }
 
@@ -369,8 +371,8 @@ export function evaluate<A>(e: Eval<A>): A {
         break
       }
       case EvalTag.Memoize: {
-        if (I.result._tag === 'Just') {
-          result             = I.result.value
+        if (I.result !== UNSET) {
+          result             = I.result
           const continuation = popContinuation()
           if (continuation) {
             current = continuation(result)
