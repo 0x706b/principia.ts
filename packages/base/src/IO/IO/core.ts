@@ -1749,6 +1749,62 @@ export function causeAsError<R, E, A>(ma: IO<R, E, A>): IO<R, Cause<E>, A> {
 }
 
 /**
+ * @trace 1
+ */
+export function chainEitherK_<R, E, A, E1, B>(ma: IO<R, E, A>, f: (a: A) => E.Either<E1, B>): IO<R, E | E1, B> {
+  return chain_(
+    ma,
+    traceAs(f, (a) => fromEither(f(a)))
+  )
+}
+
+/**
+ * @trace 0
+ * @dataFirst chainEitherK_
+ */
+export function chainEitherK<A, E1, B>(f: (a: A) => E.Either<E1, B>): <R, E>(ma: IO<R, E, A>) => IO<R, E | E1, B> {
+  return (ma) => chainEitherK_(ma, f)
+}
+
+/**
+ * @trace 1
+ */
+export function chainMaybeK_<R, E, A, B>(ma: IO<R, E, A>, f: (a: A) => M.Maybe<B>): IO<R, M.Maybe<E>, B> {
+  return chain_(
+    mapError_(ma, M.just),
+    traceAs(f, (a) => fromMaybe(f(a)))
+  )
+}
+
+/**
+ * @trace 0
+ * @dataFirst chainMaybeK_
+ */
+export function chainMaybeK<A, B>(f: (a: A) => M.Maybe<B>): <R, E>(ma: IO<R, E, A>) => IO<R, M.Maybe<E>, B> {
+  return (ma) => chainMaybeK_(ma, f)
+}
+
+/**
+ * @trace 1
+ */
+export function chainSyncK_<R, E, A, R1, E1, B>(ma: IO<R, E, A>, f: (a: A) => Sync<R1, E1, B>): IO<R & R1, E | E1, B> {
+  return chain_(
+    ma,
+    traceAs(f, (a) => fromSync(f(a)))
+  )
+}
+
+/**
+ * @trace 0
+ * @dataFirst chainSyncK_
+ */
+export function chainSyncK<A, R1, E1, B>(
+  f: (a: A) => Sync<R1, E1, B>
+): <R, E>(ma: IO<R, E, A>) => IO<R & R1, E | E1, B> {
+  return (ma) => chainSyncK_(ma, f)
+}
+
+/**
  * Checks the interrupt status, and produces the IO returned by the
  * specified callback.
  *
@@ -3165,7 +3221,7 @@ export function orHalt<R, E, A>(ma: IO<R, E, A>): IO<R, never, A> {
 /**
  * @trace call
  */
-export function orHaltKeep<R, E, A>(ma: IO<R, E, A>): IO<R, unknown, A> {
+export function orHaltKeep<R, E, A>(ma: IO<R, E, A>): IO<R, never, A> {
   const trace = accessCallTrace()
   return matchCauseIO_(ma, traceFrom(trace, flow(C.chain(C.halt), failCause)), succeed)
 }
@@ -3316,7 +3372,7 @@ export function partition_<R, E, A, B>(
   as: Iterable<A>,
   f: (a: A) => IO<R, E, B>
 ): IO<R, never, readonly [Iterable<E>, Iterable<B>]> {
-  return map_(foreach_(as, traceAs(f, flow(f, either))), I.partitionMap(identity))
+  return map_(foreach_(as, traceAs(f, flow(f, either))), I.separate)
 }
 
 /**

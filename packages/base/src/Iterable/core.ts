@@ -1,12 +1,12 @@
 import type { Either } from '../Either'
 import type * as HKT from '../HKT'
+import type * as E from '../internal/Either'
 import type { Maybe } from '../Maybe'
 import type { IterableURI } from '../Modules'
 import type * as P from '../prelude'
 
 import * as Ev from '../Eval/core'
 import { identity } from '../function'
-import * as E from '../internal/Either'
 import * as It from '../internal/Iterable'
 import * as M from '../Maybe'
 import { tuple } from '../tuple'
@@ -289,6 +289,10 @@ export function partitionMap<A, B, C>(
   f: (a: A, i: number) => Either<B, C>
 ): (fa: Iterable<A>) => readonly [Iterable<B>, Iterable<C>] {
   return (fa) => partitionMap_(fa, f)
+}
+
+export function separate<A, B>(fa: Iterable<E.Either<A, B>>): readonly [Iterable<A>, Iterable<B>] {
+  return partitionMap_(fa, identity)
 }
 
 /*
