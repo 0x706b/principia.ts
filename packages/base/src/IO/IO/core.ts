@@ -3,12 +3,23 @@
 import type { Chunk } from '../../Chunk'
 import type { Eval } from '../../Eval'
 import type { Has, Tag } from '../../Has'
+import type * as HKT from '../../HKT'
 import type { FiberContext } from '../../internal/FiberContext'
 import type { Maybe } from '../../Maybe'
 import type { Monoid } from '../../Monoid'
 import type { NonEmptyArray } from '../../NonEmptyArray'
 import type { Predicate } from '../../Predicate'
-import type { HasStruct, HasTuple, ServicesStruct, ServicesTuple } from '../../prelude'
+import type {
+  Filterable,
+  Foldable,
+  HasStruct,
+  HasTuple,
+  ServicesStruct,
+  ServicesTuple,
+  Traversable,
+  Witherable
+} from '../../prelude'
+import type * as P from '../../prelude'
 import type { Refinement } from '../../Refinement'
 import type { Sync } from '../../Sync'
 import type { Cause } from '../Cause'
@@ -18,6 +29,7 @@ import type { FiberDescriptor, InterruptStatus } from '../Fiber/core'
 import type { FiberId } from '../Fiber/FiberId'
 import type { Trace } from '../Fiber/trace'
 import type { Supervisor } from '../Supervisor'
+import type { IOURI } from '.'
 import type { FailureReporter, FIO, IO, UIO, URIO } from './primitives'
 
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
@@ -26,13 +38,14 @@ import * as A from '../../Array/core'
 import * as Ch from '../../Chunk/core'
 import * as E from '../../Either'
 import { NoSuchElementError } from '../../Error'
+import * as Ev from '../../Eval'
 import { RuntimeException } from '../../Exception'
 import { constant, flow, identity, pipe } from '../../function'
 import { isTag, mergeEnvironments } from '../../Has'
 import * as I from '../../Iterable'
 import * as M from '../../Maybe'
 import * as NEA from '../../NonEmptyArray'
-import * as P from '../../prelude'
+import { Applicative } from '../../prelude'
 import * as R from '../../Record'
 import * as S from '../../Sync'
 import { tuple } from '../../tuple'
@@ -2032,6 +2045,38 @@ export function filter<A, R, E>(f: (a: A) => IO<R, E, boolean>): (as: Iterable<A
 }
 
 /**
+ * @trace 1
+ */
+export function filterMap_<A, R, E, B>(
+  as: Iterable<A>,
+  f: (a: A, i: number) => IO<R, E, M.Maybe<B>>
+): IO<R, E, Chunk<B>> {
+  return defer(() => {
+    const bs: Array<B> = []
+    return pipe(
+      as,
+      foreachUnit((a, i) =>
+        map_(f(a, i), (b) => {
+          if (M.isJust(b)) {
+            bs.push(b.value)
+          }
+        })
+      ),
+      map(() => Ch.from(bs))
+    )
+  })
+}
+
+/**
+ * @trace 0
+ */
+export function filterMap<A, R, E, B>(
+  f: (a: A, i: number) => IO<R, E, M.Maybe<B>>
+): (as: Iterable<A>) => IO<R, E, Chunk<B>> {
+  return (as) => filterMap_(as, f)
+}
+
+/**
  * Filters the collection using the specified effectual predicate, removing
  * all elements that satisfy the predicate.
  *
@@ -2059,6 +2104,22 @@ export function filterNot_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boole
  */
 export function filterNot<A, R, E>(f: (a: A) => IO<R, E, boolean>): (as: Iterable<A>) => IO<R, E, Chunk<A>> {
   return (as) => filterNot_(as, f)
+}
+
+export function filterMapW_<F extends HKT.URIS, C = HKT.Auto>(W: Witherable<F, C>) {
+  return <K, Q, W, X, I, S, R, E, A, R1, E1, B>(
+    wa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
+    f: (a: A) => IO<R1, E1, M.Maybe<B>>
+  ): IO<R1, E1, HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>> => W.wither_(_Applicative)(wa, f)
+}
+
+export function filterMapW<F extends HKT.URIS, C = HKT.Auto>(W: Witherable<F, C>) {
+  const filterMapWW_ = filterMapW_(W)
+  return <A, R1, E1, B>(f: (a: A) => IO<R1, E1, M.Maybe<B>>) =>
+    <K, Q, W, X, I, S, R, E>(
+      wa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+    ): IO<R1, E1, HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>> =>
+      filterMapWW_(wa, f)
 }
 
 /**
@@ -2271,6 +2332,20 @@ export function chainError<E, R1, E1>(f: (e: E) => IO<R1, never, E1>): <R, A>(ma
   return (ma) => chainError_(ma, f)
 }
 
+function foreachUnitLoop<A, R, E, B>(
+  iterator: Iterator<A>,
+  f: (a: A, i: number) => IO<R, E, B>,
+  i = 0
+): IO<R, E, void> {
+  const next = iterator.next()
+  return next.done
+    ? unit()
+    : chain_(
+        f(next.value, i),
+        traceAs(f, () => foreachUnitLoop(iterator, f, i + 1))
+      )
+}
+
 /**
  * Applies the function `f` to each element of the `Iterable<A>` and runs
  * produced IOs sequentially.
@@ -2283,17 +2358,8 @@ export function chainError<E, R1, E1>(f: (e: E) => IO<R1, never, E1>): <R, A>(ma
  *
  * @trace 1
  */
-export function foreachUnit_<R, E, A, A1>(as: Iterable<A>, f: (a: A) => IO<R, E, A1>): IO<R, E, void> {
-  return I.foldMap_(
-    P.Monoid<IO<R, E, void>>(
-      (x, y) =>
-        chain_(
-          x,
-          traceAs(f, () => y)
-        ),
-      unit()
-    )
-  )(as, f as (a: A) => IO<R, E, any>)
+export function foreachUnit_<A, R, E, B>(as: Iterable<A>, f: (a: A, i: number) => IO<R, E, B>): IO<R, E, void> {
+  return defer(() => foreachUnitLoop(as[Symbol.iterator](), f))
 }
 
 /**
@@ -2309,13 +2375,13 @@ export function foreachUnit_<R, E, A, A1>(as: Iterable<A>, f: (a: A) => IO<R, E,
  * @dataFirst foreachUnit_
  * @trace 0
  */
-export function foreachUnit<A, R, E, A1>(f: (a: A) => IO<R, E, A1>): (as: Iterable<A>) => IO<R, E, void> {
+export function foreachUnit<A, R, E, A1>(f: (a: A, i: number) => IO<R, E, A1>): (as: Iterable<A>) => IO<R, E, void> {
   return (as) => foreachUnit_(as, f)
 }
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` and
- * returns the results in a new `readonly B[]`.
+ * returns the results in a new `Chunk<B>`.
  *
  * For a parallel version of this method, see `foreachPar`.
  * If you do not need the results, see `foreachUnit` for a more efficient implementation.
@@ -2325,17 +2391,18 @@ export function foreachUnit<A, R, E, A1>(f: (a: A) => IO<R, E, A1>): (as: Iterab
  *
  * @trace 1
  */
-export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>): IO<R, E, Chunk<B>> {
-  return pipe(
-    as,
-    I.foldl(succeed(Ch.builder()) as IO<R, E, Ch.ChunkBuilder<B>>, (b, a) =>
-      crossWith_(b, defer(traceAs(f, () => f(a))), (builder, r) => {
-        builder.append(r)
-        return builder
-      })
-    ),
-    map((b) => b.result())
-  )
+export function foreach_<A, R, E, B>(as: Iterable<A>, f: (a: A, i: number) => IO<R, E, B>): IO<R, E, Chunk<B>> {
+  return defer(() => {
+    const acc: Array<B> = []
+    return map_(
+      foreachUnit_(as, (a, i) =>
+        map_(f(a, i), (b) => {
+          acc.push(b)
+        })
+      ),
+      () => Ch.from(acc)
+    )
+  })
 }
 
 /**
@@ -2351,7 +2418,7 @@ export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>):
  * @dataFirst foreach_
  * @trace 0
  */
-export function foreach<R, E, A, B>(f: (a: A) => IO<R, E, B>): (as: Iterable<A>) => IO<R, E, Chunk<B>> {
+export function foreach<R, E, A, B>(f: (a: A, i: number) => IO<R, E, B>): (as: Iterable<A>) => IO<R, E, Chunk<B>> {
   return (as) => foreach_(as, f)
 }
 
@@ -2383,6 +2450,27 @@ export function foldl_<A, B, R, E>(as: Iterable<A>, b: B, f: (b: B, a: A) => IO<
  */
 export function foldl<R, E, A, B>(b: B, f: (b: B, a: A) => IO<R, E, B>): (as: Iterable<A>) => IO<R, E, B> {
   return (as) => foldl_(as, b, f)
+}
+
+export function foldlF_<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
+  return <K, Q, W, X, I, S, R, E, A, R1, E1, B>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
+    b: B,
+    f: (b: B, a: A) => IO<R1, E1, B>
+  ): IO<R1, E1, B> =>
+    F.foldl_(fa, succeed(b) as IO<R1, E1, B>, (acc, a) =>
+      chain_(
+        acc,
+        traceAs(f, (b) => f(b, a))
+      )
+    )
+}
+
+export function foldlF<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
+  const foldlFF_ = foldlF_(F)
+  return <A, R1, E1, B>(b: B, f: (b: B, a: A) => IO<R1, E1, B>) =>
+    <K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>): IO<R1, E1, B> =>
+      foldlFF_(fa, b, f)
 }
 
 /**
@@ -2430,6 +2518,44 @@ export function foldMap<M>(M: Monoid<M>) {
   )
 }
 
+export function foldMapF_<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
+  return <M>(M: Monoid<M>) =>
+    <K, Q, W, X, I, S, R, E, R1, E1, A>(
+      fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
+      f: (a: A) => IO<R1, E1, M>
+    ): IO<R1, E1, M> =>
+      F.foldl_(fa, succeed(M.nat) as IO<R1, E1, M>, (b, a) =>
+        pipe(
+          b,
+          chain((m0) =>
+            pipe(
+              f(a),
+              map((m1) => M.combine_(m0, m1))
+            )
+          )
+        )
+      )
+}
+
+export function foldMapF<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
+  const foldMapFF_ = foldMapF_(F)
+  return <M>(M: Monoid<M>) => {
+    const foldMapFFM_ = foldMapFF_(M)
+    return <A, R1, E1>(f: (a: A) => IO<R1, E1, M>) =>
+      <K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>): IO<R1, E1, M> =>
+        foldMapFFM_(fa, f)
+  }
+}
+
+function foldrLoop<A, B, R, E>(
+  iterator: Iterator<A>,
+  b: UIO<B>,
+  f: (a: A, b: IO<R, E, B>) => IO<R, E, B>
+): IO<R, E, B> {
+  const next = iterator.next()
+  return next.done ? b : f(next.value, foldrLoop(iterator, b, f))
+}
+
 /**
  * Folds an `Iterable<A>` using an effectual function f, working sequentially from right to left.
  *
@@ -2439,16 +2565,7 @@ export function foldMap<M>(M: Monoid<M>) {
  * @trace 2
  */
 export function foldr_<A, B, R, E>(as: Iterable<A>, b: UIO<B>, f: (a: A, b: IO<R, E, B>) => IO<R, E, B>): IO<R, E, B> {
-  const iterator        = as[Symbol.iterator]()
-  const go: IO<R, E, B> = defer(() => {
-    const { value: current, done } = iterator.next()
-    if (done) {
-      return b
-    } else {
-      return f(current, go)
-    }
-  })
-  return go
+  return foldrLoop(as[Symbol.iterator](), b, f)
 }
 
 /**
@@ -2465,6 +2582,22 @@ export function foldr<A, B, R, E>(
   f: (a: A, b: IO<R, E, B>) => IO<R, E, B>
 ): (i: Iterable<A>) => IO<R, E, B> {
   return (i) => foldr_(i, b, f)
+}
+
+export function foldrF_<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
+  return <K, Q, W, X, I, S, R, E, A, R1, E1, B>(
+    fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
+    b: UIO<B>,
+    f: (a: A, b: IO<R1, E1, B>) => IO<R1, E1, B>
+  ): IO<R1, E1, B> =>
+    Ev.evaluate(F.foldr_(fa, Ev.now(b as IO<R1, E1, B>), (a, b) => Ev.now(f(a, flatten(fromEval(b))))))
+}
+
+export function foldrF<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
+  const foldrFF_ = foldrF_(F)
+  return <A, R1, E1, B>(b: UIO<B>, f: (a: A, b: IO<R1, E1, B>) => IO<R1, E1, B>) =>
+    <K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>): IO<R1, E1, B> =>
+      foldrFF_(fa, b, f)
 }
 
 /**
@@ -3388,6 +3521,27 @@ export function partition<R, E, A, B>(
   return (fas) => partition_(fas, f)
 }
 
+export function partitionMapW_<F extends HKT.URIS, C = HKT.Auto>(W: Witherable<F, C>) {
+  return <K, Q, W, X, I, S, R, E, A, R1, E1, B>(
+    wa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
+    f: (a: A) => IO<R1, E1, B>
+  ): IO<R1, never, readonly [HKT.Kind<F, C, K, Q, W, X, I, S, R, E, E1>, HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>]> =>
+    W.wilt_(_Applicative)(wa, flow(f, either))
+}
+
+export function partitionMapW<F extends HKT.URIS, C = HKT.Auto>(W: Witherable<F, C>) {
+  const partitionMapFF_ = partitionMapW_(W)
+  return <A, R1, E1, B>(f: (a: A) => IO<R1, E1, B>) =>
+    <K, Q, W, X, I, S, R, E>(
+      wa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+    ): IO<
+      R1,
+      never,
+      readonly [HKT.Kind<F, C, K, Q, W, X, I, S, R, E, E1>, HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>]
+    > =>
+      partitionMapFF_(wa, f)
+}
+
 /**
  * Returns an IO that semantically runs the IO on a fiber,
  * producing an `Exit` for the completion value of the fiber.
@@ -3962,6 +4116,43 @@ export function timedWith<R1, E1>(
 ): <R, E, A>(ma: IO<R, E, A>) => IO<R & R1, E1 | E, readonly [number, A]> {
   const trace = accessCallTrace()
   return (ma) => traceCall(timedWith_, trace)(ma, msTime)
+}
+
+const _Applicative = Applicative<[HKT.URI<IOURI>], HKT.V<'R', '-'> & HKT.V<'E', '+'>>({
+  map_,
+  crossWith_,
+  cross_,
+  ap_,
+  pure
+})
+
+/**
+ * Traverses a `Traversable` with an effectful computation
+ */
+export function traverseT_<F extends HKT.URIS, C = HKT.Auto>(
+  T: Traversable<F, C>
+): <K, Q, W, X, I, S, R, E, A, R1, E1, B>(
+  ta: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
+  f: (a: A) => IO<R1, E1, B>
+) => IO<R1, E1, HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>> {
+  const traverseIO_ = T.traverse_(_Applicative)
+  return (ta, f) => traverseIO_(ta, f)
+}
+
+/**
+ * Traverses a `Traversable` with an effectful computation
+ *
+ * @dataFirst traverse_
+ */
+export function traverseT<F extends HKT.URIS, C = HKT.Auto>(
+  T: Traversable<F, C>
+): <A, R1, E1, B>(
+  f: (a: A) => IO<R1, E1, B>
+) => <K, Q, W, X, I, S, R, E>(
+  ta: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+) => IO<R1, E1, HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>> {
+  const traverseT__ = traverseT_(T)
+  return (f) => (ta) => traverseT__(ta, f)
 }
 
 /**

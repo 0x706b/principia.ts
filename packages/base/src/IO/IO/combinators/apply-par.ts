@@ -116,8 +116,8 @@ export function crossPar<R1, E1, A1>(
  * @trace 2
  */
 export function crossWithPar_<R, E, A, R2, E2, A2, B>(
-  a: I.IO<R, E, A>,
-  b: I.IO<R2, E2, A2>,
+  fa: I.IO<R, E, A>,
+  fb: I.IO<R2, E2, A2>,
   f: (a: A, b: A2) => B
 ): I.IO<R & R2, E | E2, B> {
   const g = traceAs(f, (b: A2, a: A) => f(a, b))
@@ -125,8 +125,8 @@ export function crossWithPar_<R, E, A, R2, E2, A2, B>(
   return transplant((graft) =>
     I.descriptorWith((d) =>
       raceWith_(
-        graft(a),
-        graft(b),
+        graft(fa),
+        graft(fb),
         (ex, fi) => coordinateCrossWithPar<E, E2>()(d.id, f, true, ex, fi),
         (ex, fi) => coordinateCrossWithPar<E, E2>()(d.id, g, false, ex, fi)
       )
@@ -141,11 +141,11 @@ export function crossWithPar_<R, E, A, R2, E2, A2, B>(
  * @dataFirst crossWithPar_
  * @trace 1
  */
-export function crossWithPar<A, R1, E1, A1, B>(
-  mb: I.IO<R1, E1, A1>,
-  f: (a: A, b: A1) => B
-): <R, E>(ma: I.IO<R, E, A>) => I.IO<R & R1, E1 | E, B> {
-  return (ma) => crossWithPar_(ma, mb, f)
+export function crossWithPar<A, R1, E1, B, C>(
+  fb: I.IO<R1, E1, B>,
+  f: (a: A, b: B) => C
+): <R, E>(fa: I.IO<R, E, A>) => I.IO<R & R1, E1 | E, C> {
+  return (fa) => crossWithPar_(fa, fb, f)
 }
 
 function coordinateCrossWithPar<E, E2>() {

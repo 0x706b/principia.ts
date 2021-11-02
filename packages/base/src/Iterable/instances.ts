@@ -17,6 +17,7 @@ import {
   partition_,
   partitionMap_,
   pure,
+  traverse_,
   unit
 } from './core'
 
@@ -102,6 +103,14 @@ export const FoldableWithIndex = P.FoldableWithIndex<URI>({
   ifoldl_: foldl_,
   ifoldr_: foldr_,
   ifoldMap_: foldMap_
+})
+
+export const Traversable = P.Traversable<URI>({
+  map_,
+  foldl_,
+  foldr_,
+  foldMap_,
+  traverse_
 })
 
 export { IterableURI } from '../Modules'
