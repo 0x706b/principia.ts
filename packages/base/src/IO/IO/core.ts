@@ -2452,6 +2452,12 @@ export function foldl<R, E, A, B>(b: B, f: (b: B, a: A) => IO<R, E, B>): (as: It
   return (as) => foldl_(as, b, f)
 }
 
+/**
+ * Performs an effectful left-associative fold on an arbitrary `Foldable`
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
 export function foldlF_<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
   return <K, Q, W, X, I, S, R, E, A, R1, E1, B>(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
@@ -2466,6 +2472,14 @@ export function foldlF_<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
     )
 }
 
+/**
+ * Performs an effectful left-associative fold on an arbitrary `Foldable`
+ *
+ * @category combinators
+ * @since 1.0.0
+ *
+ * @dataFirst foldlF_
+ */
 export function foldlF<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
   const foldlFF_ = foldlF_(F)
   return <A, R1, E1, B>(b: B, f: (b: B, a: A) => IO<R1, E1, B>) =>
@@ -2518,6 +2532,13 @@ export function foldMap<M>(M: Monoid<M>) {
   )
 }
 
+/**
+ * Performs an effectful left-associative fold on an arbitrary `Foldable`,
+ * combining each value with the provided `Monoid`
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
 export function foldMapF_<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
   return <M>(M: Monoid<M>) =>
     <K, Q, W, X, I, S, R, E, R1, E1, A>(
@@ -2537,6 +2558,15 @@ export function foldMapF_<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
       )
 }
 
+/**
+ * Performs an effectful left-associative fold on an arbitrary `Foldable`,
+ * combining each value with the provided `Monoid`
+ *
+ * @category combinators
+ * @since 1.0.0
+ *
+ * @dataFirst foldMapF_
+ */
 export function foldMapF<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
   const foldMapFF_ = foldMapF_(F)
   return <M>(M: Monoid<M>) => {
@@ -2584,6 +2614,12 @@ export function foldr<A, B, R, E>(
   return (i) => foldr_(i, b, f)
 }
 
+/**
+ * Performs an effectful right-associative fold on an arbitrary `Foldable`
+ *
+ * @category combinators
+ * @since 1.0.0
+ */
 export function foldrF_<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
   return <K, Q, W, X, I, S, R, E, A, R1, E1, B>(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
@@ -2593,6 +2629,14 @@ export function foldrF_<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
     Ev.evaluate(F.foldr_(fa, Ev.now(b as IO<R1, E1, B>), (a, b) => Ev.now(f(a, flatten(fromEval(b))))))
 }
 
+/**
+ * Performs an effectful right-associative fold on an arbitrary `Foldable`
+ *
+ * @category combinators
+ * @since 1.0.0
+ *
+ * @dataFirst foldrF_
+ */
 export function foldrF<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
   const foldrFF_ = foldrF_(F)
   return <A, R1, E1, B>(b: UIO<B>, f: (a: A, b: IO<R1, E1, B>) => IO<R1, E1, B>) =>
@@ -4127,7 +4171,7 @@ const _Applicative = Applicative<[HKT.URI<IOURI>], HKT.V<'R', '-'> & HKT.V<'E', 
 })
 
 /**
- * Traverses a `Traversable` with an effectful computation
+ * Maps an arbitrary `Traversable` to an effectful computation
  */
 export function traverseT_<F extends HKT.URIS, C = HKT.Auto>(
   T: Traversable<F, C>
@@ -4140,8 +4184,11 @@ export function traverseT_<F extends HKT.URIS, C = HKT.Auto>(
 }
 
 /**
- * Traverses a `Traversable` with an effectful computation
+ * Maps an arbitrary `Traversable` to an effectful computation
  *
+ * @category combinators
+ * @since 1.0.0
+ * 
  * @dataFirst traverse_
  */
 export function traverseT<F extends HKT.URIS, C = HKT.Auto>(
