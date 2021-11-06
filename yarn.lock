@@ -3244,30 +3244,30 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@principia/actors-node@workspace:packages/actors-node"
   dependencies:
-    "@principia/actors": ^0.20.3
-    "@principia/base": ^0.26.0
-    "@principia/express": ^0.19.3
-    "@principia/keeper": ^0.20.3
-    "@principia/pg": ^0.18.3
-    "@principia/schema": ^0.21.3
+    "@principia/actors": ^0.21.0
+    "@principia/base": ^0.27.0
+    "@principia/express": ^0.20.0
+    "@principia/keeper": ^0.20.4
+    "@principia/pg": ^0.18.4
+    "@principia/schema": ^0.21.4
     "@types/isomorphic-fetch": ^0.0.35
     isomorphic-fetch: ^3.0.0
     testcontainers: ^7.21.0
   languageName: unknown
   linkType: soft
 
-"@principia/actors@^0.20.3, @principia/actors@workspace:packages/actors":
+"@principia/actors@^0.21.0, @principia/actors@workspace:packages/actors":
   version: 0.0.0-use.local
   resolution: "@principia/actors@workspace:packages/actors"
   dependencies:
-    "@principia/base": ^0.26.0
-    "@principia/schema": ^0.21.3
+    "@principia/base": ^0.27.0
+    "@principia/schema": ^0.21.4
     "@types/isomorphic-fetch": ^0.0.35
     isomorphic-fetch: ^3.0.0
   languageName: unknown
   linkType: soft
 
-"@principia/base@^0.26.0, @principia/base@workspace:packages/base":
+"@principia/base@^0.27.0, @principia/base@workspace:packages/base":
   version: 0.0.0-use.local
   resolution: "@principia/base@workspace:packages/base"
   dependencies:
@@ -3290,12 +3290,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@principia/express@^0.19.3, @principia/express@workspace:packages/express":
+"@principia/express@^0.20.0, @principia/express@workspace:packages/express":
   version: 0.0.0-use.local
   resolution: "@principia/express@workspace:packages/express"
   dependencies:
-    "@principia/base": ^0.26.0
-    "@principia/http": ^0.19.3
+    "@principia/base": ^0.27.0
+    "@principia/http": ^0.20.0
     "@types/express": ^4.17.13
     express: ^4.17.1
   languageName: unknown
@@ -3305,8 +3305,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@principia/fastify@workspace:packages/fastify"
   dependencies:
-    "@principia/base": ^0.26.0
-    "@principia/http": ^0.19.3
+    "@principia/base": ^0.27.0
+    "@principia/http": ^0.20.0
     fastify: ^3.22.0
   languageName: unknown
   linkType: soft
@@ -3315,10 +3315,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@principia/graphql@workspace:packages/graphql"
   dependencies:
-    "@principia/base": ^0.26.0
-    "@principia/http": ^0.19.3
-    "@principia/koa": ^0.18.3
-    "@principia/query": ^0.19.3
+    "@principia/base": ^0.27.0
+    "@principia/http": ^0.20.0
+    "@principia/koa": ^0.19.0
+    "@principia/query": ^0.19.4
     "@types/koa-graphql": 0.8.5
     apollo-server-koa: 2.25.2
     graphql: 15.6.1
@@ -3327,37 +3327,37 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@principia/http@^0.19.3, @principia/http@workspace:packages/http":
+"@principia/http@^0.20.0, @principia/http@workspace:packages/http":
   version: 0.0.0-use.local
   resolution: "@principia/http@workspace:packages/http"
   dependencies:
-    "@principia/base": ^0.26.0
-    "@principia/node": ^0.19.3
-    "@principia/schema": ^0.21.3
+    "@principia/base": ^0.27.0
+    "@principia/node": ^0.20.0
+    "@principia/schema": ^0.21.4
     "@types/qs": ^6.9.7
     path-to-regexp: ^6.2.0
     qs: ^6.10.1
   languageName: unknown
   linkType: soft
 
-"@principia/keeper@^0.20.3, @principia/keeper@workspace:packages/keeper":
+"@principia/keeper@^0.20.4, @principia/keeper@workspace:packages/keeper":
   version: 0.0.0-use.local
   resolution: "@principia/keeper@workspace:packages/keeper"
   dependencies:
-    "@principia/base": ^0.26.0
-    "@principia/schema": ^0.21.3
+    "@principia/base": ^0.27.0
+    "@principia/schema": ^0.21.4
     "@types/node-zookeeper-client": ^0.2.8
     node-zookeeper-client: ^1.1.1
   languageName: unknown
   linkType: soft
 
-"@principia/koa@^0.18.3, @principia/koa@workspace:packages/koa":
+"@principia/koa@^0.19.0, @principia/koa@workspace:packages/koa":
   version: 0.0.0-use.local
   resolution: "@principia/koa@workspace:packages/koa"
   dependencies:
     "@koa/router": ^10.1.1
-    "@principia/base": ^0.26.0
-    "@principia/http": ^0.19.3
+    "@principia/base": ^0.27.0
+    "@principia/http": ^0.20.0
     "@types/koa": ^2.13.4
     "@types/koa-bodyparser": ^4.3.3
     "@types/koa-compose": ^3.2.5
@@ -3374,7 +3374,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@principia/laws@workspace:packages/laws"
   dependencies:
-    "@principia/base": ^0.26.0
+    "@principia/base": ^0.27.0
     fast-check: ^2.18.0
   languageName: unknown
   linkType: soft
@@ -3383,19 +3383,19 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@principia/logger@workspace:packages/logger"
   dependencies:
-    "@principia/base": ^0.26.0
-    "@principia/node": ^0.19.3
+    "@principia/base": ^0.27.0
+    "@principia/node": ^0.20.0
     chalk: ^4.1.2
     date-fns: ^2.25.0
     strip-ansi: ^7.0.1
   languageName: unknown
   linkType: soft
 
-"@principia/node@^0.19.3, @principia/node@workspace:packages/node":
+"@principia/node@^0.20.0, @principia/node@workspace:packages/node":
   version: 0.0.0-use.local
   resolution: "@principia/node@workspace:packages/node"
   dependencies:
-    "@principia/base": ^0.26.0
+    "@principia/base": ^0.27.0
   languageName: unknown
   linkType: soft
 
@@ -3403,24 +3403,24 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@principia/observable@workspace:packages/observable"
   dependencies:
-    "@principia/base": ^0.26.0
+    "@principia/base": ^0.27.0
     "@principia/compile": ^0.19.2
   languageName: unknown
   linkType: soft
 
-"@principia/optics@^0.19.3, @principia/optics@workspace:packages/optics":
+"@principia/optics@^0.19.4, @principia/optics@workspace:packages/optics":
   version: 0.0.0-use.local
   resolution: "@principia/optics@workspace:packages/optics"
   dependencies:
-    "@principia/base": ^0.26.0
+    "@principia/base": ^0.27.0
   languageName: unknown
   linkType: soft
 
-"@principia/pg@^0.18.3, @principia/pg@workspace:packages/pg":
+"@principia/pg@^0.18.4, @principia/pg@workspace:packages/pg":
   version: 0.0.0-use.local
   resolution: "@principia/pg@workspace:packages/pg"
   dependencies:
-    "@principia/base": ^0.26.0
+    "@principia/base": ^0.27.0
     "@types/pg": ^8.6.1
     pg: ^8.7.1
   languageName: unknown
@@ -3430,7 +3430,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@principia/ptest@workspace:packages/ptest"
   dependencies:
-    "@principia/test": ^0.21.0
+    "@principia/test": ^0.22.0
     "@types/yargs": 17.0.4
     glob: ^7.2.0
     ts-node: ^10.3.0
@@ -3440,30 +3440,30 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@principia/query@^0.19.3, @principia/query@workspace:packages/query":
+"@principia/query@^0.19.4, @principia/query@workspace:packages/query":
   version: 0.0.0-use.local
   resolution: "@principia/query@workspace:packages/query"
   dependencies:
-    "@principia/base": ^0.26.0
+    "@principia/base": ^0.27.0
   languageName: unknown
   linkType: soft
 
-"@principia/schema@^0.21.3, @principia/schema@workspace:packages/schema":
+"@principia/schema@^0.21.4, @principia/schema@workspace:packages/schema":
   version: 0.0.0-use.local
   resolution: "@principia/schema@workspace:packages/schema"
   dependencies:
-    "@principia/base": ^0.26.0
-    "@principia/optics": ^0.19.3
-    "@principia/test": ^0.21.0
+    "@principia/base": ^0.27.0
+    "@principia/optics": ^0.19.4
+    "@principia/test": ^0.22.0
     fast-check: ^2.18.0
   languageName: unknown
   linkType: soft
 
-"@principia/test@^0.21.0, @principia/test@workspace:packages/test":
+"@principia/test@^0.22.0, @principia/test@workspace:packages/test":
   version: 0.0.0-use.local
   resolution: "@principia/test@workspace:packages/test"
   dependencies:
-    "@principia/base": ^0.26.0
+    "@principia/base": ^0.27.0
     "@principia/compile": ^0.19.2
   languageName: unknown
   linkType: soft
