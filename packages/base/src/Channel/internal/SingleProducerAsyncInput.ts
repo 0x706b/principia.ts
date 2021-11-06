@@ -1,16 +1,16 @@
-import type { Either } from '../../../Either'
-import type { UIO } from '../../../IO'
-import type { Cause } from '../../../IO/Cause'
-import type { Exit } from '../../../IO/Exit'
+import type { Either } from '../../Either'
+import type { UIO } from '../../IO'
+import type { Cause } from '../../IO/Cause'
+import type { Exit } from '../../IO/Exit'
 import type { AsyncInputConsumer, AsyncInputProducer } from './producer'
 
-import * as E from '../../../Either'
-import * as F from '../../../Future'
-import * as T from '../../../IO'
-import * as Ca from '../../../IO/Cause'
-import * as Ex from '../../../IO/Exit'
-import * as Ref from '../../../Ref'
-import { tuple } from '../../../tuple'
+import * as E from '../../Either'
+import * as F from '../../Future'
+import * as T from '../../IO'
+import * as Ca from '../../IO/Cause'
+import * as Ex from '../../IO/Exit'
+import * as Ref from '../../Ref'
+import { tuple } from '../../tuple'
 
 export const StateDoneTag = Symbol()
 export type StateDoneTag = typeof StateDoneTag

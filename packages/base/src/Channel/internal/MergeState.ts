@@ -1,7 +1,7 @@
-import type { Either } from '../../../Either'
-import type { Fiber } from '../../../Fiber'
-import type { IO } from '../../../IO'
-import type { Exit } from '../../../IO/Exit'
+import type { Either } from '../../Either'
+import type { Fiber } from '../../Fiber'
+import type { IO } from '../../IO'
+import type { Exit } from '../../IO/Exit'
 
 export const MergeStateTag = {
   BothRunning: 'BothRunning',

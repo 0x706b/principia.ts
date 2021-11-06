@@ -7,7 +7,7 @@ import type { ArrayInt64 } from '@principia/base/util/pure-rand/distribution/int
 import * as Ca from '@principia/base/Cause'
 import * as C from '@principia/base/Chunk'
 import * as Ex from '@principia/base/Exit'
-import { hole, pipe } from '@principia/base/function'
+import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as O from '@principia/base/Maybe'
 import * as S from '@principia/base/Stream'

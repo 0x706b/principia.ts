@@ -73,16 +73,16 @@ export function Message<Tag extends string, Req extends S.AnyUS, Res extends S.A
 ): MessageFactory<Tag, Req, Err, Res> {
   // @ts-expect-error
   return class {
-    static RequestSchema  = Req
+    static RequestSchema = Req
     static ResponseSchema = Res
-    static ErrorSchema    = M.fromNullable(Err)
-    static Tag            = Tag
+    static ErrorSchema = M.fromNullable(Err)
+    static Tag = Tag
 
-    readonly _tag = Tag;
+    readonly _tag = Tag
 
-    readonly [ResponseSchemaSymbol] = Res;
-    readonly [RequestSchemaSymbol]  = Req;
-    readonly [ErrorSchemaSymbol]    = M.fromNullable(Err)
+    readonly [ResponseSchemaSymbol] = Res
+    readonly [RequestSchemaSymbol] = Req
+    readonly [ErrorSchemaSymbol] = M.fromNullable(Err)
 
     constructor(ps?: any) {
       if (ps) {

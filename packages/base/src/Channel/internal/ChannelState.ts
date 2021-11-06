@@ -1,8 +1,8 @@
-import type { Either } from '../../../internal/Either'
-import type { IO } from '../../../IO'
+import type { Either } from '../../internal/Either'
+import type { IO } from '../../IO'
 
-import * as E from '../../../Either'
-import * as I from '../../../IO'
+import * as E from '../../Either'
+import * as I from '../../IO'
 
 export const ChannelStateTag = {
   Emit: 'Emit',

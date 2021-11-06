@@ -1,5 +1,5 @@
-import type { UIO } from '../../../IO'
-import type { Cause } from '../../../IO/Cause'
+import type { UIO } from '../../IO'
+import type { Cause } from '../../IO/Cause'
 
 export interface AsyncInputProducer<Err, Elem, Done> {
   emit(el: Elem): UIO<unknown>

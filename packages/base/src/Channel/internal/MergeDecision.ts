@@ -1,5 +1,5 @@
-import type { IO } from '../../../IO'
-import type { Exit } from '../../../IO/Exit'
+import type { IO } from '../../IO'
+import type { Exit } from '../../IO/Exit'
 
 export const MergeDecisionTag = {
   Done: 'Done',

@@ -9,7 +9,7 @@
 // - Sinks should always end when receiving a `Nothing`. It is a defect to not end with some
 //   sort of result (even a failure) when receiving a `None`.
 
-import type { Managed } from '../../Managed'
+import type { Managed } from '../../../Managed'
 import type { Push } from '../Push'
 
 // - Sinks can assume they will not be pushed again after emitting a value.

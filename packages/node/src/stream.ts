@@ -1,14 +1,14 @@
 import type { Byte } from '@principia/base/Byte'
 import type * as stream from 'stream'
 
+import * as Ch from '@principia/base/Channel'
 import * as C from '@principia/base/Chunk'
-import * as Ch from '@principia/base/experimental/Channel'
-import * as Sink from '@principia/base/experimental/Sink'
-import * as S from '@principia/base/experimental/Stream'
 import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as Ma from '@principia/base/Managed'
 import * as M from '@principia/base/Maybe'
+import * as Sink from '@principia/base/Sink'
+import * as S from '@principia/base/Stream'
 import { tuple } from '@principia/base/tuple'
 
 export class ReadableError {

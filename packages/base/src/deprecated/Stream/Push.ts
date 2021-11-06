@@ -1,13 +1,13 @@
-import type { Chunk } from '../Chunk'
-import type { Cause } from '../IO/Cause'
-import type { Managed } from '../Managed'
-import type * as M from '../Maybe'
+import type { Chunk } from '../../Chunk'
+import type { Cause } from '../../IO/Cause'
+import type { Managed } from '../../Managed'
+import type * as M from '../../Maybe'
 
-import * as C from '../Chunk'
-import * as E from '../Either'
-import * as I from '../IO'
-import * as Ma from '../Managed'
-import * as XR from '../Ref'
+import * as C from '../../Chunk'
+import * as E from '../../Either'
+import * as I from '../../IO'
+import * as Ma from '../../Managed'
+import * as XR from '../../Ref'
 
 export type Push<R, E, I, L, Z> = (_: M.Maybe<Chunk<I>>) => I.IO<R, readonly [E.Either<E, Z>, Chunk<L>], void>
 

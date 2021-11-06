@@ -1,14 +1,14 @@
-import type { Has } from '../../Has'
+import type { Has } from '../Has'
 
-import * as C from '../../Chunk'
-import { Clock } from '../../Clock'
-import { flow, pipe } from '../../function'
-import * as I from '../../IO'
-import * as Ma from '../../Managed'
-import * as M from '../../Maybe'
-import { tuple } from '../../tuple'
-import { AtomicReference } from '../../util/support/AtomicReference'
 import * as Ch from '../Channel'
+import * as C from '../Chunk'
+import { Clock } from '../Clock'
+import { flow, pipe } from '../function'
+import * as I from '../IO'
+import * as Ma from '../Managed'
+import * as M from '../Maybe'
+import { tuple } from '../tuple'
+import { AtomicReference } from '../util/support/AtomicReference'
 
 /**
  * Sink is a data type that represent a channel that reads elements

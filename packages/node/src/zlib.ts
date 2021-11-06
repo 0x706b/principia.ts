@@ -1,6 +1,6 @@
 import type { TransformError } from './stream'
 import type { Byte } from '@principia/base/Byte'
-import type { Stream } from '@principia/base/experimental/Stream'
+import type { Stream } from '@principia/base/Stream'
 import type { Transform } from 'stream'
 
 import * as zlib from 'zlib'

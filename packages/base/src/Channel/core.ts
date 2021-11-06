@@ -1,10 +1,10 @@
-import type { IO, URIO } from '../../IO'
-import type { Cause } from '../../IO/Cause'
-import type { Exit } from '../../IO/Exit'
+import type { IO, URIO } from '../IO'
+import type { Cause } from '../IO/Cause'
+import type { Exit } from '../IO/Exit'
 import type { AsyncInputProducer } from './internal/producer'
 
-import * as Ex from '../../Exit'
-import { tuple } from '../../tuple'
+import * as Ex from '../Exit'
+import { tuple } from '../tuple'
 
 export const ChannelTag = {
   PipeTo: 'PipeTo',

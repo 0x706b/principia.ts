@@ -20,11 +20,11 @@ export function merge_<R, E, K, V, R1, E1, A>(
   gb: GroupBy<R, E, K, V>,
   f: (k: K, s: Stream<unknown, E, V>) => Stream<R1, E1, A>
 ): Stream<R & R1, E | E1, A> {
-  return gb.merge(f)
+  return gb.apply(f)
 }
 
 export function merge<E, K, V, R1, E1, A>(
   f: (k: K, s: Stream<unknown, E, V>) => Stream<R1, E1, A>
 ): <R>(gb: GroupBy<R, E, K, V>) => Stream<R & R1, E | E1, A> {
-  return (gb) => gb.merge(f)
+  return (gb) => gb.apply(f)
 }

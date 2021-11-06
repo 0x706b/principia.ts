@@ -1,32 +1,35 @@
-import type { Chunk } from '../Chunk'
-import type { Cause } from '../IO/Cause'
-import type { Maybe } from '../Maybe'
+import type * as Ca from '../IO/Cause'
 
 import * as C from '../Chunk'
-import { pipe } from '../function'
 import * as I from '../IO'
-import { just, nothing } from '../Maybe'
+import * as M from '../Maybe'
+import * as Q from '../Queue'
+import * as Take from './Take'
 
-export type Pull<R, E, O> = I.IO<R, Maybe<E>, Chunk<O>>
+export type Pull<R, E, A> = I.IO<R, M.Maybe<E>, C.Chunk<A>>
 
-export const end = I.fail(nothing())
-
-export function fail<E>(e: E): I.FIO<Maybe<E>, never> {
-  return I.fail(just(e))
+export function emit<A>(a: A): I.UIO<C.Chunk<A>> {
+  return I.succeed(C.single(a))
 }
 
-export function halt<E>(e: Cause<E>): I.IO<unknown, Maybe<E>, never> {
-  return pipe(I.failCause(e), I.mapError(just))
+export function emitChunk<A>(as: C.Chunk<A>): I.UIO<C.Chunk<A>> {
+  return I.succeed(as)
 }
 
-export function empty<A>(): I.UIO<Chunk<A>> {
-  return I.pure(C.empty())
+export function fromQueue<E, A>(d: Q.Dequeue<Take.Take<E, A>>): I.FIO<M.Maybe<E>, C.Chunk<A>> {
+  return I.chain_(Q.take(d), (_) => Take.done(_))
 }
 
-export function emit<A>(a: A): I.UIO<Chunk<A>> {
-  return I.pure(C.single(a))
+export function fail<E>(e: E): I.FIO<M.Maybe<E>, never> {
+  return I.fail(M.just(e))
 }
 
-export function emitChunk<A>(as: Chunk<A>): I.UIO<Chunk<A>> {
-  return I.pure(as)
+export function halt<E>(c: Ca.Cause<E>): I.FIO<M.Maybe<E>, never> {
+  return I.mapError_(I.failCause(c), M.just)
 }
+
+export function empty<A>(): I.FIO<never, C.Chunk<A>> {
+  return I.succeed(C.empty<A>())
+}
+
+export const end: I.FIO<M.Maybe<never>, never> = I.fail(M.nothing())

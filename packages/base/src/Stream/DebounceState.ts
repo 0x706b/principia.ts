@@ -1,5 +1,5 @@
-import type { Chunk } from '../../Chunk'
-import type { Fiber } from '../../Fiber'
+import type { Chunk } from '../Chunk'
+import type { Fiber } from '../Fiber'
 import type { HandoffSignal } from './Handoff'
 
 export const DebounceStateTypeId = Symbol()

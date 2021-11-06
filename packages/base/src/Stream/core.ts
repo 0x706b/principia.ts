@@ -1,213 +1,79 @@
-import type { Chunk } from '../Chunk'
 import type { ExecutionStrategy } from '../ExecutionStrategy'
-import type { Fiber } from '../Fiber'
-import type { Has, Tag } from '../Has'
-import type { Managed } from '../Managed'
-import type { Maybe } from '../Maybe'
+import type { Has } from '../Has'
+import type { Layer, MergeE } from '../Layer'
 import type { Predicate } from '../Predicate'
-import type { _E, _R } from '../prelude'
-import type { Refinement } from '../Refinement'
-import type { Schedule } from '../Schedule'
-import type { Transducer } from './Transducer'
+import type * as P from '../prelude'
+import type * as SK from '../Sink'
+import type { StreamAspect } from '../StreamAspect'
 
+import * as AI from '../AsyncIterable'
+import * as Ch from '../Channel'
+import * as MD from '../Channel/internal/MergeDecision'
 import * as C from '../Chunk'
 import { Clock } from '../Clock'
 import * as E from '../Either'
-import { NoSuchElementError, PrematureGeneratorExitError } from '../Error'
-import { RuntimeException } from '../Exception'
-import { parallel, sequential } from '../ExecutionStrategy'
-import * as Fi from '../Fiber'
-import { constTrue, flow, identity, pipe } from '../function'
-import * as F from '../Future'
-import { isTag } from '../Has'
+import { IllegalArgumentError } from '../Error'
+import * as F from '../Fiber'
+import { flow, identity, pipe } from '../function'
+import * as Pr from '../Future'
+import * as HM from '../HashMap'
+import * as H from '../Hub'
 import * as I from '../IO'
 import * as Ca from '../IO/Cause'
 import * as Ex from '../IO/Exit'
-import * as L from '../List/core'
+import * as La from '../Layer'
+import * as L from '../List'
 import * as Ma from '../Managed'
-import * as RM from '../Managed/ReleaseMap'
-import * as Map from '../Map'
 import * as M from '../Maybe'
 import { not } from '../Predicate'
 import * as Q from '../Queue'
 import * as Ref from '../Ref'
-import * as RefM from '../RefM'
-import * as Sc from '../Schedule'
-import { globalScope } from '../Scope'
-import * as Semaphore from '../Semaphore'
+import * as SC from '../Schedule'
+import * as Sem from '../Semaphore'
+import * as Sink from '../Sink'
 import { tuple } from '../tuple'
-import { matchTag } from '../util/match'
-import * as BPull from './BufferedPull'
-import * as Ha from './Handoff'
+import { match } from '../util/pattern'
+import * as DS from './DebounceState'
+import * as GB from './GroupBy'
+import * as HO from './Handoff'
 import * as Pull from './Pull'
-import * as Sink from './Sink'
+import * as SER from './SinkEndReason'
 import * as Take from './Take'
-import * as Tr from './Transducer'
+import { zipChunks_ } from './utils'
 
-/*
- * -------------------------------------------------------------------------------------------------
- * Model
- * -------------------------------------------------------------------------------------------------
- */
+export const StreamTypeId = Symbol.for('@principia/base/IO/Stream')
+export type StreamTypeId = typeof StreamTypeId
 
 /**
  * A `Stream<R, E, A>` is a description of a program that, when evaluated,
  * may emit 0 or more values of type `A`, may fail with errors of type `E`
  * and uses an environment of type `R`.
- *
- * One way to think of `Stream` is as a `IO` program that could emit multiple values.
- *
- * This data type can emit multiple `A` values through multiple calls to `next`.
- * Similarly, embedded inside every `Stream` is an IO program: `IO<R, Option<E>, Chunk<A>>`.
- * This program will be repeatedly evaluated as part of the stream execution. For
- * every evaluation, it will emit a chunk of values or end with an optional failure.
- * A failure of type `None` signals the end of the stream.
+ * One way to think of `Stream` is as a `Effect` program that could emit multiple values.
  *
  * `Stream` is a purely functional *pull* based stream. Pull based streams offer
  * inherent laziness and backpressure, relieving users of the need to manage buffers
- * between operatrs. As an optimization, `Stream` does not emit single values, but
+ * between operators. As an optimization `Stream` does not emit single values, but
  * rather an array of values. This allows the cost of effect evaluation to be
  * amortized.
  *
- * The last important attribute of `Stream` is resource management: it makes
- * heavy use of `Managed` to manage resources that are acquired
- * and released during the stream's lifetime.
- *
  * `Stream` forms a monad on its `A` type parameter, and has error management
- * facilities for its `E` type parameter, modeled similarly to `IO` (with some
+ * facilities for its `E` type parameter, modeled similarly to `Effect` (with some
  * adjustments for the multiple-valued nature of `Stream`). These aspects allow
  * for rich and expressive composition of streams.
- *
- * The current encoding of `Stream` is *not* safe for recursion. `Stream` programs
- * that are defined in terms of themselves will leak memory.
- *
- * Instead, recursive operators must be defined explicitly. See the definition of
- * `forever` for an example. This limitation will be lifted in the future.
  */
 export class Stream<R, E, A> {
-  readonly [I._U]: 'Stream'
-  readonly [I._E]: () => E
-  readonly [I._A]: () => A
-  readonly [I._R]: (_: R) => void
+  readonly [StreamTypeId]: StreamTypeId = StreamTypeId
+  readonly _R!: (_: R) => void
+  readonly _E!: () => E
+  readonly _A!: () => A
 
-  constructor(readonly proc: Ma.Managed<R, never, I.IO<R, Maybe<E>, Chunk<A>>>) {}
+  constructor(readonly channel: Ch.Channel<R, unknown, unknown, unknown, E, C.Chunk<A>, unknown>) {}
 }
 
 /**
- * Type aliases
+ * Empty stream
  */
-export type UStream<A> = Stream<unknown, never, A>
-export type URStream<R, A> = Stream<R, never, A>
-export type FStream<E, A> = Stream<unknown, E, A>
-
-/**
- * The default chunk size used by the various combinators and constructors of `Stream`.
- */
-export const DefaultChunkSize = 4096
-
-/**
- * @internal
- */
-export class Chain<R_, E_, O, O2> {
-  constructor(
-    readonly f0: (a: O) => Stream<R_, E_, O2>,
-    readonly outerStream: I.IO<R_, Maybe<E_>, Chunk<O>>,
-    readonly currOuterChunk: Ref.URef<[Chunk<O>, number]>,
-    readonly currInnerStream: Ref.URef<I.IO<R_, Maybe<E_>, Chunk<O2>>>,
-    readonly innerFinalizer: Ref.URef<RM.Finalizer>
-  ) {
-    this.apply        = this.apply.bind(this)
-    this.closeInner   = this.closeInner.bind(this)
-    this.pullNonEmpty = this.pullNonEmpty.bind(this)
-    this.pullOuter    = this.pullOuter.bind(this)
-  }
-
-  closeInner() {
-    return pipe(
-      this.innerFinalizer,
-      Ref.getAndSet(RM.noopFinalizer),
-      I.chain((f) => f(Ex.unit()))
-    )
-  }
-
-  pullNonEmpty<R, E, O>(pull: I.IO<R, Maybe<E>, Chunk<O>>): I.IO<R, Maybe<E>, Chunk<O>> {
-    return pipe(
-      pull,
-      I.chain((os) => (os.length > 0 ? I.pure(os) : this.pullNonEmpty(pull)))
-    )
-  }
-
-  pullOuter() {
-    const self = this
-    return pipe(
-      self.currOuterChunk,
-      Ref.modify(([chunk, nextIdx]): [I.IO<R_, Maybe<E_>, O>, [Chunk<O>, number]] => {
-        if (nextIdx < chunk.length) {
-          return [I.pure(C.unsafeGet_(chunk, nextIdx)), [chunk, nextIdx + 1]]
-        } else {
-          return [
-            pipe(
-              self.pullNonEmpty(self.outerStream),
-              I.tap((os) => self.currOuterChunk.set([os, 1])),
-              I.map((os) => C.unsafeGet_(os, 0))
-            ),
-            [chunk, nextIdx]
-          ]
-        }
-      }),
-      I.flatten,
-      I.chain((o) =>
-        I.uninterruptibleMask(({ restore }) =>
-          I.gen(function* (_) {
-            const releaseMap = yield* _(RM.make)
-            const pull       = yield* _(
-              pipe(
-                self.f0(o).proc.io,
-                I.gives((_: R_) => tuple(_, releaseMap)),
-                I.map(([, x]) => x),
-                restore
-              )
-            )
-            yield* _(self.currInnerStream.set(pull))
-            yield* _(self.innerFinalizer.set((e) => Ma.releaseAll_(releaseMap, e, sequential)))
-          })
-        )
-      )
-    )
-  }
-
-  apply(): I.IO<R_, Maybe<E_>, Chunk<O2>> {
-    return pipe(
-      this.currInnerStream.get,
-      I.flatten,
-      I.catchAllCause((c) =>
-        pipe(
-          c,
-          Ca.sequenceCauseOption,
-          M.match(
-            // The additional switch is needed to eagerly run the finalizer
-            // *before* pulling another element from the outer stream.
-            () =>
-              pipe(
-                this.closeInner(),
-                I.chain(() => this.pullOuter()),
-                I.chain(() =>
-                  new Chain(
-                    this.f0,
-                    this.outerStream,
-                    this.currOuterChunk,
-                    this.currInnerStream,
-                    this.innerFinalizer
-                  ).apply()
-                )
-              ),
-            Pull.halt
-          )
-        )
-      )
-    )
-  }
-}
+export const empty = fromChunk(C.empty<never>())
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -216,466 +82,255 @@ export class Chain<R_, E_, O, O2> {
  */
 
 /**
- * Creates a stream from an array of values
+ * Halt a stream with the specified exception
  */
-export function fromChunk<A>(c: Chunk<A>): UStream<A> {
-  return new Stream(
-    I.toManaged_(
-      I.gen(function* (_) {
-        const doneRef = yield* _(Ref.make(false))
-        const pull    = pipe(
-          doneRef,
-          Ref.modify<I.FIO<Maybe<never>, Chunk<A>>, boolean>((done) =>
-            done || c.length === 0 ? tuple(Pull.end, true) : tuple(I.succeed(c), true)
-          ),
-          I.flatten
-        )
-
-        return pull
-      })
-    )
-  )
+export function halt(u: unknown): Stream<unknown, never, never> {
+  return new Stream(Ch.halt(u))
 }
 
 /**
- * Creates a single-valued pure stream
+ * Halt a stream with the specified exception
  */
-export function succeed<O>(o: O): UStream<O> {
-  return fromChunk(C.single(o))
+export function haltLazy(u: () => unknown): Stream<unknown, never, never> {
+  return new Stream(Ch.haltLazy(u))
 }
 
 /**
- * The stream that always fails with the `error`
+ * Halt a stream with the specified error
  */
-export function fail<E>(e: E): FStream<E, never> {
-  return fromIO(I.fail(e))
+export function fail<E>(error: E): Stream<unknown, E, never> {
+  return new Stream(Ch.fail(error))
 }
 
 /**
- * The `Stream` that halts with the error.
+ * Halt a stream with the specified error
  */
-export function halt(e: unknown): UStream<never> {
-  return fromIO(I.halt(e))
+export function failLazy<E>(error: () => E): Stream<unknown, E, never> {
+  return new Stream(Ch.failLazy(error))
 }
 
 /**
- * The stream that halts with an exception described by `message`.
+ * Creates a stream from a `Chunk` of values
  */
-export function haltMessage(message: string): Stream<unknown, never, never> {
-  return fromIO(I.haltMessage(message))
-}
-
-export function failCause<E>(cause: Ca.Cause<E>): Stream<unknown, E, never> {
-  return fromIO(I.failCause(cause))
+export function fromChunk<O>(c: C.Chunk<O>): Stream<unknown, never, O> {
+  return new Stream(Ch.unwrap(I.succeedLazy(() => Ch.write(c))))
 }
 
 /**
- * The empty stream
+ * Creates a stream from a `Chunk` of values
  */
-export const empty: UStream<never> = new Stream(Ma.succeed(Pull.end))
-
-/**
- * The infinite stream of iterative function application: a, f(a), f(f(a)), f(f(f(a))), ...
- */
-export function iterate<A>(a: A, f: (a: A) => A): UStream<A> {
-  return new Stream(pipe(Ref.make(a), I.toManaged(), Ma.map(flow(Ref.getAndUpdate(f), I.map(C.single)))))
-}
-
-export function defer<R, E, A>(thunk: () => Stream<R, E, A>): Stream<R, E, A> {
-  return new Stream(Ma.defer(() => thunk().proc))
+export function fromChunkLazy<O>(c: () => C.Chunk<O>): Stream<unknown, never, O> {
+  return new Stream(Ch.unwrap(I.succeedLazy(() => Ch.writeLazy(c))))
 }
 
 /**
  * Creates a single-valued stream from a managed resource
  */
-export function fromManaged<R, E, A>(ma: Ma.Managed<R, E, A>): Stream<R, E, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const doneRef   = yield* _(Ref.managedRef(false))
-      const finalizer = yield* _(Ma.makeManagedReleaseMap(sequential))
+export function fromManaged<R, E, A>(stream: Ma.Managed<R, E, A>): Stream<R, E, A> {
+  return new Stream(Ch.managedOut(Ma.map_(stream, C.single)))
+}
 
-      const pull = I.uninterruptibleMask(({ restore }) =>
-        pipe(
-          doneRef.get,
-          I.chain((done) => {
-            if (done) {
-              return Pull.end
-            } else {
-              return pipe(
-                I.gen(function* (_) {
-                  const a = yield* _(
-                    pipe(
-                      ma.io,
-                      I.map(([, a]) => a),
-                      I.gives((r: R) => tuple(r, finalizer)),
-                      restore,
-                      I.onError(() => doneRef.set(true))
-                    )
-                  )
-                  yield* _(doneRef.set(true))
-                  return C.single(a)
-                }),
-                I.mapError(M.just)
-              )
-            }
-          })
-        )
+/**
+ * Creates a single-valued pure stream
+ */
+export function succeed<O>(o: O): Stream<unknown, never, O> {
+  return fromChunk(C.single(o))
+}
+
+/**
+ * Creates a single-valued pure stream
+ */
+export function succeedLazy<O>(o: () => O): Stream<unknown, never, O> {
+  return fromChunkLazy(() => C.single(o()))
+}
+
+function unfoldChunkIOLoop<S, R, E, A>(
+  s: S,
+  f: (s: S) => I.IO<R, E, M.Maybe<readonly [C.Chunk<A>, S]>>
+): Ch.Channel<R, unknown, unknown, unknown, E, C.Chunk<A>, unknown> {
+  return Ch.unwrap(
+    I.map_(
+      f(s),
+      M.match(
+        () => Ch.unit(),
+        ([as, s]) => Ch.chain_(Ch.write(as), () => unfoldChunkIOLoop(s, f))
       )
-      return pull
-    })
-  )
-}
-
-/**
- * Creates a one-element stream that never fails and executes the finalizer when it ends.
- */
-export function finalizer<R>(finalizer: I.URIO<R, unknown>): URStream<R, unknown> {
-  return bracket((_) => finalizer)(I.unit())
-}
-
-/**
- * Creates a stream from an IO producing a value of type `A` or an empty Stream
- */
-export function fromIOMaybe<R, E, A>(fa: I.IO<R, Maybe<E>, A>): Stream<R, E, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const doneRef = yield* _(Ref.make(false))
-
-      const pull = pipe(
-        doneRef,
-        Ref.modify((done) => {
-          if (done) return tuple(Pull.end, true)
-          else return tuple(I.map_(fa, C.single), true)
-        }),
-        I.flatten
-      )
-      return pull
-    })
-  )
-}
-
-/**
- * Creates a stream from an IO producing a value of type `A`
- */
-export function fromIO<R, E, A>(ef: I.IO<R, E, A>): Stream<R, E, A> {
-  return pipe(ef, I.mapError(M.just), fromIOMaybe)
-}
-
-/**
- * Creates a stream from a `Schedule` that does not require any further
- * input. The stream will emit an element for each value output from the
- * schedule, continuing for as long as the schedule continues.
- */
-export function fromSchedule<R, A>(schedule: Sc.Schedule<R, unknown, A>): Stream<R & Has<Clock>, never, A> {
-  return pipe(
-    schedule,
-    Sc.driver,
-    I.map((driver) => repeatIOMaybe(driver.next(undefined))),
-    unwrap
-  )
-}
-
-/**
- * Creates a stream from an asynchronous callback that can be called multiple times.
- * The registration of the callback can possibly return the stream synchronously.
- * The optionality of the error type `E` can be used to signal the end of the stream,
- * by setting it to `None`.
- */
-export function asyncMaybe<R, E, A>(
-  register: (
-    resolve: (
-      next: I.IO<R, Maybe<E>, Chunk<A>>,
-      offerCb?: (e: Ex.Exit<never, boolean>) => void
-    ) => I.UIO<Ex.Exit<never, boolean>>
-  ) => Maybe<Stream<R, E, A>>,
-  outputBuffer = 16
-): Stream<R, E, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const output      = yield* _(Q.makeBounded<Take.Take<E, A>>(outputBuffer))
-      const runtime     = yield* _(I.runtime<R>())
-      const maybeStream = yield* _(
-        Ma.succeedLazy(() =>
-          register((k, cb) =>
-            pipe(
-              Take.fromPull(k),
-              I.chain((a) => Q.offer_(output, a)),
-              runtime.runCancel(cb)
-            )
-          )
-        )
-      )
-
-      const pull = yield* _(
-        M.match_(
-          maybeStream,
-          () =>
-            Ma.map_(Ref.managedRef(false), (doneRef) =>
-              pipe(
-                doneRef.get,
-                I.chain((done) => {
-                  if (done) {
-                    return Pull.end
-                  } else {
-                    return pipe(
-                      Q.take(output),
-                      I.chain(Take.done),
-                      I.onError(() => pipe(doneRef.set(true), I.crossSecond(Q.shutdown(output))))
-                    )
-                  }
-                })
-              )
-            ),
-          (s) => pipe(Q.shutdown(output), I.toManaged(), Ma.crossSecond(s.proc))
-        )
-      )
-      return pull
-    })
-  )
-}
-
-/**
- * Creates a stream from an asynchronous callback that can be called multiple times.
- * The optionality of the error type `E` can be used to signal the end of the stream,
- * by setting it to `None`.
- */
-export function async<R, E, A>(
-  register: (
-    resolve: (
-      next: I.IO<R, Maybe<E>, Chunk<A>>,
-      offerCb?: (e: Ex.Exit<never, boolean>) => void
-    ) => I.UIO<Ex.Exit<never, boolean>>
-  ) => void,
-  outputBuffer = 16
-): Stream<R, E, A> {
-  return asyncMaybe((cb) => {
-    register(cb)
-    return M.nothing()
-  }, outputBuffer)
-}
-
-/**
- * Creates a stream from an asynchronous callback that can be called multiple times.
- * The registration of the callback returns either a canceler or synchronously returns a stream.
- * The optionality of the error type `E` can be used to signal the end of the stream, by
- * setting it to `None`.
- */
-export function asyncInterruptEither<R, E, A>(
-  register: (
-    resolve: (
-      next: I.IO<R, Maybe<E>, Chunk<A>>,
-      offerCb?: (e: Ex.Exit<never, boolean>) => void
-    ) => I.UIO<Ex.Exit<never, boolean>>
-  ) => E.Either<I.Canceler<R>, Stream<R, E, A>>,
-  outputBuffer = 16
-): Stream<R, E, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const output       = yield* _(Q.makeBounded<Take.Take<E, A>>(outputBuffer))
-      const runtime      = yield* _(I.runtime<R>())
-      const eitherStream = yield* _(
-        Ma.succeedLazy(() =>
-          register((k, cb) =>
-            pipe(
-              Take.fromPull(k),
-              I.chain((a) => Q.offer_(output, a)),
-              (x) => runtime.runCancel_(x, cb)
-            )
-          )
-        )
-      )
-
-      const pull = yield* _(
-        E.match_(
-          eitherStream,
-          (canceler) =>
-            pipe(
-              Ref.managedRef(false),
-              Ma.map((doneRef) =>
-                pipe(
-                  doneRef.get,
-                  I.chain((done) => {
-                    if (done) {
-                      return Pull.end
-                    } else {
-                      return pipe(
-                        Q.take(output),
-                        I.chain(Take.done),
-                        I.onError(() => pipe(doneRef.set(true), I.crossSecond(Q.shutdown(output))))
-                      )
-                    }
-                  })
-                )
-              ),
-              Ma.ensuring(canceler)
-            ),
-          (s) => pipe(Q.shutdown(output), I.toManaged(), Ma.crossSecond(s.proc))
-        )
-      )
-      return pull
-    })
-  )
-}
-
-/**
- * Creates a stream from an asynchronous callback that can be called multiple times.
- * The registration of the callback returns either a canceler or synchronously returns a stream.
- * The optionality of the error type `E` can be used to signal the end of the stream, by
- * setting it to `None`.
- */
-export function asyncInterrupt<R, E, A>(
-  register: (
-    cb: (
-      next: I.IO<R, Maybe<E>, Chunk<A>>,
-      offerCb?: (e: Ex.Exit<never, boolean>) => void
-    ) => I.UIO<Ex.Exit<never, boolean>>
-  ) => I.Canceler<R>,
-  outputBuffer = 16
-): Stream<R, E, A> {
-  return asyncInterruptEither((cb) => E.left(register(cb)), outputBuffer)
-}
-
-/**
- * Like `unfold`, but allows the emission of values to end one step further than
- * the unfolding of the state. This is useful for embedding paginated APIs,
- * hence the name.
- */
-export function paginate<S, A>(s: S, f: (s: S) => readonly [A, Maybe<S>]): Stream<unknown, never, A> {
-  return paginateIO(s, flow(f, I.succeed))
-}
-
-/**
- * Like `unfoldM`, but allows the emission of values to end one step further than
- * the unfolding of the state. This is useful for embedding paginated APIs,
- * hence the name.
- */
-export function paginateIO<S, R, E, A>(s: S, f: (s: S) => I.IO<R, E, readonly [A, Maybe<S>]>): Stream<R, E, A> {
-  return paginateChunkIO(
-    s,
-    flow(
-      f,
-      I.map(([a, s]) => tuple(C.single(a), s))
     )
   )
 }
 
 /**
- * Like `unfoldChunk`, but allows the emission of values to end one step further than
- * the unfolding of the state. This is useful for embedding paginated APIs,
- * hence the name.
+ * Creates a stream by effectfully peeling off the "layers" of a value of type `S`
  */
-export function paginateChunk<S, A>(s: S, f: (s: S) => readonly [Chunk<A>, Maybe<S>]): Stream<unknown, never, A> {
-  return paginateChunkIO(s, flow(f, I.succeed))
+export function unfoldChunkIO<R, E, A, S>(
+  s: S,
+  f: (s: S) => I.IO<R, E, M.Maybe<readonly [C.Chunk<A>, S]>>
+): Stream<R, E, A> {
+  return new Stream(unfoldChunkIOLoop(s, f))
 }
 
 /**
- * Like `unfoldChunkM`, but allows the emission of values to end one step further than
- * the unfolding of the state. This is useful for embedding paginated APIs,
- * hence the name.
+ * Creates a stream by effectfully peeling off the "layers" of a value of type `S`
  */
-export function paginateChunkIO<S, R, E, A>(
-  s: S,
-  f: (s: S) => I.IO<R, E, readonly [Chunk<A>, Maybe<S>]>
-): Stream<R, E, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const ref = yield* _(Ref.make(M.just(s)))
-      return pipe(
-        ref.get,
-        I.chain(
-          M.match(
-            () => Pull.end,
-            flow(
-              f,
-              I.matchIO(Pull.fail, ([as, s]) =>
-                pipe(
-                  ref.set(s),
-                  I.asLazy(() => as)
-                )
-              )
-            )
-          )
-        )
-      )
-    })
+export function unfoldIO<S, R, E, A>(s: S, f: (s: S) => I.IO<R, E, M.Maybe<readonly [A, S]>>): Stream<R, E, A> {
+  return unfoldChunkIO(s, (_) =>
+    I.map_(
+      f(_),
+      M.map(([a, s]) => tuple(C.single(a), s))
+    )
   )
 }
 
-export function range(min: number, max: number, chunkSize = 16): Stream<unknown, never, number> {
-  const pull = (ref: Ref.URef<number>) =>
-    I.gen(function* (_) {
-      const start = yield* _(Ref.getAndUpdate_(ref, (n) => n + chunkSize))
-      yield* _(I.when(() => start >= max)(I.fail(M.nothing())))
-      return C.range(start, Math.min(start + chunkSize, max))
-    })
+function unfoldChunkLoop<S, A>(
+  s: S,
+  f: (s: S) => M.Maybe<readonly [C.Chunk<A>, S]>
+): Ch.Channel<unknown, unknown, unknown, unknown, never, C.Chunk<A>, unknown> {
+  return pipe(
+    f(s),
+    M.match(
+      () => Ch.unit(),
+      ([as, s]) => pipe(Ch.write(as), Ch.crossSecond(unfoldChunkLoop(s, f)))
+    )
+  )
+}
 
-  return new Stream(pipe(Ref.managedRef(min), Ma.map(pull)))
+export function unfoldChunk<S, A>(s: S, f: (s: S) => M.Maybe<readonly [C.Chunk<A>, S]>): Stream<unknown, never, A> {
+  return new Stream(unfoldChunkLoop(s, f))
+}
+
+export function unfold<S, A>(s: S, f: (s: S) => M.Maybe<readonly [A, S]>): Stream<unknown, never, A> {
+  return unfoldChunk(
+    s,
+    flow(
+      f,
+      M.map(([a, s]) => [C.single(a), s])
+    )
+  )
+}
+
+/**
+ * Creates a stream from an effect producing a value of type `A`
+ */
+export function fromIO<R, E, A>(fa: I.IO<R, E, A>): Stream<R, E, A> {
+  return fromIOOption(I.mapError_(fa, M.just))
+}
+
+/**
+ * Creates a stream from an effect producing a value of type `A` or an empty Stream
+ */
+export function fromIOOption<R, E, A>(fa: I.IO<R, M.Maybe<E>, A>): Stream<R, E, A> {
+  return new Stream(
+    Ch.unwrap(
+      I.match_(
+        fa,
+        M.match(
+          () => Ch.end(undefined),
+          (e) => Ch.fail(e)
+        ),
+        (a) => Ch.write(C.single(a))
+      )
+    )
+  )
+}
+
+/**
+ * Creates a stream from a `XQueue` of values
+ */
+export function fromQueue_<R, E, O>(
+  queue: Q.Queue<never, R, unknown, E, never, O>,
+  maxChunkSize: number = DEFAULT_CHUNK_SIZE
+): Stream<R, E, O> {
+  return repeatIOChunkOption(
+    pipe(
+      Q.takeBetween_(queue, 1, maxChunkSize),
+      I.map(C.from),
+      I.catchAllCause((c) =>
+        I.chain_(Q.isShutdown(queue), (down) => {
+          if (down && Ca.interrupted(c)) {
+            return Pull.end
+          } else {
+            return Pull.halt(c)
+          }
+        })
+      )
+    )
+  )
+}
+
+/**
+ * Creates a stream from a `XQueue` of values
+ */
+export function fromQueue(maxChunkSize: number = DEFAULT_CHUNK_SIZE) {
+  return <R, E, O>(queue: Q.Queue<never, R, unknown, E, never, O>) => fromQueue_(queue, maxChunkSize)
+}
+
+export function fromQueueWithShutdown_<R, E, A>(
+  queue: Q.Queue<never, R, unknown, E, never, A>,
+  maxChunkSize: number = DEFAULT_CHUNK_SIZE
+): Stream<R, E, A> {
+  return pipe(fromQueue_(queue, maxChunkSize), ensuring(Q.shutdown(queue)))
+}
+
+export function fromQueueWithShutdown(
+  maxChunkSize: number = DEFAULT_CHUNK_SIZE
+): <R, E, A>(queue: Q.Queue<never, R, unknown, E, never, A>) => Stream<R, E, A> {
+  return (queue) => fromQueueWithShutdown_(queue, maxChunkSize)
 }
 
 /**
  * Repeats the provided value infinitely.
  */
-export function repeat<A>(a: A): Stream<unknown, never, A> {
-  return repeatIO(I.succeed(a))
-}
-
-/**
- * Creates a stream from an IO producing chunks of `A` values until it fails with Nothing.
- */
-export function repeatIOChunkMaybe<R, E, A>(ef: I.IO<R, Maybe<E>, Chunk<A>>): Stream<R, E, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const doneRef = yield* _(Ref.make(false))
-      const pull    = I.chain_(doneRef.get, (done) => {
-        if (done) {
-          return Pull.end
-        } else {
-          return I.tapError_(
-            ef,
-            M.match(
-              () => doneRef.set(true),
-              () => I.unit()
-            )
-          )
-        }
-      })
-      return pull
-    })
-  )
-}
-
-/**
- * Creates a stream from an effect producing chunks of `A` values which repeats forever.
- */
-export function repeatIOChunk<R, E, A>(fa: I.IO<R, E, Chunk<A>>): Stream<R, E, A> {
-  return repeatIOChunkMaybe(I.mapError_(fa, M.just))
-}
-
-/**
- * Creates a stream from an IO producing values of type `A` until it fails with None.
- */
-export function repeatIOMaybe<R, E, A>(fa: I.IO<R, Maybe<E>, A>): Stream<R, E, A> {
-  return pipe(fa, I.map(C.single), repeatIOChunkMaybe)
+export function repeatValue<A>(a: A): Stream<unknown, never, A> {
+  return new Stream(pipe(C.single(a), Ch.write, Ch.repeated))
 }
 
 /**
  * Creates a stream from an effect producing a value of type `A` which repeats forever.
  */
 export function repeatIO<R, E, A>(fa: I.IO<R, E, A>): Stream<R, E, A> {
-  return repeatIOMaybe(I.mapError_(fa, M.just))
+  return pipe(fa, I.mapError(M.just), repeatIOOption)
+}
+
+/**
+ * Creates a stream from an effect producing values of type `A` until it fails with None.
+ */
+export function repeatIOOption<R, E, A>(fa: I.IO<R, M.Maybe<E>, A>): Stream<R, E, A> {
+  return pipe(fa, I.map(C.single), repeatIOChunkOption)
+}
+
+/**
+ * Creates a stream from an effect producing chunks of `A` values which repeats forever.
+ */
+export function repeatIOChunk<R, E, A>(fa: I.IO<R, E, C.Chunk<A>>): Stream<R, E, A> {
+  return pipe(fa, I.mapError(M.just), repeatIOChunkOption)
+}
+
+/**
+ * Creates a stream from an effect producing chunks of `A` values until it fails with None.
+ */
+export function repeatIOChunkOption<R, E, A>(fa: I.IO<R, M.Maybe<E>, C.Chunk<A>>): Stream<R, E, A> {
+  return unfoldChunkIO(undefined, (_) => {
+    return I.catchAll_(
+      I.map_(fa, (chunk) => M.just(tuple(chunk, undefined))),
+      M.match(
+        () => I.succeed(M.nothing()),
+        (e) => I.fail(e)
+      )
+    )
+  })
 }
 
 /**
  * Creates a stream from an effect producing a value of type `A`, which is repeated using the
  * specified schedule.
  */
-export function repeatIOWith_<R, E, A>(
+export function repeatIOWith<R, E, A>(
   effect: I.IO<R, E, A>,
-  schedule: Schedule<R, A, any>
+  schedule: SC.Schedule<R, A, unknown>
 ): Stream<R & Has<Clock>, E, A> {
   return pipe(
     effect,
-    I.cross(Sc.driver(schedule)),
+    I.cross(SC.driver(schedule)),
     fromIO,
     chain(([a, driver]) =>
       pipe(
@@ -686,7 +341,7 @@ export function repeatIOWith_<R, E, A>(
             flow(
               driver.next,
               I.matchIO(
-                (_) => I.succeed(_ as M.Maybe<readonly [A, A]>),
+                (_) => I.succeed(M.nothing()),
                 () =>
                   pipe(
                     effect,
@@ -702,352 +357,415 @@ export function repeatIOWith_<R, E, A>(
 }
 
 /**
- * Creates a stream from an effect producing a value of type `A`, which is repeated using the
- * specified schedule.
+ * Repeats the value using the provided schedule.
  */
-export function repeatIOWith<R, A>(
-  schedule: Schedule<R, A, any>
-): <E>(effect: I.IO<R, E, A>) => Stream<R & Has<Clock>, E, A> {
-  return (effect) => repeatIOWith_(effect, schedule)
+export function repeatValueWith<R, A>(a: A, schedule: SC.Schedule<R, A, unknown>): Stream<R & Has<Clock>, never, A> {
+  return repeatIOWith(I.succeed(a), schedule)
 }
 
-export function repeatWith_<R, A>(a: A, schedule: Schedule<R, A, any>): Stream<R & Has<Clock>, never, A> {
-  return repeatIOWith_(I.succeed(a), schedule)
-}
-
-export function repeatWith<R, A>(schedule: Schedule<R, A, any>): (a: A) => Stream<R & Has<Clock>, never, A> {
-  return (a) => repeatWith_(a, schedule)
-}
-
-/**
- * Creates a stream from a `Queue` of values
- */
-export function fromChunkQueue<R, E, O>(queue: Q.Queue<never, R, unknown, E, never, Chunk<O>>): Stream<R, E, O> {
-  return repeatIOChunkMaybe(
-    I.catchAllCause_(Q.take(queue), (c) =>
-      I.chain_(Q.isShutdown(queue), (down) => (down && Ca.interrupted(c) ? Pull.end : Pull.halt(c)))
-    )
-  )
-}
-
-/**
- * Creates a stream from a `Queue` of values. The queue will be shutdown once the stream is closed.
- */
-export function fromChunkQueueWithShutdown<R, E, A>(
-  queue: Q.Queue<never, R, unknown, E, never, Chunk<A>>
-): Stream<R, E, A> {
-  return ensuringFirst_(fromChunkQueue(queue), Q.shutdown(queue))
-}
-
-/**
- * Creates a stream from an `XQueue` of values
- */
-export function fromQueue<R, E, A>(queue: Q.Queue<never, R, unknown, E, never, A>): Stream<R, E, A> {
-  return pipe(
-    queue,
-    Q.takeBetween(1, Number.MAX_SAFE_INTEGER),
-    I.catchAllCause((c) =>
-      I.chain_(Q.isShutdown(queue), (down) => (down && Ca.interrupted(c) ? Pull.end : Pull.halt(c)))
-    ),
-    repeatIOChunkMaybe
-  )
-}
-
-/**
- * Creates a stream from an `XQueue` of values. The queue will be shutdown once the stream is closed.
- */
-export function fromQueueWithShutdown<R, E, A>(queue: Q.Queue<never, R, unknown, E, never, A>): Stream<R, E, A> {
-  return ensuringFirst_(fromQueue(queue), Q.shutdown(queue))
-}
-
-class StreamEnd extends Error {}
-/**
- * Creates a stream from an iterable collection of values
- */
-export function fromIterable<A>(iterable: () => Iterable<A>): Stream<unknown, unknown, A> {
-  return pipe(
-    fromIO(I.succeedLazy(() => iterable()[Symbol.iterator]())),
-    chain((it) =>
-      repeatIOMaybe(
-        pipe(
-          I.try(() => {
-            const v = it.next()
-            if (!v.done) {
-              return v.value
-            } else {
-              throw new StreamEnd()
-            }
-          }),
-          I.mapError((err) => {
-            if (err instanceof StreamEnd) {
-              return M.nothing()
-            } else {
-              return M.just(err)
-            }
-          })
-        )
-      )
-    )
-  )
-}
-
-/**
- * Creates a stream from a single value that will get cleaned up after the
- * stream is consumed
- */
-export function bracket_<R, E, A, R1>(
-  acquire: I.IO<R, E, A>,
-  release: (a: A) => I.IO<R1, never, any>
-): Stream<R & R1, E, A> {
-  return fromManaged(Ma.bracket_(acquire, release))
-}
-
-/**
- * Creates a stream from a single value that will get cleaned up after the
- * stream is consumed
- */
-export function bracket<A, R1>(release: (a: A) => I.IO<R1, never, any>) {
-  return <R, E>(acquire: I.IO<R, E, A>) => bracket_(acquire, release)
-}
-
-/**
- * Creates a stream from a single value that will get cleaned up after the
- * stream is consumed
- */
-export function bracketExit_<R, E, A, R1>(
-  acquire: I.IO<R, E, A>,
-  release: (a: A, exit: Ex.Exit<unknown, unknown>) => I.IO<R1, never, unknown>
-): Stream<R & R1, E, A> {
-  return fromManaged(Ma.bracketExit_(acquire, release))
-}
-
-/**
- * Creates a stream from a single value that will get cleaned up after the
- * stream is consumed
- */
-export function bracketExit<A, R1>(
-  release: (a: A, exit: Ex.Exit<unknown, unknown>) => I.IO<R1, never, unknown>
-): <R, E>(acquire: I.IO<R, E, A>) => Stream<R & R1, E, A> {
-  return (acquire) => bracketExit_(acquire, release)
-}
-
-/**
- * Creates a stream from an asynchronous callback that can be called multiple times
- * The registration of the callback itself returns an IO. The optionality of the
- * error type `E` can be used to signal the end of the stream, by setting it to `None`.
- */
-export function asyncIO<R, E, A, R1 = R, E1 = E>(
+export function asyncInterrupt<R, E, A>(
   register: (
-    cb: (
-      next: I.IO<R, Maybe<E>, Chunk<A>>,
+    resolve: (
+      next: I.IO<R, M.Maybe<E>, C.Chunk<A>>,
       offerCb?: (e: Ex.Exit<never, boolean>) => void
     ) => I.UIO<Ex.Exit<never, boolean>>
-  ) => I.IO<R1, E1, unknown>,
+  ) => E.Either<I.Canceler<R>, Stream<R, E, A>>,
   outputBuffer = 16
-): Stream<R & R1, E | E1, A> {
-  return pipe(
+): Stream<R, E, A> {
+  return unwrapManaged(
     Ma.gen(function* (_) {
-      const output  = yield* _(Q.makeBounded<Take.Take<E, A>>(outputBuffer))
-      const runtime = yield* _(I.runtime<R>())
-      yield* _(
-        register((k, cb) =>
-          pipe(
-            Take.fromPull(k),
-            I.chain((a) => Q.offer_(output, a)),
-            (x) => runtime.runCancel_(x, cb)
+      const output       = yield* _(Ma.bracket_(Q.makeBounded<Take.Take<E, A>>(outputBuffer), Q.shutdown))
+      const runtime      = yield* _(I.runtime<R>())
+      const eitherStream = yield* _(
+        Ma.succeedLazy(() =>
+          register((k, cb) =>
+            pipe(
+              Take.fromPull(k),
+              I.chain((a) => Q.offer_(output, a)),
+              runtime.runCancel(cb)
+            )
           )
         )
       )
-      const doneRef = yield* _(Ref.make(false))
-      const pull    = I.chain_(doneRef.get, (done) => {
-        if (done) {
-          return Pull.end
-        } else {
-          return pipe(
+      return E.match_(
+        eitherStream,
+        (canceler) => {
+          const loop: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = pipe(
             Q.take(output),
             I.chain(Take.done),
-            I.onError(() => pipe(doneRef.set(true), I.crossSecond(Q.shutdown(output))))
+            I.match(flow(M.match(() => Ch.end(undefined), Ch.fail)), (a) => Ch.crossSecond_(Ch.write(a), loop)),
+            Ch.unwrap
           )
-        }
-      })
-      return pull
-    }),
-    fromManaged,
-    chain(repeatIOChunkMaybe)
-  )
-}
-
-/*
- * -------------------------------------------------------------------------------------------------
- * Run
- * -------------------------------------------------------------------------------------------------
- */
-
-/**
- * Runs the sink on the stream to produce either the sink's result or an error.
- */
-export function runManaged_<R, E, A, R1, E1, B>(
-  stream: Stream<R, E, A>,
-  sink: Sink.Sink<R1, E1, A, any, B>
-): Ma.Managed<R & R1, E1 | E, B> {
-  return pipe(
-    Ma.cross_(stream.proc, sink.push),
-    Ma.mapIO(([pull, push]) => {
-      const go: I.IO<R1 & R, E1 | E, B> = I.matchCauseIO_(
-        pull,
-        (c): I.IO<R1, E1 | E, B> =>
+          return ensuring_(new Stream(loop), canceler)
+        },
+        (stream) =>
           pipe(
-            Ca.sequenceCauseOption(c),
-            M.match(
-              () =>
-                I.matchCauseIO_(
-                  push(M.nothing()),
-                  (c) =>
-                    pipe(
-                      c,
-                      Ca.map(([_]) => _),
-                      Ca.sequenceCauseEither,
-                      E.match(I.failCause, I.pure)
-                    ),
-                  () => I.haltMessage('empty stream / empty sinks')
-                ),
-              I.failCause
-            )
-          ),
-        (os) =>
-          I.matchCauseIO_(
-            push(M.just(os)),
-            (c): I.IO<unknown, E1, B> =>
-              pipe(
-                c,
-                Ca.map(([_]) => _),
-                Ca.sequenceCauseEither,
-                E.match(I.failCause, I.pure)
-              ),
-            () => go
+            Q.shutdown(output),
+            I.asLazy(() => stream),
+            unwrap
           )
       )
-      return go
     })
   )
 }
 
 /**
- * Runs the sink on the stream to produce either the sink's result or an error.
+ * Creates a stream from an asynchronous callback that can be called multiple times.
+ * The registration of the callback can possibly return the stream synchronously.
+ * The optionality of the error type `E` can be used to signal the end of the stream,
+ * by setting it to `None`.
  */
-export function runManaged<A, R1, E1, B>(
-  sink: Sink.Sink<R1, E1, A, any, B>
-): <R, E>(ma: Stream<R, E, A>) => Ma.Managed<R & R1, E1 | E, B> {
-  return (ma) => runManaged_(ma, sink)
+export function asyncOption<R, E, A>(
+  register: (
+    resolve: (
+      next: I.IO<R, M.Maybe<E>, C.Chunk<A>>,
+      offerCb?: (e: Ex.Exit<never, boolean>) => void
+    ) => I.UIO<Ex.Exit<never, boolean>>
+  ) => M.Maybe<Stream<R, E, A>>,
+  outputBuffer = 16
+): Stream<R, E, A> {
+  return asyncInterrupt((k) => M.match_(register(k), () => E.left(I.unit()), E.right), outputBuffer)
+}
+
+export function async<R, E, A>(
+  register: (
+    resolve: (
+      next: I.IO<R, M.Maybe<E>, C.Chunk<A>>,
+      offerCb?: (e: Ex.Exit<never, boolean>) => void
+    ) => I.UIO<Ex.Exit<never, boolean>>
+  ) => void,
+  outputBuffer = 16
+): Stream<R, E, A> {
+  return asyncOption((cb) => {
+    register(cb)
+    return M.nothing()
+  }, outputBuffer)
+}
+
+export function asyncIO<R, E, A, R1 = R, E1 = E>(
+  register: (
+    resolve: (
+      next: I.IO<R, M.Maybe<E>, C.Chunk<A>>,
+      offerCb?: (e: Ex.Exit<never, boolean>) => void
+    ) => I.UIO<Ex.Exit<never, boolean>>
+  ) => I.IO<R1, E1, unknown>,
+  outputBuffer = 16
+): Stream<R & R1, E | E1, A> {
+  return new Stream(
+    Ch.unwrapManaged(
+      Ma.gen(function* (_) {
+        const output  = yield* _(Ma.bracket_(Q.makeBounded<Take.Take<E, A>>(outputBuffer), Q.shutdown))
+        const runtime = yield* _(I.runtime<R>())
+        yield* _(
+          register((k, cb) =>
+            pipe(
+              Take.fromPull(k),
+              I.chain((a) => Q.offer_(output, a)),
+              runtime.runCancel(cb)
+            )
+          )
+        )
+        const loop: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = pipe(
+          Q.take(output),
+          I.chain(Take.done),
+          I.matchCauseIO(
+            (maybeError) =>
+              pipe(
+                Q.shutdown(output),
+                I.asLazy(() =>
+                  pipe(
+                    Ca.failureOrCause(maybeError),
+                    E.match(
+                      M.match(() => Ch.end(undefined), Ch.fail),
+                      Ch.failCause
+                    )
+                  )
+                )
+              ),
+            (a) => I.succeed(Ch.crossSecond_(Ch.write(a), loop))
+          ),
+          Ch.unwrap
+        )
+        return loop
+      })
+    )
+  )
+}
+
+function fromAsyncIterableLoop<A>(
+  iterator: AsyncIterator<A>
+): Ch.Channel<unknown, unknown, unknown, unknown, never, C.Chunk<A>, unknown> {
+  return Ch.unwrap(
+    I.async<unknown, never, Ch.Channel<unknown, unknown, unknown, unknown, never, C.Chunk<A>, unknown>>((k) => {
+      iterator
+        .next()
+        .then((result) =>
+          result.done
+            ? k(I.succeed(Ch.end(undefined)))
+            : k(I.succeed(Ch.crossSecond_(Ch.write(C.single(result.value)), fromAsyncIterableLoop(iterator))))
+        )
+    })
+  )
+}
+
+export function fromAsyncIterable<A>(iterable: AsyncIterable<A>): Stream<unknown, never, A> {
+  return new Stream(fromAsyncIterableLoop(iterable[Symbol.asyncIterator]()))
+}
+
+function fromIterableLoop<A>(
+  iterator: Iterator<A>
+): Ch.Channel<unknown, unknown, unknown, unknown, never, C.Chunk<A>, unknown> {
+  return Ch.unwrap(
+    I.succeedLazy(() => {
+      const v = iterator.next()
+      return v.done ? Ch.end(undefined) : pipe(Ch.write(C.single(v.value)), Ch.crossSecond(fromIterableLoop(iterator)))
+    })
+  )
+}
+
+export function fromIterable<A>(iterable: Iterable<A>): Stream<unknown, never, A> {
+  return new Stream(fromIterableLoop(iterable[Symbol.iterator]()))
 }
 
 /**
- * Runs the sink on the stream to produce either the sink's result or an error.
+ * The stream that always halts with `cause`.
  */
-export function run_<R, E, A, R1, E1, B>(ma: Stream<R, E, A>, sink: Sink.Sink<R1, E1, A, any, B>) {
-  return Ma.useNow(runManaged_(ma, sink))
+export function failCause<E>(cause: Ca.Cause<E>): Stream<unknown, E, never> {
+  return fromIO(I.failCause(cause))
 }
 
 /**
- * Runs the sink on the stream to produce either the sink's result or an error.
+ * The stream that always halts with `cause`.
  */
-export function run<A, R1, E1, B>(
-  sink: Sink.Sink<R1, E1, A, any, B>
-): <R, E>(ma: Stream<R, E, A>) => I.IO<R & R1, E1 | E, B> {
-  return (ma) => run_(ma, sink)
-}
-
-export function runCollect<R, E, A>(ma: Stream<R, E, A>): I.IO<R, E, Chunk<A>> {
-  return run_(ma, Sink.collectAll<A>())
+export function failCauseLazy<E>(cause: () => Ca.Cause<E>): Stream<unknown, E, never> {
+  return fromIO(I.failCauseLazy(cause))
 }
 
 /**
- * Runs the stream and collects all of its elements to an array.
+ * Creates a stream from a subscription to a hub.
  */
-export function runDrain<R, E, A>(ma: Stream<R, E, A>): I.IO<R, E, void> {
-  return pipe(
-    ma,
-    foreach((_) => I.unit())
+export function fromHub<R, E, A>(hub: H.Hub<never, R, unknown, E, never, A>): Stream<R, E, A> {
+  return chain_(fromManaged(H.subscribe(hub)), fromQueue())
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Apply
+ * -------------------------------------------------------------------------------------------------
+ */
+
+/**
+ * Composes this stream with the specified stream to create a cartesian product of elements.
+ * The `that` stream would be run multiple times, for every element in the `this` stream.
+ */
+export function cross_<R, R1, E, E1, A, A1>(
+  stream: Stream<R, E, A>,
+  that: Stream<R1, E1, A1>
+): Stream<R & R1, E | E1, readonly [A, A1]> {
+  return new Stream(
+    Ch.concatMap_(stream.channel, (a) =>
+      Ch.mapOut_(that.channel, (b) => C.chain_(a, (a) => C.map_(b, (b) => tuple(a, b))))
+    )
   )
 }
 
 /**
- * Consumes all elements of the stream, passing them to the specified callback.
+ * Composes this stream with the specified stream to create a cartesian product of elements.
+ * The `that` stream would be run multiple times, for every element in the `this` stream.
  */
-export function foreach_<R, E, A, R1, E1, B>(
-  ma: Stream<R, E, A>,
-  f: (a: A) => I.IO<R1, E1, B>
-): I.IO<R & R1, E | E1, void> {
-  return run_(ma, Sink.foreach(f))
+export function cross<R1, E1, A1>(that: Stream<R1, E1, A1>) {
+  return <R, E, A>(stream: Stream<R, E, A>) => cross_(stream, that)
 }
 
 /**
- * Consumes all elements of the stream, passing them to the specified callback.
+ * Composes this stream with the specified stream to create a cartesian product of elements,
+ * but keeps only elements from this stream.
+ * The `that` stream would be run multiple times, for every element in the `this` stream.
  */
-export function foreach<A, R1, E1, B>(
-  f: (a: A) => I.IO<R1, E1, B>
-): <R, E>(ma: Stream<R, E, A>) => I.IO<R & R1, E1 | E, void> {
-  return (ma) => foreach_(ma, f)
-}
-
-/**
- * Like `foreach`, but returns a `Managed` so the finalization order
- * can be controlled.
- */
-export function foreachManaged_<R, E, A, R1, E1, B>(
-  ma: Stream<R, E, A>,
-  f: (a: A) => I.IO<R1, E1, B>
-): Ma.Managed<R & R1, E | E1, void> {
-  return runManaged_(ma, Sink.foreach(f))
-}
-
-/**
- * Like `foreach`, but returns a `Managed` so the finalization order
- * can be controlled.
- */
-export function foreachManaged<A, R1, E1, B>(
-  f: (a: A) => I.IO<R1, E1, B>
-): <R, E>(ma: Stream<R, E, A>) => Ma.Managed<R & R1, E1 | E, void> {
-  return (ma) => foreachManaged_(ma, f)
-}
-
-export function foreachChunk_<R, E, A, R1, E1, A1>(
-  ma: Stream<R, E, A>,
-  f: (chunk: Chunk<A>) => I.IO<R1, E1, A1>
-): I.IO<R & R1, E | E1, void> {
-  return run_(ma, Sink.foreachChunk(f))
-}
-
-export function foreachChunk<A, R1, E1, A1>(
-  f: (chunk: Chunk<A>) => I.IO<R1, E1, A1>
-): <R, E>(ma: Stream<R, E, A>) => I.IO<R & R1, E | E1, void> {
-  return (ma) => foreachChunk_(ma, f)
-}
-
-export function foreachChunkManaged_<R, E, A, R1, E1, A1>(
+export function crossFirst_<R, R1, E, E1, A, A1>(
   stream: Stream<R, E, A>,
-  f: (chunk: Chunk<A>) => I.IO<R1, E1, A1>
-): Ma.Managed<R & R1, E | E1, void> {
-  return runManaged_(stream, Sink.foreachChunk(f))
+  that: Stream<R1, E1, A1>
+): Stream<R & R1, E | E1, A> {
+  return map_(cross_(stream, that), ([a]) => a)
 }
 
-export function foreachChunkManaged<A, R1, E1, A1>(
-  f: (chunk: Chunk<A>) => I.IO<R1, E1, A1>
-): <R, E>(stream: Stream<R, E, A>) => Ma.Managed<R & R1, E | E1, void> {
-  return (stream) => foreachChunkManaged_(stream, f)
+/**
+ * Composes this stream with the specified stream to create a cartesian product of elements,
+ * but keeps only elements from this stream.
+ * The `that` stream would be run multiple times, for every element in the `this` stream.
+ */
+export function crossFirst<R1, E1, A1>(that: Stream<R1, E1, A1>) {
+  return <R, E, A>(stream: Stream<R, E, A>) => crossFirst_(stream, that)
 }
 
-export function foreachWhileManaged_<R, E, A, R1, E1>(
-  ma: Stream<R, E, A>,
-  f: (a: A) => I.IO<R1, E1, boolean>
-): Ma.Managed<R & R1, E | E1, void> {
-  return runManaged_(ma, Sink.foreachWhile(f))
+/**
+ * Composes this stream with the specified stream to create a cartesian product of elements,
+ * but keeps only elements from the other stream.
+ * The `that` stream would be run multiple times, for every element in the `this` stream.
+ */
+export function crossSecond_<R, R1, E, E1, A, A1>(
+  stream: Stream<R, E, A>,
+  that: Stream<R1, E1, A1>
+): Stream<R & R1, E | E1, A1> {
+  return map_(cross_(stream, that), ([, a1]) => a1)
 }
 
-export function foreachWhileManaged<A, R1, E1>(
-  f: (a: A) => I.IO<R1, E1, boolean>
-): <R, E>(ma: Stream<R, E, A>) => Ma.Managed<R & R1, E | E1, void> {
-  return (ma) => foreachWhileManaged_(ma, f)
+/**
+ * Composes this stream with the specified stream to create a cartesian product of elements,
+ * but keeps only elements from the other stream.
+ * The `that` stream would be run multiple times, for every element in the `this` stream.
+ */
+export function crossSecond<R1, E1, A1>(that: Stream<R1, E1, A1>) {
+  return <R, E, A>(stream: Stream<R, E, A>) => crossSecond_(stream, that)
+}
+
+/**
+ * Composes this stream with the specified stream to create a cartesian product of elements
+ * with a specified function.
+ * The `that` stream would be run multiple times, for every element in the `this` stream.
+ */
+export function crossWith<R, R1, E, E1, A, A1>(stream: Stream<R, E, A>, that: Stream<R1, E1, A1>) {
+  return <C>(f: (a: A, a1: A1) => C): Stream<R & R1, E | E1, C> => chain_(stream, (l) => map_(that, (r) => f(l, r)))
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Monad
+ * -------------------------------------------------------------------------------------------------
+ */
+
+/**
+ * Returns a stream made of the concatenation in strict order of all the streams
+ * produced by passing each element of this stream to `f`
+ */
+export function chain_<R, E, O, R1, E1, O1>(
+  stream: Stream<R, E, O>,
+  f: (o: O) => Stream<R1, E1, O1>
+): Stream<R & R1, E | E1, O1> {
+  return new Stream(
+    Ch.concatMap_(stream.channel, (o) =>
+      C.foldl_(
+        C.map_(o, (x) => f(x).channel),
+        Ch.unit() as Ch.Channel<R1, unknown, unknown, unknown, E1, C.Chunk<O1>, unknown>,
+        (s, a) => Ch.chain_(s, () => a)
+      )
+    )
+  )
+}
+
+/**
+ * Returns a stream made of the concatenation in strict order of all the streams
+ * produced by passing each element of this stream to `f`
+ *
+ * @dataFirst chain_
+ */
+export function chain<O, R1, E1, O1>(
+  f: (o: O) => Stream<R1, E1, O1>
+): <R, E>(stream: Stream<R, E, O>) => Stream<R & R1, E | E1, O1> {
+  return (stream) => chain_(stream, f)
+}
+
+/**
+ * Flattens this stream-of-streams into a stream made of the concatenation in
+ * strict order of all the streams.
+ */
+export function flatten<R0, E0, R, E, A>(stream: Stream<R0, E0, Stream<R, E, A>>): Stream<R0 & R, E0 | E, A> {
+  return chain_(stream, identity)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Functor
+ * -------------------------------------------------------------------------------------------------
+ */
+
+/**
+ * Maps over elements of the stream with the specified effectful function.
+ */
+export function mapIO_<R, E, A, R1, E1, B>(
+  stream: Stream<R, E, A>,
+  f: (a: A) => I.IO<R1, E1, B>
+): Stream<R & R1, E | E1, B> {
+  return loopOnPartialChunksElements_<R, E, A, R1, E1, B>(stream, (a, emit) => I.chain_(f(a), emit))
+}
+
+/**
+ * Maps over elements of the stream with the specified effectful function.
+ *
+ * @dataFirst mapIO_
+ */
+export function mapIO<A, R1, E1, B>(
+  f: (a: A) => I.IO<R1, E1, B>
+): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
+  return (stream) => mapIO_(stream, f)
+}
+
+/**
+ * Transforms the elements of this stream using the supplied function.
+ */
+export function map_<R, E, O, O1>(stream: Stream<R, E, O>, f: (o: O) => O1): Stream<R, E, O1> {
+  return new Stream(Ch.mapOut_(stream.channel, (o) => C.map_(o, f)))
+}
+
+/**
+ * Transforms the elements of this stream using the supplied function.
+ *
+ * @dataFirst map_
+ */
+export function map<O, O1>(f: (o: O) => O1): <R, E>(stream: Stream<R, E, O>) => Stream<R, E, O1> {
+  return (stream) => map_(stream, f)
+}
+
+/**
+ * Maps the success values of this stream to the specified constant value.
+ */
+export function as_<R, E, A, A2>(stream: Stream<R, E, A>, a2: A2): Stream<R, E, A2> {
+  return map_(stream, (_) => a2)
+}
+
+/**
+ * Maps the success values of this stream to the specified constant value.
+ */
+export function as<A2>(a2: A2) {
+  return <R, E, A>(stream: Stream<R, E, A>) => as_(stream, a2)
+}
+
+/**
+ * Transforms the chunks emitted by this stream.
+ */
+export function mapChunks_<R, E, A, A1>(
+  stream: Stream<R, E, A>,
+  f: (chunk: C.Chunk<A>) => C.Chunk<A1>
+): Stream<R, E, A1> {
+  return new Stream(Ch.mapOut_(stream.channel, f))
+}
+
+/**
+ * Transforms the chunks emitted by this stream.
+ */
+export function mapChunks<A, A1>(
+  f: (chunk: C.Chunk<A>) => C.Chunk<A1>
+): <R, E>(stream: Stream<R, E, A>) => Stream<R, E, A1> {
+  return (stream) => mapChunks_(stream, f)
+}
+
+/**
+ * Effectfully transforms the chunks emitted by this stream.
+ */
+export function mapChunksIO_<R, E, A, R1, E1, B>(
+  stream: Stream<R, E, A>,
+  f: (chunk: C.Chunk<A>) => I.IO<R1, E1, C.Chunk<B>>
+): Stream<R & R1, E | E1, B> {
+  return new Stream(Ch.mapOutIO_(stream.channel, f))
+}
+
+/**
+ * Effectfully transforms the chunks emitted by this stream.
+ */
+export function mapChunksIO<A, R1, E1, B>(
+  f: (chunk: C.Chunk<A>) => I.IO<R1, E1, C.Chunk<B>>
+): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
+  return (stream) => mapChunksIO_(stream, f)
 }
 
 /*
@@ -1059,76 +777,32 @@ export function foreachWhileManaged<A, R1, E1>(
 /**
  * Transforms the errors emitted by this stream using `f`.
  */
-export function mapError_<R, E, A, E1>(pab: Stream<R, E, A>, f: (e: E) => E1) {
-  return new Stream(pipe(pab.proc, Ma.map(I.mapError(M.map(f)))))
+export function mapError_<R, E, E1, A>(stream: Stream<R, E, A>, f: (e: E) => E1): Stream<R, E1, A> {
+  return new Stream(Ch.mapError_(stream.channel, f))
 }
 
 /**
  * Transforms the errors emitted by this stream using `f`.
  */
 export function mapError<E, E1>(f: (e: E) => E1) {
-  return <R, A>(pab: Stream<R, E, A>) => mapError_(pab, f)
-}
-
-/**
- * Transforms the full causes of failures emitted by this stream.
- */
-export function mapErrorCause_<R, E, A, E1>(
-  stream: Stream<R, E, A>,
-  f: (e: Ca.Cause<E>) => Ca.Cause<E1>
-): Stream<R, E1, A> {
-  return new Stream(
-    pipe(
-      stream.proc,
-      Ma.map(
-        I.mapErrorCause((cause) =>
-          pipe(
-            Ca.sequenceCauseOption(cause),
-            M.match(
-              () => Ca.fail(M.nothing()),
-              (c) => Ca.map_(f(c), M.just)
-            )
-          )
-        )
-      )
-    )
-  )
-}
-
-/**
- * Transforms the full causes of failures emitted by this stream.
- */
-export function mapErrorCause<E, E1>(
-  f: (e: Ca.Cause<E>) => Ca.Cause<E1>
-): <R, A>(stream: Stream<R, E, A>) => Stream<R, E1, A> {
-  return (stream) => mapErrorCause_(stream, f)
+  return <R, A>(stream: Stream<R, E, A>) => mapError_(stream, f)
 }
 
 /**
  * Returns a stream whose failure and success channels have been mapped by
  * the specified pair of functions, `f` and `g`.
  */
-export function bimap_<R, E, A, E1, A1>(pab: Stream<R, E, A>, f: (e: E) => E1, g: (a: A) => A1): Stream<R, E1, A1> {
-  return pipe(pab, mapError(f), map(g))
+export function bimap_<R, E, E1, A, A1>(stream: Stream<R, E, A>, f: (e: E) => E1, g: (a: A) => A1): Stream<R, E1, A1> {
+  return map_(mapError_(stream, f), g)
 }
 
 /**
  * Returns a stream whose failure and success channels have been mapped by
  * the specified pair of functions, `f` and `g`.
  */
-export function bimap<E, A, E1, A1>(f: (e: E) => E1, g: (a: A) => A1): <R>(pab: Stream<R, E, A>) => Stream<R, E1, A1> {
-  return (pab) => bimap_(pab, f, g)
+export function bimap<E, E1, A, A1>(f: (e: E) => E1, g: (a: A) => A1) {
+  return <R>(stream: Stream<R, E, A>) => bimap_(stream, f, g)
 }
-
-/*
- * -------------------------------------------------------------------------------------------------
- * Fallible
- * -------------------------------------------------------------------------------------------------
- */
-
-export const subsumeEither: <R, E, A, E1>(stream: Stream<R, E, E.Either<E1, A>>) => Stream<R, E | E1, A> = chain(
-  E.match(fail, succeed)
-)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -1136,301 +810,164 @@ export const subsumeEither: <R, E, A, E1>(stream: Stream<R, E, E.Either<E1, A>>)
  * -------------------------------------------------------------------------------------------------
  */
 
-/**
- * Applies the predicate to each element and allows passing elements
- * to reach the output of this stream.
- */
-export function filter<A, A1 extends A>(f: Refinement<A, A1>): <R, E>(self: Stream<R, E, A>) => Stream<R, E, A1>
-export function filter<A>(f: Predicate<A>): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, A>
-export function filter<A>(f: Predicate<A>): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, A> {
-  return <R, E>(fa: Stream<R, E, A>): Stream<R, E, A> => filter_(fa, f)
-}
-
-/**
- * Applies the predicate to each element and allows passing elements
- * to reach the output of this stream.
- */
-export function filter_<R, E, A, A1 extends A>(fa: Stream<R, E, A>, f: Refinement<A, A1>): Stream<R, E, A1>
-export function filter_<R, E, A>(fa: Stream<R, E, A>, f: Predicate<A>): Stream<R, E, A>
-export function filter_<R, E, A>(fa: Stream<R, E, A>, f: Predicate<A>): Stream<R, E, A> {
-  return mapChunks_(fa, C.filter(f))
-}
-
-/**
- * Effectfully filters the elements emitted by this stream.
- */
-export function filterIO_<R, R1, E, E1, A>(
+export function filterIO_<R, E, A, R1, E1>(
   fa: Stream<R, E, A>,
   f: (a: A) => I.IO<R1, E1, boolean>
 ): Stream<R & R1, E | E1, A> {
-  return new Stream(
-    pipe(
-      fa.proc,
-      Ma.mapIO(BPull.make),
-      Ma.map((os) => {
-        const pull: Pull.Pull<R & R1, E | E1, A> = pipe(
-          os,
-          BPull.pullElement,
-          I.chain((o) =>
-            pipe(
-              f(o),
-              I.mapError(M.just),
-              I.chain((_) => {
-                if (_) return I.succeed(C.single(o))
-                else return pull
-              })
-            )
-          )
-        )
-        return pull
-      })
+  return loopOnPartialChunksElements_(fa, (a, emit) => I.chain_(f(a), (r) => (r ? emit(a) : I.unit())))
+}
+
+export function filterIO<A, R1, E1>(
+  f: (a: A) => I.IO<R1, E1, boolean>
+): <R, E>(fa: Stream<R, E, A>) => Stream<R & R1, E | E1, A> {
+  return (fa) => filterIO_(fa, f)
+}
+
+export function filter_<R, E, A, B extends A>(fa: Stream<R, E, A>, refinement: P.Refinement<A, B>): Stream<R, E, B>
+export function filter_<R, E, A>(fa: Stream<R, E, A>, predicate: P.Predicate<A>): Stream<R, E, A>
+export function filter_<R, E, A>(fa: Stream<R, E, A>, predicate: P.Predicate<A>): Stream<R, E, A> {
+  return filterIO_(fa, flow(predicate, I.succeed))
+}
+
+export function filter<A, B extends A>(refinement: P.Refinement<A, B>): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, B>
+export function filter<A>(predicate: P.Predicate<A>): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, A>
+export function filter<A>(predicate: P.Predicate<A>): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, A> {
+  return (fa) => filter_(fa, predicate)
+}
+
+export function filterMapIO_<R, E, A, R1, E1, B>(
+  fa: Stream<R, E, A>,
+  f: (a: A) => I.IO<R1, E1, M.Maybe<B>>
+): Stream<R & R1, E | E1, B> {
+  return loopOnPartialChunksElements_(fa, (a, emit) =>
+    I.chain_(
+      f(a),
+      M.match(() => I.unit(), emit)
     )
   )
 }
 
-/**
- * Effectfully filters the elements emitted by this stream.
- */
-export function filterIO<R1, E1, A>(f: (o: A) => I.IO<R1, E1, boolean>) {
-  return <R, E>(fa: Stream<R, E, A>) => filterIO_(fa, f)
-}
-
-/**
- * Filters this stream by the specified predicate, removing all elements for
- * which the predicate evaluates to true.
- */
-export function filterNot_<R, E, A>(fa: Stream<R, E, A>, pred: Predicate<A>): Stream<R, E, A> {
-  return filter_(fa, not(pred))
-}
-
-/**
- * Filters this stream by the specified predicate, removing all elements for
- * which the predicate evaluates to true.
- */
-export function filterNot<A>(pred: Predicate<A>) {
-  return <R, E>(fa: Stream<R, E, A>) => filterNot_(fa, pred)
-}
-
-/**
- * Performs a filter and a map in a single step
- */
-export function filterMap_<R, E, A, A1>(fa: Stream<R, E, A>, f: (a: A) => Maybe<A1>): Stream<R, E, A1> {
-  return mapChunks_(fa, C.filterMap(f))
-}
-
-/**
- * Performs a filter and a map in a single step
- */
-export function filterMap<A, A1>(f: (a: A) => Maybe<A1>): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, A1> {
-  return (fa) => filterMap_(fa, f)
-}
-
-/**
- * Performs an effectful filter and map in a single step.
- */
-export function filterMapIO_<R, E, A, R1, E1, A1>(
-  fa: Stream<R, E, A>,
-  f: (a: A) => Maybe<I.IO<R1, E1, A1>>
-): Stream<R & R1, E | E1, A1> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const os = yield* _(Ma.mapIO_(fa.proc, BPull.make))
-
-      const go: I.IO<R & R1, M.Maybe<E | E1>, Chunk<A1>> = I.chain_(
-        BPull.pullElement(os),
-        flow(
-          f,
-          M.match(() => go, I.bimap(M.just, C.single))
-        )
-      )
-      return go
-    })
-  )
-}
-
-/**
- * Performs an effectful filter and map in a single step.
- */
-export function filterMapIO<A, R1, E1, A1>(
-  f: (a: A) => Maybe<I.IO<R1, E1, A1>>
-): <R, E>(fa: Stream<R, E, A>) => Stream<R & R1, E | E1, A1> {
+export function filterMapIO<A, R1, E1, B>(
+  f: (a: A) => I.IO<R1, E1, M.Maybe<B>>
+): <R, E>(fa: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
   return (fa) => filterMapIO_(fa, f)
 }
 
-/*
- * -------------------------------------------------------------------------------------------------
- * Functor
- * -------------------------------------------------------------------------------------------------
- */
+export function filterMap_<R, E, A, B>(fa: Stream<R, E, A>, f: (a: A) => M.Maybe<B>): Stream<R, E, B> {
+  return filterMapIO_(fa, flow(f, I.succeed))
+}
 
-/**
- * Effectfully transforms the chunks emitted by this stream.
- */
-export function mapChunksIO_<R, E, A, R1, E1, B>(
+export function filterMap<A, B>(f: (a: A) => M.Maybe<B>): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, B> {
+  return (fa) => filterMap_(fa, f)
+}
+
+export function partitionMapIO_<R, E, A, R1, E1, B, C>(
   fa: Stream<R, E, A>,
-  f: (chunks: Chunk<A>) => I.IO<R1, E1, Chunk<B>>
-): Stream<R & R1, E | E1, B> {
-  return new Stream(
-    pipe(
-      fa.proc,
-      Ma.map((e) => pipe(e, I.chain(flow(f, I.mapError<E1, Maybe<E | E1>>(M.just)))))
-    )
-  )
-}
-
-/**
- * Effectfully transforms the chunks emitted by this stream.
- */
-export function mapChunksIO<A, R1, E1, B>(
-  f: (chunks: Chunk<A>) => I.IO<R1, E1, Chunk<B>>
-): <R, E>(fa: Stream<R, E, A>) => Stream<R & R1, E1 | E, B> {
-  return (fa) => mapChunksIO_(fa, f)
-}
-
-/**
- * Transforms the chunks emitted by this stream.
- */
-export function mapChunks_<R, E, A, B>(fa: Stream<R, E, A>, f: (chunks: Chunk<A>) => Chunk<B>): Stream<R, E, B> {
-  return mapChunksIO_(fa, flow(f, I.pure))
-}
-
-/**
- * Transforms the chunks emitted by this stream.
- */
-export function mapChunks<A, B>(f: (chunks: Chunk<A>) => Chunk<B>): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, B> {
-  return (fa) => mapChunks_(fa, f)
-}
-
-/**
- * Transforms the chunks emitted by this stream.
- */
-export function map_<R, E, A, B>(fa: Stream<R, E, A>, f: (a: A) => B): Stream<R, E, B> {
-  return mapChunks_(fa, C.map(f))
-}
-
-/**
- * Transforms the chunks emitted by this stream.
- */
-export function map<A, B>(f: (a: A) => B): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, B> {
-  return (fa) => map_(fa, f)
-}
-
-/**
- * Maps over elements of the stream with the specified effectful function.
- */
-export function mapIO_<R, E, A, R1, E1, B>(
-  fa: Stream<R, E, A>,
-  f: (a: A) => I.IO<R1, E1, B>
-): Stream<R & R1, E | E1, B> {
-  return new Stream<R & R1, E | E1, B>(
-    pipe(
-      fa.proc,
-      Ma.mapIO(BPull.make),
-      Ma.map((pull) =>
-        pipe(
-          pull,
-          BPull.pullElement,
-          I.chain((o) => pipe(f(o), I.bimap(M.just, C.single)))
+  f: (a: A) => I.IO<R1, E1, E.Either<B, C>>,
+  buffer = 16
+): Ma.Managed<R & R1, E1, readonly [Stream<unknown, E | E1, B>, Stream<unknown, E | E1, C>]> {
+  return pipe(
+    fa,
+    mapIO(f),
+    distributedWith(
+      2,
+      buffer,
+      E.match(
+        () => I.succeed((_) => _ === 0),
+        () => I.succeed((_) => _ === 1)
+      )
+    ),
+    Ma.chain(([q1, q2]) =>
+      Ma.succeed(
+        tuple(
+          pipe(fromQueueWithShutdown_(q1), flattenExitOption, collectLeft),
+          pipe(fromQueueWithShutdown_(q2), flattenExitOption, collectRight)
         )
       )
     )
   )
 }
 
-/**
- * Maps over elements of the stream with the specified effectful function.
- */
-export function mapIO<A, R1, E1, A1>(
-  f: (o: A) => I.IO<R1, E1, A1>
-): <R, E>(fa: Stream<R, E, A>) => Stream<R & R1, E1 | E, A1> {
-  return (fa) => mapIO_(fa, f)
+export function partitionMapIO<A, R1, E1, B, C>(
+  f: (a: A) => I.IO<R1, E1, E.Either<B, C>>,
+  buffer = 16
+): <R, E>(
+  fa: Stream<R, E, A>
+) => Ma.Managed<R & R1, E1, readonly [Stream<unknown, E | E1, B>, Stream<unknown, E | E1, C>]> {
+  return (fa) => partitionMapIO_(fa, f, buffer)
 }
 
-/**
- * Maps the success values of this stream to the specified constant value.
- */
-export function as_<R, E, A, B>(ma: Stream<R, E, A>, b: B): Stream<R, E, B> {
-  return map_(ma, () => b)
+export function partitionMap_<R, E, A, B, C>(
+  fa: Stream<R, E, A>,
+  f: (a: A) => E.Either<B, C>,
+  buffer = 16
+): Ma.Managed<R, never, readonly [Stream<unknown, E, B>, Stream<unknown, E, C>]> {
+  return partitionMapIO_(fa, flow(f, I.succeed), buffer)
 }
 
-/**
- * Maps the success values of this stream to the specified constant value.
- */
-export function as<B>(b: B): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E, B> {
-  return (ma) => as_(ma, b)
+export function partitionMap<A, B, C>(
+  f: (a: A) => E.Either<B, C>,
+  buffer = 16
+): <R, E>(fa: Stream<R, E, A>) => Ma.Managed<R, never, readonly [Stream<unknown, E, B>, Stream<unknown, E, C>]> {
+  return (fa) => partitionMap_(fa, f, buffer)
 }
 
-/**
- * Maps the success values of this stream to the specified constant value.
- */
-export function asLazy_<R, E, A, B>(ma: Stream<R, E, A>, b: () => B): Stream<R, E, B> {
-  return map_(ma, () => b())
-}
-
-/**
- * Maps the success values of this stream to the specified constant value.
- */
-export function asLazy<B>(b: () => B): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E, B> {
-  return (ma) => asLazy_(ma, b)
-}
-
-/*
- * -------------------------------------------------------------------------------------------------
- * Monad
- * -------------------------------------------------------------------------------------------------
- */
-
-/**
- * Returns a stream made of the concatenation in strict order of all the streams
- * produced by passing each element of this stream to `f0`
- */
-export function chain_<R, E, A, R1, E1, B>(
-  ma: Stream<R, E, A>,
-  f: (a: A) => Stream<R1, E1, B>
-): Stream<R & R1, E | E1, B> {
-  type R_ = R & R1
-  type E_ = E | E1
-
-  return new Stream(
-    Ma.gen(function* (_) {
-      const outerStream     = yield* _(ma.proc)
-      const currOuterChunk  = yield* _(Ref.make<[Chunk<A>, number]>([C.empty(), 0]))
-      const currInnerStream = yield* _(Ref.make<I.IO<R_, Maybe<E_>, Chunk<B>>>(Pull.end))
-      const innerFinalizer  = yield* _(Ma.finalizerRef(RM.noopFinalizer))
-      return new Chain(f, outerStream, currOuterChunk, currInnerStream, innerFinalizer).apply()
-    })
+export function partitionIO_<R, E, A, R1, E1>(
+  fa: Stream<R, E, A>,
+  f: (a: A) => I.IO<R1, E1, boolean>,
+  buffer = 16
+): Ma.Managed<R & R1, E1, readonly [Stream<unknown, E | E1, A>, Stream<unknown, E | E1, A>]> {
+  return partitionMapIO_(
+    fa,
+    (a) =>
+      pipe(
+        f(a),
+        I.map((b) => (b ? E.right(a) : E.left(a)))
+      ),
+    buffer
   )
 }
 
-/**
- * Returns a stream made of the concatenation in strict order of all the streams
- * produced by passing each element of this stream to `f0`
- */
-export function chain<A, R1, E1, B>(
-  f: (a: A) => Stream<R1, E1, B>
-): <R, E>(ma: Stream<R, E, A>) => Stream<R1 & R, E1 | E, B> {
-  return (ma) => chain_(ma, f)
+export function partitionIO<A, R1, E1>(
+  f: (a: A) => I.IO<R1, E1, boolean>,
+  buffer = 16
+): <R, E>(
+  fa: Stream<R, E, A>
+) => Ma.Managed<R & R1, E1, readonly [Stream<unknown, E | E1, A>, Stream<unknown, E | E1, A>]> {
+  return (fa) => partitionIO_(fa, f, buffer)
 }
 
-/**
- * Flattens this stream-of-streams into a stream made of the concatenation in
- * strict order of all the streams.
- */
-export function flatten<R, E, R1, E1, A>(mma: Stream<R, E, Stream<R1, E1, A>>): Stream<R1 & R, E1 | E, A> {
-  return chain_(mma, identity)
+export function partition_<R, E, A, B extends A>(
+  fa: Stream<R, E, A>,
+  refinement: P.Refinement<A, B>,
+  buffer?: number
+): Ma.Managed<R, never, readonly [Stream<unknown, E, A>, Stream<unknown, E, B>]>
+export function partition_<R, E, A>(
+  fa: Stream<R, E, A>,
+  predicate: P.Predicate<A>,
+  buffer?: number
+): Ma.Managed<R, never, readonly [Stream<unknown, E, A>, Stream<unknown, E, A>]>
+export function partition_<R, E, A>(
+  fa: Stream<R, E, A>,
+  predicate: P.Predicate<A>,
+  buffer = 16
+): Ma.Managed<R, never, readonly [Stream<unknown, E, A>, Stream<unknown, E, A>]> {
+  return partitionIO_(fa, flow(predicate, I.succeed), buffer)
 }
 
-export function tap_<R, E, A, R1, E1, A1>(
-  ma: Stream<R, E, A>,
-  f: (a: A) => I.IO<R1, E1, A1>
-): Stream<R & R1, E | E1, A> {
-  return mapIO_(ma, (a) => I.as_(f(a), a))
-}
-
-export function tap<A, R1, E1, A1>(
-  f: (a: A) => I.IO<R1, E1, A1>
-): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, A> {
-  return (ma) => tap_(ma, f)
+export function partition<A, B extends A>(
+  refinement: P.Refinement<A, B>,
+  buffer?: number
+): <R, E>(fa: Stream<R, E, A>) => Ma.Managed<R, never, readonly [Stream<unknown, E, A>, Stream<unknown, E, B>]>
+export function partition<A>(
+  predicate: P.Predicate<A>,
+  buffer?: number
+): <R, E>(fa: Stream<R, E, A>) => Ma.Managed<R, never, readonly [Stream<unknown, E, A>, Stream<unknown, E, A>]>
+export function partition<A>(
+  predicate: P.Predicate<A>,
+  buffer = 16
+): <R, E>(fa: Stream<R, E, A>) => Ma.Managed<R, never, readonly [Stream<unknown, E, A>, Stream<unknown, E, A>]> {
+  return (fa) => partition_(fa, predicate, buffer)
 }
 
 /*
@@ -1439,31 +976,28 @@ export function tap<A, R1, E1, A1>(
  * -------------------------------------------------------------------------------------------------
  */
 
-/**
- * Accesses the whole environment of the stream.
- */
-export function ask<R>(): URStream<R, R> {
+export function ask<R>(): Stream<R, never, R> {
   return fromIO(I.ask<R>())
 }
 
 /**
  * Accesses the environment of the stream.
  */
-export function asks<R, A>(f: (_: R) => A): URStream<R, A> {
-  return map_(ask(), f)
+export function asks<R, A>(f: (r: R) => A): Stream<R, never, A> {
+  return map_(ask<R>(), f)
 }
 
 /**
- * Accesses the environment of the stream in the context of an IO.
+ * Accesses the environment of the stream in the context of an effect.
  */
-export function asksIO<R0, R, E, A>(f: (_: R0) => I.IO<R, E, A>): Stream<R & R0, E, A> {
+export function asksIO<R0, R, E, A>(f: (r0: R0) => I.IO<R, E, A>): Stream<R0 & R, E, A> {
   return mapIO_(ask<R0>(), f)
 }
 
 /**
  * Accesses the environment of the stream in the context of a stream.
  */
-export function asksStream<R0, R, E, A>(f: (_: R0) => Stream<R, E, A>): Stream<R0 & R, E, A> {
+export function asksStream<R0, R, E, A>(f: (r0: R0) => Stream<R, E, A>): Stream<R0 & R, E, A> {
   return chain_(ask<R0>(), f)
 }
 
@@ -1471,16 +1005,60 @@ export function asksStream<R0, R, E, A>(f: (_: R0) => Stream<R, E, A>): Stream<R
  * Provides the stream with its required environment, which eliminates
  * its dependency on `R`.
  */
-export function giveAll_<R, E, A>(ra: Stream<R, E, A>, r: R): FStream<E, A> {
-  return new Stream(Ma.map_(Ma.giveAll_(ra.proc, r), I.giveAll(r)))
+export function giveAll_<R, E, A>(ra: Stream<R, E, A>, r: R): Stream<unknown, E, A> {
+  return new Stream(Ch.giveAll_(ra.channel, r))
 }
 
 /**
  * Provides the stream with its required environment, which eliminates
  * its dependency on `R`.
  */
-export function giveAll<R>(r: R): <E, A>(ra: Stream<R, E, A>) => FStream<E, A> {
+export function giveAll<R>(r: R): <E, A>(ra: Stream<R, E, A>) => Stream<unknown, E, A> {
   return (ra) => giveAll_(ra, r)
+}
+
+/**
+ * Provides some of the environment required to run this effect,
+ * leaving the remainder `R0`.
+ */
+export function gives_<R, E, A, R0>(ra: Stream<R, E, A>, f: (r0: R0) => R): Stream<R0, E, A> {
+  return chain_(ask<R0>(), (r0) => giveAll_(ra, f(r0)))
+}
+
+/**
+ * Provides some of the environment required to run this effect,
+ * leaving the remainder `R0`.
+ */
+export function gives<R, R0>(f: (r0: R0) => R): <E, A>(ra: Stream<R, E, A>) => Stream<R0, E, A> {
+  return (ra) => gives_(ra, f)
+}
+
+export function give_<R, E, A, R0>(ra: Stream<R0 & R, E, A>, r: R): Stream<R0, E, A> {
+  return gives_(ra, (r0) => ({ ...r0, ...r }))
+}
+
+export function give<R>(r: R): <R0, E, A>(ra: Stream<R0 & R, E, A>) => Stream<R0, E, A> {
+  return (ra) => give_(ra, r)
+}
+
+/**
+ * Provides a layer to the stream, which translates it to another level.
+ */
+export function giveLayer_<R, E, A, R0, E1, R1>(
+  ra: Stream<R & R1, E, A>,
+  layer: Layer<R0, E1, R1>
+): Stream<R0 & R, E | E1, A> {
+  return new Stream(Ch.managed_(La.build(layer), (r1) => Ch.gives_(ra.channel, (env0: R0 & R) => ({ ...env0, ...r1 }))))
+}
+
+/**
+ * Provides a layer to the stream, which translates it to another level.
+ */
+export function giveLayer<R0, E1, R1>(
+  layer: Layer<R0, E1, R1>
+): <R, E, A>(ra: Stream<R & R1, E, A>) => Stream<R0 & R, E | E1, A> {
+  return <R, E, A>(ra: Stream<R & R1, E, A>): Stream<R0 & R, E | E1, A> =>
+    new Stream(Ch.managed_(La.build(layer), (r1) => Ch.gives_(ra.channel, (env0: R0 & R) => ({ ...env0, ...r1 }))))
 }
 
 /*
@@ -1490,207 +1068,168 @@ export function giveAll<R>(r: R): <E, A>(ra: Stream<R, E, A>) => FStream<E, A> {
  */
 
 /**
- * Submerges the chunks carried by this stream into the stream's structure, while
- * still preserving them.
+ * Creates a stream from a single value that will get cleaned up after the
+ * stream is consumed
  */
-export function flattenChunks<R, E, A>(ma: Stream<R, E, Chunk<A>>): Stream<R, E, A> {
-  return new Stream(pipe(ma.proc, Ma.mapIO(BPull.make), Ma.map(BPull.pullElement)))
+export function bracket_<R, E, A, R1>(
+  acquire: I.IO<R, E, A>,
+  release: (a: A) => I.IO<R1, never, unknown>
+): Stream<R & R1, E, A> {
+  return fromManaged(Ma.bracket_(acquire, release))
 }
 
 /**
- * Unwraps `Exit` values that also signify end-of-stream by failing with `Nothing`.
+ * Creates a stream from a single value that will get cleaned up after the
+ * stream is consumed
  */
-export function flattenExitMaybe<R, E, E1, A>(ma: Stream<R, E, Ex.Exit<M.Maybe<E1>, A>>): Stream<R, E | E1, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const upstream = yield* _(Ma.mapIO_(ma.proc, BPull.make))
-      const doneRef  = yield* _(Ref.make(false))
-      const pull     = pipe(
-        doneRef.get,
-        I.chain((done) => {
-          if (done) {
-            return Pull.end
-          } else {
-            return pipe(
-              BPull.pullElement(upstream),
-              I.matchIO(
-                M.match(
-                  () => pipe(doneRef.set(true), I.crossSecond(Pull.end)),
-                  (e) => Pull.fail(e as E | E1)
-                ),
-                flow(
-                  I.fromExit,
-                  I.matchIO(
-                    M.match(() => pipe(doneRef.set(true), I.crossSecond(Pull.end)), Pull.fail),
-                    Pull.emit
-                  )
-                )
-              )
-            )
-          }
-        })
-      )
-      return pull
-    })
+export function bracket<A, R1>(
+  release: (a: A) => I.IO<R1, never, unknown>
+): <R, E>(acquire: I.IO<R, E, A>) => Stream<R & R1, E, A> {
+  return (acquire) => bracket_(acquire, release)
+}
+
+/**
+ * Creates a stream from a single value that will get cleaned up after the
+ * stream is consumed
+ */
+export function bracketExit_<R, E, A, R1>(
+  acquire: I.IO<R, E, A>,
+  release: (a: A, exit: Ex.Exit<any, any>) => I.IO<R1, never, unknown>
+): Stream<R & R1, E, A> {
+  return fromManaged(Ma.bracketExit_(acquire, release))
+}
+
+/**
+ * Creates a stream from a single value that will get cleaned up after the
+ * stream is consumed
+ */
+export function bracketExit<A, R1>(
+  release: (a: A, exit: Ex.Exit<any, any>) => I.IO<R1, never, unknown>
+): <R, E>(acquire: I.IO<R, E, A>) => Stream<R & R1, E, A> {
+  return (acquire) => bracketExit_(acquire, release)
+}
+
+function combineChunksProducer<Err, Elem>(
+  handoff: HO.Handoff<Take.Take<Err, Elem>>,
+  latch: HO.Handoff<void>
+): Ch.Channel<unknown, Err, C.Chunk<Elem>, unknown, never, never, any> {
+  return Ch.crossSecond_(
+    Ch.fromIO(HO.take(latch)),
+    Ch.readWithCause(
+      (chunk) =>
+        Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, Take.chunk(chunk))), combineChunksProducer(handoff, latch)),
+      (cause) => Ch.fromIO(HO.offer(handoff, Take.failCause(cause))),
+      () => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, Take.end)), combineChunksProducer(handoff, latch))
+    )
   )
 }
 
 /**
- * Unwraps `Exit` values and flatten chunks that also signify end-of-stream by failing with `None`.
+ * Combines the chunks from this stream and the specified stream by repeatedly applying the
+ * function `f` to extract a chunk using both sides and conceptually "offer"
+ * it to the destination stream. `f` can maintain some internal state to control
+ * the combining process, with the initial state being specified by `s`.
  */
-export function flattenTake<R, E, E1, A>(ma: Stream<R, E, Take.Take<E1, A>>): Stream<R, E | E1, A> {
-  return pipe(ma, flattenExitMaybe, flattenChunks)
-}
-
-/**
- * Aggregates elements using the provided transducer until it signals completion, or the
- * delay signalled by the schedule has passed.
- *
- * This operator divides the stream into two asynchronous islands. Operators upstream
- * of this operator run on one fiber, while downstream operators run on another. Elements
- * will be aggregated by the transducer until the downstream fiber pulls the aggregated value,
- * or until the schedule's delay has passed.
- *
- * Aggregated elements will be fed into the schedule to determine the delays between
- * pulls.
- */
-export function aggregateAsyncWithinEither<A, R1, E1, P, Q>(
-  transducer: Transducer<R1, E1, A, P>,
-  schedule: Schedule<R1, Chunk<P>, Q>
-): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1 & Has<Clock>, E | E1, E.Either<Q, P>> {
-  return (ma) => aggregateAsyncWithinEither_(ma, transducer, schedule)
-}
-
-/**
- * Aggregates elements using the provided transducer until it signals completion, or the
- * delay signalled by the schedule has passed.
- *
- * This operator divides the stream into two asynchronous islands. Operators upstream
- * of this operator run on one fiber, while downstream operators run on another. Elements
- * will be aggregated by the transducer until the downstream fiber pulls the aggregated value,
- * or until the schedule's delay has passed.
- *
- * Aggregated elements will be fed into the schedule to determine the delays between
- * pulls.
- */
-export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
-  ma: Stream<R, E, A>,
-  transducer: Transducer<R1, E1, A, P>,
-  schedule: Schedule<R1, Chunk<P>, Q>
-): Stream<R & R1 & Has<Clock>, E | E1, E.Either<Q, P>> {
-  return flattenTake(
-    new Stream(
+export function combineChunks_<R, E, A, R1, E1, A1, S, R2, A2>(
+  stream: Stream<R, E, A>,
+  that: Stream<R1, E1, A1>,
+  s: S,
+  f: (
+    s: S,
+    l: I.IO<R, M.Maybe<E>, C.Chunk<A>>,
+    r: I.IO<R1, M.Maybe<E1>, C.Chunk<A1>>
+  ) => I.IO<R2, never, Ex.Exit<M.Maybe<E | E1>, readonly [C.Chunk<A2>, S]>>
+): Stream<R1 & R & R2, E | E1, A2> {
+  return new Stream(
+    Ch.managed_(
       Ma.gen(function* (_) {
-        const pull         = yield* _(ma.proc)
-        const push         = yield* _(transducer.push)
-        const handoff      = yield* _(Ha.make<Take.Take<E, A>>())
-        const raceNextTime = yield* _(Ref.make(false))
-        const waitingFiber = yield* _(Ref.make<M.Maybe<Fiber<never, Take.Take<E | E1, A>>>>(M.nothing()))
-        const sdriver      = yield* _(Sc.driver(schedule))
-        const lastChunk    = yield* _(Ref.make<Chunk<P>>(C.empty()))
+        const left   = yield* _(HO.make<Take.Take<E, A>>())
+        const right  = yield* _(HO.make<Take.Take<E1, A1>>())
+        const latchL = yield* _(HO.make<void>())
+        const latchR = yield* _(HO.make<void>())
+        yield* _(pipe(stream.channel, Ch.pipeTo(combineChunksProducer(left, latchL)), Ch.runManaged, Ma.fork))
+        yield* _(pipe(that.channel, Ch.pipeTo(combineChunksProducer(right, latchR)), Ch.runManaged, Ma.fork))
+        return tuple(left, right, latchL, latchR)
+      }),
+      ([left, right, latchL, latchR]) => {
+        const pullLeft  = pipe(HO.offer(latchL, undefined), I.crossSecond(HO.take(left)), I.chain(Take.done))
+        const pullRight = pipe(HO.offer(latchR, undefined), I.crossSecond(HO.take(right)), I.chain(Take.done))
+        return unfoldChunkIO(s, (s) => I.chain_(f(s, pullLeft, pullRight), flow(I.fromExit, I.optional))).channel
+      }
+    )
+  )
+}
 
-        const producer = pipe(
-          pull,
-          Take.fromPull,
-          I.repeatWhileIO((take) => pipe(Ha.offer(take)(handoff), I.as(Ex.isSuccess(take))))
-        )
+/**
+ * Combines the chunks from this stream and the specified stream by repeatedly applying the
+ * function `f` to extract a chunk using both sides and conceptually "offer"
+ * it to the destination stream. `f` can maintain some internal state to control
+ * the combining process, with the initial state being specified by `s`.
+ *
+ * @dataFirst combineChunks_
+ */
+export function combineChunks<R, E, A, R1, E1, A1, S, R2, A2>(
+  that: Stream<R1, E1, A1>,
+  s: S,
+  f: (
+    s: S,
+    l: I.IO<R, M.Maybe<E>, C.Chunk<A>>,
+    r: I.IO<R1, M.Maybe<E1>, C.Chunk<A1>>
+  ) => I.IO<R2, never, Ex.Exit<M.Maybe<E | E1>, readonly [C.Chunk<A2>, S]>>
+): (stream: Stream<R, E, A>) => Stream<R1 & R & R2, E | E1, A2> {
+  return (stream) => combineChunks_(stream, that, s, f)
+}
 
-        const updateSchedule: I.URIO<R1 & Has<Clock>, M.Maybe<Q>> = pipe(
-          lastChunk.get,
-          I.chain(sdriver.next),
-          I.match((_) => M.nothing(), M.just)
-        )
+/**
+ * Repeats this stream forever.
+ */
+export function forever<R, E, A>(stream: Stream<R, E, A>): Stream<R, E, A> {
+  return new Stream(Ch.repeated(stream.channel))
+}
 
-        const waitForProducer: I.URIO<R1, Take.Take<E | E1, A>> = pipe(
-          waitingFiber,
-          Ref.getAndSet(M.nothing()),
-          I.chain(
-            M.match(
-              () => Ha.take(handoff),
-              (fiber) => Fi.join(fiber)
-            )
-          )
-        )
+/**
+ * Loops over the stream chunks concatenating the result of f
+ */
+export function loopOnChunks_<R, E, A, R1, E1, A1>(
+  stream: Stream<R, E, A>,
+  f: (a: C.Chunk<A>) => Ch.Channel<R1, E | E1, C.Chunk<A>, unknown, E | E1, C.Chunk<A1>, boolean>
+): Stream<R & R1, E | E1, A1> {
+  const loop: Ch.Channel<R1, E | E1, C.Chunk<A>, unknown, E | E1, C.Chunk<A1>, boolean> = Ch.readWithCause(
+    (chunk) => Ch.chain_(f(chunk), (cont) => (cont ? loop : Ch.end(false))),
+    Ch.failCause,
+    (_) => Ch.end(false)
+  )
+  return new Stream(Ch.pipeTo_(stream.channel, loop))
+}
 
-        const updateLastChunk = (take: Take.Take<E1, P>): I.UIO<void> => Take.tap_(take, lastChunk.set)
-
-        const handleTake = (take: Take.Take<E | E1, A>): Pull.Pull<R1, E | E1, Take.Take<E1, E.Either<never, P>>> =>
-          pipe(
-            take,
-            Take.matchM(
-              () =>
-                pipe(
-                  push(M.nothing()),
-                  I.map((ps) => C.make(Take.chunk(C.map_(ps, E.right)), Take.end))
-                ),
-              I.failCause,
-              (os) =>
-                I.chain_(Take.fromPull(I.asJustError(push(M.just(os)))), (take) =>
-                  I.as_(updateLastChunk(take), C.make(Take.map_(take, E.right)))
-                )
+/**
+ * Loops on chunks emitting partially
+ */
+export function loopOnPartialChunks_<R, E, A, R1, E1, A1>(
+  stream: Stream<R, E, A>,
+  f: (a: C.Chunk<A>, emit: (a: A1) => I.UIO<void>) => I.IO<R1, E1, boolean>
+): Stream<R & R1, E | E1, A1> {
+  return loopOnChunks_(stream, (chunk) =>
+    Ch.unwrap(
+      I.defer(() => {
+        let outputChunk = C.empty<A1>()
+        return I.catchAll_(
+          I.map_(
+            f(chunk, (a: A1) =>
+              I.succeedLazy(() => {
+                outputChunk = C.append_(outputChunk, a)
+              })
             ),
-            I.mapError(M.just)
-          )
-
-        const go = (
-          race: boolean
-        ): I.IO<R & R1 & Has<Clock>, M.Maybe<E | E1>, Chunk<Take.Take<E1, E.Either<Q, P>>>> => {
-          if (!race) {
-            return pipe(waitForProducer, I.chain(handleTake), I.crossFirst(raceNextTime.set(true)))
-          } else {
-            return I.raceWith_(
-              updateSchedule,
-              waitForProducer,
-              (scheduleDone, producerWaiting) =>
-                pipe(
-                  I.fromExit(scheduleDone),
-                  I.chain(
-                    M.match(
-                      () =>
-                        I.gen(function* (_) {
-                          const lastQ = yield* _(
-                            pipe(
-                              lastChunk.set(C.empty()),
-                              I.crossSecond(I.orHalt(sdriver.last)),
-                              I.crossFirst(sdriver.reset)
-                            )
-                          )
-
-                          const scheduleResult: Take.Take<E1, E.Either<Q, P>> = Ex.succeed(C.single(E.left(lastQ)))
-
-                          const take = yield* _(
-                            pipe(push(M.nothing()), I.asJustError, Take.fromPull, I.tap(updateLastChunk))
-                          )
-                          yield* _(raceNextTime.set(false))
-                          yield* _(waitingFiber.set(M.just(producerWaiting)))
-                          return C.make(scheduleResult, Take.map_(take, E.right))
-                        }),
-                      (_) =>
-                        I.gen(function* (_) {
-                          const ps = yield* _(
-                            pipe(push(M.nothing()), I.asJustError, Take.fromPull, I.tap(updateLastChunk))
-                          )
-                          yield* _(raceNextTime.set(false))
-                          yield* _(waitingFiber.set(M.just(producerWaiting)))
-                          return C.single(Take.map_(ps, E.right))
-                        })
-                    )
-                  )
-                ),
-              (producerDone, scheduleWaiting) =>
-                I.crossSecond_(Fi.interrupt(scheduleWaiting), handleTake(Ex.flatten(producerDone)))
-            )
-          }
-        }
-
-        yield* _(I.forkManaged(producer))
-
-        return pipe(
-          raceNextTime.get,
-          I.chain(go),
-          I.onInterrupt((_) =>
-            pipe(waitingFiber.get, I.chain(flow(M.map(Fi.interrupt), M.getOrElse(I.unit), I.asUnit)))
-          )
+            (cont) => Ch.chain_(Ch.write(outputChunk), () => Ch.end(cont))
+          ),
+          (failure) =>
+            I.succeedLazy(() => {
+              if (C.isEmpty(outputChunk)) {
+                return Ch.fail(failure)
+              } else {
+                return Ch.chain_(Ch.write(outputChunk), () => Ch.fail(failure))
+              }
+            })
         )
       })
     )
@@ -1698,45 +1237,226 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
 }
 
 /**
- * Uses `aggregateAsyncWithinEither` but only returns the `Right` results.
+ * Loops on chunks elements emitting partially
  */
-export function aggregateAsyncWithin<A, R1, E1, P>(
-  transducer: Transducer<R1, E1, A, P>,
-  schedule: Schedule<R1, Chunk<P>, any>
-): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1 & Has<Clock>, E | E1, P> {
-  return (ma) => aggregateAsyncWithin_(ma, transducer, schedule)
-}
-
-/**
- * Uses `aggregateAsyncWithinEither` but only returns the `Right` results.
- */
-export function aggregateAsyncWithin_<R, E, A, R1, E1, P>(
-  ma: Stream<R, E, A>,
-  transducer: Transducer<R1, E1, A, P>,
-  schedule: Schedule<R1, Chunk<P>, any>
-): Stream<R & R1 & Has<Clock>, E | E1, P> {
-  return filterMap_(
-    aggregateAsyncWithinEither_(ma, transducer, schedule),
-    E.match(() => M.nothing(), M.just)
+export function loopOnPartialChunksElements_<R, E, A, R1, E1, A1>(
+  stream: Stream<R, E, A>,
+  f: (a: A, emit: (a: A1) => I.UIO<void>) => I.IO<R1, E1, void>
+): Stream<R & R1, E | E1, A1> {
+  return loopOnPartialChunks_(stream, (a, emit) =>
+    I.asLazy_(
+      C.mapIO_(a, (a) => f(a, emit)),
+      () => true
+    )
   )
 }
 
 /**
- * Aggregates elements of this stream using the provided sink for as long
- * as the downstream operators on the stream are busy.
- *
- * This operator divides the stream into two asynchronous "islands". Operators upstream
- * of this operator run on one fiber, while downstream operators run on another. Whenever
- * the downstream fiber is busy processing elements, the upstream fiber will feed elements
- * into the sink until it signals completion.
- *
- * Any transducer can be used here, but see `Transducer.foldWeightedM` and `Transducer.foldUntilM` for
- * transducers that cover the common usecases.
+ * Runs the sink on the stream to produce either the sink's result or an error.
  */
-export function aggregateAsync<A, R1, E1, P>(
-  transducer: Transducer<R1, E1, A, P>
-): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1 & Has<Clock>, E | E1, P> {
-  return (ma) => aggregateAsync_(ma, transducer)
+export function run_<R, E, A, R2, E2, Z>(
+  stream: Stream<R, E, A>,
+  sink: Sink.Sink<R2, E, A, E2, unknown, Z>
+): I.IO<R & R2, E2, Z> {
+  return Ch.runDrain(Ch.pipeTo_(stream.channel, sink.channel))
+}
+
+/**
+ * Runs the sink on the stream to produce either the sink's result or an error.
+ *
+ * @dataFirst run_
+ */
+export function run<E, A, R2, E2, Z>(
+  sink: Sink.Sink<R2, E, A, E2, unknown, Z>
+): <R>(stream: Stream<R, E, A>) => I.IO<R & R2, E2, Z> {
+  return (stream) => run_(stream, sink)
+}
+
+/**
+ * Runs the sink on the stream to produce either the sink's result or an error.
+ */
+export function runManaged_<R, E, A, R2, E2, Z>(
+  stream: Stream<R, E, A>,
+  sink: Sink.Sink<R2, E, A, E2, unknown, Z>
+): Ma.Managed<R & R2, E | E2, Z> {
+  return Ch.runManaged(Ch.drain(Ch.pipeTo_(stream.channel, sink.channel)))
+}
+
+/**
+ * Runs the sink on the stream to produce either the sink's result or an error.
+ *
+ * @dataFirst runManaged_
+ */
+export function runManaged<E, A, R2, E2, Z>(
+  sink: Sink.Sink<R2, E, A, E2, unknown, Z>
+): <R>(stream: Stream<R, E, A>) => Ma.Managed<R & R2, E | E2, Z> {
+  return (stream) => runManaged_(stream, sink)
+}
+
+/**
+ * Runs the stream and collects all of its elements to a chunk.
+ */
+export function runCollect<R, E, A>(stream: Stream<R, E, A>): I.IO<R, E, C.Chunk<A>> {
+  return run_(stream, Sink.collectAll())
+}
+
+/**
+ * Runs the stream and collects ignore its elements.
+ */
+export function runDrain<R, E, A>(stream: Stream<R, E, A>): I.IO<R, E, void> {
+  return run_(stream, Sink.drain())
+}
+
+export function runForeachManaged_<R, E, A, R1, E1>(
+  sa: Stream<R, E, A>,
+  f: (a: A) => I.IO<R1, E1, any>
+): Ma.Managed<R & R1, E | E1, void> {
+  return runManaged_(sa, Sink.foreach<R1, E | E1, A>(f))
+}
+
+export function runForeachManaged<A, R1, E1>(
+  f: (a: A) => I.IO<R1, E1, any>
+): <R, E>(sa: Stream<R, E, A>) => Ma.Managed<R & R1, E | E1, void> {
+  return (sa) => runForeachManaged_(sa, f)
+}
+
+/**
+ * Consumes all elements of the stream, passing them to the specified callback.
+ */
+export function runForeach_<R, E, A, R1, E1>(
+  sa: Stream<R, E, A>,
+  f: (a: A) => I.IO<R1, E1, any>
+): I.IO<R & R1, E | E1, void> {
+  return run_(sa, Sink.foreach<R1, E | E1, A>(f))
+}
+
+/**
+ * Consumes all elements of the stream, passing them to the specified callback.
+ */
+export function runForeach<A, R1, E1>(
+  f: (a: A) => I.IO<R1, E1, any>
+): <R, E>(sa: Stream<R, E, A>) => I.IO<R & R1, E | E1, void> {
+  return (sa) => runForeach_(sa, f)
+}
+
+/**
+ * Consumes all elements of the stream, passing them to the specified callback.
+ */
+export function runForeachChunk_<R, E, A, R1, E1>(
+  sa: Stream<R, E, A>,
+  f: (as: C.Chunk<A>) => I.IO<R1, E1, any>
+): I.IO<R & R1, E | E1, void> {
+  return run_(sa, Sink.foreachChunk<R1, E | E1, A>(f))
+}
+
+/**
+ * Consumes all elements of the stream, passing them to the specified callback.
+ */
+export function runForeachChunk<A, R1, E1>(
+  f: (as: C.Chunk<A>) => I.IO<R1, E1, any>
+): <R, E>(sa: Stream<R, E, A>) => I.IO<R & R1, E | E1, void> {
+  return (sa) => runForeachChunk_(sa, f)
+}
+
+function takeLoop<E, A>(n: number): Ch.Channel<unknown, E, C.Chunk<A>, unknown, E, C.Chunk<A>, unknown> {
+  return Ch.readWithCause(
+    (i) => {
+      const taken = C.take_(i, n)
+      const left  = Math.max(n - taken.length, 0)
+      if (left > 0) {
+        return Ch.chain_(Ch.write(taken), () => takeLoop(left))
+      } else {
+        return Ch.write(taken)
+      }
+    },
+    Ch.failCause,
+    Ch.end
+  )
+}
+
+/**
+ * Takes the specified number of elements from this stream.
+ */
+export function take_<R, E, A>(stream: Stream<R, E, A>, n: number): Stream<R, E, A> {
+  if (n <= 0) {
+    return empty
+  }
+  if (!Number.isInteger(n)) {
+    return halt(new IllegalArgumentError(`${n} should be an integer`, 'Stream.take'))
+  }
+  return new Stream(Ch.pipeTo_(stream.channel, takeLoop(n)))
+}
+
+/**
+ * Takes the specified number of elements from this stream.
+ *
+ * @dataFirst take_
+ */
+export function take(n: number): <R, E, A>(stream: Stream<R, E, A>) => Stream<R, E, A> {
+  return (stream) => take_(stream, n)
+}
+
+function takeUntilLoop<R, E, A>(f: (a: A) => boolean): Ch.Channel<R, E, C.Chunk<A>, unknown, E, C.Chunk<A>, unknown> {
+  return Ch.readWith(
+    (chunk: C.Chunk<A>) => {
+      const taken = pipe(chunk, C.takeWhile(not(f)))
+      const last  = pipe(chunk, C.drop(taken.length), C.take(1))
+      if (C.isEmpty(last)) {
+        return pipe(Ch.write(taken), Ch.crossSecond(takeUntilLoop<R, E, A>(f)))
+      } else {
+        return Ch.write(C.concat_(taken, last))
+      }
+    },
+    (err: E) => Ch.fail(err),
+    Ch.succeed
+  )
+}
+
+/**
+ * Takes all elements of the stream until the specified predicate evaluates
+ * to `true`.
+ */
+export function takeUntil_<R, E, A>(fa: Stream<R, E, A>, pa: Predicate<A>): Stream<R, E, A> {
+  return new Stream(pipe(fa.channel, Ch.pipeTo(takeUntilLoop(pa))))
+}
+/**
+ * Takes all elements of the stream until the specified predicate evaluates
+ * to `true`.
+ *
+ * @dataFirst takeUntil_
+ */
+export function takeUntil<A>(pa: Predicate<A>): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, A> {
+  return (fa) => takeUntil_(fa, pa)
+}
+
+/**
+ * Interpret the stream as a managed pull
+ */
+export function toPull<R, E, A>(stream: Stream<R, E, A>): Ma.Managed<R, never, I.IO<R, M.Maybe<E>, C.Chunk<A>>> {
+  return Ma.map_(Ch.toPull(stream.channel), (pull) =>
+    I.mapError_(pull, (e) => (e._tag === 'Left' ? M.just(e.left) : M.nothing()))
+  )
+}
+
+/**
+ * Creates a stream produced from an effect
+ */
+export function unwrap<R0, E0, R, E, A>(stream: I.IO<R0, E0, Stream<R, E, A>>): Stream<R0 & R, E0 | E, A> {
+  return flatten(fromIO(stream))
+}
+
+/**
+ * Creates a stream produced from a managed
+ */
+export function unwrapManaged<R0, E0, R, E, A>(stream: Ma.Managed<R0, E0, Stream<R, E, A>>): Stream<R0 & R, E0 | E, A> {
+  return flatten(fromManaged(stream))
+}
+
+/**
+ * Submerges the error case of an `Either` into the `ZStream`.
+ */
+export function subsumeEither<R, E, E2, A>(xs: Stream<R, E, E.Either<E2, A>>): Stream<R, E | E2, A> {
+  return mapIO_(xs, (_) => I.fromEitherLazy(() => _))
 }
 
 /**
@@ -1748,64 +1468,1228 @@ export function aggregateAsync<A, R1, E1, P>(
  * the downstream fiber is busy processing elements, the upstream fiber will feed elements
  * into the sink until it signals completion.
  *
- * Any transducer can be used here, but see `Transducer.foldWeightedM` and `Transducer.foldUntilM` for
- * transducers that cover the common usecases.
+ * Any sink can be used here, but see `Sink.foldWeightedM` and `Sink.foldUntilM` for
+ * sinks that cover the common usecases.
  */
-export function aggregateAsync_<R, E, A, R1, E1, P>(
-  ma: Stream<R, E, A>,
-  transducer: Transducer<R1, E1, A, P>
-): Stream<R & R1 & Has<Clock>, E | E1, P> {
-  return aggregateAsyncWithin_(ma, transducer, Sc.forever)
+export function aggregateAsync_<R, R1, E extends E1, E1, E2, A extends A1, A1, B>(
+  stream: Stream<R, E, A>,
+  sink: SK.Sink<R1, E1, A1, E2, A1, B>
+): Stream<R & R1 & Has<Clock>, E2, B> {
+  return aggregateAsyncWithin_(stream, sink, SC.forever)
 }
 
 /**
- * Applies an aggregator to the stream, which converts one or more elements
- * of type `O` into elements of type `P`.
+ * Aggregates elements of this stream using the provided sink for as long
+ * as the downstream operators on the stream are busy.
+ *
+ * This operator divides the stream into two asynchronous "islands". Operators upstream
+ * of this operator run on one fiber, while downstream operators run on another. Whenever
+ * the downstream fiber is busy processing elements, the upstream fiber will feed elements
+ * into the sink until it signals completion.
+ *
+ * Any sink can be used here, but see `Sink.foldWeightedM` and `Sink.foldUntilM` for
+ * sinks that cover the common usecases.
  */
-export function aggregate_<R, E, A, R1, E1, P>(
-  ma: Stream<R, E, A>,
-  transducer: Transducer<R1, E1, A, P>
-): Stream<R & R1, E | E1, P> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const pull    = yield* _(ma.proc)
-      const push    = yield* _(transducer.push)
-      const doneRef = yield* _(Ref.make(false))
+export function aggregateAsync<R1, E1, E2, A1, B>(sink: SK.Sink<R1, E1, A1, E2, A1, B>) {
+  return <R, E extends E1, A extends A1>(stream: Stream<R, E, A>) => aggregateAsync_(stream, sink)
+}
 
-      const go: I.IO<R & R1, M.Maybe<E | E1>, Chunk<P>> = pipe(
-        doneRef.get,
-        I.chain((done) => {
-          if (done) {
-            return Pull.end
-          } else {
-            return pipe(
-              pull,
-              I.matchIO(
-                M.match(
-                  (): I.IO<R1, M.Maybe<E | E1>, Chunk<P>> =>
-                    pipe(doneRef.set(true), I.crossSecond(I.asJustError(push(M.nothing())))),
-                  (e) => Pull.fail(e)
-                ),
-                (as) => I.asJustError(push(M.just(as)))
-              ),
-              I.chain((ps) => (C.isEmpty(ps) ? go : I.succeed(ps)))
+/**
+ * Like `aggregateAsyncWithinEither`, but only returns the `Right` results.
+ */
+export function aggregateAsyncWithin_<R, R1, R2, E extends E1, E1, E2, A extends A1, A1, B, C>(
+  stream: Stream<R, E, A>,
+  sink: SK.Sink<R1, E1, A1, E2, A1, B>,
+  schedule: SC.Schedule<R2, M.Maybe<B>, C>
+): Stream<R & R1 & R2 & Has<Clock>, E2, B> {
+  return collect_(
+    aggregateAsyncWithinEither_(stream, sink, schedule),
+    E.match(
+      () => M.nothing(),
+      (v) => M.just(v)
+    )
+  )
+}
+
+/**
+ * Like `aggregateAsyncWithinEither`, but only returns the `Right` results.
+ */
+export function aggregateAsyncWithin<R1, R2, E1, E2, A1, B, C>(
+  sink: SK.Sink<R1, E1, A1, E2, A1, B>,
+  schedule: SC.Schedule<R2, M.Maybe<B>, C>
+) {
+  return <R, E extends E1, A extends A1>(stream: Stream<R, E, A>) => aggregateAsyncWithin_(stream, sink, schedule)
+}
+
+/**
+ * Aggregates elements using the provided sink until it completes, or until the
+ * delay signalled by the schedule has passed.
+ *
+ * This operator divides the stream into two asynchronous islands. Operators upstream
+ * of this operator run on one fiber, while downstream operators run on another. Elements
+ * will be aggregated by the sink until the downstream fiber pulls the aggregated value,
+ * or until the schedule's delay has passed.
+ *
+ * Aggregated elements will be fed into the schedule to determine the delays between
+ * pulls.
+ */
+export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A extends A1, A1, B, C>(
+  stream: Stream<R, E, A>,
+  sink: SK.Sink<R1, E1, A1, E2, A1, B>,
+  schedule: SC.Schedule<R2, M.Maybe<B>, C>
+): Stream<R & R1 & R2 & Has<Clock>, E2, E.Either<C, B>> {
+  type HandoffSignal = HO.HandoffSignal<C, E1, A>
+  type SinkEndReason = SER.SinkEndReason<C>
+
+  const deps = I.sequenceT(
+    HO.make<HandoffSignal>(),
+    Ref.make<SinkEndReason>(new SER.SinkEnd()),
+    Ref.make(C.empty<A1>()),
+    SC.driver(schedule)
+  )
+
+  return chain_(fromIO(deps), ([handoff, sinkEndReason, sinkLeftovers, scheduleDriver]) => {
+    const handoffProducer: Ch.Channel<unknown, E1, C.Chunk<A>, unknown, never, never, any> = Ch.readWithCause(
+      (_in: C.Chunk<A>) => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, new HO.Emit(_in))), handoffProducer),
+      (cause: Ca.Cause<E1>) => Ch.fromIO(HO.offer(handoff, new HO.Halt(cause))),
+      (_: any) => Ch.fromIO(HO.offer(handoff, new HO.End(new SER.UpstreamEnd())))
+    )
+
+    const handoffConsumer: Ch.Channel<unknown, unknown, unknown, unknown, E1, C.Chunk<A1>, void> = Ch.unwrap(
+      I.chain_(Ref.getAndSet_(sinkLeftovers, C.empty<A1>()), (leftovers) => {
+        if (C.isEmpty(leftovers)) {
+          return I.succeed(Ch.crossSecond_(Ch.write(leftovers), handoffConsumer))
+        } else {
+          return I.map_(HO.take(handoff), (_) => {
+            switch (_._typeId) {
+              case HO.EmitTypeId:
+                return Ch.crossSecond_(Ch.write(_.els), handoffConsumer)
+              case HO.HaltTypeId:
+                return Ch.failCause(_.error)
+              case HO.EndTypeId:
+                return Ch.fromIO(Ref.set_(sinkEndReason, _.reason))
+            }
+          })
+        }
+      })
+    )
+
+    const scheduledAggregator = (
+      lastB: M.Maybe<B>
+    ): Ch.Channel<R1 & R2 & Has<Clock>, unknown, unknown, unknown, E2, C.Chunk<E.Either<C, B>>, any> => {
+      const timeout = I.matchCauseIO_(
+        scheduleDriver.next(lastB),
+        (_) =>
+          E.match_(
+            Ca.failureOrCause(_),
+            (_) => HO.offer(handoff, new HO.End(new SER.ScheduleTimeout())),
+            (cause) => HO.offer(handoff, new HO.Halt(cause))
+          ),
+        (c) => HO.offer(handoff, new HO.End(new SER.ScheduleEnd(c)))
+      )
+
+      return pipe(
+        Ch.managed_(I.forkManaged(timeout), (fiber) => {
+          return Ch.chain_(Ch.doneCollect(Ch.pipeTo_(handoffConsumer, sink.channel)), ([leftovers, b]) => {
+            return Ch.crossSecond_(
+              Ch.fromIO(I.crossSecond_(F.interrupt(fiber), Ref.set_(sinkLeftovers, C.flatten(leftovers)))),
+              Ch.unwrap(
+                Ref.modify_(sinkEndReason, (reason) => {
+                  switch (reason._typeId) {
+                    case SER.ScheduleEndTypeId:
+                      return tuple(
+                        Ch.as_(Ch.write(C.from([E.right(b), E.left(reason.c)])), M.just(b)),
+                        new SER.SinkEnd()
+                      )
+                    case SER.ScheduleTimeoutTypeId:
+                      return tuple(Ch.as_(Ch.write(C.single(E.right(b))), M.just(b)), new SER.SinkEnd())
+                    case SER.SinkEndTypeId:
+                      return tuple(Ch.as_(Ch.write(C.single(E.right(b))), M.just(b)), new SER.SinkEnd())
+                    case SER.UpstreamEndTypeId:
+                      return tuple(Ch.as_(Ch.write(C.single(E.right(b))), M.nothing()), new SER.UpstreamEnd())
+                  }
+                })
+              )
             )
+          })
+        }),
+        Ch.chain((_) => {
+          if (M.isNothing(_)) {
+            return Ch.unit()
+          } else {
+            return scheduledAggregator(_)
           }
         })
       )
-      return go
+    }
+
+    return zipSecond_(
+      fromManaged(pipe(Ch.pipeTo_(stream.channel, handoffProducer), Ch.runManaged, Ma.fork)),
+      new Stream(scheduledAggregator(M.nothing()))
+    )
+  })
+}
+
+/**
+ * Aggregates elements using the provided sink until it completes, or until the
+ * delay signalled by the schedule has passed.
+ *
+ * This operator divides the stream into two asynchronous islands. Operators upstream
+ * of this operator run on one fiber, while downstream operators run on another. Elements
+ * will be aggregated by the sink until the downstream fiber pulls the aggregated value,
+ * or until the schedule's delay has passed.
+ *
+ * Aggregated elements will be fed into the schedule to determine the delays between
+ * pulls.
+ */
+export function aggregateAsyncWithinEither<R1, R2, E1, E2, A1, B, C>(
+  sink: SK.Sink<R1, E1, A1, E2, A1, B>,
+  schedule: SC.Schedule<R2, M.Maybe<B>, C>
+) {
+  return <R, E extends E1, A extends A1>(stream: Stream<R, E, A>) => aggregateAsyncWithinEither_(stream, sink, schedule)
+}
+
+/**
+ * Maps each element of this stream to another stream and returns the
+ * non-deterministic merge of those streams, executing up to `n` inner streams
+ * concurrently. Up to `bufferSize` elements of the produced streams may be
+ * buffered in memory by this operator.
+ */
+export function chainPar_<R, E, A, R1, E1, B>(
+  ma: Stream<R, E, A>,
+  f: (a: A) => Stream<R1, E1, B>,
+  n: number,
+  bufferSize = 16
+): Stream<R & R1, E | E1, B> {
+  return new Stream(
+    pipe(
+      ma.channel,
+      Ch.concatMap(Ch.writeChunk),
+      Ch.mergeMap((a) => f(a).channel, n, bufferSize)
+    )
+  )
+}
+
+/**
+ * Maps each element of this stream to another stream and returns the
+ * non-deterministic merge of those streams, executing up to `n` inner streams
+ * concurrently. Up to `bufferSize` elements of the produced streams may be
+ * buffered in memory by this operator.
+ */
+export function chainPar<A, R1, E1, B>(
+  f: (a: A) => Stream<R1, E1, B>,
+  n: number,
+  bufferSize = 16
+): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
+  return (ma) => chainPar_(ma, f, n, bufferSize)
+}
+
+/**
+ * Fan out the stream, producing a list of streams that have the same elements as this stream.
+ * The driver stream will only ever advance of the `maximumLag` chunks before the
+ * slowest downstream stream.
+ */
+export function broadcast_<R, E, A>(
+  stream: Stream<R, E, A>,
+  n: number,
+  maximumLag: number
+): Ma.Managed<R, never, C.Chunk<Stream<unknown, E, A>>> {
+  return pipe(stream, broadcastedQueues(n, maximumLag), Ma.map(C.map(flow(fromQueueWithShutdown(), flattenTake))))
+}
+
+/**
+ * Fan out the stream, producing a list of streams that have the same elements as this stream.
+ * The driver stream will only ever advance of the `maximumLag` chunks before the
+ * slowest downstream stream.
+ */
+export function broadcast(
+  n: number,
+  maximumLag: number
+): <R, E, A>(stream: Stream<R, E, A>) => Ma.Managed<R, never, C.Chunk<Stream<unknown, E, A>>> {
+  return (stream) => broadcast_(stream, n, maximumLag)
+}
+
+/**
+ * Fan out the stream, producing a dynamic number of streams that have the same elements as this stream.
+ * The driver stream will only ever advance of the `maximumLag` chunks before the
+ * slowest downstream stream.
+ */
+export function broadcastDynamic_<R, E, A>(
+  stream: Stream<R, E, A>,
+  maximumLag: number
+): Ma.Managed<R, never, Stream<unknown, E, A>> {
+  return Ma.map_(broadcastedQueuesDynamic_(stream, maximumLag), (_) =>
+    pipe(fromManaged(_), chain(fromQueue()), flattenTake)
+  )
+}
+
+/**
+ * Fan out the stream, producing a dynamic number of streams that have the same elements as this stream.
+ * The driver stream will only ever advance of the `maximumLag` chunks before the
+ * slowest downstream stream.
+ */
+export function broadcastDynamic(maximumLag: number) {
+  return <R, E, A>(stream: Stream<R, E, A>) => broadcastDynamic_(stream, maximumLag)
+}
+
+/**
+ * Converts the stream to a managed list of queues. Every value will be replicated to every queue with the
+ * slowest queue being allowed to buffer `maximumLag` chunks before the driver is backpressured.
+ *
+ * Queues can unsubscribe from upstream by shutting down.
+ */
+export function broadcastedQueues_<R, E, A>(
+  stream: Stream<R, E, A>,
+  n: number,
+  maximumLag: number
+): Ma.Managed<R, never, C.Chunk<H.HubDequeue<unknown, never, Take.Take<E, A>>>> {
+  return Ma.gen(function* (_) {
+    const hub    = yield* _(H.makeBounded<Take.Take<E, A>>(maximumLag))
+    const queues = yield* _(Ma.collectAll(C.fill(n, () => H.subscribe(hub))))
+    yield* _(Ma.fork(runIntoHubManaged_(stream, hub)))
+    return queues
+  })
+}
+
+/**
+ * Converts the stream to a managed list of queues. Every value will be replicated to every queue with the
+ * slowest queue being allowed to buffer `maximumLag` chunks before the driver is backpressured.
+ *
+ * Queues can unsubscribe from upstream by shutting down.
+ */
+export function broadcastedQueues(n: number, maximumLag: number) {
+  return <R, E, A>(stream: Stream<R, E, A>) => broadcastedQueues_(stream, n, maximumLag)
+}
+
+/**
+ * Converts the stream to a managed dynamic amount of queues. Every chunk will be replicated to every queue with the
+ * slowest queue being allowed to buffer `maximumLag` chunks before the driver is backpressured.
+ *
+ * Queues can unsubscribe from upstream by shutting down.
+ */
+export function broadcastedQueuesDynamic_<R, E, A>(
+  stream: Stream<R, E, A>,
+  maximumLag: number
+): Ma.Managed<R, never, Ma.Managed<unknown, never, H.HubDequeue<unknown, never, Take.Take<E, A>>>> {
+  return Ma.map_(toHub_(stream, maximumLag), (_) => H.subscribe(_))
+}
+
+/**
+ * Converts the stream to a managed dynamic amount of queues. Every chunk will be replicated to every queue with the
+ * slowest queue being allowed to buffer `maximumLag` chunks before the driver is backpressured.
+ *
+ * Queues can unsubscribe from upstream by shutting down.
+ */
+export function broadcastedQueuesDynamic(maximumLag: number) {
+  return <R, E, A>(stream: Stream<R, E, A>) => broadcastedQueuesDynamic_(stream, maximumLag)
+}
+
+export function bufferChunks_<R, E, A>(stream: Stream<R, E, A>, capacity: number): Stream<R, E, A> {
+  const queue = toQueue_(stream, capacity)
+  return new Stream(
+    Ch.managed_(queue, (queue) => {
+      const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = pipe(
+        Ch.fromIO(Q.take(queue)),
+        Ch.chain((take: Take.Take<E, A>) =>
+          Take.fold_(take, Ch.end(undefined), Ch.failCause, (value) => Ch.crossSecond_(Ch.write(value), process))
+        )
+      )
+      return process
+    })
+  )
+}
+
+export function bufferChunks(capacty: number): <R, E, A>(stream: Stream<R, E, A>) => Stream<R, E, A> {
+  return (stream) => bufferChunks_(stream, capacty)
+}
+
+/**
+ * Allows a faster producer to progress independently of a slower consumer by buffering
+ * up to `capacity` elements in a queue.
+ */
+export function buffer_<R, E, A>(stream: Stream<R, E, A>, capacity: number): Stream<R, E, A> {
+  const queue = toQueueOfElements_(stream, capacity)
+  return new Stream(
+    Ch.managed_(queue, (queue) => {
+      const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = pipe(
+        Ch.fromIO(Q.take(queue)),
+        Ch.chain((exit: Ex.Exit<M.Maybe<E>, A>) =>
+          Ex.match_(
+            exit,
+            flow(
+              Ca.flipCauseOption,
+              M.match(() => Ch.end(undefined), Ch.failCause)
+            ),
+            (value) => Ch.crossSecond_(Ch.write(C.single(value)), process)
+          )
+        )
+      )
+      return process
     })
   )
 }
 
 /**
- * Applies an aggregator to the stream, which converts one or more elements
- * of type `O` into elements of type `P`.
+ * Allows a faster producer to progress independently of a slower consumer by buffering
+ * up to `capacity` chunks in a queue.
  */
-export function aggregate<R1, E1, A, P>(
-  transducer: Transducer<R1, E1, A, P>
-): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E1 | E, P> {
-  return (ma) => aggregate_(ma, transducer)
+export function buffer(capacity: number): <R, E, A>(stream: Stream<R, E, A>) => Stream<R, E, A> {
+  return (stream) => buffer_(stream, capacity)
+}
+
+export function bufferDropping_<R, E, A>(stream: Stream<R, E, A>, capacity: number): Stream<R, E, A> {
+  const queue = Ma.bracket_(Q.makeDropping<readonly [Take.Take<E, A>, Pr.Future<never, void>]>(capacity), Q.shutdown)
+  return new Stream(bufferSignal(queue, chunkN_(stream, 1).channel))
+}
+
+export function bufferDropping(capacity: number): <R, E, A>(stream: Stream<R, E, A>) => Stream<R, E, A> {
+  return (stream) => bufferDropping_(stream, capacity)
+}
+
+export function bufferSliding_<R, E, A>(stream: Stream<R, E, A>, capacity: number): Stream<R, E, A> {
+  const queue = Ma.bracket_(Q.makeSliding<readonly [Take.Take<E, A>, Pr.Future<never, void>]>(capacity), Q.shutdown)
+  return new Stream(bufferSignal(queue, chunkN_(stream, 1).channel))
+}
+
+export function bufferSliding(capacity: number): <R, E, A>(stream: Stream<R, E, A>) => Stream<R, E, A> {
+  return (stream) => bufferSliding_(stream, capacity)
+}
+
+export function bufferChunksDropping_<R, E, A>(stream: Stream<R, E, A>, capacity: number): Stream<R, E, A> {
+  const queue = Ma.bracket_(Q.makeDropping<readonly [Take.Take<E, A>, Pr.Future<never, void>]>(capacity), Q.shutdown)
+  return new Stream(bufferSignal(queue, stream.channel))
+}
+
+export function bufferChunksDropping(capacity: number): <R, E, A>(stream: Stream<R, E, A>) => Stream<R, E, A> {
+  return (stream) => bufferChunksDropping_(stream, capacity)
+}
+
+export function bufferChunksSliding_<R, E, A>(stream: Stream<R, E, A>, capacity: number): Stream<R, E, A> {
+  const queue = Ma.bracket_(Q.makeSliding<readonly [Take.Take<E, A>, Pr.Future<never, void>]>(capacity), Q.shutdown)
+  return new Stream(bufferSignal(queue, stream.channel))
+}
+
+export function bufferChunksSliding(capacity: number): <R, E, A>(stream: Stream<R, E, A>) => Stream<R, E, A> {
+  return (stream) => bufferSliding_(stream, capacity)
+}
+
+function bufferSignalProducer<R, E, A>(
+  queue: Q.UQueue<readonly [Take.Take<E, A>, Pr.Future<never, void>]>,
+  ref: Ref.URef<Pr.Future<never, void>>
+): Ch.Channel<R, E, C.Chunk<A>, unknown, never, never, unknown> {
+  const terminate = (take: Take.Take<E, A>): Ch.Channel<R, E, C.Chunk<A>, unknown, never, never, unknown> =>
+    Ch.fromIO(
+      I.gen(function* (_) {
+        const latch = yield* _(ref.get)
+        yield* _(Pr.await(latch))
+        const p = yield* _(Pr.make<never, void>())
+        yield* _(Q.offer_(queue, tuple(take, p)))
+        yield* _(ref.set(p))
+        yield* _(Pr.await(p))
+      })
+    )
+  return Ch.readWith(
+    (inp) =>
+      Ch.crossSecond_(
+        Ch.fromIO(
+          I.gen(function* (_) {
+            const p     = yield* _(Pr.make<never, void>())
+            const added = yield* _(Q.offer_(queue, tuple(Take.chunk(inp), p)))
+            yield* _(I.when_(ref.set(p), () => added))
+          })
+        ),
+        bufferSignalProducer(queue, ref)
+      ),
+    flow(Take.fail, terminate),
+    () => terminate(Take.end)
+  )
+}
+
+function bufferSignalConsumer<R, E, A>(
+  queue: Q.UQueue<readonly [Take.Take<E, A>, Pr.Future<never, void>]>
+): Ch.Channel<R, unknown, unknown, unknown, E, C.Chunk<A>, void> {
+  const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = Ch.chain_(
+    Ch.fromIO(Q.take(queue)),
+    ([take, promise]) =>
+      Ch.crossSecond_(
+        Ch.fromIO(Pr.succeed_(promise, undefined)),
+        Take.fold_(take, Ch.end(undefined), Ch.failCause, (value) => Ch.crossSecond_(Ch.write(value), process))
+      )
+  )
+  return process
+}
+
+function bufferSignal<R, E, A>(
+  managed: Ma.UManaged<Q.UQueue<readonly [Take.Take<E, A>, Pr.Future<never, void>]>>,
+  channel: Ch.Channel<R, unknown, unknown, unknown, E, C.Chunk<A>, unknown>
+): Ch.Channel<R, unknown, unknown, unknown, E, C.Chunk<A>, void> {
+  return Ch.managed_(
+    Ma.gen(function* (_) {
+      const queue = yield* _(managed)
+      const start = yield* _(Pr.make<never, void>())
+      yield* _(Pr.succeed_(start, undefined))
+      const ref = yield* _(Ref.make(start))
+      yield* _(pipe(channel, Ch.pipeTo(bufferSignalProducer(queue, ref)), Ch.runManaged, Ma.fork))
+      return queue
+    }),
+    bufferSignalConsumer
+  )
+}
+
+/**
+ * Allows a faster producer to progress independently of a slower consumer by buffering
+ * elements into an unbounded queue.
+ */
+export function bufferUnbounded<R, E, A>(stream: Stream<R, E, A>): Stream<R, E, A> {
+  const queue = toQueueUnbounded(stream)
+
+  return new Stream(
+    Ch.managed_(queue, (queue) => {
+      const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = Ch.chain_(
+        Ch.fromIO(Q.take(queue)),
+        Take.fold(
+          Ch.end(undefined),
+          (error) => Ch.failCause(error),
+          (value) => Ch.crossSecond_(Ch.write(value), process)
+        )
+      )
+
+      return process
+    })
+  )
+}
+
+/**
+ * Switches over to the stream produced by the provided function in case this one
+ * fails with a typed error.
+ */
+export function catchAll_<R, R1, E, E1, A, A1>(
+  stream: Stream<R, E, A>,
+  f: (e: E) => Stream<R1, E1, A1>
+): Stream<R & R1, E1, A | A1> {
+  return catchAllCause_(stream, (_) => E.match_(Ca.failureOrCause(_), f, (_) => failCause(_)))
+}
+
+/**
+ * Switches over to the stream produced by the provided function in case this one
+ * fails with a typed error.
+ */
+export function catchAll<R1, E, E1, A1>(f: (e: E) => Stream<R1, E1, A1>) {
+  return <R, A>(stream: Stream<R, E, A>) => catchAll_(stream, f)
+}
+
+/**
+ * Switches over to the stream produced by the provided function in case this one
+ * fails. Allows recovery from all causes of failure, including interruption if the
+ * stream is uninterruptible.
+ */
+export function catchAllCause_<R, R1, E, E1, A, A1>(
+  stream: Stream<R, E, A>,
+  f: (cause: Ca.Cause<E>) => Stream<R1, E1, A1>
+): Stream<R & R1, E1, A | A1> {
+  const channel: Ch.Channel<R & R1, unknown, unknown, unknown, E1, C.Chunk<A | A1>, unknown> = Ch.catchAllCause_(
+    stream.channel,
+    (_) => f(_).channel
+  )
+
+  return new Stream(channel)
+}
+
+/**
+ * Switches over to the stream produced by the provided function in case this one
+ * fails. Allows recovery from all causes of failure, including interruption if the
+ * stream is uninterruptible.
+ */
+export function catchAllCause<R1, E, E1, A1>(f: (cause: Ca.Cause<E>) => Stream<R1, E1, A1>) {
+  return <R, A>(stream: Stream<R, E, A>) => catchAllCause_(stream, f)
+}
+
+/**
+ * Switches over to the stream produced by the provided function in case this one
+ * fails with some typed error.
+ */
+export function catchJust_<R, R1, E, E1, A, A1>(
+  stream: Stream<R, E, A>,
+  pf: (e: E) => M.Maybe<Stream<R1, E1, A1>>
+): Stream<R & R1, E | E1, A | A1> {
+  return catchAll_(stream, (e) =>
+    M.match_(
+      pf(e),
+      () => fail<E | E1>(e),
+      (_) => _
+    )
+  )
+}
+
+/**
+ * Switches over to the stream produced by the provided function in case this one
+ * fails with some typed error.
+ */
+export function catchJust<R1, E, E1, A1>(pf: (e: E) => M.Maybe<Stream<R1, E1, A1>>) {
+  return <R, A>(stream: Stream<R, E, A>) => catchJust_(stream, pf)
+}
+
+/**
+ * Switches over to the stream produced by the provided function in case this one
+ * fails with some errors. Allows recovery from all causes of failure, including interruption if the
+ * stream is uninterruptible.
+ */
+export function catchJustCause_<R, R1, E, E1, A, A1>(
+  stream: Stream<R, E, A>,
+  pf: (e: Ca.Cause<E>) => M.Maybe<Stream<R1, E1, A1>>
+): Stream<R & R1, E | E1, A | A1> {
+  return catchAllCause_(
+    stream,
+    (e): Stream<R1, E | E1, A1> =>
+      M.match_(
+        pf(e),
+        () => failCause(e),
+        (_) => _
+      )
+  )
+}
+
+/**
+ * Switches over to the stream produced by the provided function in case this one
+ * fails with some errors. Allows recovery from all causes of failure, including interruption if the
+ * stream is uninterruptible.
+ */
+export function catchJustCause<R1, E, E1, A1>(pf: (e: Ca.Cause<E>) => M.Maybe<Stream<R1, E1, A1>>) {
+  return <R, A>(stream: Stream<R, E, A>) => catchJustCause_(stream, pf)
+}
+
+class Rechunker<A> {
+  private builder = C.builder<A>()
+  private pos = 0
+
+  constructor(readonly n: number) {}
+
+  write(elem: A) {
+    this.builder.append(elem)
+    this.pos += 1
+
+    if (this.pos === this.n) {
+      const result = this.builder.result()
+
+      this.builder = C.builder()
+      this.pos     = 0
+
+      return result
+    }
+
+    return null
+  }
+
+  emitOfNotEmpty() {
+    if (this.pos !== 0) {
+      return Ch.write(this.builder.result())
+    } else {
+      return Ch.unit()
+    }
+  }
+  /* eslint-enable */
+}
+
+function changesWithWriter<R, E, A>(
+  f: (x: A, y: A) => boolean,
+  last: M.Maybe<A>
+): Ch.Channel<R, E, C.Chunk<A>, unknown, E, C.Chunk<A>, void> {
+  return Ch.readWithCause(
+    (chunk: C.Chunk<A>) => {
+      const [newLast, newChunk] = C.foldl_(chunk, [last, C.empty<A>()], ([maybeLast, os], o1) =>
+        M.match_(
+          maybeLast,
+          () => [M.just(o1), os[':+'](o1)],
+          (o) => (f(o, o1) ? [M.just(o1), os] : [M.just(o1), os[':+'](o1)])
+        )
+      )
+      return Ch.crossSecond_(Ch.write(newChunk), changesWithWriter(f, newLast))
+    },
+    Ch.failCause,
+    () => Ch.unit()
+  )
+}
+
+/**
+ * Returns a new stream that only emits elements that are not equal to the
+ * previous element emitted, using the specified function to determine
+ * whether two elements are equal.
+ */
+export function changesWith_<R, E, A>(stream: Stream<R, E, A>, f: (x: A, y: A) => boolean): Stream<R, E, A> {
+  return new Stream(Ch.pipeTo_(stream.channel, changesWithWriter<R, E, A>(f, M.nothing())))
+}
+
+/**
+ * Returns a new stream that only emits elements that are not equal to the
+ * previous element emitted, using the specified function to determine
+ * whether two elements are equal.
+ */
+export function changesWith<A>(f: (x: A, y: A) => boolean): <R, E>(stream: Stream<R, E, A>) => Stream<R, E, A> {
+  return (stream) => changesWith_(stream, f)
+}
+
+/**
+ * Returns a new stream that only emits elements that are not equal to the
+ * previous element emitted, using the provided `Eq` instance to determine whether two
+ * elements are equal.
+ */
+export function changes<A>(E: P.Eq<A>): <R, E>(stream: Stream<R, E, A>) => Stream<R, E, A> {
+  return (stream) => changesWith_(stream, E.equals_)
+}
+
+/**
+ * Re-chunks the elements of the stream into chunks of
+ * `n` elements each.
+ * The last chunk might contain less than `n` elements
+ */
+export function chunkN_<R, E, A>(stream: Stream<R, E, A>, n: number): Stream<R, E, A> {
+  return unwrap(
+    I.succeedLazy(() => {
+      const rechunker = new Rechunker<A>(n)
+      const process: Ch.Channel<R, E, C.Chunk<A>, unknown, E, C.Chunk<A>, void> = Ch.readWithCause(
+        (chunk) => {
+          const chunkSize = chunk.length
+
+          if (chunkSize > 0) {
+            let chunks                    = L.empty<C.Chunk<A>>()
+            let result: C.Chunk<A> | null = null
+            let i = 0
+
+            while (i < chunkSize) {
+              while (i < chunkSize && result === null) {
+                result = rechunker.write(C.unsafeGet_(chunk, i))
+                i     += 1
+              }
+
+              if (result !== null) {
+                chunks = L.prepend_(chunks, result)
+                result = null
+              }
+            }
+
+            return Ch.crossSecond_(Ch.writeAll(...L.toArray(L.reverse(chunks))), process)
+          }
+
+          return process
+        },
+        (cause) => Ch.crossSecond_(rechunker.emitOfNotEmpty(), Ch.failCause(cause)),
+        (_) => rechunker.emitOfNotEmpty()
+      )
+
+      return new Stream(Ch.pipeTo_(stream.channel, process))
+    })
+  )
+}
+
+/**
+ * Re-chunks the elements of the stream into chunks of
+ * `n` elements each.
+ * The last chunk might contain less than `n` elements
+ */
+export function chunkN(n: number) {
+  return <R, E, A>(stream: Stream<R, E, A>) => chunkN_(stream, n)
+}
+
+/**
+ * Exposes the underlying chunks of the stream as a stream of chunks of elements
+ */
+export function chunks<R, E, A>(stream: Stream<R, E, A>): Stream<R, E, C.Chunk<A>> {
+  return mapChunks_(stream, C.single)
+}
+
+/**
+ * Performs a filter and map in a single step.
+ */
+export function collect_<R, E, A, B>(stream: Stream<R, E, A>, f: (a: A) => M.Maybe<B>): Stream<R, E, B> {
+  return mapChunks_(stream, C.filterMap(f))
+}
+
+/**
+ * Performs a filter and map in a single step.
+ */
+export function collect<A, B>(f: (a: A) => M.Maybe<B>) {
+  return <R, E>(stream: Stream<R, E, A>) => collect_(stream, f)
+}
+
+/**
+ * Filters any `Right` values.
+ */
+export function collectLeft<R, E, L1, A>(stream: Stream<R, E, E.Either<L1, A>>): Stream<R, E, L1> {
+  return collect_(
+    stream,
+    E.match(
+      (a) => M.just(a),
+      (_) => M.nothing()
+    )
+  )
+}
+
+/**
+ * Filters any `Left` values.
+ */
+export function collectRight<R, E, A, R1>(stream: Stream<R, E, E.Either<A, R1>>): Stream<R, E, R1> {
+  return collect_(
+    stream,
+    E.match(
+      (_) => M.nothing(),
+      (a) => M.just(a)
+    )
+  )
+}
+
+/**
+ * Filters any `None` values.
+ */
+export function collectJust<R, E, A>(stream: Stream<R, E, M.Maybe<A>>): Stream<R, E, A> {
+  return collect_(stream, (a) => a)
+}
+
+/**
+ * Filters any `Exit.Failure` values.
+ */
+export function collectSuccess<R, E, A, L1>(stream: Stream<R, E, Ex.Exit<L1, A>>) {
+  return collect_(
+    stream,
+    Ex.match(
+      (_) => M.nothing(),
+      (a) => M.just(a)
+    )
+  )
+}
+
+/**
+ * Performs an effectful filter and map in a single step.
+ */
+export function collectIO_<R, R1, E, E1, A, A1>(
+  stream: Stream<R, E, A>,
+  pf: (a: A) => M.Maybe<I.IO<R1, E1, A1>>
+): Stream<R & R1, E | E1, A1> {
+  return loopOnPartialChunksElements_(stream, (a, emit) =>
+    M.match_(
+      pf(a),
+      () => I.unit(),
+      (_) => I.asUnit(I.chain_(_, emit))
+    )
+  )
+}
+
+/**
+ * Performs an effectful filter and map in a single step.
+ */
+export function collectIO<R1, E1, A, A1>(pf: (a: A) => M.Maybe<I.IO<R1, E1, A1>>) {
+  return <R, E>(stream: Stream<R, E, A>) => collectIO_(stream, pf)
+}
+
+/**
+ * Transforms all elements of the stream for as long as the specified partial function is defined.
+ */
+export function collectWhile_<R, E, A, A1>(stream: Stream<R, E, A>, pf: (a: A) => M.Maybe<A1>): Stream<R, E, A1> {
+  const loop: Ch.Channel<R, E, C.Chunk<A>, unknown, E, C.Chunk<A1>, any> = Ch.readWith(
+    (_in) => {
+      const mapped = C.collectWhile_(_in, pf)
+
+      if (mapped.length === _in.length) {
+        return Ch.crossSecond_(Ch.write(mapped), loop)
+      } else {
+        return Ch.write(mapped)
+      }
+    },
+    Ch.fail,
+    Ch.succeed
+  )
+
+  return new Stream(Ch.pipeTo_(stream.channel, loop))
+}
+
+/**
+ * Transforms all elements of the stream for as long as the specified partial function is defined.
+ */
+export function collectWhile<A, A1>(pf: (a: A) => M.Maybe<A1>) {
+  return <R, E>(stream: Stream<R, E, A>) => collectWhile_(stream, pf)
+}
+
+/**
+ * Terminates the stream when encountering the first `Right`.
+ */
+export function collectWhileLeft<R, E, A1, L1>(stream: Stream<R, E, E.Either<L1, A1>>): Stream<R, E, L1> {
+  return collectWhile_(
+    stream,
+    E.match(
+      (l) => M.just(l),
+      (_) => M.nothing()
+    )
+  )
+}
+
+/**
+ * Effectfully transforms all elements of the stream for as long as the specified partial function is defined.
+ */
+export function collectWhileIO_<R, R1, E, E1, A, A1>(
+  stream: Stream<R, E, A>,
+  pf: (a: A) => M.Maybe<I.IO<R1, E1, A1>>
+): Stream<R & R1, E | E1, A1> {
+  return loopOnPartialChunks_(stream, (chunk, emit) => {
+    const pfJust = (a: A) =>
+      M.match_(
+        pf(a),
+        () => I.succeed(false),
+        (_) => I.as_(I.chain_(_, emit), true)
+      )
+
+    const loop = (chunk: C.Chunk<A>): I.IO<R1, E1, boolean> => {
+      if (C.isEmpty(chunk)) {
+        return I.succeed(true)
+      } else {
+        return I.chain_(pfJust(C.unsafeHead(chunk)), (cont) => {
+          if (cont) {
+            return loop(C.unsafeTail(chunk))
+          } else {
+            return I.succeed(false)
+          }
+        })
+      }
+    }
+
+    return loop(chunk)
+  })
+}
+
+/**
+ * Effectfully transforms all elements of the stream for as long as the specified partial function is defined.
+ */
+export function collectWhileIO<R1, E1, A, A1>(pf: (a: A) => M.Maybe<I.IO<R1, E1, A1>>) {
+  return <R, E>(stream: Stream<R, E, A>) => collectWhileIO_(stream, pf)
+}
+
+/**
+ * Terminates the stream when encountering the first `Nothing`.
+ */
+export function collectWhileJust<R, E, A1>(stream: Stream<R, E, M.Maybe<A1>>): Stream<R, E, A1> {
+  return collectWhile_(stream, identity)
+}
+
+/**
+ * Terminates the stream when encountering the first `Left`.
+ */
+export function collectWhileRight<R, E, A1, L1>(stream: Stream<R, E, E.Either<L1, A1>>): Stream<R, E, A1> {
+  return collectWhile_(
+    stream,
+    E.match(
+      () => M.nothing(),
+      (r) => M.just(r)
+    )
+  )
+}
+
+/**
+ * Terminates the stream when encountering the first `Exit.Failure`.
+ */
+export function collectWhileSuccess<R, E, A1, L1>(stream: Stream<R, E, Ex.Exit<L1, A1>>): Stream<R, E, A1> {
+  return collectWhile_(
+    stream,
+    Ex.match(
+      () => M.nothing(),
+      (r) => M.just(r)
+    )
+  )
+}
+
+function combineProducer<Err, Elem>(
+  handoff: HO.Handoff<Ex.Exit<M.Maybe<Err>, Elem>>,
+  latch: HO.Handoff<void>
+): Ch.Channel<unknown, Err, Elem, unknown, never, never, any> {
+  return Ch.crossSecond_(
+    Ch.fromIO(HO.take(latch)),
+    Ch.readWithCause(
+      (value) => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, Ex.succeed(value))), combineProducer(handoff, latch)),
+      (cause) => Ch.fromIO(HO.offer(handoff, Ex.failCause(Ca.map_(cause, M.just)))),
+      () => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, Ex.fail(M.nothing()))), combineProducer(handoff, latch))
+    )
+  )
+}
+
+/**
+ * Combines the elements from this stream and the specified stream by repeatedly applying the
+ * function `f` to extract an element using both sides and conceptually "offer"
+ * it to the destination stream. `f` can maintain some internal state to control
+ * the combining process, with the initial state being specified by `s`.
+ *
+ * Where possible, prefer `Stream#combineChunks` for a more efficient implementation.
+ */
+export function combine_<R, E, A, R1, E1, A1, S, R2, A2>(
+  stream: Stream<R, E, A>,
+  that: Stream<R1, E1, A1>,
+  s: S,
+  f: (
+    s: S,
+    eff1: I.IO<R, M.Maybe<E>, A>,
+    eff2: I.IO<R1, M.Maybe<E1>, A1>
+  ) => I.IO<R2, never, Ex.Exit<M.Maybe<E | E1>, readonly [A2, S]>>
+): Stream<R & R1 & R2, E | E1, A2> {
+  return new Stream(
+    Ch.managed_(
+      Ma.gen(function* (_) {
+        const left   = yield* _(HO.make<Ex.Exit<M.Maybe<E>, A>>())
+        const right  = yield* _(HO.make<Ex.Exit<M.Maybe<E1>, A1>>())
+        const latchL = yield* _(HO.make<void>())
+        const latchR = yield* _(HO.make<void>())
+        yield* _(
+          pipe(
+            stream.channel,
+            Ch.concatMap(Ch.writeChunk),
+            Ch.pipeTo(combineProducer(left, latchL)),
+            Ch.runManaged,
+            Ma.fork
+          )
+        )
+        yield* _(
+          pipe(
+            that.channel,
+            Ch.concatMap(Ch.writeChunk),
+            Ch.pipeTo(combineProducer(right, latchR)),
+            Ch.runManaged,
+            Ma.fork
+          )
+        )
+        return tuple(left, right, latchL, latchR)
+      }),
+      ([left, right, latchL, latchR]) => {
+        const pullLeft  = pipe(HO.offer(latchL, undefined), I.crossSecond(HO.take(left)), I.chain(I.fromExit))
+        const pullRight = pipe(HO.offer(latchR, undefined), I.crossSecond(HO.take(right)), I.chain(I.fromExit))
+        return unfoldIO(s, (s) => I.chain_(f(s, pullLeft, pullRight), flow(I.fromExit, I.optional))).channel
+      }
+    )
+  )
+}
+
+/**
+ * Combines the elements from this stream and the specified stream by repeatedly applying the
+ * function `f` to extract an element using both sides and conceptually "offer"
+ * it to the destination stream. `f` can maintain some internal state to control
+ * the combining process, with the initial state being specified by `s`.
+ *
+ * Where possible, prefer `Stream#combineChunks` for a more efficient implementation.
+ *
+ * @dataFirst combine_
+ */
+export function combine<R, E, A, R1, E1, B, S, R2, C>(
+  that: Stream<R1, E1, B>,
+  s: S,
+  f: (
+    s: S,
+    a: I.IO<R, M.Maybe<E>, A>,
+    b: I.IO<R1, M.Maybe<E1>, B>
+  ) => I.IO<R2, never, Ex.Exit<M.Maybe<E | E1>, readonly [C, S]>>
+): (fa: Stream<R, E, A>) => Stream<R & R1 & R2, E | E1, C> {
+  return (fa) => combine_(fa, that, s, f)
+}
+
+/**
+ * Concatenates the specified stream with this stream, resulting in a stream
+ * that emits the elements from this stream and then the elements from the specified stream.
+ */
+export function concat_<R, R1, E, E1, A, A1>(
+  stream: Stream<R, E, A>,
+  that: Stream<R1, E1, A1>
+): Stream<R & R1, E | E1, A | A1> {
+  return new Stream<R & R1, E | E1, A | A1>(Ch.crossSecond_(stream.channel, that.channel))
+}
+
+/**
+ * Concatenates the specified stream with this stream, resulting in a stream
+ * that emits the elements from this stream and then the elements from the specified stream.
+ */
+export function concat<R1, E1, A1>(that: Stream<R1, E1, A1>) {
+  return <R, E, A>(stream: Stream<R, E, A>) => concat_(stream, that)
+}
+
+export function debounce_<R, E, A>(stream: Stream<R, E, A>, duration: number): Stream<R & Has<Clock>, E, A> {
+  return unwrap(
+    I.gen(function* (_) {
+      const scope   = yield* _(I.forkScope)
+      const handoff = yield* _(HO.make<HO.HandoffSignal<void, E, A>>())
+      function enqueue(last: C.Chunk<A>) {
+        return pipe(
+          Clock.sleep(duration),
+          I.as(last),
+          I.forkIn(scope),
+          I.map((f) => consumer(new DS.Previous(f)))
+        )
+      }
+      const producer: Ch.Channel<R & Has<Clock>, E, C.Chunk<A>, unknown, E, never, unknown> = Ch.readWithCause(
+        (inp: C.Chunk<A>) =>
+          pipe(
+            C.last(inp),
+            M.match(
+              () => producer,
+              (last) => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, new HO.Emit(C.single(last)))), producer)
+            )
+          ),
+        (cause: Ca.Cause<E>) => Ch.fromIO(HO.offer(handoff, new HO.Halt(cause))),
+        () => Ch.fromIO(HO.offer(handoff, new HO.End(new SER.UpstreamEnd())))
+      )
+      function consumer(
+        state: DS.DebounceState<E, A>
+      ): Ch.Channel<R & Has<Clock>, unknown, unknown, unknown, E, C.Chunk<A>, unknown> {
+        return Ch.unwrap(
+          DS.match_(state, {
+            NotStarted: () =>
+              I.map_(
+                HO.take(handoff),
+                HO.matchSignal({
+                  Emit: ({ els }) => Ch.unwrap(enqueue(els)),
+                  Halt: ({ error }) => Ch.failCause(error),
+                  End: () => Ch.unit()
+                })
+              ),
+            Current: ({ fiber }) =>
+              I.map_(
+                F.join(fiber),
+                HO.matchSignal({
+                  Emit: ({ els }) => Ch.unwrap(enqueue(els)),
+                  Halt: ({ error }) => Ch.failCause(error),
+                  End: () => Ch.unit()
+                })
+              ),
+            Previous: ({ fiber }) =>
+              I.raceWith_(
+                F.join(fiber),
+                HO.take(handoff),
+                (ex, current) =>
+                  Ex.match_(
+                    ex,
+                    (cause) => I.as_(F.interrupt(current), Ch.failCause(cause)),
+                    (chunk) => I.succeed(Ch.crossSecond_(Ch.write(chunk), consumer(new DS.Current(current))))
+                  ),
+                (ex, previous) =>
+                  Ex.match_(
+                    ex,
+                    (cause) => I.as_(F.interrupt(previous), Ch.failCause(cause)),
+                    HO.matchSignal({
+                      Emit: ({ els }) => I.crossSecond_(F.interrupt(previous), enqueue(els)),
+                      Halt: ({ error }) => I.as_(F.interrupt(previous), Ch.failCause(error)),
+                      End: () => I.map_(F.join(previous), (chunk) => Ch.crossSecond_(Ch.write(chunk), Ch.unit()))
+                    })
+                  )
+              )
+          })
+        )
+      }
+      return crossSecond_(
+        fromManaged(pipe(stream.channel, Ch.pipeTo(producer), Ch.runManaged, Ma.fork)),
+        new Stream(consumer(new DS.NotStarted()))
+      )
+    })
+  )
+}
+
+/**
+ * More powerful version of `ZStream#distributedWith`. This returns a function that will produce
+ * new queues and corresponding indices.
+ * You can also provide a function that will be executed after the final events are enqueued in all queues.
+ * Shutdown of the queues is handled by the driver.
+ * Downstream users can also shutdown queues manually. In this case the driver will
+ * continue but no longer backpressure on them.
+ */
+export function distributedWithDynamic_<R, E, A>(
+  ma: Stream<R, E, A>,
+  maximumLag: number,
+  decide: (o: A) => I.UIO<(_: symbol) => boolean>,
+  done: (_: Ex.Exit<M.Maybe<E>, never>) => I.UIO<any> = (_: any) => I.unit()
+): Ma.Managed<R, never, I.UIO<readonly [symbol, Q.Dequeue<Ex.Exit<M.Maybe<E>, A>>]>> {
+  const offer = (queuesRef: Ref.URef<HM.HashMap<symbol, Q.UQueue<Ex.Exit<M.Maybe<E>, A>>>>) => (a: A) =>
+    I.gen(function* (_) {
+      const shouldProcess = yield* _(decide(a))
+      const queues        = yield* _(queuesRef.get)
+      return yield* _(
+        pipe(
+          queues,
+          I.foldl(C.empty<symbol>(), (b, [id, queue]) => {
+            if (shouldProcess(id)) {
+              return pipe(
+                Q.offer_(queue, Ex.succeed(a)),
+                I.matchCauseIO(
+                  (c) => (Ca.interrupted(c) ? I.succeed(C.append(id)(b)) : I.failCause(c)),
+                  () => I.succeed(b)
+                )
+              )
+            } else {
+              return I.succeed(b)
+            }
+          }),
+          I.chain((ids) => (C.isNonEmpty(ids) ? Ref.update_(queuesRef, HM.removeMany(ids)) : I.unit()))
+        )
+      )
+    })
+
+  return Ma.gen(function* (_) {
+    const queuesRef = yield* _(
+      Ma.bracket_(
+        Ref.make<HM.HashMap<symbol, Q.UQueue<Ex.Exit<M.Maybe<E>, A>>>>(HM.makeDefault()),
+        flow(
+          Ref.get,
+          I.chain((qs) => I.foreach_(HM.values(qs), Q.shutdown))
+        )
+      )
+    )
+
+    const add = yield* _(
+      Ma.gen(function* (_) {
+        const queuesLock = yield* _(Sem.make(1))
+        const newQueue   = yield* _(
+          Ref.make<I.UIO<readonly [symbol, Q.UQueue<Ex.Exit<M.Maybe<E>, A>>]>>(
+            I.gen(function* (_) {
+              const queue = yield* _(Q.makeBounded<Ex.Exit<M.Maybe<E>, A>>(maximumLag))
+              const id    = yield* _(I.succeedLazy(() => Symbol()))
+              yield* _(pipe(queuesRef, Ref.update(HM.set(id, queue))))
+              return tuple(id, queue)
+            })
+          )
+        )
+        const finalize = (endTake: Ex.Exit<M.Maybe<E>, never>): I.UIO<void> =>
+          Sem.withPermit(queuesLock)(
+            pipe(
+              I.gen(function* (_) {
+                const queue = yield* _(Q.makeBounded<Ex.Exit<M.Maybe<E>, A>>(1))
+                yield* _(Q.offer_(queue, endTake))
+                const id = Symbol() as symbol
+                yield* _(pipe(queuesRef, Ref.update(HM.set(id, queue))))
+                return tuple(id, queue)
+              }),
+              newQueue.set,
+              I.chain(() =>
+                I.gen(function* (_) {
+                  const queues = yield* _(pipe(queuesRef.get, I.map(HM.values)))
+                  yield* _(
+                    I.foreach_(queues, (queue) =>
+                      pipe(
+                        Q.offer_(queue, endTake),
+                        I.catchJustCause((c) => (Ca.interrupted(c) ? M.just(I.unit()) : M.nothing<I.UIO<void>>()))
+                      )
+                    )
+                  )
+                  yield* _(done(endTake))
+                })
+              ),
+              I.asUnit
+            )
+          )
+
+        yield* _(
+          pipe(
+            ma,
+            runForeachManaged(offer(queuesRef)),
+            Ma.matchCauseManaged(flow(Ca.map(M.just), Ex.failCause, finalize, I.toManaged()), () =>
+              pipe(M.nothing(), Ex.fail, finalize, I.toManaged())
+            ),
+            Ma.fork
+          )
+        )
+        return Sem.withPermit(queuesLock)(I.flatten(newQueue.get))
+      })
+    )
+    return add
+  })
 }
 
 /**
@@ -1825,129 +2709,6 @@ export function distributedWithDynamic<E, A>(
 }
 
 /**
- * More powerful version of `distributedWith`. This returns a function that will produce
- * new queues and corresponding indices.
- * You can also provide a function that will be executed after the final events are enqueued in all queues.
- * Shutdown of the queues is handled by the driver.
- * Downstream users can also shutdown queues manually. In this case the driver will
- * continue but no longer backpressure on them.
- */
-export function distributedWithDynamic_<R, E, A>(
-  ma: Stream<R, E, A>,
-  maximumLag: number,
-  decide: (o: A) => I.UIO<(_: symbol) => boolean>,
-  done: (_: Ex.Exit<M.Maybe<E>, never>) => I.UIO<any> = (_: any) => I.unit()
-): Ma.Managed<R, never, I.UIO<readonly [symbol, Q.Dequeue<Ex.Exit<M.Maybe<E>, A>>]>> {
-  const offer = (queuesRef: Ref.URef<ReadonlyMap<symbol, Q.UQueue<Ex.Exit<M.Maybe<E>, A>>>>) => (o: A) =>
-    I.gen(function* (_) {
-      const shouldProcess = yield* _(decide(o))
-      const queues        = yield* _(queuesRef.get)
-      return yield* _(
-        pipe(
-          queues,
-          I.foldl(C.empty<symbol>(), (b, [id, queue]) => {
-            if (shouldProcess(id)) {
-              return pipe(
-                Q.offer_(queue, Ex.succeed(o)),
-                I.matchCauseIO(
-                  (c) => (Ca.interrupted(c) ? I.succeed(C.append(id)(b)) : I.failCause(c)),
-                  () => I.succeed(b)
-                )
-              )
-            } else {
-              return I.succeed(b)
-            }
-          }),
-          I.chain((ids) => (C.isNonEmpty(ids) ? Ref.update_(queuesRef, Map.removeMany(ids)) : I.unit()))
-        )
-      )
-    })
-
-  return Ma.gen(function* (_) {
-    const queuesRef = yield* _(
-      pipe(
-        Ref.make(Map.empty<symbol, Q.UQueue<Ex.Exit<M.Maybe<E>, A>>>()),
-        Ma.bracket((_) => I.chain_(_.get, (qs) => I.foreach_(qs.values(), Q.shutdown)))
-      )
-    )
-    const add = yield* _(
-      Ma.gen(function* (_) {
-        const queuesLock = yield* _(Semaphore.make(1))
-        const newQueue   = yield* _(
-          Ref.make<I.UIO<readonly [symbol, Q.UQueue<Ex.Exit<M.Maybe<E>, A>>]>>(
-            I.gen(function* (_) {
-              const queue = yield* _(Q.makeBounded<Ex.Exit<M.Maybe<E>, A>>(maximumLag))
-              const id    = yield* _(I.succeedLazy(() => Symbol()))
-              yield* _(pipe(queuesRef, Ref.update(Map.insert(id, queue))))
-              return tuple(id, queue)
-            })
-          )
-        )
-        const finalize = (endTake: Ex.Exit<M.Maybe<E>, never>): I.UIO<void> =>
-          Semaphore.withPermit(queuesLock)(
-            pipe(
-              I.gen(function* (_) {
-                const queue = yield* _(Q.makeBounded<Ex.Exit<M.Maybe<E>, A>>(1))
-                yield* _(Q.offer_(queue, endTake))
-                const id = Symbol() as symbol
-                yield* _(pipe(queuesRef, Ref.update(Map.insert(id, queue))))
-                return tuple(id, queue)
-              }),
-              newQueue.set,
-              I.chain(() =>
-                I.gen(function* (_) {
-                  const queues = yield* _(
-                    pipe(
-                      queuesRef.get,
-                      I.map((m) => m.values())
-                    )
-                  )
-                  yield* _(
-                    I.foreach_(queues, (queue) =>
-                      pipe(
-                        Q.offer_(queue, endTake),
-                        I.catchJustCause((c) => (Ca.interrupted(c) ? M.just(I.unit()) : M.nothing<I.UIO<void>>()))
-                      )
-                    )
-                  )
-                  yield* _(done(endTake))
-                })
-              ),
-              I.asUnit
-            )
-          )
-
-        yield* _(
-          pipe(
-            ma,
-            foreachManaged(offer(queuesRef)),
-            Ma.matchCauseManaged(flow(Ca.map(M.just), Ex.failCause, finalize, I.toManaged()), () =>
-              pipe(M.nothing(), Ex.fail, finalize, I.toManaged())
-            ),
-            Ma.fork
-          )
-        )
-        return Semaphore.withPermit(queuesLock)(I.flatten(newQueue.get))
-      })
-    )
-    return add
-  })
-}
-
-/**
- * More powerful version of `broadcast`. Allows to provide a function that determines what
- * queues should receive which elements. The decide function will receive the indices of the queues
- * in the resulting list.
- */
-export function distributedWith<A>(
-  n: number,
-  maximumLag: number,
-  decide: (_: A) => I.UIO<(_: number) => boolean>
-): <R, E>(stream: Stream<R, E, A>) => Ma.Managed<R, never, Chunk<Q.Dequeue<Ex.Exit<M.Maybe<E>, A>>>> {
-  return (stream) => distributedWith_(stream, n, maximumLag, decide)
-}
-
-/**
  * More powerful version of `broadcast`. Allows to provide a function that determines what
  * queues should receive which elements. The decide function will receive the indices of the queues
  * in the resulting list.
@@ -1957,37 +2718,39 @@ export function distributedWith_<R, E, A>(
   n: number,
   maximumLag: number,
   decide: (_: A) => I.UIO<(_: number) => boolean>
-): Ma.Managed<R, never, Chunk<Q.Dequeue<Ex.Exit<M.Maybe<E>, A>>>> {
+): Ma.Managed<R, never, C.Chunk<Q.Dequeue<Ex.Exit<M.Maybe<E>, A>>>> {
   return pipe(
-    F.make<never, (_: A) => I.UIO<(_: symbol) => boolean>>(),
+    Pr.make<never, (_: A) => I.UIO<(_: symbol) => boolean>>(),
     Ma.fromIO,
-    Ma.chain((prom) =>
+    Ma.chain((p) =>
       pipe(
         distributedWithDynamic_(
           ma,
           maximumLag,
-          (o) => I.chain_(F.await(prom), (_) => _(o)),
+          (o) => I.chain_(Pr.await(p), (_) => _(o)),
           (_) => I.unit()
         ),
         Ma.chain((next) =>
           pipe(
             I.collectAll(
               pipe(
-                C.range(0, n - 1),
+                C.range(0, n),
                 C.map((id) => I.map_(next, ([key, queue]) => [[key, id], queue] as const))
               )
             ),
             I.chain((entries) => {
               const [mappings, queues] = C.foldr_(
                 entries,
-                [Map.empty<symbol, number>(), C.empty<Q.Dequeue<Ex.Exit<M.Maybe<E>, A>>>()] as const,
+                [HM.makeDefault<symbol, number>(), C.empty<Q.Dequeue<Ex.Exit<M.Maybe<E>, A>>>()] as const,
                 ([mapping, queue], [mappings, queues]) => [
-                  Map.insert_(mappings, mapping[0], mapping[1]),
+                  HM.set_(mappings, mapping[0], mapping[1]),
                   C.append_(queues, queue)
                 ]
               )
               return pipe(
-                F.succeed_(prom, (o: A) => I.map_(decide(o), (f) => (key: symbol) => f(mappings.get(key)!))),
+                Pr.succeed_(p, (o: A) =>
+                  I.map_(decide(o), (f) => (key: symbol) => f(M.toUndefined(HM.get_(mappings, key))!))
+                ),
                 I.as(queues)
               )
             }),
@@ -2000,1425 +2763,143 @@ export function distributedWith_<R, E, A>(
 }
 
 /**
- * Converts the stream to a managed list of queues. Every value will be replicated to every queue with the
- * slowest queue being allowed to buffer `maximumLag` chunks before the driver is backpressured.
- * The downstream queues will be provided with chunks in the same order they are returned, so
- * the fastest queue might have seen up to (`maximumLag` + 1) chunks more than the slowest queue if it
- * has a lower index than the slowest queue.
- *
- * Queues can unsubscribe from upstream by shutting down.
+ * More powerful version of `broadcast`. Allows to provide a function that determines what
+ * queues should receive which elements. The decide function will receive the indices of the queues
+ * in the resulting list.
  */
-export function broadcastedQueues(
+export function distributedWith<A>(
   n: number,
-  maximumLag: number
-): <R, E, A>(ma: Stream<R, E, A>) => Ma.Managed<R, never, Chunk<Q.Dequeue<Ex.Exit<M.Maybe<E>, A>>>> {
-  return (ma) => broadcastedQueues_(ma, n, maximumLag)
+  maximumLag: number,
+  decide: (_: A) => I.UIO<(_: number) => boolean>
+): <R, E>(stream: Stream<R, E, A>) => Ma.Managed<R, never, C.Chunk<Q.Dequeue<Ex.Exit<M.Maybe<E>, A>>>> {
+  return (stream) => distributedWith_(stream, n, maximumLag, decide)
 }
 
-/**
- * Converts the stream to a managed list of queues. Every value will be replicated to every queue with the
- * slowest queue being allowed to buffer `maximumLag` chunks before the driver is backpressured.
- * The downstream queues will be provided with chunks in the same order they are returned, so
- * the fastest queue might have seen up to (`maximumLag` + 1) chunks more than the slowest queue if it
- * has a lower index than the slowest queue.
- *
- * Queues can unsubscribe from upstream by shutting down.
- */
-export function broadcastedQueues_<R, E, A>(
-  ma: Stream<R, E, A>,
-  n: number,
-  maximumLag: number
-): Ma.Managed<R, never, Chunk<Q.Dequeue<Ex.Exit<M.Maybe<E>, A>>>> {
-  const decider = I.succeed((_: number) => true)
-  return distributedWith_(ma, n, maximumLag, (_) => decider)
-}
-
-/**
- * Fan out the stream, producing a list of streams that have the same elements as this stream.
- * The driver stream will only ever advance of the `maximumLag` chunks before the
- * slowest downstream stream.
- */
-export function broadcast(
-  n: number,
-  maximumLag: number
-): <R, E, A>(ma: Stream<R, E, A>) => Ma.Managed<R, never, Chunk<Stream<unknown, E, A>>> {
-  return (ma) => broadcast_(ma, n, maximumLag)
-}
-
-/**
- * Fan out the stream, producing a list of streams that have the same elements as this stream.
- * The driver stream will only ever advance of the `maximumLag` chunks before the
- * slowest downstream stream.
- */
-export function broadcast_<R, E, A>(
-  ma: Stream<R, E, A>,
-  n: number,
-  maximumLag: number
-): Ma.Managed<R, never, Chunk<Stream<unknown, E, A>>> {
-  return pipe(broadcastedQueues_(ma, n, maximumLag), Ma.map(C.map((q) => flattenExitMaybe(fromQueueWithShutdown(q)))))
-}
-
-/**
- * Converts the stream to a managed dynamic amount of queues. Every chunk will be replicated to every queue with the
- * slowest queue being allowed to buffer `maximumLag` chunks before the driver is backpressured.
- * The downstream queues will be provided with chunks in the same order they are returned, so
- * the fastest queue might have seen up to (`maximumLag` + 1) chunks more than the slowest queue if it
- * has a lower index than the slowest queue.
- *
- * Queues can unsubscribe from upstream by shutting down.
- */
-export function broadcastedQueuesDynamic_<R, E, A>(
-  ma: Stream<R, E, A>,
-  maximumLag: number
-): Ma.Managed<R, never, I.UIO<Q.Dequeue<Ex.Exit<M.Maybe<E>, A>>>> {
-  return Ma.map_(
-    distributedWithDynamic_(
-      ma,
-      maximumLag,
-      () => I.succeed((_) => true),
-      () => I.unit()
-    ),
-    I.map(([_, queue]) => queue)
-  )
-}
-
-/**
- * Converts the stream to a managed dynamic amount of queues. Every chunk will be replicated to every queue with the
- * slowest queue being allowed to buffer `maximumLag` chunks before the driver is backpressured.
- * The downstream queues will be provided with chunks in the same order they are returned, so
- * the fastest queue might have seen up to (`maximumLag` + 1) chunks more than the slowest queue if it
- * has a lower index than the slowest queue.
- *
- * Queues can unsubscribe from upstream by shutting down.
- */
-export function broadcastedQueuesDynamic(
-  maximumLag: number
-): <R, E, A>(ma: Stream<R, E, A>) => Ma.Managed<R, never, I.UIO<Q.Dequeue<Ex.Exit<M.Maybe<E>, A>>>> {
-  return (ma) => broadcastedQueuesDynamic_(ma, maximumLag)
-}
-
-/**
- * Fan out the stream, producing a dynamic number of streams that have the same elements as this stream.
- * The driver stream will only ever advance of the `maximumLag` chunks before the
- * slowest downstream stream.
- */
-export function broadcastDynamic_<R, E, A>(
-  ma: Stream<R, E, A>,
-  maximumLag: number
-): Ma.Managed<R, never, I.UIO<Stream<unknown, E, A>>> {
-  return pipe(
-    distributedWithDynamic_(
-      ma,
-      maximumLag,
-      (_) => I.succeed(constTrue),
-      (_) => I.unit()
-    ),
-    Ma.map(I.map(([, queue]) => queue)),
-    Ma.map(I.map(flow(fromQueueWithShutdown, flattenExitMaybe)))
-  )
-}
-
-/**
- * Fan out the stream, producing a dynamic number of streams that have the same elements as this stream.
- * The driver stream will only ever advance of the `maximumLag` chunks before the
- * slowest downstream stream.
- */
-export function broadcastDynamic(
-  maximumLag: number
-): <R, E, A>(ma: Stream<R, E, A>) => Ma.Managed<R, never, I.UIO<Stream<unknown, E, A>>> {
-  return (ma) => broadcastDynamic_(ma, maximumLag)
-}
-
-/**
- * Allows a faster producer to progress independently of a slower consumer by buffering
- * up to `capacity` chunks in a queue.
- *
- * @note Prefer capacities that are powers of 2 for better performance.
- */
-export function buffer_<R, E, A>(ma: Stream<R, E, A>, capacity: number): Stream<R, E, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const doneRef = yield* _(Ref.make(false))
-      const queue   = yield* _(toQueue_(ma, capacity))
-      return pipe(
-        doneRef.get,
-        I.chain((done) => {
-          if (done) {
-            return Pull.end
-          } else {
-            return pipe(
-              Q.take(queue),
-              I.chain(I.fromExit),
-              I.catchJust(
-                M.match(() => pipe(doneRef.set(true), I.crossSecond(Pull.end), M.just), flow(M.just, I.fail, M.just))
-              )
-            )
-          }
-        })
-      )
-    })
-  )
-}
-
-/**
- * Allows a faster producer to progress independently of a slower consumer by buffering
- * up to `capacity` chunks in a queue.
- *
- * @note Prefer capacities that are powers of 2 for better performance.
- */
-export function buffer(capacity: number): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E, A> {
-  return (ma) => buffer_(ma, capacity)
-}
-
-/**
- * Allows a faster producer to progress independently of a slower consumer by buffering
- * elements into an unbounded queue.
- */
-export function bufferUnbounded<R, E, A>(ma: Stream<R, E, A>): Stream<R, E, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const doneRef = yield* _(Ref.managedRef(false))
-      const queue   = yield* _(toQueueUnbounded(ma))
-      return pipe(
-        doneRef.get,
-        I.chain((done) => {
-          if (done) {
-            return Pull.end
-          } else {
-            return pipe(
-              Q.take(queue),
-              I.chain(Take.matchM(() => pipe(doneRef.set(true), I.crossSecond(Pull.end)), Pull.halt, Pull.emitChunk))
-            )
-          }
-        })
-      )
-    })
-  )
-}
-
-function bufferSignal_<R, E, A>(
-  ma: Stream<R, E, A>,
-  queue: Q.UQueue<[Take.Take<E, A>, F.Future<never, void>]>
-): Ma.Managed<R, never, I.IO<R, M.Maybe<E>, Chunk<A>>> {
-  return Ma.gen(function* (_) {
-    const as    = yield* _(ma.proc)
-    const start = yield* _(F.make<never, void>())
-    yield* _(F.succeed_(start, undefined))
-    const ref     = yield* _(Ref.make(start))
-    const doneRef = yield* _(Ref.make(false))
-    const offer   = (take: Take.Take<E, A>): I.UIO<void> =>
-      Ex.match_(
-        take,
-        (_) =>
-          I.gen(function* ($) {
-            const latch = yield* $(ref.get)
-            yield* $(F.await(latch))
-            const p = yield* $(F.make<never, void>())
-            yield* $(Q.offer_(queue, [take, p]))
-            yield* $(ref.set(p))
-            yield* $(F.await(p))
-          }),
-        (_) =>
-          I.gen(function* ($) {
-            const p     = yield* $(F.make<never, void>())
-            const added = yield* $(Q.offer_(queue, [take, p]))
-            yield* $(I.when_(ref.set(p), () => added))
-          })
-      )
-    const upstream = pipe(
-      Take.fromPull(as),
-      I.tap(offer),
-      I.repeatWhile((take) => take !== Take.end),
-      I.asUnit
-    )
-    yield* _(Ma.fork(I.toManaged_(upstream)))
-    return pipe(
-      doneRef.get,
-      I.chain((done) => {
-        if (done) {
-          return Pull.end
-        } else {
-          return pipe(
-            Q.take(queue),
-            I.chain(([take, p]) =>
-              pipe(
-                F.succeed_(p, undefined),
-                I.crossSecond(I.when(() => take === Take.end)(doneRef.set(true))),
-                I.crossSecond(Take.done(take))
-              )
-            )
-          )
-        }
-      })
-    )
-  })
-}
-
-/**
- * Allows a faster producer to progress independently of a slower consumer by buffering
- * up to `capacity` elements in a sliding queue.
- *
- * @note Prefer capacities that are powers of 2 for better performance.
- */
-export function bufferSliding_<R, E, A>(ma: Stream<R, E, A>, capacity = 2): Stream<R, E, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const queue = yield* _(
-        I.toManaged_(Q.makeSliding<[Take.Take<E, A>, F.Future<never, void>]>(capacity), Q.shutdown)
-      )
-      return yield* _(bufferSignal_(ma, queue))
-    })
-  )
-}
-
-/**
- * Allows a faster producer to progress independently of a slower consumer by buffering
- * up to `capacity` elements in a sliding queue.
- *
- * @note Prefer capacities that are powers of 2 for better performance.
- */
-export function bufferSliding(capacity = 2): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E, A> {
-  return (ma) => bufferSliding_(ma, capacity)
-}
-
-/**
- * Allows a faster producer to progress independently of a slower consumer by buffering
- * up to `capacity` elements in a dropping queue.
- *
- * @note Prefer capacities that are powers of 2 for better performance.
- */
-export function bufferDropping_<R, E, A>(ma: Stream<R, E, A>, capacity = 2): Stream<R, E, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const queue = yield* _(
-        I.toManaged_(Q.makeDropping<[Take.Take<E, A>, F.Future<never, void>]>(capacity), Q.shutdown)
-      )
-      return yield* _(bufferSignal_(ma, queue))
-    })
-  )
-}
-
-/**
- * Allows a faster producer to progress independently of a slower consumer by buffering
- * up to `capacity` elements in a dropping queue.
- *
- * @note Prefer capacities that are powers of 2 for better performance.
- */
-export function bufferDropping(capacity = 2): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E, A> {
-  return (ma) => bufferSliding_(ma, capacity)
-}
-
-/**
- * Switches over to the stream produced by the provided function in case this one
- * fails. Allows recovery from all causes of failure, including interruption if the
- * stream is uninterruptible.
- */
-export function catchAllCause_<R, E, A, R1, E1, B>(
-  stream: Stream<R, E, A>,
-  f: (e: Ca.Cause<E>) => Stream<R1, E1, B>
-): Stream<R & R1, E1, B | A> {
-  type NotStarted = { _tag: 'NotStarted' }
-  type Self<E0> = { _tag: 'Self', pull: Pull.Pull<R, E0, A> }
-  type Other = { _tag: 'Other', pull: Pull.Pull<R1, E1, B> }
-  type State<E0> = NotStarted | Self<E0> | Other
-  return new Stream<R & R1, E1, A | B>(
-    Ma.gen(function* (_) {
-      const finalizerRef = yield* _(Ma.finalizerRef(RM.noopFinalizer))
-      const stateRef     = yield* _(Ref.make<State<E>>({ _tag: 'NotStarted' }))
-
-      const closeCurrent = (cause: Ca.Cause<any>) =>
-        pipe(
-          finalizerRef,
-          Ref.getAndSet(RM.noopFinalizer),
-          I.chain((f) => f(Ex.failCause(cause))),
-          I.uninterruptible
-        )
-
-      const open =
-        <R, E0, O>(stream: Stream<R, E0, O>) =>
-        (asState: (_: Pull.Pull<R, E0, O>) => State<E>) =>
-          I.uninterruptibleMask(({ restore }) =>
-            pipe(
-              RM.make,
-              I.chain((releaseMap) =>
-                pipe(
-                  finalizerRef.set((exit) => Ma.releaseAll_(releaseMap, exit, sequential)),
-                  I.chain(() =>
-                    pipe(
-                      restore(stream.proc.io),
-                      I.gives((_: R) => [_, releaseMap] as [R, RM.ReleaseMap]),
-                      I.map(([_, __]) => __),
-                      I.tap((pull) => stateRef.set(asState(pull)))
-                    )
-                  )
-                )
-              )
-            )
-          )
-
-      const failover = (cause: Ca.Cause<Maybe<E>>) =>
-        pipe(
-          cause,
-          Ca.sequenceCauseOption,
-          M.match(
-            () => I.fail(M.nothing()),
-            (cause) =>
-              pipe(
-                closeCurrent(cause),
-                I.chain(() =>
-                  open(f(cause))((pull) => ({
-                    _tag: 'Other',
-                    pull
-                  }))
-                ),
-                I.flatten
-              )
-          )
-        )
-
-      const pull = pipe(
-        stateRef.get,
-        I.chain((s) => {
-          switch (s._tag) {
-            case 'NotStarted': {
-              return pipe(
-                open(stream)((pull) => ({ _tag: 'Self', pull })),
-                I.flatten,
-                I.catchAllCause(failover)
-              )
-            }
-            case 'Self': {
-              return pipe(s.pull, I.catchAllCause(failover))
-            }
-            case 'Other': {
-              return s.pull
-            }
-          }
-        })
-      )
-      return pull
-    })
-  )
-}
-
-/**
- * Switches over to the stream produced by the provided function in case this one
- * fails. Allows recovery from all causes of failure, including interruption if the
- * stream is uninterruptible.
- */
-export function catchAllCause<E, R1, E1, B>(
-  f: (e: Ca.Cause<E>) => Stream<R1, E1, B>
-): <R, A>(stream: Stream<R, E, A>) => Stream<R & R1, E1, B | A> {
-  return (stream) => catchAllCause_(stream, f)
-}
-
-/**
- * Switches over to the stream produced by the provided function in case this one
- * fails with a typed error.
- */
-export function catchAll_<R, E, A, R1, E1, A1>(
-  ma: Stream<R, E, A>,
-  f: (e: E) => Stream<R1, E1, A1>
-): Stream<R & R1, E1, A | A1> {
-  return catchAllCause_(ma, flow(Ca.failureOrCause, E.match(f, failCause)))
-}
-
-/**
- * Switches over to the stream produced by the provided function in case this one
- * fails with a typed error.
- */
-export function catchAll<E, R1, E1, A1>(
-  f: (e: E) => Stream<R1, E1, A1>
-): <R, A>(ma: Stream<R, E, A>) => Stream<R & R1, E1, A | A1> {
-  return (ma) => catchAll_(ma, f)
-}
-
-/**
- * Switches over to the stream produced by the provided function in case this one
- * fails with some typed error.
- */
-export function catchJust_<R, E, A, R1, E1, A1>(
-  ma: Stream<R, E, A>,
-  f: (e: E) => Maybe<Stream<R1, E1, A1>>
-): Stream<R & R1, E | E1, A | A1> {
-  return catchAll_(ma, (e) => M.match_(f(e), (): Stream<R & R1, E | E1, A | A1> => fail(e), identity))
-}
-
-/**
- * Switches over to the stream produced by the provided function in case this one
- * fails with some typed error.
- */
-export function catchJust<E, R1, E1, A1>(
-  f: (e: E) => Maybe<Stream<R1, E1, A1>>
-): <R, A>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, A | A1> {
-  return (ma) => catchJust_(ma, f)
-}
-
-/**
- * Switches over to the stream produced by the provided function in case this one
- * fails with some errors. Allows recovery from all causes of failure, including interruption if the
- * stream is uninterruptible.
- */
-export function catchJustCause_<R, E, A, R1, E1, A1>(
-  ma: Stream<R, E, A>,
-  f: (cause: Ca.Cause<E>) => Maybe<Stream<R1, E1, A1>>
-): Stream<R & R1, E | E1, A | A1> {
-  return catchAllCause_(ma, (cause) =>
-    M.match_(f(cause), (): Stream<R & R1, E | E1, A | A1> => failCause(cause), identity)
-  )
-}
-
-/**
- * Switches over to the stream produced by the provided function in case this one
- * fails with some errors. Allows recovery from all causes of failure, including interruption if the
- * stream is uninterruptible.
- */
-export function catchJustCause<E, R1, E1, A1>(
-  f: (cause: Ca.Cause<E>) => Maybe<Stream<R1, E1, A1>>
-): <R, A>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, A | A1> {
-  return (ma) => catchJustCause_(ma, f)
-}
-
-/**
- * Maps each element of this stream to another stream and returns the
- * non-deterministic merge of those streams, executing up to `n` inner streams
- * concurrently. Up to `outputBuffer` elements of the produced streams may be
- * buffered in memory by this operator.
- */
-export function chainPar_<R, E, A, R1, E1, A1>(
-  ma: Stream<R, E, A>,
-  f: (o: A) => Stream<R1, E1, A1>,
-  n: number,
-  outputBuffer = 16
-) {
-  return new Stream(
-    Ma.withChildren((getChildren) =>
-      Ma.gen(function* (_) {
-        const outQueue = yield* _(
-          I.toManaged_(Q.makeBounded<I.IO<R1, M.Maybe<E | E1>, Chunk<A1>>>(outputBuffer), Q.shutdown)
-        )
-        const permits      = yield* _(Semaphore.make(n))
-        const innerFailure = yield* _(F.make<Ca.Cause<E1>, never>())
-        // - The driver stream forks an inner fiber for each stream created
-        //   by f, with an upper bound of n concurrent fibers, enforced by the semaphore.
-        //   - On completion, the driver stream tries to acquire all permits to verify
-        //     that all inner fibers have finished.
-        //     - If one of them failed (signalled by a promise), all other fibers are interrupted
-        //     - If they all succeeded, Take.End is enqueued
-        //   - On error, the driver stream interrupts all inner fibers and emits a
-        //     Take.Fail value
-        //   - Interruption is handled by running the finalizers which take care of cleanup
-        // - Inner fibers enqueue Take values from their streams to the output queue
-        //   - On error, an inner fiber enqueues a Take.Fail value and signals its failure
-        //     with a promise. The driver will pick that up and interrupt all other fibers.
-        //   - On interruption, an inner fiber does nothing
-        //   - On completion, an inner fiber does nothing
-        yield* _(
-          pipe(
-            foreachManaged_(ma, (o) =>
-              I.gen(function* (_) {
-                const latch       = yield* _(F.make<never, void>())
-                const innerStream = pipe(
-                  Semaphore.withPermitManaged(permits),
-                  fromManaged,
-                  tap(() => F.succeed_(latch, undefined)),
-                  chain(() => f(o)),
-                  foreachChunk(flow(I.succeed, (_) => Q.offer_(outQueue, _), I.asUnit)),
-                  I.matchCauseIO(
-                    (cause) =>
-                      pipe(
-                        cause,
-                        Pull.halt,
-                        (_) => Q.offer_(outQueue, _),
-                        I.crossSecond(F.fail_(innerFailure, cause)),
-                        I.asUnit
-                      ),
-                    () => I.unit()
-                  )
-                )
-                yield* _(I.fork(innerStream))
-                yield* _(F.await(latch))
-              })
-            ),
-            Ma.matchCauseManaged(
-              (cause) =>
-                pipe(
-                  getChildren,
-                  I.chain(Fi.interruptAll),
-                  I.crossSecond(I.asUnit(Q.offer_(outQueue, Pull.halt(cause)))),
-                  I.toManaged()
-                ),
-              () =>
-                pipe(
-                  F.await(innerFailure),
-                  I.interruptible,
-                  I.raceWith(
-                    Semaphore.withPermits(permits, n)(I.interruptible(I.unit())),
-                    (_, permitsAcquisition) =>
-                      pipe(
-                        getChildren,
-                        I.chain(Fi.interruptAll),
-                        I.crossSecond(I.asUnit(Fi.interrupt(permitsAcquisition)))
-                      ),
-                    (_, failureAwait) =>
-                      pipe(Q.offer_(outQueue, Pull.end), I.crossSecond(I.asUnit(Fi.interrupt(failureAwait))))
-                  ),
-                  I.toManaged()
-                )
-            ),
-            Ma.fork
-          )
-        )
-        return I.flatten(Q.take(outQueue))
-      })
-    )
-  )
-}
-
-/**
- * Maps each element of this stream to another stream and returns the
- * non-deterministic merge of those streams, executing up to `n` inner streams
- * concurrently. Up to `outputBuffer` elements of the produced streams may be
- * buffered in memory by this operator.
- */
-export function chainPar<A, R1, E1, A1>(
-  f: (o: A) => Stream<R1, E1, A1>,
-  n: number,
-  outputBuffer = 16
-): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, A1> {
-  return (stream) => chainPar_(stream, f, n, outputBuffer)
-}
-
-/**
- * Maps each element of this stream to another stream and returns the non-deterministic merge
- * of those streams, executing up to `n` inner streams concurrently. When a new stream is created
- * from an element of the source stream, the oldest executing stream is cancelled. Up to `bufferSize`
- * elements of the produced streams may be buffered in memory by this operator.
- */
-export function chainParSwitch_(n: number, bufferSize = 16) {
-  return <R, E, A, R1, E1, B>(ma: Stream<R, E, A>, f: (o: A) => Stream<R1, E1, B>): Stream<R & R1, E | E1, B> => {
-    return new Stream(
-      Ma.withChildren((getChildren) =>
-        Ma.gen(function* (_) {
-          const outQueue = yield* _(
-            I.toManaged_(Q.makeBounded<I.IO<R1, M.Maybe<E | E1>, Chunk<B>>>(bufferSize), Q.shutdown)
-          )
-          const permits      = yield* _(Semaphore.make(n))
-          const innerFailure = yield* _(F.make<Ca.Cause<E1>, never>())
-          const cancelers    = yield* _(I.toManaged_(Q.makeBounded<F.Future<never, void>>(n), Q.shutdown))
-          yield* _(
-            pipe(
-              ma,
-              foreachManaged((o) =>
-                I.gen(function* (_) {
-                  const canceler = yield* _(F.make<never, void>())
-                  const latch    = yield* _(F.make<never, void>())
-                  const size     = yield* _(Q.size(cancelers))
-                  if (size < n) {
-                    yield* _(I.unit())
-                  } else {
-                    yield* _(
-                      pipe(
-                        Q.take(cancelers),
-                        I.chain(() => I.succeed(undefined)),
-                        I.asUnit
-                      )
-                    )
-                  }
-                  yield* _(Q.offer_(cancelers, canceler))
-                  const innerStream = pipe(
-                    Semaphore.withPermitManaged(permits),
-                    fromManaged,
-                    tap(() => F.succeed_(latch, undefined)),
-                    chain(() => f(o)),
-                    foreachChunk(flow(I.succeed, (_) => Q.offer_(outQueue, _), I.asUnit)),
-                    I.matchCauseIO(
-                      (cause) =>
-                        pipe(
-                          cause,
-                          Pull.halt,
-                          (_) => Q.offer_(outQueue, _),
-                          I.crossSecond(F.fail_(innerFailure, cause)),
-                          I.asUnit
-                        ),
-                      () => I.unit()
-                    )
-                  )
-                  yield* _(I.fork(I.race_(innerStream, F.await(canceler))))
-                  yield* _(F.await(latch))
-                })
-              ),
-              Ma.matchCauseManaged(
-                (cause) =>
-                  pipe(
-                    getChildren,
-                    I.chain(Fi.interruptAll),
-                    I.crossSecond(Q.offer_(outQueue, Pull.halt(cause))),
-                    I.toManaged()
-                  ),
-                () =>
-                  pipe(
-                    F.await(innerFailure),
-                    I.raceWith(
-                      Semaphore.withPermits(permits, n)(I.unit()),
-                      (_, permitsAcquisition) =>
-                        pipe(
-                          getChildren,
-                          I.chain(Fi.interruptAll),
-                          I.crossSecond(I.asUnit(Fi.interrupt(permitsAcquisition)))
-                        ),
-                      (_, failureAwait) =>
-                        pipe(Q.offer_(outQueue, Pull.end), I.crossSecond(I.asUnit(Fi.interrupt(failureAwait))))
-                    ),
-                    I.toManaged()
-                  )
-              ),
-              Ma.fork
-            )
-          )
-          return I.flatten(Q.take(outQueue))
-        })
-      )
-    )
-  }
-}
-
-/**
- * Maps each element of this stream to another stream and returns the non-deterministic merge
- * of those streams, executing up to `n` inner streams concurrently. When a new stream is created
- * from an element of the source stream, the oldest executing stream is cancelled. Up to `bufferSize`
- * elements of the produced streams may be buffered in memory by this operator.
- */
-export function chainParSwitch(n: number, bufferSize = 16) {
-  return <A, R1, E1, B>(f: (a: A) => Stream<R1, E1, B>) =>
-    <R, E>(ma: Stream<R, E, A>): Stream<R & R1, E | E1, B> =>
-      chainParSwitch_(n, bufferSize)(ma, f)
-}
-
-/**
- * Re-chunks the elements of the stream into chunks of `n` elements each.
- * The last chunk might contain less than `n` elements
- */
-export function chunkN_<R, E, A>(ma: Stream<R, E, A>, n: number): Stream<R, E, A> {
-  interface State<X> {
-    readonly buffer: Chunk<X>
-    readonly done: boolean
-  }
-
-  function emitOrAccumulate(
-    buffer: Chunk<A>,
-    done: boolean,
-    ref: Ref.URef<State<A>>,
-    pull: I.IO<R, Maybe<E>, Chunk<A>>
-  ): I.IO<R, Maybe<E>, Chunk<A>> {
-    if (buffer.length < n) {
-      if (done) {
-        if (C.isEmpty(buffer)) {
-          return Pull.end
-        } else {
-          return I.crossSecond_(
-            ref.set({
-              buffer: C.empty(),
-              done: true
-            }),
-            Pull.emitChunk(buffer)
-          )
-        }
-      } else {
-        return I.matchIO_(
-          pull,
-          M.match(() => emitOrAccumulate(buffer, true, ref, pull), Pull.fail),
-          (ch) => emitOrAccumulate(C.concat_(buffer, ch), false, ref, pull)
-        )
-      }
-    } else {
-      const [chunk, leftover] = C.splitAt_(buffer, n)
-      return I.crossSecond_(ref.set({ buffer: leftover, done }), Pull.emitChunk(chunk))
-    }
-  }
-
-  if (n < 1) {
-    return failCause(Ca.halt(new RuntimeException('chunkN: n must be at least 1')))
-  } else {
-    return new Stream(
-      Ma.gen(function* (_) {
-        const ref = yield* _(Ref.make<State<A>>({ buffer: C.empty(), done: false }))
-        const p   = yield* _(ma.proc)
-        return I.chain_(ref.get, (s) => emitOrAccumulate(s.buffer, s.done, ref, p))
-      })
-    )
-  }
-}
-
-/**
- * Re-chunks the elements of the stream into chunks of `n` elements each.
- * The last chunk might contain less than `n` elements
- */
-export function chunkN(n: number): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E, A> {
-  return (ma) => chunkN_(ma, n)
-}
-
-/**
- * Filters any `Right` values.
- */
-export function collectLeft<R, E, L, A>(ma: Stream<R, E, E.Either<L, A>>): Stream<R, E, L> {
-  return filterMap_(ma, M.getLeft)
-}
-
-/**
- * Filters any `Left` values.
- */
-export function collectRight<R, E, L, A>(ma: Stream<R, E, E.Either<L, A>>): Stream<R, E, A> {
-  return filterMap_(ma, M.getRight)
-}
-
-/**
- * Filters any 'Nothing' values.
- */
-export function collectJust<R, E, A>(ma: Stream<R, E, M.Maybe<A>>): Stream<R, E, A> {
-  return filterMap_(ma, identity)
-}
-
-/**
- * Filters any `Exit.Failure` values.
- */
-export function collectSuccess<R, E, L, A>(ma: Stream<R, E, Ex.Exit<L, A>>): Stream<R, E, A> {
-  return filterMap_(ma, (ex) => (Ex.isSuccess(ex) ? M.just(ex.value) : M.nothing()))
-}
-
-/**
- * Transforms all elements of the stream for as long as the specified partial function is defined.
- */
-export function collectWhile_<R, E, A, B>(ma: Stream<R, E, A>, f: (a: A) => M.Maybe<B>): Stream<R, E, B> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const chunks  = yield* _(ma.proc)
-      const doneRef = yield* _(Ref.managedRef(false))
-      return pipe(
-        doneRef.get,
-        I.chain((done) => {
-          if (done) {
-            return Pull.end
-          } else {
-            return I.gen(function* (_) {
-              const chunk     = yield* _(chunks)
-              const remaining = C.filterMap_(chunk, f)
-              yield* _(
-                pipe(
-                  doneRef.set(true),
-                  I.when(() => remaining.length < chunk.length)
-                )
-              )
-              return remaining
-            })
-          }
-        })
-      )
-    })
-  )
-}
-
-/**
- * Transforms all elements of the stream for as long as the specified partial function is defined.
- */
-export function collectWhile<A, B>(f: (o: A) => M.Maybe<B>): <R, E>(ma: Stream<R, E, A>) => Stream<R, E, B> {
-  return (ma) => collectWhile_(ma, f)
-}
-
-/**
- * Terminates the stream when encountering the first `Right`.
- */
-export function collectWhileLeft<R, E, L, A>(ma: Stream<R, E, E.Either<L, A>>): Stream<R, E, L> {
-  return collectWhile_(ma, M.getLeft)
-}
-
-/**
- * Terminates the stream when encountering the first `Left`.
- */
-export function collectWhileRight<R, E, L, A>(ma: Stream<R, E, E.Either<L, A>>): Stream<R, E, A> {
-  return collectWhile_(ma, M.getRight)
-}
-
-/**
- * Terminates the stream when encountering the first `Nothing`.
- */
-export function collectWhileJust<R, E, A>(ma: Stream<R, E, M.Maybe<A>>): Stream<R, E, A> {
-  return collectWhile_(ma, identity)
-}
-
-/**
- * Terminates the stream when encountering the first `Exit.Failure`.
- */
-export function collectWhileSuccess<R, E, L, A>(ma: Stream<R, E, Ex.Exit<L, A>>): Stream<R, E, A> {
-  return collectWhile_(ma, (ex) => (Ex.isSuccess(ex) ? M.just(ex.value) : M.nothing()))
-}
-
-/**
- * Effectfully transforms all elements of the stream for as long as the specified partial function is defined.
- */
-export function collectWhileIO_<R, E, A, R1, E1, B>(
-  ma: Stream<R, E, A>,
-  f: (o: A) => M.Maybe<I.IO<R1, E1, B>>
-): Stream<R & R1, E | E1, B> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const os      = yield* _(Ma.mapIO_(ma.proc, BPull.make))
-      const doneRef = yield* _(Ref.managedRef(false))
-      return pipe(
-        doneRef.get,
-        I.chain((done) => {
-          if (done) {
-            return Pull.end
-          } else {
-            return pipe(
-              BPull.pullElement(os),
-              I.chain(
-                flow(
-                  f,
-                  M.match(() => pipe(doneRef.set(true), I.crossSecond(Pull.end)), I.bimap(M.just, C.single))
-                )
-              )
-            ) as I.IO<R & R1, M.Maybe<E | E1>, Chunk<B>>
-          }
-        })
-      )
-    })
-  )
-}
-
-/**
- * Effectfully transforms all elements of the stream for as long as the specified partial function is defined.
- */
-export function collectWhileIO<A, R1, E1, B>(
-  f: (o: A) => M.Maybe<I.IO<R1, E1, B>>
-): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
-  return (ma) => collectWhileIO_(ma, f)
-}
-
-/**
- * Combines the elements from this stream and the specified stream by repeatedly applying the
- * function `f` to extract an element using both sides and conceptually "offer"
- * it to the destination stream. `f` can maintain some internal state to control
- * the combining process, with the initial state being specified by `s`.
- *
- * Where possible, prefer `combineChunks` for a more efficient implementation.
- */
-export function combine_<R, E, A, R1, E1, B, Z, C>(
-  ma: Stream<R, E, A>,
-  mb: Stream<R1, E1, B>,
-  z: Z,
-  f: (
-    z: Z,
-    s: I.IO<R, Maybe<E>, A>,
-    t: I.IO<R1, Maybe<E1>, B>
-  ) => I.IO<R & R1, never, Ex.Exit<Maybe<E | E1>, readonly [C, Z]>>
-): Stream<R & R1, E | E1, C> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const left  = yield* _(Ma.mapIO_(ma.proc, BPull.make))
-      const right = yield* _(Ma.mapIO_(mb.proc, BPull.make))
-      const pull  = yield* _(
-        unfoldIO(z, (z) =>
-          I.chain_(f(z, BPull.pullElement(left), BPull.pullElement(right)), flow(I.fromExit, I.optional))
-        ).proc
-      )
-      return pull
-    })
-  )
-}
-
-/**
- * Combines the elements from this stream and the specified stream by repeatedly applying the
- * function `f` to extract an element using both sides and conceptually "offer"
- * it to the destination stream. `f` can maintain some internal state to control
- * the combining process, with the initial state being specified by `s`.
- *
- * Where possible, prefer `combineChunks` for a more efficient implementation.
- */
-export function combine<R, E, A, R1, E1, B, Z, C>(
-  mb: Stream<R1, E1, B>,
-  z: Z,
-  f: (
-    z: Z,
-    s: I.IO<R, Maybe<E>, A>,
-    t: I.IO<R1, Maybe<E1>, B>
-  ) => I.IO<R & R1, never, Ex.Exit<Maybe<E | E1>, readonly [C, Z]>>
-): (ma: Stream<R, E, A>) => Stream<R & R1, E | E1, C> {
-  return (ma) => combine_(ma, mb, z, f)
-}
-
-/**
- * Combines the chunks from this stream and the specified stream by repeatedly applying the
- * function `f` to extract a chunk using both sides and conceptually "offer"
- * it to the destination stream. `f` can maintain some internal state to control
- * the combining process, with the initial state being specified by `s`.
- */
-export function combineChunks_<R, E, A, R1, E1, B, Z, C>(
-  ma: Stream<R, E, A>,
-  mb: Stream<R1, E1, B>,
-  z: Z,
-  f: (
-    z: Z,
-    s: I.IO<R, Maybe<E>, Chunk<A>>,
-    t: I.IO<R1, Maybe<E1>, Chunk<B>>
-  ) => I.IO<R & R1, never, Ex.Exit<Maybe<E | E1>, readonly [Chunk<C>, Z]>>
-): Stream<R & R1, E | E1, C> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const left  = yield* _(ma.proc)
-      const right = yield* _(mb.proc)
-      const pull  = yield* _(
-        unfoldChunkIO(z, (z) =>
-          pipe(
-            f(z, left, right),
-            I.chain((ex) => I.optional(I.fromExit(ex)))
-          )
-        ).proc
-      )
-      return pull
-    })
-  )
-}
-
-/**
- * Combines the chunks from this stream and the specified stream by repeatedly applying the
- * function `f` to extract a chunk using both sides and conceptually "offer"
- * it to the destination stream. `f` can maintain some internal state to control
- * the combining process, with the initial state being specified by `s`.
- */
-export function combineChunks<R, E, A, R1, E1, B, Z, C>(
-  mb: Stream<R1, E1, B>,
-  z: Z,
-  f: (
-    z: Z,
-    s: I.IO<R, Maybe<E>, Chunk<A>>,
-    t: I.IO<R1, Maybe<E1>, Chunk<B>>
-  ) => I.IO<R & R1, never, Ex.Exit<Maybe<E | E1>, readonly [Chunk<C>, Z]>>
-): (ma: Stream<R, E, A>) => Stream<R & R1, E | E1, C> {
-  return (ma) => combineChunks_(ma, mb, z, f)
-}
-
-/**
- * Concatenates the specified stream with this stream, resulting in a stream
- * that emits the elements from this stream and then the elements from the specified stream.
- */
-export function concat_<R, E, A, R1, E1, B>(ma: Stream<R, E, A>, mb: Stream<R1, E1, B>): Stream<R & R1, E | E1, A | B> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const currStream   = yield* _(Ref.make<I.IO<R & R1, M.Maybe<E | E1>, Chunk<A | B>>>(Pull.end))
-      const switchStream = yield* _(Ma.switchable<R & R1, never, I.IO<R & R1, M.Maybe<E | E1>, Chunk<A | B>>>())
-      const switched     = yield* _(Ref.make(false))
-      yield* _(
-        pipe(
-          ma.proc,
-          switchStream,
-          I.chain((x) => currStream.set(x))
-        )
-      )
-
-      const go: I.IO<R & R1, M.Maybe<E | E1>, Chunk<A | B>> = pipe(
-        currStream.get,
-        (x) => I.flatten(x),
-        I.catchAllCause(
-          flow(
-            Ca.sequenceCauseOption,
-            M.match(
-              () =>
-                pipe(
-                  switched,
-                  Ref.getAndSet(true),
-                  I.chain((b) =>
-                    b ? Pull.end : pipe(switchStream(mb.proc), I.chain(currStream.set), I.crossSecond(go))
-                  )
-                ),
-              Pull.halt
-            )
-          )
-        )
-      )
-
-      return go
-    })
-  )
-}
-
-/**
- * Concatenates the specified stream with this stream, resulting in a stream
- * that emits the elements from this stream and then the elements from the specified stream.
- */
-export function concat<R1, E1, B>(
-  mb: Stream<R1, E1, B>
-): <R, E, A>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, A | B> {
-  return (ma) => concat_(ma, mb)
-}
-
-/**
- * Concatenates all of the streams in the chunk to one stream.
- */
-export function concatAll<R, E, A>(streams: Chunk<Stream<R, E, A>>): Stream<R, E, A> {
-  const chunkSize = streams.length
-  return new Stream(
-    Ma.gen(function* (_) {
-      const currIndex    = yield* _(Ref.make(0))
-      const currStream   = yield* _(Ref.make<I.IO<R, Maybe<E>, Chunk<A>>>(Pull.end))
-      const switchStream = yield* _(Ma.switchable<R, never, I.IO<R, Maybe<E>, Chunk<A>>>())
-
-      const go: I.IO<R, Maybe<E>, Chunk<A>> = pipe(
-        currStream.get,
-        I.flatten,
-        I.catchAllCause(
-          flow(
-            Ca.sequenceCauseOption,
-            M.match(
-              () =>
-                pipe(
-                  currIndex,
-                  Ref.getAndUpdate((x) => x + 1),
-                  I.chain((i) => {
-                    if (i >= chunkSize) {
-                      return Pull.end
-                    } else {
-                      return pipe(
-                        switchStream(C.unsafeGet_(streams, i).proc),
-                        I.chain(currStream.set),
-                        I.crossSecond(go)
-                      )
-                    }
-                  })
-                ),
-              Pull.halt
-            )
-          )
-        )
-      )
-      return go
-    })
-  )
-}
-
-/**
- * Composes this stream with the specified stream to create a cartesian product of elements
- * with a specified function.
- * The `that` stream would be run multiple times, for every element in the `this` stream.
- *
- * See also `zipWith` for the more common point-wise variant.
- */
-export function crossWith_<R, E, A, R1, E1, B, C>(
-  ma: Stream<R, E, A>,
-  mb: Stream<R1, E1, B>,
-  f: (o: A, o1: B) => C
-): Stream<R & R1, E | E1, C> {
-  return chain_(ma, (o) => map_(mb, (o1) => f(o, o1)))
-}
-
-/**
- * Composes this stream with the specified stream to create a cartesian product of elements
- * with a specified function.
- * The `that` stream would be run multiple times, for every element in the `this` stream.
- *
- * See also `zipWith` for the more common point-wise variant.
- */
-export function crossWith<A, R1, E1, B, C>(
-  mb: Stream<R1, E1, B>,
-  f: (o: A, o1: B) => C
-): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, C> {
-  return (ma) => crossWith_(ma, mb, f)
-}
-
-/**
- * Composes this stream with the specified stream to create a cartesian product of elements.
- * The `that` stream would be run multiple times, for every element in the `this` stream.
- *
- * See also `zip` and for the more common point-wise variant.
- */
-export function cross_<R, E, A, R1, E1, B>(
-  ma: Stream<R, E, A>,
-  mb: Stream<R1, E1, B>
-): Stream<R & R1, E | E1, readonly [A, B]> {
-  return crossWith_(ma, mb, tuple)
-}
-
-/**
- * Composes this stream with the specified stream to create a cartesian product of elements.
- * The `that` stream would be run multiple times, for every element in the `this` stream.
- *
- * See also `zip` and for the more common point-wise variant.
- */
-export function cross<R1, E1, A1>(
-  mb: Stream<R1, E1, A1>
-): <R, E, A>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, readonly [A, A1]> {
-  return (ma) => cross_(ma, mb)
-}
-
-/**
- * Composes this stream with the specified stream to create a cartesian product of elements,
- * but keeps only elements from this stream.
- * The `that` stream would be run multiple times, for every element in the `this` stream.
- *
- * See also `zipFirst_` for the more common point-wise variant.
- */
-export function crossFirst_<R, E, A, R1, E1, A1>(
-  ma: Stream<R, E, A>,
-  mb: Stream<R1, E1, A1>
-): Stream<R & R1, E | E1, A> {
-  return crossWith_(ma, mb, (o, _) => o)
-}
-
-/**
- * Composes this stream with the specified stream to create a cartesian product of elements,
- * but keeps only elements from this stream.
- * The `that` stream would be run multiple times, for every element in the `this` stream.
- *
- * See also `zipFirst` for the more common point-wise variant.
- */
-export function crossFirst<R1, E1, A1>(
-  mb: Stream<R1, E1, A1>
-): <R, E, A>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, A> {
-  return (ma) => crossFirst_(ma, mb)
-}
-
-/**
- * Composes this stream with the specified stream to create a cartesian product of elements,
- * but keeps only elements from the other stream.
- * The `that` stream would be run multiple times, for every element in the `this` stream.
- *
- * See also `zipSecond_` for the more common point-wise variant.
- */
-export function crossSecond_<R, E, A, R1, E1, A1>(
-  ma: Stream<R, E, A>,
-  mb: Stream<R1, E1, A1>
-): Stream<R & R1, E | E1, A1> {
-  return crossWith_(ma, mb, (_, o1) => o1)
-}
-
-/**
- * Composes this stream with the specified stream to create a cartesian product of elements,
- * but keeps only elements from the other stream.
- * The `that` stream would be run multiple times, for every element in the `this` stream.
- *
- * See also `zipSecond` for the more common point-wise variant.
- */
-export function crossSecond<R1, E1, A1>(
-  mb: Stream<R1, E1, A1>
-): <R, E, A>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, A1> {
-  return (ma) => crossSecond_(ma, mb)
-}
-
-/**
- * Converts this stream to a stream that executes its effects but emits no
- * elements. Useful for sequencing effects using streams:
- */
-export function drain<R, E, A>(ma: Stream<R, E, A>): Stream<R, E, void> {
-  return mapChunks_(ma, () => C.empty())
-}
-
-/**
- * drains the provided stream in the background for as long as this stream is running.
- * if `ma` ends before `mb`, `mb` will be interrupted. if `mb` fails,
- * `ma` will fail with that error.
- */
-export function drainFork_<R, E, A, R1, E1, A1>(
-  ma: Stream<R, E, A>,
-  mb: Stream<R1, E1, A1>
-): Stream<R & R1, E | E1, A> {
-  return pipe(
-    F.make<E | E1, never>(),
-    fromIO,
-    chain((bgHalted) =>
-      pipe(
-        mb,
-        foreachManaged(() => I.unit()),
-        Ma.catchAllCause((_) => pipe(F.failCause_(bgHalted, _), I.toManaged())),
-        Ma.fork,
-        fromManaged,
-        crossSecond(interruptOn_(ma, bgHalted))
-      )
-    )
-  )
-}
-
-/**
- * drains the provided stream in the background for as long as this stream is running.
- * if `ma` ends before `mb`, `mb` will be interrupted. if `mb` fails,
- * `ma` will fail with that error.
- */
-export function drainFork<R1, E1, A1>(
-  mb: Stream<R1, E1, A1>
-): <R, E, A>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, A> {
-  return (ma) => drainFork_(ma, mb)
-}
-
-/**
- * Drops the specified number of elements from this stream.
- */
-export function drop_<R, E, A>(self: Stream<R, E, A>, n: number): Stream<R, E, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const chunks     = yield* _(self.proc)
-      const counterRef = yield* _(Ref.make(0))
-
-      const pull: I.IO<R, M.Maybe<E>, Chunk<A>> = I.gen(function* (_) {
-        const chunk = yield* _(chunks)
-        const count = yield* _(counterRef.get)
-        if (count >= n) {
-          return yield* _(I.succeed(chunk))
-        } else if (chunk.length <= n - count) {
-          return yield* _(pipe(counterRef.set(count + chunk.length), I.crossSecond(pull)))
-        } else {
-          return yield* _(pipe(counterRef.set(count + (n - count)), I.as(C.drop_(chunk, n - count))))
-        }
-      })
-      return pull
-    })
+function dropLoop<R, E, A>(r: number): Ch.Channel<R, E, C.Chunk<A>, unknown, E, C.Chunk<A>, unknown> {
+  return Ch.readWith(
+    (inp: C.Chunk<A>) => {
+      const dropped  = C.drop_(inp, r)
+      const leftover = Math.max(0, r - inp.length)
+      const more     = C.isEmpty(inp) || leftover > 0
+      return more ? dropLoop(leftover) : Ch.crossSecond_(Ch.write(dropped), Ch.id())
+    },
+    Ch.fail,
+    () => Ch.unit()
   )
 }
 
 /**
  * Drops the specified number of elements from this stream.
  */
-export function drop(n: number) {
-  return <R, E, A>(self: Stream<R, E, A>) => drop_(self, n)
+export function drop_<R, E, A>(stream: Stream<R, E, A>, n: number): Stream<R, E, A> {
+  return new Stream(Ch.pipeTo_(stream.channel, dropLoop(n)))
 }
 
 /**
- * Drops all elements of the stream until the specified predicate evaluates
- * to `true`.
+ * Drops the specified number of elements from this stream.
  */
-export function dropUntil_<R, E, A>(ma: Stream<R, E, A>, p: Predicate<A>): Stream<R, E, A> {
-  return drop_(dropWhile_(ma, not(p)), 1)
-}
-
-/**
- * Drops all elements of the stream until the specified predicate evaluates
- * to `true`.
- */
-export function dropUntil<A>(p: Predicate<A>): <R, E>(ma: Stream<R, E, A>) => Stream<R, E, A> {
-  return (ma) => dropUntil_(ma, p)
+export function drop(n: number): <R, E, A>(stream: Stream<R, E, A>) => Stream<R, E, A> {
+  return (stream) => drop_(stream, n)
 }
 
 /**
  * Drops all elements of the stream for as long as the specified predicate
  * evaluates to `true`.
  */
-export function dropWhile_<R, E, A>(ma: Stream<R, E, A>, pred: Predicate<A>): Stream<R, E, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const chunks          = yield* _(ma.proc)
-      const keepDroppingRef = yield* _(Ref.make(true))
-
-      const pull: I.IO<R, M.Maybe<E>, Chunk<A>> = I.gen(function* (_) {
-        const chunk        = yield* _(chunks)
-        const keepDropping = yield* _(keepDroppingRef.get)
-        if (!keepDropping) {
-          return yield* _(I.succeed(chunk))
-        } else {
-          const remaining = C.dropWhile_(chunk, pred)
-          const isEmpty   = remaining.length <= 0
-          if (isEmpty) {
-            return yield* _(pull)
-          } else {
-            return yield* _(
-              pipe(
-                keepDroppingRef.set(false),
-                I.asLazy(() => remaining)
-              )
-            )
-          }
-        }
-      })
-
-      return pull
-    })
+export function dropWhile_<R, E, A>(stream: Stream<R, E, A>, predicate: P.Predicate<A>): Stream<R, E, A> {
+  const loop: Ch.Channel<R, E, C.Chunk<A>, unknown, E, C.Chunk<A>, unknown> = Ch.readWith(
+    (inp: C.Chunk<A>) => {
+      const leftover = C.dropWhile_(inp, predicate)
+      return C.isEmpty(leftover) ? loop : Ch.crossSecond_(Ch.write(leftover), Ch.id())
+    },
+    Ch.fail,
+    () => Ch.unit()
   )
+
+  return new Stream(Ch.pipeTo_(stream.channel, loop))
 }
 
 /**
  * Drops all elements of the stream for as long as the specified predicate
  * evaluates to `true`.
  */
-export function dropWhile<A>(pred: Predicate<A>) {
-  return <R, E>(ma: Stream<R, E, A>) => dropWhile_(ma, pred)
+export function dropWhile<A>(predicate: P.Predicate<A>): <R, E>(stream: Stream<R, E, A>) => Stream<R, E, A> {
+  return (stream) => dropWhile_(stream, predicate)
 }
 
 /**
- * Executes the provided finalizer after this stream's finalizers run.
+ * Drops all elements of the stream until the specified predicate evaluates
+ * to `true`.
  */
-export function ensuring_<R, E, A, R1>(ma: Stream<R, E, A>, finalizer: I.IO<R1, never, any>): Stream<R & R1, E, A> {
-  return new Stream(Ma.ensuring_(ma.proc, finalizer))
+export function dropUntil_<R, E, A>(stream: Stream<R, E, A>, predicate: P.Predicate<A>): Stream<R, E, A> {
+  return pipe(stream, dropWhile(not(predicate)), drop(1))
 }
 
 /**
- * Executes the provided finalizer after this stream's finalizers run.
+ * Drops all elements of the stream until the specified predicate evaluates
+ * to `true`.
  */
-export function ensuring<R1>(finalizer: I.IO<R1, never, any>): <R, E, A>(ma: Stream<R, E, A>) => Stream<R & R1, E, A> {
-  return (ma) => ensuring_(ma, finalizer)
+export function dropUntil<A>(predicate: P.Predicate<A>): <R, E>(stream: Stream<R, E, A>) => Stream<R, E, A> {
+  return (stream) => dropUntil_(stream, predicate)
 }
 
 /**
- * Executes the provided finalizer before this stream's finalizers run.
+ * Returns a stream whose failures and successes have been lifted into an
+ * `Either`. The resulting stream cannot fail, because the failures have
+ * been exposed as part of the `Either` success case.
+ *
+ * @note the stream will end as soon as the first error occurs.
  */
-export function ensuringFirst_<R, E, A, R1>(
+export function either<R, E, A>(stream: Stream<R, E, A>): Stream<R, never, E.Either<E, A>> {
+  return pipe(stream, map(E.right), catchAll(flow(E.left, succeed)))
+}
+
+/**
+ * Finds the first element emitted by this stream that satisfies the provided predicate.
+ */
+export function find_<R, E, A>(stream: Stream<R, E, A>, f: Predicate<A>): Stream<R, E, A> {
+  const loop: Ch.Channel<R, E, C.Chunk<A>, unknown, E, C.Chunk<A>, unknown> = Ch.readWith(
+    flow(
+      C.find(f),
+      M.match(() => loop, flow(C.single, Ch.write))
+    ),
+    Ch.fail,
+    () => Ch.unit()
+  )
+  return new Stream(Ch.pipeTo_(stream.channel, loop))
+}
+
+/**
+ * Finds the first element emitted by this stream that satisfies the provided predicate.
+ */
+export function find<A>(f: Predicate<A>): <R, E>(stream: Stream<R, E, A>) => Stream<R, E, A> {
+  return (stream) => find_(stream, f)
+}
+
+/**
+ * Finds the first element emitted by this stream that satisfies the provided effectful predicate.
+ */
+export function findIO_<R, E, A, R1, E1>(
   stream: Stream<R, E, A>,
-  fin: I.IO<R1, never, unknown>
-): Stream<R & R1, E, A> {
-  return new Stream<R & R1, E, A>(Ma.ensuringFirst_(stream.proc, fin))
-}
-
-/**
- * Executes the provided finalizer before this stream's finalizers run.
- */
-export function ensuringFirst<R1>(
-  fin: I.IO<R1, never, unknown>
-): <R, E, A>(stream: Stream<R, E, A>) => Stream<R & R1, E, A> {
-  return (stream) => ensuringFirst_(stream, fin)
-}
-
-/**
- * Emits elements of this stream with a fixed delay in between, regardless of how long it
- * takes to produce a value.
- */
-export function fixed_<R, E, A>(ma: Stream<R, E, A>, duration: number): Stream<R & Has<Clock>, E, A> {
-  return schedule_(ma, Sc.fixed(duration))
-}
-
-/**
- * Emits elements of this stream with a fixed delay in between, regardless of how long it
- * takes to produce a value.
- */
-export function fixed(duration: number) {
-  return <R, E, A>(self: Stream<R, E, A>) => fixed_(self, duration)
-}
-
-/**
- * Repeats this stream forever.
- */
-export function forever<R, E, A>(ma: Stream<R, E, A>): Stream<R, E, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const currStream   = yield* _(Ref.make<I.IO<R, M.Maybe<E>, Chunk<A>>>(Pull.end))
-      const switchStream = yield* _(Ma.switchable<R, never, I.IO<R, M.Maybe<E>, Chunk<A>>>())
-      yield* _(pipe(ma.proc, switchStream, I.chain(currStream.set)))
-      const go: I.IO<R, M.Maybe<E>, Chunk<A>> = pipe(
-        currStream.get,
-        I.flatten,
-        I.catchAllCause(
-          flow(
-            Ca.sequenceCauseOption,
-            M.match(
-              () => pipe(ma.proc, switchStream, I.chain(currStream.set), I.crossSecond(I.yieldNow), I.crossSecond(go)),
-              Pull.halt
-            )
-          )
-        )
-      )
-      return go
-    })
+  f: (a: A) => I.IO<R1, E1, boolean>
+): Stream<R & R1, E | E1, A> {
+  const loop: Ch.Channel<R & R1, E, C.Chunk<A>, unknown, E | E1, C.Chunk<A>, unknown> = Ch.readWith(
+    flow(C.findIO(f), I.map(M.match(() => loop, flow(C.single, Ch.write))), Ch.unwrap),
+    Ch.fail,
+    () => Ch.unit()
   )
+  return new Stream(Ch.pipeTo_(stream.channel, loop))
 }
 
 /**
- * More powerful version of `groupByKey`
+ * Finds the first element emitted by this stream that satisfies the provided effectful predicate.
  */
+export function findIO<A, R1, E1>(
+  f: (a: A) => I.IO<R1, E1, boolean>
+): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, A> {
+  return (stream) => findIO_(stream, f)
+}
+
 export function groupBy_<R, E, A, R1, E1, K, V>(
   stream: Stream<R, E, A>,
   f: (a: A) => I.IO<R1, E1, readonly [K, V]>,
@@ -3426,44 +2907,39 @@ export function groupBy_<R, E, A, R1, E1, K, V>(
 ): GroupBy<R & R1, E | E1, K, V> {
   const qstream = unwrapManaged(
     Ma.gen(function* (_) {
-      const decider = yield* _(F.make<never, (k: K, v: V) => I.UIO<(key: symbol) => boolean>>())
-
-      const out = yield* _(
-        pipe(
+      const decider = yield* _(Pr.make<never, (k: K, v: V) => I.UIO<(_: symbol) => boolean>>())
+      const out     = yield* _(
+        Ma.bracket_(
           Q.makeBounded<Ex.Exit<M.Maybe<E | E1>, readonly [K, Q.Dequeue<Ex.Exit<M.Maybe<E | E1>, V>>]>>(buffer),
-          I.toManaged(Q.shutdown)
+          Q.shutdown
         )
       )
-      const ref = yield* _(Ref.make<ReadonlyMap<K, symbol>>(Map.empty()))
+      const ref = yield* _(Ref.make<HM.HashMap<K, symbol>>(HM.makeDefault()))
       const add = yield* _(
         pipe(
           stream,
           mapIO(f),
           distributedWithDynamic(
             buffer,
-            ([k, v]) =>
-              pipe(
-                F.await(decider),
-                I.chain((f) => f(k, v))
-              ),
+            ([k, v]) => I.chain_(Pr.await(decider), (f) => f(k, v)),
             (_) => Q.offer_(out, _)
           )
         )
       )
       yield* _(
-        F.succeed_(decider, (k: K, __: V) =>
+        Pr.succeed_(decider, (k, _) =>
           pipe(
             ref.get,
-            I.map(Map.lookup(k)),
+            I.map(HM.get(k)),
             I.chain(
               M.match(
                 () =>
-                  I.chain_(add, ([idx, q]) =>
-                    pipe(
-                      ref,
-                      Ref.update(Map.insert(k, idx)),
-                      I.crossSecond(
-                        pipe(
+                  pipe(
+                    add,
+                    I.chain(([idx, q]) =>
+                      pipe(
+                        Ref.update_(ref, HM.set(k, idx)),
+                        I.crossSecond(
                           Q.offer_(
                             out,
                             Ex.succeed([
@@ -3473,9 +2949,9 @@ export function groupBy_<R, E, A, R1, E1, K, V>(
                                 Ex.map(([, v]) => v)
                               )
                             ] as const)
-                          ),
-                          I.as((_) => _ === idx)
-                        )
+                          )
+                        ),
+                        I.as((_) => _ === idx)
                       )
                     )
                   ),
@@ -3485,15 +2961,12 @@ export function groupBy_<R, E, A, R1, E1, K, V>(
           )
         )
       )
-      return flattenExitMaybe(fromQueueWithShutdown(out))
+      return flattenExitOption(fromQueueWithShutdown_(out))
     })
   )
   return new GroupBy(qstream, buffer)
 }
 
-/**
- * More powerful version of `groupByKey`
- */
 export function groupBy<A, R1, E1, K, V>(
   f: (a: A) => I.IO<R1, E1, readonly [K, V]>,
   buffer = 16
@@ -3501,261 +2974,83 @@ export function groupBy<A, R1, E1, K, V>(
   return (stream) => groupBy_(stream, f, buffer)
 }
 
-/**
- * Partition a stream using a function and process each stream individually.
- * This returns a data structure that can be used
- * to further filter down which groups shall be processed.
- *
- * After calling merge on the GroupBy object, the remaining groups will be processed
- * in parallel and the resulting streams merged in a nondeterministic fashion.
- *
- * Up to `buffer` elements may be buffered in any group stream before the producer
- * is backpressured. Take care to consume from all streams in order
- * to prevent deadlocks.
- */
-export function groupByKey_<R, E, A, K>(ma: Stream<R, E, A>, f: (a: A) => K, buffer = 16): GroupBy<R, E, K, A> {
-  return pipe(
-    ma,
-    groupBy((a) => I.succeed(tuple(f(a), a)), buffer)
-  )
+export function groupByKey_<R, E, A, K>(stream: Stream<R, E, A>, f: (a: A) => K, buffer = 16): GroupBy<R, E, K, A> {
+  return groupBy_(stream, (a) => I.succeed([f(a), a]), buffer)
 }
 
-/**
- * Partition a stream using a function and process each stream individually.
- * This returns a data structure that can be used
- * to further filter down which groups shall be processed.
- *
- * After calling merge on the GroupBy object, the remaining groups will be processed
- * in parallel and the resulting streams merged in a nondeterministic fashion.
- *
- * Up to `buffer` elements may be buffered in any group stream before the producer
- * is backpressured. Take care to consume from all streams in order
- * to prevent deadlocks.
- */
-export function groupByKey<A, K>(f: (a: A) => K, buffer = 16): <R, E>(ma: Stream<R, E, A>) => GroupBy<R, E, K, A> {
+export function groupByKey<A, K>(f: (a: A) => K, buffer = 16): <R, E>(stream: Stream<R, E, A>) => GroupBy<R, E, K, A> {
   return (stream) => groupByKey_(stream, f, buffer)
 }
 
-/**
- * Partitions the stream with specified chunkSize
- */
-export function grouped_<R, E, A>(ma: Stream<R, E, A>, chunkSize: number): Stream<R, E, Chunk<A>> {
-  return aggregate_(ma, Tr.collectAllN(chunkSize))
-}
-
-/**
- * Partitions the stream with specified chunkSize
- */
-export function grouped(chunkSize: number): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E, Chunk<A>> {
-  return (ma) => grouped_(ma, chunkSize)
-}
-
-/**
- * Halts the evaluation of this stream when the provided IO completes. The given IO
- * will be forked as part of the returned stream, and its success will be discarded.
- *
- * An element in the process of being pulled will not be interrupted when the IO
- * completes. See `interruptWhen` for this behavior.
- *
- * If the IO completes with a failure, the stream will emit that failure.
- */
-export function endWhen_<R, E, A, R1, E1>(ma: Stream<R, E, A>, io: I.IO<R1, E1, any>): Stream<R & R1, E | E1, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const as    = yield* _(ma.proc)
-      const runIO = yield* _(I.forkManaged(io))
-      return pipe(
-        runIO.poll,
-        I.chain(
-          M.match(
-            (): I.IO<R & R1, M.Maybe<E | E1>, Chunk<A>> => as,
-            Ex.match(Pull.halt, () => Pull.end)
-          )
-        )
-      )
-    })
-  )
-}
-
-/**
- * Halts the evaluation of this stream when the provided IO completes. The given IO
- * will be forked as part of the returned stream, and its success will be discarded.
- *
- * An element in the process of being pulled will not be interrupted when the IO
- * completes. See `interruptWhen` for this behavior.
- *
- * If the IO completes with a failure, the stream will emit that failure.
- */
-export function endWhen<R1, E1>(io: I.IO<R1, E1, any>): <R, E, A>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, A> {
-  return (ma) => endWhen_(ma, io)
-}
-
-/**
- * Specialized version of haltWhen which halts the evaluation of this stream
- * after the given duration.
- *
- * An element in the process of being pulled will not be interrupted when the
- * given duration completes. See `interruptAfter` for this behavior.
- */
-export function endAfter_<R, E, A>(ma: Stream<R, E, A>, duration: number): Stream<R & Has<Clock>, E, A> {
-  return endWhen_(ma, I.sleep(duration))
-}
-
-/**
- * Specialized version of haltWhen which halts the evaluation of this stream
- * after the given duration.
- *
- * An element in the process of being pulled will not be interrupted when the
- * given duration completes. See `interruptAfter` for this behavior.
- */
-export function endAfter(duration: number): <R, E, A>(ma: Stream<R, E, A>) => Stream<R & Has<Clock>, E, A> {
-  return (ma) => endAfter_(ma, duration)
-}
-
-/**
- * Halts the evaluation of this stream when the provided promise resolves.
- *
- * If the promise completes with a failure, the stream will emit that failure.
- */
-export function endOn_<R, E, A, E1>(ma: Stream<R, E, A>, p: F.Future<E1, any>): Stream<R, E | E1, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const as      = yield* _(ma.proc)
-      const doneRef = yield* _(Ref.make(false))
-      const pull    = pipe(
-        doneRef.get,
-        I.chain((done) => {
-          if (done) {
-            return Pull.end
-          } else {
-            return pipe(
-              F.poll(p),
-              I.chain(
-                M.match(
-                  (): I.IO<R, M.Maybe<E | E1>, Chunk<A>> => as,
-                  (v) => pipe(doneRef.set(true), I.crossSecond(I.mapError_(v, M.just)), I.crossSecond(Pull.end))
-                )
-              )
-            )
-          }
-        })
-      )
-      return pull
-    })
-  )
-}
-
-/**
- * Halts the evaluation of this stream when the provided promise resolves.
- *
- * If the promise completes with a failure, the stream will emit that failure.
- */
-export function endOn<E1>(p: F.Future<E1, any>): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E | E1, A> {
-  return (ma) => endOn_(ma, p)
-}
-
-/**
- * Combines this stream and the specified stream deterministically using the
- * stream of boolean values `b` to control which stream to pull from next.
- * `true` indicates to pull from this stream and `false` indicates to pull
- * from the specified stream. Only consumes as many elements as requested by
- * `b`. If either this stream or the specified stream are exhausted further
- * requests for values from that stream will be ignored.
- */
-export function interleaveWith_<R, E, A, R1, E1, A1>(
-  ma: Stream<R, E, A>,
-  mb: Stream<R1, E1, A1>,
-  b: Stream<R & R1, E | E1, boolean>
-): Stream<R & R1, E | E1, A | A1> {
-  const loop = (
-    leftDone: boolean,
-    rightDone: boolean,
-    s: I.IO<R & R1, M.Maybe<E | E1>, boolean>,
-    left: I.IO<R, M.Maybe<E>, A>,
-    right: I.IO<R1, M.Maybe<E1>, A1>
-  ): I.IO<
-    R & R1,
-    never,
-    Ex.Exit<M.Maybe<E | E1>, readonly [A | A1, readonly [boolean, boolean, I.IO<R & R1, M.Maybe<E | E1>, boolean>]]>
-  > => {
-    return pipe(
-      s,
-      I.matchCauseIO(
-        flow(
-          Ca.sequenceCauseOption,
-          M.match(
-            () => I.succeed(Ex.fail(M.nothing())),
-            (e) => I.succeed(Ex.failCause(Ca.map_(e, M.just)))
-          )
-        ),
-        (b) => {
-          if (b && !leftDone) {
-            return pipe(
-              left,
-              I.matchCauseIO(
-                flow(
-                  Ca.sequenceCauseOption,
-                  M.match(
-                    () => {
-                      if (rightDone) {
-                        return I.succeed(Ex.fail(M.nothing()))
-                      } else {
-                        return loop(true, rightDone, s, left, right)
-                      }
-                    },
-                    (e) => I.succeed(Ex.failCause(Ca.map_(e, M.just)))
-                  )
-                ),
-                (a) => I.succeed(Ex.succeed([a, [leftDone, rightDone, s]] as const))
-              )
-            )
-          } else if (!b && !rightDone) {
-            return pipe(
-              right,
-              I.matchCauseIO(
-                flow(
-                  Ca.sequenceCauseOption,
-                  M.match(
-                    () => {
-                      if (rightDone) {
-                        return I.succeed(Ex.fail(M.nothing()))
-                      } else {
-                        return loop(leftDone, true, s, left, right)
-                      }
-                    },
-                    (e) => I.succeed(Ex.failCause(Ca.map_(e, M.just)))
-                  )
-                ),
-                (a) => I.succeed(Ex.succeed([a, [leftDone, rightDone, s]] as const))
-              )
-            )
-          } else {
-            return loop(leftDone, rightDone, s, left, right)
-          }
-        }
+function endWhenWriter<E, A, E1>(
+  fiber: F.Fiber<E1, any>
+): Ch.Channel<unknown, E | E1, C.Chunk<A>, unknown, E | E1, C.Chunk<A>, void> {
+  return Ch.unwrap(
+    I.map_(
+      fiber.poll,
+      M.match(
+        () =>
+          Ch.readWith(
+            (inp: C.Chunk<A>) => Ch.crossSecond_(Ch.write(inp), endWhenWriter(fiber)),
+            Ch.fail,
+            () => Ch.unit()
+          ),
+        Ex.match(Ch.failCause, () => Ch.unit())
       )
     )
-  }
+  )
+}
 
+/**
+ * Halts the evaluation of this stream when the provided IO completes. The given IO
+ * will be forked as part of the returned stream, and its success will be discarded.
+ *
+ * An element in the process of being pulled will not be interrupted when the IO
+ * completes. See `interruptWhen` for this behavior.
+ *
+ * If the IO completes with a failure, the stream will emit that failure.
+ */
+export function endWhen_<R, E, A, R1, E1>(stream: Stream<R, E, A>, io: I.IO<R1, E1, any>): Stream<R & R1, E | E1, A> {
   return new Stream(
-    Ma.gen(function* (_) {
-      const sides  = yield* _(pipe(b.proc, Ma.mapIO(BPull.make)))
-      const result = yield* _(
-        pipe(
-          ma,
-          combine(
-            mb,
-            [false, false, BPull.pullElement(sides)] as readonly [
-              boolean,
-              boolean,
-              I.IO<R & R1, M.Maybe<E | E1>, boolean>
-            ],
-            ([leftDone, rightDone, sides], left, right) => loop(leftDone, rightDone, sides, left, right)
-          )
-        ).proc
-      )
-      return result
-    })
+    Ch.unwrapManaged(Ma.map_(I.forkManaged(io), (fiber) => Ch.pipeTo_(stream.channel, endWhenWriter(fiber))))
+  )
+}
+
+/**
+ * Halts the evaluation of this stream when the provided IO completes. The given IO
+ * will be forked as part of the returned stream, and its success will be discarded.
+ *
+ * An element in the process of being pulled will not be interrupted when the IO
+ * completes. See `interruptWhen` for this behavior.
+ *
+ * If the IO completes with a failure, the stream will emit that failure.
+ */
+export function endWhen<R1, E1>(
+  io: I.IO<R1, E1, any>
+): <R, E, A>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, A> {
+  return (stream) => endWhen_(stream, io)
+}
+
+export function interleave_<R, E, A, R1, E1, B>(
+  sa: Stream<R, E, A>,
+  sb: Stream<R1, E1, B>
+): Stream<R & R1, E | E1, A | B> {
+  return interleaveWith_(sa, sb, pipe(C.make(true, false), fromChunk, forever))
+}
+
+export function interleave<R1, E1, B>(
+  sb: Stream<R1, E1, B>
+): <R, E, A>(sa: Stream<R, E, A>) => Stream<R & R1, E | E1, A | B> {
+  return (sa) => interleave_(sa, sb)
+}
+
+function interleaveWithProducer<R, E, A>(
+  handoff: HO.Handoff<Take.Take<E, A>>
+): Ch.Channel<R, E, A, unknown, never, never, void> {
+  return Ch.readWithCause(
+    (value: A) => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, Take.single(value))), interleaveWithProducer(handoff)),
+    (cause) => Ch.fromIO(HO.offer(handoff, Take.failCause(cause))),
+    () => Ch.fromIO(HO.offer(handoff, Take.end))
   )
 }
 
@@ -3767,75 +3062,111 @@ export function interleaveWith_<R, E, A, R1, E1, A1>(
  * `b`. If either this stream or the specified stream are exhausted further
  * requests for values from that stream will be ignored.
  */
-export function interleaveWith<R, E, R1, E1, A1>(
-  mb: Stream<R1, E1, A1>,
-  b: Stream<R & R1, E | E1, boolean>
-): <A>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, A | A1> {
-  return (ma) => interleaveWith_(ma, mb, b)
-}
-
-/**
- * Interleaves this stream and the specified stream deterministically by
- * alternating pulling values from this stream and the specified stream.
- * When one stream is exhausted all remaining values in the other stream
- * will be pulled.
- */
-export function interleave_<R, E, A, R1, E1, A1>(
-  ma: Stream<R, E, A>,
-  mb: Stream<R1, E1, A1>
-): Stream<R & R1, E | E1, A | A1> {
-  return interleaveWith_(ma, mb, forever(fromChunk(C.make(true, false))))
-}
-
-/**
- * Interleaves this stream and the specified stream deterministically by
- * alternating pulling values from this stream and the specified stream.
- * When one stream is exhausted all remaining values in the other stream
- * will be pulled.
- */
-export function interleave<R1, E1, A1>(
-  mb: Stream<R1, E1, A1>
-): <R, E, A>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, A | A1> {
-  return (ma) => interleave_(ma, mb)
-}
-
-/**
- * Intersperse stream with provided element similar to <code>List.mkString</code>.
- */
-export function intersperse_<R, E, A, A1>(ma: Stream<R, E, A>, middle: A1): Stream<R, E, A | A1> {
+export function interleaveWith_<R, E, A, R1, E1, B, R2, E2>(
+  sa: Stream<R, E, A>,
+  sb: Stream<R1, E1, B>,
+  b: Stream<R2, E2, boolean>
+): Stream<R & R1 & R2, E | E1 | E2, A | B> {
   return new Stream(
-    Ma.gen(function* (_) {
-      const state  = yield* _(Ref.make(true))
-      const chunks = yield* _(ma.proc)
-      const pull   = pipe(
-        chunks,
-        I.chain((os) =>
-          Ref.modify_(state, (first) => {
-            let r    = C.empty<A | A1>()
-            let flag = first
-            for (const o of os) {
-              if (flag) {
-                flag = false
-                r    = C.append_(r, o)
-              } else {
-                r = C.append_(r, middle)
-                r = C.append_(r, o)
-              }
-            }
-            return [r, flag]
-          })
+    Ch.managed_(
+      Ma.gen(function* (_) {
+        const left  = yield* _(HO.make<Take.Take<E, A>>())
+        const right = yield* _(HO.make<Take.Take<E1, B>>())
+        yield* _(
+          pipe(sa.channel, Ch.concatMap(Ch.writeChunk), Ch.pipeTo(interleaveWithProducer(left)), Ch.runManaged, Ma.fork)
         )
-      )
-      return pull
-    })
+        yield* _(
+          pipe(
+            sb.channel,
+            Ch.concatMap(Ch.writeChunk),
+            Ch.pipeTo(interleaveWithProducer(right)),
+            Ch.runManaged,
+            Ma.fork
+          )
+        )
+        return tuple(left, right)
+      }),
+      ([left, right]) => {
+        const process = (
+          leftDone: boolean,
+          rightDone: boolean
+        ): Ch.Channel<R & R1 & R2, E | E1 | E2, boolean, unknown, E | E1 | E2, C.Chunk<A | B>, void> =>
+          Ch.readWithCause(
+            (b: boolean) => {
+              if (b && leftDone) {
+                return Ch.chain_(
+                  Ch.fromIO(HO.take(left)),
+                  Take.fold(
+                    rightDone ? Ch.unit() : process(true, rightDone),
+                    (cause) => Ch.failCause(cause),
+                    (chunk) => Ch.crossSecond_(Ch.write(chunk), process(leftDone, rightDone))
+                  )
+                )
+              }
+              if (!b && !rightDone) {
+                return Ch.chain_(
+                  Ch.fromIO(HO.take(right)),
+                  Take.fold(
+                    leftDone ? Ch.unit() : process(leftDone, true),
+                    (cause) => Ch.failCause(cause),
+                    (chunk) => Ch.crossSecond_(Ch.write(chunk), process(leftDone, rightDone))
+                  )
+                )
+              }
+              return process(leftDone, rightDone)
+            },
+            Ch.failCause,
+            () => Ch.unit()
+          )
+        return pipe(b.channel, Ch.concatMap(Ch.writeChunk), Ch.pipeTo(process(false, false)))
+      }
+    )
+  )
+}
+
+export function interleaveWith<R1, E1, B, R2, E2>(
+  sb: Stream<R1, E1, B>,
+  b: Stream<R2, E2, boolean>
+): <R, E, A>(sa: Stream<R, E, A>) => Stream<R & R1 & R2, E | E1 | E2, A | B> {
+  return (sa) => interleaveWith_(sa, sb, b)
+}
+
+function intersperseWriter<R, E, A, A1>(
+  middle: A1,
+  isFirst: boolean
+): Ch.Channel<R, E, C.Chunk<A>, unknown, E, C.Chunk<A | A1>, void> {
+  return Ch.readWith(
+    (inp: C.Chunk<A>) => {
+      const builder  = C.builder<A | A1>()
+      let flagResult = isFirst
+      C.foreach_(inp, (a) => {
+        if (flagResult) {
+          flagResult = false
+          builder.append(a)
+        } else {
+          builder.append(middle)
+          builder.append(a)
+        }
+      })
+      return Ch.crossSecond_(Ch.write(builder.result()), intersperseWriter(middle, flagResult))
+    },
+    Ch.fail,
+    () => Ch.unit()
   )
 }
 
 /**
- * Intersperse stream with provided element similar to <code>List.mkString</code>.
+ * Intersperse stream with provided element
  */
-export function intersperse<A1>(middle: A1): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E, A | A1> {
-  return (ma) => intersperse_(ma, middle)
+export function intersperse_<R, E, A, A1>(stream: Stream<R, E, A>, middle: A1): Stream<R, E, A | A1> {
+  return new Stream(Ch.pipeTo_(stream.channel, intersperseWriter(middle, true)))
+}
+
+/**
+ * Intersperse stream with provided element
+ */
+export function intersperse<A1>(middle: A1): <R, E, A>(stream: Stream<R, E, A>) => Stream<R, E, A | A1> {
+  return (stream) => intersperse_(stream, middle)
 }
 
 /**
@@ -3846,16 +3177,11 @@ export function intersperse<A1>(middle: A1): <R, E, A>(ma: Stream<R, E, A>) => S
  * If the IO completes with a failure before the stream completes, the returned stream
  * will emit that failure.
  */
-export function interruptWhen_<R, E, A, R1, E1>(ma: Stream<R, E, A>, io: I.IO<R1, E1, any>): Stream<R & R1, E | E1, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const as    = yield* _(ma.proc)
-      const runIO = yield* _(
-        pipe(io, I.asJustError, I.crossSecond(Pull.end as I.IO<unknown, M.Maybe<E | E1>, any>), I.forkManaged)
-      )
-      return pipe(runIO, Fi.join, I.disconnect, I.raceFirst(as))
-    })
-  )
+export function interruptWhen_<R, E, A, R1, E1>(
+  stream: Stream<R, E, A>,
+  io: I.IO<R1, E1, any>
+): Stream<R & R1, E | E1, A> {
+  return new Stream(Ch.interruptWhen_(stream.channel, io))
 }
 
 /**
@@ -3868,143 +3194,80 @@ export function interruptWhen_<R, E, A, R1, E1>(ma: Stream<R, E, A>, io: I.IO<R1
  */
 export function interruptWhen<R1, E1>(
   io: I.IO<R1, E1, any>
-): <R, E, A>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, A> {
-  return (ma) => interruptWhen_(ma, io)
+): <R, E, A>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, A> {
+  return (stream) => interruptWhen_(stream, io)
 }
 
-/**
- * Interrupts the evaluation of this stream when the provided promise resolves. This
- * combinator will also interrupt any in-progress element being pulled from upstream.
- *
- * If the promise completes with a failure, the stream will emit that failure.
- */
-export function interruptOn_<R, E, A, E1, A1>(ma: Stream<R, E, A>, p: F.Future<E1, A1>): Stream<R, E | E1, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const as      = yield* _(ma.proc)
-      const doneRef = yield* _(Ref.make(false))
-      const asPull  = pipe(
-        F.await(p),
-        I.asJustError,
-        I.crossSecond(doneRef.set(true)),
-        I.crossSecond(Pull.end as I.IO<unknown, M.Maybe<E | E1>, any>)
-      )
-      const pull = pipe(
-        doneRef.get,
-        I.cross(F.isDone(p)),
-        I.chain(([b1, b2]) => {
-          if (b1) {
-            return Pull.end
-          }
-          if (b2) {
-            return asPull
-          }
-          return I.raceFirst(as)(asPull)
-        })
-      )
-      return pull
-    })
+function mapAccumAccumulator<S, E = never, A = never, B = never>(
+  currS: S,
+  f: (s: S, a: A) => readonly [B, S]
+): Ch.Channel<unknown, E, C.Chunk<A>, unknown, E, C.Chunk<B>, void> {
+  return Ch.readWith(
+    (inp: C.Chunk<A>) => {
+      const [bs, nextS] = C.mapAccum_(inp, currS, f)
+      return Ch.crossSecond_(Ch.write(bs), mapAccumAccumulator(nextS, f))
+    },
+    Ch.fail,
+    () => Ch.unit()
   )
 }
 
 /**
- * Interrupts the evaluation of this stream when the provided promise resolves. This
- * combinator will also interrupt any in-progress element being pulled from upstream.
- *
- * If the promise completes with a failure, the stream will emit that failure.
+ * Statefully maps over the elements of this stream to produce new elements.
  */
-export function interruptOn<E1>(p: F.Future<E1, any>): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E | E1, A> {
-  return (ma) => interruptOn_(ma, p)
-}
-
-/**
- * enqueues elements of this stream into a queue. stream failure and ending will also be
- * signalled.
- */
-export function into_<R, E, A, R1, E1>(
-  ma: Stream<R, E, A>,
-  queue: Q.Queue<R1, never, never, unknown, Take.Take<E | E1, A>, any>
-): I.IO<R & R1, E | E1, void> {
-  return Ma.use_(intoManaged_(ma, queue), () => I.unit())
-}
-
-/**
- * Enqueues elements of this stream into a queue. Stream failure and ending will also be
- * signalled.
- */
-export function into<E, A, R1, E1>(
-  queue: Q.Queue<R1, never, never, unknown, Take.Take<E | E1, A>, any>
-): <R>(ma: Stream<R, E, A>) => I.IO<R & R1, E | E1, void> {
-  return (ma) => into_(ma, queue)
-}
-
-/**
- * Like `into`, but provides the result as a `Managed` to allow for scope
- * composition.
- */
-export function intoManaged_<R, E, A, R1, E1>(
-  ma: Stream<R, E, A>,
-  queue: Q.Queue<R1, never, never, unknown, Take.Take<E | E1, A>, any>
-): Ma.Managed<R & R1, E | E1, void> {
-  return Ma.gen(function* (_) {
-    const os = yield* _(ma.proc)
-
-    const pull: I.IO<R & R1, never, void> = pipe(
-      os,
-      I.matchCauseIO(
-        flow(
-          Ca.sequenceCauseOption,
-          M.match(
-            () => pipe(Take.end, (_) => Q.offer_(queue, _), I.asUnit),
-            (cause) => pipe(cause, Take.halt, (_) => Q.offer_(queue, _), I.crossSecond(pull))
-          )
-        ),
-        (c) => pipe(c, Take.chunk, (_) => Q.offer_(queue, _), I.crossSecond(pull))
-      )
-    )
-    return yield* _(pull)
-  })
-}
-
-/**
- * Like `into`, but provides the result as a `Managed` to allow for scope
- * composition.
- */
-export function intoManaged<E, A, R1, E1>(
-  queue: Q.Queue<R1, never, never, unknown, Take.Take<E | E1, A>, any>
-): <R>(ma: Stream<R, E, A>) => Ma.Managed<R & R1, E | E1, void> {
-  return (ma) => intoManaged_(ma, queue)
-}
-
-/**
- * Statefully and effectfully maps over the elements of this stream to produce
- * new elements.
- */
-export function mapAccumIO_<R, E, A, R1, E1, B, Z>(
+export function mapAccum_<R, E, A, S, B>(
   stream: Stream<R, E, A>,
-  z: Z,
-  f: (z: Z, a: A) => I.IO<R1, E1, readonly [B, Z]>
-): Stream<R & R1, E | E1, B> {
-  return new Stream<R & R1, E | E1, B>(
-    Ma.gen(function* (_) {
-      const state = yield* _(Ref.make(z))
-      const pull  = yield* _(pipe(stream.proc, Ma.mapIO(BPull.make)))
-      return pipe(
-        pull,
-        BPull.pullElement,
-        I.chain((o) =>
-          pipe(
-            I.gen(function* (_) {
-              const s = yield* _(state.get)
-              const t = yield* _(f(s, o))
-              yield* _(state.set(t[1]))
-              return C.single(t[0])
-            }),
-            I.mapError(M.just)
+  s: S,
+  f: (s: S, a: A) => readonly [B, S]
+): Stream<R, E, B> {
+  return new Stream(Ch.pipeTo_(stream.channel, mapAccumAccumulator(s, f)))
+}
+
+/**
+ * Statefully maps over the elements of this stream to produce new elements.
+ */
+export function mapAccum<A, S, B>(
+  s: S,
+  f: (s: S, a: A) => readonly [B, S]
+): <R, E>(stream: Stream<R, E, A>) => Stream<R, E, B> {
+  return (stream) => mapAccum_(stream, s, f)
+}
+
+function mapAccumIOAccumulator<R, E, A, R1, E1, S, B>(
+  s: S,
+  f: (s: S, a: A) => I.IO<R1, E1, readonly [B, S]>
+): Ch.Channel<R & R1, E, C.Chunk<A>, unknown, E | E1, C.Chunk<B>, void> {
+  return Ch.readWith(
+    (inp: C.Chunk<A>) =>
+      Ch.unwrap(
+        I.defer(() => {
+          const outputChunk = C.builder<B>()
+          const emit        = (b: B) =>
+            I.succeedLazy(() => {
+              outputChunk.append(b)
+            })
+          return pipe(
+            inp,
+            I.foldl(s, (s1, a) =>
+              pipe(
+                f(s1, a),
+                I.chain(([b, s2]) => I.as_(emit(b), s2))
+              )
+            ),
+            I.match(
+              (failure) => {
+                const partialResult = outputChunk.result()
+                return C.isNonEmpty(partialResult)
+                  ? Ch.crossSecond_(Ch.write(partialResult), Ch.fail(failure))
+                  : Ch.fail(failure)
+              },
+              (s) => Ch.crossSecond_(Ch.write(outputChunk.result()), mapAccumIOAccumulator(s, f))
+            )
           )
-        )
-      )
-    })
+        })
+      ),
+    Ch.fail,
+    () => Ch.unit()
   )
 }
 
@@ -4012,60 +3275,55 @@ export function mapAccumIO_<R, E, A, R1, E1, B, Z>(
  * Statefully and effectfully maps over the elements of this stream to produce
  * new elements.
  */
-export function mapAccumIO<Z>(
-  z: Z
-): <A, R1, E1, B>(
-  f: (z: Z, a: A) => I.IO<R1, E1, [B, Z]>
-) => <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E1 | E, B> {
-  return (f) => (stream) => mapAccumIO_(stream, z, f)
+export function mapAccumIO_<R, E, A, R1, E1, S, B>(
+  stream: Stream<R, E, A>,
+  s: S,
+  f: (s: S, a: A) => I.IO<R1, E1, readonly [B, S]>
+): Stream<R & R1, E | E1, B> {
+  return new Stream(Ch.pipeTo_(stream.channel, mapAccumIOAccumulator(s, f)))
 }
 
 /**
- * Statefully maps over the elements of this stream to produce new elements.
+ * Statefully and effectfully maps over the elements of this stream to produce
+ * new elements.
  */
-export function mapAccum_<R, E, A, B, Z>(stream: Stream<R, E, A>, z: Z, f: (z: Z, a: A) => readonly [B, Z]) {
-  return mapAccumIO_(stream, z, (z, a) => I.pure(f(z, a)))
-}
-
-/**
- * Statefully maps over the elements of this stream to produce new elements.
- */
-export function mapAccum<Z>(
-  z: Z
-): <A, B>(f: (z: Z, a: A) => [B, Z]) => <R, E>(stream: Stream<R, E, A>) => Stream<R, E, B> {
-  return (f) => (stream) => mapAccum_(stream, z, f)
-}
-
-/**
- * Maps each element to an iterable, and flattens the iterables into the
- * output of this stream.
- */
-export function mapConcat_<R, E, A, B>(ma: Stream<R, E, A>, f: (a: A) => Iterable<B>) {
-  return mapChunks_(ma, (chunks) => C.chain_(chunks, (a) => C.from(f(a))))
-}
-
-/**
- * Maps each element to an iterable, and flattens the iterables into the
- * output of this stream.
- */
-export function mapConcat<A, B>(f: (a: A) => Iterable<B>): <R, E>(ma: Stream<R, E, A>) => Stream<R, E, B> {
-  return (ma) => mapConcat_(ma, f)
+export function mapAccumIO<A, S, R1, E1, B>(
+  s: S,
+  f: (s: S, a: A) => I.IO<R1, E1, readonly [B, S]>
+): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
+  return (stream) => mapAccumIO_(stream, s, f)
 }
 
 /**
  * Maps each element to a chunk, and flattens the chunks into the output of
  * this stream.
  */
-export function mapConcatChunk_<R, E, A, B>(ma: Stream<R, E, A>, f: (a: A) => Chunk<B>): Stream<R, E, B> {
-  return mapChunks_(ma, (chunks) => C.chain_(chunks, f))
+export function mapConcatChunk_<R, E, A, B>(stream: Stream<R, E, A>, f: (a: A) => C.Chunk<B>): Stream<R, E, B> {
+  return mapChunks_(stream, C.chain(f))
 }
 
 /**
  * Maps each element to a chunk, and flattens the chunks into the output of
  * this stream.
  */
-export function mapConcatChunk<A, B>(f: (a: A) => Chunk<B>): <R, E>(ma: Stream<R, E, A>) => Stream<R, E, B> {
-  return (ma) => mapConcatChunk_(ma, f)
+export function mapConcatChunk<A, B>(f: (a: A) => C.Chunk<B>): <R, E>(stream: Stream<R, E, A>) => Stream<R, E, B> {
+  return (stream) => mapConcatChunk_(stream, f)
+}
+
+/**
+ * Maps each element to an iterable, and flattens the iterables into the
+ * output of this stream.
+ */
+export function mapConcat_<R, E, A, B>(stream: Stream<R, E, A>, f: (a: A) => Iterable<B>): Stream<R, E, B> {
+  return mapConcatChunk_(stream, (a) => C.from(f(a)))
+}
+
+/**
+ * Maps each element to an iterable, and flattens the iterables into the
+ * output of this stream.
+ */
+export function mapConcat<A, B>(f: (a: A) => Iterable<B>): <R, E>(stream: Stream<R, E, A>) => Stream<R, E, B> {
+  return (stream) => mapConcat_(stream, f)
 }
 
 /**
@@ -4073,10 +3331,10 @@ export function mapConcatChunk<A, B>(f: (a: A) => Chunk<B>): <R, E>(ma: Stream<R
  * the output of this stream.
  */
 export function mapConcatChunkIO_<R, E, A, R1, E1, B>(
-  ma: Stream<R, E, A>,
-  f: (a: A) => I.IO<R1, E1, Chunk<B>>
+  stream: Stream<R, E, A>,
+  f: (a: A) => I.IO<R1, E1, C.Chunk<B>>
 ): Stream<R & R1, E | E1, B> {
-  return pipe(ma, mapIO(f), mapConcatChunk(identity))
+  return pipe(stream, mapIO(f), mapConcatChunk(identity))
 }
 
 /**
@@ -4084,9 +3342,9 @@ export function mapConcatChunkIO_<R, E, A, R1, E1, B>(
  * the output of this stream.
  */
 export function mapConcatChunkIO<A, R1, E1, B>(
-  f: (a: A) => I.IO<R1, E1, Chunk<B>>
-): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E1 | E, B> {
-  return (ma) => mapConcatChunkIO_(ma, f)
+  f: (a: A) => I.IO<R1, E1, C.Chunk<B>>
+): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
+  return (stream) => mapConcatChunkIO_(stream, f)
 }
 
 /**
@@ -4094,13 +3352,10 @@ export function mapConcatChunkIO<A, R1, E1, B>(
  * the output of this stream.
  */
 export function mapConcatIO_<R, E, A, R1, E1, B>(
-  ma: Stream<R, E, A>,
+  stream: Stream<R, E, A>,
   f: (a: A) => I.IO<R1, E1, Iterable<B>>
 ): Stream<R & R1, E | E1, B> {
-  return pipe(
-    ma,
-    mapConcatChunkIO((a) => I.map_(f(a), (_) => C.from(_)))
-  )
+  return pipe(stream, mapIO(flow(f, I.map(C.from))), mapConcatChunk(identity))
 }
 
 /**
@@ -4109,527 +3364,882 @@ export function mapConcatIO_<R, E, A, R1, E1, B>(
  */
 export function mapConcatIO<A, R1, E1, B>(
   f: (a: A) => I.IO<R1, E1, Iterable<B>>
-): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
-  return (ma) => mapConcatIO_(ma, f)
+): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
+  return (stream) => mapConcatIO_(stream, f)
+}
+
+/**
+ * Transforms the full causes of failures emitted by this stream.
+ */
+export function mapErrorCause_<R, E, A, E1>(
+  fa: Stream<R, E, A>,
+  f: (e: Ca.Cause<E>) => Ca.Cause<E1>
+): Stream<R, E1, A> {
+  return new Stream(Ch.mapErrorCause_(fa.channel, f))
+}
+
+/**
+ * Transforms the full causes of failures emitted by this stream.
+ */
+export function mapErrorCause<E, E1>(
+  f: (e: Ca.Cause<E>) => Ca.Cause<E1>
+): <R, A>(fa: Stream<R, E, A>) => Stream<R, E1, A> {
+  return (fa) => mapErrorCause_(fa, f)
 }
 
 /**
  * Maps over elements of the stream with the specified effectful function,
  * executing up to `n` invocations of `f` concurrently. Transformed elements
  * will be emitted in the original order.
+ *
+ * @note This combinator destroys the chunking structure. It's recommended to use chunkN afterwards.
  */
-export function mapIOPar_(n: number) {
-  return <R, E, A, R1, E1, B>(stream: Stream<R, E, A>, f: (a: A) => I.IO<R1, E1, B>): Stream<R & R1, E | E1, B> =>
-    new Stream(
-      Ma.gen(function* (_) {
-        const out         = yield* _(Q.makeBounded<I.IO<R1, Maybe<E | E1>, B>>(n))
-        const errorSignal = yield* _(F.make<E1, never>())
-        const permits     = yield* _(Semaphore.make(n))
-        yield* _(
-          pipe(
-            stream,
-            foreachManaged((o) =>
-              I.gen(function* (_) {
-                const p     = yield* _(F.make<E1, B>())
-                const latch = yield* _(F.make<never, void>())
-                yield* _(Q.offer_(out, pipe(F.await(p), I.mapError(M.just))))
-                yield* _(
-                  pipe(
-                    latch,
-                    F.succeed<void>(undefined),
-                    I.crossSecond(
-                      pipe(
-                        F.await(errorSignal),
-                        I.raceFirst(f(o)),
-                        I.tapCause((_) => F.failCause_(errorSignal, _)),
-                        I.fulfill(p)
-                      )
-                    ),
-                    Semaphore.withPermit(permits),
-                    I.fork
-                  )
-                )
-                yield* _(F.await(latch))
-              })
-            ),
-            Ma.matchCauseManaged(
-              flow(Pull.halt, (_) => Q.offer_(out, _), I.toManaged()),
-              () =>
-                pipe(
-                  Semaphore.withPermits(permits, n)(I.unit()),
-                  I.chain(() => Q.offer_(out, Pull.end)),
-                  I.toManaged()
-                )
-            ),
-            Ma.fork
-          )
-        )
-        return pipe(Q.take(out), I.flatten, I.map(C.single))
-      })
-    )
+export function mapIOPar_<R, E, A, R1, E1, B>(
+  stream: Stream<R, E, A>,
+  n: number,
+  f: (a: A) => I.IO<R1, E1, B>
+): Stream<R & R1, E | E1, B> {
+  return new Stream(pipe(stream.channel, Ch.concatMap(Ch.writeChunk), Ch.mapOutIOPar(n, f), Ch.mapOut(C.single)))
 }
 
 /**
  * Maps over elements of the stream with the specified effectful function,
  * executing up to `n` invocations of `f` concurrently. Transformed elements
  * will be emitted in the original order.
+ *
+ * @note This combinator destroys the chunking structure. It's recommended to use chunkN afterwards.
  */
-export function mapIOPar(
-  n: number
-): <A, R1, E1, B>(f: (a: A) => I.IO<R1, E1, B>) => <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E1 | E, B> {
-  return (f) => (stream) => mapIOPar_(n)(stream, f)
+export function mapIOPar<A, R1, E1, B>(
+  n: number,
+  f: (a: A) => I.IO<R1, E1, B>
+): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
+  return (stream) => mapIOPar_(stream, n, f)
+}
+
+/**
+ * Maps over elements of the stream with the specified effectful function,
+ * executing up to `n` invocations of `f` concurrently. The element order
+ * is not enforced by this combinator, and elements may be reordered.
+ */
+export function mapIOParUnordered_<R, E, A, R1, E1, B>(
+  stream: Stream<R, E, A>,
+  f: (a: A) => I.IO<R1, E1, B>,
+  n: number,
+  bufferSize = 16
+): Stream<R & R1, E | E1, B> {
+  return chainPar_(stream, flow(f, fromIO), n, bufferSize)
+}
+
+/**
+ * Maps over elements of the stream with the specified effectful function,
+ * executing up to `n` invocations of `f` concurrently. The element order
+ * is not enforced by this combinator, and elements may be reordered.
+ */
+export function mapIOParUnordered<A, R1, E1, B>(
+  f: (a: A) => I.IO<R1, E1, B>,
+  n: number,
+  bufferSize = 16
+): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
+  return (stream) => mapIOParUnordered_(stream, f, n, bufferSize)
+}
+
+/**
+ * Maps over elements of the stream with the specified effectful function,
+ * partitioned by `p` executing invocations of `f` concurrently. The number
+ * of concurrent invocations of `f` is determined by the number of different
+ * outputs of type `K`. Up to `buffer` elements may be buffered per partition.
+ * Transformed elements may be reordered but the order within a partition is maintained.
+ */
+export function mapIOPartitioned_<R, E, A, R1, E1, A1, K>(
+  stream: Stream<R, E, A>,
+  f: (a: A) => I.IO<R1, E1, A1>,
+  keyBy: (a: A) => K,
+  buffer = 16
+): Stream<R & R1, E | E1, A1> {
+  return pipe(
+    stream,
+    groupByKey(keyBy, buffer),
+    GB.merge((_, s) => mapIO_(s, f))
+  )
+}
+
+/**
+ * Maps over elements of the stream with the specified effectful function,
+ * partitioned by `p` executing invocations of `f` concurrently. The number
+ * of concurrent invocations of `f` is determined by the number of different
+ * outputs of type `K`. Up to `buffer` elements may be buffered per partition.
+ * Transformed elements may be reordered but the order within a partition is maintained.
+ */
+export function mapIOPartitioned<A, R1, E1, A1, K>(
+  f: (a: A) => I.IO<R1, E1, A1>,
+  keyBy: (a: A) => K,
+  buffer = 16
+): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, A1> {
+  return (stream) => mapIOPartitioned_(stream, f, keyBy, buffer)
+}
+
+export function mergeWithHandler<R, E>(
+  terminate: boolean
+): (exit: Ex.Exit<E, unknown>) => MD.MergeDecision<R, E, unknown, E, unknown> {
+  return (exit) => (terminate || !Ex.isSuccess(exit) ? MD.done(I.fromExit(exit)) : MD.await(I.fromExit))
+}
+
+export function merge_<R, E, A, R1, E1, A1>(
+  sa: Stream<R, E, A>,
+  sb: Stream<R1, E1, A1>,
+  strategy: TerminationStrategy = 'Both'
+): Stream<R & R1, E | E1, A | A1> {
+  return mergeWith_(sa, sb, identity, identity, strategy)
+}
+
+export function merge<R1, E1, A1>(
+  sb: Stream<R1, E1, A1>,
+  strategy: TerminationStrategy = 'Both'
+): <R, E, A>(sa: Stream<R, E, A>) => Stream<R & R1, E | E1, A | A1> {
+  return (sa) => merge_(sa, sb, strategy)
 }
 
 export type TerminationStrategy = 'Left' | 'Right' | 'Both' | 'Either'
 
-/**
- * Merges this stream and the specified stream together to a common element
- * type with the specified mapping functions.
- *
- * New produced stream will terminate when both specified stream terminate if
- * no termination strategy is specified.
- */
-export function mergeWith_<R, E, A, R1, E1, B, C, C1>(
+export function mergeWith_<R, E, A, R1, E1, A1, B, C>(
   sa: Stream<R, E, A>,
-  sb: Stream<R1, E1, B>,
-  l: (a: A) => C,
-  r: (b: B) => C1,
+  sb: Stream<R1, E1, A1>,
+  l: (a: A) => B,
+  r: (b: A1) => C,
   strategy: TerminationStrategy = 'Both'
-): Stream<R1 & R, E | E1, C | C1> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const handoff = yield* _(Ha.make<Take.Take<E | E1, C | C1>>())
-      const doneRef = yield* _(RefM.make<M.Maybe<boolean>>(M.nothing()))
-      const chunksL = yield* _(sa.proc)
-      const chunksR = yield* _(sb.proc)
-
-      const handler = (pull: Pull.Pull<R & R1, E | E1, C | C1>, terminate: boolean) =>
-        pipe(
-          doneRef.get,
-          I.chain((o) => {
-            if (o._tag === 'Just' && o.value) {
-              return I.succeed(false)
-            } else {
-              return pipe(
-                pull,
-                I.result,
-                I.chain((exit) =>
-                  pipe(
-                    doneRef,
-                    RefM.modifyIO((o) => {
-                      const causeOrChunk = pipe(
-                        exit,
-                        Ex.match(
-                          (c): E.Either<M.Maybe<Ca.Cause<E | E1>>, Chunk<C | C1>> => E.left(Ca.sequenceCauseOption(c)),
-                          E.right
-                        )
-                      )
-
-                      if (o._tag === 'Just' && o.value) {
-                        return I.succeed([false, o])
-                      } else if (causeOrChunk._tag === 'Right') {
-                        return pipe(
-                          handoff,
-                          Ha.offer(<Take.Take<E | E1, C | C1>>Take.chunk(causeOrChunk.right)),
-                          I.as([true, o])
-                        )
-                      } else if (causeOrChunk._tag === 'Left' && causeOrChunk.left._tag === 'Just') {
-                        return pipe(
-                          handoff,
-                          Ha.offer(<Take.Take<E | E1, C | C1>>Take.halt(causeOrChunk.left.value)),
-                          I.as([false, M.just(true)])
-                        )
-                      } else if (
-                        causeOrChunk._tag === 'Left' &&
-                        causeOrChunk.left._tag === 'Nothing' &&
-                        (terminate || o._tag === 'Just')
-                      ) {
-                        return pipe(handoff, Ha.offer(<Take.Take<E | E1, C | C1>>Take.end), I.as([false, M.just(true)]))
-                      } else {
-                        return I.succeed([false, M.just(false)])
-                      }
-                    })
-                  )
-                )
-              )
-            }
-          }),
-          I.repeatWhile(identity),
-          I.fork,
-          I.interruptible,
-          I.toManaged(Fi.interrupt)
-        )
-
-      yield* _(handler(pipe(chunksL, I.map(C.map(l))), strategy === 'Left' || strategy === 'Either'))
-      yield* _(handler(pipe(chunksR, I.map(C.map(r))), strategy === 'Right' || strategy === 'Either'))
-      return I.gen(function* (_) {
-        const done   = yield* _(doneRef.get)
-        const take   = yield* _(done._tag === 'Just' && done.value ? I.get(Ha.poll(handoff)) : Ha.take(handoff))
-        const result = yield* _(Take.done(take))
-        return result
-      })
-    })
+): Stream<R & R1, E | E1, B | C> {
+  return new Stream<R & R1, E | E1, B | C>(
+    pipe(
+      map_(sa, l).channel,
+      Ch.mergeWith(
+        map_(sb, r).channel,
+        mergeWithHandler<R & R1, E | E1>(strategy === 'Either' || strategy === 'Left'),
+        mergeWithHandler<R & R1, E | E1>(strategy === 'Either' || strategy === 'Right')
+      )
+    )
   )
 }
 
+export function mergeWith<A, R1, E1, A1, B, C>(
+  sb: Stream<R1, E1, A1>,
+  l: (a: A) => B,
+  r: (a: A1) => C,
+  strategy: TerminationStrategy = 'Both'
+): <R, E>(sa: Stream<R, E, A>) => Stream<R & R1, E | E1, B | C> {
+  return (sa) => mergeWith_(sa, sb, l, r, strategy)
+}
+
 /**
- * Merges this stream and the specified stream together to a common element
- * type with the specified mapping functions.
+ * Runs the specified effect if this stream fails, providing the error to the effect if it exists.
  *
- * New produced stream will terminate when both specified stream terminate if
- * no termination strategy is specified.
+ * Note: Unlike `IO.onError`, there is no guarantee that the provided effect will not be interrupted.
  */
-export function mergeWith<R, E, A, R1, E1, B, C, C1>(
-  that: Stream<R1, E1, B>,
-  l: (a: A) => C,
-  r: (b: B) => C1,
-  strategy: TerminationStrategy = 'Both'
-): (ma: Stream<R, E, A>) => Stream<R1 & R, E | E1, C | C1> {
-  return (ma) => mergeWith_(ma, that, l, r, strategy)
+export function onError_<R, E, A, R1>(
+  stream: Stream<R, E, A>,
+  cleanup: (e: Ca.Cause<E>) => I.IO<R1, never, any>
+): Stream<R & R1, E, A> {
+  return catchAllCause_(stream, (cause) => fromIO(I.crossSecond_(cleanup(cause), I.failCause(cause))))
 }
 
 /**
- * Merges this stream and the specified stream together.
+ * Runs the specified effect if this stream fails, providing the error to the effect if it exists.
  *
- * New produced stream will terminate when both specified stream terminate if no termination
- * strategy is specified.
+ * Note: Unlike `IO.onError`, there is no guarantee that the provided effect will not be interrupted.
  */
-export function merge_<R, E, A, R1, E1, B>(
-  self: Stream<R, E, A>,
-  that: Stream<R1, E1, B>,
-  strategy: TerminationStrategy = 'Both'
-): Stream<R1 & R, E | E1, A | B> {
-  return mergeWith_(
-    self,
-    that,
-    (a): A | B => a,
-    (b) => b,
-    strategy
-  )
+export function onError<E, R1>(
+  cleanup: (e: Ca.Cause<E>) => I.IO<R1, never, any>
+): <R, A>(stream: Stream<R, E, A>) => Stream<R & R1, E, A> {
+  return (stream) => onError_(stream, cleanup)
 }
 
 /**
- * Merges this stream and the specified stream together.
+ * Switches to the provided stream in case this one fails with a typed error.
  *
- * New produced stream will terminate when both specified stream terminate if no termination
- * strategy is specified.
+ * See also Stream#catchAll.
  */
-export function merge<R1, E1, B>(
-  sb: Stream<R1, E1, B>,
-  strategy: TerminationStrategy = 'Both'
-): <R, E, A>(sa: Stream<R, E, A>) => Stream<R1 & R, E1 | E, B | A> {
-  return (sa) => merge_(sa, sb, strategy)
+export function orElse_<R, E, A, R1, E1, A1>(
+  stream: Stream<R, E, A>,
+  that: () => Stream<R1, E1, A1>
+): Stream<R & R1, E1, A | A1> {
+  return new Stream<R & R1, E1, A | A1>(Ch.orElse_(stream.channel, that().channel))
 }
 
 /**
- * Merges this stream and the specified stream together. New produced stream will
- * terminate when either stream terminates.
+ * Switches to the provided stream in case this one fails with a typed error.
+ *
+ * See also ZStream#catchAll.
  */
-export function mergeTerminateEither_<R, E, A, R1, E1, B>(
-  sa: Stream<R, E, A>,
-  sb: Stream<R1, E1, B>
-): Stream<R1 & R, E | E1, A | B> {
-  return merge_(sa, sb, 'Either')
+export function orElse<R1, E1, A1>(
+  that: () => Stream<R1, E1, A1>
+): <R, E, A>(stream: Stream<R, E, A>) => Stream<R & R1, E1, A | A1> {
+  return (stream) => orElse_(stream, that)
 }
 
 /**
- * Merges this stream and the specified stream together. New produced stream will
- * terminate when either stream terminates.
+ * Switches to the provided stream in case this one fails with a typed error.
+ *
+ * See also ZStream#catchAll.
  */
-export function mergeTerminateEither<R1, E1, B>(
-  sb: Stream<R1, E1, B>
-): <R, E, A>(sa: Stream<R, E, A>) => Stream<R1 & R, E1 | E, B | A> {
-  return (sa) => merge_(sa, sb, 'Either')
-}
-
-/**
- * Merges this stream and the specified stream together. New produced stream will
- * terminate when this stream terminates.
- */
-export function mergeTerminateLeft_<R, E, A, R1, E1, B>(
-  sa: Stream<R, E, A>,
-  sb: Stream<R1, E1, B>
-): Stream<R1 & R, E | E1, A | B> {
-  return merge_(sa, sb, 'Left')
-}
-
-/**
- * Merges this stream and the specified stream together. New produced stream will
- * terminate when this stream terminates.
- */
-export function mergeTerminateLeft<R1, E1, B>(
-  sb: Stream<R1, E1, B>
-): <R, E, A>(sa: Stream<R, E, A>) => Stream<R1 & R, E1 | E, B | A> {
-  return (sa) => merge_(sa, sb, 'Left')
-}
-
-/**
- * Merges this stream and the specified stream together. New produced stream will
- * terminate when the specified stream terminates.
- */
-export function mergeTerminateRight_<R, E, A, R1, E1, B>(
-  sa: Stream<R, E, A>,
-  sb: Stream<R1, E1, B>
-): Stream<R1 & R, E | E1, A | B> {
-  return merge_(sa, sb, 'Right')
-}
-
-/**
- * Merges this stream and the specified stream together. New produced stream will
- * terminate when the specified stream terminates.
- */
-export function mergeTerminateRight<R1, E1, B>(
-  sb: Stream<R1, E1, B>
-): <R, E, A>(sa: Stream<R, E, A>) => Stream<R1 & R, E1 | E, B | A> {
-  return (sa) => merge_(sa, sb, 'Right')
-}
-
-/**
- * Merges this stream and the specified stream together to produce a stream of
- * eithers.
- */
-export function mergeEither_<R, E, A, R1, E1, B>(
-  sa: Stream<R, E, A>,
-  sb: Stream<R1, E1, B>,
-  strategy: TerminationStrategy = 'Both'
-): Stream<R & R1, E | E1, E.Either<A, B>> {
-  return mergeWith_(sa, sb, E.left, E.right, strategy)
-}
-
-/**
- * Merges this stream and the specified stream together to produce a stream of
- * eithers.
- */
-export function mergeEither<R1, E1, B>(
-  sb: Stream<R1, E1, B>,
-  strategy: TerminationStrategy = 'Both'
-): <R, E, A>(sa: Stream<R, E, A>) => Stream<R & R1, E1 | E, E.Either<A, B>> {
-  return (sa) => mergeEither_(sa, sb, strategy)
-}
-
-/**
- * Executes a pure fold over the stream of values - reduces all elements in the stream to a value of type `S`.
- */
-export function fold_<R, E, A, S>(ma: Stream<R, E, A>, s: S, f: (s: S, o: A) => S): I.IO<R, E, S> {
-  return Ma.use_(
-    foldWhileManagedIO_(ma, s, constTrue, (s, o) => I.succeed(f(s, o))),
-    I.succeed
-  )
-}
-
-/**
- * Executes a pure fold over the stream of values - reduces all elements in the stream to a value of type `S`.
- */
-export function fold<A, S>(s: S, f: (s: S, a: A) => S): <R, E>(ma: Stream<R, E, A>) => I.IO<R, E, S> {
-  return (ma) => fold_(ma, s, f)
-}
-
-/**
- * Executes an effectful fold over the stream of values.
- */
-export function foldIO_<R, E, A, R1, E1, S>(
-  ma: Stream<R, E, A>,
-  s: S,
-  f: (s: S, a: A) => I.IO<R1, E1, S>
-): I.IO<R & R1, E | E1, S> {
-  return Ma.use_(foldWhileManagedIO_(ma, s, constTrue, f), I.succeed)
-}
-
-/**
- * Executes an effectful fold over the stream of values.
- */
-export function foldIO<A, R1, E1, S>(
-  s: S,
-  f: (s: S, a: A) => I.IO<R1, E1, S>
-): <R, E>(ma: Stream<R, E, A>) => I.IO<R & R1, E | E1, S> {
-  return (ma) => foldIO_(ma, s, f)
-}
-
-/**
- * Executes a pure fold over the stream of values.
- * Returns a Managed value that represents the scope of the stream.
- */
-export function foldManaged_<R, E, A, S>(ma: Stream<R, E, A>, s: S, f: (s: S, a: A) => S): Ma.Managed<R, E, S> {
-  return foldWhileManagedIO_(ma, s, constTrue, (s, o) => I.succeed(f(s, o)))
-}
-
-/**
- * Executes a pure fold over the stream of values.
- * Returns a Managed value that represents the scope of the stream.
- */
-export function foldManaged<A, S>(s: S, f: (s: S, a: A) => S): <R, E>(ma: Stream<R, E, A>) => Ma.Managed<R, E, S> {
-  return (ma) => foldManaged_(ma, s, f)
-}
-
-/**
- * Executes an effectful fold over the stream of values.
- * Returns a Managed value that represents the scope of the stream.
- */
-export function foldManagedIO_<R, E, A, R1, E1, S>(
-  ma: Stream<R, E, A>,
-  s: S,
-  f: (s: S, a: A) => I.IO<R1, E1, S>
-): Ma.Managed<R & R1, E | E1, S> {
-  return foldWhileManagedIO_(ma, s, constTrue, f)
-}
-
-/**
- * Executes an effectful fold over the stream of values.
- * Returns a Managed value that represents the scope of the stream.
- */
-export function foldManagedIO<A, R1, E1, S>(
-  s: S,
-  f: (s: S, a: A) => I.IO<R1, E1, S>
-): <R, E>(ma: Stream<R, E, A>) => Ma.Managed<R & R1, E | E1, S> {
-  return (ma) => foldManagedIO_(ma, s, f)
-}
-
-/**
- * Reduces the elements in the stream to a value of type `S`.
- * Stops the fold early when the condition is not fulfilled.
- */
-export function foldWhile_<R, E, A, S>(
-  ma: Stream<R, E, A>,
-  s: S,
-  cont: (s: S) => boolean,
-  f: (s: S, a: A) => S
-): I.IO<R, E, S> {
-  return Ma.use_(
-    foldWhileManagedIO_(ma, s, cont, (s, o) => I.succeed(f(s, o))),
-    I.succeed
-  )
-}
-
-/**
- * Reduces the elements in the stream to a value of type `S`.
- * Stops the fold early when the condition is not fulfilled.
- */
-export function foldWhile<A, S>(
-  s: S,
-  cont: (s: S) => boolean,
-  f: (s: S, a: A) => S
-): <R, E>(ma: Stream<R, E, A>) => I.IO<R, E, S> {
-  return (ma) => foldWhile_(ma, s, cont, f)
-}
-
-/**
- * Executes an effectful fold over the stream of values.
- * Stops the fold early when the condition is not fulfilled.
- */
-export function foldWhileIO_<R, E, A, R1, E1, S>(
-  ma: Stream<R, E, A>,
-  s: S,
-  cont: (s: S) => boolean,
-  f: (s: S, a: A) => I.IO<R1, E1, S>
-): I.IO<R & R1, E | E1, S> {
-  return Ma.use_(foldWhileManagedIO_(ma, s, cont, f), I.succeed)
-}
-
-/**
- * Executes an effectful fold over the stream of values.
- * Stops the fold early when the condition is not fulfilled.
- */
-export function foldWhileIO<A, R1, E1, S>(
-  s: S,
-  cont: (s: S) => boolean,
-  f: (s: S, a: A) => I.IO<R1, E1, S>
-): <R, E>(ma: Stream<R, E, A>) => I.IO<R & R1, E | E1, S> {
-  return (ma) => foldWhileIO_(ma, s, cont, f)
-}
-
-/**
- * Executes a pure fold over the stream of values.
- * Returns a Managed value that represents the scope of the stream.
- * Stops the fold early when the condition is not fulfilled.
- */
-export function foldWhileManaged_<R, E, A, S>(
-  ma: Stream<R, E, A>,
-  s: S,
-  cont: (s: S) => boolean,
-  f: (s: S, a: A) => S
-): Ma.Managed<R, E, S> {
-  return foldWhileManagedIO_(ma, s, cont, (s, o) => I.succeed(f(s, o)))
-}
-
-/**
- * Executes a pure fold over the stream of values.
- * Returns a Managed value that represents the scope of the stream.
- * Stops the fold early when the condition is not fulfilled.
- */
-export function foldWhileManaged<A, S>(
-  s: S,
-  cont: (s: S) => boolean,
-  f: (s: S, o: A) => S
-): <R, E>(ma: Stream<R, E, A>) => Ma.Managed<R, E, S> {
-  return (ma) => foldWhileManaged_(ma, s, cont, f)
-}
-
-/**
- * Executes an effectful fold over the stream of values.
- * Returns a Managed value that represents the scope of the stream.
- * Stops the fold early when the condition is not fulfilled.
- */
-export function foldWhileManagedIO_<R, E, A, R1, E1, S>(
-  ma: Stream<R, E, A>,
-  s: S,
-  cont: (s: S) => boolean,
-  f: (s: S, a: A) => I.IO<R1, E1, S>
-): Ma.Managed<R & R1, E | E1, S> {
+export function orElseEither_<R, E, A, R1, E1, A1>(
+  stream: Stream<R, E, A>,
+  that: () => Stream<R1, E1, A1>
+): Stream<R & R1, E1, E.Either<A, A1>> {
   return pipe(
-    ma.proc,
-    Ma.chain((is) => {
-      const loop = (s1: S): I.IO<R & R1, E | E1, S> => {
-        if (!cont(s)) {
-          return I.succeed(s1)
-        } else {
-          return pipe(
-            is,
-            I.matchIO(
-              M.match(() => I.succeed(s1), I.fail),
-              flow(I.foldl(s1, f), I.chain(loop))
-            )
-          )
-        }
-      }
-      return I.toManaged_(loop(s))
-    })
+    stream,
+    map(E.left),
+    orElse(() => map_(that(), E.right))
   )
 }
 
 /**
- * Executes an effectful fold over the stream of values.
- * Returns a Managed value that represents the scope of the stream.
- * Stops the fold early when the condition is not fulfilled.
+ * Switches to the provided stream in case this one fails with a typed error.
+ *
+ * See also ZStream#catchAll.
  */
-export function foldWhileManagedIO<A, R1, E1, S>(
-  s: S,
-  cont: (s: S) => boolean,
-  f: (s: S, a: A) => I.IO<R1, E1, S>
-): <R, E>(ma: Stream<R, E, A>) => Ma.Managed<R & R1, E | E1, S> {
-  return (ma) => foldWhileManagedIO_(ma, s, cont, f)
+export function orElseEither<R1, E1, A1>(
+  that: () => Stream<R1, E1, A1>
+): <R, E, A>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, E.Either<A, A1>> {
+  return (stream) => orElseEither_(stream, that)
 }
 
 /**
- * Schedules the output of the stream using the provided `schedule`.
+ * Fails with given error in case this one fails with a typed error.
+ *
+ * See also Stream#catchAll.
  */
-export function schedule_<R, R1, E, A>(
-  self: Stream<R, E, A>,
-  schedule: Schedule<R1, A, any>
-): Stream<R & R1 & Has<Clock>, E, A> {
-  return filterMap_(
-    scheduleEither_(self, schedule),
-    E.match(
-      (_) => M.nothing(),
-      (a) => M.just(a)
+export function orElseFail_<R, E, A, E1>(stream: Stream<R, E, A>, e: () => E1): Stream<R, E1, A> {
+  return orElse_(stream, () => fail(e()))
+}
+
+/**
+ * Fails with given error in case this one fails with a typed error.
+ *
+ * See also Stream#catchAll.
+ */
+export function orElseFail<E1>(e: () => E1): <R, E, A>(stream: Stream<R, E, A>) => Stream<R, E1, A> {
+  return (stream) => orElseFail_(stream, e)
+}
+
+/**
+ * Switches to the provided stream in case this one fails with the `None` value.
+ *
+ * See also Stream#catchAll.
+ */
+export function orElseOptional_<R, E, A, R1, E1, A1>(
+  stream: Stream<R, M.Maybe<E>, A>,
+  that: () => Stream<R1, M.Maybe<E1>, A1>
+): Stream<R & R1, M.Maybe<E | E1>, A | A1> {
+  return catchAll_(
+    stream,
+    M.match(
+      (): Stream<R & R1, M.Maybe<E | E1>, A | A1> => that(),
+      (e) => fail(M.just(e))
     )
   )
 }
 
 /**
+ * Switches to the provided stream in case this one fails with the `None` value.
+ *
+ * See also Stream#catchAll.
+ */
+export function orElseOptional<R1, E1, A1>(
+  that: () => Stream<R1, M.Maybe<E1>, A1>
+): <R, E, A>(stream: Stream<R, M.Maybe<E>, A>) => Stream<R & R1, M.Maybe<E | E1>, A | A1> {
+  return (stream) => orElseOptional_(stream, that)
+}
+
+/**
+ * Succeeds with the specified value if this one fails with a typed error.
+ */
+export function orElseSucceed_<R, E, A, A1>(stream: Stream<R, E, A>, a: () => A1): Stream<R, never, A | A1> {
+  return orElse_(stream, () => succeed(a()))
+}
+
+/**
+ * Succeeds with the specified value if this one fails with a typed error.
+ */
+export function orElseSucceed<A1>(a: () => A1): <R, E, A>(stream: Stream<R, E, A>) => Stream<R, never, A | A1> {
+  return (stream) => orElseSucceed_(stream, a)
+}
+
+class PeelEmit<A> {
+  readonly _tag = 'Emit'
+  constructor(readonly els: C.Chunk<A>) {}
+}
+class PeelHalt<E> {
+  readonly _tag = 'Halt'
+  constructor(readonly cause: Ca.Cause<E>) {}
+}
+class PeelEnd {
+  readonly _tag = 'End'
+}
+type PeelSignal<E, A> = PeelEmit<A> | PeelHalt<E> | PeelEnd
+
+/**
+ * Peels off enough material from the stream to construct a `Z` using the
+ * provided `Sink` and then returns both the `Z` and the rest of the
+ * `Stream` in a managed resource. Like all `Managed` values, the provided
+ * stream is valid only within the scope of `Managed`.
+ */
+export function peel_<R, E, A extends A1, R1, E1, A1, Z>(
+  stream: Stream<R, E, A>,
+  sink: Sink.Sink<R1, E, A, E1, A1, Z>
+): Ma.Managed<R & R1, E1, readonly [Z, Stream<unknown, E | E1, A1>]> {
+  return Ma.gen(function* (_) {
+    const p       = yield* _(Pr.make<E1, Z>())
+    const handoff = yield* _(HO.make<PeelSignal<E, A1>>())
+
+    const consumer = pipe(
+      Sink.exposeLeftover(sink),
+      Sink.matchSink(
+        (e) => Sink.apr_(Sink.fromIO(Pr.fail_(p, e)), Sink.fail(e)),
+        ([z1, leftovers]) => {
+          const loop: Ch.Channel<unknown, E, C.Chunk<A1>, unknown, E | E1, C.Chunk<A1>, void> = Ch.readWithCause(
+            (inp: C.Chunk<A1>) => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, new PeelEmit(inp))), loop),
+            (cause) => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, new PeelHalt(cause))), Ch.failCause(cause)),
+            () => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, new PeelEnd())), Ch.unit())
+          )
+          return new Sink.Sink(
+            pipe(
+              Ch.fromIO(Pr.succeed_(p, z1)),
+              Ch.crossSecond(Ch.fromIO(HO.offer(handoff, new PeelEmit(leftovers)))),
+              Ch.crossSecond(loop)
+            )
+          )
+        }
+      )
+    )
+    const producer: Ch.Channel<unknown, unknown, unknown, unknown, E | E1, C.Chunk<A1>, void> = Ch.unwrap(
+      I.map_(HO.take(handoff), (signal) => {
+        switch (signal._tag) {
+          case 'Emit':
+            return Ch.crossSecond_(Ch.write(signal.els), producer)
+          case 'Halt':
+            return Ch.failCause(signal.cause)
+          case 'End':
+            return Ch.unit()
+        }
+      })
+    )
+    yield* _(Ma.fork(runManaged_(stream, consumer)))
+    const z = yield* _(Pr.await(p))
+    return tuple(z, new Stream(producer))
+  })
+}
+
+/**
+ * Peels off enough material from the stream to construct a `Z` using the
+ * provided `Sink` and then returns both the `Z` and the rest of the
+ * `Stream` in a managed resource. Like all `Managed` values, the provided
+ * stream is valid only within the scope of `Managed`.
+ */
+export function peel<E, A extends A1, R1, E1, A1, Z>(
+  sink: Sink.Sink<R1, E, A, E1, A1, Z>
+): <R>(stream: Stream<R, E, A>) => Ma.Managed<R & R1, E1, readonly [Z, Stream<unknown, E | E1, A1>]> {
+  return (stream) => peel_(stream, sink)
+}
+
+/**
+ * Keeps some of the errors, and terminates the fiber with the rest, using
+ * the specified function to convert the `E` into a `Throwable`.
+ */
+export function refineOrHaltWith_<R, E, A, E1>(
+  stream: Stream<R, E, A>,
+  pf: (e: E) => M.Maybe<E1>,
+  haltWith: (e: E) => unknown
+): Stream<R, E1, A> {
+  return new Stream(
+    Ch.catchAll_(stream.channel, (e) =>
+      pipe(
+        pf(e),
+        M.match(
+          () => Ch.failCause(Ca.halt(haltWith(e))),
+          (e1) => Ch.fail(e1)
+        )
+      )
+    )
+  )
+}
+
+/**
+ * Keeps some of the errors, and terminates the fiber with the rest, using
+ * the specified function to convert the `E` into a `Throwable`.
+ */
+export function refineOrHaltWith<E, E1>(
+  pf: (e: E) => M.Maybe<E1>,
+  haltWith: (e: E) => unknown
+): <R, A>(stream: Stream<R, E, A>) => Stream<R, E1, A> {
+  return (stream) => refineOrHaltWith_(stream, pf, haltWith)
+}
+
+/**
+ * Keeps some of the errors, and terminates the fiber with the rest
+ */
+export function refineOrHalt_<R, E, A, E1>(stream: Stream<R, E, A>, pf: (e: E) => M.Maybe<E1>): Stream<R, E1, A> {
+  return refineOrHaltWith_(stream, pf, identity)
+}
+
+/**
+ * Keeps some of the errors, and terminates the fiber with the rest
+ */
+export function refineOrHalt<E, E1>(pf: (e: E) => M.Maybe<E1>): <R, A>(stream: Stream<R, E, A>) => Stream<R, E1, A> {
+  return (stream) => refineOrHalt_(stream, pf)
+}
+
+/**
+ * Repeats the entire stream using the specified schedule. The stream will execute normally,
+ * and then repeat again according to the provided schedule.
+ */
+export function repeat_<R, E, A, R1, B>(
+  stream: Stream<R, E, A>,
+  schedule: SC.Schedule<R1, any, B>
+): Stream<R & R1 & Has<Clock>, E, A> {
+  return pipe(stream, repeatEither(schedule), filterMap(M.getRight))
+}
+
+/**
+ * Repeats the entire stream using the specified schedule. The stream will execute normally,
+ * and then repeat again according to the provided schedule.
+ */
+export function repeat<R1, B>(
+  schedule: SC.Schedule<R1, any, B>
+): <R, E, A>(stream: Stream<R, E, A>) => Stream<R & R1 & Has<Clock>, E, A> {
+  return (stream) => repeat_(stream, schedule)
+}
+
+/**
+ * Repeats the entire stream using the specified schedule. The stream will execute normally,
+ * and then repeat again according to the provided schedule. The schedule output will be emitted at
+ * the end of each repetition.
+ */
+export function repeatEither_<R, E, A, R1, B>(
+  stream: Stream<R, E, A>,
+  schedule: SC.Schedule<R1, any, B>
+): Stream<R & R1 & Has<Clock>, E, E.Either<B, A>> {
+  return repeatWith_(stream, schedule, E.right, E.left)
+}
+
+/**
+ * Repeats the entire stream using the specified schedule. The stream will execute normally,
+ * and then repeat again according to the provided schedule. The schedule output will be emitted at
+ * the end of each repetition.
+ */
+export function repeatEither<R1, B>(
+  schedule: SC.Schedule<R1, any, B>
+): <R, E, A>(stream: Stream<R, E, A>) => Stream<R & R1 & Has<Clock>, E, E.Either<B, A>> {
+  return (stream) => repeatEither_(stream, schedule)
+}
+
+/**
+ * Repeats each element of the stream using the provided schedule. Repetitions are done in
+ * addition to the first execution, which means using `Schedule.recurs(1)` actually results in
+ * the original effect, plus an additional recurrence, for a total of two repetitions of each
+ * value in the stream.
+ */
+export function repeatElements_<R, E, A, R1, B>(
+  stream: Stream<R, E, A>,
+  schedule: SC.Schedule<R1, A, B>
+): Stream<R & R1 & Has<Clock>, E, A> {
+  return pipe(stream, repeatElementsEither(schedule), filterMap(M.getRight))
+}
+
+/**
+ * Repeats each element of the stream using the provided schedule. Repetitions are done in
+ * addition to the first execution, which means using `Schedule.recurs(1)` actually results in
+ * the original effect, plus an additional recurrence, for a total of two repetitions of each
+ * value in the stream.
+ */
+export function repeatElements<A, R1, B>(
+  schedule: SC.Schedule<R1, A, B>
+): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1 & Has<Clock>, E, A> {
+  return (stream) => repeatElements_(stream, schedule)
+}
+
+/**
+ * Repeats each element of the stream using the provided schedule. When the schedule is finished,
+ * then the output of the schedule will be emitted into the stream. Repetitions are done in
+ * addition to the first execution, which means using `Schedule.recurs(1)` actually results in
+ * the original effect, plus an additional recurrence, for a total of two repetitions of each
+ * value in the stream.
+ */
+export function repeatElementsEither_<R, E, A, R1, B>(
+  stream: Stream<R, E, A>,
+  schedule: SC.Schedule<R1, A, B>
+): Stream<R & R1 & Has<Clock>, E, E.Either<B, A>> {
+  return repeatElementsWith_(stream, schedule, E.right, E.left)
+}
+
+/**
+ * Repeats each element of the stream using the provided schedule. When the schedule is finished,
+ * then the output of the schedule will be emitted into the stream. Repetitions are done in
+ * addition to the first execution, which means using `Schedule.recurs(1)` actually results in
+ * the original effect, plus an additional recurrence, for a total of two repetitions of each
+ * value in the stream.
+ */
+export function repeatElementsEither<A, R1, B>(
+  schedule: SC.Schedule<R1, A, B>
+): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1 & Has<Clock>, E, E.Either<B, A>> {
+  return (stream) => repeatElementsEither_(stream, schedule)
+}
+
+/**
+ * Repeats each element of the stream using the provided schedule. When the schedule is finished,
+ * then the output of the schedule will be emitted into the stream. Repetitions are done in
+ * addition to the first execution, which means using `Schedule.recurs(1)` actually results in
+ * the original effect, plus an additional recurrence, for a total of two repetitions of each
+ * value in the stream.
+ *
+ * This function accepts two conversion functions, which allow the output of this stream and the
+ * output of the provided schedule to be unified into a single type. For example, `Either` or
+ * similar data type.
+ */
+export function repeatElementsWith_<R, E, A, R1, B, C, D>(
+  stream: Stream<R, E, A>,
+  schedule: SC.Schedule<R1, A, B>,
+  f: (a: A) => C,
+  g: (b: B) => D
+): Stream<R & R1 & Has<Clock>, E, C | D> {
+  return new Stream<R & R1 & Has<Clock>, E, C | D>(
+    Ch.pipeTo_(
+      stream.channel,
+      Ch.unwrap(
+        I.gen(function* (_) {
+          const driver = yield* _(SC.driver(schedule))
+          const feed   = (
+            inp: C.Chunk<A>
+          ): Ch.Channel<R & R1 & Has<Clock>, E, C.Chunk<A>, unknown, E, C.Chunk<C> | C.Chunk<D>, void> =>
+            pipe(
+              inp,
+              C.head,
+              M.match(
+                () => loop,
+                (a) => Ch.crossSecond_(Ch.write(C.single(f(a))), step(C.drop_(inp, 1), a))
+              )
+            )
+          const step = (
+            inp: C.Chunk<A>,
+            a: A
+          ): Ch.Channel<R & R1 & Has<Clock>, E, C.Chunk<A>, unknown, E, C.Chunk<C> | C.Chunk<D>, void> => {
+            const advance = I.as_(driver.next(a), Ch.crossSecond_(Ch.write(C.single(f(a))), step(inp, a)))
+            const reset   = I.gen(function* (_) {
+              const b = yield* _(I.orHalt(driver.last))
+              yield* _(driver.reset)
+              return Ch.crossSecond_(Ch.write(C.single(g(b))), feed(inp))
+            })
+            return Ch.unwrap(I.orElse_(advance, () => reset))
+          }
+
+          const loop: Ch.Channel<
+            R & R1 & Has<Clock>,
+            E,
+            C.Chunk<A>,
+            unknown,
+            E,
+            C.Chunk<C> | C.Chunk<D>,
+            void
+          > = Ch.readWith(feed, Ch.fail, () => Ch.unit())
+
+          return loop
+        })
+      )
+    )
+  )
+}
+
+/**
+ * Repeats each element of the stream using the provided schedule. When the schedule is finished,
+ * then the output of the schedule will be emitted into the stream. Repetitions are done in
+ * addition to the first execution, which means using `Schedule.recurs(1)` actually results in
+ * the original effect, plus an additional recurrence, for a total of two repetitions of each
+ * value in the stream.
+ *
+ * This function accepts two conversion functions, which allow the output of this stream and the
+ * output of the provided schedule to be unified into a single type. For example, `Either` or
+ * similar data type.
+ */
+export function repeatElementsWith<A, R1, B, C, D>(
+  schedule: SC.Schedule<R1, A, B>,
+  f: (a: A) => C,
+  g: (b: B) => D
+): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1 & Has<Clock>, E, C | D> {
+  return (stream) => repeatElementsWith_(stream, schedule, f, g)
+}
+
+/**
+ * Repeats the entire stream using the specified schedule. The stream will execute normally,
+ * and then repeat again according to the provided schedule. The schedule output will be emitted at
+ * the end of each repetition and can be unified with the stream elements using the provided functions.
+ */
+export function repeatWith_<R, E, A, R1, B, C, D>(
+  stream: Stream<R, E, A>,
+  schedule: SC.Schedule<R1, any, B>,
+  f: (a: A) => C,
+  g: (b: B) => D
+): Stream<R & R1 & Has<Clock>, E, C | D> {
+  return unwrap(
+    I.gen(function* (_) {
+      const driver         = yield* _(SC.driver(schedule))
+      const scheduleOutput = pipe(driver.last, I.orHalt, I.map(g))
+      const process        = map_(stream, f).channel
+
+      const loop: Ch.Channel<R & R1 & Has<Clock>, unknown, unknown, unknown, E, C.Chunk<C | D>, void> = pipe(
+        driver.next(undefined),
+        I.match(
+          () => Ch.unit(),
+          () =>
+            pipe(
+              process,
+              Ch.crossSecond(Ch.unwrap(I.map_(scheduleOutput, (d) => Ch.write(C.single(d))))),
+              Ch.crossSecond(loop)
+            )
+        ),
+        Ch.unwrap
+      )
+      return new Stream(Ch.crossSecond_(process, loop))
+    })
+  )
+}
+
+/**
+ * Repeats the entire stream using the specified schedule. The stream will execute normally,
+ * and then repeat again according to the provided schedule. The schedule output will be emitted at
+ * the end of each repetition and can be unified with the stream elements using the provided functions.
+ */
+export function repeatWith<A, R1, B, C, D>(
+  schedule: SC.Schedule<R1, any, B>,
+  f: (a: A) => C,
+  g: (b: B) => D
+): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1 & Has<Clock>, E, C | D> {
+  return (stream) => repeatWith_(stream, schedule, f, g)
+}
+
+/**
+ * Fails with the error `None` if value is `Left`.
+ */
+export function right<R, E, A, B>(stream: Stream<R, E, E.Either<A, B>>): Stream<R, M.Maybe<E>, B> {
+  return pipe(
+    stream,
+    mapError(M.just),
+    rightOrFail(() => M.nothing())
+  )
+}
+
+/**
+ * Fails with given error 'e' if value is `Left`.
+ */
+export function rightOrFail_<R, E, A, B, E1>(stream: Stream<R, E, E.Either<A, B>>, e: () => E1): Stream<R, E | E1, B> {
+  return pipe(stream, mapIO(E.match(() => I.fail(e()), I.succeed)))
+}
+
+/**
+ * Fails with given error 'e' if value is `Left`.
+ */
+export function rightOrFail<E1>(
+  e: () => E1
+): <R, E, A, B>(stream: Stream<R, E, E.Either<A, B>>) => Stream<R, E | E1, B> {
+  return (stream) => rightOrFail_(stream, e)
+}
+
+/**
+ * Enqueues elements of this stream into a queue. Stream failure and ending will also be
+ * signalled.
+ */
+export function runInto_<R, E extends E1, A, R1, E1>(
+  stream: Stream<R, E, A>,
+  queue: Q.Queue<R1, never, never, unknown, Take.Take<E1, A>, any>
+): I.IO<R & R1, E | E1, void> {
+  return pipe(
+    stream,
+    runIntoManaged(queue),
+    Ma.use(() => I.unit())
+  )
+}
+
+/**
+ * Enqueues elements of this stream into a queue. Stream failure and ending will also be
+ * signalled.
+ */
+export function runInto<R1, E1, A>(
+  queue: Q.Queue<R1, never, never, unknown, Take.Take<E1, A>, any>
+): <R, E extends E1>(stream: Stream<R, E, A>) => I.IO<R & R1, E | E1, void> {
+  return (stream) => runInto_(stream, queue)
+}
+
+/*
+ * Like `into`, but provides the result as a `Managed` to allow for scope
+ * composition.
+ */
+export function runIntoElementsManaged_<R, E, A, R1, E1>(
+  stream: Stream<R, E, A>,
+  queue: Q.Queue<R1, unknown, never, never, Ex.Exit<M.Maybe<E | E1>, A>, unknown>
+): Ma.Managed<R & R1, E | E1, void> {
+  const writer: Ch.Channel<R & R1, E, C.Chunk<A>, unknown, never, Ex.Exit<M.Maybe<E | E1>, A>, unknown> = Ch.readWith(
+    (inp: C.Chunk<A>) =>
+      Ch.crossSecond_(
+        C.foldl_(
+          inp,
+          Ch.unit() as Ch.Channel<R1, unknown, unknown, unknown, never, Ex.Exit<M.Maybe<E | E1>, A>, unknown>,
+          (channel, a) => Ch.crossSecond_(channel, Ch.write(Ex.succeed(a)))
+        ),
+        writer
+      ),
+    (err) => Ch.write(Ex.fail(M.just(err))),
+    () => Ch.write(Ex.fail(M.nothing()))
+  )
+  return pipe(
+    stream.channel,
+    Ch.pipeTo(writer),
+    Ch.mapOutIO((exit) => Q.offer_(queue, exit)),
+    Ch.drain,
+    Ch.runManaged,
+    Ma.asUnit
+  )
+}
+
+/*
+ * Like `into`, but provides the result as a `Managed` to allow for scope
+ * composition.
+ */
+export function runIntoElementsManaged<E, A, R1, E1>(
+  queue: Q.Queue<R1, unknown, never, never, Ex.Exit<M.Maybe<E | E1>, A>, unknown>
+): <R>(stream: Stream<R, E, A>) => Ma.Managed<R & R1, E | E1, void> {
+  return (stream) => runIntoElementsManaged_(stream, queue)
+}
+
+/**
+ * Publishes elements of this stream to a hub. Stream failure and ending will
+ * also be signalled.
+ */
+export function runIntoHub_<R, E extends E1, A, R1, E1>(
+  sa: Stream<R, E, A>,
+  hub: H.Hub<R1, never, never, unknown, Take.Take<E1, A>, any>
+): I.IO<R & R1, E | E1, void> {
+  return runInto_(sa, H.toQueue(hub))
+}
+
+/**
+ * Publishes elements of this stream to a hub. Stream failure and ending will
+ * also be signalled.
+ */
+export function runIntoHub<A, R1, E1>(
+  hub: H.Hub<R1, never, never, unknown, Take.Take<E1, A>, any>
+): <R, E extends E1>(sa: Stream<R, E, A>) => I.IO<R & R1, E | E1, void> {
+  return (sa) => runIntoHub_(sa, hub)
+}
+
+/**
+ * Like `Stream#runIntoHub`, but provides the result as a `Managed` to allow for scope
+ * composition.
+ */
+export function runIntoHubManaged_<R, R1, E extends E1, E1, A>(
+  stream: Stream<R, E, A>,
+  hub: H.Hub<R1, never, never, unknown, Take.Take<E1, A>, any>
+): Ma.Managed<R & R1, E | E1, void> {
+  return runIntoManaged_(stream, H.toQueue(hub))
+}
+
+/**
+ * Like `Stream#runIntoHub`, but provides the result as a `Managed` to allow for scope
+ * composition.
+ */
+export function runIntoHubManaged<R1, E1, A>(hub: H.Hub<R1, never, never, unknown, Take.Take<E1, A>, any>) {
+  return <R, E extends E1>(stream: Stream<R, E, A>) => runIntoHubManaged_(stream, hub)
+}
+
+/**
+ * Like `Stream#into`, but provides the result as a `Managed` to allow for scope
+ * composition.
+ */
+export function runIntoManaged_<R, R1, E extends E1, E1, A>(
+  stream: Stream<R, E, A>,
+  queue: Q.Queue<R1, never, never, unknown, Take.Take<E1, A>, any>
+): Ma.Managed<R & R1, E | E1, void> {
+  const writer: Ch.Channel<R, E, C.Chunk<A>, unknown, E, Take.Take<E | E1, A>, any> = Ch.readWithCause(
+    (in_) => Ch.crossSecond_(Ch.write(Take.chunk(in_)), writer),
+    (cause) => Ch.write(Take.failCause(cause)),
+    (_) => Ch.write(Take.end)
+  )
+
+  return pipe(
+    stream.channel,
+    Ch.pipeTo(writer),
+    Ch.mapOutIO((_) => Q.offer_(queue, _)),
+    Ch.drain,
+    Ch.runManaged,
+    Ma.asUnit
+  )
+}
+
+/**
+ * Like `Stream#into`, but provides the result as a `Managed` to allow for scope
+ * composition.
+ */
+export function runIntoManaged<R1, E1, A>(
+  queue: Q.Queue<R1, never, never, unknown, Take.Take<E1, A>, any>
+): <R, E extends E1>(stream: Stream<R, E, A>) => Ma.Managed<R & R1, E1 | E, void> {
+  return (stream) => runIntoManaged_(stream, queue)
+}
+
+/**
+ * Statefully maps over the elements of this stream to produce all intermediate results
+ * of type `S` given an initial S.
+ */
+export function scan_<R, E, A, B>(sa: Stream<R, E, A>, b: B, f: (b: B, a: A) => B): Stream<R, E, B> {
+  return scanIO_(sa, b, (b, a) => I.succeed(f(b, a)))
+}
+
+/**
+ * Statefully maps over the elements of this stream to produce all intermediate results
+ * of type `S` given an initial S.
+ */
+export function scan<A, B>(b: B, f: (b: B, a: A) => B): <R, E>(sa: Stream<R, E, A>) => Stream<R, E, B> {
+  return (sa) => scan_(sa, b, f)
+}
+
+/**
+ * Statefully and effectfully maps over the elements of this stream to produce all
+ * intermediate results of type `S` given an initial S.
+ */
+export function scanIO_<R, E, A, R1, E1, B>(
+  sa: Stream<R, E, A>,
+  b: B,
+  f: (b: B, a: A) => I.IO<R1, E1, B>
+): Stream<R & R1, E | E1, B> {
+  return concat_(
+    succeed(b),
+    mapAccumIO_(sa, b, (b, a) => I.map_(f(b, a), (b) => [b, b]))
+  )
+}
+
+/**
+ * Statefully and effectfully maps over the elements of this stream to produce all
+ * intermediate results of type `S` given an initial S.
+ */
+export function scanIO<A, R1, E1, B>(
+  b: B,
+  f: (b: B, a: A) => I.IO<R1, E1, B>
+): <R, E>(sa: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
+  return (sa) => scanIO_(sa, b, f)
+}
+
+/**
  * Schedules the output of the stream using the provided `schedule`.
  */
-export function schedule<R1, I>(schedule: Schedule<R1, I, any>) {
-  return <R, E, A extends I>(self: Stream<R, E, A>) => schedule_(self, schedule)
+export function schedule_<R, E, A, R1>(
+  stream: Stream<R, E, A>,
+  schedule: SC.Schedule<R1, A, any>
+): Stream<R & R1 & Has<Clock>, E, A> {
+  return pipe(scheduleEither_(stream, schedule), filterMap(M.getLeft))
+}
+
+/**
+ * Schedules the output of the stream using the provided `schedule`.
+ */
+export function schedule<A, R1>(
+  schedule: SC.Schedule<R1, A, any>
+): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1 & Has<Clock>, E, A> {
+  return (stream) => schedule_(stream, schedule)
 }
 
 /**
@@ -4637,18 +4247,20 @@ export function schedule<R1, I>(schedule: Schedule<R1, I, any>) {
  * the end (if `schedule` is finite).
  */
 export function scheduleEither_<R, E, A, R1, B>(
-  ma: Stream<R, E, A>,
-  schedule: Schedule<R1, A, B>
-): Stream<R & R1 & Has<Clock>, E, E.Either<B, A>> {
-  return scheduleWith(schedule)(E.right, E.left)(ma)
+  stream: Stream<R, E, A>,
+  schedule: SC.Schedule<R1, A, B>
+): Stream<R & R1 & Has<Clock>, E, E.Either<A, B>> {
+  return scheduleWith_(stream, schedule, E.left, E.right)
 }
 
 /**
  * Schedules the output of the stream using the provided `schedule` and emits its output at
  * the end (if `schedule` is finite).
  */
-export function scheduleEither<R1, A, B>(schedule: Schedule<R1, A, B>) {
-  return <R, E>(ma: Stream<R, E, A>) => scheduleEither_(ma, schedule)
+export function scheduleEither<A, R1, B>(
+  schedule: SC.Schedule<R1, A, B>
+): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1 & Has<Clock>, E, E.Either<A, B>> {
+  return (stream) => scheduleEither_(stream, schedule)
 }
 
 /**
@@ -4656,218 +4268,195 @@ export function scheduleEither<R1, A, B>(schedule: Schedule<R1, A, B>) {
  * the end (if `schedule` is finite).
  * Uses the provided function to align the stream and schedule outputs on the same type.
  */
-export function scheduleWith<R1, A, B>(schedule: Sc.Schedule<R1, A, B>) {
-  return <C, D>(f: (a: A) => C, g: (b: B) => D) =>
-    <R, E>(self: Stream<R, E, A>): Stream<R & R1 & Has<Clock>, E, C | D> => {
-      return new Stream(
-        Ma.gen(function* (_) {
-          const os     = yield* _(pipe(self.proc, Ma.mapIO(BPull.make)))
-          const driver = yield* _(Sc.driver(schedule))
-
-          const pull = pipe(
-            os,
-            BPull.pullElement,
-            I.chain((o) =>
-              pipe(
-                driver.next(o),
-                I.asLazy(() => C.single(f(o))),
-                I.orElse(() =>
-                  pipe(
-                    driver.last,
-                    I.orHalt,
-                    I.map((b) => C.make<C | D>(f(o), g(b))),
-                    I.crossFirst(driver.reset)
-                  )
-                )
-              )
+export function scheduleWith_<R, E, A, R1, B, C, D>(
+  stream: Stream<R, E, A>,
+  schedule: SC.Schedule<R1, A, B>,
+  f: (a: A) => C,
+  g: (b: B) => D
+): Stream<R & R1 & Has<Clock>, E, C | D> {
+  return unwrap(
+    I.map_(SC.driver(schedule), (driver) =>
+      loopOnPartialChunksElements_(stream, (a, emit) =>
+        pipe(
+          driver.next(a),
+          I.crossSecond(emit(f(a))),
+          I.orElse(() =>
+            pipe(
+              driver.last,
+              I.orHalt,
+              I.chain((b) => I.crossSecond_(emit(f(a)), emit(g(b)))),
+              I.crossFirst(driver.reset)
             )
           )
-
-          return pull
-        })
+        )
       )
-    }
+    )
+  )
 }
 
-export function take_<R, E, A>(ma: Stream<R, E, A>, n: number): Stream<R, E, A> {
-  if (n <= 0) {
-    return empty
-  } else {
-    return new Stream(
-      Ma.gen(function* (_) {
-        const chunks     = yield* _(ma.proc)
-        const counterRef = yield* _(Ref.make(0))
+/**
+ * Schedules the output of the stream using the provided `schedule` and emits its output at
+ * the end (if `schedule` is finite).
+ * Uses the provided function to align the stream and schedule outputs on the same type.
+ */
+export function scheduleWith<A, R1, B, C, D>(
+  schedule: SC.Schedule<R1, A, B>,
+  f: (a: A) => C,
+  g: (b: B) => D
+): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1 & Has<Clock>, E, C | D> {
+  return (stream) => scheduleWith_(stream, schedule, f, g)
+}
 
-        const pull = pipe(
-          counterRef.get,
-          I.chain((count) => {
-            if (count >= n) {
-              return Pull.end
-            } else {
-              return I.gen(function* (_) {
-                const chunk = yield* _(chunks)
-                const taken = chunk.length <= n - count ? chunk : C.take_(chunk, n - count)
-                yield* _(counterRef.set(count + taken.length))
-                return taken
-              })
-            }
-          })
+/**
+ * Unwraps `Exit` values that also signify end-of-stream by failing with `None`.
+ *
+ * For `Exit<E, A>` values that do not signal end-of-stream, prefer:
+ * {{{
+ * mapM(stream, _ => T.done(_))
+ * }}}
+ */
+export function flattenExitOption<R, E, E1, A>(stream: Stream<R, E, Ex.Exit<M.Maybe<E1>, A>>): Stream<R, E | E1, A> {
+  const processChunk = (
+    chunk: C.Chunk<Ex.Exit<M.Maybe<E1>, A>>,
+    cont: Ch.Channel<R, E, C.Chunk<Ex.Exit<M.Maybe<E1>, A>>, unknown, E | E1, C.Chunk<A>, any>
+  ): Ch.Channel<R, E, C.Chunk<Ex.Exit<M.Maybe<E1>, A>>, unknown, E | E1, C.Chunk<A>, any> => {
+    const [toEmit, rest] = C.splitWhere_(chunk, (_) => !Ex.isSuccess(_))
+    const next           = M.match_(
+      C.head(rest),
+      () => cont,
+      Ex.match(
+        (cause) =>
+          M.match_(
+            Ca.flipCauseOption(cause),
+            () => Ch.end<void>(undefined),
+            (cause) => Ch.failCause(cause)
+          ),
+        () => Ch.end<void>(undefined)
+      )
+    )
+
+    return Ch.crossSecond_(
+      Ch.write(
+        C.filterMap_(
+          toEmit,
+          Ex.match(
+            () => M.nothing(),
+            (a) => M.just(a)
+          )
         )
-        return pull
-      })
+      ),
+      next
     )
   }
+
+  const process: Ch.Channel<
+    R,
+    E,
+    C.Chunk<Ex.Exit<M.Maybe<E1>, A>>,
+    unknown,
+    E | E1,
+    C.Chunk<A>,
+    any
+  > = Ch.readWithCause(
+    (chunk) => processChunk(chunk, process),
+    (cause) => Ch.failCause(cause),
+    (_) => Ch.end(undefined)
+  )
+
+  return new Stream(Ch.pipeTo_(stream.channel, process))
 }
 
 /**
- * Takes the specified number of elements from this stream.
+ * Unwraps `Exit` values and flatten chunks that also signify end-of-stream by failing with `None`.
  */
-export function take(n: number): <R, E, A>(ma: Stream<R, E, A>) => Stream<R, E, A> {
-  return (ma) => take_(ma, n)
-}
-
-/**
- * Takes all elements of the stream until the specified predicate evaluates
- * to `true`.
- */
-export function takeUntil_<R, E, A>(ma: Stream<R, E, A>, pred: Predicate<A>): Stream<R, E, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const chunks        = yield* _(ma.proc)
-      const keepTakingRef = yield* _(Ref.make(true))
-      const pull          = pipe(
-        keepTakingRef.get,
-        I.chain((keepTaking) => {
-          if (!keepTaking) {
-            return Pull.end
-          } else {
-            return I.gen(function* (_) {
-              const chunk = yield* _(chunks)
-              const taken = C.takeWhile_(chunk, not(pred))
-              const last  = pipe(chunk, C.drop(taken.length), C.take(1))
-              yield* _(
-                pipe(
-                  keepTakingRef.set(false),
-                  I.when(() => C.isNonEmpty(last))
-                )
-              )
-              return C.concat_(taken, last)
-            })
-          }
-        })
-      )
-      return pull
-    })
+export function flattenTake<R, E, E1, A>(stream: Stream<R, E, Take.Take<E1, A>>): Stream<R, E | E1, A> {
+  return pipe(
+    stream,
+    map((_) => _.exit),
+    flattenExitOption,
+    flattenChunks
   )
 }
 
 /**
- * Takes all elements of the stream until the specified predicate evaluates
- * to `true`.
+ * Submerges the chunks carried by this stream into the stream's structure, while
+ * still preserving them.
  */
-export function takeUntil<A>(pred: Predicate<A>): <R, E>(ma: Stream<R, E, A>) => Stream<R, E, A> {
-  return (ma) => takeUntil_(ma, pred)
+export function flattenChunks<R, E, A>(stream: Stream<R, E, C.Chunk<A>>): Stream<R, E, A> {
+  return new Stream(Ch.mapOut_(stream.channel, C.flatten))
+}
+
+export const DEFAULT_CHUNK_SIZE = 4096
+
+/**
+ * Converts the stream to a managed hub of chunks. After the managed hub is used,
+ * the hub will never again produce values and should be discarded.
+ */
+export function toHub_<R, E, A>(
+  stream: Stream<R, E, A>,
+  capacity: number
+): Ma.Managed<R, never, H.UHub<Take.Take<E, A>>> {
+  return Ma.gen(function* (_) {
+    const hub = yield* _(Ma.bracket_(H.makeBounded<Take.Take<E, A>>(capacity), H.shutdown))
+    yield* _(Ma.fork(runIntoHubManaged_(stream, hub)))
+    return hub
+  })
 }
 
 /**
- * Takes all elements of the stream until the specified effectual predicate
- * evaluates to `true`.
+ * Converts the stream to a managed hub of chunks. After the managed hub is used,
+ * the hub will never again produce values and should be discarded.
  */
-export function takeUntilIO_<R, E, A, R1, E1>(
-  ma: Stream<R, E, A>,
-  pred: (a: A) => I.IO<R1, E1, boolean>
-): Stream<R & R1, E | E1, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const chunks        = yield* _(ma.proc)
-      const keepTakingRef = yield* _(Ref.make(true))
-      const pull          = pipe(
-        keepTakingRef.get,
-        I.chain((keepTaking) => {
-          if (!keepTaking) {
-            return Pull.end
-          } else {
-            return I.gen(function* (_) {
-              const chunk = yield* _(chunks)
-              const taken = yield* _(
-                pipe(
-                  C.takeWhileIO_(
-                    chunk,
-                    flow(
-                      pred,
-                      I.map((_) => !_)
-                    )
-                  ),
-                  I.asJustError
-                ) as I.IO<R1, M.Maybe<E | E1>, Chunk<A>>
-              )
-              const last = pipe(chunk, C.drop(taken.length), C.take(1))
-              yield* _(
-                pipe(
-                  keepTakingRef.set(false),
-                  I.when(() => C.isNonEmpty(last))
+export function toHub(
+  capacity: number
+): <R, E, A>(stream: Stream<R, E, A>) => Ma.Managed<R, never, H.UHub<Take.Take<E, A>>> {
+  return (stream) => toHub_(stream, capacity)
+}
+
+export function ensuring_<R, E, A, R1>(sa: Stream<R, E, A>, fin: I.IO<R1, never, any>): Stream<R & R1, E, A> {
+  return new Stream(pipe(sa.channel, Ch.ensuring(fin)))
+}
+
+export function ensuring<R1>(fin: I.IO<R1, never, any>): <R, E, A>(sa: Stream<R, E, A>) => Stream<R & R1, E, A> {
+  return (sa) => ensuring_(sa, fin)
+}
+
+function throttleEnforceIOLoop<E, A, R1, E1>(
+  costFn: (chunk: C.Chunk<A>) => I.IO<R1, E1, number>,
+  units: number,
+  duration: number,
+  burst: number,
+  tokens: number,
+  timestamp: number
+): Ch.Channel<R1 & Has<Clock>, E | E1, C.Chunk<A>, unknown, E | E1, C.Chunk<A>, void> {
+  return Ch.readWith(
+    (inp: C.Chunk<A>) =>
+      Ch.unwrap(
+        pipe(
+          costFn(inp),
+          I.cross(Clock.currentTime),
+          I.map(([weight, current]) => {
+            const elapsed   = current - timestamp
+            const cycles    = elapsed / duration
+            const available = (() => {
+              const sum = tokens + cycles * units
+              const max = units + burst < 0 ? Number.MAX_SAFE_INTEGER : units + burst
+
+              return sum < 0 ? max : Math.min(sum, max)
+            })()
+
+            return weight <= available
+              ? Ch.crossSecond_(
+                  Ch.write(inp),
+                  throttleEnforceIOLoop(costFn, units, duration, burst, available - weight, current)
                 )
-              )
-              return C.concat_(taken, last)
-            })
-          }
-        })
-      )
-      return pull
-    })
+              : throttleEnforceIOLoop(costFn, units, duration, burst, available - weight, current)
+          })
+        )
+      ),
+    Ch.fail,
+    () => Ch.unit()
   )
-}
-
-/**
- * Takes all elements of the stream until the specified effectual predicate
- * evaluates to `true`.
- */
-export function takeUntilIO<A, R1, E1>(
-  pred: (a: A) => I.IO<R1, E1, boolean>
-): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, A> {
-  return (ma) => takeUntilIO_(ma, pred)
-}
-
-/**
- * Takes all elements of the stream for as long as the specified predicate
- * evaluates to `true`.
- */
-export function takeWhile_<R, E, A>(ma: Stream<R, E, A>, pred: Predicate<A>): Stream<R, E, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const chunks  = yield* _(ma.proc)
-      const doneRef = yield* _(Ref.make(false))
-      const pull    = pipe(
-        doneRef.get,
-        I.chain((done) => {
-          if (done) {
-            return Pull.end
-          } else {
-            return I.gen(function* (_) {
-              const chunk = yield* _(chunks)
-              const taken = C.takeWhile_(chunk, pred)
-              yield* _(
-                pipe(
-                  doneRef.set(true),
-                  I.when(() => taken.length < chunk.length)
-                )
-              )
-              return taken
-            })
-          }
-        })
-      )
-      return pull
-    })
-  )
-}
-
-/**
- * Takes all elements of the stream for as long as the specified predicate
- * evaluates to `true`.
- */
-export function takeWhile<A>(pred: Predicate<A>): <R, E>(ma: Stream<R, E, A>) => Stream<R, E, A> {
-  return (ma) => takeWhile_(ma, pred)
 }
 
 /**
@@ -4877,13 +4466,13 @@ export function takeWhile<A>(pred: Predicate<A>): <R, E>(ma: Stream<R, E, A>) =>
  * The weight of each chunk is determined by the `costFn` function.
  */
 export function throttleEnforce_<R, E, A>(
-  ma: Stream<R, E, A>,
-  costFn: (chunk: Chunk<A>) => number,
+  sa: Stream<R, E, A>,
+  costFn: (chunk: C.Chunk<A>) => number,
   units: number,
   duration: number,
   burst = 0
 ): Stream<R & Has<Clock>, E, A> {
-  return throttleEnforceIO_(ma, flow(costFn, I.succeed), units, duration, burst)
+  return throttleEnforceIO_(sa, (chunk) => I.succeed(costFn(chunk)), units, duration, burst)
 }
 
 /**
@@ -4893,12 +4482,12 @@ export function throttleEnforce_<R, E, A>(
  * The weight of each chunk is determined by the `costFn` function.
  */
 export function throttleEnforce<A>(
-  costFn: (chunk: Chunk<A>) => number,
+  costFn: (chunk: C.Chunk<A>) => number,
   units: number,
   duration: number,
   burst = 0
-): <R, E>(ma: Stream<R, E, A>) => Stream<R & Has<Clock>, E, A> {
-  return (ma) => throttleEnforce_(ma, costFn, units, duration, burst)
+): <R, E>(sa: Stream<R, E, A>) => Stream<R & Has<Clock>, E, A> {
+  return (sa) => throttleEnforce_(sa, costFn, units, duration, burst)
 }
 
 /**
@@ -4908,46 +4497,16 @@ export function throttleEnforce<A>(
  * The weight of each chunk is determined by the `costFn` effectful function.
  */
 export function throttleEnforceIO_<R, E, A, R1, E1>(
-  ma: Stream<R, E, A>,
-  costFn: (chunk: Chunk<A>) => I.IO<R1, E1, number>,
+  sa: Stream<R, E, A>,
+  costFn: (chunk: C.Chunk<A>) => I.IO<R1, E1, number>,
   units: number,
   duration: number,
   burst = 0
 ): Stream<R & R1 & Has<Clock>, E | E1, A> {
   return new Stream(
-    Ma.gen(function* (_) {
-      const chunks = yield* _(ma.proc)
-      const time   = yield* _(Clock.currentTime)
-      const bucket = yield* _(Ref.make(tuple(units, time)))
-      const pull: I.IO<R & R1 & Has<Clock>, M.Maybe<E | E1>, Chunk<A>> = pipe(
-        chunks,
-        I.chain((chunk) =>
-          pipe(
-            costFn(chunk),
-            I.mapError(M.just),
-            I.cross(Clock.currentTime),
-            I.chain(([weight, current]) =>
-              Ref.modify_(bucket, ([tokens, timestamp]) => {
-                const elapsed   = current - timestamp
-                const cycles    = elapsed / duration
-                const available = (() => {
-                  const sum = tokens + cycles * units
-                  const max = units + burst < 0 ? Number.MAX_VALUE : units + burst
-                  return sum < 0 ? max : Math.min(sum, max)
-                })()
-                if (weight <= available) {
-                  return tuple(M.just(chunk), tuple(available - weight, current))
-                } else {
-                  return tuple(M.nothing(), tuple(available, current))
-                }
-              })
-            ),
-            I.chain(M.match(() => pull, I.succeed))
-          )
-        )
-      )
-      return pull
-    })
+    Ch.chain_(Ch.fromIO(Clock.currentTime), (current) =>
+      Ch.pipeTo_(sa.channel, throttleEnforceIOLoop(costFn, units, duration, burst, units, current))
+    )
   )
 }
 
@@ -4958,231 +4517,25 @@ export function throttleEnforceIO_<R, E, A, R1, E1>(
  * The weight of each chunk is determined by the `costFn` effectful function.
  */
 export function throttleEnforceIO<A, R1, E1>(
-  costFn: (chunk: Chunk<A>) => I.IO<R1, E1, number>,
+  costFn: (chunk: C.Chunk<A>) => I.IO<R1, E1, number>,
   units: number,
   duration: number,
   burst = 0
-): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1 & Has<Clock>, E | E1, A> {
-  return (ma) => throttleEnforceIO_(ma, costFn, units, duration, burst)
-}
-
-export function throttleShapeM_<R, E, A, R1, E1>(
-  ma: Stream<R, E, A>,
-  costFn: (chunk: Chunk<A>) => I.IO<R1, E1, number>,
-  units: number,
-  duration: number,
-  burst = 0
-): Stream<R & R1 & Has<Clock>, E | E1, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const chunks = yield* _(ma.proc)
-      const time   = yield* _(Clock.currentTime)
-      const bucket = yield* _(Ref.make(tuple(units, time)))
-      const pull   = I.gen(function* (_) {
-        const chunk   = yield* _(chunks)
-        const weight  = yield* _(I.mapError_(costFn(chunk), M.just) as I.IO<R1, M.Maybe<E | E1>, number>)
-        const current = yield* _(Clock.currentTime)
-        const delay   = yield* _(
-          Ref.modify_(bucket, ([tokens, timestamp]) => {
-            const elapsed   = current - timestamp
-            const cycles    = elapsed / duration
-            const available = (() => {
-              const sum = tokens + cycles * units
-              const max = units + burst < 0 ? Number.MAX_VALUE : units + burst
-              return sum < 0 ? max : Math.min(sum, max)
-            })()
-            const remaining  = available - weight
-            const waitCycles = remaining >= 0 ? 0 : -remaining / units
-            const delay      = waitCycles * duration
-            return tuple(delay, tuple(remaining, current))
-          })
-        )
-        yield* _(
-          pipe(
-            I.sleep(delay),
-            I.when(() => delay > 0)
-          )
-        )
-        return chunk
-      })
-      return pull
-    })
-  )
-}
-
-export function throttleShapeIO<A, R1, E1>(
-  costFn: (chunk: Chunk<A>) => I.IO<R1, E1, number>,
-  units: number,
-  duration: number,
-  burst = 0
-): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1 & Has<Clock>, E | E1, A> {
-  return (ma) => throttleShapeM_(ma, costFn, units, duration, burst)
-}
-
-export function debounce_<R, E, A>(ma: Stream<R, E, A>, d: number): Stream<R & Has<Clock>, E, A> {
-  interface NotStarted {
-    _tag: 'NotStarted'
-  }
-  interface Previous {
-    _tag: 'Previous'
-    fiber: Fiber<never, A>
-  }
-  interface Current {
-    _tag: 'Current'
-    fiber: Fiber<Maybe<E>, Chunk<A>>
-  }
-  interface Done {
-    _tag: 'Done'
-  }
-  type State = NotStarted | Previous | Current | Done
-
-  return new Stream(
-    Ma.gen(function* (_) {
-      const chunks = yield* _(ma.proc)
-      const ref    = yield* _(
-        pipe(
-          Ref.make<State>({ _tag: 'NotStarted' }),
-          I.toManaged((ref) =>
-            I.chain_(
-              ref.get,
-              flow(
-                matchTag(
-                  {
-                    Previous: ({ fiber }) => Fi.interrupt(fiber),
-                    Current: ({ fiber }) => Fi.interrupt(fiber)
-                  },
-                  () => I.unit()
-                ),
-                I.asUnit
-              )
-            )
-          )
-        )
-      )
-      const store = (chunk: Chunk<A>) =>
-        pipe(
-          chunk,
-          C.last,
-          M.map((last) =>
-            pipe(
-              I.sleep(d),
-              I.asLazy(() => last),
-              I.forkDaemon,
-              I.chain((f) => ref.set({ _tag: 'Previous', fiber: f }))
-            )
-          ),
-          M.getOrElse(() => ref.set({ _tag: 'NotStarted' })),
-          I.asLazy(() => C.empty<A>())
-        )
-
-      const pull = pipe(
-        ref.get,
-        I.chain(
-          matchTag({
-            Previous: ({ fiber }) =>
-              pipe(
-                fiber,
-                Fi.join,
-                I.raceWith(
-                  chunks,
-                  (ex, current) =>
-                    Ex.match_(
-                      ex,
-                      (cause): I.IO<R & Has<Clock>, Maybe<E>, Chunk<A>> =>
-                        I.crossSecond_(Fi.interrupt(current), Pull.halt(cause)),
-                      (value) => I.asLazy_(ref.set({ _tag: 'Current', fiber: current }), () => C.single(value))
-                    ),
-                  (ex, previous) =>
-                    Ex.match_(
-                      ex,
-                      flow(
-                        Ca.sequenceCauseOption,
-                        M.match(
-                          (): I.IO<R & Has<Clock>, Maybe<E>, Chunk<A>> =>
-                            pipe(Fi.join(previous), I.map(C.single), I.crossFirst(ref.set({ _tag: 'Done' }))),
-                          (e) => I.crossSecond_(Fi.interrupt(previous), Pull.halt(e))
-                        )
-                      ),
-                      (chunk): I.IO<R & Has<Clock>, Maybe<E>, Chunk<A>> =>
-                        C.isEmpty(chunk) ? Pull.empty<A>() : I.crossSecond_(Fi.interrupt(previous), store(chunk))
-                    ),
-                  M.just(globalScope)
-                )
-              ),
-            Current: ({ fiber }) => I.chain_(Fi.join(fiber), store),
-            NotStarted: () => I.chain_(chunks, store),
-            Done: () => Pull.end
-          })
-        )
-      )
-      return pull
-    })
-  )
-}
-
-export function debounce(d: number): <R, E, A>(ma: Stream<R, E, A>) => Stream<R & Has<Clock>, E, A> {
-  return (ma) => debounce_(ma, d)
-}
-
-/**
- * A stream that emits Unit values spaced by the specified duration.
- */
-export function tick(interval: number): Stream<Has<Clock>, never, void> {
-  return repeatWith_(undefined, Sc.spaced(interval))
-}
-
-export function toAsyncIterable<R, E, A>(ma: Stream<R, E, A>): Managed<R, never, AsyncIterable<E.Either<E, A>>> {
-  return Ma.gen(function* (_) {
-    const runtime = yield* _(I.runtime<R>())
-    const pull    = yield* _(ma.proc)
-
-    return {
-      [Symbol.asyncIterator](): AsyncIterator<E.Either<E, A>> {
-        let currentChunk: A[] = []
-        return {
-          async next(): Promise<IteratorResult<E.Either<E, A>>> {
-            if (currentChunk.length > 0) {
-              const v = currentChunk.pop()!
-              return { done: false, value: E.right(v) }
-            } else {
-              const result = await runtime.runPromiseExit(pull)
-              return Ex.match_(
-                result,
-                flow(
-                  Ca.failureOrCause,
-                  E.match(
-                    M.match(
-                      () => ({ value: null, done: true }),
-                      (e) => ({ value: E.left(e), done: true })
-                    ),
-                    (ca) => {
-                      throw new Ca.FiberFailure(ca)
-                    }
-                  )
-                ),
-                (chunk) => {
-                  const c      = Array.from(chunk).reverse()
-                  const v      = c.pop()!
-                  currentChunk = c
-                  return { done: false, value: E.right(v) }
-                }
-              )
-            }
-          }
-        }
-      }
-    }
-  })
+): <R, E>(sa: Stream<R, E, A>) => Stream<R & R1 & Has<Clock>, E | E1, A> {
+  return (sa) => throttleEnforceIO_(sa, costFn, units, duration, burst)
 }
 
 /**
  * Converts the stream to a managed queue of chunks. After the managed queue is used,
  * the queue will never again produce values and should be discarded.
  */
-export function toQueue_<R, E, A>(ma: Stream<R, E, A>, capacity = 2): Ma.Managed<R, never, Q.Dequeue<Take.Take<E, A>>> {
+export function toQueue_<R, E, A>(
+  stream: Stream<R, E, A>,
+  capacity = 2
+): Ma.Managed<R, never, Q.UQueue<Take.Take<E, A>>> {
   return Ma.gen(function* (_) {
-    const queue = yield* _(I.toManaged_(Q.makeBounded<Take.Take<E, A>>(capacity), Q.shutdown))
-    yield* _(Ma.fork(intoManaged_(ma, queue)))
+    const queue = yield* _(Ma.bracket_(Q.makeBounded<Take.Take<E, A>>(capacity), Q.shutdown))
+    yield* _(Ma.fork(runIntoManaged_(stream, queue)))
     return queue
   })
 }
@@ -5193,809 +4546,316 @@ export function toQueue_<R, E, A>(ma: Stream<R, E, A>, capacity = 2): Ma.Managed
  */
 export function toQueue(
   capacity = 2
-): <R, E, A>(ma: Stream<R, E, A>) => Ma.Managed<R, never, Q.Dequeue<Take.Take<E, A>>> {
-  return (ma) => toQueue_(ma, capacity)
+): <R, E, A>(stream: Stream<R, E, A>) => Ma.Managed<R, never, Q.UQueue<Take.Take<E, A>>> {
+  return (stream) => toQueue_(stream, capacity)
 }
 
 /**
  * Converts the stream into an unbounded managed queue. After the managed queue
  * is used, the queue will never again produce values and should be discarded.
  */
-export function toQueueUnbounded<R, E, A>(ma: Stream<R, E, A>): Ma.Managed<R, never, Q.Dequeue<Take.Take<E, A>>> {
+export function toQueueUnbounded<R, E, A>(stream: Stream<R, E, A>): Ma.Managed<R, never, Q.UQueue<Take.Take<E, A>>> {
   return Ma.gen(function* (_) {
-    const queue = yield* _(I.toManaged_(Q.makeUnbounded<Take.Take<E, A>>(), Q.shutdown))
-    yield* _(Ma.fork(intoManaged_(ma, queue)))
+    const queue = yield* _(Ma.bracket_(Q.makeUnbounded<Take.Take<E, A>>(), Q.shutdown))
+    yield* _(Ma.fork(runIntoManaged_(stream, queue)))
     return queue
   })
 }
 
-/**
- * Creates a stream produced from an effect
- */
-export function unwrap<R, E, A>(fa: I.IO<R, E, Stream<R, E, A>>): Stream<R, E, A> {
-  return flatten(fromIO(fa))
-}
-
-/**
- * Creates a stream produced from a `Managed`
- */
-export function unwrapManaged<R, E, A>(fa: Ma.Managed<R, E, Stream<R, E, A>>): Stream<R, E, A> {
-  return flatten(fromManaged(fa))
-}
-
-/**
- * Threads the stream through the transformation function `f`.
- */
-export function via_<R, E, A, R1, E1, A1>(
-  ma: Stream<R, E, A>,
-  f: (stream: Stream<R, E, A>) => Stream<R1, E1, A1>
-): Stream<R1, E1, A1> {
-  return f(ma)
-}
-
-/**
- * Threads the stream through the transformation function `f`.
- */
-export function via<R, E, A, R1, E1, A1>(
-  f: (stream: Stream<R, E, A>) => Stream<R1, E1, A1>
-): (ma: Stream<R, E, A>) => Stream<R1, E1, A1> {
-  return f
-}
-
-/**
- * Creates a stream by peeling off the "layers" of a value of type `S`
- */
-export function unfold<S, A>(s: S, f: (s: S) => Maybe<readonly [A, S]>): Stream<unknown, never, A> {
-  return unfoldIO(s, (s) => I.succeed(f(s)))
-}
-
-/**
- * Creates a stream by effectfully peeling off the "layers" of a value of type `S`
- */
-export function unfoldIO<S, R, E, A>(s: S, f: (s: S) => I.IO<R, E, Maybe<readonly [A, S]>>): Stream<R, E, A> {
-  return unfoldChunkIO(s, flow(f, I.map(M.map(([o, z]) => [C.single(o), z]))))
-}
-
-/**
- * Creates a stream by peeling off the "layers" of a value of type `S`.
- */
-export function unfoldChunk<S, A>(s: S, f: (s: S) => Maybe<readonly [Chunk<A>, S]>): Stream<unknown, never, A> {
-  return unfoldChunkIO(s, (s) => I.succeed(f(s)))
-}
-
-/**
- * Creates a stream by effectfully peeling off the "layers" of a value of type `S`
- */
-export function unfoldChunkIO<S, R, E, A>(
-  s: S,
-  f: (s: S) => I.IO<R, E, Maybe<readonly [Chunk<A>, S]>>
-): Stream<R, E, A> {
-  return new Stream(
-    Ma.gen(function* (_) {
-      const doneRef = yield* _(Ref.make(false))
-      const ref     = yield* _(Ref.make(s))
-
-      const pull = pipe(
-        doneRef.get,
-        I.chain((done) => {
-          if (done) {
-            return Pull.end
-          } else {
-            return pipe(
-              ref.get,
-              I.chain(f),
-              I.matchIO(
-                Pull.fail,
-                M.match(
-                  () => pipe(doneRef.set(true), I.crossSecond(Pull.end)),
-                  ([as, z]) =>
-                    pipe(
-                      ref.set(z),
-                      I.asLazy(() => as)
-                    )
-                )
-              )
-            )
-          }
-        })
-      )
-      return pull
-    })
-  )
-}
-
-export function zipAll_<R, E, A, R1, E1, B>(
-  ma: Stream<R, E, A>,
-  mb: Stream<R1, E1, B>,
-  defLeft: A,
-  defRight: B
-): Stream<R & R1, E | E1, readonly [A, B]> {
-  return zipAllWith_(
-    ma,
-    mb,
-    (o) => tuple(o, defRight),
-    (o1) => tuple(defLeft, o1),
-    tuple
-  )
-}
-
-export function zipAll<A, R1, E1, B>(
-  mb: Stream<R1, E1, B>,
-  defLeft: A,
-  defRight: B
-): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, readonly [A, B]> {
-  return (ma) => zipAll_(ma, mb, defLeft, defRight)
-}
-
-/**
- * Zips this stream with another point-wise, and keeps only elements from this stream.
- *
- * The provided default value will be used if the other stream ends before this one.
- */
-export function zipAllLeft_<R, E, A, R1, E1, B>(
-  ma: Stream<R, E, A>,
-  mb: Stream<R1, E1, B>,
-  def: A
-): Stream<R & R1, E | E1, A> {
-  return zipAllWith_(
-    ma,
-    mb,
-    identity,
-    () => def,
-    (o, _) => o
-  )
-}
-
-/**
- * Zips this stream with another point-wise, and keeps only elements from this stream.
- *
- * The provided default value will be used if the other stream ends before this one.
- */
-export function zipAllLeft<A, R1, E1, B>(
-  mb: Stream<R1, E1, B>,
-  def: A
-): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, A> {
-  return (ma) => zipAllLeft_(ma, mb, def)
-}
-
-/**
- * Zips this stream with another point-wise, and keeps only elements from the other stream.
- *
- * The provided default value will be used if this stream ends before the other one.
- */
-export function zipAllRight_<R, E, A, R1, E1, B>(
-  ma: Stream<R, E, A>,
-  mb: Stream<R1, E1, B>,
-  def: B
-): Stream<R & R1, E | E1, B> {
-  return zipAllWith_(
-    ma,
-    mb,
-    () => def,
-    identity,
-    (_, o1) => o1
-  )
-}
-
-/**
- * Zips this stream with another point-wise, and keeps only elements from the other stream.
- *
- * The provided default value will be used if this stream ends before the other one.
- */
-export function zipAllRight<A, R1, E1, B>(
-  mb: Stream<R1, E1, B>,
-  def: B
-): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
-  return (ma) => zipAllRight_(ma, mb, def)
-}
-
-/**
- * Zips this stream with another point-wise. The provided functions will be used to create elements
- * for the composed stream.
- *
- * The functions `left` and `right` will be used if the streams have different lengths
- * and one of the streams has ended before the other.
- */
-export function zipAllWith_<R, E, A, R1, E1, B, C>(
-  ma: Stream<R, E, A>,
-  mb: Stream<R1, E1, B>,
-  left: (a: A) => C,
-  right: (b: B) => C,
-  both: (a: A, b: B) => C
-): Stream<R & R1, E | E1, C> {
-  return zipAllWithExec_(ma, mb, parallel, left, right, both)
-}
-
-/**
- * Zips this stream with another point-wise. The provided functions will be used to create elements
- * for the composed stream.
- *
- * The functions `left` and `right` will be used if the streams have different lengths
- * and one of the streams has ended before the other.
- */
-export function zipAllWith<A, R1, E1, B, C>(
-  mb: Stream<R1, E1, B>,
-  left: (a: A) => C,
-  right: (b: B) => C,
-  both: (a: A, b: B) => C
-): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, C> {
-  return (ma) => zipAllWith_(ma, mb, left, right, both)
-}
-
-/**
- * Zips this stream with another point-wise. The provided functions will be used to create elements
- * for the composed stream.
- *
- * The functions `left` and `right` will be used if the streams have different lengths
- * and one of the streams has ended before the other.
- *
- * The execution strategy `exec` will be used to determine whether to pull
- * from the streams sequentially or in parallel.
- */
-export function zipAllWithExec_<R, E, A, R1, E1, B, C>(
-  ma: Stream<R, E, A>,
-  mb: Stream<R1, E1, B>,
-  exec: ExecutionStrategy,
-  left: (a: A) => C,
-  right: (b: B) => C,
-  both: (a: A, b: B) => C
-): Stream<R & R1, E | E1, C> {
-  interface Running {
-    readonly _tag: 'Running'
-  }
-  interface LeftDone {
-    readonly _tag: 'LeftDone'
-  }
-  interface RightDone {
-    readonly _tag: 'RightDone'
-  }
-  interface End {
-    readonly _tag: 'End'
-  }
-  type Status = Running | LeftDone | RightDone | End
-  type State = readonly [Status, E.Either<Chunk<A>, Chunk<B>>]
-
-  const handleSuccess = (
-    maybeO: M.Maybe<Chunk<A>>,
-    maybeO1: M.Maybe<Chunk<B>>,
-    excess: E.Either<Chunk<A>, Chunk<B>>
-  ): Ex.Exit<never, readonly [Chunk<C>, State]> => {
-    const [excessL, excessR] = E.match_(
-      excess,
-      (l) => tuple(l, C.empty<B>()),
-      (r) => tuple(C.empty<A>(), r)
-    )
-    const chunkL = M.match_(
-      maybeO,
-      () => excessL,
-      (upd) => C.concat_(excessL, upd)
-    )
-    const chunkR = M.match_(
-      maybeO1,
-      () => excessR,
-      (upd) => C.concat_(excessR, upd)
-    )
-    const [emit, newExcess]  = _zipChunks(chunkL, chunkR, both)
-    const [fullEmit, status] = M.isJust(maybeO)
-      ? M.isJust(maybeO1)
-        ? tuple(emit, <Status>{ _tag: 'Running' })
-        : tuple(emit, <Status>{ _tag: 'RightDone' })
-      : M.isJust(maybeO1)
-      ? tuple(emit, <Status>{ _tag: 'LeftDone' })
-      : tuple(C.concat_(emit, E.match_(newExcess, C.map(left), C.map(right))), <Status>{ _tag: 'End' })
-
-    return Ex.succeed([fullEmit, [status, newExcess]])
-  }
-
-  return combineChunks_(
-    ma,
-    mb,
-    tuple(<Status>{ _tag: 'Running' }, E.left<Chunk<A>, Chunk<B>>(C.empty())),
-    ([state, excess], pullL, pullR) => {
-      switch (state._tag) {
-        case 'Running': {
-          switch (exec._tag) {
-            case 'Sequential': {
-              return pipe(
-                pullL,
-                I.optional,
-                I.crossWith(I.optional(pullR), (l, r) => handleSuccess(l, r, excess)),
-                I.catchAllCause(flow(Ca.map(M.just), Ex.failCause, I.succeed))
-              )
-            }
-            default: {
-              return pipe(
-                pullL,
-                I.optional,
-                I.crossWithPar(I.optional(pullR), (l, r) => handleSuccess(l, r, excess)),
-                I.catchAllCause(flow(Ca.map(M.just), Ex.failCause, I.succeed))
-              )
-            }
-          }
-        }
-        case 'LeftDone': {
-          return pipe(
-            pullR,
-            I.optional,
-            I.map((r) => handleSuccess(M.nothing(), r, excess)),
-            I.catchAllCause(flow(Ca.map(M.just), Ex.failCause, I.succeed))
-          )
-        }
-        case 'RightDone': {
-          return pipe(
-            pullL,
-            I.optional,
-            I.map((l) => handleSuccess(l, M.nothing(), excess)),
-            I.catchAllCause(flow(Ca.map(M.just), Ex.failCause, I.succeed))
-          )
-        }
-        case 'End': {
-          return pipe(M.nothing(), Ex.fail, I.succeed)
-        }
-      }
-    }
-  )
-}
-
-/**
- * Zips this stream with another point-wise. The provided functions will be used to create elements
- * for the composed stream.
- *
- * The functions `left` and `right` will be used if the streams have different lengths
- * and one of the streams has ended before the other.
- *
- * The execution strategy `exec` will be used to determine whether to pull
- * from the streams sequentially or in parallel.
- */
-export function zipAllWithExec<A, R1, E1, B, C>(
-  mb: Stream<R1, E1, B>,
-  exec: ExecutionStrategy,
-  left: (a: A) => C,
-  right: (b: B) => C,
-  both: (a: A, b: B) => C
-): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, C> {
-  return (ma) => zipAllWithExec_(ma, mb, exec, left, right, both)
-}
-
-/**
- * Zips this stream with another point-wise and applies the function to the paired elements.
- *
- * The new stream will end when one of the sides ends.
- */
-export function zipWith_<R, E, A, R1, E1, B, C>(
-  me: Stream<R, E, A>,
-  that: Stream<R1, E1, B>,
-  f: (a: A, b: B) => C
-): Stream<R & R1, E | E1, C> {
-  return zipWithExec_(me, that, f, sequential)
-}
-
-/**
- * Zips this stream with another point-wise and applies the function to the paired elements.
- *
- * The new stream will end when one of the sides ends.
- */
-export function zipWith<A, R1, E1, B, C>(
-  that: Stream<R1, E1, B>,
-  f: (a: A, b: B) => C
-): <R, E>(me: Stream<R, E, A>) => Stream<R & R1, E1 | E, C> {
-  return (me) => zipWith_(me, that, f)
-}
-
-function _zipChunks<A, B, C>(
-  fa: Chunk<A>,
-  fb: Chunk<B>,
-  f: (a: A, b: B) => C
-): [Chunk<C>, E.Either<Chunk<A>, Chunk<B>>] {
-  let fc    = C.empty<C>()
-  const len = Math.min(fa.length, fb.length)
-  for (let i = 0; i < len; i++) {
-    fc = C.append_(fc, f(C.unsafeGet_(fa, i), C.unsafeGet_(fb, i)))
-  }
-  if (fa.length > fb.length) {
-    return [fc, E.left(C.drop_(fa, fb.length))]
-  }
-  return [fc, E.right(C.drop_(fb, fa.length))]
-}
-
-/**
- * Zips this stream together with the index of elements.
- */
-export function zipWithIndex<R, E, A>(ma: Stream<R, E, A>): Stream<R, E, readonly [A, number]> {
-  return mapAccum_(ma, 0, (index, a) => tuple(tuple(a, index), index + 1))
-}
-
-/**
- * Zips this stream with another point-wise and applies the function to the paired elements.
- *
- * The new stream will end when one of the sides ends.
- *
- * By default pull is executed in parallel to preserve async semantics, see `zipWith` for
- * a sequential alternative
- */
-export function zipWithExec_<R, E, A, R1, E1, B, C>(
-  ma: Stream<R, E, A>,
-  mb: Stream<R1, E1, B>,
-  f: (a: A, b: B) => C,
-  exec: ExecutionStrategy
-): Stream<R & R1, E1 | E, C> {
-  type End = { _tag: 'End' }
-  type RightDone<W2> = { _tag: 'RightDone', excessR: Chunk<W2> }
-  type LeftDone<W1> = { _tag: 'LeftDone', excessL: Chunk<W1> }
-  type Running<W1, W2> = {
-    _tag: 'Running'
-    excess: E.Either<Chunk<W1>, Chunk<W2>>
-  }
-  type State<W1, W2> = End | Running<W1, W2> | LeftDone<W1> | RightDone<W2>
-
-  const handleSuccess = (
-    leftUpd: Maybe<Chunk<A>>,
-    rightUpd: Maybe<Chunk<B>>,
-    excess: E.Either<Chunk<A>, Chunk<B>>
-  ): Ex.Exit<Maybe<never>, readonly [Chunk<C>, State<A, B>]> => {
-    const [leftExcess, rightExcess] = pipe(
-      excess,
-      E.match(
-        (l) => tuple<[Chunk<A>, Chunk<B>]>(l, C.empty()),
-        (r) => tuple<[Chunk<A>, Chunk<B>]>(C.empty(), r)
-      )
-    )
-
-    const [left, right] = [
-      pipe(
-        leftUpd,
-        M.match(
-          () => leftExcess,
-          (upd) => C.concat_(leftExcess, upd)
-        )
-      ),
-      pipe(
-        rightUpd,
-        M.match(
-          () => rightExcess,
-          (upd) => C.concat_(rightExcess, upd)
-        )
-      )
-    ]
-
-    const [emit, newExcess] = _zipChunks(left, right, f)
-
-    if (M.isJust(leftUpd) && M.isJust(rightUpd)) {
-      return Ex.succeed(
-        tuple<[Chunk<C>, State<A, B>]>(emit, {
-          _tag: 'Running',
-          excess: newExcess
-        })
-      )
-    } else if (M.isNothing(leftUpd) && M.isNothing(rightUpd)) {
-      return Ex.fail(M.nothing())
-    } else {
-      return Ex.succeed(
-        tuple(
-          emit,
-          pipe(
-            newExcess,
-            E.match(
-              (l): State<A, B> =>
-                !C.isEmpty(l)
-                  ? {
-                      _tag: 'LeftDone',
-                      excessL: l
-                    }
-                  : { _tag: 'End' },
-              (r): State<A, B> =>
-                !C.isEmpty(r)
-                  ? {
-                      _tag: 'RightDone',
-                      excessR: r
-                    }
-                  : { _tag: 'End' }
-            )
-          )
-        )
-      )
-    }
-  }
-
-  return combineChunks_(
-    ma,
-    mb,
-    <State<A, B>>{
-      _tag: 'Running',
-      excess: E.left(C.empty())
-    },
-    (st, p1, p2) => {
-      switch (st._tag) {
-        case 'End': {
-          return I.pure(Ex.fail(M.nothing()))
-        }
-        case 'Running': {
-          return pipe(
-            p1,
-            I.optional,
-            exec._tag === 'Sequential'
-              ? I.crossWith(I.optional(p2), (l, r) => handleSuccess(l, r, st.excess))
-              : I.crossWithPar(I.optional(p2), (l, r) => handleSuccess(l, r, st.excess)),
-            I.catchAllCause((e) => I.pure(Ex.failCause(pipe(e, Ca.map(M.just)))))
-          )
-        }
-        case 'LeftDone': {
-          return pipe(
-            p2,
-            I.optional,
-            I.map((r) => handleSuccess(M.nothing(), r, E.left(st.excessL))),
-            I.catchAllCause((e) => I.pure(Ex.failCause(pipe(e, Ca.map(M.just)))))
-          )
-        }
-        case 'RightDone': {
-          return pipe(
-            p1,
-            I.optional,
-            I.map((l) => handleSuccess(l, M.nothing(), E.right(st.excessR))),
-            I.catchAllCause((e) => I.pure(Ex.failCause(pipe(e, Ca.map(M.just)))))
-          )
-        }
-      }
-    }
-  )
-}
-
-export function zipWithExec<A, R1, E1, B, C>(
-  mb: Stream<R1, E1, B>,
-  f: (a: A, b: B) => C,
-  exec: ExecutionStrategy
-): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E1 | E, C> {
-  return (ma) => zipWithExec_(ma, mb, f, exec)
-}
-
-export function zipWithPar_<R, E, A, R1, E1, B, C>(
-  ma: Stream<R, E, A>,
-  mb: Stream<R1, E1, B>,
-  f: (a: A, b: B) => C
-): Stream<R & R1, E | E1, C> {
-  return zipWithExec_(ma, mb, f, parallel)
-}
-
-/**
- * Zips this stream with another point-wise and applies the function to the paired elements.
- *
- * The new stream will end when one of the sides ends.
- *
- * By default pull is executed in parallel to preserve async semantics, see `zipWithSeq` for
- * a sequential alternative
- */
-export function zipWithPar<A, R1, E1, B, C>(
-  mb: Stream<R1, E1, B>,
-  f: (a: A, b: B) => C
-): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E1 | E, C> {
-  return (ma) => zipWithPar_(ma, mb, f)
-}
-
-/**
- * Zips the two streams so that when a value is emitted by either of the two streams,
- * it is combined with the latest value from the other stream to produce a result.
- *
- * Note: tracking the latest value is done on a per-chunk basis. That means that
- * emitted elements that are not the last value in chunks will never be used for zipping.
- */
-export function zipWithLatest_<R, E, A, R1, E1, B, C>(
-  ma: Stream<R, E, A>,
-  mb: Stream<R1, E1, B>,
-  f: (a: A, b: B) => C
-): Stream<R & R1, E | E1, C> {
-  const pullNonEmpty = <R, E, O>(pull: I.IO<R, Maybe<E>, Chunk<O>>): I.IO<R, Maybe<E>, Chunk<O>> =>
-    pipe(
-      pull,
-      I.chain((chunk) => {
-        if (C.isEmpty(chunk)) {
-          return pullNonEmpty(pull)
-        } else {
-          return I.succeed(chunk)
-        }
-      })
-    )
-
-  return new Stream(
-    Ma.gen(function* (_) {
-      const left  = yield* _(Ma.map_(ma.proc, pullNonEmpty))
-      const right = yield* _(Ma.map_(mb.proc, pullNonEmpty))
-
-      const pull = yield* _(
-        pipe(
-          left,
-          I.raceWith(
-            right,
-            (leftDone, rightFiber): I.IO<unknown, M.Maybe<E | E1>, readonly [Chunk<A>, Chunk<B>, boolean]> =>
-              pipe(
-                leftDone,
-                I.fromExit,
-                I.crossWith(Fi.join(rightFiber), (os, o1s) => [os, o1s, <boolean>true] as const)
-              ),
-            (rightDone, leftFiber) =>
-              pipe(
-                rightDone,
-                I.fromExit,
-                I.crossWith(Fi.join(leftFiber), (o1s, os) => [os, o1s, <boolean>false] as const)
-              )
-          ),
-          fromIOMaybe,
-          chain(([l, r, leftFirst]) =>
-            pipe(
-              Ref.make(C.unsafeGet_(l, l.length - 1)),
-              I.cross(Ref.make(C.unsafeGet_(r, r.length - 1))),
-              fromIO,
-              chain(([latestLeft, latestRight]) =>
-                pipe(
-                  fromChunk(
-                    leftFirst
-                      ? C.map_(r, (o1) => f(C.unsafeGet_(l, l.length - 1), o1))
-                      : C.map_(l, (o) => f(o, C.unsafeGet_(r, r.length - 1)))
-                  ),
-                  concat(
-                    pipe(
-                      left,
-                      I.tap((chunk) => latestLeft.set(C.unsafeGet_(chunk, chunk.length - 1))),
-                      I.cross(latestRight.get),
-                      repeatIOMaybe,
-                      mergeWith(
-                        pipe(
-                          right,
-                          I.tap((chunk) => latestRight.set(C.unsafeGet_(chunk, chunk.length - 1))),
-                          I.cross(latestLeft.get),
-                          repeatIOMaybe
-                        ),
-                        ([leftChunk, rightLatest]) => C.map_(leftChunk, (o) => f(o, rightLatest)),
-                        ([rightChunk, leftLatest]) => C.map_(rightChunk, (o1) => f(leftLatest, o1))
-                      ),
-                      chain(fromChunk)
-                    )
-                  )
-                )
-              )
-            )
-          )
-        ).proc
-      )
-      return pull
-    })
-  )
-}
-
-/**
- * Zips the two streams so that when a value is emitted by either of the two streams,
- * it is combined with the latest value from the other stream to produce a result.
- *
- * Note: tracking the latest value is done on a per-chunk basis. That means that
- * emitted elements that are not the last value in chunks will never be used for zipping.
- */
-export function zipWithLatest<A, R1, E1, B, C>(
-  mb: Stream<R1, E1, B>,
-  f: (a: A, b: B) => C
-): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, C> {
-  return (ma) => zipWithLatest_(ma, mb, f)
-}
-
-/*
- * -------------------------------------------------------------------------------------------------
- * Gen
- * -------------------------------------------------------------------------------------------------
- */
-
-export class GenStream<R, E, A> {
-  readonly _R!: (_R: R) => void
-  readonly _E!: () => E
-  readonly _A!: () => A
-  constructor(readonly S: () => Stream<R, E, A>) {}
-  *[Symbol.iterator](): Generator<GenStream<R, E, A>, A, any> {
-    return yield this
-  }
-}
-
-const adapter = (_: any, __?: any) => {
-  return new GenStream(() => {
-    const x = _()
-    if (M.isMaybe(x)) {
-      return x._tag === 'Nothing' ? fail(__ ? __() : new NoSuchElementError('Stream.gen')) : succeed(x.value)
-    } else if (E.isEither(x)) {
-      return fromIO(I.fromEitherLazy(() => x))
-    } else if (x instanceof Stream) {
-      return x
-    } else if (isTag(x)) {
-      return fromIO(I.askService(x))
-    }
-
-    return fromIO(x)
+export function toQueueDropping_<R, E, A>(
+  stream: Stream<R, E, A>,
+  capacity = 2
+): Ma.Managed<R, never, Q.Dequeue<Take.Take<E, A>>> {
+  return Ma.gen(function* (_) {
+    const queue = yield* _(Ma.bracket_(Q.makeDropping<Take.Take<E, A>>(capacity), Q.shutdown))
+    yield* _(Ma.fork(runIntoManaged_(stream, queue)))
+    return queue
   })
 }
-export function gen<R0, E0, A0>(): <T extends GenStream<R0, E0, any>>(
-  f: (i: {
-    <A>(_: () => Tag<A>): GenStream<Has<A>, never, A>
-    <E, A>(_: () => Maybe<A>, onNothing: () => E): GenStream<unknown, E, A>
-    <A>(_: () => Maybe<A>): GenStream<unknown, NoSuchElementError, A>
-    <E, A>(_: () => E.Either<E, A>): GenStream<unknown, E, A>
-    <R, E, A>(_: () => I.IO<R, E, A>): GenStream<R, E, A>
-    <R, E, A>(_: () => Stream<R, E, A>): GenStream<R, E, A>
-  }) => Generator<T, A0, any>
-) => Stream<_R<T>, _E<T>, A0>
-export function gen<E0, A0>(): <T extends GenStream<any, E0, any>>(
-  f: (i: {
-    <A>(_: () => Tag<A>): GenStream<Has<A>, never, A>
-    <E, A>(_: () => Maybe<A>, onNothing: () => E): GenStream<unknown, E, A>
-    <A>(_: () => Maybe<A>): GenStream<unknown, NoSuchElementError, A>
-    <E, A>(_: () => E.Either<E, A>): GenStream<unknown, E, A>
-    <R, E, A>(_: () => I.IO<R, E, A>): GenStream<R, E, A>
-    <R, E, A>(_: () => Stream<R, E, A>): GenStream<R, E, A>
-  }) => Generator<T, A0, any>
-) => Stream<_R<T>, _E<T>, A0>
-export function gen<A0>(): <T extends GenStream<any, any, any>>(
-  f: (i: {
-    <A>(_: () => Tag<A>): GenStream<Has<A>, never, A>
-    <E, A>(_: () => Maybe<A>, onNothing: () => E): GenStream<unknown, E, A>
-    <A>(_: () => Maybe<A>): GenStream<unknown, NoSuchElementError, A>
-    <E, A>(_: () => E.Either<E, A>): GenStream<unknown, E, A>
-    <R, E, A>(_: () => I.IO<R, E, A>): GenStream<R, E, A>
-    <R, E, A>(_: () => Stream<R, E, A>): GenStream<R, E, A>
-  }) => Generator<T, A0, any>
-) => Stream<_R<T>, _E<T>, A0>
-export function gen<T extends GenStream<any, any, any>, A0>(
-  f: (i: {
-    <A>(_: () => Tag<A>): GenStream<Has<A>, never, A>
-    <E, A>(_: () => Maybe<A>, onNothing: () => E): GenStream<unknown, E, A>
-    <A>(_: () => Maybe<A>): GenStream<unknown, NoSuchElementError, A>
-    <E, A>(_: () => E.Either<E, A>): GenStream<unknown, E, A>
-    <R, E, A>(_: () => I.IO<R, E, A>): GenStream<R, E, A>
-    <R, E, A>(_: () => Stream<R, E, A>): GenStream<R, E, A>
-  }) => Generator<T, A0, any>
-): Stream<_R<T>, _E<T>, A0>
-export function gen(...args: any[]): any {
-  function gen_<T extends GenStream<any, any, any>, A>(f: (i: any) => Generator<T, A, any>): Stream<_R<T>, _E<T>, A> {
-    return defer(() => {
-      function run(replayStack: L.List<any>): Stream<any, any, A> {
-        const iterator    = f(adapter as any)
-        let state         = iterator.next()
-        let prematureExit = false
-        L.forEach_(replayStack, (a) => {
-          if (state.done) prematureExit = true
 
-          state = iterator.next(a)
-        })
-        if (prematureExit) return fromIO(I.halt(new PrematureGeneratorExitError('Stream.gen')))
+export function toQueueDropping(
+  capacity = 2
+): <R, E, A>(stream: Stream<R, E, A>) => Ma.Managed<R, never, Q.Dequeue<Take.Take<E, A>>> {
+  return (stream) => toQueueDropping_(stream, capacity)
+}
 
-        if (state.done) return succeed(state.value)
+export function toQueueOfElements_<R, E, A>(
+  stream: Stream<R, E, A>,
+  capacity = 2
+): Ma.Managed<R, never, Q.Dequeue<Ex.Exit<M.Maybe<E>, A>>> {
+  return Ma.gen(function* (_) {
+    const queue = yield* _(Ma.bracket_(Q.makeBounded<Ex.Exit<M.Maybe<E>, A>>(capacity), Q.shutdown))
+    yield* _(Ma.fork(runIntoElementsManaged_(stream, queue)))
+    return queue
+  })
+}
 
-        return chain_(state.value.S(), (val) => {
-          return run(L.append_(replayStack, val))
-        })
+export function toQueueOfElements(
+  capacity = 2
+): <R, E, A>(stream: Stream<R, E, A>) => Ma.Managed<R, never, Q.Dequeue<Ex.Exit<M.Maybe<E>, A>>> {
+  return (stream) => toQueueOfElements_(stream, capacity)
+}
+
+export function toQueueSliding_<R, E, A>(
+  stream: Stream<R, E, A>,
+  capacity = 2
+): Ma.Managed<R, never, Q.Dequeue<Take.Take<E, A>>> {
+  return Ma.gen(function* (_) {
+    const queue = yield* _(Ma.bracket_(Q.makeSliding<Take.Take<E, A>>(capacity), Q.shutdown))
+    yield* _(Ma.fork(runIntoManaged_(stream, queue)))
+    return queue
+  })
+}
+
+export function toQueueSliding(
+  capacity = 2
+): <R, E, A>(stream: Stream<R, E, A>) => Ma.Managed<R, never, Q.Dequeue<Take.Take<E, A>>> {
+  return (stream) => toQueueSliding_(stream, capacity)
+}
+
+/**
+ *
+ */
+export function toAsyncIterable<R, E, A>(ma: Stream<R, E, A>): Ma.Managed<R, never, AsyncIterable<E.Either<E, A>>> {
+  return Ma.gen(function* (_) {
+    const runtime = yield* _(I.runtime<R>())
+    const pull    = yield* _(toPull(ma))
+    return AI.asyncIterable(() => {
+      let currentChunk: C.Chunk<A> = C.empty()
+      return {
+        async next(): Promise<IteratorResult<E.Either<E, A>>> {
+          if (currentChunk.length === 1) {
+            const v      = C.unsafeHead(currentChunk)
+            currentChunk = C.empty()
+            return { done: false, value: E.right(v) }
+          } else if (currentChunk.length > 1) {
+            const v      = C.unsafeHead(currentChunk)
+            currentChunk = C.unsafeTail(currentChunk)
+            return { done: false, value: E.right(v) }
+          } else {
+            const result = await runtime.runPromiseExit(pull)
+            return pipe(
+              result,
+              Ex.match(
+                flow(
+                  Ca.failureOrCause,
+                  E.match(
+                    M.match(
+                      () => Promise.resolve({ value: null, done: true }),
+                      (e) => Promise.resolve({ value: E.left(e), done: true })
+                    ),
+                    (ca) => {
+                      throw new Ca.FiberFailure(ca)
+                    }
+                  )
+                ),
+                (c) => {
+                  currentChunk = c
+                  return this.next()
+                }
+              )
+            )
+          }
+        }
       }
-      return run(L.empty())
     })
-  }
-  if (args.length === 0) return (f: any) => gen_(f)
+  })
+}
 
-  return gen_(args[0])
+class Running<W1, W2> {
+  readonly _tag = 'Running'
+  constructor(readonly excess: E.Either<C.Chunk<W1>, C.Chunk<W2>>) {}
+}
+class LeftDone<W1> {
+  readonly _tag = 'LeftDone'
+  constructor(readonly excessL: C.Chunk<W1>) {}
+}
+class RightDone<W2> {
+  readonly _tag = 'RightDone'
+  constructor(readonly excessR: C.Chunk<W2>) {}
+}
+class End {
+  readonly _tag = 'End'
+}
+type State<W1, W2> = Running<W1, W2> | LeftDone<W1> | RightDone<W2> | End
+
+function handleSuccess<A, A1, B>(
+  f: (a: A, a1: A1) => B,
+  leftUpd: M.Maybe<C.Chunk<A>>,
+  rightUpd: M.Maybe<C.Chunk<A1>>,
+  excess: E.Either<C.Chunk<A>, C.Chunk<A1>>
+): Ex.Exit<M.Maybe<never>, readonly [C.Chunk<B>, State<A, A1>]> {
+  const [leftExcess, rightExcess] = E.match_(
+    excess,
+    (l) => [l, C.empty<A1>()] as const,
+    (r) => [C.empty<A>(), r] as const
+  )
+  const left = M.match_(
+    leftUpd,
+    () => leftExcess,
+    (upd) => C.concat_(leftExcess, upd)
+  )
+  const right = M.match_(
+    rightUpd,
+    () => rightExcess,
+    (upd) => C.concat_(rightExcess, upd)
+  )
+  const [emit, newExcess] = zipChunks_(left, right, f)
+
+  if (leftUpd._tag === 'Just' && rightUpd._tag === 'Nothing') {
+    return Ex.succeed(tuple(emit, new Running(newExcess)))
+  }
+  if (leftUpd._tag === 'Nothing' && rightUpd._tag === 'Nothing') {
+    return Ex.fail(M.nothing())
+  }
+  const newState: State<A, A1> =
+    newExcess._tag === 'Left'
+      ? C.isEmpty(newExcess.left)
+        ? new End()
+        : new LeftDone(newExcess.left)
+      : C.isEmpty(newExcess.right)
+      ? new End()
+      : new RightDone(newExcess.right)
+  return Ex.succeed(tuple(emit, newState))
+}
+
+/**
+ * Zips this stream with another point-wise and applies the function to the paired elements.
+ *
+ * The new stream will end when one of the sides ends.
+ */
+export function zipWith_<R, E, A, R1, E1, A1, B>(
+  stream: Stream<R, E, A>,
+  that: Stream<R1, E1, A1>,
+  f: (a: A, a1: A1) => B
+): Stream<R1 & R, E | E1, B> {
+  return combineChunks_(stream, that, <State<A, A1>>new Running(E.left(C.empty())), (st, p1, p2) => {
+    switch (st._tag) {
+      case 'End': {
+        return I.succeed(Ex.fail(M.nothing()))
+      }
+      case 'Running': {
+        return I.catchAllCause_(
+          I.crossWithPar_(I.optional(p1), I.optional(p2), (l, r) => handleSuccess(f, l, r, st.excess)),
+          (e) => I.succeed(Ex.failCause(Ca.map_(e, M.just)))
+        )
+      }
+      case 'LeftDone': {
+        return I.catchAllCause_(
+          I.map_(I.optional(p2), (l) => handleSuccess(f, M.nothing(), l, E.left(st.excessL))),
+          (e) => I.succeed(Ex.failCause(Ca.map_(e, M.just)))
+        )
+      }
+      case 'RightDone': {
+        return I.catchAllCause_(
+          I.map_(I.optional(p1), (r) => handleSuccess(f, r, M.nothing(), E.right(st.excessR))),
+          (e) => I.succeed(Ex.failCause(Ca.map_(e, M.just)))
+        )
+      }
+    }
+  })
+}
+
+/**
+ * Zips this stream with another point-wise and applies the function to the paired elements.
+ *
+ * The new stream will end when one of the sides ends.
+ *
+ * @dataFirst zipWith_
+ */
+export function zipWith<A, R1, E1, A1, B>(
+  that: Stream<R1, E1, A1>,
+  f: (a: A, a1: A1) => B
+): <R, E>(stream: Stream<R, E, A>) => Stream<R1 & R, E | E1, B> {
+  return (stream) => zipWith_(stream, that, f)
+}
+
+export function zipWithIndex<R, E, A>(stream: Stream<R, E, A>): Stream<R, E, readonly [A, number]> {
+  return mapAccum_(stream, 0, (index, a) => [[a, index], index + 1])
+}
+
+/**
+ * Zips this stream with another point-wise and emits tuples of elements from both streams.
+ *
+ * The new stream will end when one of the sides ends.
+ */
+export function zip_<R, E, A, R1, E1, A1>(
+  stream: Stream<R, E, A>,
+  that: Stream<R1, E1, A1>
+): Stream<R1 & R, E | E1, readonly [A, A1]> {
+  return zipWith_(stream, that, tuple)
+}
+
+/**
+ * Zips this stream with another point-wise and emits tuples of elements from both streams.
+ *
+ * The new stream will end when one of the sides ends.
+ *
+ * @dataFirst zip_
+ */
+export function zip<R1, E1, A1>(
+  that: Stream<R1, E1, A1>
+): <R, E, A>(stream: Stream<R, E, A>) => Stream<R1 & R, E | E1, readonly [A, A1]> {
+  return (stream) => zip_(stream, that)
+}
+
+/**
+ * Zips this stream with another point-wise, but keeps only the outputs of the other stream.
+ *
+ * The new stream will end when one of the sides ends.
+ */
+export function zipSecond_<R, R1, E, E1, A, A1>(
+  stream: Stream<R, E, A>,
+  that: Stream<R1, E1, A1>
+): Stream<R1 & R, E | E1, A1> {
+  return zipWith_(stream, that, (_, o) => o)
+}
+
+/**
+ * Zips this stream with another point-wise, but keeps only the outputs of the other stream.
+ *
+ * The new stream will end when one of the sides ends.
+ */
+export function zipSecond<R, R1, E, E1, A, A1>(that: Stream<R1, E1, A1>) {
+  return (stream: Stream<R, E, A>) => zipSecond_(stream, that)
+}
+
+/**
+ * Zips this stream with another point-wise, but keeps only the outputs of this stream.
+ *
+ * The new stream will end when one of the sides ends.
+ */
+export function zipFirst_<R, R1, E, E1, A, A1>(
+  stream: Stream<R, E, A>,
+  that: Stream<R1, E1, A1>
+): Stream<R1 & R, E | E1, A> {
+  return zipWith_(stream, that, (o, _) => o)
+}
+
+/**
+ * Zips this stream with another point-wise, but keeps only the outputs of this stream.
+ *
+ * The new stream will end when one of the sides ends.
+ */
+export function zipFirst<R, R1, E, E1, A, A1>(that: Stream<R1, E1, A1>) {
+  return (stream: Stream<R, E, A>) => zipFirst_(stream, that)
 }
 
 export class GroupBy<R, E, K, V> {
-  constructor(readonly grouped: Stream<R, E, readonly [K, Q.Dequeue<Ex.Exit<Maybe<E>, V>>]>, readonly buffer: number) {}
+  constructor(
+    readonly grouped: Stream<R, E, readonly [K, Q.Dequeue<Ex.Exit<M.Maybe<E>, V>>]>,
+    readonly buffer: number
+  ) {}
+
   first(n: number): GroupBy<R, E, K, V> {
     const g1 = pipe(
       this.grouped,
       zipWithIndex,
       filterIO((elem) => {
-        const [[, q], i] = elem
-        if (i < n) {
-          return pipe(
-            I.succeed(elem),
-            I.asLazy(() => true)
-          )
-        } else {
-          return pipe(
-            Q.shutdown(q),
-            I.asLazy(() => false)
-          )
-        }
+        const i = elem[1]
+        return i < n ? I.succeed(true) : I.as_(Q.shutdown(elem[0][1]), false)
       }),
-      map(([grouped, _]) => grouped)
+      map(([_]) => _)
     )
     return new GroupBy(g1, this.buffer)
   }
@@ -6003,30 +4863,15 @@ export class GroupBy<R, E, K, V> {
   filter(f: (k: K) => boolean): GroupBy<R, E, K, V> {
     const g1 = pipe(
       this.grouped,
-      filterIO((elem) => {
-        const [k, q] = elem
-        if (f(k)) {
-          return pipe(
-            I.succeed(elem),
-            I.asLazy(() => true)
-          )
-        } else {
-          return pipe(
-            Q.shutdown(q),
-            I.asLazy(() => false)
-          )
-        }
-      })
+      filterIO(([k, q]) => (f(k) ? I.succeed(true) : I.as_(Q.shutdown(q), false)))
     )
     return new GroupBy(g1, this.buffer)
   }
 
-  merge<R1, E1, A>(f: (k: K, s: Stream<unknown, E, V>) => Stream<R1, E1, A>): Stream<R & R1, E | E1, A> {
-    return chainPar_(
+  apply<R1, E1, A>(f: (k: K, s: Stream<unknown, E, V>) => Stream<R1, E1, A>): Stream<R & R1, E | E1, A> {
+    return pipe(
       this.grouped,
-      ([k, q]) => f(k, flattenExitMaybe(fromQueueWithShutdown(q))),
-      Number.MAX_SAFE_INTEGER,
-      this.buffer
+      chainPar(([k, q]) => f(k, flattenExitOption(fromQueueWithShutdown_(q))), Number.MAX_SAFE_INTEGER)
     )
   }
 }
