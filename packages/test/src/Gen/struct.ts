@@ -4,7 +4,7 @@ import type { _A, _R } from '@principia/base/util/types'
 import * as A from '@principia/base/Array'
 import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
-import { Random } from '@principia/base/IO/Random'
+import { Random } from '@principia/base/Random'
 
 import * as G from './core'
 

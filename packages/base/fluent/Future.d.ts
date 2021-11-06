@@ -1,8 +1,8 @@
+import type { FiberId } from '@principia/base/Fiber'
+import type * as F from '@principia/base/Future'
 import type * as I from '@principia/base/IO'
 import type { Cause } from '@principia/base/IO/Cause'
 import type { Exit } from '@principia/base/IO/Exit'
-import type { FiberId } from '@principia/base/IO/Fiber'
-import type * as F from '@principia/base/IO/Future'
 import type { Maybe } from '@principia/base/Maybe'
 
 declare global {

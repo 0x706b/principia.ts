@@ -1,8 +1,8 @@
 import { pipe } from '@principia/base/function'
+import * as F from '@principia/base/Future'
 import * as I from '@principia/base/IO'
-import * as F from '@principia/base/IO/Future'
-import * as M from '@principia/base/IO/Managed'
-import * as S from '@principia/base/IO/Stream'
+import * as M from '@principia/base/Managed'
+import * as S from '@principia/base/Stream'
 import { assertCompletes, DefaultRunnableSpec, suite, testIO } from '@principia/test'
 
 class StreamSpec extends DefaultRunnableSpec {

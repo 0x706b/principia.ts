@@ -1,14 +1,14 @@
 import type { AnyRequest, Request } from './Request'
 import type { HashMap } from '@principia/base/HashMap'
-import type { URef } from '@principia/base/IO/Ref'
 import type { _A, _E } from '@principia/base/prelude'
+import type { URef } from '@principia/base/Ref'
 
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/function'
 import * as HM from '@principia/base/HashMap'
 import * as I from '@principia/base/IO'
-import * as Ref from '@principia/base/IO/Ref'
 import * as M from '@principia/base/Maybe'
+import * as Ref from '@principia/base/Ref'
 import { tuple } from '@principia/base/tuple'
 
 export interface Cache {

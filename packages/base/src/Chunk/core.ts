@@ -285,6 +285,22 @@ class Empty<A> extends ChunkImplementation<A> {
       }
     }
   }
+  arrayIterator(): Iterator<Array<A>> {
+    return {
+      next: () => ({
+        value: undefined,
+        done: true
+      })
+    }
+  }
+  reverseArrayIterator(): Iterator<Array<A>> {
+    return {
+      next: () => ({
+        value: undefined,
+        done: true
+      })
+    }
+  }
 }
 const _Empty = new Empty<any>()
 

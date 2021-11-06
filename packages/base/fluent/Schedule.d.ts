@@ -1,9 +1,9 @@
 import type { Either } from '@principia/base/Either'
 import type { Has } from '@principia/base/Has'
 import type * as I from '@principia/base/IO'
-import type { Random } from '@principia/base/IO/Random'
-import type * as Sc from '@principia/base/IO/Schedule'
-import type { Decision } from '@principia/base/IO/Schedule/Decision'
+import type { Random } from '@principia/base/Random'
+import type * as Sc from '@principia/base/Schedule'
+import type { Decision } from '@principia/base/Schedule/Decision'
 
 /* eslint typescript-sort-keys/interface: "error" */
 

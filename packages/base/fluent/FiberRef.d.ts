@@ -1,5 +1,5 @@
+import type * as FR from '@principia/base/FiberRef'
 import type { IO, UIO } from '@principia/base/IO'
-import type * as FR from '@principia/base/IO/FiberRef'
 import type { Maybe } from '@principia/base/Maybe'
 
 declare global {
@@ -11,7 +11,7 @@ interface FiberRefStaticOps {
   make: typeof FR.make
 }
 
-declare module '@principia/base/IO/FiberRef/core' {
+declare module '@principia/base/FiberRef/core' {
   export interface FiberRef<A> {
     /**
      * @rewriteGetter get from "@principia/base/IO/FiberRef"

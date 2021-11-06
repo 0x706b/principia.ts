@@ -1,7 +1,7 @@
+import type * as I from '@principia/base/IO'
 import type { Cause } from '@principia/base/IO/Cause'
-import type * as I from '@principia/base/IO/IO'
-import type * as L from '@principia/base/IO/Layer'
-import type * as M from '@principia/base/IO/Managed'
+import type * as L from '@principia/base/Layer'
+import type * as M from '@principia/base/Managed'
 
 /* eslint typescript-sort-keys/interface: "error" */
 

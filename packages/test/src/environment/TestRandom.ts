@@ -1,24 +1,24 @@
+import type { Clock } from '@principia/base/Clock'
 import type { Has } from '@principia/base/Has'
 import type { UIO } from '@principia/base/IO'
-import type { Clock } from '@principia/base/IO/Clock'
-import type { Random } from '@principia/base/IO/Random'
-import type { URef } from '@principia/base/IO/Ref'
 import type { List } from '@principia/base/List'
 import type { Maybe } from '@principia/base/Maybe'
+import type { Random } from '@principia/base/Random'
+import type { URef } from '@principia/base/Ref'
 import type { ArrayInt } from '@principia/base/util/pure-rand/distribution/internals/ArrayInt'
 
 import { Byte } from '@principia/base/Byte'
+import { ClockTag } from '@principia/base/Clock'
 import { IllegalArgumentError } from '@principia/base/Error'
 import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import { intersect } from '@principia/base/HeterogeneousRecord'
 import * as I from '@principia/base/IO'
-import { ClockTag } from '@principia/base/IO/Clock'
-import * as L from '@principia/base/IO/Layer'
-import { RandomTag } from '@principia/base/IO/Random'
-import * as Ref from '@principia/base/IO/Ref'
+import * as L from '@principia/base/Layer'
 import * as Li from '@principia/base/List'
 import * as M from '@principia/base/Maybe'
+import { RandomTag } from '@principia/base/Random'
+import * as Ref from '@principia/base/Ref'
 import { Mash } from '@principia/base/util/Mash'
 import { ImmutableQueue } from '@principia/base/util/support/ImmutableQueue'
 
@@ -28,11 +28,11 @@ export class TestRandom implements Random {
   constructor(readonly randomState: URef<Data>, readonly bufferState: URef<Buffer>) {}
 
   clearBooleans: UIO<void> = Ref.update_(this.bufferState, (buff) => buff.copy({ booleans: Li.empty() }))
-  clearBytes: UIO<void>    = Ref.update_(this.bufferState, (buff) => buff.copy({ bytes: Li.empty() }))
-  clearChars: UIO<void>    = Ref.update_(this.bufferState, (buff) => buff.copy({ chars: Li.empty() }))
-  clearDoubles: UIO<void>  = Ref.update_(this.bufferState, (buff) => buff.copy({ doubles: Li.empty() }))
-  clearInts: UIO<void>     = Ref.update_(this.bufferState, (buff) => buff.copy({ integers: Li.empty() }))
-  clearStrings: UIO<void>  = Ref.update_(this.bufferState, (buff) => buff.copy({ strings: Li.empty() }))
+  clearBytes: UIO<void> = Ref.update_(this.bufferState, (buff) => buff.copy({ bytes: Li.empty() }))
+  clearChars: UIO<void> = Ref.update_(this.bufferState, (buff) => buff.copy({ chars: Li.empty() }))
+  clearDoubles: UIO<void> = Ref.update_(this.bufferState, (buff) => buff.copy({ doubles: Li.empty() }))
+  clearInts: UIO<void> = Ref.update_(this.bufferState, (buff) => buff.copy({ integers: Li.empty() }))
+  clearStrings: UIO<void> = Ref.update_(this.bufferState, (buff) => buff.copy({ strings: Li.empty() }))
   feedBooleans(...booleans: ReadonlyArray<boolean>): UIO<void> {
     return Ref.update_(this.bufferState, (buff) =>
       buff.copy({ booleans: Li.concat_(Li.from(booleans), buff.booleans) })
@@ -256,11 +256,11 @@ export class TestRandom implements Random {
     []
   )
 
-  static clearInts     = TestRandom._lifted.clearInts
-  static clearBytes    = TestRandom._lifted.clearBytes
-  static clearChars    = TestRandom._lifted.clearChars
-  static clearDoubles  = TestRandom._lifted.clearDoubles
-  static clearStrings  = TestRandom._lifted.clearStrings
+  static clearInts = TestRandom._lifted.clearInts
+  static clearBytes = TestRandom._lifted.clearBytes
+  static clearChars = TestRandom._lifted.clearChars
+  static clearDoubles = TestRandom._lifted.clearDoubles
+  static clearStrings = TestRandom._lifted.clearStrings
   static clearBooleans = TestRandom._lifted.clearBooleans
   static feedInts(...ints: ReadonlyArray<number>) {
     return I.asksServiceIO(TestRandomTag)((tr) => tr.feedInts(...ints))
@@ -280,14 +280,14 @@ export class TestRandom implements Random {
   static feedBooleans(...booleans: ReadonlyArray<boolean>) {
     return I.asksServiceIO(TestRandomTag)((tr) => tr.feedBooleans(...booleans))
   }
-  static next           = TestRandom._lifted.next
-  static nextInt        = TestRandom._lifted.nextInt
-  static nextDouble     = TestRandom._lifted.nextDouble
-  static nextBoolean    = TestRandom._lifted.nextBoolean
-  static nextRange      = TestRandom._lifted.nextRange
+  static next = TestRandom._lifted.next
+  static nextInt = TestRandom._lifted.nextInt
+  static nextDouble = TestRandom._lifted.nextDouble
+  static nextBoolean = TestRandom._lifted.nextBoolean
+  static nextRange = TestRandom._lifted.nextRange
   static nextIntBetween = TestRandom._lifted.nextIntBetween
-  static setSeed        = TestRandom._lifted.setSeed
-  static getSeed        = TestRandom._lifted.getSeed
+  static setSeed = TestRandom._lifted.setSeed
+  static getSeed = TestRandom._lifted.getSeed
 }
 
 /**

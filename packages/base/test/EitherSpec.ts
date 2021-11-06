@@ -113,8 +113,8 @@ class EitherSpec extends DefaultRunnableSpec {
       )
     }),
 
-    test('mapA', () => {
-      const mapA = E.mapA(M.Applicative)((n: number) => (n >= 2 ? M.just(n) : M.nothing()))
+    test('traverse', () => {
+      const mapA = E.traverse(M.Applicative)((n: number) => (n >= 2 ? M.just(n) : M.nothing()))
       return all(
         pipe(E.left('a'), mapA, assert(deepStrictEqualTo(M.just(E.left('a'))))),
         pipe(E.right(1), mapA, assert(deepStrictEqualTo(M.nothing()))),
@@ -262,24 +262,24 @@ class EitherSpec extends DefaultRunnableSpec {
 
     suite(
       'getWitherable',
-      testIO('filterMapA', () => {
-        const filterMapA = E.getWitherable(S.Monoid).filterMapA(I.ApplicativePar)
-        const p          = (n: number) => n > 2
-        const f          = (n: number) => I.succeed(p(n) ? M.just(n + 1) : M.nothing())
+      testIO('wither', () => {
+        const wither = E.getWitherable(S.Monoid).wither(I.ApplicativePar)
+        const p      = (n: number) => n > 2
+        const f      = (n: number) => I.succeed(p(n) ? M.just(n + 1) : M.nothing())
         return allIO(
-          pipe(E.left('foo'), filterMapA(f), assertIO(deepStrictEqualTo(E.left('foo')))),
-          pipe(E.right(1), filterMapA(f), assertIO(deepStrictEqualTo(E.left(S.Monoid.nat)))),
-          pipe(E.right(3), filterMapA(f), assertIO(deepStrictEqualTo(E.right(4))))
+          pipe(E.left('foo'), wither(f), assertIO(deepStrictEqualTo(E.left('foo')))),
+          pipe(E.right(1), wither(f), assertIO(deepStrictEqualTo(E.left(S.Monoid.nat)))),
+          pipe(E.right(3), wither(f), assertIO(deepStrictEqualTo(E.right(4))))
         )
       }),
-      testIO('partitionMapA', () => {
-        const partitionMapA = E.getWitherable(S.Monoid).partitionMapA(I.ApplicativePar)
-        const p             = (n: number) => n > 2
-        const f             = (n: number) => I.succeed(p(n) ? E.right(n + 1) : E.left(n - 1))
+      testIO('wilt', () => {
+        const wilt = E.getWitherable(S.Monoid).wilt(I.ApplicativePar)
+        const p    = (n: number) => n > 2
+        const f    = (n: number) => I.succeed(p(n) ? E.right(n + 1) : E.left(n - 1))
         return allIO(
-          pipe(E.left('foo'), partitionMapA(f), assertIO(deepStrictEqualTo([E.left('foo'), E.left('foo')]))),
-          pipe(E.right(1), partitionMapA(f), assertIO(deepStrictEqualTo([E.right(0), E.left(S.Monoid.nat)]))),
-          pipe(E.right(3), partitionMapA(f), assertIO(deepStrictEqualTo([E.left(S.Monoid.nat), E.right(4)])))
+          pipe(E.left('foo'), wilt(f), assertIO(deepStrictEqualTo([E.left('foo'), E.left('foo')]))),
+          pipe(E.right(1), wilt(f), assertIO(deepStrictEqualTo([E.right(0), E.left(S.Monoid.nat)]))),
+          pipe(E.right(3), wilt(f), assertIO(deepStrictEqualTo([E.left(S.Monoid.nat), E.right(4)])))
         )
       })
     ),

@@ -1,5 +1,5 @@
 import type { PCause } from '../Cause'
-import type { IO } from '../IO/IO/core'
+import type { IO } from '../IO/core'
 import type { Predicate } from '../prelude'
 import type { Equatable, Hashable } from '../Structural'
 

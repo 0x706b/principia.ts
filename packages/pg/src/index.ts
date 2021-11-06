@@ -5,8 +5,8 @@ import { Tagged } from '@principia/base/Case'
 import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as T from '@principia/base/IO'
-import * as L from '@principia/base/IO/Layer'
-import * as M from '@principia/base/IO/Managed'
+import * as L from '@principia/base/Layer'
+import * as M from '@principia/base/Managed'
 import * as pg from 'pg'
 
 export const PGConfigSymbol = Symbol()

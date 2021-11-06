@@ -1,13 +1,13 @@
 import type { RouterParamContext } from '@koa/router'
+import type { Console } from '@principia/base/Console'
+import type { RuntimeFiber } from '@principia/base/Fiber'
 import type {} from '@principia/base/fluent'
 import type { Has } from '@principia/base/Has'
 import type { IO, URIO } from '@principia/base/IO'
 import type { Cause } from '@principia/base/IO/Cause'
-import type { Console } from '@principia/base/IO/Console'
 import type { Exit } from '@principia/base/IO/Exit'
-import type { RuntimeFiber } from '@principia/base/IO/Fiber'
-import type { IOEnv } from '@principia/base/IO/IOEnv'
-import type { Supervisor } from '@principia/base/IO/Supervisor'
+import type { IOEnv } from '@principia/base/IOEnv'
+import type { Supervisor } from '@principia/base/Supervisor'
 import type { _R, Erase, UnionToIntersection } from '@principia/base/util/types'
 import type * as http from 'http'
 import type { DefaultContext, DefaultState, Middleware, Next, ParameterizedContext } from 'koa'
@@ -16,19 +16,19 @@ import '@principia/base/Operators'
 
 import KoaRouter from '@koa/router'
 import * as A from '@principia/base/Array'
+import { putStrLnErr } from '@principia/base/Console'
+import * as Fi from '@principia/base/Fiber'
 import { flow } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as I from '@principia/base/IO'
 import * as Ca from '@principia/base/IO/Cause'
-import { putStrLnErr } from '@principia/base/IO/Console'
 import * as Ex from '@principia/base/IO/Exit'
-import * as Fi from '@principia/base/IO/Fiber'
-import { live as liveIOEnv } from '@principia/base/IO/IOEnv'
-import * as L from '@principia/base/IO/Layer'
-import * as M from '@principia/base/IO/Managed'
-import * as Ref from '@principia/base/IO/Ref'
-import * as RefM from '@principia/base/IO/RefM'
-import * as Su from '@principia/base/IO/Supervisor'
+import { live as liveIOEnv } from '@principia/base/IOEnv'
+import * as L from '@principia/base/Layer'
+import * as M from '@principia/base/Managed'
+import * as Ref from '@principia/base/Ref'
+import * as RefM from '@principia/base/RefM'
+import * as Su from '@principia/base/Supervisor'
 import { HttpConnection } from '@principia/http/HttpConnection'
 import * as Status from '@principia/http/StatusCode'
 import koa from 'koa'
@@ -128,7 +128,7 @@ export abstract class KoaApp {
 
   private static _derived = I.deriveLifted(KoaAppTag)([], [], ['app', 'server'])
 
-  static app    = KoaApp._derived.app
+  static app = KoaApp._derived.app
   static server = KoaApp._derived.server
 
   static live: L.Layer<Has<KoaAppConfig> & Has<KoaRouterConfig>, never, Has<KoaApp>> = L.fromManaged(KoaAppTag)(
@@ -266,8 +266,8 @@ export abstract class KoaRouterConfig {
 
   static empty: L.Layer<unknown, never, Has<KoaRouterConfig>> = L.succeed(KoaRouterConfigTag)(
     new (class extends KoaRouterConfig {
-      middleware   = []
-      router       = new KoaRouter<DefaultState, Context>()
+      middleware = []
+      router = new KoaRouter<DefaultState, Context>()
       parentRouter = undefined
     })()
   )

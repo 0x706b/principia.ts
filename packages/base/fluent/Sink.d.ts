@@ -1,8 +1,8 @@
 import type * as C from '@principia/base/Chunk'
+import type { Clock } from '@principia/base/Clock'
+import type * as Si from '@principia/base/experimental/Sink'
 import type { Has } from '@principia/base/Has'
 import type * as I from '@principia/base/IO'
-import type { Clock } from '@principia/base/IO/Clock'
-import type * as Si from '@principia/base/IO/experimental/Sink'
 
 /* eslint typescript-sort-keys/interface: "error" */
 

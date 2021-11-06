@@ -1,8 +1,8 @@
 import type { Chunk } from '@principia/base/Chunk'
 import type { IO } from '@principia/base/IO'
-import type * as Q from '@principia/base/IO/Queue'
 import type { Maybe } from '@principia/base/Maybe'
 import type { Predicate } from '@principia/base/prelude'
+import type * as Q from '@principia/base/Queue'
 
 declare global {
   export const Queue: QueueStaticOps

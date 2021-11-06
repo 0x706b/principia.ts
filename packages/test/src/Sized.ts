@@ -1,12 +1,12 @@
 import type { Has } from '@principia/base/Has'
 import type { IO, UIO, URIO } from '@principia/base/IO'
-import type { Layer } from '@principia/base/IO/Layer'
+import type { Layer } from '@principia/base/Layer'
 
+import * as FR from '@principia/base/FiberRef'
 import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as I from '@principia/base/IO'
-import * as FR from '@principia/base/IO/FiberRef'
-import * as L from '@principia/base/IO/Layer'
+import * as L from '@principia/base/Layer'
 
 export abstract class Sized {
   abstract readonly size: UIO<number>

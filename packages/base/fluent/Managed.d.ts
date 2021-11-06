@@ -1,16 +1,16 @@
+import type { Clock } from '@principia/base/Clock'
 import type { Either } from '@principia/base/Either'
 import type { NoSuchElementError } from '@principia/base/Error'
+import type { FiberContext } from '@principia/base/Fiber'
 import type { Has } from '@principia/base/Has'
 import type * as I from '@principia/base/IO'
 import type { Cause } from '@principia/base/IO/Cause'
-import type { Clock } from '@principia/base/IO/Clock'
 import type { Exit } from '@principia/base/IO/Exit'
-import type { FiberContext } from '@principia/base/IO/Fiber'
-import type { Layer } from '@principia/base/IO/Layer'
-import type * as M from '@principia/base/IO/Managed'
-import type { Schedule } from '@principia/base/IO/Schedule'
+import type { Layer } from '@principia/base/Layer'
+import type * as M from '@principia/base/Managed'
 import type { Maybe } from '@principia/base/Maybe'
 import type { Erase, Monoid } from '@principia/base/prelude'
+import type { Schedule } from '@principia/base/Schedule'
 
 /* eslint typescript-sort-keys/interface: "error" */
 

@@ -1,19 +1,19 @@
 import type { Live } from './Live'
+import type { FiberRef } from '@principia/base/FiberRef'
 import type { Has } from '@principia/base/Has'
 import type { IO, UIO } from '@principia/base/IO'
-import type { FiberRef } from '@principia/base/IO/FiberRef'
-import type { URef } from '@principia/base/IO/Ref'
+import type { URef } from '@principia/base/Ref'
 
 import * as A from '@principia/base/Array'
+import { Console, ConsoleTag } from '@principia/base/Console'
+import * as FR from '@principia/base/FiberRef'
 import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import { intersect } from '@principia/base/HeterogeneousRecord'
 import * as I from '@principia/base/IO'
-import { Console, ConsoleTag } from '@principia/base/IO/Console'
-import * as FR from '@principia/base/IO/FiberRef'
-import * as L from '@principia/base/IO/Layer'
-import * as Ref from '@principia/base/IO/Ref'
+import * as L from '@principia/base/Layer'
 import * as Li from '@principia/base/List'
+import * as Ref from '@principia/base/Ref'
 import { inspect } from 'util'
 
 import { LiveTag } from './Live'
@@ -83,7 +83,7 @@ export class TestConsole implements Console {
     )
   }
   constructor(readonly consoleState: URef<ConsoleData>, readonly live: Live, readonly debugState: FiberRef<boolean>) {}
-  clearInput: UIO<void>  = Ref.update_(this.consoleState, (data) => data.copy({ input: Li.empty() }))
+  clearInput: UIO<void> = Ref.update_(this.consoleState, (data) => data.copy({ input: Li.empty() }))
   clearOutput: UIO<void> = Ref.update_(this.consoleState, (data) => data.copy({ output: Li.empty() }))
   debug<R, E, A>(io: IO<R, E, A>): IO<R, E, A> {
     return FR.locally_(this.debugState, true, io)
@@ -91,8 +91,8 @@ export class TestConsole implements Console {
   feedLines(...lines: ReadonlyArray<string>): UIO<void> {
     return Ref.update_(this.consoleState, (data) => data.copy({ input: Li.concat_(Li.from(lines), data.input) }))
   }
-  output: UIO<ReadonlyArray<string>>      = I.map_(this.consoleState.get, (data) => Li.toArray(data.output))
-  outputErr: UIO<ReadonlyArray<string>>   = I.map_(this.consoleState.get, (data) => Li.toArray(data.errOutput))
+  output: UIO<ReadonlyArray<string>> = I.map_(this.consoleState.get, (data) => Li.toArray(data.output))
+  outputErr: UIO<ReadonlyArray<string>> = I.map_(this.consoleState.get, (data) => Li.toArray(data.errOutput))
   outputDebug: UIO<ReadonlyArray<string>> = I.map_(this.consoleState.get, (data) => Li.toArray(data.debugOutput))
   silent<R, E, A>(io: IO<R, E, A>): IO<R, E, A> {
     return FR.locally_(this.debugState, false, io)

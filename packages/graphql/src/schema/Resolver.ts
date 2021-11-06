@@ -1,6 +1,6 @@
 import type { Has } from '@principia/base/Has'
 import type * as I from '@principia/base/IO'
-import type { Stream } from '@principia/base/IO/Stream'
+import type { Stream } from '@principia/base/Stream'
 import type * as U from '@principia/base/util/types'
 import type * as Q from '@principia/query/Query'
 import type { GraphQLResolveInfo } from 'graphql'

@@ -1,7 +1,7 @@
 import { pipe } from '@principia/base/function'
 import * as T from '@principia/base/IO'
-import * as L from '@principia/base/IO/Layer'
-import * as M from '@principia/base/IO/Managed'
+import * as L from '@principia/base/Layer'
+import * as M from '@principia/base/Managed'
 import { KeeperConfig, makeKeeperConfig } from '@principia/keeper'
 import { GenericContainer } from 'testcontainers'
 

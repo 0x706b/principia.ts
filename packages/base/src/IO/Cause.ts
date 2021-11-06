@@ -1,7 +1,7 @@
-import type { FiberId } from './Fiber/FiberId'
+import type { FiberId } from '../Fiber/FiberId'
 
 import * as C from '../Cause'
-import { prettyTrace } from '../IO/Fiber/trace'
+import { prettyTrace } from '../Fiber/trace'
 
 export * from '../Cause'
 
@@ -18,7 +18,7 @@ export const defaultRenderer: C.Renderer<FiberId> = {
 export const defaultPrettyPrint = C.makePrettyPrint(defaultRenderer)
 
 export class FiberFailure<E> extends Error {
-  readonly _tag   = 'FiberFailure'
+  readonly _tag = 'FiberFailure'
   readonly pretty = defaultPrettyPrint(this.cause)
 
   constructor(readonly cause: C.PCause<FiberId, E>) {

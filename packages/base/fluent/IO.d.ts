@@ -1,21 +1,18 @@
 import type { Async } from '@principia/base/Async'
 import type { Chunk } from '@principia/base/Chunk'
+import type { Clock } from '@principia/base/Clock'
 import type { Either } from '@principia/base/Either'
 import type { NoSuchElementError } from '@principia/base/Error'
 import type { Eval } from '@principia/base/Eval'
+import type { Fiber, FiberContext, FiberId, InterruptStatus, RuntimeFiber } from '@principia/base/Fiber'
+import type { Future } from '@principia/base/Future'
 import type { Has, Tag } from '@principia/base/Has'
 import type * as I from '@principia/base/IO'
 import type { Cause } from '@principia/base/IO/Cause'
-import type { Clock } from '@principia/base/IO/Clock'
 import type { Exit } from '@principia/base/IO/Exit'
-import type { Fiber, FiberContext, FiberId, InterruptStatus, RuntimeFiber } from '@principia/base/IO/Fiber'
-import type { Future } from '@principia/base/IO/Future'
-import type { IOEnv } from '@principia/base/IO/IOEnv'
-import type * as L from '@principia/base/IO/Layer'
-import type { Managed, Reservation } from '@principia/base/IO/Managed'
-import type { Schedule } from '@principia/base/IO/Schedule'
-import type { Scope } from '@principia/base/IO/Scope'
-import type { Supervisor } from '@principia/base/IO/Supervisor'
+import type { IOEnv } from '@principia/base/IOEnv'
+import type * as L from '@principia/base/Layer'
+import type { Managed, Reservation } from '@principia/base/Managed'
 import type { Maybe } from '@principia/base/Maybe'
 import type {
   Erase,
@@ -25,6 +22,9 @@ import type {
   ServicesTuple,
   UnionToIntersection
 } from '@principia/base/prelude'
+import type { Schedule } from '@principia/base/Schedule'
+import type { Scope } from '@principia/base/Scope'
+import type { Supervisor } from '@principia/base/Supervisor'
 import type { Sync } from '@principia/base/Sync'
 
 /* eslint typescript-sort-keys/interface: "error" */
@@ -37,7 +37,7 @@ declare global {
   export interface RIO<R, A> extends I.IO<R, never, A> {}
 }
 
-declare module '@principia/base/IO/IO/primitives' {
+declare module '@principia/base/IO/primitives' {
   export interface IO<R, E, A> extends IOOps<R, E, A> {}
   export interface FIO<E, A> extends IOOps<unknown, E, A> {}
   export interface UIO<A> extends IOOps<unknown, never, A> {}

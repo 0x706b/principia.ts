@@ -1,7 +1,7 @@
 import type { Either } from '@principia/base/Either'
+import type * as Fiber from '@principia/base/Fiber'
 import type { Tag } from '@principia/base/Has'
-import type * as Fiber from '@principia/base/IO/Fiber'
-import type { URef } from '@principia/base/IO/Ref'
+import type { URef } from '@principia/base/Ref'
 
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
@@ -15,7 +15,7 @@ export const TestAnnotationTypeId = Symbol()
 export type TestAnnotationTypeId = typeof TestAnnotationTypeId
 
 export class TestAnnotation<V> {
-  readonly _V!: () => V;
+  readonly _V!: () => V
 
   readonly [TestAnnotationTypeId]: TestAnnotationTypeId = TestAnnotationTypeId
 

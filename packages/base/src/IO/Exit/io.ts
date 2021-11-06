@@ -1,8 +1,8 @@
-import type { IO } from '../IO/core'
+import type { IO } from '../core'
 import type { Exit } from './core'
 
 import { pipe } from '../../function'
-import * as I from '../IO/core'
+import * as I from '../core'
 import * as Ex from './core'
 
 /**

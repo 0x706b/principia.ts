@@ -3,9 +3,9 @@ import type { XSpec } from './Spec'
 import type { TestAspect } from './TestAspect'
 import type { TestLogger } from './TestLogger'
 import type { TestRunner } from './TestRunner'
+import type { Clock } from '@principia/base/Clock'
 import type { Has } from '@principia/base/Has'
 import type { URIO } from '@principia/base/IO'
-import type { Clock } from '@principia/base/IO/Clock'
 
 import * as A from '@principia/base/Array'
 

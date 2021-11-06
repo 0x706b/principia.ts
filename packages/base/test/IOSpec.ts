@@ -6,8 +6,8 @@ import { RuntimeException } from '@principia/base/Exception'
 import * as Ex from '@principia/base/Exit'
 import { identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
-import * as Ref from '@principia/base/IO/Ref'
 import * as M from '@principia/base/Maybe'
+import * as Ref from '@principia/base/Ref'
 import {
   assert,
   assert_,

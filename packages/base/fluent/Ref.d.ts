@@ -1,8 +1,8 @@
 import type { Either } from '@principia/base/Either'
 import type { IO } from '@principia/base/IO'
-import type * as R from '@principia/base/IO/Ref'
 import type { Maybe } from '@principia/base/Maybe'
 import type { Predicate } from '@principia/base/prelude'
+import type * as R from '@principia/base/Ref'
 
 declare global {
   export const Ref: RefStaticOps

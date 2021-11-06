@@ -1,9 +1,9 @@
 import type { Has } from '@principia/base/Has'
-import type { Layer } from '@principia/base/IO/Layer'
+import type { Layer } from '@principia/base/Layer'
 
 import { tag } from '@principia/base/Has'
 import * as I from '@principia/base/IO'
-import * as L from '@principia/base/IO/Layer'
+import * as L from '@principia/base/Layer'
 
 export abstract class TestConfig {
   abstract readonly repeats: number

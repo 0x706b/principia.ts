@@ -1,11 +1,11 @@
+import type { Callback, Fiber, InterruptStatus, RuntimeFiber } from '../Fiber/core'
+import type { FiberId } from '../Fiber/FiberId'
+import type { TraceElement } from '../Fiber/trace'
+import type { FiberRef } from '../FiberRef'
 import type { Exit } from '../IO/Exit/core'
-import type { Callback, Fiber, InterruptStatus, RuntimeFiber } from '../IO/Fiber/core'
-import type { FiberId } from '../IO/Fiber/FiberId'
-import type { TraceElement } from '../IO/Fiber/trace'
-import type { FiberRef } from '../IO/FiberRef'
-import type { Instruction, IO, Match, Race, UIO } from '../IO/IO/primitives'
-import type { Supervisor } from '../IO/Supervisor'
+import type { Instruction, IO, Match, Race, UIO } from '../IO/primitives'
 import type { Maybe } from '../Maybe'
+import type { Supervisor } from '../Supervisor'
 import type { Stack } from '../util/support/Stack'
 import type { Platform } from './Platform'
 
@@ -14,9 +14,6 @@ import { traceAs } from '@principia/compile/util'
 import * as A from '../Array/core'
 import * as E from '../Either'
 import { RuntimeException } from '../Exception'
-import { constVoid, flow } from '../function'
-import * as C from '../IO/Cause'
-import * as Ex from '../IO/Exit/core'
 import {
   FiberDescriptor,
   FiberStateDone,
@@ -24,13 +21,15 @@ import {
   initial,
   interrupting,
   interruptStatus
-} from '../IO/Fiber/core'
-import * as Status from '../IO/Fiber/core'
-import { newFiberId } from '../IO/Fiber/FiberId'
-import { SourceLocation, Trace, traceLocation, truncatedParentTrace } from '../IO/Fiber/trace'
-import * as FR from '../IO/FiberRef'
-import { bracket_ } from '../IO/IO/combinators/bracket'
-import { asyncInterruptEither, interruptAs } from '../IO/IO/combinators/interrupt'
+} from '../Fiber/core'
+import * as Status from '../Fiber/core'
+import { newFiberId } from '../Fiber/FiberId'
+import { SourceLocation, Trace, traceLocation, truncatedParentTrace } from '../Fiber/trace'
+import * as FR from '../FiberRef'
+import { constVoid, flow } from '../function'
+import * as C from '../IO/Cause'
+import { bracket_ } from '../IO/combinators/bracket'
+import { asyncInterruptEither, interruptAs } from '../IO/combinators/interrupt'
 import {
   async,
   chain_,
@@ -43,12 +42,13 @@ import {
   succeed,
   succeedLazy,
   unit
-} from '../IO/IO/core'
-import { concrete, IOTag, Succeed } from '../IO/IO/primitives'
-import * as Scope from '../IO/Scope'
-import * as Super from '../IO/Supervisor'
+} from '../IO/core'
+import * as Ex from '../IO/Exit/core'
+import { concrete, IOTag, Succeed } from '../IO/primitives'
 import * as L from '../List/core'
 import * as M from '../Maybe'
+import * as Scope from '../Scope'
+import * as Super from '../Supervisor'
 import { AtomicReference } from '../util/support/AtomicReference'
 import { RingBuffer } from '../util/support/RingBuffer'
 import { defaultScheduler } from '../util/support/Scheduler'
@@ -97,15 +97,15 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
   private readonly state = new AtomicReference(initial<E, A>())
 
-  private asyncEpoch         = 0 | 0
-  private scopeKey           = undefined as Scope.Key | undefined
-  private stack              = undefined as Stack<Frame> | undefined
-  private environments       = makeStack(this.initialEnv) as Stack<any> | undefined
-  private interruptStatus    = makeStack(this.initialInterruptStatus.toBoolean) as Stack<boolean> | undefined
-  private supervisors        = makeStack(this.initialSupervisor)
-  private forkScopeOverride  = undefined as Stack<Maybe<Scope.Scope<Exit<any, any>>>> | undefined
+  private asyncEpoch = 0 | 0
+  private scopeKey = undefined as Scope.Key | undefined
+  private stack = undefined as Stack<Frame> | undefined
+  private environments = makeStack(this.initialEnv) as Stack<any> | undefined
+  private interruptStatus = makeStack(this.initialInterruptStatus.toBoolean) as Stack<boolean> | undefined
+  private supervisors = makeStack(this.initialSupervisor)
+  private forkScopeOverride = undefined as Stack<Maybe<Scope.Scope<Exit<any, any>>>> | undefined
   private traceStatusEnabled = this.platform.traceExecution || this.platform.traceStack
-  private executionTraces    = this.traceStatusEnabled
+  private executionTraces = this.traceStatusEnabled
     ? new RingBuffer<TraceElement>(this.platform.executionTraceLength)
     : undefined
   private stackTraces = this.traceStatusEnabled

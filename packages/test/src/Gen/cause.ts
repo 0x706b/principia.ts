@@ -1,11 +1,11 @@
 import type { Sized } from '../Sized'
 import type { Has } from '@principia/base/Has'
-import type { Random } from '@principia/base/IO/Random'
+import type { Random } from '@principia/base/Random'
 
 import * as C from '@principia/base/Cause'
+import { emptyFiberId } from '@principia/base/Fiber'
+import { Trace } from '@principia/base/Fiber/trace'
 import { pipe } from '@principia/base/function'
-import { emptyFiberId } from '@principia/base/IO/Fiber'
-import { Trace } from '@principia/base/IO/Fiber/trace'
 import * as L from '@principia/base/List'
 import * as M from '@principia/base/Maybe'
 

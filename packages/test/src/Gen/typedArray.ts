@@ -1,7 +1,7 @@
 import type { Sized } from '../Sized'
 import type { Gen, LengthConstraints, NumberConstraints } from './core'
 import type { Has } from '@principia/base/Has'
-import type { Random } from '@principia/base/IO/Random'
+import type { Random } from '@principia/base/Random'
 
 import { pipe } from '@principia/base/function'
 

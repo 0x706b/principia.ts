@@ -1,1 +1,6 @@
-export * from './IO'
+export { IOURI } from '../Modules'
+export * from './combinators'
+export * from './combinators/apply-par'
+export * from './core'
+export * from './instances'
+export * from './runtime'

@@ -1,7 +1,7 @@
 import type { Sized } from '../Sized'
 import type { Gen, ObjectConstraints } from './core'
 import type { Has } from '@principia/base/Has'
-import type { Random } from '@principia/base/IO/Random'
+import type { Random } from '@principia/base/Random'
 import type { _R } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'

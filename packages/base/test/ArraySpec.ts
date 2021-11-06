@@ -217,11 +217,11 @@ class ArraySpec extends DefaultRunnableSpec {
           assert(deepStrictEqualTo([0, -1, 1, -2, 2, -3, 3, -4, 4, -5, 5]))
         ))
     ),
-    test('mapA', () => {
+    test('traverse', () => {
       const f = (n: number) => (isOdd(n) ? M.just(n) : M.nothing())
       return all(
-        pipe([1, 2], A.mapA(M.Applicative)(f), assert(deepStrictEqualTo(M.nothing()))),
-        pipe([1, 3], A.mapA(M.Applicative)(f), assert(deepStrictEqualTo(M.just([1, 3]))))
+        pipe([1, 2], A.traverse(M.Applicative)(f), assert(deepStrictEqualTo(M.nothing()))),
+        pipe([1, 3], A.traverse(M.Applicative)(f), assert(deepStrictEqualTo(M.just([1, 3]))))
       )
     }),
     test('mapAccumM', () => {
@@ -236,15 +236,15 @@ class ArraySpec extends DefaultRunnableSpec {
         A.unfold(5, (n) => (n > 0 ? M.just([n, n - 1]) : M.nothing())),
         deepStrictEqualTo([5, 4, 3, 2, 1])
       )),
-    test('filterMapA', () => {
-      const filterMapA = A.filterMapA(Id.Applicative)((n: number) => (n > 2 ? M.just(n + 1) : M.nothing()))
+    test('wither', () => {
+      const filterMapA = A.wither(Id.Applicative)((n: number) => (n > 2 ? M.just(n + 1) : M.nothing()))
       return all(
         pipe([], filterMapA, assert(deepStrictEqualTo([]))),
         pipe([1, 3], filterMapA, assert(deepStrictEqualTo([4])))
       )
     }),
-    test('partitionMapA', () => {
-      const partitionMapA = A.partitionMapA(Id.Applicative)((n: number) => (n > 2 ? E.right(n + 1) : E.left(n - 1)))
+    test('wilt', () => {
+      const partitionMapA = A.wilt(Id.Applicative)((n: number) => (n > 2 ? E.right(n + 1) : E.left(n - 1)))
       return all(
         pipe([], partitionMapA, assert(deepStrictEqualTo([[], []]))),
         pipe([1, 3], partitionMapA, assert(deepStrictEqualTo([[0], [4]])))

@@ -1,14 +1,14 @@
 import type { AnyRequest, Request } from '../Request'
 import type { Either } from '@principia/base/Either'
-import type { URef } from '@principia/base/IO/Ref'
 import type { Maybe } from '@principia/base/Maybe'
+import type { URef } from '@principia/base/Ref'
 import type { _A, _E } from '@principia/base/util/types'
 
 export const BlockedRequestTypeId = Symbol('@principia/query/internal/BlockedRequest')
 export type BlockedRequestTypeId = typeof BlockedRequestTypeId
 
 export class BlockedRequest<A> {
-  readonly _A!: () => A;
+  readonly _A!: () => A
 
   readonly [BlockedRequestTypeId]: BlockedRequestTypeId = BlockedRequestTypeId
 

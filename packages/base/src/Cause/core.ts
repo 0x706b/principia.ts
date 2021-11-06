@@ -1,5 +1,5 @@
+import type { Trace } from '../Fiber/trace'
 import type { HashSet } from '../HashSet'
-import type { Trace } from '../IO/Fiber/trace'
 import type { Predicate } from '../Predicate'
 import type * as P from '../prelude'
 import type { Equatable, Hashable } from '../Structural'

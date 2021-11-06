@@ -1,6 +1,6 @@
+import type { FiberId } from '../Fiber'
 import type { Cause, Renderer } from '../IO/Cause'
-import type { FiberId } from '../IO/Fiber'
-import type { Supervisor } from '../IO/Supervisor'
+import type { Supervisor } from '../Supervisor'
 
 export class Platform<A> {
   public executionTraceLength: number
