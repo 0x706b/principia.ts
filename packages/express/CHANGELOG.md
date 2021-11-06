@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.20.0](https://github.com/0x706b/principia.ts/compare/@principia/express@0.19.3...@principia/express@0.20.0) (2021-11-06)
+
+
+### Features
+
+* **koa:** add param inference and `Koa` layer constructor ([447af9f](https://github.com/0x706b/principia.ts/commit/447af9fae1e7f2d3451693695f2d5b1d81e608dd))
+
+
+
+
+
 ## [0.19.3](https://github.com/0x706b/principia.ts/compare/@principia/express@0.19.2...@principia/express@0.19.3) (2021-10-10)
 
 **Note:** Version bump only for package @principia/express

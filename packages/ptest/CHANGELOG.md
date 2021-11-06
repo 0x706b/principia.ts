@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.1](https://github.com/0x706b/principia.ts/compare/@principia/ptest@0.20.0...@principia/ptest@0.20.1) (2021-11-06)
+
+**Note:** Version bump only for package @principia/ptest
+
+
+
+
+
 # [0.20.0](https://github.com/0x706b/principia.ts/compare/@principia/ptest@0.19.2...@principia/ptest@0.20.0) (2021-10-10)
 
 

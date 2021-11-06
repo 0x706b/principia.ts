@@ -3,6 +3,30 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.27.0](https://github.com/0x706b/principia.ts/compare/@principia/base@0.26.0...@principia/base@0.27.0) (2021-11-06)
+
+
+### Features
+
+* **base/chunk:** fast Chunk updates (via ZIO) ([54fd286](https://github.com/0x706b/principia.ts/commit/54fd28621f64df7054218bd4722d9b60fc834b18))
+* **base:** add Pool (via ZIO) ([25c2a84](https://github.com/0x706b/principia.ts/commit/25c2a847f6fde40178be1e9647b19d4a9605cde6))
+* **base:** deprecate old `Stream` implementation ([3f50c02](https://github.com/0x706b/principia.ts/commit/3f50c021fab4a0e4a11c0128cfb56b753da3ab1a))
+* **base:** fork `ts-pattern` ([7e62173](https://github.com/0x706b/principia.ts/commit/7e6217340df5739d41b68d929be2f1b298813c57))
+* **channel:** do not read ahead in `mergeWith` (via ZIO) ([f5ffa5c](https://github.com/0x706b/principia.ts/commit/f5ffa5c63622067b0a9ce778e8d3734bc2eadace))
+* **io:** add higher kinded variants for some combinators ([42ac4d9](https://github.com/0x706b/principia.ts/commit/42ac4d9f6bfd61e0fc0bed34b1bbb9401ab7a2d3))
+* **io:** add some `chain*K` combinators ([dd52a15](https://github.com/0x706b/principia.ts/commit/dd52a15561ef1b6203469fe5ed7c604c267077a5))
+* **pool:** support max pool size and dependencies, improve shutdown robustness ([8596895](https://github.com/0x706b/principia.ts/commit/8596895b46dde1db8f6147416ac8c78715f55f85))
+
+
+### Performance Improvements
+
+* **base/Maybe:** constant `Nothing` instance ([65f9ebe](https://github.com/0x706b/principia.ts/commit/65f9ebe4741712c020a0632425de0cc2d1f0aa08))
+* **eval:** optimize memoization ([38e1e66](https://github.com/0x706b/principia.ts/commit/38e1e661c1aab32ead83aaa2dbf3034c5314e87c))
+
+
+
+
+
 # [0.26.0](https://github.com/0x706b/principia.ts/compare/@principia/base@0.25.2...@principia/base@0.26.0) (2021-10-10)
 
 

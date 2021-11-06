@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.20.0](https://github.com/0x706b/principia.ts/compare/@principia/node@0.19.3...@principia/node@0.20.0) (2021-11-06)
+
+
+### Features
+
+* **base:** deprecate old `Stream` implementation ([3f50c02](https://github.com/0x706b/principia.ts/commit/3f50c021fab4a0e4a11c0128cfb56b753da3ab1a))
+
+
+
+
+
 ## [0.19.3](https://github.com/0x706b/principia.ts/compare/@principia/node@0.19.2...@principia/node@0.19.3) (2021-10-10)
 
 **Note:** Version bump only for package @principia/node

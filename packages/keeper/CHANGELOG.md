@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.20.4](https://github.com/0x706b/principia.ts/compare/@principia/keeper@0.20.3...@principia/keeper@0.20.4) (2021-11-06)
+
+**Note:** Version bump only for package @principia/keeper
+
+
+
+
+
 ## [0.20.3](https://github.com/0x706b/principia.ts/compare/@principia/keeper@0.20.2...@principia/keeper@0.20.3) (2021-10-10)
 
 **Note:** Version bump only for package @principia/keeper
