@@ -1,16 +1,15 @@
-import * as A from '../../Array/core'
+import * as L from '../../List/core'
 import * as M from '../../Maybe'
-import * as NA from '../../NonEmptyArray'
 
-export class ImmutableQueue<A> {
-  constructor(private readonly backing: readonly A[]) {}
+export class ImmutableQueue<A> implements Iterable<A> {
+  constructor(private readonly backing: L.List<A>) {}
 
   push(a: A) {
-    return new ImmutableQueue([...this.backing, a])
+    return new ImmutableQueue(L.append_(this.backing, a))
   }
 
   prepend(a: A) {
-    return new ImmutableQueue([a, ...this.backing])
+    return new ImmutableQueue(L.prepend_(this.backing, a))
   }
 
   get size() {
@@ -18,18 +17,26 @@ export class ImmutableQueue<A> {
   }
 
   dequeue() {
-    if (A.isNonEmpty(this.backing)) {
-      return M.just([NA.head(this.backing), new ImmutableQueue(NA.tail(this.backing))] as const)
+    if (L.isNonEmpty(this.backing)) {
+      return M.just([L.unsafeHead(this.backing)!, new ImmutableQueue(L.tail(this.backing))] as const)
     } else {
       return M.nothing()
     }
   }
 
   find(f: (a: A) => boolean) {
-    return A.findLast(f)(this.backing)
+    return L.findLast_(this.backing, f)
   }
 
   filter(f: (a: A) => boolean) {
-    return new ImmutableQueue(A.filter(f)(this.backing))
+    return new ImmutableQueue(L.filter_(this.backing, f))
+  }
+
+  static single<A>(a: A): ImmutableQueue<A> {
+    return new ImmutableQueue(L.single(a))
+  }
+
+  [Symbol.iterator]() {
+    return this.backing[Symbol.iterator]()
   }
 }

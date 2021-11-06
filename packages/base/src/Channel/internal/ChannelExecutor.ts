@@ -623,33 +623,38 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
               if (this.input) {
                 const inputExecutor = this.input
                 this.input          = undefined
-                const drainer: URIO<Env, unknown> = I.defer(() => {
-                  const state = inputExecutor.run()
+                const drainer: URIO<Env, unknown> = pipe(
+                  currentChannel.input.awaitRead,
+                  I.crossSecond(
+                    I.defer(() => {
+                      const state = inputExecutor.run()
 
-                  State.concrete(state)
+                      State.concrete(state)
 
-                  switch (state._tag) {
-                    case State.ChannelStateTag.Emit: {
-                      return pipe(
-                        currentChannel.input.emit(inputExecutor.getEmit()),
-                        I.chain(() => drainer)
-                      )
-                    }
-                    case State.ChannelStateTag.Effect: {
-                      return pipe(
-                        state.effect,
-                        I.matchCauseIO(
-                          (cause) => currentChannel.input.error(cause),
-                          () => drainer
-                        )
-                      )
-                    }
-                    case State.ChannelStateTag.Done: {
-                      const done = inputExecutor.getDone()
-                      return Ex.match_(done, currentChannel.input.error, currentChannel.input.done)
-                    }
-                  }
-                })
+                      switch (state._tag) {
+                        case State.ChannelStateTag.Emit: {
+                          return pipe(
+                            currentChannel.input.emit(inputExecutor.getEmit()),
+                            I.chain(() => drainer)
+                          )
+                        }
+                        case State.ChannelStateTag.Effect: {
+                          return pipe(
+                            state.effect,
+                            I.matchCauseIO(
+                              (cause) => currentChannel.input.error(cause),
+                              () => drainer
+                            )
+                          )
+                        }
+                        case State.ChannelStateTag.Done: {
+                          const done = inputExecutor.getDone()
+                          return Ex.match_(done, currentChannel.input.error, currentChannel.input.done)
+                        }
+                      }
+                    })
+                  )
+                )
                 result = new State.Effect(
                   pipe(
                     I.fork(drainer),

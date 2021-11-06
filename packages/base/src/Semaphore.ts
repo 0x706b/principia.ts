@@ -115,7 +115,7 @@ export class Semaphore {
                 if (m >= n) {
                   return [new Acquisition(I.unit(), this.releaseN(n)), E.right(m - n)]
                 }
-                return [new Acquisition(F.await(p), this.restore(p, n)), E.left(new ImmutableQueue([[p, n - m]]))]
+                return [new Acquisition(F.await(p), this.restore(p, n)), E.left(ImmutableQueue.single([p, n - m]))]
               }
             )
           )
