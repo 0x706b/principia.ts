@@ -1335,18 +1335,21 @@ function runManagedInterpret<Env, InErr, InDone, OutErr, OutDone>(
 function toPullInterpret<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   channelState: ChannelState<Env, OutErr>,
   exec: ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
-): IO<Env, E.Either<OutErr, OutDone>, OutElem> {
+): IO<Env, OutErr, E.Either<OutDone, OutElem>> {
   State.concrete(channelState)
   switch (channelState._tag) {
     case State.ChannelStateTag.Effect: {
-      return I.chain_(I.mapError_(channelState.effect, E.left), () => toPullInterpret(exec.run(), exec))
+      return pipe(
+        channelState.effect,
+        I.chain(() => toPullInterpret(exec.run(), exec))
+      )
     }
     case State.ChannelStateTag.Emit: {
-      return I.succeed(exec.getEmit())
+      return I.succeed(E.right(exec.getEmit()))
     }
     case State.ChannelStateTag.Done: {
       const done = exec.getDone()
-      return Ex.matchIO_(done, flow(Ca.map(E.left), I.failCause), flow(E.right, I.fail))
+      return Ex.match_(done, I.failCause, flow(E.left, I.succeed))
     }
   }
 }
@@ -1411,7 +1414,7 @@ export function mergeAllWith_<
       Ma.gen(function* (_) {
         yield* _(Ma.finalizer(I.chain_(getChildren, F.interruptAll)))
         const queue = yield* _(
-          Ma.bracket_(Q.makeBounded<I.IO<Env, E.Either<OutErr | OutErr1, OutDone>, OutElem>>(bufferSize), Q.shutdown)
+          Ma.bracket_(Q.makeBounded<I.IO<Env, OutErr | OutErr1, E.Either<OutDone, OutElem>>>(bufferSize), Q.shutdown)
         )
         const cancelers   = yield* _(Ma.bracket_(Q.makeBounded<PR.Future<never, void>>(n), Q.shutdown))
         const lastDone    = yield* _(Ref.make<M.Maybe<OutDone>>(M.nothing()))
@@ -1419,29 +1422,29 @@ export function mergeAllWith_<
         const permits     = yield* _(Sem.make(n))
         const pull        = yield* _(toPull(channels))
 
-        const evaluatePull = (pull: I.IO<Env & Env1, E.Either<OutErr | OutErr1, OutDone>, OutElem>) =>
+        const evaluatePull = (pull: I.IO<Env & Env1, OutErr | OutErr1, E.Either<OutDone, OutElem>>) =>
           pipe(
             pull,
-            I.chain((elem) => pipe(I.succeed(elem), (_) => Q.offer_(queue, _))),
-            I.forever,
-            I.catchAllCause(
-              flow(
-                Ca.flipCauseEither,
-                E.match(
-                  (cause) =>
-                    I.crossSecond_(
-                      Q.offer_(queue, I.failCause(Ca.map_(cause, E.left))),
-                      I.asUnit(PR.succeed_(errorSignal, undefined))
-                    ),
-                  (outDone) =>
-                    Ref.update_(
-                      lastDone,
+            I.chain(
+              E.match(
+                (outDone) => I.succeed(M.just(outDone)),
+                (outElem) => pipe(queue, Q.offer(I.succeed(E.right(outElem))), I.as(M.nothing<OutDone>()))
+              )
+            ),
+            I.repeatUntil(M.isJust),
+            I.chain(
+              M.match(
+                () => I.unit(),
+                (outDone) =>
+                  pipe(
+                    lastDone,
+                    Ref.update(
                       M.match(
                         () => M.just(outDone),
                         (lastDone) => M.just(f(lastDone, outDone))
                       )
                     )
-                )
+                  )
               )
             )
           )
@@ -1450,71 +1453,72 @@ export function mergeAllWith_<
           pipe(
             pull,
             I.matchCauseIO(
-              flow(
-                Ca.flipCauseEither,
-                E.match(
-                  (cause) =>
-                    pipe(
-                      getChildren,
-                      I.chain(F.interruptAll),
-                      I.crossSecond(pipe(queue, Q.offer(I.failCause(Ca.map_(cause, E.left))), I.as(false)))
-                    ),
-                  (outDone) =>
-                    I.raceWith_(
-                      PR.await(errorSignal),
-                      Sem.withPermits(permits, n)(I.unit()),
-                      (_, permitAcquisition) =>
-                        pipe(
-                          getChildren,
-                          I.chain(F.interruptAll),
-                          I.crossSecond(pipe(F.interrupt(permitAcquisition), I.as(false)))
-                        ),
-                      (_, failureAwait) =>
-                        pipe(
-                          F.interrupt(failureAwait),
-                          I.crossSecond(
-                            pipe(
-                              Ref.get(lastDone),
-                              I.chain(
-                                M.match(
-                                  () => Q.offer_(queue, I.fail(E.right(outDone))),
-                                  (lastDone) => Q.offer_(queue, I.fail(E.right(f(lastDone, outDone))))
-                                )
-                              ),
-                              I.as(false)
-                            )
+              (cause) =>
+                pipe(
+                  getChildren,
+                  I.chain(F.interruptAll),
+                  I.crossSecond(pipe(queue, Q.offer(I.failCause(cause)), I.as(false)))
+                ),
+              E.match(
+                (outDone) =>
+                  I.raceWith_(
+                    PR.await(errorSignal),
+                    Sem.withPermits(permits, n)(I.unit()),
+                    (_, permitAcquisition) =>
+                      pipe(
+                        getChildren,
+                        I.chain(F.interruptAll),
+                        I.crossSecond(pipe(F.interrupt(permitAcquisition), I.as(false)))
+                      ),
+                    (_, failureAwait) =>
+                      pipe(
+                        F.interrupt(failureAwait),
+                        I.crossSecond(
+                          pipe(
+                            Ref.get(lastDone),
+                            I.chain(
+                              M.match(
+                                () => Q.offer_(queue, I.succeed(E.left(outDone))),
+                                (lastDone) => Q.offer_(queue, I.succeed(E.left(f(lastDone, outDone))))
+                              )
+                            ),
+                            I.as(false)
                           )
                         )
-                    )
-                )
-              ),
-              (channel) => {
-                switch (mergeStrategy) {
-                  case 'BackPressure':
-                    return I.gen(function* (_) {
-                      const latch   = yield* _(PR.make<never, void>())
-                      const raceIOs = pipe(toPull(channel), Ma.use(flow(evaluatePull, I.race(PR.await(errorSignal)))))
-                      yield* _(I.fork(Sem.withPermit(permits)(I.crossSecond_(PR.succeed_(latch, undefined), raceIOs))))
-                      yield* _(PR.await(latch))
-                      return !(yield* _(PR.isDone(errorSignal)))
-                    })
-                  case 'BufferSliding':
-                    return I.gen(function* (_) {
-                      const canceler = yield* _(PR.make<never, void>())
-                      const latch    = yield* _(PR.make<never, void>())
-                      const size     = yield* _(Q.size(cancelers))
-                      yield* _(I.when(() => size >= n)(I.chain_(Q.take(cancelers), PR.succeed<void>(undefined))))
-                      yield* _(Q.offer_(cancelers, canceler))
-                      const raceIOs = pipe(
-                        toPull(channel),
-                        Ma.use(flow(evaluatePull, I.race(PR.await(errorSignal)), I.race(PR.await(canceler))))
                       )
-                      yield* _(I.fork(Sem.withPermit(permits)(I.crossSecond_(PR.succeed_(latch, undefined), raceIOs))))
-                      yield* _(PR.await(latch))
-                      return !(yield* _(PR.isDone(errorSignal)))
-                    })
+                  ),
+                (channel) => {
+                  switch (mergeStrategy) {
+                    case 'BackPressure':
+                      return I.gen(function* (_) {
+                        const latch   = yield* _(PR.make<never, void>())
+                        const raceIOs = pipe(toPull(channel), Ma.use(flow(evaluatePull, I.race(PR.await(errorSignal)))))
+                        yield* _(
+                          I.fork(Sem.withPermit(permits)(I.crossSecond_(PR.succeed_(latch, undefined), raceIOs)))
+                        )
+                        yield* _(PR.await(latch))
+                        return !(yield* _(PR.isDone(errorSignal)))
+                      })
+                    case 'BufferSliding':
+                      return I.gen(function* (_) {
+                        const canceler = yield* _(PR.make<never, void>())
+                        const latch    = yield* _(PR.make<never, void>())
+                        const size     = yield* _(Q.size(cancelers))
+                        yield* _(I.when(() => size >= n)(I.chain_(Q.take(cancelers), PR.succeed<void>(undefined))))
+                        yield* _(Q.offer_(cancelers, canceler))
+                        const raceIOs = pipe(
+                          toPull(channel),
+                          Ma.use(flow(evaluatePull, I.race(PR.await(errorSignal)), I.race(PR.await(canceler))))
+                        )
+                        yield* _(
+                          I.fork(Sem.withPermit(permits)(I.crossSecond_(PR.succeed_(latch, undefined), raceIOs)))
+                        )
+                        yield* _(PR.await(latch))
+                        return !(yield* _(PR.isDone(errorSignal)))
+                      })
+                  }
                 }
-              }
+              )
             ),
             I.repeatWhile((b) => b === true),
             I.forkManaged
@@ -1528,8 +1532,9 @@ export function mergeAllWith_<
         pipe(
           Q.take(queue),
           I.flatten,
-          I.matchCause(flow(Ca.flipCauseEither, E.match(failCause, end)), (outElem) =>
-            crossSecond_(write(outElem), consumer)
+          I.matchCause(
+            failCause,
+            E.match(end, (outElem) => pipe(write(outElem), crossSecond(consumer)))
           )
         )
       )
@@ -1740,17 +1745,17 @@ export function mergeWith_<
       >
       const handleSide =
         <Err, Done, Err2, Done2>(
-          exit: Ex.Exit<E.Either<Err, Done>, OutElem | OutElem1>,
-          fiber: F.Fiber<E.Either<Err2, Done2>, OutElem | OutElem1>,
-          pull: IO<Env & Env1, E.Either<Err, Done>, OutElem | OutElem1>
+          exit: Ex.Exit<Err, E.Either<Done, OutElem | OutElem1>>,
+          fiber: F.Fiber<Err2, E.Either<Done2, OutElem | OutElem1>>,
+          pull: IO<Env & Env1, Err, E.Either<Done, OutElem | OutElem1>>
         ) =>
         (
           done: (
             ex: Ex.Exit<Err, Done>
           ) => MD.MergeDecision<Env & Env1, Err2, Done2, OutErr2 | OutErr3, OutDone2 | OutDone3>,
           both: (
-            f1: F.Fiber<E.Either<Err, Done>, OutElem | OutElem1>,
-            f2: F.Fiber<E.Either<Err2, Done2>, OutElem | OutElem1>
+            f1: F.Fiber<Err, E.Either<Done, OutElem | OutElem1>>,
+            f2: F.Fiber<Err2, E.Either<Done2, OutElem | OutElem1>>
           ) => MergeState,
           single: (
             f: (ex: Ex.Exit<Err2, Done2>) => IO<Env & Env1, OutErr2 | OutErr3, OutDone2 | OutDone3>
@@ -1759,41 +1764,50 @@ export function mergeWith_<
           Env & Env1,
           never,
           Channel<Env & Env1, unknown, unknown, unknown, OutErr2 | OutErr3, OutElem | OutElem1, OutDone2 | OutDone3>
-        > =>
-          Ex.match_(
-            exit,
-            (cause) => {
-              const result = pipe(Ca.flipCauseEither(cause), E.match(Ex.failCause, Ex.succeed), done)
-
-              MD.concrete(result)
-
-              switch (result._tag) {
-                case MD.MergeDecisionTag.Done: {
-                  return pipe(I.crossSecond_(F.interrupt(fiber), result.io), fromIO, I.succeed)
-                }
-                case MD.MergeDecisionTag.Await: {
-                  return pipe(
-                    fiber.await,
-                    I.map(
-                      Ex.match(
-                        flow(Ca.flipCauseEither, E.match(Ex.failCause, Ex.succeed), result.f, fromIO),
-                        flow(write, crossSecond(go(single(result.f))))
+        > => {
+          const onDecision = (
+            decision: MD.MergeDecision<Env & Env1, Err2, Done2, OutErr2 | OutErr3, OutDone2 | OutDone3>
+          ) => {
+            MD.concrete(decision)
+            switch (decision._tag) {
+              case MD.MergeDecisionTag.Done: {
+                return I.succeed(fromIO(I.crossSecond_(F.interrupt(fiber), decision.io)))
+              }
+              case MD.MergeDecisionTag.Await: {
+                return pipe(
+                  fiber.await,
+                  I.map(
+                    Ex.match(
+                      flow(Ex.failCause, decision.f, fromIO),
+                      E.match(flow(Ex.succeed, decision.f, fromIO), (elem) =>
+                        pipe(write(elem), crossSecond(go(single(decision.f))))
                       )
                     )
                   )
-                }
+                )
               }
-            },
-            (elem) => I.map_(I.forkDaemon(pull), (leftFiber) => crossSecond_(write(elem), go(both(leftFiber, fiber))))
+            }
+          }
+          return Ex.match_(
+            exit,
+            flow(Ex.failCause, done, onDecision),
+            E.match(flow(Ex.succeed, done, onDecision), (elem) =>
+              pipe(
+                pull,
+                I.forkDaemon,
+                I.map((leftFiber) => crossSecond_(write(elem), go(both(leftFiber, fiber))))
+              )
+            )
           )
+        }
 
       const go = (
         state: MergeState
       ): Channel<Env & Env1, unknown, unknown, unknown, OutErr2 | OutErr3, OutElem | OutElem1, OutDone2 | OutDone3> => {
         switch (state._tag) {
           case MS.MergeStateTag.BothRunning: {
-            const lj: IO<Env1, E.Either<OutErr, OutDone>, OutElem | OutElem1>   = F.join(state.left)
-            const rj: IO<Env1, E.Either<OutErr1, OutDone1>, OutElem | OutElem1> = F.join(state.right)
+            const lj: IO<Env1, OutErr, E.Either<OutDone, OutElem | OutElem1>>   = F.join(state.left)
+            const rj: IO<Env1, OutErr1, E.Either<OutDone1, OutElem | OutElem1>> = F.join(state.right)
 
             return unwrap(
               I.raceWith_(
@@ -1819,8 +1833,10 @@ export function mergeWith_<
               I.result(pullR),
               I.map(
                 Ex.match(
-                  flow(Ca.flipCauseEither, E.match(Ex.failCause, Ex.succeed), state.f, fromIO),
-                  flow(write, crossSecond(go(new MS.LeftDone(state.f))))
+                  flow(Ex.failCause, state.f, fromIO),
+                  E.match(flow(Ex.succeed, state.f, fromIO), (elem) =>
+                    pipe(write(elem), crossSecond(go(new MS.LeftDone(state.f))))
+                  )
                 )
               ),
               unwrap
@@ -1831,8 +1847,10 @@ export function mergeWith_<
               I.result(pullL),
               I.map(
                 Ex.match(
-                  flow(Ca.flipCauseEither, E.match(Ex.failCause, Ex.succeed), state.f, fromIO),
-                  flow(write, crossSecond(go(new MS.RightDone(state.f))))
+                  flow(Ex.failCause, state.f, fromIO),
+                  E.match(flow(Ex.succeed, state.f, fromIO), (elem) =>
+                    pipe(write(elem), crossSecond(go(new MS.RightDone(state.f))))
+                  )
                 )
               ),
               unwrap
@@ -1967,7 +1985,7 @@ export function mapOutIOPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
       Ma.gen(function* (_) {
         yield* _(Ma.finalizer(pipe(getChildren, I.chain(F.interruptAll))))
         const queue = yield* _(
-          Ma.bracket_(Q.makeBounded<I.IO<Env1, E.Either<OutErr | OutErr1, OutDone>, OutElem1>>(n), Q.shutdown)
+          Ma.bracket_(Q.makeBounded<I.IO<Env1, OutErr | OutErr1, E.Either<OutDone, OutElem1>>>(n), Q.shutdown)
         )
         const errorSignal = yield* _(PR.make<OutErr1, never>())
         const permits     = yield* _(Sem.make(n))
@@ -1976,41 +1994,39 @@ export function mapOutIOPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
           pipe(
             pull,
             I.matchCauseIO(
-              flow(
-                Ca.flipCauseEither,
-                E.match(
-                  flow(Ca.map(E.left), I.failCause, (_) => Q.offer_(queue, _)),
-                  (outDone) =>
-                    pipe(
-                      Sem.withPermits(permits, n)(I.unit()),
-                      I.interruptible,
-                      I.crossSecond(pipe(E.right(outDone), I.fail, (_) => Q.offer_(queue, _)))
-                    )
-                )
-              ),
-              (outElem) =>
-                I.gen(function* (_) {
-                  const p     = yield* _(PR.make<OutErr1, OutElem1>())
-                  const latch = yield* _(PR.make<never, void>())
-                  yield* _(Q.offer_(queue, pipe(PR.await(p), I.mapError(E.left))))
-                  yield* _(
-                    I.fork(
+              (cause) => Q.offer_(queue, I.failCause(cause)),
+              E.match(
+                (outDone) =>
+                  pipe(
+                    Sem.withPermits(permits, n)(I.unit()),
+                    I.interruptible,
+                    I.crossSecond(Q.offer_(queue, I.succeed(E.left(outDone)))),
+                    I.asUnit
+                  ),
+                (outElem) =>
+                  I.gen(function* (_) {
+                    const p     = yield* _(PR.make<OutErr1, OutElem1>())
+                    const latch = yield* _(PR.make<never, void>())
+                    yield* _(Q.offer_(queue, pipe(p, PR.await, I.map(E.right))))
+                    yield* _(
                       Sem.withPermit(permits)(
-                        I.crossSecond_(
-                          PR.succeed_(latch, undefined),
-                          pipe(
-                            PR.await(errorSignal),
-                            I.raceFirst(f(outElem)),
-                            I.tapCause((cause) => PR.failCause_(p, cause)),
-                            I.fulfill(p)
+                        pipe(
+                          latch,
+                          PR.succeed<void>(undefined),
+                          I.crossSecond(
+                            pipe(
+                              PR.await(errorSignal),
+                              I.raceFirst(f(outElem)),
+                              I.tapErrorCause((c) => PR.failCause_(p, c)),
+                              I.fulfill(p)
+                            )
                           )
                         )
                       )
                     )
-                  )
-
-                  yield* _(PR.await(latch))
-                })
+                    yield* _(PR.await(latch))
+                  })
+              )
             ),
             I.forever,
             I.interruptible,
@@ -2025,8 +2041,9 @@ export function mapOutIOPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
         pipe(
           Q.take(queue),
           I.flatten,
-          I.matchCause(flow(Ca.flipCauseEither, E.match(failCause, end)), (outElem) =>
-            crossSecond_(write(outElem), consumer)
+          I.matchCause(
+            failCause,
+            E.match(end, (outElem) => pipe(write(outElem), crossSecond(consumer)))
           )
         )
       )
@@ -2137,7 +2154,7 @@ export function asUnit<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
  */
 export function toPull<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
-): Ma.Managed<Env, never, IO<Env, E.Either<OutErr, OutDone>, OutElem>> {
+): Ma.Managed<Env, never, IO<Env, OutErr, E.Either<OutDone, OutElem>>> {
   return Ma.map_(
     Ma.bracketExit_(
       I.succeedLazy(() => new ChannelExecutor(() => self, undefined)),

@@ -1089,6 +1089,27 @@ export function tapError<E, R1, E1>(f: (e: E) => IO<R1, E1, any>): <R, A>(fa: IO
   return (fa) => tapError_(fa, f)
 }
 
+/**
+ * Returns an effect that effectually "peeks" at the cause of the failure of
+ * this effect.
+ */
+export function tapErrorCause_<R, E, A, R1, E1>(
+  fa: IO<R, E, A>,
+  f: (e: Cause<E>) => IO<R1, E1, any>
+): IO<R & R1, E | E1, A> {
+  return matchCauseIO_(fa, (c) => crossSecond_(f(c), failCause(c)), succeed)
+}
+
+/**
+ * Returns an effect that effectually "peeks" at the cause of the failure of
+ * this effect.
+ */
+export function tapErrorCause<E, R1, E1>(
+  f: (e: Cause<E>) => IO<R1, E1, any>
+): <R, A>(fa: IO<R, E, A>) => IO<R & R1, E | E1, A> {
+  return (fa) => tapErrorCause_(fa, f)
+}
+
 /*
  * -------------------------------------------------------------------------------------------------
  * Reader

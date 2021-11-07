@@ -1433,8 +1433,10 @@ export function takeUntil<A>(pa: Predicate<A>): <R, E>(fa: Stream<R, E, A>) => S
  * Interpret the stream as a managed pull
  */
 export function toPull<R, E, A>(stream: Stream<R, E, A>): Ma.Managed<R, never, I.IO<R, M.Maybe<E>, C.Chunk<A>>> {
-  return Ma.map_(Ch.toPull(stream.channel), (pull) =>
-    I.mapError_(pull, (e) => (e._tag === 'Left' ? M.just(e.left) : M.nothing()))
+  return pipe(
+    stream.channel,
+    Ch.toPull,
+    Ma.map(flow(I.mapError(M.just), I.chain(E.match(() => I.fail(M.nothing()), I.succeed))))
   )
 }
 
