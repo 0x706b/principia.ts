@@ -1784,7 +1784,7 @@ export function mergeWith_<
                 }
               }
             },
-            (elem) => I.map_(I.fork(pull), (leftFiber) => crossSecond_(write(elem), go(both(leftFiber, fiber))))
+            (elem) => I.map_(I.forkDaemon(pull), (leftFiber) => crossSecond_(write(elem), go(both(leftFiber, fiber))))
           )
 
       const go = (
@@ -1841,9 +1841,9 @@ export function mergeWith_<
         }
       }
       return pipe(
-        I.fork(pullL),
+        I.forkDaemon(pullL),
         I.crossWith(
-          I.fork(pullR),
+          I.forkDaemon(pullR),
           (a, b): MergeState =>
             new MS.BothRunning<unknown, OutErr, OutErr1, unknown, OutElem | OutElem1, OutDone, OutDone1, unknown>(a, b)
         ),
