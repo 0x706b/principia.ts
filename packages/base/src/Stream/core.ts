@@ -34,7 +34,6 @@ import * as Sink from '../Sink'
 import { tuple } from '../tuple'
 import { match } from '../util/pattern'
 import * as DS from './DebounceState'
-import * as GB from './GroupBy'
 import * as HO from './Handoff'
 import * as Pull from './Pull'
 import * as SER from './SinkEndReason'
@@ -113,7 +112,7 @@ export function failLazy<E>(error: () => E): Stream<unknown, E, never> {
  * Creates a stream from a `Chunk` of values
  */
 export function fromChunk<O>(c: C.Chunk<O>): Stream<unknown, never, O> {
-  return new Stream(Ch.unwrap(I.succeedLazy(() => Ch.write(c))))
+  return new Stream(Ch.deferTotal(() => (C.isEmpty(c) ? Ch.unit() : Ch.write(c))))
 }
 
 /**
@@ -2902,88 +2901,6 @@ export function findIO<A, R1, E1>(
   return (stream) => findIO_(stream, f)
 }
 
-export function groupBy_<R, E, A, R1, E1, K, V>(
-  stream: Stream<R, E, A>,
-  f: (a: A) => I.IO<R1, E1, readonly [K, V]>,
-  buffer = 16
-): GroupBy<R & R1, E | E1, K, V> {
-  const qstream = unwrapManaged(
-    Ma.gen(function* (_) {
-      const decider = yield* _(Pr.make<never, (k: K, v: V) => I.UIO<(_: symbol) => boolean>>())
-      const out     = yield* _(
-        Ma.bracket_(
-          Q.makeBounded<Ex.Exit<M.Maybe<E | E1>, readonly [K, Q.Dequeue<Ex.Exit<M.Maybe<E | E1>, V>>]>>(buffer),
-          Q.shutdown
-        )
-      )
-      const ref = yield* _(Ref.make<HM.HashMap<K, symbol>>(HM.makeDefault()))
-      const add = yield* _(
-        pipe(
-          stream,
-          mapIO(f),
-          distributedWithDynamic(
-            buffer,
-            ([k, v]) => I.chain_(Pr.await(decider), (f) => f(k, v)),
-            (_) => Q.offer_(out, _)
-          )
-        )
-      )
-      yield* _(
-        Pr.succeed_(decider, (k, _) =>
-          pipe(
-            ref.get,
-            I.map(HM.get(k)),
-            I.chain(
-              M.match(
-                () =>
-                  pipe(
-                    add,
-                    I.chain(([idx, q]) =>
-                      pipe(
-                        Ref.update_(ref, HM.set(k, idx)),
-                        I.crossSecond(
-                          Q.offer_(
-                            out,
-                            Ex.succeed([
-                              k,
-                              Q.map_(
-                                q,
-                                Ex.map(([, v]) => v)
-                              )
-                            ] as const)
-                          )
-                        ),
-                        I.as((_) => _ === idx)
-                      )
-                    )
-                  ),
-                (idx) => I.succeed((_) => _ === idx)
-              )
-            )
-          )
-        )
-      )
-      return flattenExitOption(fromQueueWithShutdown_(out))
-    })
-  )
-  return new GroupBy(qstream, buffer)
-}
-
-export function groupBy<A, R1, E1, K, V>(
-  f: (a: A) => I.IO<R1, E1, readonly [K, V]>,
-  buffer = 16
-): <R, E>(stream: Stream<R, E, A>) => GroupBy<R & R1, E | E1, K, V> {
-  return (stream) => groupBy_(stream, f, buffer)
-}
-
-export function groupByKey_<R, E, A, K>(stream: Stream<R, E, A>, f: (a: A) => K, buffer = 16): GroupBy<R, E, K, A> {
-  return groupBy_(stream, (a) => I.succeed([f(a), a]), buffer)
-}
-
-export function groupByKey<A, K>(f: (a: A) => K, buffer = 16): <R, E>(stream: Stream<R, E, A>) => GroupBy<R, E, K, A> {
-  return (stream) => groupByKey_(stream, f, buffer)
-}
-
 function endWhenWriter<E, A, E1>(
   fiber: F.Fiber<E1, any>
 ): Ch.Channel<unknown, E | E1, C.Chunk<A>, unknown, E | E1, C.Chunk<A>, void> {
@@ -3443,41 +3360,6 @@ export function mapIOParUnordered<A, R1, E1, B>(
   bufferSize = 16
 ): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
   return (stream) => mapIOParUnordered_(stream, f, n, bufferSize)
-}
-
-/**
- * Maps over elements of the stream with the specified effectful function,
- * partitioned by `p` executing invocations of `f` concurrently. The number
- * of concurrent invocations of `f` is determined by the number of different
- * outputs of type `K`. Up to `buffer` elements may be buffered per partition.
- * Transformed elements may be reordered but the order within a partition is maintained.
- */
-export function mapIOPartitioned_<R, E, A, R1, E1, A1, K>(
-  stream: Stream<R, E, A>,
-  f: (a: A) => I.IO<R1, E1, A1>,
-  keyBy: (a: A) => K,
-  buffer = 16
-): Stream<R & R1, E | E1, A1> {
-  return pipe(
-    stream,
-    groupByKey(keyBy, buffer),
-    GB.merge((_, s) => mapIO_(s, f))
-  )
-}
-
-/**
- * Maps over elements of the stream with the specified effectful function,
- * partitioned by `p` executing invocations of `f` concurrently. The number
- * of concurrent invocations of `f` is determined by the number of different
- * outputs of type `K`. Up to `buffer` elements may be buffered per partition.
- * Transformed elements may be reordered but the order within a partition is maintained.
- */
-export function mapIOPartitioned<A, R1, E1, A1, K>(
-  f: (a: A) => I.IO<R1, E1, A1>,
-  keyBy: (a: A) => K,
-  buffer = 16
-): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, A1> {
-  return (stream) => mapIOPartitioned_(stream, f, keyBy, buffer)
 }
 
 export function mergeWithHandler<R, E>(
@@ -4843,37 +4725,3 @@ export function zipFirst<R, R1, E, E1, A, A1>(that: Stream<R1, E1, A1>) {
   return (stream: Stream<R, E, A>) => zipFirst_(stream, that)
 }
 
-export class GroupBy<R, E, K, V> {
-  constructor(
-    readonly grouped: Stream<R, E, readonly [K, Q.Dequeue<Ex.Exit<M.Maybe<E>, V>>]>,
-    readonly buffer: number
-  ) {}
-
-  first(n: number): GroupBy<R, E, K, V> {
-    const g1 = pipe(
-      this.grouped,
-      zipWithIndex,
-      filterIO((elem) => {
-        const i = elem[1]
-        return i < n ? I.succeed(true) : I.as_(Q.shutdown(elem[0][1]), false)
-      }),
-      map(([_]) => _)
-    )
-    return new GroupBy(g1, this.buffer)
-  }
-
-  filter(f: (k: K) => boolean): GroupBy<R, E, K, V> {
-    const g1 = pipe(
-      this.grouped,
-      filterIO(([k, q]) => (f(k) ? I.succeed(true) : I.as_(Q.shutdown(q), false)))
-    )
-    return new GroupBy(g1, this.buffer)
-  }
-
-  apply<R1, E1, A>(f: (k: K, s: Stream<unknown, E, V>) => Stream<R1, E1, A>): Stream<R & R1, E | E1, A> {
-    return pipe(
-      this.grouped,
-      chainPar(([k, q]) => f(k, flattenExitOption(fromQueueWithShutdown_(q))), Number.MAX_SAFE_INTEGER)
-    )
-  }
-}

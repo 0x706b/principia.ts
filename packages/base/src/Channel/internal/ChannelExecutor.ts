@@ -78,10 +78,12 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
   private cancelled?: Exit<OutErr, OutDone>
   private emitted?: unknown
   private currentChannel?: ErasedChannel<Env>
+  private closeLastSubstream?: I.URIO<Env, unknown>
 
   constructor(
     initialChannel: () => C.Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
-    private providedEnv: unknown
+    private providedEnv: unknown,
+    private executeCloseLastSubstream: (_: I.URIO<Env, unknown>) => I.URIO<Env, unknown>
   ) {
     this.currentChannel = initialChannel() as ErasedChannel<Env>
   }
@@ -230,37 +232,24 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
 
   private finishSubexecutorWithCloseEffect(
     subexecDone: Exit<unknown, unknown>,
-    closeEffect: IO<Env, never, unknown> | undefined
-  ) {
-    if (closeEffect) {
-      return new State.Effect(
+    ...closeFns: ReadonlyArray<(exit: Ex.Exit<unknown, unknown>) => I.URIO<Env, unknown> | undefined>
+  ): ChannelState<Env, unknown> | undefined {
+    this.addFinalizer(
+      new C.ContinuationFinalizer(() =>
         pipe(
-          closeEffect,
-          I.matchCauseIO(
-            (cause) =>
-              this.finishWithExit(
-                Ex.failCause(
-                  Ca.then(
-                    Ex.match_(subexecDone, identity, () => Ca.empty),
-                    cause
-                  )
-                )
-              ),
-            () => this.finishWithExit(subexecDone)
+          closeFns,
+          I.foreachUnit((closeFn) =>
+            pipe(
+              I.succeedLazy(() => closeFn(subexecDone)),
+              I.chain((closeEffect) => closeEffect ?? I.unit())
+            )
           )
         )
       )
-    } else {
-      const state: ChannelState<Env, unknown> | undefined = Ex.match_(
-        subexecDone,
-        (cause) => this.doneHalt(cause),
-        (a) => this.doneSucceed(a)
-      )
-
-      this.subexecutorStack = undefined
-
-      return state
-    }
+    )
+    const state           = pipe(subexecDone, Ex.match(this.doneHalt, this.doneSucceed))
+    this.subexecutorStack = undefined
+    return state
   }
 
   private finishWithExit(exit: Exit<unknown, unknown>): IO<Env, unknown, unknown> {
@@ -304,11 +293,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     self: ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
     cause: Cause<unknown>
   ): ChannelState<Env, unknown> | undefined {
-    const closeEffect = maybeCloseBoth(exec.close(Ex.failCause(cause)), rest.exec.close(Ex.failCause(cause)))
-    return self.finishSubexecutorWithCloseEffect(
-      Ex.failCause(cause),
-      closeEffect ? I.chain_(closeEffect, I.fromExit) : undefined
-    )
+    return self.finishSubexecutorWithCloseEffect(Ex.failCause(cause), rest.exec.close, exec.close)
   }
 
   private drainFromKAndSubexecutor(
@@ -381,30 +366,61 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
 
     switch (run._tag) {
       case State.ChannelStateTag.Emit: {
-        const fromK: ErasedExecutor<Env> = new ChannelExecutor(() => inner.subK(inner.exec.getEmit()), this.providedEnv)
-        fromK.input           = this.input
-        this.subexecutorStack = new FromKAnd(fromK, inner)
+        if (this.closeLastSubstream) {
+          const closeLast         = this.closeLastSubstream
+          this.closeLastSubstream = undefined
+          return new State.Effect(
+            pipe(
+              this.executeCloseLastSubstream(closeLast),
+              I.map(() => {
+                const fromK: ErasedExecutor<Env> = new ChannelExecutor(
+                  () => inner.subK(inner.exec.getEmit()),
+                  this.providedEnv,
+                  this.executeCloseLastSubstream
+                )
+                fromK.input           = this.input
+                this.subexecutorStack = new FromKAnd(fromK, inner)
+              })
+            )
+          )
+        } else {
+          const fromK: ErasedExecutor<Env> = new ChannelExecutor(
+            () => inner.subK(inner.exec.getEmit()),
+            this.providedEnv,
+            this.executeCloseLastSubstream
+          )
+          fromK.input           = this.input
+          this.subexecutorStack = new FromKAnd(fromK, inner)
+        }
         return undefined
       }
       case State.ChannelStateTag.Done: {
-        const done = inner.exec.getDone()
+        const lastClose = this.closeLastSubstream
+        const done      = inner.exec.getDone()
         return Ex.match_(
           done,
-          () => this.finishSubexecutorWithCloseEffect(done, inner.exec.close(done)),
+          () => this.finishSubexecutorWithCloseEffect(done, () => lastClose, inner.exec.close),
           (value) => {
             const doneValue = Ex.succeed(inner.combineSubKAndInner(inner.lastDone, value))
-            return this.finishSubexecutorWithCloseEffect(doneValue, inner.exec.close(doneValue))
+            return this.finishSubexecutorWithCloseEffect(doneValue, () => lastClose, inner.exec.close)
           }
         )
       }
       // eslint-disable-next-line no-fallthrough
       case State.ChannelStateTag.Effect: {
+        const closeLast = this.closeLastSubstream ?? I.unit()
         return new State.Effect(
-          I.catchAllCause_(
-            run.effect,
-            (cause) =>
-              this.finishSubexecutorWithCloseEffect(Ex.failCause(cause), inner.exec.close(Ex.failCause(cause)))
-                ?.effect || I.unit()
+          pipe(
+            this.executeCloseLastSubstream(closeLast),
+            I.crossSecond(
+              pipe(
+                run.effect,
+                I.catchAllCause(
+                  (cause) =>
+                    this.finishSubexecutorWithCloseEffect(Ex.failCause(cause), inner.exec.close)?.effect || I.unit()
+                )
+              )
+            )
           )
         )
       }
@@ -677,9 +693,13 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
             }
             case C.ChannelTag.PipeTo: {
               const previousInput = this.input
-              const leftExec      = new ChannelExecutor(currentChannel.left, this.providedEnv)
-              leftExec.input      = previousInput
-              this.input          = leftExec
+              const leftExec      = new ChannelExecutor(
+                currentChannel.left,
+                this.providedEnv,
+                this.executeCloseLastSubstream
+              )
+              leftExec.input = previousInput
+              this.input     = leftExec
               this.addFinalizer(
                 new C.ContinuationFinalizer((exit) => this.restorePipe(exit, previousInput) || I.unit())
               )
@@ -741,7 +761,12 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
               break
             }
             case C.ChannelTag.ConcatAll: {
-              const exec            = new ChannelExecutor(() => currentChannel.value, this.providedEnv)
+              const innerExecuteLastClose = (f: I.URIO<Env, any>) =>
+                I.succeedLazy(() => {
+                  const prevLastClose     = this.closeLastSubstream ?? I.unit()
+                  this.closeLastSubstream = I.crossSecond_(prevLastClose, f)
+                })
+              const exec            = new ChannelExecutor(() => currentChannel.value, this.providedEnv, innerExecuteLastClose)
               exec.input            = this.input
               this.subexecutorStack = new Inner(
                 exec,
@@ -750,7 +775,8 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
                 currentChannel.combineInners,
                 currentChannel.combineAll
               )
-              this.currentChannel = undefined
+              this.closeLastSubstream = undefined
+              this.currentChannel     = undefined
               break
             }
             case C.ChannelTag.Fold: {

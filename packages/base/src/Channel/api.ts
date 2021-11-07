@@ -651,16 +651,17 @@ export function fromIO<R, E, A>(io: IO<R, E, A>): Channel<R, unknown, unknown, u
 export function managedOut<R, E, A>(
   managed: Ma.Managed<R, E, A>
 ): Channel<R, unknown, unknown, unknown, E, A, unknown> {
-  return concatMap_(
-    bracketOutExit_(RM.make, (rm, ex) => Ma.releaseAll_(rm, ex, sequential)),
-    (rm) =>
+  return pipe(
+    RM.make,
+    I.chain((releaseMap) =>
       pipe(
         managed.io,
-        I.gives((r: R) => tuple(r, rm)),
-        I.map(([, a]) => a),
-        fromIO,
-        chain(write)
+        I.gives((_: R) => tuple(_, releaseMap)),
+        I.map(([_, out]) => tuple(out, releaseMap))
       )
+    ),
+    bracketOutExit(([_, releaseMap], exit) => Ma.releaseAll_(releaseMap, exit, sequential)),
+    mapOut(([a]) => a)
   )
 }
 
@@ -1416,7 +1417,7 @@ export function mergeAllWith_<
         const queue = yield* _(
           Ma.bracket_(Q.makeBounded<I.IO<Env, OutErr | OutErr1, E.Either<OutDone, OutElem>>>(bufferSize), Q.shutdown)
         )
-        const cancelers   = yield* _(Ma.bracket_(Q.makeBounded<PR.Future<never, void>>(n), Q.shutdown))
+        const cancelers   = yield* _(Ma.bracket_(Q.makeUnbounded<PR.Future<never, void>>(), Q.shutdown))
         const lastDone    = yield* _(Ref.make<M.Maybe<OutDone>>(M.nothing()))
         const errorSignal = yield* _(PR.make<never, void>())
         const permits     = yield* _(Sem.make(n))
@@ -2112,7 +2113,7 @@ export function runManaged<Env, InErr, InDone, OutErr, OutDone>(
 ): Ma.Managed<Env, OutErr, OutDone> {
   return Ma.mapIO_(
     Ma.bracketExit_(
-      I.succeedLazy(() => new ChannelExecutor(() => self, undefined)),
+      I.succeedLazy(() => new ChannelExecutor(() => self, undefined, identity)),
       (exec, exit) => exec.close(exit) || I.unit()
     ),
     (exec) => I.defer(() => runManagedInterpret(exec.run(), exec))
@@ -2157,7 +2158,7 @@ export function toPull<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
 ): Ma.Managed<Env, never, IO<Env, OutErr, E.Either<OutDone, OutElem>>> {
   return Ma.map_(
     Ma.bracketExit_(
-      I.succeedLazy(() => new ChannelExecutor(() => self, undefined)),
+      I.succeedLazy(() => new ChannelExecutor(() => self, undefined, identity)),
       (exec, exit) => exec.close(exit) || I.unit()
     ),
     (exec) => I.defer(() => toPullInterpret(exec.run(), exec))
