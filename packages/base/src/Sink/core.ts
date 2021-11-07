@@ -1,10 +1,14 @@
+import type * as E from '../Either'
 import type { Has } from '../Has'
 
 import * as Ch from '../Channel'
+import * as MD from '../Channel/internal/MergeDecision'
 import * as C from '../Chunk'
 import { Clock } from '../Clock'
 import { flow, pipe } from '../function'
+import * as H from '../Hub'
 import * as I from '../IO'
+import * as Ex from '../IO/Exit'
 import * as Ma from '../Managed'
 import * as M from '../Maybe'
 import { tuple } from '../tuple'
@@ -951,4 +955,77 @@ export function timed<R, InErr, In, OutErr, L, Z>(
   sink: Sink<R & Has<Clock>, InErr, In, OutErr, L, Z>
 ): Sink<R & Has<Clock>, InErr, In, OutErr, L, readonly [Z, number]> {
   return summarized_(sink, Clock.currentTime, (start, end) => end - start)
+}
+
+/**
+ * Runs both sinks in parallel on the input and combines the results
+ * using the provided function.
+ */
+export function crossWithPar_<
+  R,
+  InErr,
+  In,
+  OutErr,
+  L extends In1 & L1,
+  Z,
+  R1,
+  InErr1,
+  OutErr1,
+  In1 extends In,
+  L1,
+  Z1,
+  Z2
+>(
+  fa: Sink<R, InErr, In, OutErr, L, Z>,
+  fb: Sink<R1, InErr1, In1, OutErr1, L1, Z1>,
+  f: (a: Z, b: Z1) => Z2,
+  capacity = 16
+): Sink<R & R1, InErr & InErr1, In & In1, OutErr | OutErr1, L1, Z2> {
+  return new Sink(
+    Ch.unwrapManaged(
+      Ma.gen(function* (_) {
+        const hub    = yield* _(H.makeBounded<E.Either<Ex.Exit<InErr & InErr1, any>, C.Chunk<In & In1>>>(capacity))
+        const left   = yield* _(Ch.fromHubManaged(hub))
+        const right  = yield* _(Ch.fromHubManaged(hub))
+        const reader = Ch.toHub<InErr & InErr1, any, C.Chunk<In1>>(hub)
+        const c1     = Ch.pipeTo_(left, fa.channel)
+        const c2     = Ch.pipeTo_(right, fb.channel)
+        const writer = pipe(
+          c1,
+          Ch.mergeWith(
+            c2,
+            Ex.match(
+              (err) => MD.done<unknown, OutErr | OutErr1, never>(I.failCause(err)),
+              (lz) => MD.await(Ex.match(I.failCause, (rz) => I.succeed(f(lz, rz))))
+            ),
+            Ex.match(
+              (err) => MD.done<unknown, OutErr | OutErr1, never>(I.failCause(err)),
+              (rz) => MD.await(Ex.match(I.failCause, (lz) => I.succeed(f(lz, rz))))
+            )
+          )
+        )
+        return pipe(
+          reader,
+          Ch.mergeWith(
+            writer,
+            () => MD.await(Ex.match(I.failCause, I.succeed)),
+            Ex.match(flow(I.failCause, MD.done), flow(I.succeed, MD.done))
+          )
+        )
+      })
+    )
+  )
+}
+
+/**
+ * Runs both sinks in parallel on the input and combines the results
+ * using the provided function.
+ */
+export function crossWithPar<In, L extends In1 & L1, Z, R1, InErr1, In1 extends In, OutErr1, L1, Z1, Z2>(
+  fb: Sink<R1, InErr1, In1, OutErr1, L1, Z1>,
+  f: (a: Z, b: Z1) => Z2
+): <R, InErr, OutErr>(
+  fa: Sink<R, InErr, In, OutErr, L, Z>
+) => Sink<R & R1, InErr & InErr1, In & In1, OutErr | OutErr1, L1, Z2> {
+  return (fa) => crossWithPar_(fa, fb, f)
 }

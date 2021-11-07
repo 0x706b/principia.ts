@@ -2447,8 +2447,12 @@ export function read<In>(): Channel<unknown, unknown, In, unknown, M.Nothing, ne
   return readOrFail(M.nothing() as M.Nothing)
 }
 
-export function fromHub<Err, Done, Elem>(hub: H.UHub<Ex.Exit<E.Either<Err, Done>, Elem>>) {
+export function fromHub<Err, Done, Elem>(hub: H.UHub<E.Either<Ex.Exit<Err, Done>, Elem>>) {
   return managed_(H.subscribe(hub), fromQueue)
+}
+
+export function fromHubManaged<Err, Done, Elem>(hub: H.UHub<E.Either<Ex.Exit<Err, Done>, Elem>>) {
+  return pipe(H.subscribe(hub), Ma.map(fromQueue))
 }
 
 export function fromInput<Err, Elem, Done>(
@@ -2464,33 +2468,25 @@ export function fromInput<Err, Elem, Done>(
 }
 
 export function fromQueue<Err, Elem, Done>(
-  queue: Q.Dequeue<Ex.Exit<E.Either<Err, Done>, Elem>>
+  queue: Q.Dequeue<E.Either<Ex.Exit<Err, Done>, Elem>>
 ): Channel<unknown, unknown, unknown, unknown, Err, Elem, Done> {
   return chain_(
     fromIO(Q.take(queue)),
-    Ex.match(
-      (cause) =>
-        E.match_(
-          Ca.flipCauseEither(cause),
-          (cause) => failCause(cause),
-          (done) => end(done)
-        ),
-      (elem) => crossSecond_(write(elem), fromQueue(queue))
-    )
+    E.match(Ex.match(failCause, end), (elem) => crossSecond_(write(elem), fromQueue(queue)))
   )
 }
 
-export function toHub<Err, Done, Elem>(hub: H.UHub<Ex.Exit<E.Either<Err, Done>, Elem>>) {
+export function toHub<Err, Done, Elem>(hub: H.UHub<E.Either<Ex.Exit<Err, Done>, Elem>>) {
   return toQueue(H.toQueue(hub))
 }
 
 export function toQueue<Err, Done, Elem>(
-  queue: Q.Enqueue<Ex.Exit<E.Either<Err, Done>, Elem>>
+  queue: Q.Enqueue<E.Either<Ex.Exit<Err, Done>, Elem>>
 ): Channel<unknown, Err, Elem, Done, never, never, any> {
   return readWithCause(
-    (in_: Elem) => crossSecond_(fromIO(Q.offer_(queue, Ex.succeed(in_))), toQueue(queue)),
-    (cause: Ca.Cause<Err>) => fromIO(Q.offer_(queue, Ex.failCause(Ca.map_(cause, (_) => E.left(_))))),
-    (done: Done) => fromIO(Q.offer_(queue, Ex.fail(E.right(done))))
+    (in_: Elem) => crossSecond_(fromIO(Q.offer_(queue, E.right(in_))), toQueue(queue)),
+    (cause: Ca.Cause<Err>) => fromIO(Q.offer_(queue, E.left(Ex.failCause(cause)))),
+    (done: Done) => fromIO(Q.offer_(queue, E.left(Ex.succeed(done))))
   )
 }
 
