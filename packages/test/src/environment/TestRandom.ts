@@ -60,7 +60,7 @@ export class TestRandom implements Random {
     const newSeed = mash(seed)
     const seed1   = Math.floor(newSeed >>> 24)
     const seed2   = Math.floor(newSeed) & ((1 << 24) - 1)
-    return this.randomState.set(new Data(seed1, seed2, new ImmutableQueue([])))
+    return this.randomState.set(new Data(seed1, seed2, new ImmutableQueue(Li.empty())))
   }
 
   private bufferedBoolean = (buffer: Buffer): readonly [Maybe<boolean>, Buffer] => {
@@ -312,7 +312,7 @@ class Data {
   constructor(
     readonly seed1: number,
     readonly seed2: number,
-    readonly nextNextGaussians: ImmutableQueue<number> = new ImmutableQueue([])
+    readonly nextNextGaussians: ImmutableQueue<number> = new ImmutableQueue(Li.empty())
   ) {}
 }
 
