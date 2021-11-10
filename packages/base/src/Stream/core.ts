@@ -21,6 +21,7 @@ import * as H from '../Hub'
 import * as I from '../IO'
 import * as Ca from '../IO/Cause'
 import * as Ex from '../IO/Exit'
+import * as It from '../Iterable'
 import * as La from '../Layer'
 import * as L from '../List'
 import * as Ma from '../Managed'
@@ -4164,6 +4165,50 @@ export function scheduleEither<A, R1, B>(
   return (stream) => scheduleEither_(stream, schedule)
 }
 
+function scheduleWithLoop<R, E, A, R1, E1, B, C, D>(
+  driver: SC.Driver<R1, A, B>,
+  iterator: Iterator<A>,
+  index: number,
+  f: (a: A) => C,
+  g: (b: B) => D
+): Ch.Channel<R & R1, E | E1, C.Chunk<A>, unknown, E | E1, C.Chunk<C | D>, unknown> {
+  const next = iterator.next()
+  if (next.done) {
+    return Ch.readWithCause(
+      (chunk) => scheduleWithLoop(driver, chunk[Symbol.iterator](), 0, f, g),
+      Ch.failCause,
+      Ch.end
+    )
+  } else {
+    return Ch.unwrap(
+      pipe(
+        driver.next(next.value),
+        I.matchIO(
+          () =>
+            pipe(
+              driver.last,
+              I.orHalt,
+              I.map((b) =>
+                pipe(
+                  Ch.write(C.make<C | D>(f(next.value), g(b))),
+                  Ch.crossSecond(scheduleWithLoop<R, E, A, R1, E1, B, C, D>(driver, iterator, index + 1, f, g))
+                )
+              ),
+              I.crossFirst(driver.reset)
+            ),
+          () =>
+            I.succeed(
+              pipe(
+                Ch.write(C.single(f(next.value))),
+                Ch.crossSecond(scheduleWithLoop<R, E, A, R1, E1, B, C, D>(driver, iterator, index + 1, f, g))
+              )
+            )
+        )
+      )
+    )
+  }
+}
+
 /**
  * Schedules the output of the stream using the provided `schedule` and emits its output at
  * the end (if `schedule` is finite).
@@ -4175,21 +4220,11 @@ export function scheduleWith_<R, E, A, R1, B, C, D>(
   f: (a: A) => C,
   g: (b: B) => D
 ): Stream<R & R1 & Has<Clock>, E, C | D> {
-  return unwrap(
-    I.map_(SC.driver(schedule), (driver) =>
-      loopOnPartialChunksElements_(stream, (a, emit) =>
-        pipe(
-          driver.next(a),
-          I.crossSecond(emit(f(a))),
-          I.orElse(() =>
-            pipe(
-              driver.last,
-              I.orHalt,
-              I.chain((b) => I.crossSecond_(emit(f(a)), emit(g(b)))),
-              I.crossFirst(driver.reset)
-            )
-          )
-        )
+  return new Stream(
+    pipe(
+      Ch.fromIO(SC.driver(schedule)),
+      Ch.chain((driver) =>
+        pipe(stream.channel, Ch.pipeTo(scheduleWithLoop(driver, It.empty<A>()[Symbol.iterator](), 0, f, g)))
       )
     )
   )
