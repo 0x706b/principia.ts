@@ -672,6 +672,19 @@ export function flatten<R0, E0, R, E, A>(stream: Stream<R0, E0, Stream<R, E, A>>
   return chain_(stream, identity)
 }
 
+export function tap_<R, E, A, R1, E1>(ma: Stream<R, E, A>, f: (a: A) => I.IO<R1, E1, any>): Stream<R & R1, E | E1, A> {
+  return pipe(
+    ma,
+    mapIO((a) => pipe(f(a), I.as(a)))
+  )
+}
+
+export function tap<A, R1, E1>(
+  f: (a: A) => I.IO<R1, E1, any>
+): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, A> {
+  return (ma) => tap_(ma, f)
+}
+
 /*
  * -------------------------------------------------------------------------------------------------
  * Functor
@@ -2582,6 +2595,10 @@ export function debounce_<R, E, A>(stream: Stream<R, E, A>, duration: number): S
       )
     })
   )
+}
+
+export function debounce(duration: number): <R, E, A>(stream: Stream<R, E, A>) => Stream<R & Has<Clock>, E, A> {
+  return (stream) => debounce_(stream, duration)
 }
 
 /**
@@ -4724,4 +4741,3 @@ export function zipFirst_<R, R1, E, E1, A, A1>(
 export function zipFirst<R, R1, E, E1, A, A1>(that: Stream<R1, E1, A1>) {
   return (stream: Stream<R, E, A>) => zipFirst_(stream, that)
 }
-

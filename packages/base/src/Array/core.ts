@@ -2284,6 +2284,10 @@ export function union<A>(E: P.Eq<A>): (ys: ReadonlyArray<A>) => (xs: ReadonlyArr
   return (ys) => (xs) => unionE_(xs, ys)
 }
 
+export function unprepend<A>(xs: ReadonlyArray<A>): M.Maybe<readonly [A, ReadonlyArray<A>]> {
+  return isNonEmpty(xs) ? M.just([xs[0], xs.slice(1)]) : M.nothing()
+}
+
 /*
  * -------------------------------------------------------------------------------------------------
  * Instances

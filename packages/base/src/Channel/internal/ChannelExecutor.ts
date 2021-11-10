@@ -247,7 +247,13 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
         )
       )
     )
-    const state           = pipe(subexecDone, Ex.match(this.doneHalt, this.doneSucceed))
+    const state = pipe(
+      subexecDone,
+      Ex.match(
+        (e) => this.doneHalt(e),
+        (a) => this.doneSucceed(a)
+      )
+    )
     this.subexecutorStack = undefined
     return state
   }
@@ -376,7 +382,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
                 const fromK: ErasedExecutor<Env> = new ChannelExecutor(
                   () => inner.subK(inner.exec.getEmit()),
                   this.providedEnv,
-                  this.executeCloseLastSubstream
+                  (_) => this.executeCloseLastSubstream(_)
                 )
                 fromK.input           = this.input
                 this.subexecutorStack = new FromKAnd(fromK, inner)
@@ -387,7 +393,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
           const fromK: ErasedExecutor<Env> = new ChannelExecutor(
             () => inner.subK(inner.exec.getEmit()),
             this.providedEnv,
-            this.executeCloseLastSubstream
+            (_) => this.executeCloseLastSubstream(_)
           )
           fromK.input           = this.input
           this.subexecutorStack = new FromKAnd(fromK, inner)
