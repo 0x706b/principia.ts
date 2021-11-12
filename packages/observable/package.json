@@ -34,6 +34,14 @@
       "import": "./dist/dist/esm/Observable/constructors/index.js",
       "require": "./dist/dist/cjs/Observable/constructors/index.js"
     },
+    "./Observable/dom": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/Observable/dom/index.js",
+        "require": "./dist/dist-traced/cjs/Observable/dom/index.js"
+      },
+      "import": "./dist/dist/esm/Observable/dom/index.js",
+      "require": "./dist/dist/cjs/Observable/dom/index.js"
+    },
     "./Observable": {
       "traced": {
         "import": "./dist/dist-traced/esm/Observable/index.js",
@@ -41,14 +49,6 @@
       },
       "import": "./dist/dist/esm/Observable/index.js",
       "require": "./dist/dist/cjs/Observable/index.js"
-    },
-    "./Scheduler": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/Scheduler/index.js",
-        "require": "./dist/dist-traced/cjs/Scheduler/index.js"
-      },
-      "import": "./dist/dist/esm/Scheduler/index.js",
-      "require": "./dist/dist/cjs/Scheduler/index.js"
     },
     "./*": {
       "traced": {

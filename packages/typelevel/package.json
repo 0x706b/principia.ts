@@ -1,11 +1,11 @@
 {
-  "name": "@principia/actors-node",
-  "version": "0.21.0",
-  "description": "Actors Node",
+  "name": "@principia/typelevel",
+  "version": "0.0.1",
+  "description": "Description",
   "repository": {
     "type": "git",
     "url": "https://github.com/0x706b/principia.ts.git",
-    "directory": "packages/actors-node"
+    "directory": "packages/typelevel"
   },
   "license": "MIT",
   "author": "Peter Krol <peter@peterkrol.com>",
@@ -27,15 +27,15 @@
       "require": "./dist/dist/cjs/*.js"
     }
   },
-  "main": "dist/dist/cjs/index.js",
+  "main": "./dist/dist/cjs/index.js",
   "module": "./dist/dist/esm/index.js",
-  "types": "dist/index.d.ts",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "autofix": "yarn lint --fix",
     "build": "concurrently \"yarn build:types\" \"yarn build:esm\" \"yarn build:cjs\"",
     "build:cjs": "tsc --build ./config/tsconfig.cjs.json",
     "build:esm": "tsc --build ./config/tsconfig.esm.json && babel dist/dist/esm/ -d dist/dist/esm/ -s --plugins annotate-pure-calls",
-    "build:postprocess": "ts-node ../../scripts/rewrite-source-maps.ts && ts-node ../../scripts/package.ts && yarn sort-package-json ./dist/package.json && yarn prettier --write ./dist/package.json",
+    "build:postprocess": "yarn ts-node ../../scripts/rewrite-source-maps.ts && yarn ts-node ../../scripts/package.ts && yarn sort-package-json ./dist/package.json && yarn prettier --write ./dist/package.json && cpx ./fluent/**/*.d.ts ./dist/fluent",
     "build:test": "tsc --build ./config/tsconfig.test.json --verbose",
     "build:traced": "concurrently \"yarn build:traced:esm\" \"yarn build:traced:cjs\"",
     "build:traced:cjs": "tsc --build ./config/tsconfig.traced.cjs.json",
@@ -44,26 +44,12 @@
     "buildAll": "concurrently \"yarn build\" \"yarn build:traced\" && yarn build:postprocess",
     "clean": "rimraf dist build tsbuildinfo",
     "clean:test": "rimraf build",
-    "demo": "ts-node -r tsconfig-paths/register demo/demo.ts",
     "generateSubpaths": "ts-node ../../scripts/subpath.ts && sort-package-json && prettier --write package.json",
     "lint": "eslint ."
   },
-  "dependencies": {
-    "@principia/actors": "^0.21.0",
-    "@principia/base": "^0.27.0",
-    "@principia/express": "^0.20.0",
-    "@principia/keeper": "^0.20.4",
-    "@principia/pg": "^0.18.4",
-    "@principia/schema": "^0.21.4",
-    "isomorphic-fetch": "^3.0.0"
-  },
-  "devDependencies": {
-    "@types/isomorphic-fetch": "^0.0.35",
-    "testcontainers": "^7.21.0"
-  },
+  "config": {},
   "publishConfig": {
     "access": "public",
     "directory": "dist"
-  },
-  "gitHead": "450312aae828b332a7d7a48a99796db0ff98d35d"
+  }
 }

@@ -9,7 +9,24 @@
   },
   "license": "MIT",
   "author": "Peter Krol <peter@peterkrol.com>",
-  "exports": {},
+  "exports": {
+    ".": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/index.js",
+        "require": "./dist/dist-traced/cjs/index.js"
+      },
+      "import": "./dist/dist/esm/index.js",
+      "require": "./dist/dist/cjs/index.js"
+    },
+    "./*": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/*",
+        "require": "./dist/dist-traced/cjs/*.js"
+      },
+      "import": "./dist/dist/esm/*",
+      "require": "./dist/dist/cjs/*.js"
+    }
+  },
   "main": "./dist/dist/cjs/index.js",
   "module": "./dist/dist/esm/index.js",
   "types": "./dist/index.d.ts",

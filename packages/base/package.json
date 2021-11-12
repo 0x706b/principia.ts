@@ -42,6 +42,14 @@
       "import": "./dist/dist/esm/Cause/index.js",
       "require": "./dist/dist/cjs/Cause/index.js"
     },
+    "./Channel": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/Channel/index.js",
+        "require": "./dist/dist-traced/cjs/Channel/index.js"
+      },
+      "import": "./dist/dist/esm/Channel/index.js",
+      "require": "./dist/dist/cjs/Channel/index.js"
+    },
     "./Chunk": {
       "traced": {
         "import": "./dist/dist-traced/esm/Chunk/index.js",
@@ -49,6 +57,14 @@
       },
       "import": "./dist/dist/esm/Chunk/index.js",
       "require": "./dist/dist/cjs/Chunk/index.js"
+    },
+    "./deprecated/Stream": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/deprecated/Stream/index.js",
+        "require": "./dist/dist-traced/cjs/deprecated/Stream/index.js"
+      },
+      "import": "./dist/dist/esm/deprecated/Stream/index.js",
+      "require": "./dist/dist/cjs/deprecated/Stream/index.js"
     },
     "./Eval": {
       "traced": {
@@ -65,30 +81,6 @@
       },
       "import": "./dist/dist/esm/Exit/index.js",
       "require": "./dist/dist/cjs/Exit/index.js"
-    },
-    "./experimental/Channel": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/experimental/Channel/index.js",
-        "require": "./dist/dist-traced/cjs/experimental/Channel/index.js"
-      },
-      "import": "./dist/dist/esm/experimental/Channel/index.js",
-      "require": "./dist/dist/cjs/experimental/Channel/index.js"
-    },
-    "./experimental/Sink": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/experimental/Sink/index.js",
-        "require": "./dist/dist-traced/cjs/experimental/Sink/index.js"
-      },
-      "import": "./dist/dist/esm/experimental/Sink/index.js",
-      "require": "./dist/dist/cjs/experimental/Sink/index.js"
-    },
-    "./experimental/Stream": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/experimental/Stream/index.js",
-        "require": "./dist/dist-traced/cjs/experimental/Stream/index.js"
-      },
-      "import": "./dist/dist/esm/experimental/Stream/index.js",
-      "require": "./dist/dist/cjs/experimental/Stream/index.js"
     },
     "./Fiber/combinators": {
       "traced": {
@@ -234,6 +226,14 @@
       "import": "./dist/dist/esm/Schedule/index.js",
       "require": "./dist/dist/cjs/Schedule/index.js"
     },
+    "./Sink": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/Sink/index.js",
+        "require": "./dist/dist-traced/cjs/Sink/index.js"
+      },
+      "import": "./dist/dist/esm/Sink/index.js",
+      "require": "./dist/dist/cjs/Sink/index.js"
+    },
     "./stm/STM": {
       "traced": {
         "import": "./dist/dist-traced/esm/stm/STM/index.js",
@@ -241,6 +241,14 @@
       },
       "import": "./dist/dist/esm/stm/STM/index.js",
       "require": "./dist/dist/cjs/stm/STM/index.js"
+    },
+    "./Stream/combinators": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/Stream/combinators/index.js",
+        "require": "./dist/dist-traced/cjs/Stream/combinators/index.js"
+      },
+      "import": "./dist/dist/esm/Stream/combinators/index.js",
+      "require": "./dist/dist/cjs/Stream/combinators/index.js"
     },
     "./Stream": {
       "traced": {
@@ -346,6 +354,7 @@
   "devDependencies": {
     "@babel/cli": "^7.15.7",
     "@babel/core": "^7.15.8",
+    "@effect-ts/core": "^0.46.0",
     "babel-plugin-annotate-pure-calls": "^0.4.0",
     "concurrently": "^6.3.0",
     "cpx": "^1.5.0",

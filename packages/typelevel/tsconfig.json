@@ -1,0 +1,7 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["dom", "es2020"]
+  },
+  "exclude": ["dist", "test", "build", "bench", "../!(typelevel)/src/**"]
+}

@@ -44,21 +44,21 @@
     "buildAll": "concurrently \"yarn build\" \"yarn build:traced\" && yarn build:postprocess",
     "clean": "rimraf dist build tsbuildinfo",
     "clean:test": "rimraf build",
+    "demo": "ts-node -r tsconfig-paths/register test/demo.ts",
     "generateSubpaths": "ts-node ../../scripts/subpath.ts && sort-package-json && prettier --write package.json",
-    "lint": "eslint .",
-    "demo": "ts-node -r tsconfig-paths/register test/demo.ts"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@principia/base": "^0.27.0",
     "@principia/schema": "^0.21.4",
     "isomorphic-fetch": "^3.0.0"
   },
+  "devDependencies": {
+    "@types/isomorphic-fetch": "^0.0.35"
+  },
   "publishConfig": {
     "access": "public",
     "directory": "dist"
   },
-  "gitHead": "450312aae828b332a7d7a48a99796db0ff98d35d",
-  "devDependencies": {
-    "@types/isomorphic-fetch": "^0.0.35"
-  }
+  "gitHead": "450312aae828b332a7d7a48a99796db0ff98d35d"
 }

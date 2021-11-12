@@ -1668,6 +1668,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@effect-ts/core@npm:^0.46.0":
+  version: 0.46.0
+  resolution: "@effect-ts/core@npm:0.46.0"
+  dependencies:
+    "@effect-ts/system": ^0.43.0
+  checksum: 29d238ff6f57e0e24a6bacdcb5cedc85be53354a24ad51c09ed892acb3daeabb28b81d758462d7cdc8d2050e4ae9a10c598b2cc010212d7ea7b726cd1a9a1d36
+  languageName: node
+  linkType: hard
+
+"@effect-ts/system@npm:^0.43.0":
+  version: 0.43.0
+  resolution: "@effect-ts/system@npm:0.43.0"
+  checksum: 28a303a35a21c267422b2e38b064340e3699e7c863d42a2f4875300533c5f45f17fbc2714ff67d980327287f9f7af7f5e18c99a5f9e5f4f7232f9b6b9c4565ba
+  languageName: node
+  linkType: hard
+
 "@eslint/eslintrc@npm:^0.4.3":
   version: 0.4.3
   resolution: "@eslint/eslintrc@npm:0.4.3"
@@ -3273,6 +3289,7 @@ __metadata:
   dependencies:
     "@babel/cli": ^7.15.7
     "@babel/core": ^7.15.8
+    "@effect-ts/core": ^0.46.0
     "@principia/compile": ^0.19.2
     babel-plugin-annotate-pure-calls: ^0.4.0
     concurrently: ^6.3.0
@@ -3465,6 +3482,12 @@ __metadata:
   dependencies:
     "@principia/base": ^0.27.0
     "@principia/compile": ^0.19.2
+  languageName: unknown
+  linkType: soft
+
+"@principia/typelevel@workspace:packages/typelevel":
+  version: 0.0.0-use.local
+  resolution: "@principia/typelevel@workspace:packages/typelevel"
   languageName: unknown
   linkType: soft
 
