@@ -47,7 +47,7 @@ export const defaultPlatform = new Platform({
   ancestryLength: 25,
   renderer: C.defaultRenderer,
   reportFailure: constVoid,
-  maxOp: 500,
+  maxOp: 128,
   supervisor: Super.trackMainFibers
 })
 
@@ -86,12 +86,13 @@ export class CustomRuntime<R, A> {
       context.onDone((exit) => supervisor.unsafeOnEnd(Ex.flatten(exit), context))
     }
 
+    context.evaluateLater(I.concrete(effect))
+
     return context
   }
 
   runFiber<E, A>(self: I.IO<R, E, A>): FiberContext<E, A> {
     const context = this.fiberContext<E, A>(self)
-    context.evaluateLater(I.concrete(self))
     return context
   }
 
@@ -100,8 +101,6 @@ export class CustomRuntime<R, A> {
    */
   run_<E, A>(_: I.IO<R, E, A>, cb?: Callback<E, A>) {
     const context = this.fiberContext<E, A>(_)
-
-    context.evaluateLater(I.concrete(_))
     context.runAsync(cb || constVoid)
   }
 
@@ -118,7 +117,6 @@ export class CustomRuntime<R, A> {
   runAsap_<E, A>(_: I.IO<R, E, A>, cb?: Callback<E, A>) {
     const context = this.fiberContext<E, A>(_)
 
-    context.evaluateNow(I.concrete(_))
     context.runAsync(cb || constVoid)
   }
 
@@ -136,7 +134,6 @@ export class CustomRuntime<R, A> {
   runCancel_<E, A>(_: I.IO<R, E, A>, cb?: Callback<E, A>): AsyncCancel<E, A> {
     const context = this.fiberContext<E, A>(_)
 
-    context.evaluateLater(I.concrete(_))
     context.runAsync(cb || constVoid)
 
     return context.interruptAs(context.id)
@@ -156,8 +153,6 @@ export class CustomRuntime<R, A> {
   runPromise<E, A>(_: I.IO<R, E, A>): Promise<A> {
     const context = this.fiberContext<E, A>(_)
 
-    context.evaluateLater(I.concrete(_))
-
     return new Promise((res, rej) => {
       context.runAsync(Ex.match(flow(C.squash(showFiberId)(identity), rej), res))
     })
@@ -169,8 +164,6 @@ export class CustomRuntime<R, A> {
    */
   runPromiseExit<E, A>(_: I.IO<R, E, A>): Promise<Exit<E, A>> {
     const context = this.fiberContext<E, A>(_)
-
-    context.evaluateLater(I.concrete(_))
 
     return new Promise((res) => {
       context.runAsync((exit) => {

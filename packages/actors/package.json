@@ -54,7 +54,9 @@
     "isomorphic-fetch": "^3.0.0"
   },
   "devDependencies": {
-    "@types/isomorphic-fetch": "^0.0.35"
+    "@types/isomorphic-fetch": "^0.0.35",
+    "ts-patch": "^2.0.1",
+    "typescript": "rc"
   },
   "publishConfig": {
     "access": "public",

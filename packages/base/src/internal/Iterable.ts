@@ -9,9 +9,7 @@ export function empty<A>(): Iterable<A> {
 
 export function iterable<A>(iterator: () => Iterator<A>): Iterable<A> {
   return {
-    [Symbol.iterator]() {
-      return iterator()
-    }
+    [Symbol.iterator]: iterator
   }
 }
 

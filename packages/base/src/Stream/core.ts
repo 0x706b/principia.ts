@@ -7,6 +7,7 @@ import type * as SK from '../Sink'
 import type { StreamAspect } from '../StreamAspect'
 
 import * as AI from '../AsyncIterable'
+import { invert } from '../boolean'
 import * as Ch from '../Channel'
 import * as MD from '../Channel/internal/MergeDecision'
 import * as C from '../Chunk'
@@ -839,7 +840,7 @@ export function filterIO<A, R1, E1>(
 export function filter_<R, E, A, B extends A>(fa: Stream<R, E, A>, refinement: P.Refinement<A, B>): Stream<R, E, B>
 export function filter_<R, E, A>(fa: Stream<R, E, A>, predicate: P.Predicate<A>): Stream<R, E, A>
 export function filter_<R, E, A>(fa: Stream<R, E, A>, predicate: P.Predicate<A>): Stream<R, E, A> {
-  return filterIO_(fa, flow(predicate, I.succeed))
+  return mapChunks_(fa, C.filter(predicate))
 }
 
 export function filter<A, B extends A>(refinement: P.Refinement<A, B>): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, B>
@@ -867,7 +868,7 @@ export function filterMapIO<A, R1, E1, B>(
 }
 
 export function filterMap_<R, E, A, B>(fa: Stream<R, E, A>, f: (a: A) => M.Maybe<B>): Stream<R, E, B> {
-  return filterMapIO_(fa, flow(f, I.succeed))
+  return mapChunks_(fa, C.filterMap(f))
 }
 
 export function filterMap<A, B>(f: (a: A) => M.Maybe<B>): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, B> {
@@ -1210,7 +1211,7 @@ export function loopOnChunks_<R, E, A, R1, E1, A1>(
   const loop: Ch.Channel<R1, E | E1, C.Chunk<A>, unknown, E | E1, C.Chunk<A1>, boolean> = Ch.readWithCause(
     (chunk) => Ch.chain_(f(chunk), (cont) => (cont ? loop : Ch.end(false))),
     Ch.failCause,
-    (_) => Ch.end(false)
+    (_) => Ch.succeed(false)
   )
   return new Stream(Ch.pipeTo_(stream.channel, loop))
 }
@@ -1407,6 +1408,28 @@ export function take_<R, E, A>(stream: Stream<R, E, A>, n: number): Stream<R, E,
  */
 export function take(n: number): <R, E, A>(stream: Stream<R, E, A>) => Stream<R, E, A> {
   return (stream) => take_(stream, n)
+}
+
+export function takeUntilIO_<R, E, A, R1, E1>(
+  ma: Stream<R, E, A>,
+  f: (a: A) => I.IO<R1, E1, boolean>
+): Stream<R & R1, E | E1, A> {
+  return loopOnPartialChunks_(ma, (chunk, emit) =>
+    pipe(
+      chunk,
+      C.takeWhileIO((v) => pipe(emit(v), I.crossSecond(pipe(f(v), I.map(invert))))),
+      I.map((taken) => pipe(taken, C.drop(taken.length), C.take(1), C.isEmpty))
+    )
+  )
+}
+
+/**
+ * @dataFirst takeUntilIO_
+ */
+export function takeUntilIO<A, R1, E1>(
+  f: (a: A) => I.IO<R1, E1, boolean>
+): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, A> {
+  return (ma) => takeUntilIO_(ma, f)
 }
 
 function takeUntilLoop<R, E, A>(f: (a: A) => boolean): Ch.Channel<R, E, C.Chunk<A>, unknown, E, C.Chunk<A>, unknown> {
@@ -2114,8 +2137,8 @@ function changesWithWriter<R, E, A>(
       const [newLast, newChunk] = C.foldl_(chunk, [last, C.empty<A>()], ([maybeLast, os], o1) =>
         M.match_(
           maybeLast,
-          () => [M.just(o1), os[':+'](o1)],
-          (o) => (f(o, o1) ? [M.just(o1), os] : [M.just(o1), os[':+'](o1)])
+          () => [M.just(o1), C.append_(os, o1)],
+          (o) => (f(o, o1) ? [M.just(o1), os] : [M.just(o1), C.append_(os, o1)])
         )
       )
       return Ch.crossSecond_(Ch.write(newChunk), changesWithWriter(f, newLast))

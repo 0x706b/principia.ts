@@ -1,23 +1,20 @@
 import { DoublyLinkedList } from './DoublyLinkedList'
 
-const microtask =
-  typeof queueMicrotask !== 'undefined' ? queueMicrotask : (callback: () => void) => Promise.resolve().then(callback)
+// const microtask =
+//   typeof queueMicrotask !== 'undefined' ? queueMicrotask : (callback: () => void) => Promise.resolve().then(callback)
 
-export class Scheduler {
-  isRunning = false
-  tasks     = new DoublyLinkedList<() => void>()
-  schedule(thunk: () => void) {
-    this.tasks.add(thunk)
-    if (!this.isRunning) {
-      this.isRunning = true
-      microtask(() => {
-        while (this.tasks.length > 0) {
-          this.tasks.shift()!()
-        }
-        this.isRunning = false
-      })
-    }
+let isRunning = false
+const tasks   = new DoublyLinkedList<() => void>()
+
+export const defaultScheduler: (thunk: () => void) => void = (thunk) => {
+  tasks.add(thunk)
+  if (!isRunning) {
+    isRunning = true
+    Promise.resolve().then(() => {
+      while (tasks.length > 0) {
+        tasks.shift()!()
+      }
+      isRunning = false
+    })
   }
 }
-
-export const defaultScheduler = new Scheduler()

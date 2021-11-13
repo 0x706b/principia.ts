@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": false,
+    "outDir": "../build",
+    "rootDir": "../",
+    "target": "es2018",
+    "module": "esnext",
+    "sourceMap": true,
+    "plugins": [
+      {
+        "transform": "@principia/compile",
+        "relativeProjectRoot": "../../",
+        "tracing": false,
+        "addExtensions": false
+      }
+    ]
+  },
+  "include": ["../src", "../bench"],
+  "extends": "../../../tsconfig.json"
+}

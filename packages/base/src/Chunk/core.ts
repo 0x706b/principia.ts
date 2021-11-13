@@ -49,31 +49,12 @@ export abstract class Chunk<A> implements Iterable<A>, Ha.Hashable, Equ.Equatabl
   abstract readonly length: number
   abstract [Symbol.iterator](): Iterator<A>
 
-  constructor() {
-    this['++'] = this['++'].bind(this)
-    this[':+'] = this[':+'].bind(this)
-  }
-
   get [Ha.$hash](): number {
     return Ha.hashIterator(this[Symbol.iterator]())
   }
 
   [Equ.$equals](that: unknown): boolean {
     return isChunk(that) && corresponds_(this, that, Equ.equals)
-  }
-
-  /**
-   * Returns the concatenation of this chunk with the specified chunk.
-   */
-  ['++'](that: Chunk<A>): Chunk<A> {
-    return concat_(this, that)
-  }
-
-  /**
-   * Appends an element to the chunk.
-   */
-  [':+'](a: A): Chunk<A> {
-    return append_(this, a)
   }
 }
 

@@ -1920,13 +1920,9 @@ export function mapOut_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, Ou
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
   f: (o: OutElem) => OutElem2
 ): Channel<Env, InErr, InElem, InDone, OutErr, OutElem2, OutDone> {
-  const reader: Channel<Env, OutErr, OutElem, OutDone, OutErr, OutElem2, OutDone> = readWithCause(
-    flow(
-      f,
-      write,
-      chain(() => reader)
-    ),
-    failCause,
+  const reader: Channel<Env, OutErr, OutElem, OutDone, OutErr, OutElem2, OutDone> = readWith(
+    (out) => pipe(f(out), write, crossSecond(reader)),
+    fail,
     end
   )
 

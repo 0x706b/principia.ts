@@ -34,11 +34,16 @@
     "buildAll": "yarn build && yarn build:postprocess",
     "clean": "rimraf dist build tsbuildinfo",
     "clean:test": "rimraf build",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "postinstall": "ts-patch install"
   },
   "publishConfig": {
     "access": "public",
     "directory": "dist"
   },
-  "gitHead": "f607260821713229ed2214de26c81f3b3f172760"
+  "gitHead": "f607260821713229ed2214de26c81f3b3f172760",
+  "devDependencies": {
+    "ts-patch": "^2.0.1",
+    "typescript": "rc"
+  }
 }

@@ -55,7 +55,9 @@
     "yargs": "^17.2.1"
   },
   "devDependencies": {
-    "@types/yargs": "17.0.4"
+    "@types/yargs": "17.0.4",
+    "ts-patch": "^2.0.1",
+    "typescript": "rc"
   },
   "publishConfig": {
     "access": "public",

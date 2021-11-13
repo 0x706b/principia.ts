@@ -24,8 +24,17 @@ export const empty: <A>() => Iterable<A> = It.empty
 export const iterable = It.iterable
 
 export function singleton<A>(a: A): Iterable<A> {
-  return iterable(function* () {
-    yield a
+  return iterable((): Iterator<A> => {
+    let done = false
+    return {
+      next: () => {
+        if (done) {
+          return { done, value: undefined }
+        }
+        done = true
+        return { done: false, value: a }
+      }
+    }
   })
 }
 

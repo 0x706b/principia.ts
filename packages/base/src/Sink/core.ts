@@ -805,7 +805,7 @@ function foldWeightedDecomposeIOLoop<Env, Err, In, S, Env1, Err1, Env2, Err2, En
                   } else if (decomposed.length <= 1 && dirty) {
                     return I.succeed([s, cost, dirty, C.drop_(inp, idx)])
                   } else {
-                    return go(decomposed['++'](C.drop_(inp, idx + 1)), s, dirty, cost, 0)
+                    return go(C.concat_(decomposed, C.drop_(inp, idx + 1)), s, dirty, cost, 0)
                   }
                 })
               }

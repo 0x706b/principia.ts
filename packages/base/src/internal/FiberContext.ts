@@ -346,7 +346,10 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   private notifyObservers(v: Exit<E, A>, observers: Callback<never, Exit<E, A>>[]) {
     const result = Ex.succeed(v)
 
-    observers.forEach((k) => k(result))
+    observers
+      .slice(0)
+      .reverse()
+      .forEach((k) => k(result))
   }
 
   private observe(k: Callback<never, Exit<E, A>>): Maybe<UIO<Exit<E, A>>> {
@@ -395,9 +398,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
           new FiberStateExecuting(Status.withInterrupting(true)(oldState.status), oldState.observers, newCause)
         )
 
-        setTimeout(() => {
-          this.evaluateNow(concrete(interruptAs(fiberId)))
-        }, 0)
+        this.evaluateLater(concrete(interruptAs(fiberId)))
       } else if (oldState._tag === 'Executing') {
         const newCause = C.then(oldState.interrupted, interruptedCause)
         this.state.set(new FiberStateExecuting(oldState.status, oldState.observers, newCause))
@@ -522,7 +523,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   evaluateLater(i0: Instruction) {
-    defaultScheduler.schedule(() => this.evaluateNow(i0))
+    defaultScheduler(() => this.evaluateNow(i0))
   }
 
   get scope(): Scope.Scope<Exit<E, A>> {
@@ -579,7 +580,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
     const toExecute = this.parentScopeOp(parentScope, childContext, i0)
 
-    Promise.resolve(toExecute).then((io) => childContext.evaluateNow(io))
+    childContext.evaluateLater(toExecute)
 
     return childContext
   }
@@ -832,9 +833,9 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     if (this.isStackEmpty) {
                       const cause = () => {
                         const interrupted       = this.state.get.interrupted
-                        const causeAndInterrupt = C.contains(interrupted)(maybeRedactedCause)
-                          ? maybeRedactedCause
-                          : C.then(maybeRedactedCause, interrupted)
+                        const causeAndInterrupt = !C.contains(interrupted)(maybeRedactedCause)
+                          ? C.then(maybeRedactedCause, interrupted)
+                          : maybeRedactedCause
                         return causeAndInterrupt
                       }
                       this.setInterrupting(true)

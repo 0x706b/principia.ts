@@ -3269,6 +3269,8 @@ __metadata:
     "@types/isomorphic-fetch": ^0.0.35
     isomorphic-fetch: ^3.0.0
     testcontainers: ^7.21.0
+    ts-patch: ^2.0.1
+    typescript: rc
   languageName: unknown
   linkType: soft
 
@@ -3280,6 +3282,8 @@ __metadata:
     "@principia/schema": ^0.21.4
     "@types/isomorphic-fetch": ^0.0.35
     isomorphic-fetch: ^3.0.0
+    ts-patch: ^2.0.1
+    typescript: rc
   languageName: unknown
   linkType: soft
 
@@ -3297,13 +3301,17 @@ __metadata:
     prettier: ^2.4.1
     sort-package-json: ^1.52.0
     ts-node: ^10.4.0
-    typescript: next
+    ts-patch: ^2.0.1
+    typescript: rc
   languageName: unknown
   linkType: soft
 
 "@principia/compile@^0.19.2, @principia/compile@workspace:packages/compile":
   version: 0.0.0-use.local
   resolution: "@principia/compile@workspace:packages/compile"
+  dependencies:
+    ts-patch: ^2.0.1
+    typescript: rc
   languageName: unknown
   linkType: soft
 
@@ -3315,6 +3323,8 @@ __metadata:
     "@principia/http": ^0.20.0
     "@types/express": ^4.17.13
     express: ^4.17.1
+    ts-patch: ^2.0.1
+    typescript: rc
   languageName: unknown
   linkType: soft
 
@@ -3325,6 +3335,8 @@ __metadata:
     "@principia/base": ^0.27.0
     "@principia/http": ^0.20.0
     fastify: ^3.22.0
+    ts-patch: ^2.0.1
+    typescript: rc
   languageName: unknown
   linkType: soft
 
@@ -3341,6 +3353,8 @@ __metadata:
     graphql: 15.6.1
     graphql-tools: 7.0.5
     koa-graphql: 0.9.0
+    ts-patch: ^2.0.1
+    typescript: rc
   languageName: unknown
   linkType: soft
 
@@ -3354,6 +3368,8 @@ __metadata:
     "@types/qs": ^6.9.7
     path-to-regexp: ^6.2.0
     qs: ^6.10.1
+    ts-patch: ^2.0.1
+    typescript: rc
   languageName: unknown
   linkType: soft
 
@@ -3365,6 +3381,8 @@ __metadata:
     "@principia/schema": ^0.21.4
     "@types/node-zookeeper-client": ^0.2.8
     node-zookeeper-client: ^1.1.1
+    ts-patch: ^2.0.1
+    typescript: rc
   languageName: unknown
   linkType: soft
 
@@ -3384,6 +3402,8 @@ __metadata:
     koa-bodyparser: 4.3.0
     koa-compose: 4.1.0
     koa-router: ^10.1.1
+    ts-patch: ^2.0.1
+    typescript: rc
   languageName: unknown
   linkType: soft
 
@@ -3393,6 +3413,8 @@ __metadata:
   dependencies:
     "@principia/base": ^0.27.0
     fast-check: ^2.18.0
+    ts-patch: ^2.0.1
+    typescript: rc
   languageName: unknown
   linkType: soft
 
@@ -3405,6 +3427,8 @@ __metadata:
     chalk: ^4.1.2
     date-fns: ^2.25.0
     strip-ansi: ^7.0.1
+    ts-patch: ^2.0.1
+    typescript: rc
   languageName: unknown
   linkType: soft
 
@@ -3413,6 +3437,8 @@ __metadata:
   resolution: "@principia/node@workspace:packages/node"
   dependencies:
     "@principia/base": ^0.27.0
+    ts-patch: ^2.0.1
+    typescript: rc
   languageName: unknown
   linkType: soft
 
@@ -3422,6 +3448,8 @@ __metadata:
   dependencies:
     "@principia/base": ^0.27.0
     "@principia/compile": ^0.19.2
+    ts-patch: ^2.0.1
+    typescript: rc
   languageName: unknown
   linkType: soft
 
@@ -3430,6 +3458,8 @@ __metadata:
   resolution: "@principia/optics@workspace:packages/optics"
   dependencies:
     "@principia/base": ^0.27.0
+    ts-patch: ^2.0.1
+    typescript: rc
   languageName: unknown
   linkType: soft
 
@@ -3440,6 +3470,8 @@ __metadata:
     "@principia/base": ^0.27.0
     "@types/pg": ^8.6.1
     pg: ^8.7.1
+    ts-patch: ^2.0.1
+    typescript: rc
   languageName: unknown
   linkType: soft
 
@@ -3451,6 +3483,8 @@ __metadata:
     "@types/yargs": 17.0.4
     glob: ^7.2.0
     ts-node: ^10.3.0
+    ts-patch: ^2.0.1
+    typescript: rc
     yargs: ^17.2.1
   bin:
     ptest: ./bin/ptest.js
@@ -3462,6 +3496,8 @@ __metadata:
   resolution: "@principia/query@workspace:packages/query"
   dependencies:
     "@principia/base": ^0.27.0
+    ts-patch: ^2.0.1
+    typescript: rc
   languageName: unknown
   linkType: soft
 
@@ -3473,6 +3509,8 @@ __metadata:
     "@principia/optics": ^0.19.4
     "@principia/test": ^0.22.0
     fast-check: ^2.18.0
+    ts-patch: ^2.0.1
+    typescript: rc
   languageName: unknown
   linkType: soft
 
@@ -3482,12 +3520,17 @@ __metadata:
   dependencies:
     "@principia/base": ^0.27.0
     "@principia/compile": ^0.19.2
+    ts-patch: ^2.0.1
+    typescript: rc
   languageName: unknown
   linkType: soft
 
 "@principia/typelevel@workspace:packages/typelevel":
   version: 0.0.0-use.local
   resolution: "@principia/typelevel@workspace:packages/typelevel"
+  dependencies:
+    ts-patch: ^2.0.1
+    typescript: rc
   languageName: unknown
   linkType: soft
 
@@ -13970,7 +14013,7 @@ fsevents@~2.3.2:
     sort-package-json: ^1.52.0
     syncpack: ^5.8.15
     ts-node: ^10.3.0
-    ts-patch: ^1.4.4
+    ts-patch: ^2.0.1
     typescript: rc
     ultra-runner: ^3.10.5
     yargs: ^17.2.1
@@ -15417,9 +15460,9 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"ts-patch@npm:^1.4.4":
-  version: 1.4.4
-  resolution: "ts-patch@npm:1.4.4"
+"ts-patch@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "ts-patch@npm:2.0.1"
   dependencies:
     chalk: ^4.1.0
     glob: ^7.1.7
@@ -15429,10 +15472,10 @@ fsevents@~2.3.2:
     shelljs: ^0.8.4
     strip-ansi: ^6.0.0
   peerDependencies:
-    typescript: ">2.7.0"
+    typescript: ">=4.0.0"
   bin:
     ts-patch: bin/cli.js
-  checksum: 527c30b891594c83466f7dc200912f816b4dc71a10dba2fbd964ce98287e52f580460d0962e4fa8751e0b8ec2b45b019eb52a4e4c31b05c988f2447d790eb07f
+  checksum: 0460cf3b79655ebac6909383af85675769dd8031464782b02b71900409f75a09df929abdfe903f1fd0c6f89afc8dfacea1cf80dfb5a527f53a7ad4c16d3ad790
   languageName: node
   linkType: hard
 
@@ -15613,16 +15656,6 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"typescript@npm:next":
-  version: 4.5.0-dev.20211030
-  resolution: "typescript@npm:4.5.0-dev.20211030"
-  bin:
-    tsc: bin/tsc
-    tsserver: bin/tsserver
-  checksum: 9dfa0d61cbea23e0b7a90414b76258388e6017c2844419d9673a3e2f9a8d4aedb68198e2aab969296c30e22c879ca7fdf3dc212065f20e1f534b2e417ec013aa
-  languageName: node
-  linkType: hard
-
 "typescript@npm:rc":
   version: 4.5.1-rc
   resolution: "typescript@npm:4.5.1-rc"
@@ -15640,16 +15673,6 @@ fsevents@~2.3.2:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: dc7141ab555b23a8650a6787f98845fc11692063d02b75ff49433091b3af2fe3d773650dea18389d7c21f47d620fb3b110ea363dab4ab039417a6ccbbaf96fc2
-  languageName: node
-  linkType: hard
-
-"typescript@patch:typescript@next#~builtin<compat/typescript>":
-  version: 4.5.0-dev.20211030
-  resolution: "typescript@patch:typescript@npm%3A4.5.0-dev.20211030#~builtin<compat/typescript>::version=4.5.0-dev.20211030&hash=ddd1e8"
-  bin:
-    tsc: bin/tsc
-    tsserver: bin/tsserver
-  checksum: 1cdc1234050fce244adfe9d39c423896790e218ee6dfb4a5074bb45cca5274b1c1e393ea66ab63e3f141fa5921129c1a22a2bd8be15d29b6056a238537111f66
   languageName: node
   linkType: hard
 

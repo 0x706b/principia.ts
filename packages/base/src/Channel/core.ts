@@ -87,6 +87,9 @@ export class ContinuationFinalizer<Env, OutErr, OutDone> extends Continuation<
   }
 }
 
+/**
+ * @optimize identity
+ */
 export function concreteContinuation<Env, InErr, InElem, InDone, OutErr, OutErr2, OutElem, OutDone, OutDone2>(
   _: Continuation<Env, InErr, InElem, InDone, OutErr, OutErr2, OutElem, OutDone, OutDone2>
 ): asserts _ is
@@ -503,7 +506,7 @@ export function crossFirst_<
   OutElem | OutElem1,
   OutDone
 > {
-  return map_(cross_(self, that), ([d]) => d)
+  return chain_(self, (a) => map_(that, () => a))
 }
 
 /**
@@ -551,7 +554,7 @@ export function crossSecond_<
   OutElem1 | OutElem,
   OutDone1
 > {
-  return map_(cross_(self, that), ([, d1]) => d1)
+  return chain_(self, () => that)
 }
 
 /**

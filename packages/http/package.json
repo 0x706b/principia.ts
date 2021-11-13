@@ -55,7 +55,9 @@
     "qs": "^6.10.1"
   },
   "devDependencies": {
-    "@types/qs": "^6.9.7"
+    "@types/qs": "^6.9.7",
+    "ts-patch": "^2.0.1",
+    "typescript": "rc"
   },
   "publishConfig": {
     "access": "public",

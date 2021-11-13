@@ -66,7 +66,9 @@
     "koa-graphql": "0.9.0"
   },
   "devDependencies": {
-    "@types/koa-graphql": "0.8.5"
+    "@types/koa-graphql": "0.8.5",
+    "ts-patch": "^2.0.1",
+    "typescript": "rc"
   },
   "publishConfig": {
     "access": "public",

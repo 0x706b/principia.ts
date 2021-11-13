@@ -20,10 +20,10 @@ import { flow, identity as identityFn, pipe } from '../function'
 import { isTag } from '../Has'
 import * as C from '../IO/Cause'
 import * as Ex from '../IO/Exit/core'
-import * as Ref from '../Ref/core'
 import * as Iter from '../Iterable'
 import * as M from '../Maybe'
 import * as R from '../Record'
+import * as Ref from '../Ref/core'
 import { tuple } from '../tuple'
 import * as I from './internal/io'
 import { add, addIfOpen, make, noopFinalizer, release, updateAll } from './ReleaseMap'
@@ -300,12 +300,19 @@ export function bracketExit_<R, E, A, R1>(
   const trace = accessCallTrace()
   return new Managed<R & R1, E, A>(
     I.uninterruptible(
-      I.gen(function* (_) {
-        const r  = yield* _(I.ask<readonly [R & R1, ReleaseMap]>())
-        const a  = yield* traceCall(_, trace)(I.giveAll_(acquire, r[0]))
-        const rm = yield* traceCall(_, release['$trace'])(add(r[1], (ex) => I.giveAll_(release(a, ex), r[0])))
-        return tuple(rm, a)
-      })
+      pipe(
+        I.do,
+        I.chainS('r', () => I.ask<readonly [R & R1, ReleaseMap]>()),
+        I.chainS(
+          'a',
+          traceFrom(trace, ({ r }) => I.giveAll_(acquire, r[0]))
+        ),
+        I.chainS(
+          'rm',
+          traceAs(release, ({ r, a }) => add(r[1], (ex) => I.giveAll_(release(a, ex), r[0])))
+        ),
+        I.map(({ rm, a }) => tuple(rm, a))
+      )
     )
   )
 }

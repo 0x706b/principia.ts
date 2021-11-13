@@ -333,6 +333,7 @@
     "build:esm": "tsc --build ./config/tsconfig.esm.json && babel dist/dist/esm/ -d dist/dist/esm/ -s --plugins annotate-pure-calls",
     "build:postprocess": "yarn ts-node ../../scripts/rewrite-source-maps.ts && yarn ts-node ../../scripts/package.ts && yarn sort-package-json ./dist/package.json && yarn prettier --write ./dist/package.json && cpx \"./fluent/**/*.d.ts\" \"./dist/fluent\"",
     "build:test": "tsc --build ./config/tsconfig.test.json --verbose",
+    "build:bench": "tsc --build ./config/tsconfig.bench.json --verbose",
     "build:traced": "concurrently \"yarn build:traced:esm\" \"yarn build:traced:cjs\"",
     "build:traced:cjs": "tsc --build ./config/tsconfig.traced.cjs.json",
     "build:traced:esm": "tsc --build ./config/tsconfig.traced.esm.json && babel dist/dist-traced/esm/ -d dist/dist-traced/esm/ -s --plugins annotate-pure-calls",
@@ -361,7 +362,8 @@
     "prettier": "^2.4.1",
     "sort-package-json": "^1.52.0",
     "ts-node": "^10.4.0",
-    "typescript": "next"
+    "ts-patch": "^2.0.1",
+    "typescript": "rc"
   },
   "publishConfig": {
     "access": "public",

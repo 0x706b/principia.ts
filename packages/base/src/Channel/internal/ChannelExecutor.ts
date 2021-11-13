@@ -5,7 +5,7 @@ import type { List, MutableList } from '../../List'
 import type { ChannelState } from './ChannelState'
 
 import * as F from '../../Fiber'
-import { identity, pipe } from '../../function'
+import { pipe } from '../../function'
 import * as I from '../../IO'
 import * as Ca from '../../IO/Cause'
 import * as Ex from '../../IO/Exit'

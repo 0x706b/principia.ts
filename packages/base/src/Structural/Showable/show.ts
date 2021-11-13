@@ -591,10 +591,10 @@ function showTypedArray(value: TypedArray): ShowComputationChunk {
       const elementFormatter: (context: ShowContext, _: any) => string =
         value.length > 0 && typeof value[0] === 'number' ? _showNumber : _showBigInt
       for (let i = 0; i < maxLength; ++i) {
-        output = output[':+'](elementFormatter(context, value[i]))
+        output = C.append_(output, elementFormatter(context, value[i]))
       }
       if (remaining > 0) {
-        output = output[':+'](`... ${remaining} more item${pluralize(remaining)}`)
+        output = C.append_(output, `... ${remaining} more item${pluralize(remaining)}`)
       }
       if (context.showHidden) {
         return pipe(
@@ -604,7 +604,7 @@ function showTypedArray(value: TypedArray): ShowComputationChunk {
               pipe(
                 C.make('BYTES_PER_ELEMENT', 'length', 'byteLength', 'byteOffset', 'buffer'),
                 C.traverse(Z.Applicative)((key) => Z.map_(_show(value[key]), (shown) => `[${key}]: ${shown}`)),
-                Z.map((shownKeys) => output['++'](shownKeys))
+                Z.map((shownKeys) => C.concat_(output, shownKeys))
               )
             )
           ),
@@ -730,7 +730,9 @@ function showChunk(value: Chunk<unknown>): ShowComputationChunk {
     Z.chain(([remaining, chunk]) =>
       pipe(
         C.traverse_(Z.Applicative)(chunk, _show),
-        Z.map((chunk) => (remaining > 0 ? chunk[':+'](`... ${remaining} more item${pluralize(remaining)}`) : chunk))
+        Z.map((chunk) =>
+          remaining > 0 ? C.append_(chunk, `... ${remaining} more item${pluralize(remaining)}`) : chunk
+        )
       )
     )
   )
@@ -884,10 +886,10 @@ function groupElements(context: ShowContext, input: Chunk<string>, value?: unkno
       } else {
         str += C.unsafeGet_(output, k)
       }
-      tmp = tmp[':+'](str)
+      tmp = C.append_(tmp, str)
     }
     if (context.maxArrayLength < output.length) {
-      tmp = tmp[':+'](C.unsafeGet_(output, outputLength))
+      tmp = C.append_(tmp, C.unsafeGet_(output, outputLength))
     }
     output = tmp
   }
