@@ -1076,6 +1076,10 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     )
                     break
                   }
+                  default: {
+                    console.log('Unrecognized Instruction', current)
+                    throw new Error('Unrecognized Instruction')
+                  }
                 }
               }
             } else {

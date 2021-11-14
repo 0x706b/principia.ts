@@ -58,7 +58,7 @@
     "syncpack": "^5.8.15",
     "ts-node": "^10.3.0",
     "ts-patch": "^2.0.1",
-    "typescript": "rc",
+    "typescript": "next",
     "ultra-runner": "^3.10.5",
     "yargs": "^17.2.1"
   },

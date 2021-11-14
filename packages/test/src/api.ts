@@ -230,10 +230,11 @@ function shrinkStream<R, R1, E, A>(
       stream,
       S.dropWhile((_) => !E.match_(_.value, (_) => true, BA.isFalse)),
       S.take(1),
-      S.chain(flow(Sa.shrinkSearch(E.match(() => true, BA.isFalse)), S.take(maxShrinks + 1))),
+      S.chain((sa) => pipe(sa, Sa.shrinkSearch(E.match(() => true, BA.isFalse)), S.take(maxShrinks + 1))),
       S.runCollect,
-      I.chain(
-        flow(
+      I.chain((c) =>
+        pipe(
+          c,
           C.filter(E.match(() => true, BA.isFalse)),
           C.last,
           M.match(

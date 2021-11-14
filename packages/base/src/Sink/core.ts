@@ -1,5 +1,6 @@
 import type * as E from '../Either'
 import type { Has } from '../Has'
+import type { Predicate } from '../Predicate'
 
 import * as Ch from '../Channel'
 import * as MD from '../Channel/internal/MergeDecision'
@@ -424,6 +425,23 @@ export function drain<Err, A>() {
   )
 
   return new Sink(drain)
+}
+
+export function dropWhile<Err, In>(predicate: Predicate<In>): Sink<unknown, Err, In, Err, In, any> {
+  const loop: Ch.Channel<unknown, Err, C.Chunk<In>, any, Err, C.Chunk<In>, any> = Ch.readWith(
+    (inp: C.Chunk<In>) => {
+      const leftover = C.dropWhile_(inp, predicate)
+      const more     = C.isEmpty(leftover)
+      if (more) {
+        return loop
+      } else {
+        return pipe(Ch.write(leftover), Ch.crossSecond(Ch.id<Err, C.Chunk<In>, any>()))
+      }
+    },
+    (err: Err) => Ch.fail(err),
+    () => Ch.unit()
+  )
+  return new Sink(loop)
 }
 
 function foldChunkSplit<In, S>(

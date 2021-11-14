@@ -644,9 +644,9 @@ export function chain_<R, E, O, R1, E1, O1>(
   f: (o: O) => Stream<R1, E1, O1>
 ): Stream<R & R1, E | E1, O1> {
   return new Stream(
-    Ch.concatMap_(stream.channel, (o) =>
+    Ch.concatMap_(stream.channel, (as) =>
       C.foldl_(
-        C.map_(o, (x) => f(x).channel),
+        C.map_(as, (x) => f(x).channel),
         Ch.unit() as Ch.Channel<R1, unknown, unknown, unknown, E1, C.Chunk<O1>, unknown>,
         (s, a) => Ch.chain_(s, () => a)
       )
@@ -2849,16 +2849,7 @@ export function drop(n: number): <R, E, A>(stream: Stream<R, E, A>) => Stream<R,
  * evaluates to `true`.
  */
 export function dropWhile_<R, E, A>(stream: Stream<R, E, A>, predicate: P.Predicate<A>): Stream<R, E, A> {
-  const loop: Ch.Channel<R, E, C.Chunk<A>, unknown, E, C.Chunk<A>, unknown> = Ch.readWith(
-    (inp: C.Chunk<A>) => {
-      const leftover = C.dropWhile_(inp, predicate)
-      return C.isEmpty(leftover) ? loop : Ch.crossSecond_(Ch.write(leftover), Ch.id())
-    },
-    Ch.fail,
-    () => Ch.unit()
-  )
-
-  return new Stream(Ch.pipeTo_(stream.channel, loop))
+  return pipeThrough_(stream, Sink.dropWhile(predicate))
 }
 
 /**
@@ -3663,6 +3654,22 @@ export function peel<E, A extends A1, R1, E1, A1, Z>(
   sink: Sink.Sink<R1, E, A, E1, A1, Z>
 ): <R>(stream: Stream<R, E, A>) => Ma.Managed<R & R1, E1, readonly [Z, Stream<unknown, E | E1, A1>]> {
   return (stream) => peel_(stream, sink)
+}
+
+export function pipeThrough_<R, E extends E1, A, R1, E1, E2, L, Z>(
+  ma: Stream<R, E, A>,
+  sa: Sink.Sink<R1, E1, A, E2, L, Z>
+): Stream<R & R1, E1 | E2, L> {
+  return new Stream(Ch.pipeTo_(ma.channel, sa.channel))
+}
+
+/**
+ * @dataFirst pipeThrough_
+ */
+export function pipeThrough<E extends E1, A, R1, E1, E2, L, Z>(
+  sa: Sink.Sink<R1, E1, A, E2, L, Z>
+): <R>(ma: Stream<R, E, A>) => Stream<R & R1, E1 | E2, L> {
+  return (ma) => pipeThrough_(ma, sa)
 }
 
 /**

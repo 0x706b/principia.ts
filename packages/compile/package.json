@@ -43,7 +43,9 @@
   },
   "gitHead": "f607260821713229ed2214de26c81f3b3f172760",
   "devDependencies": {
+    "@babel/cli": "^7.16.0",
+    "concurrently": "^6.4.0",
     "ts-patch": "^2.0.1",
-    "typescript": "rc"
+    "typescript": "next"
   }
 }

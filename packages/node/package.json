@@ -57,6 +57,6 @@
   "gitHead": "450312aae828b332a7d7a48a99796db0ff98d35d",
   "devDependencies": {
     "ts-patch": "^2.0.1",
-    "typescript": "rc"
+    "typescript": "next"
   }
 }

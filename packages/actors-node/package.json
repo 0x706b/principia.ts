@@ -61,7 +61,7 @@
     "@types/isomorphic-fetch": "^0.0.35",
     "testcontainers": "^7.21.0",
     "ts-patch": "^2.0.1",
-    "typescript": "rc"
+    "typescript": "next"
   },
   "publishConfig": {
     "access": "public",

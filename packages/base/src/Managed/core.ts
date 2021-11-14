@@ -299,19 +299,23 @@ export function bracketExit_<R, E, A, R1>(
 ): Managed<R & R1, E, A> {
   const trace = accessCallTrace()
   return new Managed<R & R1, E, A>(
-    I.uninterruptible(
-      pipe(
-        I.do,
-        I.chainS('r', () => I.ask<readonly [R & R1, ReleaseMap]>()),
-        I.chainS(
-          'a',
-          traceFrom(trace, ({ r }) => I.giveAll_(acquire, r[0]))
-        ),
-        I.chainS(
-          'rm',
-          traceAs(release, ({ r, a }) => add(r[1], (ex) => I.giveAll_(release(a, ex), r[0])))
-        ),
-        I.map(({ rm, a }) => tuple(rm, a))
+    pipe(
+      I.ask<readonly [R & R1, ReleaseMap]>(),
+      I.chain(
+        traceAs(acquire, (r) =>
+          pipe(
+            acquire,
+            I.giveAll(r[0]),
+            I.chain(
+              traceFrom(trace, (a) =>
+                pipe(
+                  add(r[1], (ex) => pipe(release(a, ex), I.giveAll(r[0]))),
+                  I.map((rm) => tuple(rm, a))
+                )
+              )
+            )
+          )
+        )
       )
     )
   )

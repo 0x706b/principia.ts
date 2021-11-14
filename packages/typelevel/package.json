@@ -54,6 +54,6 @@
   },
   "devDependencies": {
     "ts-patch": "^2.0.1",
-    "typescript": "rc"
+    "typescript": "next"
   }
 }
