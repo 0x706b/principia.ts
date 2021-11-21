@@ -1070,21 +1070,36 @@ export function getEq<A>(E: P.Eq<A>): P.Eq<Chunk<A>> {
 
 export function map_<A, B>(chunk: Chunk<A>, f: (a: A, i: number) => B): Chunk<B> {
   concrete<A>(chunk)
-  if (chunk._chunkTag === ChunkTag.Singleton) {
-    return new Singleton(f(chunk.value, 0))
-  }
-  const b        = builder<B>()
-  const iterator = chunk.arrayIterator()
-  let result: IteratorResult<ArrayLike<A>>
-  let i          = 0
-  while (!(result = iterator.next()).done) {
-    const as = result.value
-    for (let j = 0; j < as.length; j++) {
-      b.append(f(as[j], i))
-      i++
+  switch (chunk._chunkTag) {
+    case ChunkTag.Singleton: {
+      return new Singleton(f(chunk.value, 0))
+    }
+    case ChunkTag.Empty: {
+      return _Empty
+    }
+    case ChunkTag.Arr: {
+      const arr = chunk.arrayLike()
+      const out = new Array<B>(chunk.length)
+      for (let i = 0; i < chunk.length; i++) {
+        out[i] = f(arr[i], i)
+      }
+      return new Arr(out)
+    }
+    default: {
+      let b          = empty<B>()
+      const iterator = chunk.arrayIterator()
+      let result: IteratorResult<ArrayLike<A>>
+      let i          = 0
+      while (!(result = iterator.next()).done) {
+        const as = result.value
+        for (let j = 0; j < as.length; j++) {
+          b = append_(b, f(as[j], i))
+          i++
+        }
+      }
+      return b
     }
   }
-  return b.result()
 }
 
 /**
@@ -1216,21 +1231,45 @@ export function filter_<A, B extends A>(fa: Chunk<A>, refinement: P.RefinementWi
 export function filter_<A>(fa: Chunk<A>, predicate: P.PredicateWithIndex<number, A>): Chunk<A>
 export function filter_<A>(fa: Chunk<A>, predicate: P.PredicateWithIndex<number, A>): Chunk<A> {
   concrete(fa)
-  const iterator = fa.arrayIterator()
-  const out      = builder<A>()
-  let result: IteratorResult<ArrayLike<A>>
-  let i          = 0
-  while (!(result = iterator.next()).done) {
-    const array = result.value
-    for (let j = 0; j < array.length; j++) {
-      const a = array[j]
-      if (predicate(a, i)) {
-        out.append(a)
+  switch (fa._chunkTag) {
+    case ChunkTag.Empty: {
+      return _Empty
+    }
+    case ChunkTag.Arr: {
+      const arr   = fa.arrayLike()
+      let builder = empty<A>()
+      for (let i = 0; i < arr.length; i++) {
+        const a = arr[i]
+        if (predicate(a, i)) {
+          builder = append_(builder, a)
+        }
       }
-      i++
+      return builder
+    }
+    case ChunkTag.Singleton: {
+      if (predicate(fa.value, 0)) {
+        return fa
+      }
+      return _Empty
+    }
+    default: {
+      const iterator = fa.arrayIterator()
+      let out        = empty<A>()
+      let result: IteratorResult<ArrayLike<A>>
+      let i          = 0
+      while (!(result = iterator.next()).done) {
+        const array = result.value
+        for (let j = 0; j < array.length; j++) {
+          const a = array[j]
+          if (predicate(a, i)) {
+            out = append_(out, a)
+          }
+          i++
+        }
+      }
+      return out
     }
   }
-  return out.result()
 }
 
 /**

@@ -513,19 +513,53 @@ export function fromAsyncIterable<A>(iterable: AsyncIterable<A>): Stream<unknown
   return new Stream(fromAsyncIterableLoop(iterable[Symbol.asyncIterator]()))
 }
 
-function fromIterableLoop<A>(
-  iterator: Iterator<A>
-): Ch.Channel<unknown, unknown, unknown, unknown, never, C.Chunk<A>, unknown> {
-  return Ch.unwrap(
+export function fromIterable<A>(iterable: Iterable<A>, maxChunkSize = DEFAULT_CHUNK_SIZE): Stream<unknown, never, A> {
+  return unwrap(
     I.succeedLazy(() => {
-      const v = iterator.next()
-      return v.done ? Ch.end(undefined) : pipe(Ch.write(C.single(v.value)), Ch.crossSecond(fromIterableLoop(iterator)))
+      const loop = (
+        iterator: Iterator<A>
+      ): Ch.Channel<unknown, unknown, unknown, unknown, never, C.Chunk<A>, unknown> =>
+        Ch.unwrap(
+          I.succeedLazy(() => {
+            let result = iterator.next()
+            if (result.done) {
+              return Ch.unit()
+            }
+            if (maxChunkSize === 1) {
+              return pipe(Ch.write(C.single(result.value)), Ch.crossSecond(loop(iterator)))
+            } else {
+              const out = Array<A>(maxChunkSize)
+              out[0]    = result.value
+              let count = 1
+              while (count < maxChunkSize && !(result = iterator.next()).done) {
+                out[count] = result.value
+                count++
+              }
+              return pipe(Ch.write(C.from(out)), Ch.crossSecond(loop(iterator)))
+            }
+          })
+        )
+      return new Stream<unknown, never, A>(loop(iterable[Symbol.iterator]()))
     })
   )
 }
 
-export function fromIterable<A>(iterable: Iterable<A>): Stream<unknown, never, A> {
-  return new Stream(fromIterableLoop(iterable[Symbol.iterator]()))
+export function fromIterableSingle<A>(iterable: Iterable<A>): Stream<unknown, never, A> {
+  return pipe(
+    fromIO(I.succeedLazy(() => iterable[Symbol.iterator]())),
+    chain((iterator) =>
+      repeatIOOption(
+        I.defer(() => {
+          const value = iterator.next()
+          if (value.done) {
+            return I.fail(M.nothing())
+          } else {
+            return I.succeed(value.value)
+          }
+        })
+      )
+    )
+  )
 }
 
 /**
