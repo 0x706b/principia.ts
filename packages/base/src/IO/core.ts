@@ -2127,20 +2127,23 @@ export function filterNot<A, R, E>(f: (a: A) => IO<R, E, boolean>): (as: Iterabl
   return (as) => filterNot_(as, f)
 }
 
-export function filterMapW_<F extends HKT.HKT, C = HKT.None>(W: Witherable<F, C>) {
+export function wither_<F extends HKT.HKT, C = HKT.None>(W: Witherable<F, C>) {
   return <K, Q, W, X, I, S, R, E, A, R1, E1, B>(
     wa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     f: (a: A) => IO<R1, E1, M.Maybe<B>>
   ): IO<R1, E1, HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>> => W.wither_(_Applicative)(wa, f)
 }
 
-export function filterMapW<F extends HKT.HKT, C = HKT.None>(W: Witherable<F, C>) {
-  const filterMapWW_ = filterMapW_(W)
+/**
+ * @dataFirst wither_
+ */
+export function wither<F extends HKT.HKT, C = HKT.None>(W: Witherable<F, C>) {
+  const witherW_ = wither_(W)
   return <A, R1, E1, B>(f: (a: A) => IO<R1, E1, M.Maybe<B>>) =>
     <K, Q, W, X, I, S, R, E>(
       wa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
     ): IO<R1, E1, HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>> =>
-      filterMapWW_(wa, f)
+      witherW_(wa, f)
 }
 
 /**
@@ -3586,7 +3589,7 @@ export function partition<R, E, A, B>(
   return (fas) => partition_(fas, f)
 }
 
-export function partitionMapW_<F extends HKT.HKT, C = HKT.None>(W: Witherable<F, C>) {
+export function wilt_<F extends HKT.HKT, C = HKT.None>(W: Witherable<F, C>) {
   return <K, Q, W, X, I, S, R, E, A, R1, E1, B>(
     wa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     f: (a: A) => IO<R1, E1, B>
@@ -3594,8 +3597,11 @@ export function partitionMapW_<F extends HKT.HKT, C = HKT.None>(W: Witherable<F,
     W.wilt_(_Applicative)(wa, flow(f, either))
 }
 
-export function partitionMapW<F extends HKT.HKT, C = HKT.None>(W: Witherable<F, C>) {
-  const partitionMapFF_ = partitionMapW_(W)
+/**
+ * @dataFirst wilt_
+ */
+export function wilt<F extends HKT.HKT, C = HKT.None>(W: Witherable<F, C>) {
+  const wiltW_ = wilt_(W)
   return <A, R1, E1, B>(f: (a: A) => IO<R1, E1, B>) =>
     <K, Q, W, X, I, S, R, E>(
       wa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
@@ -3604,7 +3610,7 @@ export function partitionMapW<F extends HKT.HKT, C = HKT.None>(W: Witherable<F, 
       never,
       readonly [HKT.Kind<F, C, K, Q, W, X, I, S, R, E, E1>, HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>]
     > =>
-      partitionMapFF_(wa, f)
+      wiltW_(wa, f)
 }
 
 /**
@@ -4194,7 +4200,7 @@ const _Applicative = Applicative<IOF>({
 /**
  * Maps an arbitrary `Traversable` to an effectful computation
  */
-export function traverseT_<F extends HKT.HKT, C = HKT.None>(
+export function traverse_<F extends HKT.HKT, C = HKT.None>(
   T: Traversable<F, C>
 ): <K, Q, W, X, I, S, R, E, A, R1, E1, B>(
   ta: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
@@ -4212,14 +4218,14 @@ export function traverseT_<F extends HKT.HKT, C = HKT.None>(
  *
  * @dataFirst traverse_
  */
-export function traverseT<F extends HKT.HKT, C = HKT.None>(
+export function traverse<F extends HKT.HKT, C = HKT.None>(
   T: Traversable<F, C>
 ): <A, R1, E1, B>(
   f: (a: A) => IO<R1, E1, B>
 ) => <K, Q, W, X, I, S, R, E>(
   ta: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
 ) => IO<R1, E1, HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>> {
-  const traverseT__ = traverseT_(T)
+  const traverseT__ = traverse_(T)
   return (f) => (ta) => traverseT__(ta, f)
 }
 
