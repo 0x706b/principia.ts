@@ -1979,13 +1979,23 @@ export class GenZ<W, S, R, E, A> {
   }
 }
 
+/**
+ * @internal
+ */
+export const __adapter = (_: any, __?: any) => {
+  return _
+}
+
 const adapter = (_: any, __?: any) => {
-  return new GenZ(_)
+  return new GenZ(__adapter(_, __))
 }
 
 type _W<Z> = [Z] extends [{ ['_W']: () => infer W }] ? W : never
 type _S<Z> = [Z] extends [{ ['_S']: (_: infer S) => infer S }] ? S : never
 
+/**
+ * @gen
+ */
 export function gen<T extends GenZ<any, any, any, any, any>, A>(
   f: (i: <W, S, R, E, A>(_: Z<W, S, S, R, E, A>) => GenZ<W, S, R, E, A>) => Generator<T, A, any>
 ): Z<_W<T>, _S<T>, _S<T>, _R<T>, _E<T>, A> {

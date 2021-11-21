@@ -2985,30 +2985,29 @@ export class GenManaged<R, E, A> {
   }
 }
 
-const adapter = (_: any, __?: any) => {
+export const __adapter = (_: any, __?: any) => {
   if (isTag(_)) {
-    return new GenManaged(asksService(_)(identityFn), adapter['$trace'])
+    return asksService(_)(identityFn)
   }
   if (E.isEither(_)) {
-    return new GenManaged(
-      fromEitherLazy(() => _),
-      adapter['$trace']
-    )
+    return fromEitherLazy(() => _)
   }
   if (M.isMaybe(_)) {
-    return new GenManaged(
-      __ ? (_._tag === 'Nothing' ? fail(__()) : succeed(_.value)) : fromIO(I.getOrFail(_)),
-      adapter['$trace']
-    )
+    return __ ? (_._tag === 'Nothing' ? fail(__()) : succeed(_.value)) : fromIO(I.getOrFail(_))
   }
   if (_ instanceof Managed) {
-    return new GenManaged(_, adapter['$trace'])
+    return _
   }
-  return new GenManaged(fromIO(_), adapter['$trace'])
+  return fromIO(_)
+}
+
+const adapter = (_: any, __?: any) => {
+  return new GenManaged(__adapter(_, __), adapter['$trace'])
 }
 
 /**
  * @trace call
+ * @gen
  */
 export function gen<T extends GenManaged<any, any, any>, A>(
   f: (i: {

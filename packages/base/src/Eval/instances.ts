@@ -2,6 +2,7 @@ import type * as E from '../Either'
 import type * as HKT from '../HKT'
 import type { Eval } from './core'
 
+import { identity } from '../function'
 import * as P from '../prelude'
 import { ap_, chain_, cross_, crossWith_, defer, map_, now, pure, unit } from './core'
 
@@ -108,6 +109,11 @@ function _run<T extends GenEval<any>, A>(
   })
 }
 
+export const __adapter = identity
+
+/**
+ * @gen
+ */
 export function gen<T extends GenEval<any>, A>(f: (i: <A>(_: Eval<A>) => GenEval<A>) => Generator<T, A, any>): Eval<A> {
   return defer(() => {
     const iterator = f((_) => new GenEval(_))

@@ -4709,27 +4709,32 @@ export class GenIO<R, E, A> {
   }
 }
 
-const adapter = (_: any, __?: any) => {
+/**
+ * @internal
+ */
+export const __adapter = (_: any, __?: any) => {
   if (E.isEither(_)) {
-    return new GenIO(
-      fromEitherLazy(() => _),
-      adapter['$trace']
-    )
+    fromEitherLazy(() => _)
   }
   if (M.isMaybe(_)) {
-    return new GenIO(__ ? (_._tag === 'Nothing' ? fail(__()) : pure(_.value)) : getOrFail(_), adapter['$trace'])
+    return __ ? (_._tag === 'Nothing' ? fail(__()) : pure(_.value)) : getOrFail(_)
   }
   if (isTag(_)) {
-    return new GenIO(askService(_), adapter['$trace'])
+    return askService(_)
   }
   if (S.isSync(_)) {
-    return new GenIO(fromSync(_), adapter['$trace'])
+    return fromSync(_)
   }
-  return new GenIO(_, adapter['$trace'])
+  return _
+}
+
+const adapter = (_: any, __?: any) => {
+  return new GenIO(__adapter(_, __), adapter['$trace'])
 }
 
 /**
  * @trace call
+ * @gen
  */
 export function gen<T extends GenIO<any, any, any>, A>(
   f: (i: {

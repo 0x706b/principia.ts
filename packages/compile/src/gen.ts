@@ -112,9 +112,9 @@ const hasYieldVisitor =
     return ts.visitEachChild(node, hasYieldVisitor(result, ctx), ctx)
   }
 
-export default function gen(program: ts.Program, opts?: { optigen?: boolean }) {
-  const optigen = !(opts?.optigen === false)
-  const checker = program.getTypeChecker()
+export default function gen(program: ts.Program, opts?: { optimizeGen?: boolean }) {
+  const optimizeGen = !(opts?.optimizeGen === false)
+  const checker     = program.getTypeChecker()
 
   return {
     before(ctx: ts.TransformationContext) {
@@ -197,7 +197,7 @@ export default function gen(program: ts.Program, opts?: { optigen?: boolean }) {
           }
           return ts.visitEachChild(node, visitor, ctx)
         }
-        return optigen ? ts.visitEachChild(sourceFile, visitor, ctx) : sourceFile
+        return optimizeGen ? ts.visitEachChild(sourceFile, visitor, ctx) : sourceFile
       }
     }
   }

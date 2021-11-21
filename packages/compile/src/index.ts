@@ -2,6 +2,7 @@ import type ts from 'typescript'
 
 import classFields from './classFields'
 import dataFirst from './dataFirst'
+import gen from './gen'
 import identity from './identity'
 import rewrite from './rewrite'
 import specifierExtension from './specifierExtension'
@@ -28,6 +29,7 @@ export default function bundle(
     ignoreExtensions?: Array<string>
     addExtensions?: boolean
     classFields?: boolean
+    optimizeGen?: boolean
   }
 ) {
   const B0 = {
@@ -40,7 +42,8 @@ export default function bundle(
     untrace: untrace(program, opts),
     addSpecifierExtension: specifierExtension(program, opts),
     computedCtorFields: classFields(program, opts),
-    tag: tag(program, opts)
+    tag: tag(program, opts),
+    gen: gen(program, opts)
   }
 
   return {
@@ -54,7 +57,8 @@ export default function bundle(
         unpipe: B0.unpipe.before(ctx),
         untrace: B0.untrace.before(ctx),
         computedCtorFields: B0.computedCtorFields.before(ctx),
-        tag: B0.tag.before(ctx)
+        tag: B0.tag.before(ctx),
+        gen: B0.gen.before(ctx)
       }
 
       return (sourceFile: ts.SourceFile) => {
@@ -67,8 +71,9 @@ export default function bundle(
         const unid     = B1.identity(untraced)
         const df       = B1.dataFirst(unid)
         const tagged   = B1.tag(df)
+        const gen      = B1.gen(tagged)
 
-        return tagged
+        return gen
       }
     },
     after(ctx: ts.TransformationContext) {
