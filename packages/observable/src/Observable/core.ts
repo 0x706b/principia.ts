@@ -57,7 +57,7 @@ export type ObservableTypeId = typeof ObservableTypeId
 
 export class Observable<E, A> implements Subscribable<E, A> {
   readonly _E!: () => E
-  readonly _A!: () => A;
+  readonly _A!: () => A
 
   readonly [ObservableTypeId]: ObservableTypeId = ObservableTypeId
 
@@ -583,6 +583,43 @@ export function as_<E, A, B>(fa: Observable<E, A>, b: B): Observable<E, B> {
 
 export function as<B>(b: B): <E, A>(fa: Observable<E, A>) => Observable<E, B> {
   return (fa) => as_(fa, b)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Bifunctor
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function mapError_<E, A, E1>(fa: Observable<E, A>, f: (e: E) => E1): Observable<E1, A> {
+  return operate_(fa, (source, subscriber) => {
+    source.subscribe(
+      new OperatorSubscriber(subscriber, {
+        error: (err) => {
+          subscriber.error(f(err))
+        }
+      })
+    )
+  })
+}
+
+export function mapError<E, E1>(f: (e: E) => E1): <A>(fa: Observable<E, A>) => Observable<E1, A> {
+  return (fa) => mapError_(fa, f)
+}
+
+export function swap<E, A>(fa: Observable<E, A>): Observable<A, E> {
+  return operate_(fa, (source, subscriber) => {
+    source.subscribe(
+      new OperatorSubscriber(subscriber, {
+        next: (value) => {
+          subscriber.error(value)
+        },
+        error: (err) => {
+          subscriber.next(err)
+        }
+      })
+    )
+  })
 }
 
 /*
@@ -1148,10 +1185,10 @@ export function countWith<A>(
 export function combineLatestAll<E, E1, A>(
   fa: Observable<E, ObservableInput<E1, A>>
 ): Observable<E | E1, ReadonlyArray<A>> {
-  return joinAllInternal(fa, (sources) => combineLatest(...sources) as any)
+  return joinAllInternal(fa, (sources) => combineLatest_(...sources) as any)
 }
 
-export function combineLatest<A extends ReadonlyArray<ObservableInput<any, any>>>(
+export function combineLatest_<A extends ReadonlyArray<ObservableInput<any, any>>>(
   ...sources: A
 ): Observable<ErrorOf<A[number]>, { [K in keyof A]: TypeOf<A[K]> }> {
   if (!sources.length) {
@@ -1161,6 +1198,12 @@ export function combineLatest<A extends ReadonlyArray<ObservableInput<any, any>>
   return operate_(from(s0), (source, subscriber) => {
     combineLatestInternal(subscriber, [source, ...rest])
   })
+}
+
+export function combineLatest<O extends ReadonlyArray<ObservableInput<any, any>>>(
+  ...sources: O
+): <E, A>(fa: Observable<E, A>) => Observable<E | ErrorOf<O[number]>, [A, ...{ [K in keyof O]: TypeOf<O[K]> }]> {
+  return (fa) => combineLatest_(fa, ...sources)
 }
 
 export function debounceWith_<E, A, E1>(

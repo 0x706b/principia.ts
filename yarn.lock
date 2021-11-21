@@ -3297,7 +3297,7 @@ __metadata:
     isomorphic-fetch: ^3.0.0
     testcontainers: ^7.21.0
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
   languageName: unknown
   linkType: soft
 
@@ -3310,7 +3310,7 @@ __metadata:
     "@types/isomorphic-fetch": ^0.0.35
     isomorphic-fetch: ^3.0.0
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
   languageName: unknown
   linkType: soft
 
@@ -3329,7 +3329,7 @@ __metadata:
     sort-package-json: ^1.52.0
     ts-node: ^10.4.0
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
   languageName: unknown
   linkType: soft
 
@@ -3340,7 +3340,7 @@ __metadata:
     "@babel/cli": ^7.16.0
     concurrently: ^6.4.0
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
   languageName: unknown
   linkType: soft
 
@@ -3353,7 +3353,7 @@ __metadata:
     "@types/express": ^4.17.13
     express: ^4.17.1
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
   languageName: unknown
   linkType: soft
 
@@ -3365,7 +3365,7 @@ __metadata:
     "@principia/http": ^0.20.0
     fastify: ^3.22.0
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
   languageName: unknown
   linkType: soft
 
@@ -3383,7 +3383,7 @@ __metadata:
     graphql-tools: 7.0.5
     koa-graphql: 0.9.0
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
   languageName: unknown
   linkType: soft
 
@@ -3398,7 +3398,7 @@ __metadata:
     path-to-regexp: ^6.2.0
     qs: ^6.10.1
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
   languageName: unknown
   linkType: soft
 
@@ -3411,7 +3411,7 @@ __metadata:
     "@types/node-zookeeper-client": ^0.2.8
     node-zookeeper-client: ^1.1.1
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
   languageName: unknown
   linkType: soft
 
@@ -3432,7 +3432,7 @@ __metadata:
     koa-compose: 4.1.0
     koa-router: ^10.1.1
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
   languageName: unknown
   linkType: soft
 
@@ -3443,7 +3443,7 @@ __metadata:
     "@principia/base": ^0.27.0
     fast-check: ^2.18.0
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
   languageName: unknown
   linkType: soft
 
@@ -3457,7 +3457,7 @@ __metadata:
     date-fns: ^2.25.0
     strip-ansi: ^7.0.1
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
   languageName: unknown
   linkType: soft
 
@@ -3467,7 +3467,7 @@ __metadata:
   dependencies:
     "@principia/base": ^0.27.0
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
   languageName: unknown
   linkType: soft
 
@@ -3478,7 +3478,7 @@ __metadata:
     "@principia/base": ^0.27.0
     "@principia/compile": ^0.19.2
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
   languageName: unknown
   linkType: soft
 
@@ -3489,7 +3489,7 @@ __metadata:
     "@principia/base": ^0.27.0
     concurrently: ^6.4.0
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
   languageName: unknown
   linkType: soft
 
@@ -3501,7 +3501,7 @@ __metadata:
     "@types/pg": ^8.6.1
     pg: ^8.7.1
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
   languageName: unknown
   linkType: soft
 
@@ -3514,7 +3514,7 @@ __metadata:
     glob: ^7.2.0
     ts-node: ^10.3.0
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
     yargs: ^17.2.1
   bin:
     ptest: ./bin/ptest.js
@@ -3527,7 +3527,7 @@ __metadata:
   dependencies:
     "@principia/base": ^0.27.0
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
   languageName: unknown
   linkType: soft
 
@@ -3541,7 +3541,7 @@ __metadata:
     concurrently: ^6.4.0
     fast-check: ^2.18.0
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
   languageName: unknown
   linkType: soft
 
@@ -3558,7 +3558,7 @@ __metadata:
     sort-package-json: ^1.53.1
     ts-node: ^10.4.0
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
   languageName: unknown
   linkType: soft
 
@@ -3567,7 +3567,7 @@ __metadata:
   resolution: "@principia/typelevel@workspace:packages/typelevel"
   dependencies:
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
   languageName: unknown
   linkType: soft
 
@@ -14069,7 +14069,7 @@ fsevents@~2.3.2:
     syncpack: ^5.8.15
     ts-node: ^10.3.0
     ts-patch: ^2.0.1
-    typescript: next
+    typescript: ^4.5.2
     ultra-runner: ^3.10.5
     yargs: ^17.2.1
   languageName: unknown
@@ -15727,13 +15727,13 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"typescript@npm:next":
-  version: 4.6.0-dev.20211113
-  resolution: "typescript@npm:4.6.0-dev.20211113"
+"typescript@npm:^4.5.2":
+  version: 4.5.2
+  resolution: "typescript@npm:4.5.2"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 387094fe447b53f24a3c10d030068ab70f2c4e244e45776a886b373fc4e390b0ed86512dbc28e85b1d5c3e7e4bf39538f21d079c736cbbfdea743bc5e178e431
+  checksum: 74f9ce65d532bdf5d0214b3f60cf37992180023388c87a11ee6f838a803067ef0b63c600fa501b0deb07f989257dce1e244c9635ed79feca40bbccf6e0aa1ebc
   languageName: node
   linkType: hard
 
@@ -15747,13 +15747,13 @@ fsevents@~2.3.2:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@next#~builtin<compat/typescript>":
-  version: 4.6.0-dev.20211113
-  resolution: "typescript@patch:typescript@npm%3A4.6.0-dev.20211113#~builtin<compat/typescript>::version=4.6.0-dev.20211113&hash=ddd1e8"
+"typescript@patch:typescript@^4.5.2#~builtin<compat/typescript>":
+  version: 4.5.2
+  resolution: "typescript@patch:typescript@npm%3A4.5.2#~builtin<compat/typescript>::version=4.5.2&hash=ddd1e8"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: ce033540a5a83a0849eeb6099e7b92715a8cedae1ca3daf06dd4eb33c6ae8cde498d8a12d6b07024041440f2a15c9281c6c64ef357b1a015da995978ce59292c
+  checksum: 24a439e062a05e3285a4f0e8a40644116ecdca89f3e908bed01e5a01b9aee747e3bcf0e85fe9e017e5ebf0c0863437c39479f2616f55a244c2d82d37022cdc4f
   languageName: node
   linkType: hard
 

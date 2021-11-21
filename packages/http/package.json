@@ -57,7 +57,7 @@
   "devDependencies": {
     "@types/qs": "^6.9.7",
     "ts-patch": "^2.0.1",
-    "typescript": "next"
+    "typescript": "^4.5.2"
   },
   "publishConfig": {
     "access": "public",
