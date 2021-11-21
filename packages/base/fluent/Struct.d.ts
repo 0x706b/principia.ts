@@ -51,7 +51,7 @@ declare module '@principia/base/Struct' {
     /**
      * @rewriteConstraint modifyAtF_ from "@principia/base/Struct"
      */
-    modifyAtF<S_ extends ReadonlyRecord<string, any>, F extends HKT.URIS, C = HKT.Auto>(
+    modifyAtF<S_ extends ReadonlyRecord<string, any>, F extends HKT.HKT, C = HKT.Auto>(
       this: Struct<S_>,
       F: P.Functor<F, C>
     ): <K_ extends keyof S_, K, Q, W, X, I, S, R, E, B>(

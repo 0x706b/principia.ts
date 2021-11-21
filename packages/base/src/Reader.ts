@@ -1,5 +1,4 @@
 import type * as HKT from './HKT'
-import type { ReaderCategoryURI, ReaderURI } from './Modules'
 
 import { flow, identity } from './function'
 import * as P from './prelude'
@@ -15,13 +14,21 @@ export interface Reader<R, A> {
   (r: R): A
 }
 
-type URI = [HKT.URI<ReaderURI>]
+export interface ReaderF extends HKT.HKT {
+  readonly type: Reader<this['R'], this['A']>
+  readonly variance: {
+    R: '-'
+    A: '+'
+  }
+}
 
-export type V = HKT.V<'R', '-'>
-
-type CURI = [HKT.URI<ReaderCategoryURI>]
-
-export type CV = HKT.V<'I', '-'>
+export interface ReaderCategoryF extends HKT.HKT {
+  readonly type: Reader<this['I'], this['A']>
+  readonly variance: {
+    I: '-'
+    A: '+'
+  }
+}
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -273,31 +280,31 @@ export function unit(): Reader<unknown, void> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const Functor = P.Functor<URI, V>({
+export const Functor = P.Functor<ReaderF>({
   map_
 })
 
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<ReaderF>({
   map_,
   cross_,
   crossWith_
 })
 
-export const Apply = P.Apply<URI, V>({
+export const Apply = P.Apply<ReaderF>({
   map_,
   cross_,
   crossWith_,
   ap_
 })
 
-export const MonoidalFunctor = P.MonoidalFunctor<URI, V>({
+export const MonoidalFunctor = P.MonoidalFunctor<ReaderF>({
   map_,
   cross_,
   crossWith_,
   unit
 })
 
-export const Applicative = P.Applicative<URI, V>({
+export const Applicative = P.Applicative<ReaderF>({
   map_,
   cross_,
   crossWith_,
@@ -305,7 +312,7 @@ export const Applicative = P.Applicative<URI, V>({
   pure
 })
 
-export const Monad = P.Monad<URI, V>({
+export const Monad = P.Monad<ReaderF>({
   map_,
   cross_,
   crossWith_,
@@ -315,7 +322,7 @@ export const Monad = P.Monad<URI, V>({
   flatten
 })
 
-export const MonadEnv = P.MonadEnv<URI, V>({
+export const MonadEnv = P.MonadEnv<ReaderF>({
   map_,
   cross_,
   crossWith_,
@@ -328,16 +335,14 @@ export const MonadEnv = P.MonadEnv<URI, V>({
   giveAll_
 })
 
-export const Profunctor = P.Profunctor<URI, V>({
+export const Profunctor = P.Profunctor<ReaderF>({
   map_,
   dimap_,
   lmap_: gives_
 })
 
-export const Category = P.Category<CURI, V>({
+export const Category = P.Category<ReaderCategoryF>({
   andThen_,
   compose_,
   id
 })
-
-export { ReaderURI } from './Modules'

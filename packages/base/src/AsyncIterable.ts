@@ -1,13 +1,18 @@
 import type { Either } from './Either'
 import type * as HKT from './HKT'
 import type { Maybe } from './Maybe'
-import type { AsyncIterableURI } from './Modules'
 
 import { identity } from './function'
 import * as P from './prelude'
 import { tuple } from './tuple'
 
-type URI = [HKT.URI<AsyncIterableURI>]
+export interface AsyncIterableF extends HKT.HKT {
+  readonly type: AsyncIterable<this['A']>
+  readonly index: number
+  readonly variance: {
+    A: '+'
+  }
+}
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -545,35 +550,35 @@ export async function toArray<A>(fa: AsyncIterable<A>): Promise<ReadonlyArray<A>
  * -------------------------------------------------------------------------------------------------
  */
 
-export const Functor = P.Functor<URI>({
+export const Functor = P.Functor<AsyncIterableF>({
   map_
 })
 
-export const FunctorWithIndex = P.FunctorWithIndex<URI>({
+export const FunctorWithIndex = P.FunctorWithIndex<AsyncIterableF>({
   imap_: map_
 })
 
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<AsyncIterableF>({
   map_,
   crossWith_,
   cross_
 })
 
-export const Apply = P.Apply<URI>({
+export const Apply = P.Apply<AsyncIterableF>({
   map_,
   crossWith_,
   cross_,
   ap_
 })
 
-export const MonoidalFunctor = P.MonoidalFunctor<URI>({
+export const MonoidalFunctor = P.MonoidalFunctor<AsyncIterableF>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const Applicative = P.Applicative<URI>({
+export const Applicative = P.Applicative<AsyncIterableF>({
   map_,
   crossWith_,
   cross_,
@@ -582,7 +587,7 @@ export const Applicative = P.Applicative<URI>({
   pure
 })
 
-export const Monad = P.Monad<URI>({
+export const Monad = P.Monad<AsyncIterableF>({
   map_,
   crossWith_,
   cross_,
@@ -593,7 +598,7 @@ export const Monad = P.Monad<URI>({
   flatten
 })
 
-export const Filterable = P.Filterable<URI>({
+export const Filterable = P.Filterable<AsyncIterableF>({
   map_,
   filter_,
   filterMap_,
@@ -601,12 +606,10 @@ export const Filterable = P.Filterable<URI>({
   partitionMap_
 })
 
-export const FilterableWithIndex = P.FilterableWithIndex<URI>({
+export const FilterableWithIndex = P.FilterableWithIndex<AsyncIterableF>({
   imap_: map_,
   ifilter_: filter_,
   ifilterMap_: filterMap_,
   ipartition_: partition_,
   ipartitionMap_: partitionMap_
 })
-
-export { AsyncIterableURI } from './Modules'

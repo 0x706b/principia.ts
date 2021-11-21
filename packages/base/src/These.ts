@@ -1,7 +1,6 @@
 import type { Eq } from './Eq'
 import type { Both, Left, Right, These } from './internal/These'
 import type * as M from './Maybe'
-import type { TheseURI } from './Modules'
 import type { Show } from './Show'
 
 import { flow, identity, pipe } from './function'
@@ -20,9 +19,13 @@ import { tailRec_ } from './prelude'
 
 export { Both, Left, Right, These } from './internal/These'
 
-export type V = HKT.V<'E', '+'>
-
-type URI = [HKT.URI<TheseURI>]
+export interface TheseF extends HKT.HKT {
+  readonly type: These<this['E'], this['A']>
+  readonly variance: {
+    E: '+'
+    A: '+'
+  }
+}
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -141,7 +144,7 @@ export function toTuple<E, A>(e: E, a: A): (fa: These<E, A>) => readonly [E, A] 
  * -------------------------------------------------------------------------------------------------
  */
 
-export function getMonoidal<E>(SE: P.Semigroup<E>): P.MonoidalFunctor<URI, HKT.Fix<'E', E>> {
+export function getMonoidal<E>(SE: P.Semigroup<E>): P.MonoidalFunctor<TheseF, HKT.Fix<'E', E>> {
   return HKT.instance({
     ...getSemimonoidal(SE),
     unit
@@ -154,7 +157,7 @@ export function getMonoidal<E>(SE: P.Semigroup<E>): P.MonoidalFunctor<URI, HKT.F
  * -------------------------------------------------------------------------------------------------
  */
 
-export function getApply<E>(SE: P.Semigroup<E>): P.Apply<URI, HKT.Fix<'E', E>> {
+export function getApply<E>(SE: P.Semigroup<E>): P.Apply<TheseF, HKT.Fix<'E', E>> {
   return P.Apply(getSemimonoidal(SE))
 }
 
@@ -164,7 +167,7 @@ export function getApply<E>(SE: P.Semigroup<E>): P.Apply<URI, HKT.Fix<'E', E>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function getApplicative<E>(SE: P.Semigroup<E>): P.Applicative<URI, HKT.Fix<'E', E>> {
+export function getApplicative<E>(SE: P.Semigroup<E>): P.Applicative<TheseF, HKT.Fix<'E', E>> {
   return P.Applicative({
     ...getApply(SE),
     unit,
@@ -179,7 +182,7 @@ export function getApplicative<E>(SE: P.Semigroup<E>): P.Applicative<URI, HKT.Fi
  */
 
 export function getApplicativeExcept<E>(SE: P.Semigroup<E>) {
-  const catchAll_: P.CatchAllFn_<URI, HKT.Fix<'E', E>> = (fa, f) => (fa._tag === 'Left' ? f(fa.left) : fa)
+  const catchAll_: P.CatchAllFn_<TheseF, HKT.Fix<'E', E>> = (fa, f) => (fa._tag === 'Left' ? f(fa.left) : fa)
 
   return P.ApplicativeExcept({
     ...getApplicative(SE),
@@ -194,8 +197,8 @@ export function getApplicativeExcept<E>(SE: P.Semigroup<E>) {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function getSemimonoidal<E>(SE: P.Semigroup<E>): P.SemimonoidalFunctor<URI, HKT.Fix<'E', E>> {
-  const crossWith_: P.CrossWithFn_<URI, HKT.Fix<'E', E>> = (fa, fb, f) =>
+export function getSemimonoidal<E>(SE: P.Semigroup<E>): P.SemimonoidalFunctor<TheseF, HKT.Fix<'E', E>> {
+  const crossWith_: P.CrossWithFn_<TheseF, HKT.Fix<'E', E>> = (fa, fb, f) =>
     isLeft(fa)
       ? isLeft(fb)
         ? left(SE.combine_(fa.left, fb.left))
@@ -330,8 +333,8 @@ export function map<A, B>(f: (a: A) => B): <E>(fa: These<E, A>) => These<E, B> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function getMonad<E>(SE: P.Semigroup<E>): P.Monad<[HKT.URI<TheseURI, {}>], HKT.Fix<'E', E>> {
-  const chain_: P.ChainFn_<URI, HKT.Fix<'E', E>> = (ma, f) => {
+export function getMonad<E>(SE: P.Semigroup<E>): P.Monad<TheseF, HKT.Fix<'E', E>> {
+  const chain_: P.ChainFn_<TheseF, HKT.Fix<'E', E>> = (ma, f) => {
     if (isLeft(ma)) {
       return ma
     }
@@ -357,7 +360,7 @@ export function getMonad<E>(SE: P.Semigroup<E>): P.Monad<[HKT.URI<TheseURI, {}>]
  * -------------------------------------------------------------------------------------------------
  */
 
-export function getMonadExcept<E>(SE: P.Semigroup<E>): P.MonadExcept<URI, HKT.Fix<'E', E>> {
+export function getMonadExcept<E>(SE: P.Semigroup<E>): P.MonadExcept<TheseF, HKT.Fix<'E', E>> {
   return P.MonadExcept({ ...getApplicativeExcept(SE), ...getMonad(SE) })
 }
 
@@ -411,8 +414,8 @@ export function getShow<E, A>(SE: Show<E>, SA: Show<A>): Show<These<E, A>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function getTailRec<E>(SE: P.Semigroup<E>): P.TailRec<URI, HKT.Fix<'E', E>> {
-  const chainRec_: P.ChainRecFn_<URI, HKT.Fix<'E', E>> = (a, f) =>
+export function getTailRec<E>(SE: P.Semigroup<E>): P.TailRec<TheseF, HKT.Fix<'E', E>> {
+  const chainRec_: P.ChainRecFn_<TheseF, HKT.Fix<'E', E>> = (a, f) =>
     tailRec_(
       f(a),
       match(
@@ -442,7 +445,7 @@ export function getTailRec<E>(SE: P.Semigroup<E>): P.TailRec<URI, HKT.Fix<'E', E
       )
     )
 
-  return HKT.instance<P.TailRec<URI, HKT.Fix<'E', E>>>({
+  return HKT.instance<P.TailRec<TheseF, HKT.Fix<'E', E>>>({
     chainRec_,
     chainRec: (f) => (a) => chainRec_(a, f)
   })
@@ -454,18 +457,18 @@ export function getTailRec<E>(SE: P.Semigroup<E>): P.TailRec<URI, HKT.Fix<'E', E
  * -------------------------------------------------------------------------------------------------
  */
 
-export const traverse_: P.TraverseFn_<URI, V> = (AG) => (ta, f) =>
+export const traverse_: P.TraverseFn_<TheseF> = (AG) => (ta, f) =>
   isLeft(ta) ? AG.pure(ta) : isRight(ta) ? AG.map_(f(ta.right), right) : AG.map_(f(ta.right), (b) => both(ta.left, b))
 
 /**
  * @dataFirst traverse_
  */
-export const traverse: P.TraverseFn<URI, V> = (AG) => {
+export const traverse: P.TraverseFn<TheseF> = (AG) => {
   const traverseG_ = traverse_(AG)
   return (f) => (ta) => traverseG_(ta, f)
 }
 
-export const sequence: P.SequenceFn<URI, V> = (AG) => traverse(AG)(identity)
+export const sequence: P.SequenceFn<TheseF> = (AG) => (ta) => traverse_(AG)(ta, identity)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -500,5 +503,3 @@ export function condemnWhen_<E, A>(ma: These<E, A>, predicate: P.Predicate<E>): 
 export function condemnWhen<E>(predicate: P.Predicate<E>): <A>(ma: These<E, A>) => These<E, A> {
   return (ma) => condemnWhen_(ma, predicate)
 }
-
-export { TheseURI } from './Modules'

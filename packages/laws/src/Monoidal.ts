@@ -10,28 +10,28 @@ import * as fc from 'fast-check'
 
 import { isPromise } from './utils'
 
-function LeftIdentityLaw<F extends HKT.URIS, TC, A>(
+function LeftIdentityLaw<F extends HKT.HKT, TC, A>(
   F: MonoidalFunctor<F, TC>,
   S: MaybeAsyncEq<
     HKT.Kind<
       F,
       TC,
-      HKT.Initial<TC, 'K'>,
-      HKT.Initial<TC, 'Q'>,
-      HKT.Initial<TC, 'W'>,
-      HKT.Initial<TC, 'X'>,
-      HKT.Initial<TC, 'I'>,
-      HKT.Initial<TC, 'S'>,
-      HKT.Initial<TC, 'R'>,
-      HKT.Initial<TC, 'E'>,
+      HKT.Low<F, 'K'>,
+      HKT.Low<F, 'Q'>,
+      HKT.Low<F, 'W'>,
+      HKT.Low<F, 'X'>,
+      HKT.Low<F, 'I'>,
+      HKT.Low<F, 'S'>,
+      HKT.Low<F, 'R'>,
+      HKT.Low<F, 'E'>,
       A
     >
   >
 ): <N extends string, K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>) => Promise<boolean>
 function LeftIdentityLaw<F, A>(
-  F: MonoidalFunctor<HKT.UHKT<F>>,
-  S: MaybeAsyncEq<HKT.HKT<F, A>>
-): (fa: HKT.HKT<F, A>) => Promise<boolean> {
+  F: MonoidalFunctor<HKT.F<F>>,
+  S: MaybeAsyncEq<HKT.FK1<F, A>>
+): (fa: HKT.FK1<F, A>) => Promise<boolean> {
   const equiv = andThen_(tupleFlip<void, A>(), tupleUnit())
   return (fa) => {
     const left  = F.cross_(F.unit(), fa)
@@ -42,28 +42,28 @@ function LeftIdentityLaw<F, A>(
   }
 }
 
-function RightIdentityLaw<F extends HKT.URIS, TC, A>(
+function RightIdentityLaw<F extends HKT.HKT, TC, A>(
   F: MonoidalFunctor<F, TC>,
   S: MaybeAsyncEq<
     HKT.Kind<
       F,
       TC,
-      HKT.Initial<TC, 'K'>,
-      HKT.Initial<TC, 'Q'>,
-      HKT.Initial<TC, 'W'>,
-      HKT.Initial<TC, 'X'>,
-      HKT.Initial<TC, 'I'>,
-      HKT.Initial<TC, 'S'>,
-      HKT.Initial<TC, 'R'>,
-      HKT.Initial<TC, 'E'>,
+      HKT.Low<F, 'K'>,
+      HKT.Low<F, 'Q'>,
+      HKT.Low<F, 'W'>,
+      HKT.Low<F, 'X'>,
+      HKT.Low<F, 'I'>,
+      HKT.Low<F, 'S'>,
+      HKT.Low<F, 'R'>,
+      HKT.Low<F, 'E'>,
       A
     >
   >
 ): <N extends string, K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>) => Promise<boolean>
 function RightIdentityLaw<F, A>(
-  F: MonoidalFunctor<HKT.UHKT<F>>,
-  S: MaybeAsyncEq<HKT.HKT<F, A>>
-): (fa: HKT.HKT<F, A>) => Promise<boolean> {
+  F: MonoidalFunctor<HKT.F<F>>,
+  S: MaybeAsyncEq<HKT.FK1<F, A>>
+): (fa: HKT.FK1<F, A>) => Promise<boolean> {
   const equiv = tupleUnit<A>()
   return (fa) => {
     const left  = F.cross_(fa, F.unit())
@@ -74,20 +74,20 @@ function RightIdentityLaw<F, A>(
   }
 }
 
-function AssociativityLaw<F extends HKT.URIS, TC, A, B, C>(
+function AssociativityLaw<F extends HKT.HKT, TC, A, B, C>(
   F: MonoidalFunctor<F, TC>,
   S: MaybeAsyncEq<
     HKT.Kind<
       F,
       TC,
-      HKT.Initial<TC, 'K'>,
-      HKT.Initial<TC, 'Q'>,
-      HKT.Initial<TC, 'W'>,
-      HKT.Initial<TC, 'X'>,
-      HKT.Initial<TC, 'I'>,
-      HKT.Initial<TC, 'S'>,
-      HKT.Initial<TC, 'R'>,
-      HKT.Initial<TC, 'E'>,
+      HKT.Low<F, 'K'>,
+      HKT.Low<F, 'Q'>,
+      HKT.Low<F, 'W'>,
+      HKT.Low<F, 'X'>,
+      HKT.Low<F, 'I'>,
+      HKT.Low<F, 'S'>,
+      HKT.Low<F, 'R'>,
+      HKT.Low<F, 'E'>,
       readonly [readonly [A, B], C]
     >
   >
@@ -99,9 +99,9 @@ function AssociativityLaw<F extends HKT.URIS, TC, A, B, C>(
   ]
 ) => Promise<boolean>
 function AssociativityLaw<F, A, B, C>(
-  F: MonoidalFunctor<HKT.UHKT<F>>,
-  S: MaybeAsyncEq<HKT.HKT<F, readonly [readonly [A, B], C]>>
-): (fs: [HKT.HKT<F, A>, HKT.HKT<F, B>, HKT.HKT<F, C>]) => Promise<boolean> {
+  F: MonoidalFunctor<HKT.F<F>>,
+  S: MaybeAsyncEq<HKT.FK1<F, readonly [readonly [A, B], C]>>
+): (fs: [HKT.FK1<F, A>, HKT.FK1<F, B>, HKT.FK1<F, C>]) => Promise<boolean> {
   const equiv = tuple<A, B, C>()
   return ([fa, fb, fc]) => {
     const left  = F.cross_(fa, F.cross_(fb, fc))
@@ -118,7 +118,7 @@ export const ApplicativeLaws = {
   rightIdentity: RightIdentityLaw
 }
 
-export function testMonoidalAssociativity<F extends HKT.URIS, TC>(
+export function testMonoidalAssociativity<F extends HKT.HKT, TC>(
   F: MonoidalFunctor<F, TC>
 ): (
   lift: <A>(
@@ -127,14 +127,14 @@ export function testMonoidalAssociativity<F extends HKT.URIS, TC>(
     HKT.Kind<
       F,
       TC,
-      HKT.Initial<TC, 'K'>,
-      HKT.Initial<TC, 'Q'>,
-      HKT.Initial<TC, 'W'>,
-      HKT.Initial<TC, 'X'>,
-      HKT.Initial<TC, 'I'>,
-      HKT.Initial<TC, 'S'>,
-      HKT.Initial<TC, 'R'>,
-      HKT.Initial<TC, 'E'>,
+      HKT.Low<F, 'K'>,
+      HKT.Low<F, 'Q'>,
+      HKT.Low<F, 'W'>,
+      HKT.Low<F, 'X'>,
+      HKT.Low<F, 'I'>,
+      HKT.Low<F, 'S'>,
+      HKT.Low<F, 'R'>,
+      HKT.Low<F, 'E'>,
       A
     >
   >,
@@ -146,14 +146,14 @@ export function testMonoidalAssociativity<F extends HKT.URIS, TC>(
     HKT.Kind<
       F,
       TC,
-      HKT.Initial<TC, 'K'>,
-      HKT.Initial<TC, 'Q'>,
-      HKT.Initial<TC, 'W'>,
-      HKT.Initial<TC, 'X'>,
-      HKT.Initial<TC, 'I'>,
-      HKT.Initial<TC, 'S'>,
-      HKT.Initial<TC, 'R'>,
-      HKT.Initial<TC, 'E'>,
+      HKT.Low<F, 'K'>,
+      HKT.Low<F, 'Q'>,
+      HKT.Low<F, 'W'>,
+      HKT.Low<F, 'X'>,
+      HKT.Low<F, 'I'>,
+      HKT.Low<F, 'S'>,
+      HKT.Low<F, 'R'>,
+      HKT.Low<F, 'E'>,
       readonly [readonly [A, B], C]
     >
   >

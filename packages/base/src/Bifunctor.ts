@@ -1,7 +1,7 @@
 import { identity } from './function'
 import * as HKT from './HKT'
 
-export interface Bifunctor<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
+export interface Bifunctor<F extends HKT.HKT, C = HKT.None> extends HKT.Typeclass<F, C> {
   readonly bimap_: BimapFn_<F, C>
   readonly bimap: BimapFn<F, C>
   readonly mapLeft_: MapLeftFn_<F, C>
@@ -10,12 +10,12 @@ export interface Bifunctor<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F,
   readonly mapRight: MapRightFn<F, C>
 }
 
-export type BifunctorMin<F extends HKT.URIS, C = HKT.Auto> =
+export type BifunctorMin<F extends HKT.HKT, C = HKT.None> =
   | { readonly mapLeft_: MapLeftFn_<F, C>, readonly mapRight_: MapRightFn_<F, C> }
   | { readonly bimap_: BimapFn_<F, C> }
   | { readonly mapLeft_: MapLeftFn_<F, C>, readonly mapRight_: MapRightFn_<F, C>, readonly bimap_: BimapFn_<F, C> }
 
-export function Bifunctor<F extends HKT.URIS, C = HKT.Auto>(F: BifunctorMin<F, C>): Bifunctor<F, C> {
+export function Bifunctor<F extends HKT.HKT, C = HKT.None>(F: BifunctorMin<F, C>): Bifunctor<F, C> {
   let mapLeft_: MapLeftFn_<F, C>
   let mapRight_: MapRightFn_<F, C>
   let bimap_: BimapFn_<F, C>
@@ -45,13 +45,13 @@ export function Bifunctor<F extends HKT.URIS, C = HKT.Auto>(F: BifunctorMin<F, C
   })
 }
 
-export interface BimapFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface BimapFn<F extends HKT.HKT, C = HKT.None> {
   <E, A, H, B>(f: (e: E) => H, g: (a: A) => B): <K, Q, W, X, I, S, R>(
     fea: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
   ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, H, B>
 }
 
-export interface BimapFn_<F extends HKT.URIS, C = HKT.Auto> {
+export interface BimapFn_<F extends HKT.HKT, C = HKT.None> {
   <K, Q, W, X, I, S, R, E, A, H, B>(
     fea: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     f: (e: E) => H,
@@ -59,13 +59,13 @@ export interface BimapFn_<F extends HKT.URIS, C = HKT.Auto> {
   ): HKT.Kind<F, C, K, Q, W, X, I, S, R, H, B>
 }
 
-export interface MapLeftFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface MapLeftFn<F extends HKT.HKT, C = HKT.None> {
   <E, H>(f: (e: E) => H): <K, Q, W, X, I, S, R, A>(
     fea: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
   ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, H, A>
 }
 
-export interface MapLeftFn_<F extends HKT.URIS, C = HKT.Auto> {
+export interface MapLeftFn_<F extends HKT.HKT, C = HKT.None> {
   <K, Q, W, X, I, S, R, E, A, H>(fea: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>, f: (e: E) => H): HKT.Kind<
     F,
     C,
@@ -81,13 +81,13 @@ export interface MapLeftFn_<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export interface MapRightFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface MapRightFn<F extends HKT.HKT, C = HKT.None> {
   <A, B>(f: (a: A) => B): <K, Q, W, X, I, S, R, E>(
     fea: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
   ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
 }
 
-export interface MapRightFn_<F extends HKT.URIS, C = HKT.Auto> {
+export interface MapRightFn_<F extends HKT.HKT, C = HKT.None> {
   <K, Q, W, X, I, S, R, E, A, B>(fea: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>, f: (a: A) => B): HKT.Kind<
     F,
     C,

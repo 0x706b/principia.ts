@@ -150,9 +150,9 @@ export interface TheseOps {
    */
   foldr<E, A, B>(this: Th.These<E, A>, b: B, f: (a: A, b: B) => B): B
   /**
-   * @rewriteConstraint mapA_ from "@principia/base/These"
+   * @rewriteConstraint traverse_ from "@principia/base/These"
    */
-  mapA<E, A, F extends HKT.URIS, C = HKT.Auto>(
+  traverse<E, A, F extends HKT.HKT, C = HKT.Auto>(
     this: Th.These<E, A>,
     A: Applicative<F, C>
   ): <K, Q, W, X, I, S, R, E1, B>(

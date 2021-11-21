@@ -1,12 +1,9 @@
 import type * as HKT from './HKT'
-import type { ZStateURI } from './Modules'
 
 import * as P from './prelude'
 import * as Z from './Z'
 
 export interface ZState<S, A> extends Z.Z<never, S, S, unknown, never, A> {}
-
-export type V = HKT.V<'S', '_'>
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -151,21 +148,27 @@ export const tap: <S, A, B>(f: (a: A) => ZState<S, B>) => (ma: ZState<S, A>) => 
  * -------------------------------------------------------------------------------------------------
  */
 
-type URI = [HKT.URI<ZStateURI>]
+export interface ZStateF extends HKT.HKT {
+  readonly type: ZState<this['S'], this['A']>
+  readonly variance: {
+    S: '_'
+    A: '+'
+  }
+}
 
-export const Functor = P.Functor<URI, V>({ map_ })
+export const Functor = P.Functor<ZStateF>({ map_ })
 
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({ map_, cross_, crossWith_ })
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<ZStateF>({ map_, cross_, crossWith_ })
 
-export const Apply = P.Apply<URI, V>({ map_, cross_, crossWith_, ap_ })
+export const Apply = P.Apply<ZStateF>({ map_, cross_, crossWith_, ap_ })
 
-export const MonoidalFunctor = P.MonoidalFunctor<URI, V>({ map_, cross_, crossWith_, unit })
+export const MonoidalFunctor = P.MonoidalFunctor<ZStateF>({ map_, cross_, crossWith_, unit })
 
-export const Applicative = P.Applicative<URI, V>({ map_, cross_, crossWith_, unit, pure })
+export const Applicative = P.Applicative<ZStateF>({ map_, cross_, crossWith_, unit, pure })
 
-export const Monad = P.Monad<URI, V>({ map_, cross_, crossWith_, unit, pure, chain_, flatten })
+export const Monad = P.Monad<ZStateF>({ map_, cross_, crossWith_, unit, pure, chain_, flatten })
 
-export const MonadState = P.MonadState<URI, V>({
+export const MonadState = P.MonadState<ZStateF>({
   map_,
   cross_,
   crossWith_,

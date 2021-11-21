@@ -5,12 +5,12 @@ import type { MonadMin } from './Monad'
 import * as E from './internal/Either'
 import { Monad } from './Monad'
 
-export interface TailRec<F extends HKT.URIS, C = HKT.Auto> {
+export interface TailRec<F extends HKT.HKT, C = HKT.None> {
   readonly chainRec_: ChainRecFn_<F, C>
   readonly chainRec: ChainRecFn<F, C>
 }
 
-export interface ChainRecFn_<F extends HKT.URIS, C = HKT.Auto> {
+export interface ChainRecFn_<F extends HKT.HKT, C = HKT.None> {
   <K, Q, W, X, I, S, R, E, A, B>(a: A, f: (a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<A, B>>): HKT.Kind<
     F,
     C,
@@ -26,7 +26,7 @@ export interface ChainRecFn_<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export interface ChainRecFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface ChainRecFn<F extends HKT.HKT, C = HKT.None> {
   <K, Q, W, X, I, S, R, E, A, B>(f: (a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<A, B>>): (
     a: A
   ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
@@ -47,7 +47,7 @@ export function tailRec<A, B>(f: (a: A) => Either<A, B>): (a: A) => B {
 /**
  * Returns a `chainRec` for any stack-safe Monad
  */
-export function getChainRec_<F extends HKT.URIS, C = HKT.Auto>(F: MonadMin<F, C>): ChainRecFn_<F, C> {
+export function getChainRec_<F extends HKT.HKT, C = HKT.None>(F: MonadMin<F, C>): ChainRecFn_<F, C> {
   const M = Monad(F)
   const chainRec_: ChainRecFn_<F, C> = (a, f) =>
     M.chain_(
@@ -60,7 +60,7 @@ export function getChainRec_<F extends HKT.URIS, C = HKT.Auto>(F: MonadMin<F, C>
 /**
  * Returns a `chainRec` for any stack-safe Monad
  */
-export function getChainRec<F extends HKT.URIS, C = HKT.Auto>(F: MonadMin<F, C>): ChainRecFn<F, C> {
+export function getChainRec<F extends HKT.HKT, C = HKT.None>(F: MonadMin<F, C>): ChainRecFn<F, C> {
   const chainRec_ = getChainRec_(F)
   return (f) => (a) => chainRec_(a, f)
 }

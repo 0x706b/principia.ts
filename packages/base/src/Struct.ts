@@ -7,6 +7,7 @@ import type { UnionToIntersection } from './prelude'
 import type { ReadonlyRecord } from './Record'
 
 import * as A from './Array/core'
+import { unsafeCoerce } from './function'
 import * as HR from './HeterogeneousRecord'
 import { isObject } from './util/predicates'
 
@@ -17,7 +18,7 @@ export const StructStore   = Symbol.for('@principia/base/Struct/StructStore')
 export const StructOperate = Symbol.for('@principia/base/Struct/StructOperate')
 
 export class Struct<A> {
-  readonly [StructTypeId]: StructTypeId = StructTypeId;
+  readonly [StructTypeId]: StructTypeId = StructTypeId
   readonly [StructStore]: A
 
   constructor(store: A) {
@@ -171,7 +172,7 @@ export function modifyAt<S, K extends keyof S extends never ? string : keyof S, 
  * @category combinators
  * @since 1.0.0
  */
-export function modifyAtF_<F extends HKT.URIS, C = HKT.Auto>(
+export function modifyAtF_<F extends HKT.HKT, C = HKT.None>(
   F: P.Functor<F, C>
 ): <S_ extends ReadonlyRecord<string, any>, K_ extends keyof S_, K, Q, W, X, I, S, R, E, B>(
   s: Struct<S_>,
@@ -197,7 +198,7 @@ export function modifyAtF_<F extends HKT.URIS, C = HKT.Auto>(
 /**
  * @dataFirst modifyAtF_
  */
-export function modifyAtF<F extends HKT.URIS, C = HKT.Auto>(
+export function modifyAtF<F extends HKT.HKT, C = HKT.None>(
   F: P.Functor<F, C>
 ): <S_, K_ extends keyof S_ extends never ? string : keyof S, K, Q, W, X, I, S, R, E, A, B>(
   k: keyof S_ extends never ? EnsureLiteral<K_> : K_,
@@ -217,14 +218,12 @@ export function modifyAtF<F extends HKT.URIS, C = HKT.Auto>(
   E,
   K_ extends keyof S_
     ? Struct<{ readonly [P in Exclude<keyof S_, K_> | K_]: P extends Exclude<keyof S_, K_> ? S_[P] : B }>
-    : Struct<
-        {
-          readonly [P in Exclude<keyof S1, K_> | K_]: P extends Exclude<keyof S1, K_> ? S1[P] : B
-        }
-      >
+    : Struct<{
+        readonly [P in Exclude<keyof S1, K_> | K_]: P extends Exclude<keyof S1, K_> ? S1[P] : B
+      }>
 > {
   const modifyAtEF_ = modifyAtF_(F)
-  return (k, f) => (s) => modifyAtEF_(s, k as any, f as any)
+  return (k, f) => (s) => unsafeCoerce(modifyAtEF_(s, k as any, f as any))
 }
 
 /**

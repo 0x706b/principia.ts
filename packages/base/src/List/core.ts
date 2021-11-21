@@ -9,7 +9,6 @@
  */
 
 import type { Either } from '../Either'
-import type { ListURI } from '../Modules'
 import type { Ordering } from '../Ordering'
 import type { Predicate } from '../Predicate'
 import type { Refinement } from '../Refinement'
@@ -26,6 +25,14 @@ import * as Th from '../These'
 
 export const ListTypeId = Symbol.for('@principia/base/List')
 export type ListTypeId = typeof ListTypeId
+
+export interface ListF extends HKT.HKT {
+  readonly type: List<this['A']>
+  readonly index: number
+  readonly variance: {
+    A: '+'
+  }
+}
 
 /**
  * Represents a list of elements.
@@ -909,18 +916,19 @@ export function chainRecBreadthFirst<A, B>(f: (a: A) => List<Either<A, B>>): (a:
  * -------------------------------------------------------------------------------------------------
  */
 
-export const traverse_: P.TraverseIndexFn_<[HKT.URI<ListURI>]> = (A) => (ta, f) =>
-  foldr_(ta, A.pure(empty()), (a, fb, i) => A.crossWith_(f(a, i), fb, (b, l) => prepend_(l, b)))
+export const traverse_: P.TraverseIndexFn_<ListF> = P.implementTraverseWithIndex_<ListF>()(
+  () => (A) => (ta, f) => foldr_(ta, A.pure(empty()), (a, fb, i) => A.crossWith_(f(a, i), fb, (b, l) => prepend_(l, b)))
+)
 
 /**
  * @dataFirst traverse_
  */
-export const traverse: P.MapWithIndexAFn<[HKT.URI<ListURI>]> = (A) => {
+export const traverse: P.MapWithIndexAFn<ListF> = (A) => {
   const imapAG_ = traverse_(A)
   return (f) => (ta) => imapAG_(ta, f)
 }
 
-export const sequence: P.SequenceFn<[HKT.URI<ListURI>]> = (A) => traverse(A)(identity)
+export const sequence: P.SequenceFn<ListF> = (A) => (ta) => traverse_(A)(ta, identity)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -951,7 +959,7 @@ export function unfold<A, B>(b: B, f: (b: B) => M.Maybe<readonly [A, B]>): List<
  * -------------------------------------------------------------------------------------------------
  */
 
-export const wither_: P.WitherWithIndexFn_<[HKT.URI<ListURI>]> = (A) => {
+export const wither_: P.WitherWithIndexFn_<ListF> = (A) => {
   const itraverseA_ = traverse_(A)
   return (wa, f) => A.map_(itraverseA_(wa, f), compact)
 }
@@ -959,12 +967,12 @@ export const wither_: P.WitherWithIndexFn_<[HKT.URI<ListURI>]> = (A) => {
 /**
  * @dataFirst wither_
  */
-export const wither: P.WitherWithIndexFn<[HKT.URI<ListURI>]> = (A) => {
+export const wither: P.WitherWithIndexFn<ListF> = (A) => {
   const itraverseA_ = traverse_(A)
   return (f) => (wa) => A.map_(itraverseA_(wa, f), compact)
 }
 
-export const wilt_: P.WiltWithIndexFn_<[HKT.URI<ListURI>]> = (A) => {
+export const wilt_: P.WiltWithIndexFn_<ListF> = (A) => {
   const itraverseA_ = traverse_(A)
   return (wa, f) => A.map_(itraverseA_(wa, f), separate)
 }
@@ -972,7 +980,7 @@ export const wilt_: P.WiltWithIndexFn_<[HKT.URI<ListURI>]> = (A) => {
 /**
  * @dataFirst wilt_
  */
-export const wilt: P.WiltWithIndexFn<[HKT.URI<ListURI>]> = (A) => {
+export const wilt: P.WiltWithIndexFn<ListF> = (A) => {
   const itraverseA_ = traverse_(A)
   return (f) => (wa) => A.map_(itraverseA_(wa, f), separate)
 }
@@ -2267,40 +2275,38 @@ export function unsafeFindLast<A>(predicate: Predicate<A>): (as: List<A>) => A |
  * -------------------------------------------------------------------------------------------------
  */
 
-type URI = [HKT.URI<ListURI>]
-
-export const Align = P.Align<URI>({
+export const Align = P.Align<ListF>({
   map_,
   alignWith_,
   align_,
   nil: empty
 })
 
-export const Functor = P.Functor<URI>({
+export const Functor = P.Functor<ListF>({
   map_
 })
 
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<ListF>({
   map_,
   cross_,
   crossWith_
 })
 
-export const Apply = P.Apply<URI>({
+export const Apply = P.Apply<ListF>({
   map_,
   cross_,
   crossWith_,
   ap_
 })
 
-export const MonoidalFunctor = P.MonoidalFunctor<URI>({
+export const MonoidalFunctor = P.MonoidalFunctor<ListF>({
   map_,
   cross_,
   crossWith_,
   unit
 })
 
-export const Applicative = P.Applicative<URI>({
+export const Applicative = P.Applicative<ListF>({
   map_,
   cross_,
   crossWith_,
@@ -2309,17 +2315,17 @@ export const Applicative = P.Applicative<URI>({
   unit
 })
 
-export const Zip = P.Zip<URI>({
+export const Zip = P.Zip<ListF>({
   zipWith_,
   zip_
 })
 
-export const Alt = P.Alt<URI>({
+export const Alt = P.Alt<ListF>({
   map_,
   alt_
 })
 
-export const Alternative = P.Alternative<URI>({
+export const Alternative = P.Alternative<ListF>({
   map_,
   crossWith_,
   cross_,
@@ -2330,12 +2336,12 @@ export const Alternative = P.Alternative<URI>({
   nil: empty
 })
 
-export const Compactable = HKT.instance<P.Compactable<URI>>({
+export const Compactable = HKT.instance<P.Compactable<ListF>>({
   compact,
   separate
 })
 
-export const Filterable = P.Filterable<URI>({
+export const Filterable = P.Filterable<ListF>({
   map_,
   filter_,
   filterMap_,
@@ -2343,13 +2349,13 @@ export const Filterable = P.Filterable<URI>({
   partitionMap_
 })
 
-export const Foldable = P.Foldable<URI>({
+export const Foldable = P.Foldable<ListF>({
   foldl_,
   foldr_,
   foldMap_
 })
 
-export const Monad = P.Monad<URI>({
+export const Monad = P.Monad<ListF>({
   map_,
   crossWith_,
   cross_,
@@ -2360,7 +2366,7 @@ export const Monad = P.Monad<URI>({
   flatten
 })
 
-export const Traversable = P.Traversable<URI>({
+export const Traversable = P.Traversable<ListF>({
   map_,
   foldl_,
   foldr_,
@@ -2374,7 +2380,7 @@ export const mapAccumM_ = P.getMapAccumM_(Traversable)
  */
 export const mapAccumM = P.getMapAccumM(Traversable)
 
-export const Witherable = P.Witherable<URI>({
+export const Witherable = P.Witherable<ListF>({
   map_,
   foldl_,
   foldr_,
@@ -2388,7 +2394,7 @@ export const Witherable = P.Witherable<URI>({
   wilt_
 })
 
-export const Unfolable = HKT.instance<P.Unfoldable<URI>>({
+export const Unfolable = HKT.instance<P.Unfoldable<ListF>>({
   unfold
 })
 
@@ -3933,5 +3939,3 @@ function arrayPush<A>(array: A[], a: A): A[] {
   array.push(a)
   return array
 }
-
-export { ListURI } from '../Modules'

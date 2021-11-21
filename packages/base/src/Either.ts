@@ -9,7 +9,6 @@
 import type { FunctionN } from './function'
 import type { Either, Left, Right } from './internal/Either'
 import type { Maybe } from './Maybe'
-import type { EitherURI } from './Modules'
 import type { NonEmptyArray } from './NonEmptyArray'
 import type { These } from './These'
 
@@ -36,9 +35,12 @@ export type InferLeft<T extends Either<any, any>> = T extends Left<infer E> ? E 
 
 export type InferRight<T extends Either<any, any>> = T extends Right<infer A> ? A : never
 
-export type V = HKT.V<'E', '+'>
-
-type URI = [HKT.URI<EitherURI>]
+export interface EitherF extends HKT.HKT {
+  readonly type: Either<this['E'], this['A']>
+  readonly variance: {
+    readonly E: '+'
+  }
+}
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -614,7 +616,7 @@ export function mapLeft<E, G>(f: (e: E) => G): <A>(pab: Either<E, A>) => Either<
  */
 
 export function getCompactable<E>(Md: P.Monoid<E>) {
-  return HKT.instance<P.Compactable<[HKT.URI<EitherURI, V>], HKT.Fix<'E', E>>>({
+  return HKT.instance<P.Compactable<EitherF, HKT.Fix<'E', E>>>({
     compact: match(
       left,
       M.match(() => left(Md.nat), right)
@@ -714,7 +716,7 @@ export function getFilterable<E>(Md: P.Monoid<E>) {
 
   const empty = left(Md.nat)
 
-  const partitionMap_: P.PartitionMapFn_<[HKT.URI<EitherURI, V>], FixE> = (fa, f) =>
+  const partitionMap_: P.PartitionMapFn_<EitherF, FixE> = (fa, f) =>
     match_(
       fa,
       (e) => [left(e), left(e)],
@@ -726,7 +728,7 @@ export function getFilterable<E>(Md: P.Monoid<E>) {
         )
     )
 
-  const partition_: P.PartitionFn_<[HKT.URI<EitherURI, V>], FixE> = <A>(
+  const partition_: P.PartitionFn_<EitherF, FixE> = <A>(
     fa: Either<E, A>,
     predicate: P.Predicate<A>
   ): readonly [Either<E, A>, Either<E, A>] =>
@@ -736,15 +738,13 @@ export function getFilterable<E>(Md: P.Monoid<E>) {
       (a) => (predicate(a) ? [empty, right(a)] : [right(a), empty])
     )
 
-  const filterMap_: P.FilterMapFn_<[HKT.URI<EitherURI, V>], FixE> = (fa, f) =>
+  const filterMap_: P.FilterMapFn_<EitherF, FixE> = (fa, f) =>
     match_(fa, left, (a) => M.match_(f(a), () => empty, right))
 
-  const filter_: P.FilterFn_<[HKT.URI<EitherURI, V>], FixE> = <A>(
-    fa: Either<E, A>,
-    predicate: P.Predicate<A>
-  ): Either<E, A> => match_(fa, left, (a) => (predicate(a) ? right(a) : empty))
+  const filter_: P.FilterFn_<EitherF, FixE> = <A>(fa: Either<E, A>, predicate: P.Predicate<A>): Either<E, A> =>
+    match_(fa, left, (a) => (predicate(a) ? right(a) : empty))
 
-  return P.Filterable<[HKT.URI<EitherURI, V>], FixE>({
+  return P.Filterable<EitherF, FixE>({
     map_,
     filter_,
     filterMap_,
@@ -989,7 +989,7 @@ export function chainRec<E, A, B>(f: (a: A) => Either<E, Either<A, B>>): (a: A) 
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse_: P.TraverseFn_<URI, V> = (AG) => (ta, f) =>
+export const traverse_: P.TraverseFn_<EitherF> = (AG) => (ta, f) =>
   match_(ta, flow(left, AG.pure), flow(f, AG.map(right)))
 
 /**
@@ -998,7 +998,7 @@ export const traverse_: P.TraverseFn_<URI, V> = (AG) => (ta, f) =>
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse: P.TraverseFn<URI, V> = (AG) => (f) => (ta) => traverse_(AG)(ta, f)
+export const traverse: P.TraverseFn<EitherF> = (AG) => (f) => (ta) => traverse_(AG)(ta, f)
 
 /**
  * Evaluate each action in the structure from left to right, and collect the results.
@@ -1006,7 +1006,7 @@ export const traverse: P.TraverseFn<URI, V> = (AG) => (f) => (ta) => traverse_(A
  * @category Traversable
  * @since 1.0.0
  */
-export const sequence: P.SequenceFn<URI, V> = (AG) => (ta) => traverse_(AG)(ta, identity)
+export const sequence: P.SequenceFn<EitherF> = (AG) => (ta) => traverse_(AG)(ta, identity)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -1034,21 +1034,21 @@ export function unit<E = never>(): Either<E, void> {
  * @since 1.0.0
  */
 export function getWitherable<E>(M: P.Monoid<E>) {
-  type V_ = V & HKT.Fix<'E', E>
+  type V_ = HKT.Fix<'E', E>
 
   const Compactable = getCompactable(M)
 
-  const wither_: P.WitherFn_<URI, V_> = (G) => (wa, f) => {
+  const wither_: P.WitherFn_<EitherF, V_> = (G) => (wa, f) => {
     const traverseF = traverse_(G)
     return pipe(traverseF(wa, f), G.map(Compactable.compact))
   }
 
-  const wilt_: P.WiltFn_<URI, V_> = (G) => (wa, f) => {
+  const wilt_: P.WiltFn_<EitherF, V_> = (G) => (wa, f) => {
     const traverseF = traverse_(G)
     return pipe(traverseF(wa, f), G.map(Compactable.separate))
   }
 
-  return P.Witherable<URI, V_>({
+  return P.Witherable<EitherF, V_>({
     ...getFilterable(M),
     foldl_,
     foldr_,
@@ -1069,34 +1069,32 @@ export function getWitherable<E>(M: P.Monoid<E>) {
  * @category Instances
  * @since 1.0.0
  */
-export const Functor = P.Functor<URI, V>({
+export const Functor = P.Functor<EitherF>({
   map_
 })
 
-export const flap_: <E, A, B>(fa: Either<E, (a: A) => B>, a: A) => Either<E, B> = P.flapF_<URI, V>(Functor)
+export const flap_: <E, A, B>(fa: Either<E, (a: A) => B>, a: A) => Either<E, B> = P.flapF_<EitherF>(Functor)
 
 /**
  * @dataFirst flap_
  */
-export const flap: <A>(a: A) => <E, B>(fab: Either<E, (a: A) => B>) => Either<E, B> = P.flapF<URI, V>(Functor)
+export const flap: <A>(a: A) => <E, B>(fab: Either<E, (a: A) => B>) => Either<E, B> = P.flapF<EitherF>(Functor)
 
-export const as_: <E, A, B>(fa: Either<E, A>, b: () => B) => Either<E, B> = P.asF_<URI, V>(Functor)
+export const as_: <E, A, B>(fa: Either<E, A>, b: () => B) => Either<E, B> = P.asF_<EitherF>(Functor)
 
 /**
  * @dataFirst as_
  */
-export const as: <B>(b: () => B) => <E, A>(fa: Either<E, A>) => Either<E, B> = P.asF<URI, V>(Functor)
+export const as: <B>(b: () => B) => <E, A>(fa: Either<E, A>) => Either<E, B> = P.asF<EitherF>(Functor)
 
-export const fcross_: <E, A, B>(fa: Either<E, A>, f: (a: A) => B) => Either<E, readonly [A, B]> = P.fcrossF_<URI, V>(
-  Functor
-)
+export const fcross_: <E, A, B>(fa: Either<E, A>, f: (a: A) => B) => Either<E, readonly [A, B]> =
+  P.fcrossF_<EitherF>(Functor)
 
 /**
  * @dataFirst fcross_
  */
-export const fcross: <A, B>(f: (a: A) => B) => <E>(fa: Either<E, A>) => Either<E, readonly [A, B]> = P.fcrossF<URI, V>(
-  Functor
-)
+export const fcross: <A, B>(f: (a: A) => B) => <E>(fa: Either<E, A>) => Either<E, readonly [A, B]> =
+  P.fcrossF<EitherF>(Functor)
 
 export const tupled: <E, A>(fa: Either<E, A>) => Either<E, readonly [A]> = P.tupledF(Functor)
 
@@ -1104,7 +1102,7 @@ export const tupled: <E, A>(fa: Either<E, A>) => Either<E, readonly [A]> = P.tup
  * @category Instances
  * @since 1.0.0
  */
-export const Bifunctor = P.Bifunctor<URI, V>({
+export const Bifunctor = P.Bifunctor<EitherF>({
   mapLeft_,
   mapRight_: map_,
   bimap_
@@ -1114,12 +1112,12 @@ export const Bifunctor = P.Bifunctor<URI, V>({
  * @category Instances
  * @since 1.0.0
  */
-export const Alt = P.Alt<URI, V>({
+export const Alt = P.Alt<EitherF>({
   map_,
   alt_
 })
 
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<EitherF>({
   map_,
   crossWith_,
   cross_
@@ -1143,7 +1141,7 @@ export const crossT_ = P.crossTF_(SemimonoidalFunctor)
  */
 export const crossT = P.crossTF(SemimonoidalFunctor)
 
-export const Apply = P.Apply<URI, V>({
+export const Apply = P.Apply<EitherF>({
   map_,
   crossWith_,
   cross_,
@@ -1157,14 +1155,14 @@ export const apT = P.apTF(Apply)
  * @category Instances
  * @since 1.0.0
  */
-export const MonoidalFunctor = P.MonoidalFunctor<URI, V>({
+export const MonoidalFunctor = P.MonoidalFunctor<EitherF>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const Applicative = P.Applicative<URI, V>({
+export const Applicative = P.Applicative<EitherF>({
   map_,
   crossWith_,
   cross_,
@@ -1177,7 +1175,7 @@ export const Applicative = P.Applicative<URI, V>({
  * @category Instances
  * @since 1.0.0
  */
-export const Fail = P.Fail<URI, V>({
+export const Fail = P.Fail<EitherF>({
   fail: left
 })
 
@@ -1185,7 +1183,7 @@ export const Fail = P.Fail<URI, V>({
  * @category Instances
  * @since 1.0.0
  */
-export const Monad = P.Monad<URI, V>({
+export const Monad = P.Monad<EitherF>({
   map_,
   crossWith_,
   cross_,
@@ -1200,7 +1198,7 @@ export const Monad = P.Monad<URI, V>({
  * @category Instances
  * @since 1.0.0
  */
-export const ApplicativeExcept = P.ApplicativeExcept<URI, V>({
+export const ApplicativeExcept = P.ApplicativeExcept<EitherF>({
   map_,
   crossWith_,
   cross_,
@@ -1215,7 +1213,7 @@ export const ApplicativeExcept = P.ApplicativeExcept<URI, V>({
  * @category Instances
  * @since 1.0.0
  */
-export const MonadExcept = P.MonadExcept<URI, V>({
+export const MonadExcept = P.MonadExcept<EitherF>({
   map_,
   crossWith_,
   cross_,
@@ -1232,7 +1230,7 @@ export const MonadExcept = P.MonadExcept<URI, V>({
  * @category Instances
  * @since 1.0.0
  */
-export const Foldable = P.Foldable<URI, V>({
+export const Foldable = P.Foldable<EitherF>({
   foldl_,
   foldMap_,
   foldr_
@@ -1243,37 +1241,37 @@ export const Foldable = P.Foldable<URI, V>({
  * @since 1.0.0
  */
 
-export const Semialign = P.Semialign<URI, V>({
+export const Semialign = P.Semialign<EitherF>({
   map_,
   alignWith_
 })
 
-export const alignCombine_ = P.alignCombineF_<URI, V>({ map_, align_, alignWith_ })
+export const alignCombine_ = P.alignCombineF_<EitherF>({ map_, align_, alignWith_ })
 /**
  * @dataFirst alignCombine_
  */
-export const alignCombine = P.alignCombineF<URI, V>({ map_, align_, alignWith_ })
-export const padZip_      = P.padZipF_<URI, V>({ map_, align_, alignWith_ })
+export const alignCombine = P.alignCombineF<EitherF>({ map_, align_, alignWith_ })
+export const padZip_      = P.padZipF_<EitherF>({ map_, align_, alignWith_ })
 /**
  * @dataFirst padZip_
  */
-export const padZip      = P.padZipF<URI, V>({ map_, align_, alignWith_ })
-export const padZipWith_ = P.padZipWithF_<URI, V>({ map_, align_, alignWith_ })
+export const padZip      = P.padZipF<EitherF>({ map_, align_, alignWith_ })
+export const padZipWith_ = P.padZipWithF_<EitherF>({ map_, align_, alignWith_ })
 /**
  * @dataFirst padZipWith_
  */
-export const padZipWith = P.padZipWithF<URI, V>({ map_, align_, alignWith_ })
-export const zipAll_    = P.zipAllF_<URI, V>({ map_, align_, alignWith_ })
+export const padZipWith = P.padZipWithF<EitherF>({ map_, align_, alignWith_ })
+export const zipAll_    = P.zipAllF_<EitherF>({ map_, align_, alignWith_ })
 /**
  * @dataFirst zipAll_
  */
-export const zipAll = P.zipAllF<URI, V>({ map_, align_, alignWith_ })
+export const zipAll = P.zipAllF<EitherF>({ map_, align_, alignWith_ })
 
 /**
  * @category Instances
  * @since 1.0.0
  */
-export const Traversable = P.Traversable<URI, V>({
+export const Traversable = P.Traversable<EitherF>({
   map_,
   foldl_,
   foldr_,
@@ -1364,10 +1362,10 @@ export const toS = P.toSF(Monad)
  * @category Instances
  * @since 1.0.0
  */
-export function getApplicativeValidation<E>(S: P.Semigroup<E>): P.Applicative<URI, HKT.Fix<'E', E>> {
-  type FixE = V & HKT.Fix<'E', E>
+export function getApplicativeValidation<E>(S: P.Semigroup<E>): P.Applicative<EitherF, HKT.Fix<'E', E>> {
+  type FixE = HKT.Fix<'E', E>
 
-  const crossWithV_: P.CrossWithFn_<URI, FixE> = (fa, fb, f) =>
+  const crossWithV_: P.CrossWithFn_<EitherF, FixE> = (fa, fb, f) =>
     match_(
       fa,
       (e1) =>
@@ -1379,7 +1377,7 @@ export function getApplicativeValidation<E>(S: P.Semigroup<E>): P.Applicative<UR
       (a) => match_(fb, left, (b) => right(f(a, b)))
     )
 
-  const apV_: P.ApFn_<URI, FixE> = (fab, fa) =>
+  const apV_: P.ApFn_<EitherF, FixE> = (fab, fa) =>
     match_(
       fab,
       (e1) =>
@@ -1404,10 +1402,10 @@ export function getApplicativeValidation<E>(S: P.Semigroup<E>): P.Applicative<UR
  * @category Instances
  * @since 1.0.0
  */
-export function getAltValidation<E>(S: P.Semigroup<E>): P.Alt<URI, HKT.Fix<'E', E>> {
-  type FixE = V & HKT.Fix<'E', E>
+export function getAltValidation<E>(S: P.Semigroup<E>): P.Alt<EitherF, HKT.Fix<'E', E>> {
+  type FixE = HKT.Fix<'E', E>
 
-  const altV_: P.AltFn_<URI, FixE> = (fa, that) =>
+  const altV_: P.AltFn_<EitherF, FixE> = (fa, that) =>
     match_(fa, (e1) => match_(that(), (e2) => left(S.combine_(e1, e2)), right), right)
 
   return P.Alt({
@@ -1503,5 +1501,3 @@ export function widenE<E1>(): <E, A>(fa: Either<E, A>) => Either<E1 | E, A> {
 export function widenA<A1>(): <E, A>(fa: Either<E, A>) => Either<E, A1 | A> {
   return identity
 }
-
-export { EitherURI } from './Modules'

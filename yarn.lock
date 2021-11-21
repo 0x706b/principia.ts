@@ -3487,6 +3487,7 @@ __metadata:
   resolution: "@principia/optics@workspace:packages/optics"
   dependencies:
     "@principia/base": ^0.27.0
+    concurrently: ^6.4.0
     ts-patch: ^2.0.1
     typescript: next
   languageName: unknown
@@ -3537,6 +3538,7 @@ __metadata:
     "@principia/base": ^0.27.0
     "@principia/optics": ^0.19.4
     "@principia/test": ^0.22.0
+    concurrently: ^6.4.0
     fast-check: ^2.18.0
     ts-patch: ^2.0.1
     typescript: next

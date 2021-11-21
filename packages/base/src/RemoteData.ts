@@ -1,7 +1,6 @@
 import type * as HKT from './HKT'
 import type { Either } from './internal/Either'
 import type { Maybe } from './Maybe'
-import type { RemoteDataURI } from './Modules'
 import type { Monoid, Predicate, Refinement } from './prelude'
 
 import * as E from './Either'
@@ -12,9 +11,13 @@ import * as P from './prelude'
 import { tuple } from './tuple'
 import { isObject } from './util/predicates'
 
-type URI = [HKT.URI<RemoteDataURI>]
-
-export type V = HKT.V<'E', '+'>
+export interface RemoteDataF extends HKT.HKT {
+  readonly type: RemoteData<this['E'], this['A']>
+  readonly variance: {
+    E: '+'
+    A: '+'
+  }
+}
 
 export const RemoteDataTypeId = Symbol.for('@principia/base/RemoteData')
 export type RemoteDataTypeId = typeof RemoteDataTypeId
@@ -589,18 +592,18 @@ export function getShow<E, A>(SE: P.Show<E>, SA: P.Show<A>): P.Show<RemoteData<E
  * -------------------------------------------------------------------------------------------------
  */
 
-export const traverse_: P.TraverseFn_<URI, V> = (A) => (ta, f) =>
+export const traverse_: P.TraverseFn_<RemoteDataF> = (A) => (ta, f) =>
   isSuccess(ta) ? A.map_(f(ta.value), succeed) : A.pure(ta)
 
 /**
  * @dataFirst traverse_
  */
-export const traverseG_: P.TraverseFn<URI, V> = (A) => {
+export const traverseG_: P.TraverseFn<RemoteDataF> = (A) => {
   const traverseG_ = traverse_(A)
   return (f) => (ta) => traverseG_(ta, f)
 }
 
-export const sequence: P.SequenceFn<URI, V> = (A) => {
+export const sequence: P.SequenceFn<RemoteDataF> = (A) => {
   const traverseG_ = traverse_(A)
   return (ta) => traverseG_(ta, identity)
 }
@@ -649,31 +652,31 @@ export function exists<A>(predicate: P.Predicate<A>): <E>(fa: RemoteData<E, A>) 
  * -------------------------------------------------------------------------------------------------
  */
 
-export const Functor = P.Functor<URI, V>({ map_ })
+export const Functor = P.Functor<RemoteDataF>({ map_ })
 
-export const Bifunctor = P.Bifunctor<URI, V>({ bimap_, mapLeft_, mapRight_: map_ })
+export const Bifunctor = P.Bifunctor<RemoteDataF>({ bimap_, mapLeft_, mapRight_: map_ })
 
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<RemoteDataF>({
   map_,
   crossWith_,
   cross_
 })
 
-export const Apply = P.Apply<URI, V>({
+export const Apply = P.Apply<RemoteDataF>({
   map_,
   crossWith_,
   cross_,
   ap_
 })
 
-export const MonoidalFunctor = P.MonoidalFunctor<URI, V>({
+export const MonoidalFunctor = P.MonoidalFunctor<RemoteDataF>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const Applicative = P.Applicative<URI, V>({
+export const Applicative = P.Applicative<RemoteDataF>({
   map_,
   crossWith_,
   cross_,
@@ -681,7 +684,7 @@ export const Applicative = P.Applicative<URI, V>({
   pure
 })
 
-export const Monad = P.Monad<URI, V>({
+export const Monad = P.Monad<RemoteDataF>({
   map_,
   crossWith_,
   cross_,
@@ -692,7 +695,7 @@ export const Monad = P.Monad<URI, V>({
   flatten
 })
 
-export const MonadExcept = P.MonadExcept<URI, V>({
+export const MonadExcept = P.MonadExcept<RemoteDataF>({
   map_,
   crossWith_,
   cross_,
@@ -705,13 +708,13 @@ export const MonadExcept = P.MonadExcept<URI, V>({
   fail
 })
 
-export const Foldable = P.Foldable<URI, V>({
+export const Foldable = P.Foldable<RemoteDataF>({
   foldl_,
   foldr_,
   foldMap_
 })
 
-export const Traversable = P.Traversable<URI, V>({
+export const Traversable = P.Traversable<RemoteDataF>({
   map_,
   foldl_,
   foldr_,

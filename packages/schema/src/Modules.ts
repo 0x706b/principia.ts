@@ -28,13 +28,6 @@ export type EqSURI = typeof EqSURI
 
 export type CoreURIS = DecoderSURI | EncoderSURI | GuardSURI | EqSURI | GenSURI | ConstructorSURI
 
-declare module '@principia/base/HKT' {
-  interface URItoKind<FC, TC, K, Q, W, X, I, S, R, E, A> {
-    [DecoderSURI]: Decoder<I, E, A>
-    [EncoderSURI]: Encoder<I, A>
-  }
-}
-
 declare module './Schemable' {
   interface URItoSchemable<I, CI, E, CE, A, O> {
     [DecoderSURI]: Decoder<I, E, A>

@@ -192,7 +192,7 @@ export interface IterableCollectionOps {
   /**
    * @rewriteConstraint mapA_ from "@principia/base/Iterable"
    */
-  mapA<T, F extends HKT.URIS, C>(
+  mapA<T, F extends HKT.HKT, C>(
     this: IterableCollection<T>,
     A: Applicative<F, C>
   ): <K, Q, W, X, I, S, R, E, A>(

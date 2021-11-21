@@ -9,7 +9,7 @@ import type { ReadonlyRecord } from './Record'
 import * as A from './Array/core'
 import * as Eq from './Eq'
 import * as Ev from './Eval'
-import { pipe } from './function'
+import { pipe, unsafeCoerce } from './function'
 import * as G from './Guard'
 import * as P from './prelude'
 import * as R from './Record'
@@ -157,7 +157,7 @@ export function modifyAt<O, N extends keyof O extends never ? string : keyof O, 
  * @category combinators
  * @since 1.0.0
  */
-export function modifyAtE_<F extends HKT.URIS, C = HKT.Auto>(
+export function modifyAtE_<F extends HKT.HKT, C = HKT.None>(
   F: P.Functor<F, C>
 ): <O extends ReadonlyRecord<string, any>, N extends keyof O, K, Q, W, X, I, S, R, E, B>(
   s: O,
@@ -186,7 +186,7 @@ export function modifyAtE_<F extends HKT.URIS, C = HKT.Auto>(
 /**
  * @dataFirst modifyAtE_
  */
-export function modifyAtE<F extends HKT.URIS, C = HKT.Auto>(
+export function modifyAtE<F extends HKT.HKT, C = HKT.None>(
   F: P.Functor<F, C>
 ): <O, N extends keyof O extends never ? string : keyof S, K, Q, W, X, I, S, R, E, A, B>(
   k: keyof O extends never ? EnsureLiteral<N> : N,
@@ -211,7 +211,7 @@ export function modifyAtE<F extends HKT.URIS, C = HKT.Auto>(
       }
 > {
   const modifyAtEF_ = modifyAtE_(F)
-  return (k, f) => (s) => modifyAtEF_(s, k as any, f as any)
+  return (k, f) => (s) => unsafeCoerce(modifyAtEF_(s, k as any, f as any))
 }
 
 /**
@@ -417,10 +417,9 @@ export function getIntersectionEq(...members: ReadonlyArray<Eq<Record<string, an
   return P.Eq((x, y) => A.foldl_(members, true as boolean, (b, a) => b && a.equals_(x, y)))
 }
 
-type EnsureTagEq<T extends string, Members extends Record<string, Eq<any>>> = Members &
-  {
-    [K in keyof Members]: Eq<{ [tag in T]: K }>
-  }
+type EnsureTagEq<T extends string, Members extends Record<string, Eq<any>>> = Members & {
+  [K in keyof Members]: Eq<{ [tag in T]: K }>
+}
 
 export function getSumEq<T extends string>(
   tag: T
@@ -510,10 +509,9 @@ export function getIntersectionGuard<M extends NonEmptyArray<G.Guard<any, Record
   )
 }
 
-type EnsureTagGuard<T extends string, Members extends Record<string, G.Guard<any, any>>> = Members &
-  {
-    [K in keyof Members]: G.Guard<any, { [tag in T]: K }>
-  }
+type EnsureTagGuard<T extends string, Members extends Record<string, G.Guard<any, any>>> = Members & {
+  [K in keyof Members]: G.Guard<any, { [tag in T]: K }>
+}
 
 export function getStrictSumGuard<T extends string>(tag: T) {
   return <M extends Record<string, G.Guard<any, Record<string, any>>>>(
@@ -593,10 +591,9 @@ export function getIntersectionShow<M extends NonEmptyArray<S.Show<Record<string
   )
 }
 
-type EnsureTagShow<T extends string, M extends Record<string, S.Show<any>>> = M &
-  {
-    [K in keyof M]: S.Show<{ [tag in T]: K }>
-  }
+type EnsureTagShow<T extends string, M extends Record<string, S.Show<any>>> = M & {
+  [K in keyof M]: S.Show<{ [tag in T]: K }>
+}
 
 export function getSumShow<T extends string>(
   tag: T

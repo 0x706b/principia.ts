@@ -1,378 +1,311 @@
-import type { Erase, UnionToIntersection } from './util/types'
+import type { UnionToIntersection } from './prelude'
 
-/*
- * -------------------------------------------------------------------------------------------------
- * Base
- * https://github.com/Matechs-Garage/matechs-effect/blob/master/packages/core/src/Prelude/HKT/base.ts
- * -------------------------------------------------------------------------------------------------
- */
+export declare const URI: unique symbol
+export declare const CURI: unique symbol
 
-export interface Auto {
-  // readonly Auto: unique symbol
+export type Variance = '-' | '+' | '_'
+
+export type VarianceOf<F extends HKT, N extends ParamName> = F['variance'][N]
+
+export interface HKT {
+  readonly K?: unknown
+  readonly Q?: unknown
+  readonly W?: unknown
+  readonly X?: unknown
+  readonly I?: unknown
+  readonly S?: unknown
+  readonly R?: unknown
+  readonly E?: unknown
+  readonly A?: unknown
+  readonly type?: unknown
+
+  readonly index?: unknown
+
+  readonly variance: {
+    readonly K?: Variance
+    readonly Q?: Variance
+    readonly W?: Variance
+    readonly X?: Variance
+    readonly I?: Variance
+    readonly S?: Variance
+    readonly R?: Variance
+    readonly E?: Variance
+    readonly A?: Variance
+  }
 }
 
-export interface Base<F, C = Auto> {
+export type CovariantE = HKT & {
+  readonly variance: {
+    E: '+'
+  }
+}
+
+export type ContravariantR = HKT & {
+  readonly variance: {
+    R: '-'
+  }
+}
+
+export interface Typeclass<F extends HKT, C = None> {
+  readonly [URI]: F
+  readonly [CURI]: C
+}
+
+export interface Typeclass2<F extends HKT, G extends HKT, C = None, D = None> {
   readonly _F: F
-  readonly _C: C
+  readonly _G: G
+  readonly _CF: C
+  readonly _CG: D
 }
 
-export interface BaseHKT<F, C = Auto> {
-  readonly _HKT: unique symbol
-  readonly _URI: F
-  readonly _C: C
+export interface Compose2<F extends HKT, G extends HKT, C = None, D = None> extends HKT {
+  readonly type: Kind<
+    F,
+    C,
+    this['K'],
+    this['Q'],
+    this['W'],
+    this['X'],
+    this['I'],
+    this['S'],
+    this['R'],
+    this['E'],
+    Kind<G, D, this['K'], this['Q'], this['W'], this['X'], this['I'], this['S'], this['R'], this['E'], this['A']>
+  >
 }
 
-export type MapURIS<F, C = Auto> = F extends [URI<infer U, infer CU>, ...infer Rest]
-  ? [URI<U, CU & C>, ...MapURIS<Rest, C>]
-  : []
-
-export type CompositionBase2<F extends URIS, G extends URIS, CF = Auto, CG = Auto> = Base<
-  [...MapURIS<F, CF>, ...MapURIS<G, CG>]
->
-
-/*
- * -------------------------------------------------------------------------------------------------
- * Generic Helpers
- * https://github.com/Matechs-Garage/matechs-effect/blob/master/packages/core/src/Prelude/HKT/hkt.ts
- * -------------------------------------------------------------------------------------------------
- */
-
-export const HKT_URI = 'HKT'
-export type HKT_URI = typeof HKT_URI
-export interface HKT<URI, A> {
-  readonly _URI: URI
+export interface FK<F, K, Q, W, X, I, S, R, E, A> {
+  readonly _F: F
+  readonly _K: K
+  readonly _Q: Q
+  readonly _W: W
+  readonly _X: X
+  readonly _I: I
+  readonly _S: S
+  readonly _R: R
+  readonly _E: E
   readonly _A: A
 }
 
-export const HKT2_URI = 'HKT2'
-export type HKT2_URI = typeof HKT2_URI
-export interface HKT2<URI, E, A> extends HKT<URI, A> {
-  readonly _E: E
-}
-
-export const HKT3_URI = 'HKT3'
-export type HKT3_URI = typeof HKT3_URI
-export interface HKT3<URI, R, E, A> extends HKT2<URI, E, A> {
-  readonly _R: R
-}
-
-export const HKT4_URI = 'HKT4'
-export type HKT4_URI = typeof HKT4_URI
-export interface HKT4<URI, S, R, E, A> extends HKT3<URI, R, E, A> {
-  readonly _S: S
-}
-
-export type UHKT<F> = [URI<'HKT', CustomType<'F', F>>]
-export type UHKT2<F> = [URI<'HKT2', CustomType<'F', F>>]
-export type UHKT3<F> = [URI<'HKT3', CustomType<'F', F>>]
-export type UHKT4<F> = [URI<'HKT4', CustomType<'F', F>>]
-
-/*
- * -------------------------------------------------------------------------------------------------
- * HKT Encoding
- * https://github.com/Matechs-Garage/matechs-effect/blob/master/packages/core/src/Prelude/HKT/hkt.ts
- * -------------------------------------------------------------------------------------------------
- */
-
-/**
- * A type-level dictionary for HKTs: URI -> Concrete Type
- */
-export interface URItoKind<
-  // encodes metadata carried at the URI level (like additional params)
-  FC,
-  // encodes constraints on parameters and variance at the typeclass level
-  TC,
-  // encodes generic keys
-  K,
-  // encodes free logic
-  Q,
-  // encodes free logic
-  W,
-  // encodes free logic
-  X,
-  // encodes free logic
-  I,
-  // encodes free logic
-  S,
-  // encodes free logic
-  R,
-  // encodes free logic
-  E,
-  // encodes output
-  A
-> {
-  [HKT_URI]: HKT<AccessCustom<FC, 'F'>, A>
-  [HKT2_URI]: HKT2<AccessCustom<FC, 'F'>, E, A>
-  [HKT3_URI]: HKT3<AccessCustom<FC, 'F'>, R, E, A>
-  [HKT4_URI]: HKT4<AccessCustom<FC, 'F'>, S, R, E, A>
-}
-
-/**
- * A type-level dictionary for indexed HKTs
- */
-export interface URItoIndex<K> {
-  [HKT_URI]: K
-  [HKT2_URI]: K
-  [HKT3_URI]: K
-  [HKT4_URI]: K
-}
-
-/*
- * -------------------------------------------------------------------------------------------------
- * Kind Encoding
- * https://github.com/Matechs-Garage/matechs-effect/blob/master/packages/core/src/Prelude/HKT/kind.ts
- * -------------------------------------------------------------------------------------------------
- */
-
-export type ConcreteURIS = keyof URItoKind<any, any, any, any, any, any, any, any, any, any, any>
-
-export type URIS = [URI<ConcreteURIS, any>, ...URI<ConcreteURIS, any>[]]
-
-export interface URI<F extends ConcreteURIS, C = {}> {
+export interface FK1<F, A> {
   readonly _F: F
-  readonly _C: C
+  readonly _K: unknown
+  readonly _Q: unknown
+  readonly _W: unknown
+  readonly _X: unknown
+  readonly _I: unknown
+  readonly _S: unknown
+  readonly _R: unknown
+  readonly _E: unknown
+  readonly _A: A
 }
 
-export type AppendURI<F extends URIS, G extends URI<ConcreteURIS, any>> = F extends URIS ? [...F, G] : F
+export interface F<F> extends HKT {
+  readonly type: FK<
+    F,
+    this['K'],
+    this['Q'],
+    this['W'],
+    this['X'],
+    this['I'],
+    this['S'],
+    this['R'],
+    this['E'],
+    this['A']
+  >
+  readonly variance: {
+    readonly K: '_'
+    readonly Q: '_'
+    readonly W: '_'
+    readonly X: '_'
+    readonly I: '_'
+    readonly S: '_'
+    readonly R: '_'
+    readonly E: '_'
+    readonly A: '_'
+  }
+}
 
-export type PrependURI<G extends URI<ConcreteURIS, any>, F extends URIS> = F extends URIS ? [G, ...F] : F
+export interface FCoE<F> extends HKT {
+  readonly type: FK<
+    F,
+    this['K'],
+    this['Q'],
+    this['W'],
+    this['X'],
+    this['I'],
+    this['S'],
+    this['R'],
+    this['E'],
+    this['A']
+  >
+  readonly variance: {
+    readonly K: '_'
+    readonly Q: '_'
+    readonly W: '_'
+    readonly X: '_'
+    readonly I: '_'
+    readonly S: '_'
+    readonly R: '_'
+    readonly E: '+'
+    readonly A: '_'
+  }
+}
 
-export type Rest<F extends [any, ...any[]]> = F extends [any, ...infer Rest] ? Rest : []
+export interface FContraR<F> extends HKT {
+  readonly type: FK<
+    F,
+    this['K'],
+    this['Q'],
+    this['W'],
+    this['X'],
+    this['I'],
+    this['S'],
+    this['R'],
+    this['E'],
+    this['A']
+  >
+  readonly variance: {
+    readonly K: '_'
+    readonly Q: '_'
+    readonly W: '_'
+    readonly X: '_'
+    readonly I: '_'
+    readonly S: '_'
+    readonly R: '-'
+    readonly E: '_'
+    readonly A: '_'
+  }
+}
 
-export type Kind<F extends URIS, C, K, Q, W, X, I, S, R, E, A> = F extends [any, ...infer Next]
-  ? URItoKind<
-      F[0]['_C'],
-      C,
-      OrFix<'K', F[0]['_C'], OrFix<'K', C, K>>,
-      OrFix<'Q', F[0]['_C'], OrFix<'Q', C, Q>>,
-      OrFix<'W', F[0]['_C'], OrFix<'W', C, W>>,
-      OrFix<'X', F[0]['_C'], OrFix<'X', C, X>>,
-      OrFix<'I', F[0]['_C'], OrFix<'I', C, I>>,
-      OrFix<'S', F[0]['_C'], OrFix<'S', C, S>>,
-      OrFix<'R', F[0]['_C'], OrFix<'R', C, R>>,
-      OrFix<'E', F[0]['_C'], OrFix<'E', C, E>>,
-      Next extends URIS ? Kind<Next, C, K, Q, W, X, I, S, R, E, A> : A
-    >[F[0]['_F']]
-  : never
+export type ParamName = 'K' | 'Q' | 'W' | 'X' | 'I' | 'S' | 'R' | 'E' | 'A'
 
-/*
- * -------------------------------------------------------------------------------------------------
- * Inference
- * https://github.com/Matechs-Garage/matechs-effect/blob/master/packages/core/src/Prelude/HKT/infer.ts
- * -------------------------------------------------------------------------------------------------
- */
+export type Kind<F extends HKT, C, K, Q, W, X, I, S, R, E, A> = F extends { readonly type: unknown }
+  ? (F & {
+      readonly K: OrFix<C, 'K', K>
+      readonly Q: OrFix<C, 'Q', Q>
+      readonly W: OrFix<C, 'W', W>
+      readonly X: OrFix<C, 'X', X>
+      readonly I: OrFix<C, 'I', I>
+      readonly S: OrFix<C, 'S', S>
+      readonly R: OrFix<C, 'R', R>
+      readonly E: OrFix<C, 'E', E>
+      readonly A: A
+    })['type']
+  : FK<F, K, Q, W, X, I, S, R, E, A>
 
-export type Infer<F extends URIS, C, P extends Param | 'A' | 'C', K> = [K] extends [
+export type Infer<F extends HKT, C, N extends ParamName | 'A' | 'C', K> = [K] extends [
   Kind<F, C, infer K, infer Q, infer W, infer X, infer I, infer S, infer R, infer E, infer A>
 ]
-  ? P extends 'C'
+  ? N extends 'C'
     ? C
-    : P extends 'K'
+    : N extends 'K'
     ? K
-    : P extends 'Q'
+    : N extends 'Q'
     ? Q
-    : P extends 'W'
+    : N extends 'W'
     ? W
-    : P extends 'X'
+    : N extends 'X'
     ? X
-    : P extends 'I'
+    : N extends 'I'
     ? I
-    : P extends 'S'
+    : N extends 'S'
     ? S
-    : P extends 'R'
+    : N extends 'R'
     ? R
-    : P extends 'E'
+    : N extends 'E'
     ? E
-    : P extends 'A'
+    : N extends 'A'
     ? A
     : never
   : never
 
-export type URIOf<K extends Kind<any, any, any, any, any, any, any, any, any, any, any>> = K extends Kind<
-  infer F,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any
->
-  ? F
-  : never
-
-export type IndexForBase<F extends ConcreteURIS, K> = F extends keyof URItoIndex<any> ? URItoIndex<K>[F] : K
-
-export type IndexFor<F extends URIS, K> = IndexForBase<
-  {
-    [K in keyof F]: F[K] extends ConcreteURIS ? F[K] : F[K] extends URI<infer U, any> ? U : never
-  }[number],
-  K
->
-
-export type CompositionIndexForBase<F extends ConcreteURIS[], K> = 1 extends F['length']
-  ? F[0] extends keyof URItoIndex<any>
-    ? URItoIndex<K>[F[0]]
-    : K
-  : {
-      [P in keyof F]: F[P] extends keyof URItoIndex<any> ? URItoIndex<K>[F[P]] : K
-    }
-
-export type CompositionIndexFor<F extends URIS, K> = CompositionIndexForBase<
-  {
-    [K in keyof F]: F[K] extends ConcreteURIS ? F[K] : F[K] extends URI<infer U, any> ? U : never
-  },
-  K
->
-
-/*
- * -------------------------------------------------------------------------------------------------
- * Custom
- * https://github.com/Matechs-Garage/matechs-effect/blob/master/packages/core/src/Prelude/HKT/custom.ts
- * -------------------------------------------------------------------------------------------------
+/**
+ * Lower bounds for variance
  */
 
-export interface CustomType<P extends string, V> {
-  CustomType: {
-    [p in P]: () => V
-  }
+export interface Lows {
+  '-': unknown
+  '+': never
+  _: any
 }
 
-export type AccessCustom<C, P extends string, D = any> = C extends CustomType<P, infer V> ? V : D
+export type Low<F extends HKT, N extends ParamName> = F['variance'][N] extends Variance ? Lows[F['variance'][N]] : never
 
-export type AccessCustomExtends<C, P extends string, D = any> = C extends CustomType<P, infer V>
-  ? V extends D
-    ? V
-    : D
-  : D
-
-/*
- * -------------------------------------------------------------------------------------------------
- * Fix
- * https://github.com/Matechs-Garage/matechs-effect/blob/master/packages/core/src/Prelude/HKT/fix.ts
- * -------------------------------------------------------------------------------------------------
+/**
+ * Type mixing for variance
  */
 
-export type Param = 'K' | 'Q' | 'W' | 'I' | 'X' | 'S' | 'R' | 'E'
-
-export interface Fix<P extends Param, F> {
-  Fix: {
-    [p in P]: {
-      F: () => F
-    }
-  }
+export interface Mixes<P extends ReadonlyArray<unknown>> {
+  '-': P extends [any]
+    ? P[0]
+    : P extends [any, any]
+    ? P[0] & P[1]
+    : P extends [any, any, any]
+    ? P[0] & P[1] & P[2]
+    : P extends [any, any, any, any]
+    ? P[0] & P[1] & P[2] & P[3]
+    : P extends [any, any, any, any, any]
+    ? P[0] & P[1] & P[2] & P[3] & P[4]
+    : UnionToIntersection<P[number]>
+  '+': P[number]
+  _: P[0]
 }
-
-export type OrFix<P extends Param, A, B> = A extends Fix<P, infer X> ? X : B
-
-export type Unfix<C, P extends Param> = (Exclude<keyof C, 'Fix'> extends never
-  ? unknown
-  : {
-      [K in Exclude<keyof C, 'Fix'>]: C[K]
-    }) &
-  (keyof C & 'Fix' extends never
-    ? unknown
-    : {
-        [K in keyof C & 'Fix']: {
-          [KK in Exclude<keyof C[K], P>]: C[K][KK]
-        }
-      })
-
-export type CleanParam<C, P extends Param> = C extends (Auto | V<P, '_'> | V<P, '+'> | Fix<P, any>) & infer X ? X : C
-
-/*
- * -------------------------------------------------------------------------------------------------
- * OrNever
- * https://github.com/Matechs-Garage/matechs-effect/blob/master/packages/core/src/Prelude/HKT/or-never.ts
- * -------------------------------------------------------------------------------------------------
- */
+export type Mix<
+  F extends HKT,
+  N extends ParamName,
+  P extends ReadonlyArray<unknown>
+> = F['variance'][N] extends Variance ? Mixes<P>[F['variance'][N]] : P[0]
 
 export type OrNever<K> = unknown extends K ? never : K
 
-/*
- * -------------------------------------------------------------------------------------------------
- * Variance Encoding
- * https://github.com/Matechs-Garage/matechs-effect/blob/master/packages/core/src/Prelude/HKT/variance.ts
- * -------------------------------------------------------------------------------------------------
- */
-
-export type Variance = '+' | '-' | '_'
-
-export interface V<F extends Param, V extends Variance> {
-  Variance: {
-    [v in V]: () => F
-  }
-}
-
-/**
- * Composes types according to variance specified in C
- */
-export type Mix<C, P extends Param, X extends [any, ...any[]]> = C extends V<P, '_'>
-  ? X[0]
-  : C extends V<P, '+'>
-  ? X[number]
-  : C extends V<P, '-'>
-  ? X extends [any]
-    ? X[0]
-    : X extends [any, any]
-    ? X[0] & X[1]
-    : X extends [any, any, any]
-    ? X[0] & X[1] & X[2]
-    : X extends [any, any, any, any]
-    ? X[0] & X[1] & X[2] & X[3]
-    : X extends [any, any, any, any, any]
-    ? X[0] & X[1] & X[2] & X[3] & X[4]
-    : X extends [any, any, any, any, any, any]
-    ? X[0] & X[1] & X[2] & X[3] & X[4] & X[5]
-    : UnionToIntersection<{ [k in keyof X]: OrNever<X[k]> }[keyof X]>
-  : X[0]
-
-/**
- * Composes a record of types to the base respecting variance from C
- */
-export type MixStruct<C, P extends Param, X, Y> = C extends V<P, '_'>
+export type MixStruct<F extends HKT, N extends ParamName, X, Y> = F['variance'][N] extends '_'
   ? X
-  : C extends V<P, '+'>
+  : F['variance'][N] extends '+'
   ? Y[keyof Y]
-  : C extends V<P, '-'>
+  : F['variance'][N] extends '-'
   ? UnionToIntersection<{ [k in keyof Y]: OrNever<Y[k]> }[keyof Y]>
   : X
 
-/**
- * Used in subsequent definitions to either vary a paramter or keep it fixed to "Fixed"
- */
-export type Intro<C, P extends Param, Fixed, Current> = C extends V<P, '_'>
-  ? Fixed
-  : C extends V<P, '+'>
-  ? Current
-  : C extends V<P, '-'>
-  ? Current
-  : Fixed
+export interface Intros<A, B> {
+  '-': B
+  '+': B
+  _: A
+}
 
 /**
- * Initial type depending on variance of P in C (eg: initial Contravariant R = unknown, initial Covariant E = never)
- */
-export type Initial<C, P extends Param> = C extends V<P, '-'>
-  ? unknown
-  : C extends V<P, '+'>
-  ? never
-  : any
-
-export type Strip<C, P extends Param> = Erase<C, V<P, '_'> & V<P, '-'> & V<P, '+'>>
-
-/*
- * -------------------------------------------------------------------------------------------------
- * Instance Helpers
- * https://github.com/Matechs-Garage/matechs-effect/blob/master/packages/core/src/Prelude/HKT/instance.ts
- * -------------------------------------------------------------------------------------------------
+ * Type introduction for variance
  */
 
-export type Ignores = '_F' | '_G' | 'Commutative' | '_C' | '_CF' | '_CG'
+export type Intro<F extends HKT, N extends ParamName, A, B> = F['variance'][N] extends Variance
+  ? Intros<A, B>[F['variance'][N]]
+  : A
 
 /**
- * A helper for constructing typeclass instances
+ * Type parameter constraint
  */
-export const instance = <T>(_: Omit<T, Ignores>): T => _ as any
+
+export type None = {
+  [Fix]: {}
+}
+
+export declare const Fix: unique symbol
+
+export interface Fix<N extends ParamName, A> {
+  [Fix]: {
+    [K in N]: () => A
+  }
+}
+
+export type OrFix<C, N extends ParamName, A> = C extends Fix<N, infer X> ? X : A
+
+export type IndexFor<F extends HKT, K> = F extends { readonly index: unknown } ? F['index'] : K
+
+/**
+ * Instance util
+ */
+
+export function instance<F>(_: Omit<F, typeof URI | typeof CURI | '_F' | '_G' | '_CF' | '_CG'>): F {
+  // @ts-expect-error
+  return _
+}

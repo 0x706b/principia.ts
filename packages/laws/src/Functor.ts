@@ -10,18 +10,18 @@ import * as fc from 'fast-check'
 
 import { isPromise } from './utils'
 
-function CompositionLaw<F extends HKT.URIS, TC, K, Q, W, X, I, S, R, E, A, B, C>(
+function CompositionLaw<F extends HKT.HKT, TC, K, Q, W, X, I, S, R, E, A, B, C>(
   F: P.Functor<F, TC>,
   S: MaybeAsyncEq<HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, C>>,
   ab: FunctionN<[A], B>,
   bc: FunctionN<[B], C>
 ): (fa: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>) => Promise<boolean>
 function CompositionLaw<F, A, B, C>(
-  F: P.Functor<HKT.UHKT<F>>,
-  S: MaybeAsyncEq<HKT.HKT<F, C>>,
+  F: P.Functor<HKT.F<F>>,
+  S: MaybeAsyncEq<HKT.FK1<F, C>>,
   ab: FunctionN<[A], B>,
   bc: FunctionN<[B], C>
-): (fa: HKT.HKT<F, A>) => Promise<boolean> {
+): (fa: HKT.FK1<F, A>) => Promise<boolean> {
   return (fa) => {
     const b = S.equals_(
       F.map_(fa, (a) => bc(ab(a))),
@@ -31,14 +31,14 @@ function CompositionLaw<F, A, B, C>(
   }
 }
 
-function IdentityLaw<F extends HKT.URIS, TC, K, Q, W, X, I, S, R, E, A>(
+function IdentityLaw<F extends HKT.HKT, TC, K, Q, W, X, I, S, R, E, A>(
   F: P.Functor<F, TC>,
   S: MaybeAsyncEq<HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>>
 ): (fa: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>) => Promise<boolean>
 function IdentityLaw<F, A>(
-  F: P.Functor<HKT.UHKT<F>>,
-  S: MaybeAsyncEq<HKT.HKT<F, A>>
-): (fa: HKT.HKT<F, A>) => Promise<boolean> {
+  F: P.Functor<HKT.F<F>>,
+  S: MaybeAsyncEq<HKT.FK1<F, A>>
+): (fa: HKT.FK1<F, A>) => Promise<boolean> {
   return (fa) => {
     const b = S.equals_(
       F.map_(fa, (a) => a),
@@ -53,7 +53,7 @@ export const Functor = {
   composition: CompositionLaw
 }
 
-export function testFunctorComposition<F extends HKT.URIS, C>(
+export function testFunctorComposition<F extends HKT.HKT, C>(
   F: P.Functor<F, C>
 ): (
   lift: <A>(
@@ -62,14 +62,14 @@ export function testFunctorComposition<F extends HKT.URIS, C>(
     HKT.Kind<
       F,
       C,
-      HKT.Initial<C, 'K'>,
-      HKT.Initial<C, 'Q'>,
-      HKT.Initial<C, 'W'>,
-      HKT.Initial<C, 'X'>,
-      HKT.Initial<C, 'I'>,
-      HKT.Initial<C, 'S'>,
-      HKT.Initial<C, 'R'>,
-      HKT.Initial<C, 'E'>,
+      HKT.Low<F, 'K'>,
+      HKT.Low<F, 'Q'>,
+      HKT.Low<F, 'W'>,
+      HKT.Low<F, 'X'>,
+      HKT.Low<F, 'I'>,
+      HKT.Low<F, 'S'>,
+      HKT.Low<F, 'R'>,
+      HKT.Low<F, 'E'>,
       A
     >
   >,
@@ -79,14 +79,14 @@ export function testFunctorComposition<F extends HKT.URIS, C>(
     HKT.Kind<
       F,
       C,
-      HKT.Initial<C, 'K'>,
-      HKT.Initial<C, 'Q'>,
-      HKT.Initial<C, 'W'>,
-      HKT.Initial<C, 'X'>,
-      HKT.Initial<C, 'I'>,
-      HKT.Initial<C, 'S'>,
-      HKT.Initial<C, 'R'>,
-      HKT.Initial<C, 'E'>,
+      HKT.Low<F, 'K'>,
+      HKT.Low<F, 'Q'>,
+      HKT.Low<F, 'W'>,
+      HKT.Low<F, 'X'>,
+      HKT.Low<F, 'I'>,
+      HKT.Low<F, 'S'>,
+      HKT.Low<F, 'R'>,
+      HKT.Low<F, 'E'>,
       A
     >
   >

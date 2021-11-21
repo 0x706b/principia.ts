@@ -17,7 +17,7 @@ import * as Set from '@principia/base/Set'
 
 import * as G from './Guard'
 import { EncoderSURI } from './Modules'
-import { EncoderS, Schema, to } from './Schema'
+import { to } from './Schema'
 import { cacheThunk } from './util'
 
 export interface Encoder<A, O> {
@@ -33,7 +33,13 @@ export type OutputOf<E> = E extends Encoder<any, infer O> ? O : never
 
 export type AnyEncoder = Encoder<any, any>
 
-export type V = HKT.V<'I', '-'>
+export interface EncoderF extends HKT.HKT {
+  readonly type: Encoder<this['I'], this['A']>
+  readonly variance: {
+    I: '-'
+    A: '+'
+  }
+}
 
 /*
  * -------------------------------------------

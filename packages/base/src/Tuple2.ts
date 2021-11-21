@@ -1,5 +1,4 @@
 import type * as HKT from './HKT'
-import type { Tuple2URI } from './Modules'
 
 import { identity } from './function'
 import * as P from './prelude'
@@ -12,9 +11,9 @@ import * as P from './prelude'
 
 export interface Tuple2<A, B> extends Readonly<[A, B]> {}
 
-export type V = HKT.V<'I', '+'>
-
-type URI = [HKT.URI<Tuple2URI>]
+export interface Tuple2F extends HKT.HKT {
+  readonly type: Tuple2<this['A'], this['I']>
+}
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -50,8 +49,8 @@ export function snd<A, I>(ai: Tuple2<A, I>): I {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function getSemimonoidalFunctor<M>(S: P.Semigroup<M>): P.SemimonoidalFunctor<URI, HKT.Fix<'I', M>> {
-  const crossWith_: P.CrossWithFn_<URI, HKT.Fix<'I', M>> = (fa, fb, f) => [
+export function getSemimonoidalFunctor<M>(S: P.Semigroup<M>): P.SemimonoidalFunctor<Tuple2F, HKT.Fix<'I', M>> {
+  const crossWith_: P.CrossWithFn_<Tuple2F, HKT.Fix<'I', M>> = (fa, fb, f) => [
     f(fst(fa), fst(fb)),
     S.combine_(snd(fa), snd(fb))
   ]
@@ -68,8 +67,8 @@ export function getSemimonoidalFunctor<M>(S: P.Semigroup<M>): P.SemimonoidalFunc
  * -------------------------------------------------------------------------------------------------
  */
 
-export function getApply<M>(S: P.Semigroup<M>): P.Apply<URI, HKT.Fix<'I', M>> {
-  const ap_: P.ApFn_<URI, HKT.Fix<'I', M>> = (fab, fa) => [fst(fab)(fst(fa)), S.combine_(snd(fab), snd(fa))]
+export function getApply<M>(S: P.Semigroup<M>): P.Apply<Tuple2F, HKT.Fix<'I', M>> {
+  const ap_: P.ApFn_<Tuple2F, HKT.Fix<'I', M>> = (fab, fa) => [fst(fab)(fst(fa)), S.combine_(snd(fab), snd(fa))]
 
   return P.Apply({
     ...getSemimonoidalFunctor(S),
@@ -83,7 +82,7 @@ export function getApply<M>(S: P.Semigroup<M>): P.Apply<URI, HKT.Fix<'I', M>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function getMonoidalFunctor<M>(M: P.Monoid<M>): P.MonoidalFunctor<URI, HKT.Fix<'I', M>> {
+export function getMonoidalFunctor<M>(M: P.Monoid<M>): P.MonoidalFunctor<Tuple2F, HKT.Fix<'I', M>> {
   return P.MonoidalFunctor({
     ...getSemimonoidalFunctor(M),
     unit: () => tuple_(undefined, M.nat)
@@ -96,7 +95,7 @@ export function getMonoidalFunctor<M>(M: P.Monoid<M>): P.MonoidalFunctor<URI, HK
  * -------------------------------------------------------------------------------------------------
  */
 
-export function getApplicative<M>(M: P.Monoid<M>): P.Applicative<URI, HKT.Fix<'I', M>> {
+export function getApplicative<M>(M: P.Monoid<M>): P.Applicative<Tuple2F, HKT.Fix<'I', M>> {
   return P.Applicative({
     ...getApply(M),
     unit: () => tuple_(undefined, M.nat),
@@ -198,8 +197,8 @@ export function map<A, B>(f: (a: A) => B): <I>(fa: Tuple2<A, I>) => Tuple2<B, I>
  * -------------------------------------------------------------------------------------------------
  */
 
-export function getMonad<M>(M: P.Monoid<M>): P.Monad<URI, HKT.Fix<'I', M>> {
-  const chain_: P.ChainFn_<URI, HKT.Fix<'I', M>> = (ma, f) => {
+export function getMonad<M>(M: P.Monoid<M>): P.Monad<Tuple2F, HKT.Fix<'I', M>> {
+  const chain_: P.ChainFn_<Tuple2F, HKT.Fix<'I', M>> = (ma, f) => {
     const mb = f(fst(ma))
     return [fst(mb), M.combine_(snd(ma), snd(mb))]
   }
@@ -230,13 +229,11 @@ export function compose<C, B>(bc: Tuple2<C, B>): <A>(ab: Tuple2<B, A>) => Tuple2
  * -------------------------------------------------------------------------------------------------
  */
 
-export const traverse_: P.TraverseFn_<URI, V> = (AG) => (ta, f) => AG.map_(f(fst(ta)), (b) => [b, snd(ta)])
+export const traverse_: P.TraverseFn_<Tuple2F> = (AG) => (ta, f) => AG.map_(f(fst(ta)), (b) => [b, snd(ta)])
 
-export const traverse: P.TraverseFn<URI, V> = (A) => {
+export const traverse: P.TraverseFn<Tuple2F> = (A) => {
   const traverseG_ = traverse_(A)
   return (f) => (ta) => traverseG_(ta, f)
 }
 
-export const sequence: P.SequenceFn<URI, V> = (AG) => (ta) => AG.map_(fst(ta), (a) => [a, snd(ta)])
-
-export { Tuple2URI } from './Modules'
+export const sequence: P.SequenceFn<Tuple2F> = (AG) => (ta) => AG.map_(fst(ta), (a) => [a, snd(ta)])

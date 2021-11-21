@@ -1,14 +1,13 @@
 import type { Either } from '../Either'
-import type * as HKT from '../HKT'
 import type * as E from '../internal/Either'
 import type { Maybe } from '../Maybe'
-import type { IterableURI } from '../Modules'
-import type * as P from '../prelude'
+import type { IterableF } from './instances'
 
 import * as Ev from '../Eval/core'
 import { identity } from '../function'
 import * as It from '../internal/Iterable'
 import * as M from '../Maybe'
+import * as P from '../prelude'
 import { tuple } from '../tuple'
 
 /*
@@ -492,13 +491,14 @@ export function chainRecBreadthFirst<A, B>(f: (a: A) => Iterable<Either<A, B>>):
  * -------------------------------------------------------------------------------------------------
  */
 
-export const traverse_: P.TraverseIndexFn_<[HKT.URI<IterableURI>]> = (AG) => (ta, f) =>
-  foldl_(ta, AG.pure(never as Iterable<any>), (b, a, i) => AG.crossWith_(b, f(a, i), append_))
+export const traverse_: P.TraverseIndexFn_<IterableF> = P.implementTraverseWithIndex_<IterableF>()(
+  () => (AG) => (ta, f) => foldl_(ta, AG.pure(never as Iterable<any>), (b, a, i) => AG.crossWith_(b, f(a, i), append_))
+)
 
 /**
  * @dataFirst traverse_
  */
-export const traverse: P.MapWithIndexAFn<[HKT.URI<IterableURI>]> = (AG) => {
+export const traverse: P.MapWithIndexAFn<IterableF> = (AG) => {
   const _ = traverse_(AG)
   return (f) => (ta) => _(ta, f)
 }

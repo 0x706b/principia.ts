@@ -56,7 +56,13 @@ export interface ReplaceOptionFn<S, T, B> {
   (b: B): (s: S) => M.Maybe<T>
 }
 
-export type V = HKT.V<'I', '_'>
+export interface OptionalF extends HKT.HKT {
+  readonly type: Optional<this['I'], this['A']>
+  readonly variance: {
+    I: '_'
+    A: '+'
+  }
+}
 
 /*
  * -------------------------------------------------------------------------------------------------

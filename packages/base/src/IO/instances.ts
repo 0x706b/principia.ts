@@ -1,8 +1,7 @@
 // tracing: off
 
 import type * as HKT from '../HKT'
-import type { IOCategoryURI, IOURI } from '../Modules'
-import type { IO, V } from './core'
+import type { IO } from './core'
 
 import * as E from '../Either'
 import { mapNF, sequenceSF } from '../prelude'
@@ -26,29 +25,41 @@ import {
   unit
 } from './core'
 
-export type URI = [HKT.URI<IOURI>]
+export interface IOF extends HKT.HKT {
+  readonly type: IO<this['R'], this['E'], this['A']>
+  readonly variance: {
+    R: '-'
+    E: '+'
+    A: '+'
+  }
+}
 
-export type CURI = [HKT.URI<IOCategoryURI>]
+export interface IOCategoryF extends HKT.HKT {
+  readonly type: IO<this['I'], this['E'], this['A']>
+  readonly variance: {
+    I: '-'
+    E: '+'
+    A: '+'
+  }
+}
 
-export type CV = HKT.V<'I', '-'> & HKT.V<'E', '+'>
-
-export const Functor = P.Functor<URI, V>({
+export const Functor = P.Functor<IOF>({
   map_
 })
 
-export const Bifunctor = P.Bifunctor<URI, V>({
+export const Bifunctor = P.Bifunctor<IOF>({
   mapLeft_: mapError_,
   mapRight_: map_,
   bimap_
 })
 
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<IOF>({
   map_,
   crossWith_,
   cross_
 })
 
-export const SemimonoidalFunctorPar = P.SemimonoidalFunctor<URI, V>({
+export const SemimonoidalFunctorPar = P.SemimonoidalFunctor<IOF>({
   map_,
   crossWith_: crossWithPar_,
   cross_: crossPar_
@@ -60,35 +71,35 @@ export const mapNPar = mapNF(SemimonoidalFunctorPar)
 export const sequenceS    = sequenceSF(SemimonoidalFunctor)
 export const sequenceSPar = sequenceSF(SemimonoidalFunctorPar)
 
-export const Apply = P.Apply<URI, V>({
+export const Apply = P.Apply<IOF>({
   map_,
   crossWith_,
   cross_,
   ap_
 })
 
-export const ApplyPar = P.Apply<URI, V>({
+export const ApplyPar = P.Apply<IOF>({
   map_,
   crossWith_: crossWithPar_,
   cross_: crossPar_,
   ap_: apPar_
 })
 
-export const MonoidalFunctor = P.MonoidalFunctor<URI, V>({
+export const MonoidalFunctor = P.MonoidalFunctor<IOF>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const MonoidalFunctorPar = P.MonoidalFunctor<URI, V>({
+export const MonoidalFunctorPar = P.MonoidalFunctor<IOF>({
   map_,
   crossWith_: crossWithPar_,
   cross_: crossPar_,
   unit
 })
 
-export const Applicative = P.Applicative<URI, V>({
+export const Applicative = P.Applicative<IOF>({
   map_,
   crossWith_,
   cross_,
@@ -97,7 +108,7 @@ export const Applicative = P.Applicative<URI, V>({
   pure
 })
 
-export const ApplicativePar = P.Applicative<URI, V>({
+export const ApplicativePar = P.Applicative<IOF>({
   map_,
   cross_: crossPar_,
   crossWith_: crossWithPar_,
@@ -106,7 +117,7 @@ export const ApplicativePar = P.Applicative<URI, V>({
   pure
 })
 
-export const Monad = P.Monad<URI, V>({
+export const Monad = P.Monad<IOF>({
   map_,
   crossWith_,
   cross_,
@@ -117,10 +128,7 @@ export const Monad = P.Monad<URI, V>({
   flatten
 })
 
-export const chainRec_: <A, R, E, B>(a: A, f: (a: A) => IO<R, E, E.Either<A, B>>) => IO<R, E, B> = P.getChainRec_<
-  URI,
-  V
->({
+export const chainRec_: <A, R, E, B>(a: A, f: (a: A) => IO<R, E, E.Either<A, B>>) => IO<R, E, B> = P.getChainRec_<IOF>({
   map_,
   crossWith_,
   cross_,
@@ -131,21 +139,19 @@ export const chainRec_: <A, R, E, B>(a: A, f: (a: A) => IO<R, E, E.Either<A, B>>
   flatten
 })
 
-export const chainRec: <A, R, E, B>(f: (a: A) => IO<R, E, E.Either<A, B>>) => (a: A) => IO<R, E, B> = P.getChainRec<
-  URI,
-  V
->({
-  map_,
-  crossWith_,
-  cross_,
-  ap_,
-  unit,
-  pure,
-  chain_,
-  flatten
-})
+export const chainRec: <A, R, E, B>(f: (a: A) => IO<R, E, E.Either<A, B>>) => (a: A) => IO<R, E, B> =
+  P.getChainRec<IOF>({
+    map_,
+    crossWith_,
+    cross_,
+    ap_,
+    unit,
+    pure,
+    chain_,
+    flatten
+  })
 
-export const MonadExcept = P.MonadExcept<URI, V>({
+export const MonadExcept = P.MonadExcept<IOF>({
   map_,
   cross_,
   crossWith_,
@@ -158,7 +164,7 @@ export const MonadExcept = P.MonadExcept<URI, V>({
   fail
 })
 
-export const Category = P.Category<CURI, CV>({
+export const Category = P.Category<IOCategoryF>({
   id,
   andThen_,
   compose_

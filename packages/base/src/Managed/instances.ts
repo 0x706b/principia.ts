@@ -1,5 +1,5 @@
 import type * as HKT from '../HKT'
-import type { ManagedCategoryURI, ManagedURI } from '../Modules'
+import type { Managed } from './core'
 
 import * as P from '../prelude'
 import { apPar_, crossPar_, crossWithPar_ } from './combinators/apply-par'
@@ -21,27 +21,39 @@ import {
   unit
 } from './core'
 
-export type URI = [HKT.URI<ManagedURI>]
-export type V = HKT.V<'R', '-'> & HKT.V<'E', '+'>
+export interface ManagedF extends HKT.HKT {
+  readonly type: Managed<this['R'], this['E'], this['A']>
+  readonly variance: {
+    R: '-'
+    E: '+'
+    A: '+'
+  }
+}
 
-export type CURI = [HKT.URI<ManagedCategoryURI>]
-export type CV = HKT.V<'I', '-'> & HKT.V<'E', '+'>
+export interface ManagedCategoryF extends HKT.HKT {
+  readonly type: Managed<this['I'], this['E'], this['A']>
+  readonly variance: {
+    I: '-'
+    E: '+'
+    A: '+'
+  }
+}
 
-export const Functor = P.Functor<URI, V>({ map_ })
+export const Functor = P.Functor<ManagedF>({ map_ })
 
-export const Bifunctor = P.Bifunctor<URI, V>({
+export const Bifunctor = P.Bifunctor<ManagedF>({
   mapLeft_: mapError_,
   mapRight_: map_,
   bimap_
 })
 
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<ManagedF>({
   map_,
   crossWith_,
   cross_
 })
 
-export const SemimonoidalFunctorPar = P.SemimonoidalFunctor<URI, V>({
+export const SemimonoidalFunctorPar = P.SemimonoidalFunctor<ManagedF>({
   map_,
   crossWith_: crossWithPar_,
   cross_: crossPar_
@@ -53,35 +65,35 @@ export const mapNPar = P.mapNF(SemimonoidalFunctorPar)
 export const sequenceS    = P.sequenceSF(SemimonoidalFunctor)
 export const sequenceSPar = P.sequenceSF(SemimonoidalFunctorPar)
 
-export const Apply = P.Apply<URI, V>({
+export const Apply = P.Apply<ManagedF>({
   map_,
   crossWith_,
   cross_,
   ap_
 })
 
-export const ApplyPar = P.Apply<URI, V>({
+export const ApplyPar = P.Apply<ManagedF>({
   map_,
   crossWith_: crossWithPar_,
   cross_: crossPar_,
   ap_: apPar_
 })
 
-export const MonoidalFunctor = P.MonoidalFunctor<URI, V>({
+export const MonoidalFunctor = P.MonoidalFunctor<ManagedF>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const MonoidalFunctorPar = P.MonoidalFunctor<URI, V>({
+export const MonoidalFunctorPar = P.MonoidalFunctor<ManagedF>({
   map_,
   crossWith_: crossWithPar_,
   cross_: crossPar_,
   unit
 })
 
-export const Applicative = P.Applicative<URI, V>({
+export const Applicative = P.Applicative<ManagedF>({
   map_,
   crossWith_,
   cross_,
@@ -90,7 +102,7 @@ export const Applicative = P.Applicative<URI, V>({
   pure
 })
 
-export const ApplicativePar = P.Applicative<URI, V>({
+export const ApplicativePar = P.Applicative<ManagedF>({
   map_,
   cross_: crossPar_,
   crossWith_: crossWithPar_,
@@ -99,7 +111,7 @@ export const ApplicativePar = P.Applicative<URI, V>({
   pure
 })
 
-export const Monad = P.Monad<URI, V>({
+export const Monad = P.Monad<ManagedF>({
   map_,
   crossWith_,
   cross_,
@@ -110,7 +122,7 @@ export const Monad = P.Monad<URI, V>({
   flatten
 })
 
-export const MonadExcept = P.MonadExcept<URI, V>({
+export const MonadExcept = P.MonadExcept<ManagedF>({
   map_,
   cross_,
   crossWith_,
@@ -123,7 +135,7 @@ export const MonadExcept = P.MonadExcept<URI, V>({
   fail
 })
 
-export const Category = P.Category<CURI, CV>({
+export const Category = P.Category<ManagedCategoryF>({
   id,
   andThen_,
   compose_

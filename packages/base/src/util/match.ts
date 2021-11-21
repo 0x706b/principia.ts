@@ -1,4 +1,4 @@
-import type { Base, Infer, Kind, Param, URIS } from '../HKT'
+import type { HKT, Infer, Kind, ParamName, Typeclass } from '../HKT'
 
 export const pattern_: <N extends string>(
   n: N
@@ -36,13 +36,8 @@ export const matchTag_ = pattern_('_tag')
 
 export const matchTag = pattern('_tag')
 
-type InferMatcherParam<
-  URI extends URIS,
-  C,
-  P extends Param | 'A',
-  K extends Record<string, (...args: any) => any>
-> = Infer<
-  URI,
+type InferMatcherParam<F extends HKT, C, P extends ParamName, K extends Record<string, (...args: any) => any>> = Infer<
+  F,
   C,
   P,
   {
@@ -50,8 +45,8 @@ type InferMatcherParam<
   }[keyof K]
 >
 
-type InferMatcherParamWithDefault<URI extends URIS, C, P extends Param | 'A', K, Ret> = Infer<
-  URI,
+type InferMatcherParamWithDefault<F extends HKT, C, P extends ParamName | 'A', K, Ret> = Infer<
+  F,
   C,
   P,
   | {
@@ -60,7 +55,7 @@ type InferMatcherParamWithDefault<URI extends URIS, C, P extends Param | 'A', K,
   | Ret
 >
 
-export function matchers<URI extends URIS, C>(_: Base<URI, C>) {
+export function matchers<F extends HKT, C>(_: Typeclass<F, C>) {
   function match<N extends string>(
     tag: N
   ): {
@@ -76,59 +71,57 @@ export function matchers<URI extends URIS, C>(_: Base<URI, C>) {
               [tag in N]: k
             }
           >
-        ) => Kind<URI, C, any, any, any, any, any, any, any, any, any>
+        ) => Kind<F, C, any, any, any, any, any, any, any, any, any>
       }
     >(
       matcher: K
     ): (
       _: X
     ) => Kind<
-      URI,
+      F,
       C,
-      InferMatcherParam<URI, C, 'K', K>,
-      InferMatcherParam<URI, C, 'Q', K>,
-      InferMatcherParam<URI, C, 'W', K>,
-      InferMatcherParam<URI, C, 'X', K>,
-      InferMatcherParam<URI, C, 'I', K>,
-      InferMatcherParam<URI, C, 'S', K>,
-      InferMatcherParam<URI, C, 'R', K>,
-      InferMatcherParam<URI, C, 'E', K>,
-      InferMatcherParam<URI, C, 'A', K>
+      InferMatcherParam<F, C, 'K', K>,
+      InferMatcherParam<F, C, 'Q', K>,
+      InferMatcherParam<F, C, 'W', K>,
+      InferMatcherParam<F, C, 'X', K>,
+      InferMatcherParam<F, C, 'I', K>,
+      InferMatcherParam<F, C, 'S', K>,
+      InferMatcherParam<F, C, 'R', K>,
+      InferMatcherParam<F, C, 'E', K>,
+      InferMatcherParam<F, C, 'A', K>
     >
     <
       X extends {
         [tag in N]: string
       },
-      K extends Partial<
-        {
-          [k in X[N]]: (
-            _: Extract<
-              X,
-              {
-                [tag in N]: k
-              }
-            >
-          ) => Kind<URI, C, any, any, any, any, any, any, any, any, any>
-        }
-      >,
-      Ret extends Kind<URI, C, any, any, any, any, any, any, any, any, any>
+      K extends Partial<{
+        [k in X[N]]: (
+          _: Extract<
+            X,
+            {
+              [tag in N]: k
+            }
+          >
+        ) => Kind<F, C, any, any, any, any, any, any, any, any, any>
+      }>,
+      Ret extends Kind<F, C, any, any, any, any, any, any, any, any, any>
     >(
       matcher: K,
       def: (_: Exclude<X, { [tag in N]: keyof K }>) => Ret
     ): (
       _: X
     ) => Kind<
-      URI,
+      F,
       C,
-      InferMatcherParamWithDefault<URI, C, 'K', K, Ret>,
-      InferMatcherParamWithDefault<URI, C, 'Q', K, Ret>,
-      InferMatcherParamWithDefault<URI, C, 'W', K, Ret>,
-      InferMatcherParamWithDefault<URI, C, 'X', K, Ret>,
-      InferMatcherParamWithDefault<URI, C, 'I', K, Ret>,
-      InferMatcherParamWithDefault<URI, C, 'S', K, Ret>,
-      InferMatcherParamWithDefault<URI, C, 'R', K, Ret>,
-      InferMatcherParamWithDefault<URI, C, 'E', K, Ret>,
-      InferMatcherParamWithDefault<URI, C, 'A', K, Ret>
+      InferMatcherParamWithDefault<F, C, 'K', K, Ret>,
+      InferMatcherParamWithDefault<F, C, 'Q', K, Ret>,
+      InferMatcherParamWithDefault<F, C, 'W', K, Ret>,
+      InferMatcherParamWithDefault<F, C, 'X', K, Ret>,
+      InferMatcherParamWithDefault<F, C, 'I', K, Ret>,
+      InferMatcherParamWithDefault<F, C, 'S', K, Ret>,
+      InferMatcherParamWithDefault<F, C, 'R', K, Ret>,
+      InferMatcherParamWithDefault<F, C, 'E', K, Ret>,
+      InferMatcherParamWithDefault<F, C, 'A', K, Ret>
     >
   } {
     return (...args: any[]) => {
@@ -155,56 +148,54 @@ export function matchers<URI extends URIS, C>(_: Base<URI, C>) {
               [tag in N]: k
             }
           >
-        ) => Kind<URI, C, any, any, any, any, any, any, any, any, any>
+        ) => Kind<F, C, any, any, any, any, any, any, any, any, any>
       }
     >(
       matcher: K
     ): (
       _: X
     ) => Kind<
-      URI,
+      F,
       C,
-      InferMatcherParam<URI, C, 'K', K>,
-      InferMatcherParam<URI, C, 'Q', K>,
-      InferMatcherParam<URI, C, 'W', K>,
-      InferMatcherParam<URI, C, 'X', K>,
-      InferMatcherParam<URI, C, 'I', K>,
-      InferMatcherParam<URI, C, 'S', K>,
-      InferMatcherParam<URI, C, 'R', K>,
-      InferMatcherParam<URI, C, 'E', K>,
-      InferMatcherParam<URI, C, 'A', K>
+      InferMatcherParam<F, C, 'K', K>,
+      InferMatcherParam<F, C, 'Q', K>,
+      InferMatcherParam<F, C, 'W', K>,
+      InferMatcherParam<F, C, 'X', K>,
+      InferMatcherParam<F, C, 'I', K>,
+      InferMatcherParam<F, C, 'S', K>,
+      InferMatcherParam<F, C, 'R', K>,
+      InferMatcherParam<F, C, 'E', K>,
+      InferMatcherParam<F, C, 'A', K>
     >
     <
-      K extends Partial<
-        {
-          [k in X[N]]: (
-            _: Extract<
-              X,
-              {
-                [tag in N]: k
-              }
-            >
-          ) => Kind<URI, C, any, any, any, any, any, any, any, any, any>
-        }
-      >,
-      Ret extends Kind<URI, C, any, any, any, any, any, any, any, any, any>
+      K extends Partial<{
+        [k in X[N]]: (
+          _: Extract<
+            X,
+            {
+              [tag in N]: k
+            }
+          >
+        ) => Kind<F, C, any, any, any, any, any, any, any, any, any>
+      }>,
+      Ret extends Kind<F, C, any, any, any, any, any, any, any, any, any>
     >(
       matcher: K,
       def: (_: Exclude<X, { [tag in N]: keyof K }>) => Ret
     ): (
       _: X
     ) => Kind<
-      URI,
+      F,
       C,
-      InferMatcherParamWithDefault<URI, C, 'K', K, Ret>,
-      InferMatcherParamWithDefault<URI, C, 'Q', K, Ret>,
-      InferMatcherParamWithDefault<URI, C, 'W', K, Ret>,
-      InferMatcherParamWithDefault<URI, C, 'X', K, Ret>,
-      InferMatcherParamWithDefault<URI, C, 'I', K, Ret>,
-      InferMatcherParamWithDefault<URI, C, 'S', K, Ret>,
-      InferMatcherParamWithDefault<URI, C, 'R', K, Ret>,
-      InferMatcherParamWithDefault<URI, C, 'E', K, Ret>,
-      InferMatcherParamWithDefault<URI, C, 'A', K, Ret>
+      InferMatcherParamWithDefault<F, C, 'K', K, Ret>,
+      InferMatcherParamWithDefault<F, C, 'Q', K, Ret>,
+      InferMatcherParamWithDefault<F, C, 'W', K, Ret>,
+      InferMatcherParamWithDefault<F, C, 'X', K, Ret>,
+      InferMatcherParamWithDefault<F, C, 'I', K, Ret>,
+      InferMatcherParamWithDefault<F, C, 'S', K, Ret>,
+      InferMatcherParamWithDefault<F, C, 'R', K, Ret>,
+      InferMatcherParamWithDefault<F, C, 'E', K, Ret>,
+      InferMatcherParamWithDefault<F, C, 'A', K, Ret>
     >
   } {
     return () =>

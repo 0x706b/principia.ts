@@ -1,6 +1,5 @@
 import type { Eq } from './Eq'
 import type * as HKT from './HKT'
-import type { ConstURI } from './Modules'
 import type { Ord } from './Ord'
 
 import { identity, unsafeCoerce } from './function'
@@ -14,7 +13,13 @@ import * as P from './prelude'
 
 export type Const<E, A> = E & { readonly _A: A }
 
-type URI = [HKT.URI<ConstURI>]
+export interface ConstF extends HKT.HKT {
+  readonly type: Const<this['E'], this['A']>
+  readonly variance: {
+    E: '_'
+    A: '_'
+  }
+}
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -39,7 +44,7 @@ export function make<E, A = never>(e: E): Const<E, A> {
  * @category Instances
  * @since 1.0.0
  */
-export function getApplicative<E>(M: P.Monoid<E>): P.Applicative<URI, HKT.Fix<'E', E>> {
+export function getApplicative<E>(M: P.Monoid<E>): P.Applicative<ConstF, HKT.Fix<'E', E>> {
   return P.Applicative({
     ...getApply(M),
     unit: () => make(undefined),
@@ -57,9 +62,9 @@ export function getApplicative<E>(M: P.Monoid<E>): P.Applicative<URI, HKT.Fix<'E
  * @category Instances
  * @since 1.0.0
  */
-export function getApply<E>(S: P.Semigroup<E>): P.Apply<URI, HKT.Fix<'E', E>> {
+export function getApply<E>(S: P.Semigroup<E>): P.Apply<ConstF, HKT.Fix<'E', E>> {
   type CE = HKT.Fix<'E', E>
-  const ap_: P.Apply<URI, CE>['ap_'] = (fab, fa) => make(S.combine_(fab, fa))
+  const ap_: P.Apply<ConstF, CE>['ap_'] = (fab, fa) => make(S.combine_(fab, fa))
   return P.Apply({
     map_,
     ap_
@@ -180,7 +185,7 @@ export function getMonoid<E, A>(M: P.Monoid<E>): P.Monoid<Const<E, A>> {
  * @category Instances
  * @since 1.0.0
  */
-export function getMonoidalFunctor<E>(M: P.Monoid<E>): P.MonoidalFunctor<URI, HKT.Fix<'E', E>> {
+export function getMonoidalFunctor<E>(M: P.Monoid<E>): P.MonoidalFunctor<ConstF, HKT.Fix<'E', E>> {
   return P.MonoidalFunctor({
     ...getSemimonoidalFunctor(M),
     unit: () => make(M.nat)
@@ -239,9 +244,9 @@ export function getSemigroup<E, A>(S: P.Semigroup<E>): P.Semigroup<Const<E, A>> 
  * @category Instances
  * @since 1.0.0
  */
-export function getSemimonoidalFunctor<E>(S: P.Semigroup<E>): P.SemimonoidalFunctor<URI, HKT.Fix<'E', E>> {
+export function getSemimonoidalFunctor<E>(S: P.Semigroup<E>): P.SemimonoidalFunctor<ConstF, HKT.Fix<'E', E>> {
   type CE = HKT.Fix<'E', E>
-  const crossWith_: P.SemimonoidalFunctor<URI, CE>['crossWith_'] = (fa, fb, _) => make(S.combine_(fa, fb))
+  const crossWith_: P.SemimonoidalFunctor<ConstF, CE>['crossWith_'] = (fa, fb, _) => make(S.combine_(fa, fb))
   return P.SemimonoidalFunctor({
     map_,
     crossWith_
@@ -263,5 +268,3 @@ export function getShow<E, A>(S: P.Show<E>): P.Show<Const<E, A>> {
     show: (c) => `Const(${S.show(c)})`
   }
 }
-
-export { ConstURI } from './Modules'

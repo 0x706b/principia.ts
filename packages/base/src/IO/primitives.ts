@@ -5,9 +5,7 @@ import type { Fiber, FiberContext, FiberDescriptor, InterruptStatus, Platform } 
 import type { FiberId } from '../Fiber/FiberId'
 import type { Trace } from '../Fiber/trace'
 import type { FiberRef } from '../FiberRef'
-import type * as HKT from '../HKT'
 import type { Maybe } from '../Maybe'
-import type { IOURI } from '../Modules'
 import type { Scope } from '../Scope'
 import type { Supervisor } from '../Supervisor'
 import type { Cause } from './Cause'
@@ -62,6 +60,9 @@ export const IOTag = {
 
 export const IOTypeId = Symbol.for('@principia/base/IO')
 export type IOTypeId = typeof IOTypeId
+
+export const IOURI = 'IO'
+export type IOURI = typeof IOURI
 
 export abstract class IO<R, E, A> {
   readonly [_U]: IOURI
@@ -458,8 +459,6 @@ export function concrete(_: IO<any, any, any>): Instruction {
   // @ts-expect-error
   return _
 }
-
-export type V = HKT.V<'E', '+'> & HKT.V<'R', '-'>
 
 export type UIO<A> = IO<unknown, never, A>
 export type URIO<R, A> = IO<R, never, A>

@@ -23,7 +23,7 @@ const adapter = (_: any) => {
 }
 
 export function genF<
-  F extends HKT.URIS,
+  F extends HKT.HKT,
   TC,
   Adapter = {
     <K, Q, W, X, I, S, R, E, A>(_: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>): GenHKT<
@@ -50,23 +50,23 @@ export function genF<
   A0
 >
 export function genF<F>(
-  F: P.Monad<HKT.UHKT<F>>,
+  F: P.Monad<HKT.F<F>>,
   config?: {
     adapter?: {
-      <A>(_: HKT.HKT<F, A>): GenHKT<HKT.HKT<F, A>, A>
+      <A>(_: HKT.FK1<F, A>): GenHKT<HKT.FK1<F, A>, A>
     }
   }
-): <Eff extends GenHKT<HKT.HKT<F, any>, any>, AEff>(
-  f: (i: { <A>(_: HKT.HKT<F, A>): GenHKT<HKT.HKT<F, A>, A> }) => Generator<Eff, AEff, any>
-) => HKT.HKT<F, AEff> {
-  return <T extends GenHKT<HKT.HKT<F, any>, any>, A>(
-    f: (i: { <A>(_: HKT.HKT<F, A>): GenHKT<HKT.HKT<F, A>, A> }) => Generator<T, A, any>
-  ): HKT.HKT<F, A> => {
+): <Eff extends GenHKT<HKT.FK1<F, any>, any>, AEff>(
+  f: (i: { <A>(_: HKT.FK1<F, A>): GenHKT<HKT.FK1<F, A>, A> }) => Generator<Eff, AEff, any>
+) => HKT.FK1<F, AEff> {
+  return <T extends GenHKT<HKT.FK1<F, any>, any>, A>(
+    f: (i: { <A>(_: HKT.FK1<F, A>): GenHKT<HKT.FK1<F, A>, A> }) => Generator<T, A, any>
+  ): HKT.FK1<F, A> => {
     return F.chain_(F.pure(undefined), () => {
       const iterator = f((config?.adapter ? config.adapter : adapter) as any)
       const state    = iterator.next()
 
-      function run(state: IteratorYieldResult<T> | IteratorReturnResult<A>): HKT.HKT<F, A> {
+      function run(state: IteratorYieldResult<T> | IteratorReturnResult<A>): HKT.FK1<F, A> {
         if (state.done) {
           return F.pure(state.value)
         }
@@ -100,7 +100,7 @@ const lazyAdapter = (_: () => any) => {
 }
 
 export function genWithHistoryF<
-  F extends HKT.URIS,
+  F extends HKT.HKT,
   TC,
   Adapter = {
     <K, Q, W, X, I, S, R, E, A>(_: () => HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>): GenLazyHKT<
@@ -127,20 +127,20 @@ export function genWithHistoryF<
   A0
 >
 export function genWithHistoryF<F>(
-  F: P.Monad<HKT.UHKT<F>>,
+  F: P.Monad<HKT.F<F>>,
   config?: {
     adapter?: {
-      <A>(_: () => HKT.HKT<F, A>): GenLazyHKT<HKT.HKT<F, A>, A>
+      <A>(_: () => HKT.FK1<F, A>): GenLazyHKT<HKT.FK1<F, A>, A>
     }
   }
-): <Eff extends GenLazyHKT<HKT.HKT<F, any>, any>, AEff>(
-  f: (i: { <A>(_: () => HKT.HKT<F, A>): GenLazyHKT<HKT.HKT<F, A>, A> }) => Generator<Eff, AEff, any>
-) => HKT.HKT<F, AEff> {
-  return <Eff extends GenLazyHKT<HKT.HKT<F, any>, any>, AEff>(
-    f: (i: { <A>(_: () => HKT.HKT<F, A>): GenLazyHKT<HKT.HKT<F, A>, A> }) => Generator<Eff, AEff, any>
-  ): HKT.HKT<F, AEff> => {
+): <Eff extends GenLazyHKT<HKT.FK1<F, any>, any>, AEff>(
+  f: (i: { <A>(_: () => HKT.FK1<F, A>): GenLazyHKT<HKT.FK1<F, A>, A> }) => Generator<Eff, AEff, any>
+) => HKT.FK1<F, AEff> {
+  return <Eff extends GenLazyHKT<HKT.FK1<F, any>, any>, AEff>(
+    f: (i: { <A>(_: () => HKT.FK1<F, A>): GenLazyHKT<HKT.FK1<F, A>, A> }) => Generator<Eff, AEff, any>
+  ): HKT.FK1<F, AEff> => {
     return F.chain_(F.pure(undefined), () => {
-      function run(replayStack: L.List<any>): HKT.HKT<F, AEff> {
+      function run(replayStack: L.List<any>): HKT.FK1<F, AEff> {
         const iterator = f((config?.adapter ? config.adapter : lazyAdapter) as any)
         let state      = iterator.next()
         L.forEach_(replayStack, (a) => {

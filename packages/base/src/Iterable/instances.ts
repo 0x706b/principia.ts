@@ -1,5 +1,4 @@
 import type * as HKT from '../HKT'
-import type { IterableURI } from '../Modules'
 
 import * as P from '../prelude'
 import {
@@ -21,7 +20,13 @@ import {
   unit
 } from './core'
 
-type URI = [HKT.URI<IterableURI>]
+export interface IterableF extends HKT.HKT {
+  readonly type: Iterable<this['A']>
+  readonly index: number
+  readonly variance: {
+    A: '+'
+  }
+}
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -29,35 +34,35 @@ type URI = [HKT.URI<IterableURI>]
  * -------------------------------------------------------------------------------------------------
  */
 
-export const Functor = P.Functor<URI>({
+export const Functor = P.Functor<IterableF>({
   map_
 })
 
-export const FunctorWithIndex = P.FunctorWithIndex<URI>({
+export const FunctorWithIndex = P.FunctorWithIndex<IterableF>({
   imap_: map_
 })
 
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<IterableF>({
   map_,
   crossWith_,
   cross_
 })
 
-export const Apply = P.Apply<URI>({
+export const Apply = P.Apply<IterableF>({
   map_,
   crossWith_,
   cross_,
   ap_
 })
 
-export const MonoidalFunctor = P.MonoidalFunctor<URI>({
+export const MonoidalFunctor = P.MonoidalFunctor<IterableF>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const Applicative = P.Applicative<URI>({
+export const Applicative = P.Applicative<IterableF>({
   map_,
   crossWith_,
   cross_,
@@ -66,7 +71,7 @@ export const Applicative = P.Applicative<URI>({
   pure
 })
 
-export const Monad = P.Monad<URI>({
+export const Monad = P.Monad<IterableF>({
   map_,
   crossWith_,
   cross_,
@@ -77,7 +82,7 @@ export const Monad = P.Monad<URI>({
   flatten
 })
 
-export const Filterable = P.Filterable<URI>({
+export const Filterable = P.Filterable<IterableF>({
   map_,
   filter_,
   filterMap_,
@@ -85,7 +90,7 @@ export const Filterable = P.Filterable<URI>({
   partitionMap_
 })
 
-export const FilterableWithIndex = P.FilterableWithIndex<URI>({
+export const FilterableWithIndex = P.FilterableWithIndex<IterableF>({
   imap_: map_,
   ifilter_: filter_,
   ifilterMap_: filterMap_,
@@ -93,24 +98,22 @@ export const FilterableWithIndex = P.FilterableWithIndex<URI>({
   ipartitionMap_: partitionMap_
 })
 
-export const Foldable = P.Foldable<URI>({
+export const Foldable = P.Foldable<IterableF>({
   foldl_,
   foldr_,
   foldMap_
 })
 
-export const FoldableWithIndex = P.FoldableWithIndex<URI>({
+export const FoldableWithIndex = P.FoldableWithIndex<IterableF>({
   ifoldl_: foldl_,
   ifoldr_: foldr_,
   ifoldMap_: foldMap_
 })
 
-export const Traversable = P.Traversable<URI>({
+export const Traversable = P.Traversable<IterableF>({
   map_,
   foldl_,
   foldr_,
   foldMap_,
   traverse_
 })
-
-export { IterableURI } from '../Modules'

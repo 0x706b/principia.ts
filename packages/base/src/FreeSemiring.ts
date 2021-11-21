@@ -11,7 +11,6 @@ import * as Ev from './Eval'
 import { flow, hole, identity, pipe } from './function'
 import * as HS from './HashSet'
 import * as L from './List/core'
-import { FreeSemiringURI } from './Modules'
 import * as P from './prelude'
 import * as Eq from './Structural/Equatable'
 import * as Ha from './Structural/Hashable'
@@ -24,8 +23,6 @@ import { LinkedList, LinkedListNode } from './util/support/LinkedList'
  * Model
  * -------------------------------------------------------------------------------------------------
  */
-
-export { FreeSemiringURI }
 
 export const FreeSemiringTypeId = Symbol.for('@principia/base/FreeSemiring')
 export type FreeSemiringTypeId = typeof FreeSemiringTypeId
@@ -145,7 +142,13 @@ export class Both<Z, A> {
  */
 export type FreeSemiring<Z, A> = Empty | Single<A> | Then<Z, A> | Both<Z, A>
 
-export type V = HKT.V<'X', '+'>
+export interface FreeSemiringF extends HKT.HKT {
+  readonly type: FreeSemiring<this['X'], this['A']>
+  readonly variance: {
+    X: '+'
+    A: '+'
+  }
+}
 
 export function isFreeSemiring(u: unknown): u is FreeSemiring<unknown, unknown> {
   return isObject(u) && FreeSemiringTypeId in u
@@ -432,24 +435,26 @@ export function flatten<Z, Z1, A>(ma: FreeSemiring<Z, FreeSemiring<Z1, A>>): Fre
  * -------------------------------------------------------------------------------------------------
  */
 
-export const traverse_: P.TraverseFn_<[HKT.URI<FreeSemiringURI>]> = (AG) => (ta, f) =>
-  fold_(
-    ta,
-    AG.pure(empty()),
-    flow(f, AG.map(single)),
-    (gb1, gb2) => AG.crossWith_(gb1, gb2, then),
-    (gb1, gb2) => AG.crossWith_(gb1, gb2, both)
-  )
+export const traverse_: P.TraverseFn_<FreeSemiringF> = P.implementTraverse_<FreeSemiringF>()(
+  () => (AG) => (ta, f) =>
+    fold_(
+      ta,
+      AG.pure(empty()),
+      flow(f, AG.map(single)),
+      (gb1, gb2) => AG.crossWith_(gb1, gb2, then),
+      (gb1, gb2) => AG.crossWith_(gb1, gb2, both)
+    )
+)
 
 /**
  * @dataFirst traverse_
  */
-export const traverse: P.TraverseFn<[HKT.URI<FreeSemiringURI>]> = (AG) => {
+export const traverse: P.TraverseFn<FreeSemiringF> = (AG) => {
   const traverseG_ = traverse_(AG)
   return (f) => (ta) => traverseG_(ta, f)
 }
 
-export const sequence: P.SequenceFn<[HKT.URI<FreeSemiringURI>]> = (AG) => {
+export const sequence: P.SequenceFn<FreeSemiringF> = (AG) => {
   const traverseG_ = traverse_(AG)
   return (ta) => traverseG_(ta, identity)
 }
@@ -488,24 +493,22 @@ export function first<A>(ma: FreeSemiring<never, A>): A {
  * -------------------------------------------------------------------------------------------------
  */
 
-type URI = [HKT.URI<FreeSemiringURI>]
-
 export function getEq<A>(E: P.Eq<A>): P.Eq<FreeSemiring<any, A>> {
   const equalsE = equals_(E)
   return P.Eq((x, y) => equalsE(x, y).value)
 }
 
-export const Functor = P.Functor<URI, V>({ map_ })
+export const Functor = P.Functor<FreeSemiringF>({ map_ })
 
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({ map_, cross_, crossWith_ })
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<FreeSemiringF>({ map_, cross_, crossWith_ })
 
-export const Apply = P.Apply<URI, V>({ map_, cross_, crossWith_, ap_ })
+export const Apply = P.Apply<FreeSemiringF>({ map_, cross_, crossWith_, ap_ })
 
-export const MonoidalFunctor = P.MonoidalFunctor<URI, V>({ map_, cross_, crossWith_, unit })
+export const MonoidalFunctor = P.MonoidalFunctor<FreeSemiringF>({ map_, cross_, crossWith_, unit })
 
-export const Applicative = P.Applicative<URI, V>({ map_, cross_, crossWith_, unit, pure })
+export const Applicative = P.Applicative<FreeSemiringF>({ map_, cross_, crossWith_, unit, pure })
 
-export const Monad = P.Monad<URI, V>({ map_, cross_, crossWith_, unit, pure, chain_, flatten })
+export const Monad = P.Monad<FreeSemiringF>({ map_, cross_, crossWith_, unit, pure, chain_, flatten })
 
 /*
  * -------------------------------------------------------------------------------------------------

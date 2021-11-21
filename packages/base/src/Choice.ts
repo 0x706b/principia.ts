@@ -1,93 +1,110 @@
 import type { Category } from './Category'
 import type * as HKT from './HKT'
 import type { Either } from './internal/Either'
-import type { Profunctor } from './Profunctor'
+import type { ProfunctorCategory } from './ProfunctorCategory'
 
-import { identity, pipe } from './function'
+import { pipe } from './function'
 
-export interface Choice<F extends HKT.URIS, C = HKT.Auto> extends Profunctor<F, C> {
+export interface Choice<F extends HKT.HKT, C = HKT.None> extends ProfunctorCategory<F, C> {
   readonly left: LeftFn<F, C>
   readonly right: RightFn<F, C>
 }
 
-export interface LeftFn<F extends HKT.URIS, TC = HKT.Auto> {
-  <C>(): <K, Q, W, X, I, S, R, A, B>(
-    pab: HKT.Kind<F, TC, K, Q, W, X, I, S, R, A, B>
-  ) => HKT.Kind<F, TC, K, Q, W, X, I, S, R, Either<A, C>, Either<B, C>>
+export interface LeftFn<F extends HKT.HKT, TC = HKT.None> {
+  <C>(): <K, Q, W, X, S, R, E, A, B>(
+    pab: HKT.Kind<F, TC, K, Q, W, X, A, S, R, E, B>
+  ) => HKT.Kind<F, TC, K, Q, W, X, Either<A, C>, S, R, E, Either<B, C>>
 }
 
-export interface RightFn<F extends HKT.URIS, TC = HKT.Auto> {
-  <A>(): <K, Q, W, X, I, S, R, B, C>(
-    pbc: HKT.Kind<F, TC, K, Q, W, X, I, S, R, B, C>
-  ) => HKT.Kind<F, TC, K, Q, W, X, I, S, R, Either<A, B>, Either<A, C>>
+export interface RightFn<F extends HKT.HKT, TC = HKT.None> {
+  <A>(): <K, Q, W, X, S, R, E, B, C>(
+    pbc: HKT.Kind<F, TC, K, Q, W, X, B, S, R, E, C>
+  ) => HKT.Kind<F, TC, K, Q, W, X, Either<A, B>, S, R, E, Either<A, C>>
 }
 
-export function splitF<F extends HKT.URIS, TC = HKT.Auto>(P: Choice<F, TC>, C: Category<F, TC>) {
-  return <K, Q, W, X, I, S, R, A, B, K1, Q1, W1, X1, I1, S1, R1, C, D>(
-    pab: HKT.Kind<F, TC, K, Q, W, X, I, S, R, A, B>,
+export interface SplitFn<F extends HKT.HKT, TC = HKT.None> {
+  <K, Q, W, X, S, R, E, A, B, K1, Q1, W1, X1, S1, R1, E1, C, D>(
+    pab: HKT.Kind<F, TC, K, Q, W, X, A, S, R, E, B>,
     pcd: HKT.Kind<
       F,
       TC,
-      HKT.Intro<TC, 'K', K1, K>,
-      HKT.Intro<TC, 'Q', Q1, Q>,
-      HKT.Intro<TC, 'W', W1, W>,
-      HKT.Intro<TC, 'X', X1, X>,
-      HKT.Intro<TC, 'I', I1, I>,
-      HKT.Intro<TC, 'S', S1, S>,
-      HKT.Intro<TC, 'R', R1, R>,
+      HKT.Intro<F, 'K', K, K1>,
+      HKT.Intro<F, 'Q', Q, Q1>,
+      HKT.Intro<F, 'W', W, W1>,
+      HKT.Intro<F, 'X', X, X1>,
       C,
+      HKT.Intro<F, 'S', S, S1>,
+      HKT.Intro<F, 'R', R, R1>,
+      HKT.Intro<F, 'E', E, E1>,
       D
     >
   ): HKT.Kind<
     F,
     TC,
-    HKT.Mix<TC, 'K', [K, K1]>,
-    HKT.Mix<TC, 'Q', [Q, Q1]>,
-    HKT.Mix<TC, 'W', [W, W1]>,
-    HKT.Mix<TC, 'X', [X, X1]>,
-    HKT.Mix<TC, 'I', [I, I1]>,
-    HKT.Mix<TC, 'S', [S, S1]>,
-    HKT.Mix<TC, 'R', [R, R1]>,
+    HKT.Mix<F, 'K', [K, K1]>,
+    HKT.Mix<F, 'Q', [Q, Q1]>,
+    HKT.Mix<F, 'W', [W, W1]>,
+    HKT.Mix<F, 'X', [X, X1]>,
     Either<A, C>,
+    HKT.Mix<F, 'S', [S, S1]>,
+    HKT.Mix<F, 'R', [R, R1]>,
+    HKT.Mix<F, 'E', [E, E1]>,
     Either<B, D>
-  > => pipe(P.left<C>()(pab), C.andThen(P.right<D>()(pcd)))
+  >
 }
 
-export function fanInF<F extends HKT.URIS, TC = HKT.Auto>(P: Choice<F, TC>, C: Category<F, TC>) {
-  return <K, Q, W, X, I, S, R, A, B, K1, Q1, W1, X1, I1, S1, R1, C>(
-    pac: HKT.Kind<F, TC, K, Q, W, X, I, S, R, A, C>,
+export function splitF<F extends HKT.HKT, TC = HKT.None>(P: Choice<F, TC>, C: Category<F, TC>): SplitFn<F, TC>
+export function splitF<F>(P: Choice<HKT.F<F>>, C: Category<HKT.F<F>>): SplitFn<HKT.F<F>> {
+  return <K, Q, W, X, S, R, E, A, B, C, D>(
+    pab: HKT.FK<F, K, Q, W, X, A, S, R, E, B>,
+    pcd: HKT.FK<F, K, Q, W, X, C, S, R, E, D>
+  ): HKT.FK<F, K, Q, W, X, Either<A, C>, S, R, E, Either<B, D>> => pipe(P.left<C>()(pab), C.andThen(P.right<B>()(pcd)))
+}
+
+export interface FanInFn<F extends HKT.HKT, TC = HKT.None> {
+  <K, Q, W, X, S, R, E, A, B, K1, Q1, W1, X1, S1, R1, E1, C>(
+    pac: HKT.Kind<F, TC, K, Q, W, X, A, S, R, E, C>,
     pbc: HKT.Kind<
       F,
       TC,
-      HKT.Intro<TC, 'K', K, K1>,
-      HKT.Intro<TC, 'Q', Q, Q1>,
-      HKT.Intro<TC, 'W', W, W1>,
-      HKT.Intro<TC, 'X', X, X1>,
-      HKT.Intro<TC, 'I', I, I1>,
-      HKT.Intro<TC, 'S', S, S1>,
-      HKT.Intro<TC, 'R', R, R1>,
+      HKT.Intro<F, 'K', K, K1>,
+      HKT.Intro<F, 'Q', Q, Q1>,
+      HKT.Intro<F, 'W', W, W1>,
+      HKT.Intro<F, 'X', X, X1>,
       B,
+      HKT.Intro<F, 'S', S, S1>,
+      HKT.Intro<F, 'R', R, R1>,
+      HKT.Intro<F, 'E', E, E1>,
       C
     >
   ): HKT.Kind<
     F,
     TC,
-    HKT.Mix<TC, 'K', [K, K1]>,
-    HKT.Mix<TC, 'Q', [Q, Q1]>,
-    HKT.Mix<TC, 'W', [W, W1]>,
-    HKT.Mix<TC, 'X', [X, X1]>,
-    HKT.Mix<TC, 'I', [I, I1]>,
-    HKT.Mix<TC, 'S', [S, S1]>,
-    HKT.Mix<TC, 'R', [R, R1]>,
+    HKT.Mix<F, 'K', [K, K1]>,
+    HKT.Mix<F, 'Q', [Q, Q1]>,
+    HKT.Mix<F, 'W', [W, W1]>,
+    HKT.Mix<F, 'X', [X, X1]>,
     Either<A, B>,
+    HKT.Mix<F, 'S', [S, S1]>,
+    HKT.Mix<F, 'R', [R, R1]>,
+    HKT.Mix<F, 'E', [E, E1]>,
     C
-  > =>
+  >
+}
+
+export function fanInF<F extends HKT.HKT, TC = HKT.None>(P: Choice<F, TC>, C: Category<F, TC>): FanInFn<F, TC>
+export function fanInF<F>(P: Choice<HKT.F<F>>, C: Category<HKT.F<F>>): FanInFn<HKT.F<F>> {
+  const splitPC = splitF(P, C)
+  return <K, Q, W, X, S, R, E, A, B, C>(
+    pac: HKT.FK<F, K, Q, W, X, A, S, R, E, C>,
+    pbc: HKT.FK<F, K, Q, W, X, B, S, R, E, C>
+  ): HKT.FK<F, K, Q, W, X, Either<A, B>, S, R, E, C> =>
     pipe(
-      splitF(P, C)(pac, pbc),
+      splitPC(pac, pbc),
       C.andThen(
         pipe(
           C.id<C>(),
-          P.dimap((cc: Either<C, C>) => (cc._tag === 'Left' ? cc.left : cc.right), identity)
+          P.lmap((cc) => (cc._tag === 'Left' ? cc.left : cc.right))
         )
       )
     )

@@ -1,5 +1,6 @@
 import type * as Eq from '@principia/base/Eq'
 import type { Has } from '@principia/base/Has'
+import type * as HKT from '@principia/base/HKT'
 import type { IO } from '@principia/base/IO'
 import type { Predicate } from '@principia/base/Predicate'
 import type { _A, _R } from '@principia/base/prelude'
@@ -25,6 +26,14 @@ import { Sample, shrinkFractional } from '../Sample'
 import * as Sa from '../Sample'
 import { Sized } from '../Sized'
 import { clamp } from '../util/math'
+
+export interface GenF extends HKT.HKT {
+  readonly type: Gen<this['R'], this['A']>
+  readonly variance: {
+    R: '-'
+    A: '+'
+  }
+}
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -406,5 +415,3 @@ export function zipWith_<R, A, R1, B, C>(fa: Gen<R, A>, fb: Gen<R1, B>, f: (a: A
 export function zipWith<A, R1, B, C>(fb: Gen<R1, B>, f: (a: A, b: B) => C): <R>(fa: Gen<R, A>) => Gen<R & R1, C> {
   return (fa) => zipWith_(fa, fb, f)
 }
-
-export { GenURI } from '../Modules'

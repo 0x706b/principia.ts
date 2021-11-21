@@ -352,16 +352,6 @@ export interface ArrayOps {
   filterMap<T, B>(this: ReadonlyArray<T>, f: (a: T, i: number) => Maybe<B>): ReadonlyArray<B>
 
   /**
-   * @rewriteConstraint filterMapA_ from "@principia/base/Array"
-   */
-  filterMapA<T, F extends HKT.URIS, C = HKT.Auto>(
-    this: ReadonlyArray<T>,
-    A: Applicative<F, C>
-  ): <K, Q, W, X, I, S, R, E, A>(
-    f: (a: T, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Maybe<A>>
-  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
-
-  /**
    * @rewrite findLast_ from "@principia/base/Array"
    */
   findLast<A>(this: NonEmptyArray<A>, predicate: Predicate<A>): Maybe<A>
@@ -537,26 +527,6 @@ export interface ArrayOps {
   lookup<T>(this: ReadonlyArray<T>, i: number): Maybe<T>
 
   /**
-   * @rewrite _mapA from "@principia/base/Array"
-   */
-  mapA<A, F extends HKT.URIS, C = HKT.Auto>(
-    this: NonEmptyArray<A>,
-    A: Applicative<F, C>
-  ): <K, Q, W, X, I, S, R, E, B>(
-    f: (a: A, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
-  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, NonEmptyArray<B>>
-
-  /**
-   * @rewriteConstraint mapA_ from "@principia/base/Array"
-   */
-  mapA<T, F extends HKT.URIS, C>(
-    this: ReadonlyArray<T>,
-    A: Applicative<F, C>
-  ): <K, Q, W, X, I, S, R, E, A>(
-    f: (a: T, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
-  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
-
-  /**
    * @rewrite mapAccum_ from "@principia/base/Array"
    */
   mapAccum<A, S, B>(this: NonEmptyArray<A>, s: S, f: (s: S, a: A) => readonly [B, S]): readonly [NonEmptyArray<B>, S]
@@ -604,6 +574,7 @@ export interface ArrayOps {
     this: ReadonlyArray<T>,
     refinement: RefinementWithIndex<number, T, B>
   ): readonly [ReadonlyArray<T>, ReadonlyArray<B>]
+
   /**
    * @rewrite partition_ from "@principia/base/Array"
    */
@@ -615,29 +586,18 @@ export interface ArrayOps {
   /**
    * @rewrite partitionMap_ from "@principia/base/Array"
    */
-  partitionMap<A, B, C>(
-    this: NonEmptyArray<A>,
-    f: (a: A, i: number) => Either<B, C>
-  ): readonly [ReadonlyArray<B>, ReadonlyArray<C>]
-
-  /**
-   * @rewrite partitionMap_ from "@principia/base/Array"
-   */
   partitionMap<T, B, C>(
     this: ReadonlyArray<T>,
     f: (a: T, i: number) => Either<B, C>
   ): readonly [ReadonlyArray<B>, ReadonlyArray<C>]
 
   /**
-   * @rewriteConstraint partitionMapA_ from "@principia/base/Array"
+   * @rewrite partitionMap_ from "@principia/base/Array"
    */
-  partitionMapA<T, F extends HKT.URIS, C = HKT.Auto>(
-    this: ReadonlyArray<T>,
-    A: Applicative<F, C>
-  ): <K, Q, W, X, I, S, R, E, A, B>(
-    f: (a: T, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<A, B>>
-  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [ReadonlyArray<A>, ReadonlyArray<B>]>
-
+  partitionMap<A, B, C>(
+    this: NonEmptyArray<A>,
+    f: (a: A, i: number) => Either<B, C>
+  ): readonly [ReadonlyArray<B>, ReadonlyArray<C>]
   /**
    * @rewrite prepend_ from "@principia/base/Array"
    */
@@ -780,6 +740,26 @@ export interface ArrayOps {
   toBuffer(this: ReadonlyArray<Byte>): Uint8Array
 
   /**
+   * @rewriteConstraint traverse_ from "@principia/base/Array"
+   */
+  traverse<T, F extends HKT.HKT, C = HKT.None>(
+    this: ReadonlyArray<T>,
+    A: Applicative<F, C>
+  ): <K, Q, W, X, I, S, R, E, A>(
+    f: (a: T, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
+
+  /**
+   * @rewrite traverse_ from "@principia/base/Array"
+   */
+  traverse<A, F extends HKT.HKT, C = HKT.None>(
+    this: NonEmptyArray<A>,
+    A: Applicative<F, C>
+  ): <K, Q, W, X, I, S, R, E, B>(
+    f: (a: A, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, NonEmptyArray<B>>
+
+  /**
    * @rewriteConstraint union_ from "@principia/base/Array"
    */
   union<A>(this: NonEmptyArray<A>, E: Eq<A>): (ys: ReadonlyArray<A>) => NonEmptyArray<A>
@@ -808,6 +788,26 @@ export interface ArrayOps {
    * @rewrite updateAt_ from "@principia/base/Array"
    */
   updateAt<T>(this: ReadonlyArray<T>, i: number, a: T): Maybe<ReadonlyArray<T>>
+
+  /**
+   * @rewriteConstraint wilt_ from "@principia/base/Array"
+   */
+  wilt<T, F extends HKT.HKT, C = HKT.None>(
+    this: ReadonlyArray<T>,
+    A: Applicative<F, C>
+  ): <K, Q, W, X, I, S, R, E, A, B>(
+    f: (a: T, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<A, B>>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [ReadonlyArray<A>, ReadonlyArray<B>]>
+
+  /**
+   * @rewriteConstraint wither_ from "@principia/base/Array"
+   */
+  wither<T, F extends HKT.HKT, C = HKT.Auto>(
+    this: ReadonlyArray<T>,
+    A: Applicative<F, C>
+  ): <K, Q, W, X, I, S, R, E, A>(
+    f: (a: T, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Maybe<A>>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
 
   /**
    * @rewrite zip_ from "@principia/base/Array"

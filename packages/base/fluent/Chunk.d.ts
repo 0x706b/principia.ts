@@ -257,7 +257,7 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewriteConstraint filterMapA_ from "@principia/base/Chunk"
      */
-    filterMapA<A, F extends HKT.URIS, C>(
+    filterMapA<A, F extends HKT.HKT, C>(
       this: Chunk<A>,
       A: Applicative<F, C>
     ): <K, Q, W, X, I, S, R, E, B>(
@@ -337,7 +337,7 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewriteConstraint mapA_ from "@principia/base/Chunk"
      */
-    mapA<A, F extends HKT.URIS, C>(
+    mapA<A, F extends HKT.HKT, C>(
       this: Chunk<A>,
       A: Applicative<F, C>
     ): <K, Q, W, X, I, S, R, E, B>(
@@ -380,7 +380,7 @@ declare module '@principia/base/Chunk/core' {
     /**
      * @rewriteConstraint partitionMapA_ from "@principia/base/Chunk"
      */
-    partitionMapA<A, F extends HKT.URIS, C>(
+    partitionMapA<A, F extends HKT.HKT, C>(
       this: Chunk<A>,
       A: Applicative<F, C>
     ): <K, Q, W, X, I, S, R, E, B, D>(

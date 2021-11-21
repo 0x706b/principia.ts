@@ -1,7 +1,6 @@
 import type { Guard } from '../Guard'
 import type * as HKT from '../HKT'
 import type { These } from '../internal/These'
-import type { NonEmptyArrayURI } from '../Modules'
 import type { Endomorphism } from '../prelude'
 import type { ReadonlyRecord } from '../Record'
 
@@ -17,6 +16,14 @@ import * as Ord from '../Ord'
 import * as P from '../prelude'
 import * as S from '../Semigroup'
 import { isArray } from '../util/predicates'
+
+export interface NonEmptyArrayF extends HKT.HKT {
+  readonly type: NonEmptyArray<this['A']>
+  readonly index: number
+  readonly variance: {
+    A: '+'
+  }
+}
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -596,26 +603,30 @@ export function chain<A, B>(f: (a: A, i: number) => NonEmptyArray<B>): (ma: NonE
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const traverse_: P.TraverseIndexFn_<[HKT.URI<NonEmptyArrayURI>]> = (AG) => (ta, f) =>
-  _.foldl_(tail(ta), AG.map_(f(ta[0], 0), pure), (fbs, a, i) => AG.crossWith_(fbs, f(a, i + 1), appendW_))
+export const traverse_: P.TraverseIndexFn_<NonEmptyArrayF> = P.implementTraverseWithIndex_<NonEmptyArrayF>()(
+  () => (AG) => (ta, f) =>
+    _.foldl_(tail(ta), AG.map_(f(ta[0], 0), pure), (fbs, a, i) => AG.crossWith_(fbs, f(a, i + 1), appendW_))
+)
 
 /**
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const traverse: P.MapWithIndexAFn<[HKT.URI<NonEmptyArrayURI>]> = (AG) => {
+export const traverse: P.MapWithIndexAFn<NonEmptyArrayF> = (AG) => {
   const traverseG_ = traverse_(AG)
   return (f) => (ta) => traverseG_(ta, f)
 }
 
-export const mapAccumM_: P.MapAccumWithIndexMFn_<[HKT.URI<NonEmptyArrayURI>]> = (M) => (ta, s, f) =>
-  _.foldl_(
-    tail(ta),
-    M.map_(f(s, head(ta), 0), ([b, s]) => [pure(b), s]),
-    (b, a, i) => M.chain_(b, ([bs, s]) => M.map_(f(s, a, i), ([b, s]) => [append_(bs, b), s]))
-  )
+export const mapAccumM_: P.MapAccumWithIndexMFn_<NonEmptyArrayF> = P.implementMapAccumMWithIndex_<NonEmptyArrayF>()(
+  () => (M) => (ta, s, f) =>
+    _.foldl_(
+      tail(ta),
+      M.map_(f(s, head(ta), 0), ([b, s]) => [pure(b), s]),
+      (b, a, i) => M.chain_(b, ([bs, s]) => M.map_(f(s, a, i), ([b, s]) => [append_(bs, b), s]))
+    )
+)
 
-export const mapAccumM: P.MapAccumWithIndexMFn<[HKT.URI<NonEmptyArrayURI>]> = (M) => {
+export const mapAccumM: P.MapAccumWithIndexMFn<NonEmptyArrayF> = (M) => {
   const imapAccumMG_ = mapAccumM_(M)
   return (s, f) => (ta) => imapAccumMG_(ta, s, f)
 }
@@ -627,7 +638,7 @@ export const mapAccumM: P.MapAccumWithIndexMFn<[HKT.URI<NonEmptyArrayURI>]> = (M
  * @category Traversable
  * @since 1.0.0
  */
-export const sequence: P.SequenceFn<[HKT.URI<NonEmptyArrayURI>]> = (AG) => traverse(AG)(identity)
+export const sequence: P.SequenceFn<NonEmptyArrayF> = (AG) => (ta) => traverse_(AG)(ta, identity)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -1284,47 +1295,45 @@ export function max<A>(O: P.Ord<A>): (as: NonEmptyArray<A>) => A {
  * -------------------------------------------------------------------------------------------------
  */
 
-type URI = [HKT.URI<NonEmptyArrayURI>]
-
 export const GuardUnknownNonEmptyArray: Guard<unknown, NonEmptyArray<unknown>> = G.Guard(
   (u: unknown): u is NonEmptyArray<unknown> => isArray(u) && u.length > 0
 )
 
-export const Semialign = P.Semialign<URI>({
+export const Semialign = P.Semialign<NonEmptyArrayF>({
   map_,
   alignWith_,
   align_
 })
 
-export const Functor = P.Functor<URI>({
+export const Functor = P.Functor<NonEmptyArrayF>({
   map_
 })
 
-export const FunctorWithIndex = P.FunctorWithIndex<URI>({
+export const FunctorWithIndex = P.FunctorWithIndex<NonEmptyArrayF>({
   imap_: map_
 })
 
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<NonEmptyArrayF>({
   map_,
   cross_,
   crossWith_
 })
 
-export const Apply = P.Apply<URI>({
+export const Apply = P.Apply<NonEmptyArrayF>({
   map_,
   cross_,
   crossWith_,
   ap_
 })
 
-export const MonoidalFunctor = P.MonoidalFunctor<URI>({
+export const MonoidalFunctor = P.MonoidalFunctor<NonEmptyArrayF>({
   map_,
   cross_,
   crossWith_,
   unit
 })
 
-export const Applicative = P.Applicative<URI>({
+export const Applicative = P.Applicative<NonEmptyArrayF>({
   map_,
   cross_,
   crossWith_,
@@ -1333,29 +1342,29 @@ export const Applicative = P.Applicative<URI>({
   unit
 })
 
-export const Zip = P.Zip<URI>({
+export const Zip = P.Zip<NonEmptyArrayF>({
   zip_,
   zipWith_
 })
 
-export const Alt = P.Alt<URI>({
+export const Alt = P.Alt<NonEmptyArrayF>({
   map_,
   alt_
 })
 
-export const Foldable = P.Foldable<URI>({
+export const Foldable = P.Foldable<NonEmptyArrayF>({
   foldl_,
   foldr_,
   foldMap_
 })
 
-export const FoldableWithIndex = P.FoldableWithIndex<URI>({
+export const FoldableWithIndex = P.FoldableWithIndex<NonEmptyArrayF>({
   ifoldl_: foldl_,
   ifoldr_: foldr_,
   ifoldMap_: foldMap_
 })
 
-export const Monad = P.Monad<URI>({
+export const Monad = P.Monad<NonEmptyArrayF>({
   map_,
   crossWith_,
   cross_,
@@ -1366,7 +1375,7 @@ export const Monad = P.Monad<URI>({
   flatten
 })
 
-export const Traversable = P.Traversable<URI>({
+export const Traversable = P.Traversable<NonEmptyArrayF>({
   map_,
   foldl_,
   foldr_,
@@ -1374,7 +1383,7 @@ export const Traversable = P.Traversable<URI>({
   traverse_
 })
 
-export const TraversableWithIndex = P.TraversableWithIndex<URI>({
+export const TraversableWithIndex = P.TraversableWithIndex<NonEmptyArrayF>({
   imap_: map_,
   ifoldl_: foldl_,
   ifoldr_: foldr_,

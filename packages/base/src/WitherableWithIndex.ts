@@ -9,7 +9,7 @@ import * as HKT from './HKT'
 import * as Mb from './internal/Maybe'
 import { TraversableWithIndex } from './TraversableWithIndex'
 
-export interface WitherableWithIndex<F extends HKT.URIS, C = HKT.Auto>
+export interface WitherableWithIndex<F extends HKT.HKT, C = HKT.None>
   extends FilterableWithIndex<F, C>,
     TraversableWithIndex<F, C> {
   readonly iwither_: WitherWithIndexFn_<F, C>
@@ -18,41 +18,55 @@ export interface WitherableWithIndex<F extends HKT.URIS, C = HKT.Auto>
   readonly iwilt: WiltWithIndexFn<F, C>
 }
 
-export type WitherableWithIndexMin<F extends HKT.URIS, C = HKT.Auto> = FilterableWithIndexMin<F, C> &
+export type WitherableWithIndexMin<F extends HKT.HKT, C = HKT.None> = FilterableWithIndexMin<F, C> &
   TraversableWithIndexMin<F, C> & {
     readonly iwither_: WitherWithIndexFn_<F, C>
     readonly iwilt_: WiltWithIndexFn_<F, C>
   }
 
-export function WitherableWithIndex<F extends HKT.URIS, C = HKT.Auto>(
+export function WitherableWithIndex<F extends HKT.HKT, C = HKT.None>(
   F: WitherableWithIndexMin<F, C>
 ): WitherableWithIndex<F, C> {
   return HKT.instance({
     ...FilterableWithIndex(F),
     ...TraversableWithIndex(F),
     iwilt_: F.iwilt_,
-    iwilt: (AG) => {
+    iwilt: <G extends HKT.HKT, CG = HKT.None>(AG: Applicative<G, CG>) => {
       const iwilt_ = F.iwilt_(AG)
-      return (f) => (wa) => iwilt_(wa, f)
+      return <KG, QG, WG, XG, IG, SG, RG, EG, A, B, B1, KF>(
+          f: (
+            a: A,
+            k: HKT.IndexFor<F, HKT.OrFix<C, 'K', KF>>
+          ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, Either<B, B1>>
+        ) =>
+        <QF, WF, XF, IF, SF, RF, EF>(wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>) =>
+          iwilt_(wa, f)
     },
     iwither_: F.iwither_,
-    iwither: (AG) => {
+    iwither: <G extends HKT.HKT, CG = HKT.None>(AG: Applicative<G, CG>) => {
       const iwither_ = F.iwither_(AG)
-      return (f) => (wa) => iwither_(wa, f)
+      return <KG, QG, WG, XG, IG, SG, RG, EG, A, B, KF>(
+          f: (
+            a: A,
+            k: HKT.IndexFor<F, HKT.OrFix<C, 'K', KF>>
+          ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, Maybe<B>>
+        ) =>
+        <QF, WF, XF, IF, SF, RF, EF>(wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>) =>
+          iwither_(wa, f)
     }
   })
 }
 
-export interface WitherWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
-  <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <KG, QG, WG, XG, IG, SG, RG, EG, A, B, KF>(
-    f: (a: A, k: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Maybe<B>>
+export interface WitherWithIndexFn<F extends HKT.HKT, C = HKT.None> {
+  <G extends HKT.HKT, GC = HKT.None>(F: Applicative<G, GC>): <KG, QG, WG, XG, IG, SG, RG, EG, A, B, KF>(
+    f: (a: A, k: HKT.IndexFor<F, HKT.OrFix<C, 'K', KF>>) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Maybe<B>>
   ) => <QF, WF, XF, IF, SF, RF, EF>(
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>
   ) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
-export interface WitherWithIndexFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <
+export interface WitherWithIndexFn_<F extends HKT.HKT, C = HKT.None> {
+  <G extends HKT.HKT, GC = HKT.None>(F: Applicative<G, GC>): <
     KF,
     QF,
     WF,
@@ -73,12 +87,12 @@ export interface WitherWithIndexFn_<F extends HKT.URIS, C = HKT.Auto> {
     B
   >(
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>,
-    f: (a: A, k: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Maybe<B>>
+    f: (a: A, k: HKT.IndexFor<F, HKT.OrFix<C, 'K', KF>>) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Maybe<B>>
   ) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
-export function implementFilterMapWithIndexA<F extends HKT.URIS, C = HKT.Auto>(): (
-  i: <KF, QF, WF, XF, IF, SF, RF, EF, A, B, G>(_: {
+export function implementFilterMapWithIndexA<F extends HKT.HKT, C = HKT.None>(): (
+  i: <KF, QF, WF, XF, IF, SF, RF, EF, A, GK, GQ, GW, GX, GI, GS, GR, GE, B, G>(_: {
     A: A
     B: B
     G: G
@@ -91,19 +105,19 @@ export function implementFilterMapWithIndexA<F extends HKT.URIS, C = HKT.Auto>()
     FR: RF
     FE: EF
   }) => (
-    G: Applicative<HKT.UHKT<G>>
+    G: Applicative<HKT.F<G>>
   ) => (
-    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', F, KF>>) => HKT.HKT<G, Maybe<B>>
+    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<C, 'K', KF>>) => HKT.FK<G, GK, GQ, GW, GX, GI, GS, GR, GE, Maybe<B>>
   ) => (
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>
-  ) => HKT.HKT<G, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>>
+  ) => HKT.FK<G, GK, GQ, GW, GX, GI, GS, GR, GE, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 ) => WitherWithIndexFn<F, C>
 export function implementFilterMapWithIndexA() {
   return (i: any) => i()
 }
 
-export function implementWitherWithIndex_<F extends HKT.URIS, C = HKT.Auto>(): (
-  i: <KF, QF, WF, XF, IF, SF, RF, EF, A, B, G>(_: {
+export function implementWitherWithIndex_<F extends HKT.HKT, C = HKT.None>(): (
+  i: <KF, QF, WF, XF, IF, SF, RF, EF, A, GK, GQ, GW, GX, GI, GS, GR, GE, B, G>(_: {
     A: A
     B: B
     G: G
@@ -116,21 +130,21 @@ export function implementWitherWithIndex_<F extends HKT.URIS, C = HKT.Auto>(): (
     FR: RF
     FE: EF
   }) => (
-    G: Applicative<HKT.UHKT<G>>
+    G: Applicative<HKT.F<G>>
   ) => (
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>,
-    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>) => HKT.HKT<G, Maybe<B>>
-  ) => HKT.HKT<G, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>>
+    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<C, 'K', KF>>) => HKT.FK<G, GK, GQ, GW, GX, GI, GS, GR, GE, Maybe<B>>
+  ) => HKT.FK<G, GK, GQ, GW, GX, GI, GS, GR, GE, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 ) => WitherWithIndexFn_<F, C>
 export function implementWitherWithIndex_() {
   return (i: any) => i()
 }
 
-export interface WiltWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
-  <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <KG, QG, WG, XG, IG, SG, RG, EG, A, B, B2, KF>(
+export interface WiltWithIndexFn<F extends HKT.HKT, C = HKT.None> {
+  <G extends HKT.HKT, GC = HKT.None>(F: Applicative<G, GC>): <KG, QG, WG, XG, IG, SG, RG, EG, A, B, B2, KF>(
     f: (
       a: A,
-      k: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>
+      k: HKT.IndexFor<F, HKT.OrFix<C, 'K', KF>>
     ) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Either<B, B2>>
   ) => <QF, WF, XF, IF, SF, RF, EF>(
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>
@@ -149,8 +163,8 @@ export interface WiltWithIndexFn<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export interface WiltWithIndexFn_<F extends HKT.URIS, C = HKT.Auto> {
-  <G extends HKT.URIS, GC = HKT.Auto>(F: Applicative<G, GC>): <
+export interface WiltWithIndexFn_<F extends HKT.HKT, C = HKT.None> {
+  <G extends HKT.HKT, GC = HKT.None>(F: Applicative<G, GC>): <
     KF,
     QF,
     WF,
@@ -174,7 +188,7 @@ export interface WiltWithIndexFn_<F extends HKT.URIS, C = HKT.Auto> {
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>,
     f: (
       a: A,
-      k: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>
+      k: HKT.IndexFor<F, HKT.OrFix<C, 'K', KF>>
     ) => HKT.Kind<G, GC, KG, QG, WG, XG, IG, SG, RG, EG, Either<B, B2>>
   ) => HKT.Kind<
     G,
@@ -191,8 +205,8 @@ export interface WiltWithIndexFn_<F extends HKT.URIS, C = HKT.Auto> {
   >
 }
 
-export function implementPartitionMapWithIndexA<F extends HKT.URIS, C = HKT.Auto>(): (
-  i: <KF, QF, WF, XF, IF, SF, RF, EF, A, B, B2, G>(_: {
+export function implementPartitionMapWithIndexA<F extends HKT.HKT, C = HKT.None>(): (
+  i: <KF, QF, WF, XF, IF, SF, RF, EF, A, KG, QG, WG, XG, IG, SG, RG, EG, B, B2, G>(_: {
     A: A
     B: B
     B2: B2
@@ -206,13 +220,21 @@ export function implementPartitionMapWithIndexA<F extends HKT.URIS, C = HKT.Auto
     FR: RF
     FE: EF
   }) => (
-    G: Applicative<HKT.UHKT<G>>
+    G: Applicative<HKT.F<G>>
   ) => (
-    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>) => HKT.HKT<G, Either<B, B2>>
+    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<C, 'K', KF>>) => HKT.FK<G, KG, QG, WG, XG, IG, SG, RG, EG, Either<B, B2>>
   ) => (
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>
-  ) => HKT.HKT<
+  ) => HKT.FK<
     G,
+    KG,
+    QG,
+    WG,
+    XG,
+    IG,
+    SG,
+    RG,
+    EG,
     readonly [HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B2>]
   >
 ) => WiltWithIndexFn<F, C>
@@ -220,8 +242,8 @@ export function implementPartitionMapWithIndexA() {
   return (i: any) => i()
 }
 
-export function implementPartitionMapWithIndexA_<F extends HKT.URIS, C = HKT.Auto>(): (
-  i: <KF, QF, WF, XF, IF, SF, RF, EF, A, B, B2, G>(_: {
+export function implementPartitionMapWithIndexA_<F extends HKT.HKT, C = HKT.None>(): (
+  i: <KF, QF, WF, XF, IF, SF, RF, EF, A, KG, QG, WG, XG, IG, SG, RG, EG, B, B2, G>(_: {
     A: A
     B: B
     B2: B2
@@ -235,12 +257,20 @@ export function implementPartitionMapWithIndexA_<F extends HKT.URIS, C = HKT.Aut
     FR: RF
     FE: EF
   }) => (
-    G: Applicative<HKT.UHKT<G>>
+    G: Applicative<HKT.F<G>>
   ) => (
     wa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>,
-    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', C, KF>>) => HKT.HKT<G, Either<B, B2>>
-  ) => HKT.HKT<
+    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<C, 'K', KF>>) => HKT.FK<G, KG, QG, WG, XG, IG, SG, RG, EG, Either<B, B2>>
+  ) => HKT.FK<
     G,
+    KG,
+    QG,
+    WG,
+    XG,
+    IG,
+    SG,
+    RG,
+    EG,
     readonly [HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B>, HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, B2>]
   >
 ) => WiltWithIndexFn_<F, C>
@@ -248,8 +278,8 @@ export function implementPartitionMapWithIndexA_() {
   return (i: any) => i()
 }
 
-export interface FilterWithIndexAFn_<F extends HKT.URIS, CF = HKT.Auto> {
-  <G extends HKT.URIS, CG = HKT.Auto>(G: Applicative<G, CG>): <
+export interface FilterWithIndexAFn_<F extends HKT.HKT, CF = HKT.None> {
+  <G extends HKT.HKT, CG = HKT.None>(G: Applicative<G, CG>): <
     KF,
     QF,
     WF,
@@ -269,25 +299,25 @@ export interface FilterWithIndexAFn_<F extends HKT.URIS, CF = HKT.Auto> {
     EG
   >(
     fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>,
-    p: (a: AF, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, boolean>
+    p: (a: AF, i: HKT.IndexFor<F, HKT.OrFix<CF, 'K', KF>>) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, boolean>
   ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>>
 }
 
-export function getFilterWithIndexA_<F extends HKT.URIS, CF = HKT.Auto>(
+export function getFilterWithIndexA_<F extends HKT.HKT, CF = HKT.None>(
   F: WitherableWithIndexMin<F, CF>
 ): FilterWithIndexAFn_<F, CF> {
   return (G) => (fa, p) => F.iwither_(G)(fa, (a, i) => G.map_(p(a, i), (bb) => (bb ? Mb.just(a) : Mb.nothing())))
 }
 
-export interface FilterWithIndexAFn<F extends HKT.URIS, CF = HKT.Auto> {
-  <G extends HKT.URIS, CG = HKT.Auto>(G: Applicative<G, CG>): <KF, AF, KG, QG, WG, XG, IG, SG, RG, EG>(
-    p: (a: AF, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, boolean>
+export interface FilterWithIndexAFn<F extends HKT.HKT, CF = HKT.None> {
+  <G extends HKT.HKT, CG = HKT.None>(G: Applicative<G, CG>): <KF, AF, KG, QG, WG, XG, IG, SG, RG, EG>(
+    p: (a: AF, i: HKT.IndexFor<F, HKT.OrFix<CF, 'K', KF>>) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, boolean>
   ) => <QF, WF, XF, IF, SF, RF, EF>(
     fa: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>
   ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, AF>>
 }
 
-export function getFilterWithIndexA<F extends HKT.URIS, CF = HKT.Auto>(
+export function getFilterWithIndexA<F extends HKT.HKT, CF = HKT.None>(
   F: WitherableWithIndexMin<F, CF>
 ): FilterWithIndexAFn<F, CF> {
   return (G) => (p) => (fa) => getFilterWithIndexA_(F)(G)(fa, p)

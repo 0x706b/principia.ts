@@ -2,7 +2,6 @@ import type { Chunk } from './Chunk'
 import type { Has, Tag } from './Has'
 import type * as HKT from './HKT'
 import type { List } from './List'
-import type { SyncURI } from './Modules'
 
 import * as A from './Array/core'
 import * as E from './Either'
@@ -10,7 +9,6 @@ import { NoSuchElementError } from './Error'
 import { flow, identity, pipe } from './function'
 import { isTag, mergeEnvironments } from './Has'
 import * as M from './Maybe'
-import { ZURI } from './Modules'
 import * as P from './prelude'
 import * as R from './Record'
 import * as Z from './Z'
@@ -24,7 +22,7 @@ import * as Z from './Z'
 export interface Sync<R, E, A> extends Z.Z<never, unknown, unknown, R, E, A> {}
 
 export function isSync(u: unknown): u is Sync<any, any, any> {
-  return typeof u === 'object' && u != null && '_U' in u && u['_U'] === ZURI
+  return typeof u === 'object' && u != null && Z.ZTypeId in u
 }
 
 export type USync<A> = Sync<unknown, never, A>
@@ -800,26 +798,31 @@ export function collectAllList<R, E, A>(as: Iterable<Sync<R, E, A>>): Sync<R, E,
  * -------------------------------------------------------------------------------------------------
  */
 
-export type V = HKT.V<'R', '-'> & HKT.V<'E', '+'>
+export interface SyncF extends HKT.HKT {
+  readonly type: Sync<this['R'], this['E'], this['A']>
+  readonly variance: {
+    readonly R: '-'
+    readonly E: '+'
+    readonly A: '+'
+  }
+}
 
-type URI = [HKT.URI<typeof SyncURI>]
-
-export const Alt = P.Alt<URI, V>({
+export const Alt = P.Alt<SyncF>({
   map_,
   alt_
 })
 
-export const Functor = P.Functor<URI, V>({
+export const Functor = P.Functor<SyncF>({
   map_
 })
 
-export const Bifunctor = P.Bifunctor<URI, V>({
+export const Bifunctor = P.Bifunctor<SyncF>({
   mapLeft_: mapError_,
   mapRight_: map_,
   bimap_
 })
 
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({ map_, crossWith_, cross_ })
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<SyncF>({ map_, crossWith_, cross_ })
 
 export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
 
@@ -832,7 +835,7 @@ export const mapN_ = P.mapNF_(SemimonoidalFunctor)
  */
 export const mapN = P.mapNF(SemimonoidalFunctor)
 
-export const Apply = P.Apply<URI, V>({
+export const Apply = P.Apply<SyncF>({
   map_,
   crossWith_,
   cross_,
@@ -842,14 +845,14 @@ export const Apply = P.Apply<URI, V>({
 export const apS = P.apSF(Apply)
 export const apT = P.apTF(Apply)
 
-export const MonoidalFunctor = P.MonoidalFunctor<URI, V>({
+export const MonoidalFunctor = P.MonoidalFunctor<SyncF>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const Applicative = P.Applicative<URI, V>({
+export const Applicative = P.Applicative<SyncF>({
   map_,
   crossWith_,
   cross_,
@@ -858,7 +861,7 @@ export const Applicative = P.Applicative<URI, V>({
   pure
 })
 
-export const Monad = P.Monad<URI, V>({
+export const Monad = P.Monad<SyncF>({
   map_,
   cross_,
   crossWith_,
@@ -869,7 +872,7 @@ export const Monad = P.Monad<URI, V>({
   flatten
 })
 
-export const MonadExcept = P.MonadExcept<URI, V>({
+export const MonadExcept = P.MonadExcept<SyncF>({
   map_,
   cross_,
   crossWith_,
@@ -1030,5 +1033,3 @@ export function gen(...args: any[]): any {
 
   return _gen(args[0])
 }
-
-export { SyncURI } from './Modules'

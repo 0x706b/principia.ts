@@ -1,47 +1,53 @@
 import type * as HKT from '../HKT'
-import type { ExitURI } from '../Modules'
+import type { PExit } from './core'
 
 import * as P from '../prelude'
 import { ap_, bimap_, chain_, cross_, crossWith_, flatten, map_, mapError_, pure, unit } from './core'
 
-export type URI = [HKT.URI<ExitURI>]
-export type V = HKT.V<'E', '+'> & HKT.V<'X', '+'>
+export interface PExitF extends HKT.HKT {
+  readonly type: PExit<this['X'], this['E'], this['A']>
+  readonly variance: {
+    X: '+'
+    E: '+'
+    A: '+'
+  }
+}
 
-export const Functor = P.Functor<URI, V>({
+export const Functor = P.Functor<PExitF>({
   map_
 })
 
-export const Bifunctor = P.Bifunctor<URI, V>({
+export const Bifunctor = P.Bifunctor<PExitF>({
   mapLeft_: mapError_,
   mapRight_: map_,
   bimap_
 })
 
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<PExitF>({
   map_,
   crossWith_,
   cross_
 })
 
-export const mapN = P.mapNF<URI, V>(SemimonoidalFunctor)
+export const mapN = P.mapNF<PExitF>(SemimonoidalFunctor)
 
-export const sequenceS = P.sequenceSF<URI, V>(SemimonoidalFunctor)
+export const sequenceS = P.sequenceSF<PExitF>(SemimonoidalFunctor)
 
-export const Apply = P.Apply<URI, V>({
+export const Apply = P.Apply<PExitF>({
   map_,
   crossWith_,
   cross_,
   ap_
 })
 
-export const MonoidalFunctor = P.MonoidalFunctor<URI, V>({
+export const MonoidalFunctor = P.MonoidalFunctor<PExitF>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const Applicative = P.Applicative<URI, V>({
+export const Applicative = P.Applicative<PExitF>({
   map_,
   crossWith_,
   cross_,
@@ -50,7 +56,7 @@ export const Applicative = P.Applicative<URI, V>({
   pure
 })
 
-export const Monad = P.Monad<URI, V>({
+export const Monad = P.Monad<PExitF>({
   map_,
   crossWith_,
   cross_,

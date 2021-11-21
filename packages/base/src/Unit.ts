@@ -1,61 +1,49 @@
-import type * as HKT from './HKT'
+import type * as H from './HKT'
 
 /**
  * `Unit` describes the `unit` function, which is a natural transformation from the identity
  * of the `syntactic category` of the language, in this case `void`, to a `Functor`
  */
-export interface Unit<F extends HKT.URIS, TC = HKT.Auto> extends HKT.Base<F, TC> {
-  readonly unit: UnitFn<F, TC>
+export interface Unit<F extends H.HKT, C = H.None> extends H.Typeclass<F, C> {
+  readonly unit: UnitFn<F, C>
 }
 
-export type UnitMin<F extends HKT.URIS, C = HKT.Auto> = { readonly unit: UnitFn<F, C> }
+export type UnitMin<F extends H.HKT, C = H.None> = { readonly unit: UnitFn<F, C> }
 
-export interface Unit2<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
-  readonly unit: UnitFn2<F, G, TCF, TCG>
+export interface Unit2<F extends H.HKT, G extends H.HKT, C = H.None, D = H.None> extends H.Typeclass2<F, G, C, D> {
+  readonly unit: UnitFn2<F, G, C, D>
 }
 
-export interface UnitFn<F extends HKT.URIS, TC = HKT.Auto> {
+export interface UnitFn<F extends H.HKT, C = H.None> {
   <
-    K = HKT.Initial<TC, 'K'>,
-    Q = HKT.Initial<TC, 'Q'>,
-    W = HKT.Initial<TC, 'W'>,
-    X = HKT.Initial<TC, 'X'>,
-    I = HKT.Initial<TC, 'I'>,
-    S = HKT.Initial<TC, 'S'>,
-    R = HKT.Initial<TC, 'R'>,
-    E = HKT.Initial<TC, 'E'>
-  >(/* void */): HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, void>
+    K = H.Low<F, 'K'>,
+    Q = H.Low<F, 'Q'>,
+    W = H.Low<F, 'W'>,
+    X = H.Low<F, 'X'>,
+    I = H.Low<F, 'I'>,
+    S = H.Low<F, 'S'>,
+    R = H.Low<F, 'R'>,
+    E = H.Low<F, 'E'>
+  >(/* void */): H.Kind<F, C, K, Q, W, X, I, S, R, E, void>
 }
 
-export interface UnitFn2<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
+export interface UnitFn2<F extends H.HKT, G extends H.HKT, C = H.None, D = H.None> {
   <
-    KF = HKT.Initial<TCF, 'K'>,
-    QF = HKT.Initial<TCF, 'Q'>,
-    WF = HKT.Initial<TCF, 'W'>,
-    XF = HKT.Initial<TCF, 'X'>,
-    IF = HKT.Initial<TCF, 'I'>,
-    SF = HKT.Initial<TCF, 'S'>,
-    RF = HKT.Initial<TCF, 'R'>,
-    EF = HKT.Initial<TCF, 'E'>,
-    KG = HKT.Initial<TCG, 'K'>,
-    QG = HKT.Initial<TCG, 'Q'>,
-    WG = HKT.Initial<TCG, 'W'>,
-    XG = HKT.Initial<TCG, 'X'>,
-    IG = HKT.Initial<TCG, 'I'>,
-    SG = HKT.Initial<TCG, 'S'>,
-    RG = HKT.Initial<TCG, 'R'>,
-    EG = HKT.Initial<TCG, 'E'>
-  >(/* void */): HKT.Kind<
-    F,
-    TCF,
-    KF,
-    QF,
-    WF,
-    XF,
-    IF,
-    SF,
-    RF,
-    EF,
-    HKT.Kind<G, TCG, KG, QG, WG, XG, IG, SG, RG, EG, void>
-  >
+    KF = H.Low<F, 'K'>,
+    QF = H.Low<F, 'Q'>,
+    WF = H.Low<F, 'W'>,
+    XF = H.Low<F, 'X'>,
+    IF = H.Low<F, 'I'>,
+    SF = H.Low<F, 'S'>,
+    RF = H.Low<F, 'R'>,
+    EF = H.Low<F, 'E'>,
+    KG = H.Low<G, 'K'>,
+    QG = H.Low<G, 'Q'>,
+    WG = H.Low<G, 'W'>,
+    XG = H.Low<G, 'X'>,
+    IG = H.Low<G, 'I'>,
+    SG = H.Low<G, 'S'>,
+    RG = H.Low<G, 'R'>,
+    EG = H.Low<G, 'E'>
+  >(/* void */): H.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, H.Kind<G, D, KG, QG, WG, XG, IG, SG, RG, EG, void>>
 }

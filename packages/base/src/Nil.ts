@@ -1,22 +1,22 @@
 import type * as HKT from './HKT'
 
-export interface Nil<F extends HKT.URIS, TC = HKT.Auto> extends HKT.Base<F, TC> {
+export interface Nil<F extends HKT.HKT, TC = HKT.None> extends HKT.Typeclass<F, TC> {
   readonly nil: NilFn<F, TC>
 }
 
-export type NilMin<F extends HKT.URIS, C = HKT.Auto> = {
+export type NilMin<F extends HKT.HKT, C = HKT.None> = {
   readonly nil: NilFn<F, C>
 }
 
-export interface NilFn<F extends HKT.URIS, TC = HKT.Auto> {
+export interface NilFn<F extends HKT.HKT, TC = HKT.None> {
   <
-    K = HKT.Initial<TC, 'K'>,
-    Q = HKT.Initial<TC, 'Q'>,
-    W = HKT.Initial<TC, 'W'>,
-    X = HKT.Initial<TC, 'X'>,
-    I = HKT.Initial<TC, 'I'>,
-    S = HKT.Initial<TC, 'S'>,
-    R = HKT.Initial<TC, 'R'>,
-    E = HKT.Initial<TC, 'E'>
+    K = HKT.Low<F, 'K'>,
+    Q = HKT.Low<F, 'Q'>,
+    W = HKT.Low<F, 'W'>,
+    X = HKT.Low<F, 'X'>,
+    I = HKT.Low<F, 'I'>,
+    S = HKT.Low<F, 'S'>,
+    R = HKT.Low<F, 'R'>,
+    E = HKT.Low<F, 'E'>
   >(): HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, never>
 }

@@ -1,5 +1,4 @@
 import type * as H from '../Has'
-import type * as HKT from '../HKT'
 import type { Cause } from '../IO/Cause'
 import type { Exit } from '../IO/Exit'
 import type { IOEnv } from '../IOEnv'
@@ -30,8 +29,6 @@ import * as Ma from './internal/managed'
  * Model
  * -------------------------------------------------------------------------------------------------
  */
-
-export type V = HKT.V<'R', '-'> & HKT.V<'E', '+'>
 
 export abstract class Layer<R, E, A> {
   readonly hash = new AtomicReference<PropertyKey>(Symbol())

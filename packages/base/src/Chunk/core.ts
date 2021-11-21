@@ -1,7 +1,6 @@
 import type { Byte, ByteArray } from '../Byte'
 import type { Either } from '../Either'
 import type { Eq } from '../Eq'
-import type { ChunkURI } from '../Modules'
 import type { Predicate } from '../Predicate'
 import type { These } from '../These'
 
@@ -22,7 +21,13 @@ import { tuple } from '../tuple'
 import { isByte } from '../util/predicates'
 import { AtomicNumber } from '../util/support/AtomicNumber'
 
-type URI = [HKT.URI<ChunkURI>]
+export interface ChunkF extends HKT.HKT {
+  readonly type: Chunk<this['A']>
+  readonly index: number
+  readonly variance: {
+    A: '+'
+  }
+}
 
 const BUFFER_SIZE = 64
 
@@ -1558,18 +1563,19 @@ export function chainRecBreadthFirst<A, B>(f: (a: A) => Chunk<Either<A, B>>): (a
  * -------------------------------------------------------------------------------------------------
  */
 
-export const traverse_: P.TraverseIndexFn_<URI> = (A) => (ta, f) =>
-  foldl_(ta, A.pure(empty()), (fbs, a, i) => A.crossWith_(fbs, f(a, i), append_))
+export const traverse_: P.TraverseIndexFn_<ChunkF> = P.implementTraverseWithIndex_<ChunkF>()(
+  () => (A) => (ta, f) => foldl_(ta, A.pure(empty()), (fbs, a, i) => A.crossWith_(fbs, f(a, i), append_))
+)
 
 /**
  * @dataFirst traverse
  */
-export const traverse: P.MapWithIndexAFn<URI> = (G) => {
+export const traverse: P.MapWithIndexAFn<ChunkF> = (G) => {
   const itraverseG_ = traverse_(G)
   return (f) => (ta) => itraverseG_(ta, f)
 }
 
-export const sequence: P.SequenceFn<URI> = (G) => {
+export const sequence: P.SequenceFn<ChunkF> = (G) => {
   const traverseG_ = traverse_(G)
   return (ta) => traverseG_(ta, identity)
 }
@@ -1606,7 +1612,7 @@ export function unfold<A, B>(b: B, f: (b: B) => M.Maybe<readonly [A, B]>): Chunk
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const wither_: P.WitherWithIndexFn_<URI> = (A) => {
+export const wither_: P.WitherWithIndexFn_<ChunkF> = (A) => {
   const _ = traverse_(A)
   return (wa, f) => pipe(_(wa, f), A.map(compact))
 }
@@ -1617,7 +1623,7 @@ export const wither_: P.WitherWithIndexFn_<URI> = (A) => {
  *
  * @dataFirst wither_
  */
-export const wither: P.WitherWithIndexFn<URI> = (A) => {
+export const wither: P.WitherWithIndexFn<ChunkF> = (A) => {
   const _ = wither_(A)
   return (f) => (wa) => _(wa, f)
 }
@@ -1626,7 +1632,7 @@ export const wither: P.WitherWithIndexFn<URI> = (A) => {
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const wilt_: P.WiltWithIndexFn_<URI> = (A) => {
+export const wilt_: P.WiltWithIndexFn_<ChunkF> = (A) => {
   const _ = traverse_(A)
   return (wa, f) => pipe(_(wa, f), A.map(separate))
 }
@@ -1637,7 +1643,7 @@ export const wilt_: P.WiltWithIndexFn_<URI> = (A) => {
  *
  * @dataFirst wilt_
  */
-export const wilt: P.WiltWithIndexFn<URI> = (A) => {
+export const wilt: P.WiltWithIndexFn<ChunkF> = (A) => {
   const _ = wilt_(A)
   return (f) => (wa) => _(wa, f)
 }
@@ -2137,85 +2143,85 @@ export function zipWithIndex<A>(as: Chunk<A>): Chunk<readonly [A, number]> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const Align = P.Align<URI>({
+export const Align = P.Align<ChunkF>({
   map_,
   alignWith_,
   nil: empty
 })
 
-export const alignCombine_ = P.alignCombineF_<URI>({ map_, align_, alignWith_ })
+export const alignCombine_ = P.alignCombineF_<ChunkF>({ map_, align_, alignWith_ })
 /**
  * @dataFirst alignCombine_
  */
-export const alignCombine = P.alignCombineF<URI>({ map_, align_, alignWith_ })
+export const alignCombine = P.alignCombineF<ChunkF>({ map_, align_, alignWith_ })
 
-export const padZip_ = P.padZipF_<URI>({ map_, align_, alignWith_ })
+export const padZip_ = P.padZipF_<ChunkF>({ map_, align_, alignWith_ })
 /**
  * @dataFirst padZip_
  */
-export const padZip = P.padZipF<URI>({ map_, align_, alignWith_ })
+export const padZip = P.padZipF<ChunkF>({ map_, align_, alignWith_ })
 
-export const padZipWith_ = P.padZipWithF_<URI>({ map_, align_, alignWith_ })
+export const padZipWith_ = P.padZipWithF_<ChunkF>({ map_, align_, alignWith_ })
 /**
  * @dataFirst padZipWith_
  */
-export const padZipWith = P.padZipWithF<URI>({ map_, align_, alignWith_ })
+export const padZipWith = P.padZipWithF<ChunkF>({ map_, align_, alignWith_ })
 
-export const zipAll_ = P.zipAllF_<URI>({ map_, align_, alignWith_ })
+export const zipAll_ = P.zipAllF_<ChunkF>({ map_, align_, alignWith_ })
 /**
  * @dataFirst zipAll_
  */
-export const zipAll = P.zipAllF<URI>({ map_, align_, alignWith_ })
+export const zipAll = P.zipAllF<ChunkF>({ map_, align_, alignWith_ })
 
-export const Functor = P.Functor<URI>({
+export const Functor = P.Functor<ChunkF>({
   map_
 })
 
-export const flap_ = P.flapF_<URI>({ map_ })
+export const flap_ = P.flapF_<ChunkF>({ map_ })
 /**
  * @dataFirst flap_
  */
-export const flap = P.flapF<URI>({ map_ })
+export const flap = P.flapF<ChunkF>({ map_ })
 
-export const as_ = P.asF_<URI>({ map_ })
+export const as_ = P.asF_<ChunkF>({ map_ })
 /**
  * @dataFirst as_
  */
-export const as = P.asF<URI>({ map_ })
+export const as = P.asF<ChunkF>({ map_ })
 
-export const fcross_ = P.fcrossF_<URI>({ map_ })
+export const fcross_ = P.fcrossF_<ChunkF>({ map_ })
 /**
  * @dataFirst fcross_
  */
-export const fcross = P.fcrossF<URI>({ map_ })
+export const fcross = P.fcrossF<ChunkF>({ map_ })
 
-export const tupled = P.tupledF<URI>({ map_ })
+export const tupled = P.tupledF<ChunkF>({ map_ })
 
-export const FunctorWithIndex = P.FunctorWithIndex<URI>({
+export const FunctorWithIndex = P.FunctorWithIndex<ChunkF>({
   imap_: map_
 })
 
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<ChunkF>({
   map_,
   cross_,
   crossWith_
 })
 
-export const Apply = P.Apply<URI>({
+export const Apply = P.Apply<ChunkF>({
   map_,
   cross_,
   crossWith_,
   ap_
 })
 
-export const MonoidalFunctor = P.MonoidalFunctor<URI>({
+export const MonoidalFunctor = P.MonoidalFunctor<ChunkF>({
   map_,
   cross_,
   crossWith_,
   unit
 })
 
-export const Applicative = P.Applicative<URI>({
+export const Applicative = P.Applicative<ChunkF>({
   map_,
   cross_,
   crossWith_,
@@ -2224,17 +2230,17 @@ export const Applicative = P.Applicative<URI>({
   unit
 })
 
-export const Zip = P.Zip<URI>({
+export const Zip = P.Zip<ChunkF>({
   zip_,
   zipWith_
 })
 
-export const Alt = P.Alt<URI>({
+export const Alt = P.Alt<ChunkF>({
   map_,
   alt_
 })
 
-export const Alternative = P.Alternative<URI>({
+export const Alternative = P.Alternative<ChunkF>({
   map_,
   crossWith_,
   cross_,
@@ -2245,12 +2251,12 @@ export const Alternative = P.Alternative<URI>({
   nil: empty
 })
 
-export const Compactable = HKT.instance<P.Compactable<URI>>({
+export const Compactable = HKT.instance<P.Compactable<ChunkF>>({
   compact,
   separate
 })
 
-export const Filterable = P.Filterable<URI>({
+export const Filterable = P.Filterable<ChunkF>({
   map_,
   filter_,
   filterMap_,
@@ -2258,7 +2264,7 @@ export const Filterable = P.Filterable<URI>({
   partitionMap_
 })
 
-export const FilterableWithIndex = P.FilterableWithIndex<URI>({
+export const FilterableWithIndex = P.FilterableWithIndex<ChunkF>({
   imap_: map_,
   ifilter_: filter_,
   ifilterMap_: filterMap_,
@@ -2266,19 +2272,19 @@ export const FilterableWithIndex = P.FilterableWithIndex<URI>({
   ipartitionMap_: partitionMap_
 })
 
-export const FoldableWithIndex = P.FoldableWithIndex<URI>({
+export const FoldableWithIndex = P.FoldableWithIndex<ChunkF>({
   ifoldl_: foldl_,
   ifoldr_: foldr_,
   ifoldMap_: foldMap_
 })
 
-export const Foldable = P.Foldable<URI>({
+export const Foldable = P.Foldable<ChunkF>({
   foldl_,
   foldr_,
   foldMap_
 })
 
-export const Monad = P.Monad<URI>({
+export const Monad = P.Monad<ChunkF>({
   map_,
   crossWith_,
   cross_,
@@ -2289,7 +2295,7 @@ export const Monad = P.Monad<URI>({
   flatten
 })
 
-export const Traversable = P.Traversable<URI>({
+export const Traversable = P.Traversable<ChunkF>({
   map_,
   foldl_,
   foldr_,
@@ -2297,7 +2303,7 @@ export const Traversable = P.Traversable<URI>({
   traverse_
 })
 
-export const TraversableWithIndex = P.TraversableWithIndex<URI>({
+export const TraversableWithIndex = P.TraversableWithIndex<ChunkF>({
   imap_: map_,
   ifoldl_: foldl_,
   ifoldr_: foldr_,
@@ -2305,7 +2311,7 @@ export const TraversableWithIndex = P.TraversableWithIndex<URI>({
   itraverse_: traverse_
 })
 
-export const Witherable = P.Witherable<URI>({
+export const Witherable = P.Witherable<ChunkF>({
   map_,
   foldl_,
   foldr_,
@@ -2319,7 +2325,7 @@ export const Witherable = P.Witherable<URI>({
   partition_
 })
 
-export const WitherableWithIndex = P.WitherableWithIndex<URI>({
+export const WitherableWithIndex = P.WitherableWithIndex<ChunkF>({
   imap_: map_,
   ifoldl_: foldl_,
   ifoldr_: foldr_,
@@ -2333,7 +2339,7 @@ export const WitherableWithIndex = P.WitherableWithIndex<URI>({
   ipartition_: partition_
 })
 
-export const Unfoldable = HKT.instance<P.Unfoldable<URI>>({
+export const Unfoldable = HKT.instance<P.Unfoldable<ChunkF>>({
   unfold
 })
 

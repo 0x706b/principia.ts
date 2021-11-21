@@ -282,7 +282,7 @@ interface EitherOps<E, A> {
   /**
    * @rewriteConstraint mapA_ from "@principia/base/Either"
    */
-  mapA<E, A, F extends HKT.URIS, C = HKT.Auto>(
+  mapA<E, A, F extends HKT.HKT, C = HKT.Auto>(
     this: Either<E, A>,
     A: P.Applicative<F, C>
   ): <K, Q, W, X, I, S, R, E1, B>(

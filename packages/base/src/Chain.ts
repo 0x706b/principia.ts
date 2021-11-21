@@ -4,7 +4,7 @@ import { identity } from './function'
 import { Functor } from './Functor'
 import * as HKT from './HKT'
 
-export interface Chain<F extends HKT.URIS, TC = HKT.Auto> extends Functor<F, TC> {
+export interface Chain<F extends HKT.HKT, TC = HKT.None> extends Functor<F, TC> {
   readonly chain_: ChainFn_<F, TC>
   readonly chain: ChainFn<F, TC>
   readonly flatten: FlattenFn<F, TC>
@@ -12,13 +12,14 @@ export interface Chain<F extends HKT.URIS, TC = HKT.Auto> extends Functor<F, TC>
   readonly tap: TapFn<F, TC>
 }
 
-export type ChainMin<F extends HKT.URIS, C = HKT.Auto> = FunctorMin<F, C> &
+export type ChainMin<F extends HKT.HKT, C = HKT.None> = FunctorMin<F, C> &
   ({ readonly chain_: ChainFn_<F, C> } | { readonly flatten: FlattenFn<F, C> })
 
-export function Chain<F extends HKT.URIS, C = HKT.Auto>(F: ChainMin<F, C>): Chain<F, C> {
+export function Chain<F extends HKT.HKT, C = HKT.None>(F: ChainMin<F, C>): Chain<F, C>
+export function Chain<F>(F: ChainMin<HKT.F<F>>): Chain<HKT.F<F>> {
   const FunctorF = Functor(F)
-  let chain_: ChainFn_<F, C>
-  let flatten: FlattenFn<F, C>
+  let chain_: ChainFn_<HKT.F<F>>
+  let flatten: FlattenFn<HKT.F<F>>
 
   if ('chain_' in F) {
     chain_  = F.chain_
@@ -28,9 +29,9 @@ export function Chain<F extends HKT.URIS, C = HKT.Auto>(F: ChainMin<F, C>): Chai
     flatten = F.flatten
   }
 
-  const tap_: TapFn_<F, C> = (ma, f) => chain_(ma, (a) => F.map_(f(a), () => a))
+  const tap_: TapFn_<HKT.F<F>> = (ma, f) => chain_(ma, (a) => F.map_(f(a), () => a))
 
-  return HKT.instance<Chain<F, C>>({
+  return HKT.instance<Chain<HKT.F<F>>>({
     ...FunctorF,
     chain_,
     chain: (f) => (ma) => chain_(ma, f),
@@ -40,7 +41,7 @@ export function Chain<F extends HKT.URIS, C = HKT.Auto>(F: ChainMin<F, C>): Chai
   })
 }
 
-export interface ChainFn<F extends HKT.URIS, TC = HKT.Auto> {
+export interface ChainFn<F extends HKT.HKT, TC = HKT.None> {
   <K1, Q1, W1, X1, I1, S1, R1, E1, B, A>(f: (a: A) => HKT.Kind<F, TC, K1, Q1, W1, X1, I1, S1, R1, E1, B>): <
     K,
     Q,
@@ -54,32 +55,32 @@ export interface ChainFn<F extends HKT.URIS, TC = HKT.Auto> {
     ma: HKT.Kind<
       F,
       TC,
-      HKT.Intro<TC, 'K', K1, K>,
-      HKT.Intro<TC, 'Q', Q1, Q>,
-      HKT.Intro<TC, 'W', W1, W>,
-      HKT.Intro<TC, 'X', X1, X>,
-      HKT.Intro<TC, 'I', I1, I>,
-      HKT.Intro<TC, 'S', S1, S>,
-      HKT.Intro<TC, 'R', R1, R>,
-      HKT.Intro<TC, 'E', E1, E>,
+      HKT.Intro<F, 'K', K1, K>,
+      HKT.Intro<F, 'Q', Q1, Q>,
+      HKT.Intro<F, 'W', W1, W>,
+      HKT.Intro<F, 'X', X1, X>,
+      HKT.Intro<F, 'I', I1, I>,
+      HKT.Intro<F, 'S', S1, S>,
+      HKT.Intro<F, 'R', R1, R>,
+      HKT.Intro<F, 'E', E1, E>,
       A
     >
   ) => HKT.Kind<
     F,
     TC,
-    HKT.Mix<TC, 'K', [K1, K]>,
-    HKT.Mix<TC, 'Q', [Q1, Q]>,
-    HKT.Mix<TC, 'W', [W1, W]>,
-    HKT.Mix<TC, 'X', [X1, X]>,
-    HKT.Mix<TC, 'I', [I1, I]>,
-    HKT.Mix<TC, 'S', [S1, S]>,
-    HKT.Mix<TC, 'R', [R1, R]>,
-    HKT.Mix<TC, 'E', [E1, E]>,
+    HKT.Mix<F, 'K', [K1, K]>,
+    HKT.Mix<F, 'Q', [Q1, Q]>,
+    HKT.Mix<F, 'W', [W1, W]>,
+    HKT.Mix<F, 'X', [X1, X]>,
+    HKT.Mix<F, 'I', [I1, I]>,
+    HKT.Mix<F, 'S', [S1, S]>,
+    HKT.Mix<F, 'R', [R1, R]>,
+    HKT.Mix<F, 'E', [E1, E]>,
     B
   >
 }
 
-export interface ChainFn_<F extends HKT.URIS, TC = HKT.Auto> {
+export interface ChainFn_<F extends HKT.HKT, TC = HKT.None> {
   <K, Q, W, X, I, S, R, E, A, K1, Q1, W1, X1, I1, S1, R1, E1, B>(
     ma: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>,
     f: (
@@ -87,32 +88,32 @@ export interface ChainFn_<F extends HKT.URIS, TC = HKT.Auto> {
     ) => HKT.Kind<
       F,
       TC,
-      HKT.Intro<TC, 'K', K, K1>,
-      HKT.Intro<TC, 'Q', Q, Q1>,
-      HKT.Intro<TC, 'W', W, W1>,
-      HKT.Intro<TC, 'X', X, X1>,
-      HKT.Intro<TC, 'I', I, I1>,
-      HKT.Intro<TC, 'S', S, S1>,
-      HKT.Intro<TC, 'R', R, R1>,
-      HKT.Intro<TC, 'E', E, E1>,
+      HKT.Intro<F, 'K', K, K1>,
+      HKT.Intro<F, 'Q', Q, Q1>,
+      HKT.Intro<F, 'W', W, W1>,
+      HKT.Intro<F, 'X', X, X1>,
+      HKT.Intro<F, 'I', I, I1>,
+      HKT.Intro<F, 'S', S, S1>,
+      HKT.Intro<F, 'R', R, R1>,
+      HKT.Intro<F, 'E', E, E1>,
       B
     >
   ): HKT.Kind<
     F,
     TC,
-    HKT.Mix<TC, 'K', [K, K1]>,
-    HKT.Mix<TC, 'Q', [Q, Q1]>,
-    HKT.Mix<TC, 'W', [W, W1]>,
-    HKT.Mix<TC, 'X', [X, X1]>,
-    HKT.Mix<TC, 'I', [I, I1]>,
-    HKT.Mix<TC, 'S', [S, S1]>,
-    HKT.Mix<TC, 'R', [R, R1]>,
-    HKT.Mix<TC, 'E', [E, E1]>,
+    HKT.Mix<F, 'K', [K, K1]>,
+    HKT.Mix<F, 'Q', [Q, Q1]>,
+    HKT.Mix<F, 'W', [W, W1]>,
+    HKT.Mix<F, 'X', [X, X1]>,
+    HKT.Mix<F, 'I', [I, I1]>,
+    HKT.Mix<F, 'S', [S, S1]>,
+    HKT.Mix<F, 'R', [R, R1]>,
+    HKT.Mix<F, 'E', [E, E1]>,
     B
   >
 }
 
-export function chainF_<F extends HKT.URIS, C = HKT.Auto>(F: ChainMin<F, C>): ChainFn_<F, C> {
+export function chainF_<F extends HKT.HKT, C = HKT.None>(F: ChainMin<F, C>): ChainFn_<F, C> {
   if ('chain_' in F) {
     return F.chain_
   } else {
@@ -120,7 +121,7 @@ export function chainF_<F extends HKT.URIS, C = HKT.Auto>(F: ChainMin<F, C>): Ch
   }
 }
 
-export interface BindFnComposition<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
+export interface BindFnComposition<F extends HKT.HKT, G extends HKT.HKT, TCF = HKT.None, TCG = HKT.None> {
   <KF1, QF1, WF1, XF1, IF1, SF1, RF1, EF1, KG1, QG1, WG1, XG1, IG1, SG1, RG1, EG1, A, B>(
     f: (
       a: A
@@ -141,56 +142,56 @@ export interface BindFnComposition<F extends HKT.URIS, G extends HKT.URIS, TCF =
     fga: HKT.Kind<
       F,
       TCF,
-      HKT.Intro<TCF, 'K', KF1, KF>,
-      HKT.Intro<TCF, 'Q', QF1, QF>,
-      HKT.Intro<TCF, 'W', WF1, WF>,
-      HKT.Intro<TCF, 'X', XF1, XF>,
-      HKT.Intro<TCF, 'I', IF1, IF>,
-      HKT.Intro<TCF, 'S', SF1, SF>,
-      HKT.Intro<TCF, 'R', RF1, RF>,
-      HKT.Intro<TCF, 'E', EF1, EF>,
+      HKT.Intro<F, 'K', KF1, KF>,
+      HKT.Intro<F, 'Q', QF1, QF>,
+      HKT.Intro<F, 'W', WF1, WF>,
+      HKT.Intro<F, 'X', XF1, XF>,
+      HKT.Intro<F, 'I', IF1, IF>,
+      HKT.Intro<F, 'S', SF1, SF>,
+      HKT.Intro<F, 'R', RF1, RF>,
+      HKT.Intro<F, 'E', EF1, EF>,
       HKT.Kind<
         G,
         TCG,
-        HKT.Intro<TCG, 'K', KG1, KG>,
-        HKT.Intro<TCG, 'Q', QG1, QG>,
-        HKT.Intro<TCG, 'W', WG1, WG>,
-        HKT.Intro<TCG, 'X', XG1, XG>,
-        HKT.Intro<TCG, 'I', IG1, IG>,
-        HKT.Intro<TCG, 'S', SG1, SG>,
-        HKT.Intro<TCG, 'R', RG1, RG>,
-        HKT.Intro<TCG, 'E', EG1, EG>,
+        HKT.Intro<G, 'K', KG1, KG>,
+        HKT.Intro<G, 'Q', QG1, QG>,
+        HKT.Intro<G, 'W', WG1, WG>,
+        HKT.Intro<G, 'X', XG1, XG>,
+        HKT.Intro<G, 'I', IG1, IG>,
+        HKT.Intro<G, 'S', SG1, SG>,
+        HKT.Intro<G, 'R', RG1, RG>,
+        HKT.Intro<G, 'E', EG1, EG>,
         A
       >
     >
   ) => HKT.Kind<
     F,
     TCF,
-    HKT.Mix<TCF, 'K', [KF1, KF]>,
-    HKT.Mix<TCF, 'Q', [QF1, QF]>,
-    HKT.Mix<TCF, 'W', [WF1, WF]>,
-    HKT.Mix<TCF, 'X', [XF1, XF]>,
-    HKT.Mix<TCF, 'I', [IF1, IF]>,
-    HKT.Mix<TCF, 'S', [SF1, SF]>,
-    HKT.Mix<TCF, 'R', [RF1, RF]>,
-    HKT.Mix<TCF, 'E', [EF1, EF]>,
+    HKT.Mix<F, 'K', [KF1, KF]>,
+    HKT.Mix<F, 'Q', [QF1, QF]>,
+    HKT.Mix<F, 'W', [WF1, WF]>,
+    HKT.Mix<F, 'X', [XF1, XF]>,
+    HKT.Mix<F, 'I', [IF1, IF]>,
+    HKT.Mix<F, 'S', [SF1, SF]>,
+    HKT.Mix<F, 'R', [RF1, RF]>,
+    HKT.Mix<F, 'E', [EF1, EF]>,
     HKT.Kind<
       G,
       TCG,
-      HKT.Mix<TCG, 'K', [KG1, KG]>,
-      HKT.Mix<TCG, 'Q', [QG1, QG]>,
-      HKT.Mix<TCG, 'W', [WG1, WG]>,
-      HKT.Mix<TCG, 'X', [XG1, XG]>,
-      HKT.Mix<TCG, 'I', [IG1, IG]>,
-      HKT.Mix<TCG, 'S', [SG1, SG]>,
-      HKT.Mix<TCG, 'R', [RG1, RG]>,
-      HKT.Mix<TCG, 'E', [EG1, EG]>,
+      HKT.Mix<G, 'K', [KG1, KG]>,
+      HKT.Mix<G, 'Q', [QG1, QG]>,
+      HKT.Mix<G, 'W', [WG1, WG]>,
+      HKT.Mix<G, 'X', [XG1, XG]>,
+      HKT.Mix<G, 'I', [IG1, IG]>,
+      HKT.Mix<G, 'S', [SG1, SG]>,
+      HKT.Mix<G, 'R', [RG1, RG]>,
+      HKT.Mix<G, 'E', [EG1, EG]>,
       B
     >
   >
 }
 
-export interface BindFnComposition_<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
+export interface BindFnComposition_<F extends HKT.HKT, G extends HKT.HKT, TCF = HKT.None, TCG = HKT.None> {
   <
     KF,
     QF,
@@ -233,56 +234,56 @@ export interface BindFnComposition_<F extends HKT.URIS, G extends HKT.URIS, TCF 
     ) => HKT.Kind<
       F,
       TCF,
-      HKT.Intro<TCF, 'K', KF, KF1>,
-      HKT.Intro<TCF, 'Q', QF, QF1>,
-      HKT.Intro<TCF, 'W', WF, WF1>,
-      HKT.Intro<TCF, 'X', XF, XF1>,
-      HKT.Intro<TCF, 'I', IF, IF1>,
-      HKT.Intro<TCF, 'S', SF, SF1>,
-      HKT.Intro<TCF, 'R', RF, RF1>,
-      HKT.Intro<TCF, 'E', EF, EF1>,
+      HKT.Intro<F, 'K', KF, KF1>,
+      HKT.Intro<F, 'Q', QF, QF1>,
+      HKT.Intro<F, 'W', WF, WF1>,
+      HKT.Intro<F, 'X', XF, XF1>,
+      HKT.Intro<F, 'I', IF, IF1>,
+      HKT.Intro<F, 'S', SF, SF1>,
+      HKT.Intro<F, 'R', RF, RF1>,
+      HKT.Intro<F, 'E', EF, EF1>,
       HKT.Kind<
         G,
         TCG,
-        HKT.Intro<TCG, 'K', KG, KG1>,
-        HKT.Intro<TCG, 'Q', QG, QG1>,
-        HKT.Intro<TCG, 'W', WG, WG1>,
-        HKT.Intro<TCG, 'X', XG, XG1>,
-        HKT.Intro<TCG, 'I', IG, IG1>,
-        HKT.Intro<TCG, 'S', SG, SG1>,
-        HKT.Intro<TCG, 'R', RG, RG1>,
-        HKT.Intro<TCG, 'E', EG, EG1>,
+        HKT.Intro<G, 'K', KG, KG1>,
+        HKT.Intro<G, 'Q', QG, QG1>,
+        HKT.Intro<G, 'W', WG, WG1>,
+        HKT.Intro<G, 'X', XG, XG1>,
+        HKT.Intro<G, 'I', IG, IG1>,
+        HKT.Intro<G, 'S', SG, SG1>,
+        HKT.Intro<G, 'R', RG, RG1>,
+        HKT.Intro<G, 'E', EG, EG1>,
         B
       >
     >
   ): HKT.Kind<
     F,
     TCF,
-    HKT.Mix<TCF, 'K', [KF1, KF]>,
-    HKT.Mix<TCF, 'Q', [QF1, QF]>,
-    HKT.Mix<TCF, 'W', [WF1, WF]>,
-    HKT.Mix<TCF, 'X', [XF1, XF]>,
-    HKT.Mix<TCF, 'I', [IF1, IF]>,
-    HKT.Mix<TCF, 'S', [SF1, SF]>,
-    HKT.Mix<TCF, 'R', [RF1, RF]>,
-    HKT.Mix<TCF, 'E', [EF1, EF]>,
+    HKT.Mix<F, 'K', [KF1, KF]>,
+    HKT.Mix<F, 'Q', [QF1, QF]>,
+    HKT.Mix<F, 'W', [WF1, WF]>,
+    HKT.Mix<F, 'X', [XF1, XF]>,
+    HKT.Mix<F, 'I', [IF1, IF]>,
+    HKT.Mix<F, 'S', [SF1, SF]>,
+    HKT.Mix<F, 'R', [RF1, RF]>,
+    HKT.Mix<F, 'E', [EF1, EF]>,
     HKT.Kind<
       G,
       TCG,
-      HKT.Mix<TCG, 'K', [KG1, KG]>,
-      HKT.Mix<TCG, 'Q', [QG1, QG]>,
-      HKT.Mix<TCG, 'W', [WG1, WG]>,
-      HKT.Mix<TCG, 'X', [XG1, XG]>,
-      HKT.Mix<TCG, 'I', [IG1, IG]>,
-      HKT.Mix<TCG, 'S', [SG1, SG]>,
-      HKT.Mix<TCG, 'R', [RG1, RG]>,
-      HKT.Mix<TCG, 'E', [EG1, EG]>,
+      HKT.Mix<G, 'K', [KG1, KG]>,
+      HKT.Mix<G, 'Q', [QG1, QG]>,
+      HKT.Mix<G, 'W', [WG1, WG]>,
+      HKT.Mix<G, 'X', [XG1, XG]>,
+      HKT.Mix<G, 'I', [IG1, IG]>,
+      HKT.Mix<G, 'S', [SG1, SG]>,
+      HKT.Mix<G, 'R', [RG1, RG]>,
+      HKT.Mix<G, 'E', [EG1, EG]>,
       B
     >
   >
 }
 
-export interface TapFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface TapFn<F extends HKT.HKT, C = HKT.None> {
   <A, K2, Q2, W2, X2, I2, S2, R2, E2, B>(f: (a: A) => HKT.Kind<F, C, K2, Q2, W2, X2, I2, S2, R2, E2, B>): <
     K,
     Q,
@@ -296,73 +297,75 @@ export interface TapFn<F extends HKT.URIS, C = HKT.Auto> {
     ma: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'K', K2, K>,
-      HKT.Intro<C, 'Q', Q2, Q>,
-      HKT.Intro<C, 'W', W2, W>,
-      HKT.Intro<C, 'X', X2, X>,
-      HKT.Intro<C, 'I', I2, I>,
-      HKT.Intro<C, 'S', S2, S>,
-      HKT.Intro<C, 'R', R2, R>,
-      HKT.Intro<C, 'E', E2, E>,
+      HKT.Intro<F, 'K', K2, K>,
+      HKT.Intro<F, 'Q', Q2, Q>,
+      HKT.Intro<F, 'W', W2, W>,
+      HKT.Intro<F, 'X', X2, X>,
+      HKT.Intro<F, 'I', I2, I>,
+      HKT.Intro<F, 'S', S2, S>,
+      HKT.Intro<F, 'R', R2, R>,
+      HKT.Intro<F, 'E', E2, E>,
       A
     >
   ) => HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'K', [K2, K]>,
-    HKT.Mix<C, 'Q', [Q2, Q]>,
-    HKT.Mix<C, 'W', [W2, W]>,
-    HKT.Mix<C, 'X', [X2, X]>,
-    HKT.Mix<C, 'I', [I2, I]>,
-    HKT.Mix<C, 'S', [S2, S]>,
-    HKT.Mix<C, 'R', [R2, R]>,
-    HKT.Mix<C, 'E', [E2, E]>,
+    HKT.Mix<F, 'K', [K2, K]>,
+    HKT.Mix<F, 'Q', [Q2, Q]>,
+    HKT.Mix<F, 'W', [W2, W]>,
+    HKT.Mix<F, 'X', [X2, X]>,
+    HKT.Mix<F, 'I', [I2, I]>,
+    HKT.Mix<F, 'S', [S2, S]>,
+    HKT.Mix<F, 'R', [R2, R]>,
+    HKT.Mix<F, 'E', [E2, E]>,
     A
   >
 }
 
-export interface TapFn_<F extends HKT.URIS, C = HKT.Auto> {
+export interface TapFn_<F extends HKT.HKT, C = HKT.None> {
   <K, Q, W, X, I, S, R, E, A, K2, Q2, W2, X2, I2, S2, R2, E2, B>(
     ma: HKT.Kind<
       F,
       C,
-      HKT.Intro<C, 'K', K2, K>,
-      HKT.Intro<C, 'Q', Q2, Q>,
-      HKT.Intro<C, 'W', W2, W>,
-      HKT.Intro<C, 'X', X2, X>,
-      HKT.Intro<C, 'I', I2, I>,
-      HKT.Intro<C, 'S', S2, S>,
-      HKT.Intro<C, 'R', R2, R>,
-      HKT.Intro<C, 'E', E2, E>,
+      HKT.Intro<F, 'K', K2, K>,
+      HKT.Intro<F, 'Q', Q2, Q>,
+      HKT.Intro<F, 'W', W2, W>,
+      HKT.Intro<F, 'X', X2, X>,
+      HKT.Intro<F, 'I', I2, I>,
+      HKT.Intro<F, 'S', S2, S>,
+      HKT.Intro<F, 'R', R2, R>,
+      HKT.Intro<F, 'E', E2, E>,
       A
     >,
     f: (a: A) => HKT.Kind<F, C, K2, Q2, W2, X2, I2, S2, R2, E2, B>
   ): HKT.Kind<
     F,
     C,
-    HKT.Mix<C, 'K', [K2, K]>,
-    HKT.Mix<C, 'Q', [Q2, Q]>,
-    HKT.Mix<C, 'W', [W2, W]>,
-    HKT.Mix<C, 'X', [X2, X]>,
-    HKT.Mix<C, 'I', [I2, I]>,
-    HKT.Mix<C, 'S', [S2, S]>,
-    HKT.Mix<C, 'R', [R2, R]>,
-    HKT.Mix<C, 'E', [E2, E]>,
+    HKT.Mix<F, 'K', [K2, K]>,
+    HKT.Mix<F, 'Q', [Q2, Q]>,
+    HKT.Mix<F, 'W', [W2, W]>,
+    HKT.Mix<F, 'X', [X2, X]>,
+    HKT.Mix<F, 'I', [I2, I]>,
+    HKT.Mix<F, 'S', [S2, S]>,
+    HKT.Mix<F, 'R', [R2, R]>,
+    HKT.Mix<F, 'E', [E2, E]>,
     A
   >
 }
 
-export function tapF<F extends HKT.URIS, TC = HKT.Auto>(F: ChainMin<F, TC>): TapFn<F, TC> {
+export function tapF<F extends HKT.HKT, TC = HKT.None>(F: ChainMin<F, TC>): TapFn<F, TC>
+export function tapF<F>(F: ChainMin<HKT.F<F>>): TapFn<HKT.F<F>> {
   const chain_ = chainF_(F)
   return (f) => (ma) => chain_(ma, (a) => F.map_(f(a), () => a))
 }
 
-export function tapF_<F extends HKT.URIS, TC = HKT.Auto>(F: ChainMin<F, TC>): TapFn_<F, TC> {
+export function tapF_<F extends HKT.HKT, TC = HKT.None>(F: ChainMin<F, TC>): TapFn_<F, TC>
+export function tapF_<F>(F: ChainMin<HKT.F<F>>): TapFn_<HKT.F<F>> {
   const chain_ = chainF_(F)
   return (ma, f) => chain_(ma, (a) => F.map_(f(a), () => a))
 }
 
-export interface FlattenFn<F extends HKT.URIS, TC = HKT.Auto> {
+export interface FlattenFn<F extends HKT.HKT, TC = HKT.None> {
   <K, Q, W, X, I, S, R, E, A, K2, Q2, W2, X2, I2, S2, R2, E2>(
     mma: HKT.Kind<
       F,
@@ -378,33 +381,33 @@ export interface FlattenFn<F extends HKT.URIS, TC = HKT.Auto> {
       HKT.Kind<
         F,
         TC,
-        HKT.Intro<TC, 'K', K2, K>,
-        HKT.Intro<TC, 'Q', Q2, Q>,
-        HKT.Intro<TC, 'W', W2, W>,
-        HKT.Intro<TC, 'X', X2, X>,
-        HKT.Intro<TC, 'I', I2, I>,
-        HKT.Intro<TC, 'S', S2, S>,
-        HKT.Intro<TC, 'R', R2, R>,
-        HKT.Intro<TC, 'E', E2, E>,
+        HKT.Intro<F, 'K', K2, K>,
+        HKT.Intro<F, 'Q', Q2, Q>,
+        HKT.Intro<F, 'W', W2, W>,
+        HKT.Intro<F, 'X', X2, X>,
+        HKT.Intro<F, 'I', I2, I>,
+        HKT.Intro<F, 'S', S2, S>,
+        HKT.Intro<F, 'R', R2, R>,
+        HKT.Intro<F, 'E', E2, E>,
         A
       >
     >
   ): HKT.Kind<
     F,
     TC,
-    HKT.Mix<TC, 'K', [K2, K]>,
-    HKT.Mix<TC, 'Q', [Q2, Q]>,
-    HKT.Mix<TC, 'W', [W2, W]>,
-    HKT.Mix<TC, 'X', [X2, X]>,
-    HKT.Mix<TC, 'I', [I2, I]>,
-    HKT.Mix<TC, 'S', [S2, S]>,
-    HKT.Mix<TC, 'R', [R2, R]>,
-    HKT.Mix<TC, 'E', [E2, E]>,
+    HKT.Mix<F, 'K', [K2, K]>,
+    HKT.Mix<F, 'Q', [Q2, Q]>,
+    HKT.Mix<F, 'W', [W2, W]>,
+    HKT.Mix<F, 'X', [X2, X]>,
+    HKT.Mix<F, 'I', [I2, I]>,
+    HKT.Mix<F, 'S', [S2, S]>,
+    HKT.Mix<F, 'R', [R2, R]>,
+    HKT.Mix<F, 'E', [E2, E]>,
     A
   >
 }
 
-export interface FlattenFnComposition<F extends HKT.URIS, G extends HKT.URIS, TCF = HKT.Auto, TCG = HKT.Auto> {
+export interface FlattenFnComposition<F extends HKT.HKT, G extends HKT.HKT, TCF = HKT.None, TCG = HKT.None> {
   <
     KF,
     QF,
@@ -465,25 +468,25 @@ export interface FlattenFnComposition<F extends HKT.URIS, G extends HKT.URIS, TC
         HKT.Kind<
           F,
           TCF,
-          HKT.Intro<TCF, 'K', KF, KF1>,
-          HKT.Intro<TCF, 'Q', QF, QF1>,
-          HKT.Intro<TCF, 'W', WF, WF1>,
-          HKT.Intro<TCF, 'X', XF, XF1>,
-          HKT.Intro<TCF, 'I', IF, IF1>,
-          HKT.Intro<TCF, 'S', SF, SF1>,
-          HKT.Intro<TCF, 'R', RF, RF1>,
-          HKT.Intro<TCF, 'E', EF, EF1>,
+          HKT.Intro<F, 'K', KF, KF1>,
+          HKT.Intro<F, 'Q', QF, QF1>,
+          HKT.Intro<F, 'W', WF, WF1>,
+          HKT.Intro<F, 'X', XF, XF1>,
+          HKT.Intro<F, 'I', IF, IF1>,
+          HKT.Intro<F, 'S', SF, SF1>,
+          HKT.Intro<F, 'R', RF, RF1>,
+          HKT.Intro<F, 'E', EF, EF1>,
           HKT.Kind<
             G,
             TCG,
-            HKT.Intro<TCG, 'K', KG, KG1>,
-            HKT.Intro<TCG, 'Q', QG, QG1>,
-            HKT.Intro<TCG, 'W', WG, WG1>,
-            HKT.Intro<TCG, 'X', XG, XG1>,
-            HKT.Intro<TCG, 'I', IG, IG1>,
-            HKT.Intro<TCG, 'S', SG, SG1>,
-            HKT.Intro<TCG, 'R', RG, RG1>,
-            HKT.Intro<TCG, 'E', EG, EG1>,
+            HKT.Intro<G, 'K', KG, KG1>,
+            HKT.Intro<G, 'Q', QG, QG1>,
+            HKT.Intro<G, 'W', WG, WG1>,
+            HKT.Intro<G, 'X', XG, XG1>,
+            HKT.Intro<G, 'I', IG, IG1>,
+            HKT.Intro<G, 'S', SG, SG1>,
+            HKT.Intro<G, 'R', RG, RG1>,
+            HKT.Intro<G, 'E', EG, EG1>,
             A
           >
         >
@@ -492,31 +495,31 @@ export interface FlattenFnComposition<F extends HKT.URIS, G extends HKT.URIS, TC
   ): HKT.Kind<
     F,
     TCF,
-    HKT.Mix<TCF, 'K', [KF1, KF]>,
-    HKT.Mix<TCF, 'Q', [QF1, QF]>,
-    HKT.Mix<TCF, 'W', [WF1, WF]>,
-    HKT.Mix<TCF, 'X', [XF1, XF]>,
-    HKT.Mix<TCF, 'I', [IF1, IF]>,
-    HKT.Mix<TCF, 'S', [SF1, SF]>,
-    HKT.Mix<TCF, 'R', [RF1, RF]>,
-    HKT.Mix<TCF, 'E', [EF1, EF]>,
+    HKT.Mix<F, 'K', [KF1, KF]>,
+    HKT.Mix<F, 'Q', [QF1, QF]>,
+    HKT.Mix<F, 'W', [WF1, WF]>,
+    HKT.Mix<F, 'X', [XF1, XF]>,
+    HKT.Mix<F, 'I', [IF1, IF]>,
+    HKT.Mix<F, 'S', [SF1, SF]>,
+    HKT.Mix<F, 'R', [RF1, RF]>,
+    HKT.Mix<F, 'E', [EF1, EF]>,
     HKT.Kind<
       G,
       TCG,
-      HKT.Mix<TCG, 'K', [KG1, KG]>,
-      HKT.Mix<TCG, 'Q', [QG1, QG]>,
-      HKT.Mix<TCG, 'W', [WG1, WG]>,
-      HKT.Mix<TCG, 'X', [XG1, XG]>,
-      HKT.Mix<TCG, 'I', [IG1, IG]>,
-      HKT.Mix<TCG, 'S', [SG1, SG]>,
-      HKT.Mix<TCG, 'R', [RG1, RG]>,
-      HKT.Mix<TCG, 'E', [EG1, EG]>,
+      HKT.Mix<G, 'K', [KG1, KG]>,
+      HKT.Mix<G, 'Q', [QG1, QG]>,
+      HKT.Mix<G, 'W', [WG1, WG]>,
+      HKT.Mix<G, 'X', [XG1, XG]>,
+      HKT.Mix<G, 'I', [IG1, IG]>,
+      HKT.Mix<G, 'S', [SG1, SG]>,
+      HKT.Mix<G, 'R', [RG1, RG]>,
+      HKT.Mix<G, 'E', [EG1, EG]>,
       A
     >
   >
 }
 
-export function flattenF<F extends HKT.URIS, C = HKT.Auto>(M: ChainMin<F, C>): FlattenFn<F, C> {
+export function flattenF<F extends HKT.HKT, C = HKT.None>(M: ChainMin<F, C>): FlattenFn<F, C> {
   if ('flatten' in M) {
     return M.flatten
   } else {

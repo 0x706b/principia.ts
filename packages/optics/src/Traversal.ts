@@ -25,14 +25,14 @@ import { PSetter } from './Setter'
  */
 
 export interface ModifyAFn_<S, T, A, B> {
-  <F extends HKT.URIS, C = HKT.Auto>(F: P.Applicative<F, C>): <K, Q, W, X, I, _S, R, E>(
+  <F extends HKT.HKT, C = HKT.None>(F: P.Applicative<F, C>): <K, Q, W, X, I, _S, R, E>(
     s: S,
     f: (a: A) => HKT.Kind<F, C, K, Q, W, X, I, _S, R, E, B>
   ) => HKT.Kind<F, C, K, Q, W, X, I, _S, R, E, T>
 }
 
 export interface ModifyAFn<S, T, A, B> {
-  <F extends HKT.URIS, C = HKT.Auto>(F: P.Applicative<F, C>): <K, Q, W, X, I, _S, R, E>(
+  <F extends HKT.HKT, C = HKT.None>(F: P.Applicative<F, C>): <K, Q, W, X, I, _S, R, E>(
     f: (a: A) => HKT.Kind<F, C, K, Q, W, X, I, _S, R, E, B>
   ) => (s: S) => HKT.Kind<F, C, K, Q, W, X, I, _S, R, E, T>
 }
@@ -46,26 +46,32 @@ export interface PTraversalMin<S, T, A, B> {
   readonly modifyA_: ModifyAFn_<S, T, A, B>
 }
 
-export function PTraversal<S, T, A, B>(_: PTraversalMin<S, T, A, B>): PTraversal<S, T, A, B> {
+export function PTraversal<S, T, A, B>(F: PTraversalMin<S, T, A, B>): PTraversal<S, T, A, B> {
   return {
-    modifyA_: _.modifyA_,
-    modifyA: (F) => (f) => (s) => _.modifyA_(F)(s, f),
+    modifyA_: F.modifyA_,
+    modifyA: (A) => (f) => (s) => F.modifyA_(A)(s, f),
     ...PSetter({
-      modify_: (s, f) => _.modifyA_(I.Applicative)(s, f),
-      replace_: (s, b) => _.modifyA_(I.Applicative)(s, () => b)
+      modify_: (s, f) => F.modifyA_(I.Applicative)(s, f),
+      replace_: (s, b) => F.modifyA_(I.Applicative)(s, () => b)
     }),
     ...Fold({
       foldMap_:
         <M>(M: P.Monoid<M>) =>
         (s: S, f: (a: A) => M) =>
-          _.modifyA_(C.getApplicative(M))(s, (a) => C.make(f(a)))
+          F.modifyA_(C.getApplicative(M))(s, (a) => C.make(f(a)))
     })
   }
 }
 
 export interface Traversal<S, A> extends PTraversal<S, S, A, A> {}
 
-export type V = HKT.V<'I', '_'>
+export interface TraversalF extends HKT.HKT {
+  readonly type: Traversal<this['I'], this['A']>
+  readonly variance: {
+    I: '_'
+    A: '+'
+  }
+}
 
 /*
  * -------------------------------------------
@@ -92,8 +98,8 @@ export const fromTraversable = _.fromTraversable
  * @since 1.0.0
  */
 export function id<S, T>(): PTraversal<S, T, S, T> {
-  return PTraversal({
-    modifyA_: (_) => (s, _f) => _.pure(s)
+  return PTraversal<S, T, S, T>({
+    modifyA_: (_) => (s, f) => f(s)
   })
 }
 
@@ -122,7 +128,7 @@ export function andThen<A, B, C, D>(
   return (sa) => andThen_(sa, ab)
 }
 
-export const Category = P.Category<[HKT.URI<TraversalURI>], V>({
+export const Category = P.Category<TraversalF>({
   id,
   andThen_
 })
@@ -258,7 +264,7 @@ export const left: <S, E, A>(sea: Traversal<S, E.Either<E, A>>) => Traversal<S, 
  * @category Combinators
  * @since 1.0.0
  */
-export function traverse<T extends HKT.URIS, C = HKT.Auto>(
+export function traverse<T extends HKT.HKT, C = HKT.None>(
   T: P.Traversable<T, C>
 ): <K, Q, W, X, I, S_, R, S, A>(sta: Traversal<S, HKT.Kind<T, C, K, Q, W, X, I, S_, R, S, A>>) => Traversal<S, A> {
   return andThen(fromTraversable(T)())

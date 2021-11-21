@@ -62,7 +62,7 @@ declare module '@principia/base/HashMap' {
     /**
      * @rewriteConstraint filterMapA_ from "@principia/base/HashMap"
      */
-    filterMapA<K, V, F extends HKT.URIS, C = HKT.Auto>(
+    filterMapA<K, V, F extends HKT.HKT, C = HKT.Auto>(
       this: HashMap<K, V>,
       A: Applicative<F, C>
     ): <K_, Q, W, X, I, S, R, E, A>(
@@ -112,7 +112,7 @@ declare module '@principia/base/HashMap' {
     /**
      * @rewriteConstraint mapA_ from "@principia/base/HashMap"
      */
-    mapA<K, V, F extends HKT.URIS, C = HKT.Auto>(
+    mapA<K, V, F extends HKT.HKT, C = HKT.Auto>(
       this: HashMap<K, V>,
       A: Applicative<F, C>
     ): <K_, Q, W, X, I, S, R, E, A>(
@@ -153,7 +153,7 @@ declare module '@principia/base/HashMap' {
     /**
      * @rewriteConstraint partitionMapA_ from "@principia/base/HashMap"
      */
-    partitionMapA<K, V, F extends HKT.URIS, C = HKT.Auto>(
+    partitionMapA<K, V, F extends HKT.HKT, C = HKT.Auto>(
       this: HashMap<K, V>,
       A: Applicative<F, C>
     ): <K_, Q, W, X, I, S, R, E, A, B>(

@@ -4,7 +4,6 @@
 import type { Eq } from './Eq'
 import type { FreeSemiring } from './FreeSemiring'
 import type * as HKT from './HKT'
-import type { ZReaderCategoryURI, ZStateCategoryURI, ZURI } from './Modules'
 import type { Predicate } from './Predicate'
 import type { _E, _R } from './prelude'
 import type { Stack } from './util/support/Stack'
@@ -85,7 +84,7 @@ const ZTag = {
 
 class Succeed<A> extends Z<never, unknown, never, unknown, never, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag               = ZTag.Succeed
+  readonly _tag = ZTag.Succeed
   constructor(readonly value: A) {
     super()
   }
@@ -93,7 +92,7 @@ class Succeed<A> extends Z<never, unknown, never, unknown, never, A> {
 
 class EffectTotal<A> extends Z<never, unknown, never, unknown, never, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag               = ZTag.EffectTotal
+  readonly _tag = ZTag.EffectTotal
   constructor(readonly effect: () => A) {
     super()
   }
@@ -101,7 +100,7 @@ class EffectTotal<A> extends Z<never, unknown, never, unknown, never, A> {
 
 class EffectPartial<E, A> extends Z<never, unknown, never, unknown, E, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag               = ZTag.EffectPartial
+  readonly _tag = ZTag.EffectPartial
   constructor(readonly effect: () => A, readonly onThrow: (u: unknown) => E) {
     super()
   }
@@ -109,7 +108,7 @@ class EffectPartial<E, A> extends Z<never, unknown, never, unknown, E, A> {
 
 class DeferTotal<W, S1, S2, R, E, A> extends Z<W, S1, S2, R, E, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag               = ZTag.DeferTotal
+  readonly _tag = ZTag.DeferTotal
   constructor(readonly z: () => Z<W, S1, S2, R, E, A>) {
     super()
   }
@@ -117,7 +116,7 @@ class DeferTotal<W, S1, S2, R, E, A> extends Z<W, S1, S2, R, E, A> {
 
 class DeferPartial<W, S1, S2, R, E, A, E1> extends Z<W, S1, S2, R, E | E1, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag               = ZTag.DeferPartial
+  readonly _tag = ZTag.DeferPartial
   constructor(readonly z: () => Z<W, S1, S2, R, E, A>, readonly onThrow: (u: unknown) => E1) {
     super()
   }
@@ -125,7 +124,7 @@ class DeferPartial<W, S1, S2, R, E, A, E1> extends Z<W, S1, S2, R, E | E1, A> {
 
 class Fail<E> extends Z<never, unknown, never, unknown, E, never> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag               = ZTag.Fail
+  readonly _tag = ZTag.Fail
   constructor(readonly cause: Cause<E>) {
     super()
   }
@@ -133,7 +132,7 @@ class Fail<E> extends Z<never, unknown, never, unknown, E, never> {
 
 class Modify<S1, S2, A> extends Z<never, S1, S2, unknown, never, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag               = ZTag.Modify
+  readonly _tag = ZTag.Modify
   constructor(readonly run: (s1: S1) => readonly [A, S2]) {
     super()
   }
@@ -141,7 +140,7 @@ class Modify<S1, S2, A> extends Z<never, S1, S2, unknown, never, A> {
 
 class Chain<W, S1, S2, R, E, A, W1, S3, Q, D, B> extends Z<W | W1, S1, S3, Q & R, D | E, B> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag               = ZTag.Chain
+  readonly _tag = ZTag.Chain
   constructor(readonly z: Z<W, S1, S2, R, E, A>, readonly cont: (a: A) => Z<W1, S2, S3, Q, D, B>) {
     super()
   }
@@ -156,7 +155,7 @@ class Match<W, S1, S2, S5, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C> extend
   B | C
 > {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag               = ZTag.Match
+  readonly _tag = ZTag.Match
   constructor(
     readonly z: Z<W, S1, S2, R, E, A>,
     readonly onFailure: (ws: C.Chunk<W>, e: Cause<E>) => Z<W1, S5, S3, R1, E1, B>,
@@ -168,7 +167,7 @@ class Match<W, S1, S2, S5, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C> extend
 
 class Asks<W, R0, S1, S2, R, E, A> extends Z<W, S1, S2, R0 & R, E, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag               = ZTag.Asks
+  readonly _tag = ZTag.Asks
   constructor(readonly asks: (r: R0) => Z<W, S1, S2, R, E, A>) {
     super()
   }
@@ -176,7 +175,7 @@ class Asks<W, R0, S1, S2, R, E, A> extends Z<W, S1, S2, R0 & R, E, A> {
 
 class Give<W, S1, S2, R, E, A> extends Z<W, S1, S2, unknown, E, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag               = ZTag.Give
+  readonly _tag = ZTag.Give
   constructor(readonly z: Z<W, S1, S2, R, E, A>, readonly env: R) {
     super()
   }
@@ -184,7 +183,7 @@ class Give<W, S1, S2, R, E, A> extends Z<W, S1, S2, unknown, E, A> {
 
 class Tell<W> extends Z<W, unknown, never, unknown, never, void> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag               = ZTag.Tell
+  readonly _tag = ZTag.Tell
   constructor(readonly log: C.Chunk<W>) {
     super()
   }
@@ -192,7 +191,7 @@ class Tell<W> extends Z<W, unknown, never, unknown, never, void> {
 
 class Censor<W, S1, S2, R, E, A, W1> extends Z<W1, S1, S2, R, E, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag               = ZTag.Censor
+  readonly _tag = ZTag.Censor
   constructor(readonly z: Z<W, S1, S2, R, E, A>, readonly modifyLog: (ws: C.Chunk<W>) => C.Chunk<W1>) {
     super()
   }
@@ -1808,17 +1807,42 @@ export function runWriter<W, A>(ma: Z<W, unknown, unknown, unknown, never, A>): 
  * -------------------------------------------------------------------------------------------------
  */
 
-type URI = [HKT.URI<ZURI>]
+export interface ZF extends HKT.HKT {
+  readonly type: Z<this['W'], this['S'], this['S'], this['R'], this['E'], this['A']>
+  readonly variance: {
+    W: '_'
+    S: '_'
+    R: '-'
+    E: '+'
+    A: '+'
+  }
+}
 
-type RCURI = [HKT.URI<ZReaderCategoryURI>]
+export interface ZReaderCategoryF extends HKT.HKT {
+  readonly type: Z<this['W'], this['S'], this['S'], this['I'], this['E'], this['A']>
+  readonly variance: {
+    W: '_'
+    S: '_'
+    R: '-'
+    E: '+'
+    A: '+'
+  }
+}
 
-type SCURI = [HKT.URI<ZStateCategoryURI>]
+export interface ZStateCategoryF extends HKT.HKT {
+  readonly type: Z<this['W'], this['I'], this['A'], this['R'], this['E'], this['A']>
+  readonly variance: {
+    W: '_'
+    S: '_'
+    R: '-'
+    E: '+'
+    A: '+'
+  }
+}
 
-export type V = HKT.V<'W', '_'> & HKT.V<'S', '_'> & HKT.V<'R', '-'> & HKT.V<'E', '+'>
+export const Functor = P.Functor<ZF>({ map_ })
 
-export const Functor = P.Functor<URI, V>({ map_ })
-
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({ map_, crossWith_, cross_ })
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<ZF>({ map_, crossWith_, cross_ })
 
 export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
 export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
@@ -1827,13 +1851,13 @@ export const crossS    = P.crossSF(SemimonoidalFunctor)
 export const crossT_   = P.crossTF_(SemimonoidalFunctor)
 export const crossT    = P.crossTF(SemimonoidalFunctor)
 
-export const Apply = P.Apply<URI, V>({ map_, crossWith_, cross_, ap_ })
+export const Apply = P.Apply<ZF>({ map_, crossWith_, cross_, ap_ })
 
-export const MonoidalFunctor = P.MonoidalFunctor<URI, V>({ map_, crossWith_, cross_, unit })
+export const MonoidalFunctor = P.MonoidalFunctor<ZF>({ map_, crossWith_, cross_, unit })
 
-export const Applicative = P.Applicative<URI, V>({ map_, crossWith_, cross_, ap_, unit, pure })
+export const Applicative = P.Applicative<ZF>({ map_, crossWith_, cross_, ap_, unit, pure })
 
-export const ApplicativeExcept = P.ApplicativeExcept<URI, V>({
+export const ApplicativeExcept = P.ApplicativeExcept<ZF>({
   map_,
   crossWith_,
   cross_,
@@ -1844,17 +1868,17 @@ export const ApplicativeExcept = P.ApplicativeExcept<URI, V>({
   catchAll_
 })
 
-export const Monad = P.Monad<URI, V>({ map_, crossWith_, cross_, ap_, unit, pure, chain_, flatten })
+export const Monad = P.Monad<ZF>({ map_, crossWith_, cross_, ap_, unit, pure, chain_, flatten })
 
 export const chainRec_: <A, W, S, R, E, B>(a: A, f: (a: A) => Z<W, S, S, R, E, E.Either<A, B>>) => Z<W, S, S, R, E, B> =
-  P.getChainRec_<URI, V>({ map_, crossWith_, cross_, ap_, unit, pure, chain_, flatten })
+  P.getChainRec_<ZF>({ map_, crossWith_, cross_, ap_, unit, pure, chain_, flatten })
 
 /**
  * @dataFirst chainRec_
  */
 export const chainRec: <A, W, S, R, E, B>(
   f: (a: A) => Z<W, S, S, R, E, E.Either<A, B>>
-) => (a: A) => Z<W, S, S, R, E, B> = P.getChainRec<URI, V>({
+) => (a: A) => Z<W, S, S, R, E, B> = P.getChainRec<ZF>({
   map_,
   crossWith_,
   cross_,
@@ -1865,7 +1889,7 @@ export const chainRec: <A, W, S, R, E, B>(
   flatten
 })
 
-export const MonadExcept = P.MonadExcept<URI, V>({
+export const MonadExcept = P.MonadExcept<ZF>({
   map_,
   crossWith_,
   cross_,
@@ -1878,7 +1902,7 @@ export const MonadExcept = P.MonadExcept<URI, V>({
   catchAll_
 })
 
-export const MonadEnv = P.MonadEnv<URI, V>({
+export const MonadEnv = P.MonadEnv<ZF>({
   map_,
   crossWith_,
   cross_,
@@ -1891,7 +1915,7 @@ export const MonadEnv = P.MonadEnv<URI, V>({
   giveAll_
 })
 
-export const MonadState = P.MonadState<URI, V>({
+export const MonadState = P.MonadState<ZF>({
   map_,
   crossWith_,
   cross_,
@@ -1906,13 +1930,13 @@ export const MonadState = P.MonadState<URI, V>({
   modify
 })
 
-export const ReaderCategory = P.Category<RCURI, V>({
+export const ReaderCategory = P.Category<ZReaderCategoryF>({
   id: () => asks(identity),
   andThen_,
   compose_
 })
 
-export const StateCategory = P.Category<SCURI, V>({
+export const StateCategory = P.Category<ZStateCategoryF>({
   id: () => modify((a) => [a, a]),
   andThen_: (ab, bc) => chain_(ab, () => bc),
   compose_: (bc, ab) => chain_(ab, () => bc)
@@ -1982,5 +2006,3 @@ export function gen<T extends GenZ<any, any, any, any, any>, A>(
     return run(state)
   })
 }
-
-export { ZURI } from './Modules'

@@ -29,7 +29,14 @@ export type InputOf<C> = C extends Constructor<infer I, any, any> ? I : never
 export type ErrorOf<C> = C extends Constructor<any, infer E, any> ? E : never
 export type TypeOf<C> = C extends Constructor<any, any, infer A> ? A : never
 
-export type V = HKT.V<'I', '-'> & HKT.V<'E', '+'>
+export interface ConstructorF extends HKT.HKT {
+  readonly type: Constructor<this['I'], this['E'], this['A']>
+  readonly variance: {
+    I: '-'
+    E: '+'
+    A: '+'
+  }
+}
 
 export interface stringC extends IdP<string> {}
 export const string: stringC = pipe(Pr.id<string>(), Pr.withLabel('string'))

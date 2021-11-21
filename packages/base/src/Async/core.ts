@@ -1,7 +1,6 @@
 import type { Has, Tag } from '../Has'
 import type * as HKT from '../HKT'
 import type { Maybe } from '../Maybe'
-import type { AsyncURI } from '../Modules'
 import type { Stack } from '../util/support/Stack'
 
 import * as A from '../Array/core'
@@ -43,6 +42,15 @@ export abstract class Async<R, E, A> {
   readonly _A!: () => A
 }
 
+export interface AsyncF extends HKT.HKT {
+  readonly type: Async<this['R'], this['E'], this['A']>
+  readonly variance: {
+    R: '-'
+    E: '+'
+    A: '+'
+  }
+}
+
 export const AsyncTag = {
   Succeed: 'Succeed',
   Total: 'Total',
@@ -63,10 +71,6 @@ export const AsyncTag = {
 export type UAsync<A> = Async<unknown, never, A>
 export type FAsync<E, A> = Async<unknown, E, A>
 export type URAsync<R, A> = Async<R, never, A>
-
-export type V = HKT.V<'R', '-'> & HKT.V<'E', '+'>
-
-type URI = [HKT.URI<AsyncURI>]
 
 export type Concrete =
   | Succeed<any>
@@ -1333,51 +1337,51 @@ export function runAsyncEnv<R, E, A>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export const Functor = P.Functor<URI, V>({
+export const Functor = P.Functor<AsyncF>({
   map_
 })
 
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI, V>({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<AsyncF>({
   map_,
   crossWith_,
   cross_
 })
 
-export const SemimonoidalFunctorPar = P.SemimonoidalFunctor<URI, V>({
+export const SemimonoidalFunctorPar = P.SemimonoidalFunctor<AsyncF>({
   map_,
   crossWith_: crossWithPar_,
   cross_: crossPar_
 })
 
-export const Apply = P.Apply<URI, V>({
+export const Apply = P.Apply<AsyncF>({
   map_,
   crossWith_,
   cross_,
   ap_
 })
 
-export const ApplyPar = P.Apply<URI, V>({
+export const ApplyPar = P.Apply<AsyncF>({
   map_,
   crossWith_: crossWithPar_,
   cross_: crossPar_,
   ap_: apPar_
 })
 
-export const MonoidalFunctor = P.MonoidalFunctor<URI, V>({
+export const MonoidalFunctor = P.MonoidalFunctor<AsyncF>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const MonoidalFunctorPar = P.MonoidalFunctor<URI, V>({
+export const MonoidalFunctorPar = P.MonoidalFunctor<AsyncF>({
   map_,
   crossWith_: crossWithPar_,
   cross_: crossPar_,
   unit
 })
 
-export const Applicative = P.Applicative<URI, V>({
+export const Applicative = P.Applicative<AsyncF>({
   map_,
   crossWith_,
   cross_,
@@ -1386,7 +1390,7 @@ export const Applicative = P.Applicative<URI, V>({
   pure
 })
 
-export const ApplicativePar = P.Applicative<URI, V>({
+export const ApplicativePar = P.Applicative<AsyncF>({
   map_,
   crossWith_: crossWithPar_,
   cross_: crossPar_,
@@ -1395,7 +1399,7 @@ export const ApplicativePar = P.Applicative<URI, V>({
   pure
 })
 
-export const Monad = P.Monad<URI, V>({
+export const Monad = P.Monad<AsyncF>({
   map_,
   crossWith_,
   cross_,
@@ -1406,14 +1410,12 @@ export const Monad = P.Monad<URI, V>({
   flatten
 })
 
-export const chainRec_: <A, R, E, B>(a: A, f: (a: A) => Async<R, E, E.Either<A, B>>) => Async<R, E, B> = P.getChainRec_<
-  URI,
-  V
->({ map_, crossWith_, cross_, ap_, unit, pure, chain_, flatten })
+export const chainRec_: <A, R, E, B>(a: A, f: (a: A) => Async<R, E, E.Either<A, B>>) => Async<R, E, B> =
+  P.getChainRec_<AsyncF>({ map_, crossWith_, cross_, ap_, unit, pure, chain_, flatten })
 export const chainRec: <A, R, E, B>(f: (a: A) => Async<R, E, E.Either<A, B>>) => (a: A) => Async<R, E, B> =
-  P.getChainRec<URI, V>({ map_, crossWith_, cross_, ap_, unit, pure, chain_, flatten })
+  P.getChainRec<AsyncF>({ map_, crossWith_, cross_, ap_, unit, pure, chain_, flatten })
 
-export const Do: P.Do<URI, V> = P.Do(Monad)
+export const Do: P.Do<AsyncF> = P.Do(Monad)
 
 export const pureS_ = P.pureSF_(Monad)
 
@@ -1460,7 +1462,7 @@ interface RemoveListener {
 
 class InterruptionState {
   private isInterrupted = false
-  readonly listeners    = new Set<() => void>()
+  readonly listeners = new Set<() => void>()
 
   listen(f: () => void): RemoveListener {
     this.listeners.add(f)

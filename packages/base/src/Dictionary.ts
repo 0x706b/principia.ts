@@ -2,7 +2,6 @@ import type { Either } from './Either'
 import type { HashMap } from './HashMap'
 import type * as HKT from './HKT'
 import type { Maybe } from './Maybe'
-import type { DictionaryURI } from './Modules'
 import type { PredicateWithIndex, RefinementWithIndex } from './prelude'
 import type { ReadonlyRecord } from './Record'
 
@@ -19,7 +18,13 @@ export type DictionaryTypeId = typeof DictionaryTypeId
 export const DictionaryStore   = Symbol.for('@principia/base/Dictionary#store')
 export const DictionaryOperate = Symbol.for('@principia/base/Dictionary#operate')
 
-export type URI = [HKT.URI<DictionaryURI>]
+export interface DictionaryF extends HKT.HKT {
+  readonly type: Dictionary<this['A']>
+  readonly index: string
+  readonly variance: {
+    A: '+'
+  }
+}
 
 export class Dictionary<A> implements Iterable<readonly [string, A]> {
   readonly [DictionaryTypeId]: DictionaryTypeId = DictionaryTypeId
@@ -252,14 +257,14 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A, k: string) => M) => (f
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
 
-export function fromFoldableMap<B, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigroup<B>, F: P.Foldable<F, C>) {
+export function fromFoldableMap<B, F extends HKT.HKT, C = HKT.None>(S: P.Semigroup<B>, F: P.Foldable<F, C>) {
   return <KF, QF, WF, XF, IF, SF, RF, EF, A>(
     fa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>,
     f: (a: A) => readonly [string, B]
   ): Dictionary<B> => fromRecord(R.fromFoldableMap(S, F)(fa, f))
 }
 
-export function fromFoldable<A, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigroup<A>, F: P.Foldable<F, C>) {
+export function fromFoldable<A, F extends HKT.HKT, C = HKT.None>(S: P.Semigroup<A>, F: P.Foldable<F, C>) {
   const fromFoldableMapS = fromFoldableMap(S, F)
   return <KF, QF, WF, XF, IF, SF, RF, EF>(
     fa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, readonly [string, A]>
@@ -328,12 +333,12 @@ export function getShow<A>(S: P.Show<A>): P.Show<Dictionary<A>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const traverse_: P.TraverseIndexFn_<URI> = (A) => (ta, f) =>
+export const traverse_: P.TraverseIndexFn_<DictionaryF> = (A) => (ta, f) =>
   A.map_(R.traverse_(A)(ta[DictionaryStore], f), fromRecord)
 
-export const traverse: P.MapWithIndexAFn<URI> = (A) => (f) => (ta) => traverse_(A)(ta, f)
+export const traverse: P.MapWithIndexAFn<DictionaryF> = (A) => (f) => (ta) => traverse_(A)(ta, f)
 
-export const sequence: P.SequenceFn<URI> = (A) => (ta) => traverse_(A)(ta, (_) => _)
+export const sequence: P.SequenceFn<DictionaryF> = (A) => (ta) => traverse_(A)(ta, (_) => _)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -341,15 +346,15 @@ export const sequence: P.SequenceFn<URI> = (A) => (ta) => traverse_(A)(ta, (_) =
  * -------------------------------------------------------------------------------------------------
  */
 
-export const wither_: P.WitherWithIndexFn_<URI> = (A) => (wa, f) =>
+export const wither_: P.WitherWithIndexFn_<DictionaryF> = (A) => (wa, f) =>
   A.map_(R.wither_(A)(wa[DictionaryStore], f), fromRecord)
 
-export const wither: P.WitherWithIndexFn<URI> = (A) => (f) => (wa) => wither_(A)(wa, f)
+export const wither: P.WitherWithIndexFn<DictionaryF> = (A) => (f) => (wa) => wither_(A)(wa, f)
 
-export const wilt_: P.WiltWithIndexFn_<URI> = (A) => (wa, f) =>
+export const wilt_: P.WiltWithIndexFn_<DictionaryF> = (A) => (wa, f) =>
   A.map_(R.wilt_(A)(wa[DictionaryStore], f), ([left, right]) => [fromRecord(left), fromRecord(right)])
 
-export const wilt: P.WiltFn<URI> = (A) => (f) => (wa) => wilt_(A)(wa, f)
+export const wilt: P.WiltFn<DictionaryF> = (A) => (f) => (wa) => wilt_(A)(wa, f)
 
 /*
  * -------------------------------------------------------------------------------------------------

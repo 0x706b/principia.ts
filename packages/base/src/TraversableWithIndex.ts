@@ -7,22 +7,22 @@ import { FoldableWithIndex } from './FoldableWithIndex'
 import { FunctorWithIndex } from './FunctorWithIndex'
 import * as HKT from './HKT'
 
-export interface TraversableWithIndex<F extends HKT.URIS, C = HKT.Auto>
+export interface TraversableWithIndex<F extends HKT.HKT, C = HKT.None>
   extends FunctorWithIndex<F, C>,
     FoldableWithIndex<F, C> {
   readonly itraverse_: TraverseIndexFn_<F, C>
   readonly itraverse: MapWithIndexAFn<F, C>
 }
 
-export type TraversableWithIndexMin<F extends HKT.URIS, C = HKT.Auto> = FunctorWithIndexMin<F, C> &
+export type TraversableWithIndexMin<F extends HKT.HKT, C = HKT.None> = FunctorWithIndexMin<F, C> &
   FoldableWithIndexMin<F, C> & {
     readonly itraverse_: TraverseIndexFn_<F, C>
   }
 
-export function TraversableWithIndex<F extends HKT.URIS, C = HKT.Auto>(
+export function TraversableWithIndex<F extends HKT.HKT, C = HKT.None>(
   F: TraversableWithIndexMin<F, C>
 ): TraversableWithIndex<F, C> {
-  return HKT.instance({
+  return HKT.instance<TraversableWithIndex<F, C>>({
     ...FunctorWithIndex(F),
     ...FoldableWithIndex(F),
     itraverse_: F.itraverse_,
@@ -33,16 +33,16 @@ export function TraversableWithIndex<F extends HKT.URIS, C = HKT.Auto>(
   })
 }
 
-export interface MapWithIndexAFn<F extends HKT.URIS, CF = HKT.Auto> {
-  <G extends HKT.URIS, CG = HKT.Auto>(A: Applicative<G, CG>): <KG, QG, WG, XG, IG, SG, RG, EG, KF, A, B>(
-    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, B>
+export interface MapWithIndexAFn<F extends HKT.HKT, CF = HKT.None> {
+  <G extends HKT.HKT, CG = HKT.None>(A: Applicative<G, CG>): <KG, QG, WG, XG, IG, SG, RG, EG, KF, A, B>(
+    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<CF, 'K', KF>>) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, B>
   ) => <QF, WF, XF, IF, SF, RF, EF>(
     ta: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, A>
   ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
-export interface TraverseIndexFn_<F extends HKT.URIS, CF = HKT.Auto> {
-  <G extends HKT.URIS, CG = HKT.Auto>(A: Applicative<G, CG>): <
+export interface TraverseIndexFn_<F extends HKT.HKT, CF = HKT.None> {
+  <G extends HKT.HKT, CG = HKT.None>(A: Applicative<G, CG>): <
     KG,
     QG,
     WG,
@@ -63,15 +63,15 @@ export interface TraverseIndexFn_<F extends HKT.URIS, CF = HKT.Auto> {
     B
   >(
     ta: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, A>,
-    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, B>
+    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<CF, 'K', KF>>) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, B>
   ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, B>>
 }
 
-export interface TraverseWithIndexFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
-  <H extends HKT.URIS, CH = HKT.Auto>(A: Applicative<H, CH>): <FK, GK, HK, HQ, HW, HX, HI, HS, HR, HE, A, B>(
+export interface TraverseWithIndexFnComposition<F extends HKT.HKT, G extends HKT.HKT, CF = HKT.None, CG = HKT.None> {
+  <H extends HKT.HKT, CH = HKT.None>(A: Applicative<H, CH>): <FK, GK, HK, HQ, HW, HX, HI, HS, HR, HE, A, B>(
     f: (
       a: A,
-      i: [HKT.IndexFor<F, HKT.OrFix<'K', CF, FK>>, HKT.IndexFor<G, HKT.OrFix<'K', CG, GK>>]
+      i: [HKT.IndexFor<F, HKT.OrFix<CF, 'K', FK>>, HKT.IndexFor<G, HKT.OrFix<CG, 'K', GK>>]
     ) => HKT.Kind<H, CH, HK, HQ, HW, HX, HI, HS, HR, HE, B>
   ) => <FQ, FW, FX, FI, FS, FR, FE, GQ, GW, GX, GI, GS, GR, GE>(
     fga: HKT.Kind<F, CF, FK, FQ, FW, FX, FI, FS, FR, FE, HKT.Kind<G, CG, GK, GQ, GW, GX, GI, GS, GR, GE, A>>
@@ -90,8 +90,8 @@ export interface TraverseWithIndexFnComposition<F extends HKT.URIS, G extends HK
   >
 }
 
-export interface TraverseWithIndexFnComposition_<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
-  <H extends HKT.URIS, CH = HKT.Auto>(A: Applicative<H, CH>): <
+export interface TraverseWithIndexFnComposition_<F extends HKT.HKT, G extends HKT.HKT, CF = HKT.None, CG = HKT.None> {
+  <H extends HKT.HKT, CH = HKT.None>(A: Applicative<H, CH>): <
     FK,
     FQ,
     FW,
@@ -122,7 +122,7 @@ export interface TraverseWithIndexFnComposition_<F extends HKT.URIS, G extends H
     fga: HKT.Kind<F, CF, FK, FQ, FW, FX, FI, FS, FR, FE, HKT.Kind<G, CG, GK, GQ, GW, GX, GI, GS, GR, GE, A>>,
     f: (
       a: A,
-      i: [HKT.IndexFor<F, HKT.OrFix<'K', CF, FK>>, HKT.IndexFor<G, HKT.OrFix<'K', CG, GK>>]
+      i: [HKT.IndexFor<F, HKT.OrFix<CF, 'K', FK>>, HKT.IndexFor<G, HKT.OrFix<CF, 'K', GK>>]
     ) => HKT.Kind<H, CH, HK, HQ, HW, HX, HI, HS, HR, HE, B>
   ) => HKT.Kind<
     H,
@@ -139,8 +139,8 @@ export interface TraverseWithIndexFnComposition_<F extends HKT.URIS, G extends H
   >
 }
 
-export function implementTraverseWithIndex<F extends HKT.URIS, C = HKT.Auto>(): (
-  i: <K, Q, W, X, I, S, R, E, A, B, G>(_: {
+export function implementTraverseWithIndex<F extends HKT.HKT, C = HKT.None>(): (
+  i: <K, Q, W, X, I, S, R, E, A, B, G, K1, Q1, W1, X1, I1, S1, R1, E1>(_: {
     A: A
     B: B
     G: G
@@ -153,54 +153,64 @@ export function implementTraverseWithIndex<F extends HKT.URIS, C = HKT.Auto>(): 
     R: R
     E: E
   }) => (
-    A: Applicative<HKT.UHKT<G>>
+    A: Applicative<HKT.F<G>>
   ) => (
-    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', C, K>>) => HKT.HKT<G, B>
-  ) => (ta: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>) => HKT.HKT<G, HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>>
+    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<C, 'K', K>>) => HKT.FK<G, K1, Q1, W1, X1, I1, S1, R1, E1, B>
+  ) => (
+    ta: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+  ) => HKT.FK<G, K1, Q1, W1, X1, I1, S1, R1, E1, HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>>
 ) => MapWithIndexAFn<F, C>
 export function implementTraverseWithIndex() {
   return (i: any) => i()
 }
 
-export function implementTraverseWithIndex_<F extends HKT.URIS, C = HKT.Auto>(): (
-  i: <K, Q, W, X, I, S, R, E, A, B, G>(_: {
+export function implementTraverseWithIndex_<F extends HKT.HKT, C = HKT.None>(): (
+  i: <K, Q, W, X, I, S, R, E, A, B, K1, Q1, W1, X1, I1, S1, R1, E1, G>(_: {
     A: A
     B: B
     G: G
-    K: HKT.OrFix<'K', C, K>
+    K: HKT.OrFix<C, 'K', K>
     Q: Q
     W: W
     X: X
     I: I
     S: S
     R: R
-    E: HKT.OrFix<'E', C, E>
+    E: HKT.OrFix<C, 'E', E>
+    K1: K1
+    Q1: Q1
+    W1: W1
+    X1: X1
+    I1: I1
+    S1: S1
+    R1: R1
+    E1: E1
   }) => (
-    G: Applicative<HKT.UHKT<G>>
+    G: Applicative<HKT.F<G>>
   ) => (
     ta: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
-    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<'K', C, K>>) => HKT.HKT<G, B>
-  ) => HKT.HKT<G, HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>>
+    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<C, 'K', K>>) => HKT.FK<G, K1, Q1, W1, X1, I1, S1, R1, E1, B>
+  ) => HKT.FK<G, K1, Q1, W1, X1, I1, S1, R1, E1, HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>>
 ) => TraverseIndexFn_<F, C>
 export function implementTraverseWithIndex_() {
   return (i: any) => i()
 }
 
-export interface MapAccumWithIndexMFn<F extends HKT.URIS, CF = HKT.Auto> {
-  <G extends HKT.URIS, CG = HKT.Auto>(M: Monad<G, CG>): <KG, QG, WG, XG, IG, SG, RG, EG, KF, A, B, C>(
+export interface MapAccumWithIndexMFn<F extends HKT.HKT, CF = HKT.None> {
+  <G extends HKT.HKT, CG = HKT.None>(M: Monad<G, CG>): <KG, QG, WG, XG, IG, SG, RG, EG, KF, A, B, C>(
     s: C,
     f: (
       s: C,
       a: A,
-      i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>
+      i: HKT.IndexFor<F, HKT.OrFix<CF, 'K', KF>>
     ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, readonly [B, C]>
   ) => <QF, WF, XF, IF, SF, RF, EF>(
     ta: HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, A>
   ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, readonly [HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, B>, C]>
 }
 
-export interface MapAccumWithIndexMFn_<F extends HKT.URIS, CF = HKT.Auto> {
-  <G extends HKT.URIS, CG = HKT.Auto>(M: Monad<G, CG>): <
+export interface MapAccumWithIndexMFn_<F extends HKT.HKT, CF = HKT.None> {
+  <G extends HKT.HKT, CG = HKT.None>(M: Monad<G, CG>): <
     KG,
     QG,
     WG,
@@ -226,7 +236,45 @@ export interface MapAccumWithIndexMFn_<F extends HKT.URIS, CF = HKT.Auto> {
     f: (
       s: C,
       a: A,
-      i: HKT.IndexFor<F, HKT.OrFix<'K', CF, KF>>
+      i: HKT.IndexFor<F, HKT.OrFix<CF, 'K', KF>>
     ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, readonly [B, C]>
   ) => HKT.Kind<G, CG, KG, QG, WG, XG, IG, SG, RG, EG, readonly [HKT.Kind<F, CF, KF, QF, WF, XF, IF, SF, RF, EF, B>, C]>
+}
+
+export function implementMapAccumMWithIndex_<F extends HKT.HKT, TC = HKT.None>(): (
+  i: <K, Q, W, X, I, S, R, E, G, K1, Q1, W1, X1, I1, S1, R1, E1, A, B, C>(_: {
+    A: A
+    B: B
+    G: G
+    K: HKT.OrFix<C, 'K', K>
+    Q: Q
+    W: W
+    X: X
+    I: I
+    S: S
+    R: R
+    E: HKT.OrFix<C, 'E', E>
+    K1: K1
+    Q1: Q1
+    W1: W1
+    X1: X1
+    I1: I1
+    S1: S1
+    R1: R1
+    E1: E1
+    C: C
+  }) => (
+    G: Monad<HKT.F<G>>
+  ) => (
+    ta: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
+    s: C,
+    f: (
+      s: C,
+      a: A,
+      i: HKT.IndexFor<F, HKT.OrFix<C, 'K', K>>
+    ) => HKT.FK<G, K1, Q1, W1, X1, I1, S1, R1, E1, readonly [B, C]>
+  ) => HKT.FK<G, K1, Q1, W1, X1, I1, S1, R1, E1, readonly [HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>, C]>
+) => MapAccumWithIndexMFn_<F, TC>
+export function implementMapAccumMWithIndex_() {
+  return (i: any) => i()
 }

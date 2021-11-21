@@ -147,5 +147,3 @@ export function id<A>(): Guard<A, A> {
     is: (_): _ is A => true
   }
 }
-
-export { GuardURI } from './Modules'

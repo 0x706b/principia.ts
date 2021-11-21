@@ -6,7 +6,7 @@ import type * as P from '@principia/base/prelude'
 import { isPromise } from './utils'
 
 function AssociativeCompositionLaw<
-  F extends HKT.URIS,
+  F extends HKT.HKT,
   TC,
   K,
   Q,
@@ -41,14 +41,14 @@ function AssociativeCompositionLaw<
     HKT.Kind<
       F,
       TC,
-      HKT.Mix<TC, 'K', [K, KB, KC]>,
-      HKT.Mix<TC, 'Q', [Q, QB, QC]>,
-      HKT.Mix<TC, 'W', [W, WB, WC]>,
-      HKT.Mix<TC, 'X', [X, XB, XC]>,
-      HKT.Mix<TC, 'I', [I, IB, IC]>,
-      HKT.Mix<TC, 'S', [S, SB, SC]>,
-      HKT.Mix<TC, 'R', [R, RB, RC]>,
-      HKT.Mix<TC, 'E', [E, EB, EC]>,
+      HKT.Mix<F, 'K', [K, KB, KC]>,
+      HKT.Mix<F, 'Q', [Q, QB, QC]>,
+      HKT.Mix<F, 'W', [W, WB, WC]>,
+      HKT.Mix<F, 'X', [X, XB, XC]>,
+      HKT.Mix<F, 'I', [I, IB, IC]>,
+      HKT.Mix<F, 'S', [S, SB, SC]>,
+      HKT.Mix<F, 'R', [R, RB, RC]>,
+      HKT.Mix<F, 'E', [E, EB, EC]>,
       C
     >
   >,
@@ -56,17 +56,17 @@ function AssociativeCompositionLaw<
   bfc: (b: B) => HKT.Kind<F, TC, KC, QC, WC, XC, IC, SC, RC, EC, C>
 ): (fa: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>) => Promise<boolean>
 function AssociativeCompositionLaw<F, A, B, C>(
-  F: P.Chain<HKT.UHKT<F>>,
-  S: MaybeAsyncEq<HKT.HKT<F, C>>,
-  afb: FunctionN<[A], HKT.HKT<F, B>>,
-  bfc: FunctionN<[B], HKT.HKT<F, C>>
-): (fa: HKT.HKT<F, A>) => Promise<boolean>
+  F: P.Chain<HKT.F<F>>,
+  S: MaybeAsyncEq<HKT.FK1<F, C>>,
+  afb: FunctionN<[A], HKT.FK1<F, B>>,
+  bfc: FunctionN<[B], HKT.FK1<F, C>>
+): (fa: HKT.FK1<F, A>) => Promise<boolean>
 function AssociativeCompositionLaw<F, A, B, C>(
-  F: P.Chain<HKT.UHKT<F>>,
-  S: MaybeAsyncEq<HKT.HKT<F, C>>,
-  afb: FunctionN<[A], HKT.HKT<F, B>>,
-  bfc: FunctionN<[B], HKT.HKT<F, C>>
-): (fa: HKT.HKT<F, A>) => Promise<boolean> {
+  F: P.Chain<HKT.F<F>>,
+  S: MaybeAsyncEq<HKT.FK1<F, C>>,
+  afb: FunctionN<[A], HKT.FK1<F, B>>,
+  bfc: FunctionN<[B], HKT.FK1<F, C>>
+): (fa: HKT.FK1<F, A>) => Promise<boolean> {
   return (fa) => {
     const b = S.equals_(
       F.chain_(F.chain_(fa, afb), bfc),

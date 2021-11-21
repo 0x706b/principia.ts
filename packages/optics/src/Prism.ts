@@ -39,7 +39,13 @@ export const Prism: <S, A>(_: PPrismMin<S, S, A, A>) => Prism<S, A> = _.makePPri
 export type _S<X> = X extends Prism<infer S, any> ? S : never
 export type _A<X> = X extends Prism<any, infer A> ? A : never
 
-export type V = HKT.V<'I', '_'>
+export interface PrismF extends HKT.HKT {
+  readonly type: Prism<this['I'], this['A']>
+  readonly variance: {
+    I: '_'
+    A: '+'
+  }
+}
 
 /*
  * -------------------------------------------
@@ -176,7 +182,7 @@ export function andThen<A, B, C, D>(ab: PPrism<A, B, C, D>): <S, T>(sa: PPrism<S
  * @category Instances
  * @since 1.0.0
  */
-export const Category = P.Category<[HKT.URI<PrismURI>], V>({
+export const Category = P.Category<PrismF>({
   andThen_,
   id
 })
@@ -210,7 +216,7 @@ export function invmap<A, B>(ab: (a: A) => B, ba: (b: B) => A): <S>(ea: Prism<S,
  * @category Instances
  * @since 1.0.0
  */
-export const Invariant: P.Invariant<[HKT.URI<PrismURI>], V> = HKT.instance({
+export const Invariant: P.Invariant<PrismF> = HKT.instance({
   invmap_,
   invmap
 })
@@ -401,7 +407,7 @@ export const left: <S, E, A>(sea: Prism<S, E.Either<E, A>>) => Prism<S, E> = and
  * @category Combinators
  * @since 1.0.0
  */
-export function traverse<T extends HKT.URIS, C = HKT.Auto>(
+export function traverse<T extends HKT.HKT, C = HKT.None>(
   T: P.Traversable<T, C>
 ): <S, K, Q, W, X, I, S_, R, E, A>(sta: Prism<S, HKT.Kind<T, C, K, Q, W, X, I, S_, R, E, A>>) => Traversal<S, A> {
   return andThenTraversal(_.fromTraversable(T)())

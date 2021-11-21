@@ -9,11 +9,17 @@ import * as C from '../Chunk/core'
  * -------------------------------------------------------------------------------------------------
  */
 
-export function traverseChunk_<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
+export function traverseChunk_<G extends HKT.HKT, CG>(
+  G: P.Applicative<G, CG>
+): <A, K, Q, W, X, I, S, R, E, B>(
+  ta: Iterable<A>,
+  f: (a: A, i: number) => HKT.Kind<G, CG, K, Q, W, X, I, S, R, E, B>
+) => HKT.Kind<G, CG, K, Q, W, X, I, S, R, E, C.Chunk<B>>
+export function traverseChunk_<G>(G: P.Applicative<HKT.F<G>>) {
   return <A, K, Q, W, X, I, S, R, E, B>(
     ta: Iterable<A>,
-    f: (a: A, i: number) => HKT.Kind<G, CG, K, Q, W, X, I, S, R, E, B>
-  ): HKT.Kind<G, CG, K, Q, W, X, I, S, R, E, C.Chunk<B>> => {
+    f: (a: A, i: number) => HKT.FK<G, K, Q, W, X, I, S, R, E, B>
+  ): HKT.FK<G, K, Q, W, X, I, S, R, E, C.Chunk<B>> => {
     let output     = G.pure(C.empty<B>())
     const iterator = ta[Symbol.iterator]()
     let result: IteratorResult<A>
@@ -27,7 +33,7 @@ export function traverseChunk_<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) 
   }
 }
 
-export function traverseChunk<G extends HKT.URIS, CG>(G: P.Applicative<G, CG>) {
+export function traverseChunk<G extends HKT.HKT, CG>(G: P.Applicative<G, CG>) {
   return <A, K, Q, W, X, I, S, R, E, B>(f: (a: A, i: number) => HKT.Kind<G, CG, K, Q, W, X, I, S, R, E, B>) =>
     (ta: Iterable<A>): HKT.Kind<G, CG, K, Q, W, X, I, S, R, E, C.Chunk<B>> =>
       traverseChunk_(G)(ta, f)

@@ -60,5 +60,3 @@ export function contramap_<A, B>(fa: Show<A>, f: (b: B) => A): Show<B> {
 export function contramap<A, B>(f: (b: B) => A): (fa: Show<A>) => Show<B> {
   return (fa) => contramap_(fa, f)
 }
-
-export { ShowURI } from './Modules'

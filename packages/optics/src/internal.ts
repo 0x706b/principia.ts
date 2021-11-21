@@ -80,7 +80,7 @@ export function makePOptional<S, T, A, B>(_: POptionalMin<S, T, A, B>): POptiona
     getMaybe: getOption,
     modifyMaybe_: modifyOption_,
     modifyMaybe: (f) => (s) => modifyOption_(s, f),
-    ...makePTraversal({
+    ...makePTraversal<S, T, A, B>({
       modifyA_: (F) => (s, f) =>
         pipe(
           _.getOrModify(s),
@@ -279,7 +279,7 @@ export function traversalAndThenTraversal<S, T, A, B, C, D>(
   sa: PTraversal<S, T, A, B>,
   ab: PTraversal<A, B, C, D>
 ): PTraversal<S, T, C, D> {
-  return makePTraversal({
+  return makePTraversal<S, T, C, D>({
     modifyA_: (F) => (s, f) => sa.modifyA_(F)(s, ab.modifyA(F)(f))
   })
 }
@@ -290,30 +290,43 @@ export function traversalAndThenTraversal<S, T, A, B, C, D>(
  * @category Constructors
  * @since 1.0.0
  */
-export function fromTraversable<T extends HKT.URIS, C = HKT.Auto>(
+export function fromTraversable<T extends HKT.HKT, C = HKT.None>(
   T: P.Traversable<T, C>
 ): <
   A,
   B,
-  K = HKT.Initial<C, 'K'>,
-  Q = HKT.Initial<C, 'Q'>,
-  W = HKT.Initial<C, 'W'>,
-  X = HKT.Initial<C, 'X'>,
-  I = HKT.Initial<C, 'I'>,
-  S = HKT.Initial<C, 'S'>,
-  R = HKT.Initial<C, 'R'>,
-  E = HKT.Initial<C, 'E'>,
-  K1 = HKT.Initial<C, 'K'>,
-  Q1 = HKT.Initial<C, 'Q'>,
-  W1 = HKT.Initial<C, 'W'>,
-  X1 = HKT.Initial<C, 'X'>,
-  I1 = HKT.Initial<C, 'I'>,
-  S1 = HKT.Initial<C, 'S'>,
-  R1 = HKT.Initial<C, 'R'>,
-  E1 = HKT.Initial<C, 'E'>
->() => PTraversal<HKT.Kind<T, C, K, Q, W, X, I, S, R, E, A>, HKT.Kind<T, C, K1, Q1, W1, X1, I1, S1, R1, E1, B>, A, B> {
-  return () =>
-    makePTraversal({
+  K = HKT.Low<T, 'K'>,
+  Q = HKT.Low<T, 'Q'>,
+  W = HKT.Low<T, 'W'>,
+  X = HKT.Low<T, 'X'>,
+  I = HKT.Low<T, 'I'>,
+  S = HKT.Low<T, 'S'>,
+  R = HKT.Low<T, 'R'>,
+  E = HKT.Low<T, 'E'>,
+  K1 = HKT.Low<T, 'K'>,
+  Q1 = HKT.Low<T, 'Q'>,
+  W1 = HKT.Low<T, 'W'>,
+  X1 = HKT.Low<T, 'X'>,
+  I1 = HKT.Low<T, 'I'>,
+  S1 = HKT.Low<T, 'S'>,
+  R1 = HKT.Low<T, 'R'>,
+  E1 = HKT.Low<T, 'E'>
+>() => PTraversal<HKT.Kind<T, C, K, Q, W, X, I, S, R, E, A>, HKT.Kind<T, C, K1, Q1, W1, X1, I1, S1, R1, E1, B>, A, B>
+export function fromTraversable<T>(
+  T: P.Traversable<HKT.F<T>>
+): <A, B>() => PTraversal<
+  HKT.FK<T, any, any, any, any, any, any, any, any, A>,
+  HKT.FK<T, any, any, any, any, any, any, any, any, B>,
+  A,
+  B
+> {
+  return <A, B>() =>
+    makePTraversal<
+      HKT.FK<T, any, any, any, any, any, any, any, any, A>,
+      HKT.FK<T, any, any, any, any, any, any, any, any, B>,
+      A,
+      B
+    >({
       modifyA_: (F) => {
         const traverseF_ = T.traverse_(F)
         return (s, f) => traverseF_(s, f)

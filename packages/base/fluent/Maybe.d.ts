@@ -238,7 +238,7 @@ interface MaybeOps<A> {
   /**
    * @rewriteConstraint mapA_ from "@principia/base/Maybe"
    */
-  mapA<A, F extends HKT.URIS, C = HKT.Auto>(
+  mapA<A, F extends HKT.HKT, C = HKT.Auto>(
     this: Maybe<A>,
     A: P.Applicative<F, C>
   ): <K, Q, W, X, I, S, R, E, B>(

@@ -1,12 +1,16 @@
 import type * as E from '../Either'
 import type * as HKT from '../HKT'
-import type { EvalURI } from '../Modules'
 import type { Eval } from './core'
 
 import * as P from '../prelude'
 import { ap_, chain_, cross_, crossWith_, defer, map_, now, pure, unit } from './core'
 
-type URI = [HKT.URI<EvalURI>]
+export interface EvalF extends HKT.HKT {
+  readonly type: Eval<this['A']>
+  readonly variance: {
+    A: '+'
+  }
+}
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -14,9 +18,9 @@ type URI = [HKT.URI<EvalURI>]
  * -------------------------------------------------------------------------------------------------
  */
 
-export const Functor = P.Functor<URI>({ map_ })
+export const Functor = P.Functor<EvalF>({ map_ })
 
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({ map_, crossWith_, cross_ })
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<EvalF>({ map_, crossWith_, cross_ })
 
 export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
 export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
@@ -28,7 +32,7 @@ export const mapN_ = P.mapNF_(SemimonoidalFunctor)
  */
 export const mapN = P.mapNF(SemimonoidalFunctor)
 
-export const Apply = P.Apply<URI>({
+export const Apply = P.Apply<EvalF>({
   map_,
   crossWith_,
   cross_,
@@ -38,14 +42,14 @@ export const Apply = P.Apply<URI>({
 export const apS = P.apSF(Apply)
 export const apT = P.apTF(Apply)
 
-export const MonoidalFunctor = P.MonoidalFunctor<URI>({
+export const MonoidalFunctor = P.MonoidalFunctor<EvalF>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const Applicative = P.Applicative<URI>({
+export const Applicative = P.Applicative<EvalF>({
   map_,
   crossWith_,
   cross_,
@@ -53,7 +57,7 @@ export const Applicative = P.Applicative<URI>({
   pure
 })
 
-export const Monad = P.Monad<URI>({
+export const Monad = P.Monad<EvalF>({
   map_,
   crossWith_,
   cross_,
@@ -62,7 +66,7 @@ export const Monad = P.Monad<URI>({
   chain_
 })
 
-export const chainRec_: <A, B>(a: A, f: (a: A) => Eval<E.Either<A, B>>) => Eval<B> = P.getChainRec_<URI>({
+export const chainRec_: <A, B>(a: A, f: (a: A) => Eval<E.Either<A, B>>) => Eval<B> = P.getChainRec_<EvalF>({
   map_,
   crossWith_,
   cross_,
@@ -74,7 +78,7 @@ export const chainRec_: <A, B>(a: A, f: (a: A) => Eval<E.Either<A, B>>) => Eval<
 /**
  * @dataFirst chainRec_
  */
-export const chainRec: <A, B>(f: (a: A) => Eval<E.Either<A, B>>) => (a: A) => Eval<B> = P.getChainRec<URI>({
+export const chainRec: <A, B>(f: (a: A) => Eval<E.Either<A, B>>) => (a: A) => Eval<B> = P.getChainRec<EvalF>({
   map_,
   crossWith_,
   cross_,

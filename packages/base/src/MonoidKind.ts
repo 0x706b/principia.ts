@@ -5,23 +5,23 @@ import type { SemigroupKind } from './SemigroupKind'
 import * as HKT from './HKT'
 import { liftSemigroup } from './SemigroupKind'
 
-export interface MonoidKind<A, F extends HKT.URIS, C = HKT.Auto> extends SemigroupKind<A, F, C> {
+export interface MonoidKind<A, F extends HKT.HKT, C = HKT.None> extends SemigroupKind<A, F, C> {
   readonly nat: HKT.Kind<
     F,
     C,
-    HKT.Initial<C, 'K'>,
-    HKT.Initial<C, 'Q'>,
-    HKT.Initial<C, 'W'>,
-    HKT.Initial<C, 'X'>,
-    HKT.Initial<C, 'I'>,
-    HKT.Initial<C, 'S'>,
-    HKT.Initial<C, 'R'>,
-    HKT.Initial<C, 'E'>,
+    HKT.Low<F, 'K'>,
+    HKT.Low<F, 'Q'>,
+    HKT.Low<F, 'W'>,
+    HKT.Low<F, 'X'>,
+    HKT.Low<F, 'I'>,
+    HKT.Low<F, 'S'>,
+    HKT.Low<F, 'R'>,
+    HKT.Low<F, 'E'>,
     A
   >
 }
 
-export function liftMonoid<F extends HKT.URIS, C = HKT.Auto>(
+export function liftMonoid<F extends HKT.HKT, C = HKT.None>(
   F: MonoidalFunctor<F, C>
 ): <A>(M: Monoid<A>) => MonoidKind<A, F, C> {
   return <A>(M: Monoid<A>) => {

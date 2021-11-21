@@ -1,53 +1,53 @@
 import * as HKT from './HKT'
 
-export interface Fail<F extends HKT.URIS, TC = HKT.Auto> extends HKT.Base<F, TC> {
+export interface Fail<F extends HKT.HKT, TC = HKT.None> extends HKT.Typeclass<F, TC> {
   readonly fail: FailFn<F, TC>
 }
 
-export type FailMin<F extends HKT.URIS, C = HKT.Auto> = {
+export type FailMin<F extends HKT.HKT, C = HKT.None> = {
   readonly fail: FailFn<F, C>
 }
 
-export function Fail<F extends HKT.URIS, C = HKT.Auto>(F: FailMin<F, C>): Fail<F, C> {
+export function Fail<F extends HKT.HKT, C = HKT.None>(F: FailMin<F, C>): Fail<F, C> {
   return HKT.instance({
     fail: F.fail
   })
 }
 
-export interface FailFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface FailFn<F extends HKT.HKT, C = HKT.None> {
   <
     E,
-    K = HKT.Initial<C, 'K'>,
-    Q = HKT.Initial<C, 'Q'>,
-    W = HKT.Initial<C, 'W'>,
-    X = HKT.Initial<C, 'X'>,
-    I = HKT.Initial<C, 'I'>,
-    S = HKT.Initial<C, 'S'>,
-    R = HKT.Initial<C, 'R'>,
+    K = HKT.Low<F, 'K'>,
+    Q = HKT.Low<F, 'Q'>,
+    W = HKT.Low<F, 'W'>,
+    X = HKT.Low<F, 'X'>,
+    I = HKT.Low<F, 'I'>,
+    S = HKT.Low<F, 'S'>,
+    R = HKT.Low<F, 'R'>,
     A = never
   >(
-    e: HKT.OrFix<'E', C, E>
+    e: HKT.OrFix<C, 'E', E>
   ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
 }
 
-export interface FailFnComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface FailFnComposition<F extends HKT.HKT, G extends HKT.HKT, CF = HKT.None, CG = HKT.None> {
   <
     EG,
-    KF = HKT.Initial<CF, 'K'>,
-    QF = HKT.Initial<CF, 'Q'>,
-    WF = HKT.Initial<CF, 'W'>,
-    XF = HKT.Initial<CF, 'X'>,
-    IF = HKT.Initial<CF, 'I'>,
-    SF = HKT.Initial<CF, 'S'>,
-    RF = HKT.Initial<CF, 'R'>,
-    EF = HKT.Initial<CF, 'E'>,
-    KG = HKT.Initial<CG, 'K'>,
-    QG = HKT.Initial<CG, 'Q'>,
-    WG = HKT.Initial<CG, 'W'>,
-    XG = HKT.Initial<CG, 'X'>,
-    IG = HKT.Initial<CG, 'I'>,
-    SG = HKT.Initial<CG, 'S'>,
-    RG = HKT.Initial<CG, 'R'>,
+    KF = HKT.Low<F, 'K'>,
+    QF = HKT.Low<F, 'Q'>,
+    WF = HKT.Low<F, 'W'>,
+    XF = HKT.Low<F, 'X'>,
+    IF = HKT.Low<F, 'I'>,
+    SF = HKT.Low<F, 'S'>,
+    RF = HKT.Low<F, 'R'>,
+    EF = HKT.Low<F, 'E'>,
+    KG = HKT.Low<G, 'K'>,
+    QG = HKT.Low<G, 'Q'>,
+    WG = HKT.Low<G, 'W'>,
+    XG = HKT.Low<G, 'X'>,
+    IG = HKT.Low<G, 'I'>,
+    SG = HKT.Low<G, 'S'>,
+    RG = HKT.Low<G, 'R'>,
     A = never
   >(
     e: EG

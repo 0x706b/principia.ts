@@ -36,7 +36,13 @@ export interface Lens<S, A> extends PLens<S, S, A, A> {}
 
 export const Lens: <S, A>(_: PLensMin<S, S, A, A>) => Lens<S, A> = _.makePLens
 
-export type V = HKT.V<'I', '_'>
+export interface LensF extends HKT.HKT {
+  readonly type: Lens<this['I'], this['A']>
+  readonly variance: {
+    I: '_'
+    A: '+'
+  }
+}
 
 /*
  * -------------------------------------------
@@ -144,7 +150,7 @@ export function andThen<A, B, C, D>(ab: PLens<A, B, C, D>): <S, T>(sa: PLens<S, 
  * @category Instances
  * @since 1.0.0
  */
-export const Category = P.Category<[HKT.URI<LensURI>], V>({
+export const Category = P.Category<LensF>({
   id,
   andThen_
 })
@@ -178,7 +184,7 @@ export function invmap<A, B>(ab: (a: A) => B, ba: (b: B) => A): <I>(ea: Lens<I, 
  * @category Instances
  * @since 1.0.0
  */
-export const Invariant: P.Invariant<[HKT.URI<LensURI>], V> = HKT.instance({
+export const Invariant: P.Invariant<LensF> = HKT.instance({
   invmap_,
   invmap
 })
@@ -367,7 +373,7 @@ export const left: <S, E, A>(sea: Lens<S, E.Either<E, A>>) => Optional<S, E> = a
  * @category Combinators
  * @since 1.0.0
  */
-export function traverse<T extends HKT.URIS, C = HKT.Auto>(
+export function traverse<T extends HKT.HKT, C = HKT.None>(
   T: P.Traversable<T, C>
 ): <S, K, Q, W, X, I, S_, R, E, A>(sta: Lens<S, HKT.Kind<T, C, K, Q, W, X, I, S_, R, E, A>>) => Traversal<S, A> {
   return flow(andThenTraversal(_.fromTraversable(T)()))

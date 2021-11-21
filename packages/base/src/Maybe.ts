@@ -7,7 +7,6 @@ import type { Either } from './Either'
 import type { FunctionN } from './function'
 import type * as HKT from './HKT'
 import type { Maybe } from './internal/Maybe'
-import type { MaybeURI } from './Modules'
 import type { These } from './These'
 
 import { flow, identity, pipe } from './function'
@@ -27,7 +26,12 @@ import { tailRec_ } from './TailRec'
 
 export { Just, Maybe, Nothing } from './internal/Maybe'
 
-type URI = [HKT.URI<MaybeURI>]
+export interface MaybeF extends HKT.HKT {
+  readonly type: Maybe<this['A']>
+  readonly variance: {
+    E: '+'
+  }
+}
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -830,7 +834,8 @@ export function chainRec<A, B>(f: (a: A) => Maybe<Either<A, B>>): (a: A) => Mayb
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse_: P.TraverseFn_<URI> = (G) => (ta, f) => match_(ta, flow(nothing, G.pure), flow(f, G.map(just)))
+export const traverse_: P.TraverseFn_<MaybeF> = (G) => (ta, f) =>
+  match_(ta, flow(nothing, G.pure), flow(f, G.map(just)))
 
 /**
  * Map each element of a structure to an action, evaluate these actions from left to right, and collect the results
@@ -838,7 +843,7 @@ export const traverse_: P.TraverseFn_<URI> = (G) => (ta, f) => match_(ta, flow(n
  * @category Traversable
  * @since 1.0.0
  */
-export const traverse: P.TraverseFn<URI> = (G) => (f) => (ta) => traverse_(G)(ta, f)
+export const traverse: P.TraverseFn<MaybeF> = (G) => (f) => (ta) => traverse_(G)(ta, f)
 
 /**
  * Evaluate each action in the structure from left to right, and collect the results.
@@ -846,7 +851,7 @@ export const traverse: P.TraverseFn<URI> = (G) => (f) => (ta) => traverse_(G)(ta
  * @category Traversable
  * @since 1.0.0
  */
-export const sequence: P.SequenceFn<URI> = (G) => (fa) => traverse_(G)(fa, identity)
+export const sequence: P.SequenceFn<MaybeF> = (G) => (fa) => traverse_(G)(fa, identity)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -864,14 +869,14 @@ export function unit(): Maybe<void> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const wither_: P.WitherFn_<URI> = (A) => (wa, f) => match_(wa, flow(nothing, A.pure), f)
+export const wither_: P.WitherFn_<MaybeF> = (A) => (wa, f) => match_(wa, flow(nothing, A.pure), f)
 
 /**
  * @dataFirst wither_
  */
-export const wither: P.WitherFn<URI> = (A) => (f) => (wa) => wither_(A)(wa, f)
+export const wither: P.WitherFn<MaybeF> = (A) => (f) => (wa) => wither_(A)(wa, f)
 
-export const wilt_: P.WiltFn_<URI> = (A) => (wa, f) =>
+export const wilt_: P.WiltFn_<MaybeF> = (A) => (wa, f) =>
   pipe(
     wa,
     map(
@@ -886,7 +891,7 @@ export const wilt_: P.WiltFn_<URI> = (A) => (wa, f) =>
 /**
  * @dataFirst wilt_
  */
-export const wilt: P.WiltFn<URI> = (A) => (f) => (wa) => wilt_(A)(wa, f)
+export const wilt: P.WiltFn<MaybeF> = (A) => (f) => (wa) => wilt_(A)(wa, f)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -974,22 +979,22 @@ export function getGuard<A>(guard: G.Guard<unknown, A>): G.Guard<unknown, Maybe<
  * -------------------------------------------------------------------------------------------------
  */
 
-export const Align = P.Align<URI>({
+export const Align = P.Align<MaybeF>({
   map_,
   alignWith_,
   nil: nothing
 })
 
-export const Functor = P.Functor<URI>({
+export const Functor = P.Functor<MaybeF>({
   map_
 })
 
-export const Alt = P.Alt<URI>({
+export const Alt = P.Alt<MaybeF>({
   map_,
   alt_
 })
 
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<MaybeF>({
   map_,
   crossWith_,
   cross_
@@ -1009,7 +1014,7 @@ export const crossS_ = P.crossSF_(SemimonoidalFunctor)
  */
 export const crossS = P.crossSF(SemimonoidalFunctor)
 
-export const Apply = P.Apply<URI>({
+export const Apply = P.Apply<MaybeF>({
   map_,
   crossWith_,
   cross_,
@@ -1031,14 +1036,14 @@ export const apS: <N extends string, A, B>(
 
 export const apT = P.apTF(Apply)
 
-export const MonoidalFunctor = P.MonoidalFunctor<URI>({
+export const MonoidalFunctor = P.MonoidalFunctor<MaybeF>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const Applicative = P.Applicative<URI>({
+export const Applicative = P.Applicative<MaybeF>({
   map_,
   crossWith_,
   cross_,
@@ -1047,7 +1052,7 @@ export const Applicative = P.Applicative<URI>({
   pure
 })
 
-export const ApplicativeExcept = P.ApplicativeExcept<URI, HKT.Fix<'E', void>>({
+export const ApplicativeExcept = P.ApplicativeExcept<MaybeF, HKT.Fix<'E', void>>({
   map_,
   crossWith_,
   cross_,
@@ -1058,7 +1063,7 @@ export const ApplicativeExcept = P.ApplicativeExcept<URI, HKT.Fix<'E', void>>({
   fail
 })
 
-export const Monad = P.Monad<URI>({
+export const Monad = P.Monad<MaybeF>({
   map_,
   crossWith_,
   cross_,
@@ -1069,7 +1074,7 @@ export const Monad = P.Monad<URI>({
   flatten
 })
 
-export const MonadExcept = P.MonadExcept<URI, HKT.Fix<'E', void>>({
+export const MonadExcept = P.MonadExcept<MaybeF, HKT.Fix<'E', void>>({
   map_,
   crossWith_,
   cross_,
@@ -1141,7 +1146,7 @@ export const toS_ = P.toSF_(Monad)
  */
 export const toS = P.toSF(Monad)
 
-export const Filterable = P.Filterable<URI>({
+export const Filterable = P.Filterable<MaybeF>({
   map_,
   filter_,
   filterMap_,
@@ -1149,13 +1154,13 @@ export const Filterable = P.Filterable<URI>({
   partitionMap_
 })
 
-export const Foldable = P.Foldable<URI>({
+export const Foldable = P.Foldable<MaybeF>({
   foldl_,
   foldr_,
   foldMap_
 })
 
-export const Traversable = P.Traversable<URI>({
+export const Traversable = P.Traversable<MaybeF>({
   map_,
   foldl_,
   foldr_,
@@ -1163,7 +1168,7 @@ export const Traversable = P.Traversable<URI>({
   traverse_
 })
 
-export const Witherable = P.Witherable<URI>({
+export const Witherable = P.Witherable<MaybeF>({
   map_,
   foldl_,
   foldr_,
@@ -1176,5 +1181,3 @@ export const Witherable = P.Witherable<URI>({
   wither_,
   wilt_
 })
-
-export { MaybeURI } from './Modules'

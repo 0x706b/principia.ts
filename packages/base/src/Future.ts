@@ -15,10 +15,6 @@ export class Future<E, A> {
   constructor(readonly state: AtomicReference<State<E, A>>, readonly blockingOn: ReadonlyArray<FiberId>) {}
 }
 
-export const URI = 'Future'
-
-export type URI = typeof URI
-
 export type State<E, A> = Done<E, A> | Pending<E, A>
 
 export class Done<E, A> {

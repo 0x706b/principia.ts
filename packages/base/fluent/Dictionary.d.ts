@@ -93,7 +93,7 @@ declare module '@principia/base/Dictionary' {
     /**
      * @rewriteConstraint filterMapA_ from "@principia/base/Dictionary"
      */
-    filterMapA<A, F extends HKT.URIS, C = HKT.Auto>(
+    filterMapA<A, F extends HKT.HKT, C = HKT.Auto>(
       this: Dictionary<A>,
       A: Applicative<F, C>
     ): <K, Q, W, X, I, S, R, E, A>(
@@ -138,7 +138,7 @@ declare module '@principia/base/Dictionary' {
     /**
      * @rewriteConstraint mapA_ from "@principia/base/Dictionary"
      */
-    mapA<A, F extends HKT.URIS, C = HKT.Auto>(
+    mapA<A, F extends HKT.HKT, C = HKT.Auto>(
       this: Dictionary<A>,
       A: Applicative<F, C>
     ): <K, Q, W, X, I, S, R, E, B>(
@@ -169,7 +169,7 @@ declare module '@principia/base/Dictionary' {
     /**
      * @rewriteConstraint partitionMapA_ from "@principia/base/Dictionary"
      */
-    partitionMapA<A, F extends HKT.URIS, C = HKT.Auto>(
+    partitionMapA<A, F extends HKT.HKT, C = HKT.Auto>(
       this: Dictionary<A>,
       A: Applicative<F, C>
     ): <K, Q, W, X, I, S, R, E, A, B>(

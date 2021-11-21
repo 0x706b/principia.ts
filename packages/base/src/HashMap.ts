@@ -2,8 +2,6 @@ import type * as Eq from './Eq'
 import type { Hash } from './Hash'
 import type * as HKT from './HKT'
 import type { Node, UpdateFn } from './internal/hamt'
-import type { HashMapURI } from './Modules'
-import type * as P from './prelude'
 import type { Equatable, Hashable } from './Structural'
 
 import * as E from './Either'
@@ -12,6 +10,7 @@ import { HashSet } from './HashSet'
 import { Empty, fromBitmap, hashFragment, isEmptyNode, SIZE, toBitmap } from './internal/hamt'
 import * as It from './Iterable/core'
 import * as M from './Maybe'
+import * as P from './prelude'
 import * as Equ from './Structural/Equatable'
 import * as Ha from './Structural/Hashable'
 import { tuple } from './tuple'
@@ -20,7 +19,13 @@ type Eq<A> = Eq.Eq<A>
 
 export type Config<K> = Eq<K> & Hash<K>
 
-type URI = [HKT.URI<HashMapURI>]
+export interface HashMapF extends HKT.HKT {
+  readonly type: HashMap<this['K'], this['A']>
+  readonly variance: {
+    K: '_'
+    A: '+'
+  }
+}
 
 export class HashMap<K, V> implements Iterable<readonly [K, V]>, Hashable, Equatable {
   readonly _K!: () => K
@@ -105,7 +110,7 @@ export function makeDefault<K, V>() {
 /**
  * Makes a new map from a Foldable of key-value pairs
  */
-export function fromFoldable<F extends HKT.URIS, C, K, A>(C: Config<K>, S: P.Semigroup<A>, F: P.Foldable<F, C>) {
+export function fromFoldable<F extends HKT.HKT, C, K, A>(C: Config<K>, S: P.Semigroup<A>, F: P.Foldable<F, C>) {
   return <K_, Q, W, X, I, S, R, E>(fka: HKT.Kind<F, C, K_, Q, W, X, I, S, R, E, readonly [K, A]>): HashMap<K, A> => {
     return F.foldl_(fka, make(C), (b, [k, a]) => {
       const oa = get_(b, k)
@@ -632,13 +637,15 @@ export function foldl<K, V, Z>(z: Z, f: (z: Z, v: V, k: K) => Z) {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const traverse_: P.TraverseIndexFn_<URI> = (A) => (ta, f) =>
-  foldl_(ta, A.pure(make(ta.config)), (b, a, k) => A.crossWith_(b, f(a, k), (map, b) => set_(map, k, b)))
+export const traverse_: P.TraverseIndexFn_<HashMapF> = P.implementTraverseWithIndex_<HashMapF>()(
+  () => (A) => (ta, f) =>
+    foldl_(ta, A.pure(make(ta.config)), (b, a, k) => A.crossWith_(b, f(a, k), (map, b) => set_(map, k, b)))
+)
 
 /**
  * @dataFirst traverse_
  */
-export const traverse: P.MapWithIndexAFn<URI> = (A) => {
+export const traverse: P.MapWithIndexAFn<HashMapF> = (A) => {
   const _ = traverse_(A)
   return (f) => (ta) => _(ta, f)
 }
@@ -649,17 +656,17 @@ export const traverse: P.MapWithIndexAFn<URI> = (A) => {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const wither_: P.WitherWithIndexFn_<URI> = (A) => (wa, f) => pipe(traverse_(A)(wa, f), A.map(compact))
+export const wither_: P.WitherWithIndexFn_<HashMapF> = (A) => (wa, f) => pipe(traverse_(A)(wa, f), A.map(compact))
 
 /**
  * @dataFirst wither_
  */
-export const wither: P.WitherWithIndexFn<URI> = (A) => {
+export const wither: P.WitherWithIndexFn<HashMapF> = (A) => {
   const _ = wither_(A)
   return (f) => (ta) => _(ta, f)
 }
 
-export const wilt_: P.WiltWithIndexFn_<URI> = (A) => {
+export const wilt_: P.WiltWithIndexFn_<HashMapF> = (A) => {
   const _ = traverse_(A)
   return (wa, f) => pipe(_(wa, f), A.map(separate))
 }
@@ -667,7 +674,7 @@ export const wilt_: P.WiltWithIndexFn_<URI> = (A) => {
 /**
  * @dataFirst wilt_
  */
-export const wilt: P.WiltWithIndexFn<URI> = (A) => {
+export const wilt: P.WiltWithIndexFn<HashMapF> = (A) => {
   const _ = wilt_(A)
   return (f) => (wa) => _(wa, f)
 }

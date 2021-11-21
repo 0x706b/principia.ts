@@ -32,7 +32,13 @@ export interface Iso<S, A> extends PIso<S, S, A, A> {}
 
 export const Iso: <S, A>(_: PIsoMin<S, S, A, A>) => Iso<S, A> = _.makePIso
 
-export type V = HKT.V<'I', '_'>
+export interface IsoF extends HKT.HKT {
+  readonly type: Iso<this['I'], this['A']>
+  readonly variance: {
+    I: '_'
+    A: '+'
+  }
+}
 
 export function andThenLens_<S, T, A, B, C, D>(sa: PIso<S, T, A, B>, ab: PLens<A, B, C, D>): PLens<S, T, C, D> {
   return _.lensAndThenLens(sa, ab)
@@ -86,7 +92,7 @@ export function id<S, T>(): PIso<S, T, S, T> {
  * @category Instances
  * @since 1.0.0
  */
-export const Category = P.Category<[HKT.URI<IsoURI>], V>({
+export const Category = P.Category<IsoF>({
   id,
   andThen_
 })
@@ -120,7 +126,7 @@ export function invmap<A, B>(ab: (a: A) => B, ba: (b: B) => A): <I>(ea: Iso<I, A
  * @category Instances
  * @since 1.0.0
  */
-export const Invariant: P.Invariant<[HKT.URI<IsoURI>], V> = HKT.instance({
+export const Invariant: P.Invariant<IsoF> = HKT.instance({
   invmap_,
   invmap
 })

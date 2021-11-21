@@ -1,5 +1,4 @@
 import type * as HKT from './HKT'
-import type { StoreURI } from './Modules'
 
 import { identity } from './function'
 import * as P from './prelude'
@@ -7,6 +6,14 @@ import * as P from './prelude'
 export interface Store<S, A> {
   readonly peek: (s: S) => A
   readonly pos: S
+}
+
+export interface StoreF extends HKT.HKT {
+  readonly type: Store<this['S'], this['A']>
+  readonly variance: {
+    S: '_'
+    A: '+'
+  }
 }
 
 /*
@@ -108,11 +115,11 @@ export function duplicate<S, A>(wa: Store<S, A>): Store<S, Store<S, A>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const Functor: P.Functor<[HKT.URI<StoreURI>]> = P.Functor({
+export const Functor: P.Functor<StoreF> = P.Functor({
   map_
 })
 
-export const Comonad: P.Comonad<[HKT.URI<StoreURI>]> = P.Comonad({
+export const Comonad: P.Comonad<StoreF> = P.Comonad({
   map_,
   extend_,
   extract

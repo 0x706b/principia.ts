@@ -1,7 +1,6 @@
 import type { Byte } from '../Byte'
 import type { Either } from '../Either'
 import type { Maybe } from '../Maybe'
-import type { ArrayURI } from '../Modules'
 import type { NonEmptyArray } from '../NonEmptyArray'
 import type { ReadonlyRecord } from '../Record'
 import type { These } from '../These'
@@ -29,7 +28,13 @@ import * as P from '../prelude'
  * -------------------------------------------------------------------------------------------------
  */
 
-type URI = [HKT.URI<ArrayURI>]
+export interface ArrayF extends HKT.HKT {
+  readonly type: ReadonlyArray<this['A']>
+  readonly variance: {
+    A: '+'
+  }
+  readonly index: number
+}
 
 export type TypeOf<T> = T extends ReadonlyArray<infer A> ? A : never
 
@@ -886,7 +891,7 @@ export function chainRecBreadthFirst<A, B>(f: (a: A) => ReadonlyArray<E.Either<A
  * @category TraversableWithIndex
  * @since 1.0.0
  */
-export const traverse_ = P.implementTraverseWithIndex_<[HKT.URI<ArrayURI>]>()((_) => (G) => {
+export const traverse_ = P.implementTraverseWithIndex_<ArrayF>()((_) => (G) => {
   return (ta, f) => foldl_(ta, G.pure(empty<typeof _.B>()), (fbs, a, i) => G.crossWith_(fbs, f(a, i), append_))
 })
 
@@ -896,20 +901,22 @@ export const traverse_ = P.implementTraverseWithIndex_<[HKT.URI<ArrayURI>]>()((_
  *
  * @dataFirst traverse_
  */
-export const traverse: P.MapWithIndexAFn<[HKT.URI<ArrayURI>]> = (G) => {
+export const traverse: P.MapWithIndexAFn<ArrayF> = (G) => {
   const traverseG_ = traverse_(G)
   return (f) => (ta) => traverseG_(ta, f)
 }
 
-export const mapAccumM_: P.MapAccumWithIndexMFn_<[HKT.URI<ArrayURI>]> = (M) => (ta, s, f) =>
-  foldl_(ta, M.pure([[] as any[], s]), (b, a, i) =>
-    M.chain_(b, ([bs, s]) => M.map_(f(s, a, i), ([b, s]) => [append_(bs, b), s]))
-  )
+export const mapAccumM_: P.MapAccumWithIndexMFn_<ArrayF> = P.implementMapAccumMWithIndex_<ArrayF>()(
+  (_) => (M) => (ta, s, f) =>
+    foldl_(ta, M.pure([[] as ReadonlyArray<typeof _.B>, s]), (b, a, i) =>
+      M.chain_(b, ([bs, s]) => M.map_(f(s, a, i), ([b, s]) => [append_(bs, b), s]))
+    )
+)
 
 /**
  * @dataFirst mapAccumM_
  */
-export const mapAccumM: P.MapAccumWithIndexMFn<[HKT.URI<ArrayURI>]> = (M) => {
+export const mapAccumM: P.MapAccumWithIndexMFn<ArrayF> = (M) => {
   const imapAccum_ = mapAccumM_(M)
   return (s, f) => (ta) => imapAccum_(ta, s, f)
 }
@@ -920,7 +927,7 @@ export const mapAccumM: P.MapAccumWithIndexMFn<[HKT.URI<ArrayURI>]> = (M) => {
  * @category Traversable
  * @since 1.0.0
  */
-export const sequence = P.implementSequence<[HKT.URI<ArrayURI>]>()((_) => (G) => {
+export const sequence = P.implementSequence<ArrayF>()((_) => (G) => {
   const traverseG = traverse(G)
   return traverseG(identity)
 })
@@ -976,7 +983,7 @@ export const unit: () => ReadonlyArray<void> = NEA.unit
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const wither_: P.WitherWithIndexFn_<[HKT.URI<ArrayURI>]> = (G) => {
+export const wither_: P.WitherWithIndexFn_<ArrayF> = (G) => {
   const traverseG_ = traverse_(G)
   return (wa, f) => pipe(traverseG_(wa, f), G.map(compact))
 }
@@ -987,13 +994,13 @@ export const wither_: P.WitherWithIndexFn_<[HKT.URI<ArrayURI>]> = (G) => {
  *
  * @dataFirst wither_
  */
-export const wither: P.WitherWithIndexFn<[HKT.URI<ArrayURI>]> = (G) => (f) => (wa) => wither_(G)(wa, f)
+export const wither: P.WitherWithIndexFn<ArrayF> = (G) => (f) => (wa) => wither_(G)(wa, f)
 
 /**
  * @category WitherableWithIndex
  * @since 1.0.0
  */
-export const wilt_: P.WiltWithIndexFn_<[HKT.URI<ArrayURI>]> = (G) => {
+export const wilt_: P.WiltWithIndexFn_<ArrayF> = (G) => {
   const traverseG_ = traverse_(G)
   return (wa, f) => pipe(traverseG_(wa, f), G.map(separate))
 }
@@ -1004,7 +1011,7 @@ export const wilt_: P.WiltWithIndexFn_<[HKT.URI<ArrayURI>]> = (G) => {
  *
  * @dataFirst wilt_
  */
-export const wilt: P.WiltWithIndexFn<[HKT.URI<ArrayURI>]> = (G) => (f) => (wa) => wilt_(G)(wa, f)
+export const wilt: P.WiltWithIndexFn<ArrayF> = (G) => (f) => (wa) => wilt_(G)(wa, f)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -2307,41 +2314,41 @@ export function getGuard<A>(item: G.Guard<unknown, A>): G.Guard<unknown, Readonl
   )
 }
 
-export const Align = P.Align<URI>({
+export const Align = P.Align<ArrayF>({
   map_,
   alignWith_,
   nil: empty
 })
 
-export const Functor = P.Functor<URI>({
+export const Functor = P.Functor<ArrayF>({
   map_
 })
 
-export const FunctorWithIndex = P.FunctorWithIndex<URI>({
+export const FunctorWithIndex = P.FunctorWithIndex<ArrayF>({
   imap_: map_
 })
 
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<ArrayF>({
   map_,
   cross_,
   crossWith_
 })
 
-export const Apply = P.Apply<URI>({
+export const Apply = P.Apply<ArrayF>({
   map_,
   cross_,
   crossWith_,
   ap_
 })
 
-export const MonoidalFunctor = P.MonoidalFunctor<URI>({
+export const MonoidalFunctor = P.MonoidalFunctor<ArrayF>({
   map_,
   cross_,
   crossWith_,
   unit
 })
 
-export const Applicative = P.Applicative<URI>({
+export const Applicative = P.Applicative<ArrayF>({
   map_,
   cross_,
   crossWith_,
@@ -2350,17 +2357,17 @@ export const Applicative = P.Applicative<URI>({
   unit
 })
 
-export const Zip = P.Zip<URI>({
+export const Zip = P.Zip<ArrayF>({
   zip_,
   zipWith_
 })
 
-export const Alt = P.Alt<URI>({
+export const Alt = P.Alt<ArrayF>({
   map_,
   alt_
 })
 
-export const Alternative = P.Alternative<URI>({
+export const Alternative = P.Alternative<ArrayF>({
   map_,
   crossWith_,
   cross_,
@@ -2371,12 +2378,12 @@ export const Alternative = P.Alternative<URI>({
   nil: empty
 })
 
-export const Compactable = HKT.instance<P.Compactable<URI>>({
+export const Compactable = HKT.instance<P.Compactable<ArrayF>>({
   compact,
   separate
 })
 
-export const Filterable = P.Filterable<URI>({
+export const Filterable = P.Filterable<ArrayF>({
   map_,
   filter_,
   filterMap_,
@@ -2384,7 +2391,7 @@ export const Filterable = P.Filterable<URI>({
   partitionMap_
 })
 
-export const FilterableWithIndex = P.FilterableWithIndex<URI>({
+export const FilterableWithIndex = P.FilterableWithIndex<ArrayF>({
   imap_: map_,
   ifilter_: filter_,
   ifilterMap_: filterMap_,
@@ -2392,19 +2399,19 @@ export const FilterableWithIndex = P.FilterableWithIndex<URI>({
   ipartitionMap_: partitionMap_
 })
 
-export const FoldableWithIndex = P.FoldableWithIndex<URI>({
+export const FoldableWithIndex = P.FoldableWithIndex<ArrayF>({
   ifoldl_: foldl_,
   ifoldr_: foldr_,
   ifoldMap_: foldMap_
 })
 
-export const Foldable = P.Foldable<URI>({
+export const Foldable = P.Foldable<ArrayF>({
   foldl_,
   foldr_,
   foldMap_
 })
 
-export const Monad = P.Monad<URI>({
+export const Monad = P.Monad<ArrayF>({
   map_,
   crossWith_,
   cross_,
@@ -2415,7 +2422,7 @@ export const Monad = P.Monad<URI>({
   flatten
 })
 
-export const Traversable = P.Traversable<URI>({
+export const Traversable = P.Traversable<ArrayF>({
   map_,
   traverse_,
   foldl_,
@@ -2423,7 +2430,7 @@ export const Traversable = P.Traversable<URI>({
   foldMap_
 })
 
-export const TraversableWithIndex = P.TraversableWithIndex<URI>({
+export const TraversableWithIndex = P.TraversableWithIndex<ArrayF>({
   imap_: map_,
   ifoldl_: foldl_,
   ifoldr_: foldr_,
@@ -2431,11 +2438,11 @@ export const TraversableWithIndex = P.TraversableWithIndex<URI>({
   itraverse_: traverse_
 })
 
-export const Unfoldable = HKT.instance<P.Unfoldable<URI>>({
+export const Unfoldable = HKT.instance<P.Unfoldable<ArrayF>>({
   unfold
 })
 
-export const Witherable = P.Witherable<URI>({
+export const Witherable = P.Witherable<ArrayF>({
   map_,
   foldl_,
   foldr_,
@@ -2449,7 +2456,7 @@ export const Witherable = P.Witherable<URI>({
   wilt_
 })
 
-export const WitherableWithIndex = P.WitherableWithIndex<URI>({
+export const WitherableWithIndex = P.WitherableWithIndex<ArrayF>({
   imap_: map_,
   ifoldl_: foldl_,
   ifoldr_: foldr_,

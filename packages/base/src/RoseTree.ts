@@ -1,6 +1,5 @@
 import type * as Ev from './Eval/core'
 import type * as HKT from './HKT'
-import type { RoseTreeURI } from './Modules'
 import type { Show } from './Show'
 
 import * as A from './Array/core'
@@ -24,9 +23,12 @@ export interface RoseTree<A> {
 
 export type Forest<A> = ReadonlyArray<RoseTree<A>>
 
-export type URI = [HKT.URI<RoseTreeURI, V>]
-
-export type V = HKT.Auto
+export interface RoseTreeF extends HKT.HKT {
+  readonly type: RoseTree<this['A']>
+  readonly variance: {
+    A: '+'
+  }
+}
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -62,29 +64,35 @@ export function unfoldForest<A, B>(bs: Array<B>, f: (b: B) => [A, Array<B>]): Fo
   return bs.map((b) => unfoldTree(b, f))
 }
 
-export function unfoldTreeM<M extends HKT.URIS, C = HKT.Auto>(
+export function unfoldTreeM<M extends HKT.HKT, C = HKT.None>(
   M: P.Monad<M, C>
 ): <K, Q, W, X, I, S, R, E, A, B>(
   b: B,
   f: (b: B) => HKT.Kind<M, C, K, Q, W, X, I, S, R, E, readonly [A, ReadonlyArray<B>]>
 ) => HKT.Kind<M, C, K, Q, W, X, I, S, R, E, RoseTree<A>>
 export function unfoldTreeM<M>(
-  M: P.Monad<HKT.UHKT<M>>
-): <A, B>(b: B, f: (b: B) => HKT.HKT<M, readonly [A, ReadonlyArray<B>]>) => HKT.HKT<M, RoseTree<A>> {
+  M: P.Monad<HKT.F<M>>
+): <K, Q, W, X, I, S, R, E, A, B>(
+  b: B,
+  f: (b: B) => HKT.FK<M, K, Q, W, X, I, S, R, E, readonly [A, ReadonlyArray<B>]>
+) => HKT.FK<M, K, Q, W, X, I, S, R, E, RoseTree<A>> {
   const unfoldForestMM = unfoldForestM(M)
   return (b, f) =>
     M.chain_(f(b), ([a, bs]) => M.chain_(unfoldForestMM(bs, f), (ts) => M.pure({ value: a, forest: ts })))
 }
 
-export function unfoldForestM<M extends HKT.URIS, C = HKT.Auto>(
+export function unfoldForestM<M extends HKT.HKT, C = HKT.None>(
   M: P.Monad<M, C>
 ): <K, Q, W, X, I, S, R, E, A, B>(
   bs: ReadonlyArray<B>,
   f: (b: B) => HKT.Kind<M, C, K, Q, W, X, I, S, R, E, readonly [A, ReadonlyArray<B>]>
 ) => HKT.Kind<M, C, K, Q, W, X, I, S, R, E, Forest<A>>
 export function unfoldForestM<M>(
-  M: P.Monad<HKT.UHKT<M>>
-): <A, B>(bs: ReadonlyArray<B>, f: (b: B) => HKT.HKT<M, readonly [A, ReadonlyArray<B>]>) => HKT.HKT<M, Forest<A>> {
+  M: P.Monad<HKT.F<M>>
+): <K, Q, W, X, I, S, R, E, A, B>(
+  bs: ReadonlyArray<B>,
+  f: (b: B) => HKT.FK<M, K, Q, W, X, I, S, R, E, readonly [A, ReadonlyArray<B>]>
+) => HKT.FK<M, K, Q, W, X, I, S, R, E, Forest<A>> {
   const traverseM = A.traverse_(M)
   return (bs, f) => traverseM(bs, (b) => unfoldTreeM(M)(b, f))
 }
@@ -339,10 +347,37 @@ export function getShow<A>(S: Show<A>): Show<RoseTree<A>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const traverse_: P.TraverseFn_<URI, V> = P.implementTraverse_<URI, V>()((_) => (AG) => {
+export const traverse_: P.TraverseFn_<RoseTreeF> = P.implementTraverse_<RoseTreeF>()((_) => (AG) => {
   const traverseArrayG_ = A.traverse_(AG)
 
-  const out = <A, B>(ta: RoseTree<A>, f: (a: A) => HKT.HKT<typeof _.G, B>): HKT.HKT<typeof _.G, RoseTree<B>> =>
+  const out = <A, B>(
+    ta: RoseTree<A>,
+    f: (
+      a: A
+    ) => HKT.FK<
+      typeof _.G,
+      typeof _.K1,
+      typeof _.Q1,
+      typeof _.W1,
+      typeof _.X1,
+      typeof _.I1,
+      typeof _.S1,
+      typeof _.R1,
+      typeof _.E1,
+      B
+    >
+  ): HKT.FK<
+    typeof _.G,
+    typeof _.K1,
+    typeof _.Q1,
+    typeof _.W1,
+    typeof _.X1,
+    typeof _.I1,
+    typeof _.S1,
+    typeof _.R1,
+    typeof _.E1,
+    RoseTree<B>
+  > =>
     AG.crossWith_(
       traverseArrayG_(ta.forest, (a) => out(a, f)),
       f(ta.value),
@@ -354,9 +389,9 @@ export const traverse_: P.TraverseFn_<URI, V> = P.implementTraverse_<URI, V>()((
 /**
  * @dataFirst traverse_
  */
-export const traverse: P.TraverseFn<URI, V> = (AG) => (f) => (ta) => traverse_(AG)(ta, f)
+export const traverse: P.TraverseFn<RoseTreeF> = (AG) => (f) => (ta) => traverse_(AG)(ta, f)
 
-export const sequence: P.SequenceFn<URI, V> = (AG) => (ta) => traverse_(AG)(ta, identity)
+export const sequence: P.SequenceFn<RoseTreeF> = (AG) => (ta) => traverse_(AG)(ta, identity)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -377,16 +412,16 @@ export function unit(): RoseTree<void> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const Functor = P.Functor<URI>({ map_ })
+export const Functor = P.Functor<RoseTreeF>({ map_ })
 
-export const SemimonoidalFunctor = P.SemimonoidalFunctor<URI>({ map_, cross_, crossWith_ })
+export const SemimonoidalFunctor = P.SemimonoidalFunctor<RoseTreeF>({ map_, cross_, crossWith_ })
 
-export const Apply = P.Apply<URI>({ map_, cross_, crossWith_, ap_ })
+export const Apply = P.Apply<RoseTreeF>({ map_, cross_, crossWith_, ap_ })
 
-export const MonoidalFunctor = P.MonoidalFunctor<URI>({ map_, cross_, crossWith_, unit })
+export const MonoidalFunctor = P.MonoidalFunctor<RoseTreeF>({ map_, cross_, crossWith_, unit })
 
-export const Applicative = P.Applicative<URI>({ map_, cross_, crossWith_, unit, pure })
+export const Applicative = P.Applicative<RoseTreeF>({ map_, cross_, crossWith_, unit, pure })
 
-export const Monad = P.Monad<URI>({ map_, cross_, crossWith_, unit, pure, chain_, flatten })
+export const Monad = P.Monad<RoseTreeF>({ map_, cross_, crossWith_, unit, pure, chain_, flatten })
 
-export const Traversable = P.Traversable<URI>({ map_, foldl_, foldr_, foldMap_, traverse_ })
+export const Traversable = P.Traversable<RoseTreeF>({ map_, foldl_, foldr_, foldMap_, traverse_ })

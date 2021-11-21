@@ -1,6 +1,5 @@
 import type { Eq } from './Eq'
 import type * as HKT from './HKT'
-import type { RecordURI } from './Modules'
 import type { PredicateWithIndex } from './Predicate'
 import type { RefinementWithIndex } from './Refinement'
 import type { Show } from './Show'
@@ -28,7 +27,13 @@ export type InferRecordType<T extends ReadonlyRecord<any, any>> = T extends {
   ? A
   : never
 
-type URI = [HKT.URI<RecordURI>]
+export interface RecordF extends HKT.HKT {
+  readonly type: ReadonlyRecord<string, this['A']>
+  readonly index: string
+  readonly variance: {
+    A: '+'
+  }
+}
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -209,20 +214,20 @@ export function toArray<N extends string, A>(r: ReadonlyRecord<N, A>): ReadonlyA
  * @category Destructors
  * @since 1.0.0
  */
-export function toUnfoldable<F extends HKT.URIS, C = HKT.Auto>(U: P.Unfoldable<F, C>) {
+export function toUnfoldable<F extends HKT.HKT, C = HKT.None>(U: P.Unfoldable<F, C>) {
   return <N extends string, A>(
     r: ReadonlyRecord<N, A>
   ): HKT.Kind<
     F,
     C,
-    HKT.Initial<C, 'K'>,
-    HKT.Initial<C, 'Q'>,
-    HKT.Initial<C, 'W'>,
-    HKT.Initial<C, 'X'>,
-    HKT.Initial<C, 'I'>,
-    HKT.Initial<C, 'S'>,
-    HKT.Initial<C, 'R'>,
-    HKT.Initial<C, 'E'>,
+    HKT.Low<F, 'K'>,
+    HKT.Low<F, 'Q'>,
+    HKT.Low<F, 'W'>,
+    HKT.Low<F, 'X'>,
+    HKT.Low<F, 'I'>,
+    HKT.Low<F, 'S'>,
+    HKT.Low<F, 'R'>,
+    HKT.Low<F, 'E'>,
     readonly [N, A]
   > => {
     const arr = toArray(r)
@@ -508,7 +513,7 @@ export function foldMap<M>(
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
 
-export function fromFoldableMap<B, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigroup<B>, F: P.Foldable<F, C>) {
+export function fromFoldableMap<B, F extends HKT.HKT, C = HKT.None>(S: P.Semigroup<B>, F: P.Foldable<F, C>) {
   return <KF, QF, WF, XF, IF, SF, RF, EF, A, N extends string>(
     fa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, A>,
     f: (a: A) => readonly [N, B]
@@ -523,7 +528,7 @@ export function fromFoldableMap<B, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigr
     )
 }
 
-export function fromFoldable<A, F extends HKT.URIS, C = HKT.Auto>(S: P.Semigroup<A>, F: P.Foldable<F, C>) {
+export function fromFoldable<A, F extends HKT.HKT, C = HKT.None>(S: P.Semigroup<A>, F: P.Foldable<F, C>) {
   const fromFoldableMapS = fromFoldableMap(S, F)
   return <KF, QF, WF, XF, IF, SF, RF, EF, N extends string>(
     fa: HKT.Kind<F, C, KF, QF, WF, XF, IF, SF, RF, EF, readonly [N, A]>
@@ -617,34 +622,45 @@ export function getShow<A>(S: Show<A>): Show<ReadonlyRecord<string, A>> {
 
 /**
  */
-export const traverse_: P.TraverseIndexFn_<[HKT.URI<RecordURI>]> = P.implementTraverseWithIndex_<
-  [HKT.URI<RecordURI>]
->()((_) => (G) => (ta, f) => {
-  type _ = typeof _
+export const traverse_: P.TraverseIndexFn_<RecordF> = P.implementTraverseWithIndex_<RecordF>()(
+  (_) => (G) => (ta, f) => {
+    type _ = typeof _
 
-  const ks = keys(ta)
-  if (ks.length === 0) {
-    return G.pure(empty)
+    const ks = keys(ta)
+    if (ks.length === 0) {
+      return G.pure(empty)
+    }
+    let gr: HKT.FK<
+      _['G'],
+      _['K1'],
+      _['Q1'],
+      _['W1'],
+      _['X1'],
+      _['I1'],
+      _['S1'],
+      _['R1'],
+      _['E1'],
+      Record<string, _['B']>
+    > = G.pure({}) as any
+    for (let i = 0; i < ks.length; i++) {
+      const key = ks[i]
+      gr        = G.crossWith_(gr, f(ta[key], key), (r, b) => {
+        r[key] = b
+        return r
+      })
+    }
+    return gr
   }
-  let gr: HKT.HKT<_['G'], Record<string, _['B']>> = G.pure({}) as any
-  for (let i = 0; i < ks.length; i++) {
-    const key = ks[i]
-    gr        = G.crossWith_(gr, f(ta[key], key), (r, b) => {
-      r[key] = b
-      return r
-    })
-  }
-  return gr
-})
+)
 
 /**
  * @dataFirst traverse_
  */
-export const traverse: P.MapWithIndexAFn<[HKT.URI<RecordURI>]> = (G) => (f) => (ta) => traverse_(G)(ta, f)
+export const traverse: P.MapWithIndexAFn<RecordF> = (G) => (f) => (ta) => traverse_(G)(ta, f)
 
 /**
  */
-export const sequence: P.SequenceFn<[HKT.URI<RecordURI>]> = (G) => (ta) => traverse_(G)(ta, (a) => a)
+export const sequence: P.SequenceFn<RecordF> = (G) => (ta) => traverse_(G)(ta, (a) => a)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -652,21 +668,19 @@ export const sequence: P.SequenceFn<[HKT.URI<RecordURI>]> = (G) => (ta) => trave
  * -------------------------------------------------------------------------------------------------
  */
 
-export const wither_: P.WitherWithIndexFn_<[HKT.URI<RecordURI>]> = (A) => (wa, f) =>
-  pipe(traverse_(A)(wa, f), A.map(compact))
+export const wither_: P.WitherWithIndexFn_<RecordF> = (A) => (wa, f) => pipe(traverse_(A)(wa, f), A.map(compact))
 
 /**
  * @dataFirst wither_
  */
-export const wither: P.WitherWithIndexFn<[HKT.URI<RecordURI>]> = (A) => (f) => (wa) => wither_(A)(wa, f)
+export const wither: P.WitherWithIndexFn<RecordF> = (A) => (f) => (wa) => wither_(A)(wa, f)
 
-export const wilt_: P.WiltWithIndexFn_<[HKT.URI<RecordURI>]> = (A) => (wa, f) =>
-  pipe(traverse_(A)(wa, f), A.map(separate))
+export const wilt_: P.WiltWithIndexFn_<RecordF> = (A) => (wa, f) => pipe(traverse_(A)(wa, f), A.map(separate))
 
 /**
  * @dataFirst wilt_
  */
-export const wilt: P.WiltWithIndexFn<[HKT.URI<RecordURI>]> = (G) => (f) => (wa) => wilt_(G)(wa, f)
+export const wilt: P.WiltWithIndexFn<RecordF> = (G) => (f) => (wa) => wilt_(G)(wa, f)
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -849,27 +863,27 @@ export function getGuard<A>(codomain: G.Guard<unknown, A>): G.Guard<unknown, Rea
   )
 }
 
-export const Functor = P.Functor<URI>({
+export const Functor = P.Functor<RecordF>({
   map_
 })
 
-export const FunctorWithIndex = P.FunctorWithIndex<URI>({
+export const FunctorWithIndex = P.FunctorWithIndex<RecordF>({
   imap_: map_
 })
 
-export const Foldable = P.Foldable<URI>({
+export const Foldable = P.Foldable<RecordF>({
   foldl_,
   foldr_,
   foldMap_
 })
 
-export const FoldableWithIndex = P.FoldableWithIndex<URI>({
+export const FoldableWithIndex = P.FoldableWithIndex<RecordF>({
   ifoldl_: foldl_,
   ifoldr_: foldr_,
   ifoldMap_: foldMap_
 })
 
-export const Filterable = P.Filterable<URI>({
+export const Filterable = P.Filterable<RecordF>({
   map_,
   filter_,
   filterMap_,
@@ -877,7 +891,7 @@ export const Filterable = P.Filterable<URI>({
   partitionMap_
 })
 
-export const FilterableWithIndex = P.FilterableWithIndex<URI>({
+export const FilterableWithIndex = P.FilterableWithIndex<RecordF>({
   imap_: map_,
   ifilter_: filter_,
   ifilterMap_: filterMap_,
@@ -885,7 +899,7 @@ export const FilterableWithIndex = P.FilterableWithIndex<URI>({
   ipartitionMap_: partitionMap_
 })
 
-export const Traversable = P.Traversable<URI>({
+export const Traversable = P.Traversable<RecordF>({
   map_,
   foldl_,
   foldr_,
@@ -893,7 +907,7 @@ export const Traversable = P.Traversable<URI>({
   traverse_
 })
 
-export const TraversableWithIndex = P.TraversableWithIndex<URI>({
+export const TraversableWithIndex = P.TraversableWithIndex<RecordF>({
   imap_: map_,
   ifoldl_: foldl_,
   ifoldr_: foldr_,
@@ -901,7 +915,7 @@ export const TraversableWithIndex = P.TraversableWithIndex<URI>({
   itraverse_: traverse_
 })
 
-export const Witherable = P.Witherable<URI>({
+export const Witherable = P.Witherable<RecordF>({
   map_,
   foldl_,
   foldr_,
@@ -915,7 +929,7 @@ export const Witherable = P.Witherable<URI>({
   wilt_
 })
 
-export const WitherableWithIndex = P.WitherableWithIndex<URI>({
+export const WitherableWithIndex = P.WitherableWithIndex<RecordF>({
   imap_: map_,
   ifoldl_: foldl_,
   ifoldr_: foldr_,
@@ -928,5 +942,3 @@ export const WitherableWithIndex = P.WitherableWithIndex<URI>({
   iwither_: wither_,
   iwilt_: wilt_
 })
-
-export { RecordURI } from './Modules'

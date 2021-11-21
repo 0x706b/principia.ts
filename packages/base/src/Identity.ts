@@ -1,7 +1,6 @@
 import type * as HKT from './HKT'
-import type { IdentityURI } from './Modules'
 
-import { identity, pipe } from './function'
+import { identity } from './function'
 import * as P from './prelude'
 import { tuple } from './tuple'
 
@@ -13,7 +12,9 @@ import { tuple } from './tuple'
 
 export type Identity<A> = A
 
-type URI = [HKT.URI<IdentityURI>]
+export interface IdentityF extends HKT.HKT {
+  readonly type: Identity<this['A']>
+}
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -229,14 +230,14 @@ export function flatten<A>(mma: A): A {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const traverse_: P.TraverseFn_<URI> = (_) => (ta, f) => f(ta)
+export const traverse_: P.TraverseFn_<IdentityF> = (_) => (ta, f) => f(ta)
 
 /**
  * @dataFirst traverse_
  */
-export const traverse: P.TraverseFn<URI> = (AG) => (f) => (ta) => traverse_(AG)(ta, f)
+export const traverse: P.TraverseFn<IdentityF> = (AG) => (f) => (ta) => traverse_(AG)(ta, f)
 
-export const sequence: P.SequenceFn<URI> = (_) => (ta) => ta
+export const sequence: P.SequenceFn<IdentityF> = (_) => (ta) => ta
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -254,31 +255,31 @@ export function unit(): void {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const Functor = P.Functor<URI>({
+export const Functor = P.Functor<IdentityF>({
   map_
 })
 
-export const Semimonoidal = P.SemimonoidalFunctor<URI>({
+export const Semimonoidal = P.SemimonoidalFunctor<IdentityF>({
   map_,
   crossWith_,
   cross_
 })
 
-export const Apply = P.Apply<URI>({
+export const Apply = P.Apply<IdentityF>({
   map_,
   crossWith_,
   cross_,
   ap_
 })
 
-export const Monoidal = P.MonoidalFunctor<URI>({
+export const Monoidal = P.MonoidalFunctor<IdentityF>({
   map_,
   crossWith_,
   cross_,
   unit
 })
 
-export const Applicative = P.Applicative<URI>({
+export const Applicative = P.Applicative<IdentityF>({
   map_,
   crossWith_,
   cross_,
@@ -286,7 +287,7 @@ export const Applicative = P.Applicative<URI>({
   unit
 })
 
-export const Monad = P.Monad<URI>({
+export const Monad = P.Monad<IdentityF>({
   map_,
   crossWith_,
   cross_,
@@ -313,5 +314,3 @@ export const toS_  = P.toSF_(Monad)
  * @dataFirst toS_
  */
 export const toS = P.toSF(Monad)
-
-export { IdentityURI } from './Modules'

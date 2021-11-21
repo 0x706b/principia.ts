@@ -38,8 +38,6 @@ import { isUnknownRecord } from './util'
  */
 export interface Decoder<I, E, A> extends Parser<I, E, A> {}
 
-export type V = HKT.V<'I', '-'> & HKT.V<'E', '+'>
-
 /**
  * A `Decoder` where the input is `unknown`
  */
@@ -51,6 +49,15 @@ export type TypeOf<D> = D extends Decoder<any, any, infer A> ? A : never
 
 export type AnyD = Decoder<any, any, any>
 export type AnyUD = UDecoder<any, any>
+
+export interface DecoderF extends HKT.HKT {
+  readonly type: Decoder<this['I'], this['E'], this['A']>
+  readonly variance: {
+    I: '-'
+    E: '+'
+    A: '+'
+  }
+}
 
 /*
  * -------------------------------------------
@@ -530,5 +537,3 @@ export const getFor = to(Schemable)
 
 const _for = flow(to(Schemable), (_) => _.parse)
 export { _for as for }
-
-export { DecoderSURI }

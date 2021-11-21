@@ -27,7 +27,7 @@ import type * as P from '../prelude'
 import type { Refinement } from '../Refinement'
 import type { Supervisor } from '../Supervisor'
 import type { Sync } from '../Sync'
-import type { IOURI } from '.'
+import type { IOF, IOURI } from '.'
 import type { Cause } from './Cause'
 import type { Exit } from './Exit/core'
 import type { FailureReporter, FIO, IO, UIO, URIO } from './primitives'
@@ -1208,7 +1208,7 @@ export function gives<R0, R>(f: (r0: R0) => R): <E, A>(ma: IO<R, E, A>) => IO<R0
  * Provides a portion of the environment required to compute a MonadEnv
  *
  * Provides some of the environment required to run this effect,
- * leaving the remainder `R0` and combining it automatically using spread.
+ * leaving the remainder `R0` and combining it Nonematically using spread.
  *
  * @category MonadEnv
  * @since 1.0.0
@@ -1224,7 +1224,7 @@ export function give_<E, A, R = unknown, R0 = unknown>(ma: IO<R & R0, E, A>, r: 
  * Provides a portion of the environment required to compute a MonadEnv
  *
  * Provides some of the environment required to run this `IO`,
- * leaving the remainder `R0` and combining it automatically using spread.
+ * leaving the remainder `R0` and combining it Nonematically using spread.
  *
  * @category MonadEnv
  * @since 1.0.0
@@ -2127,14 +2127,14 @@ export function filterNot<A, R, E>(f: (a: A) => IO<R, E, boolean>): (as: Iterabl
   return (as) => filterNot_(as, f)
 }
 
-export function filterMapW_<F extends HKT.URIS, C = HKT.Auto>(W: Witherable<F, C>) {
+export function filterMapW_<F extends HKT.HKT, C = HKT.None>(W: Witherable<F, C>) {
   return <K, Q, W, X, I, S, R, E, A, R1, E1, B>(
     wa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     f: (a: A) => IO<R1, E1, M.Maybe<B>>
   ): IO<R1, E1, HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>> => W.wither_(_Applicative)(wa, f)
 }
 
-export function filterMapW<F extends HKT.URIS, C = HKT.Auto>(W: Witherable<F, C>) {
+export function filterMapW<F extends HKT.HKT, C = HKT.None>(W: Witherable<F, C>) {
   const filterMapWW_ = filterMapW_(W)
   return <A, R1, E1, B>(f: (a: A) => IO<R1, E1, M.Maybe<B>>) =>
     <K, Q, W, X, I, S, R, E>(
@@ -2479,7 +2479,7 @@ export function foldl<R, E, A, B>(b: B, f: (b: B, a: A) => IO<R, E, B>): (as: It
  * @category combinators
  * @since 1.0.0
  */
-export function foldlF_<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
+export function foldlF_<F extends HKT.HKT, C = HKT.None>(F: Foldable<F, C>) {
   return <K, Q, W, X, I, S, R, E, A, R1, E1, B>(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     b: B,
@@ -2501,7 +2501,7 @@ export function foldlF_<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
  *
  * @dataFirst foldlF_
  */
-export function foldlF<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
+export function foldlF<F extends HKT.HKT, C = HKT.None>(F: Foldable<F, C>) {
   const foldlFF_ = foldlF_(F)
   return <A, R1, E1, B>(b: B, f: (b: B, a: A) => IO<R1, E1, B>) =>
     <K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>): IO<R1, E1, B> =>
@@ -2560,7 +2560,7 @@ export function foldMap<M>(M: Monoid<M>) {
  * @category combinators
  * @since 1.0.0
  */
-export function foldMapF_<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
+export function foldMapF_<F extends HKT.HKT, C = HKT.None>(F: Foldable<F, C>) {
   return <M>(M: Monoid<M>) =>
     <K, Q, W, X, I, S, R, E, R1, E1, A>(
       fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
@@ -2588,7 +2588,7 @@ export function foldMapF_<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
  *
  * @dataFirst foldMapF_
  */
-export function foldMapF<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
+export function foldMapF<F extends HKT.HKT, C = HKT.None>(F: Foldable<F, C>) {
   const foldMapFF_ = foldMapF_(F)
   return <M>(M: Monoid<M>) => {
     const foldMapFFM_ = foldMapFF_(M)
@@ -2641,7 +2641,7 @@ export function foldr<A, B, R, E>(
  * @category combinators
  * @since 1.0.0
  */
-export function foldrF_<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
+export function foldrF_<F extends HKT.HKT, C = HKT.None>(F: Foldable<F, C>) {
   return <K, Q, W, X, I, S, R, E, A, R1, E1, B>(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     b: UIO<B>,
@@ -2658,7 +2658,7 @@ export function foldrF_<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
  *
  * @dataFirst foldrF_
  */
-export function foldrF<F extends HKT.URIS, C = HKT.Auto>(F: Foldable<F, C>) {
+export function foldrF<F extends HKT.HKT, C = HKT.None>(F: Foldable<F, C>) {
   const foldrFF_ = foldrF_(F)
   return <A, R1, E1, B>(b: UIO<B>, f: (a: A, b: IO<R1, E1, B>) => IO<R1, E1, B>) =>
     <K, Q, W, X, I, S, R, E>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>): IO<R1, E1, B> =>
@@ -2693,7 +2693,7 @@ export function forever<R, E, A>(ma: IO<R, E, A>): IO<R, E, never> {
  * Whenever you use this method to launch a new fiber, the new fiber is
  * attached to the parent fiber's scope. This means when the parent fiber
  * terminates, the child fiber will be terminated as well, ensuring that no
- * fibers leak. This behavior is called "auto supervision", and if this
+ * fibers leak. This behavior is called "None supervision", and if this
  * behavior is not desired, you may use the `forkDaemon` or `forkIn`
  * methods.
  *
@@ -2722,7 +2722,7 @@ export function fork<R, E, A>(ma: IO<R, E, A>): URIO<R, FiberContext<E, A>> {
  * Whenever you use this method to launch a new fiber, the new fiber is
  * attached to the parent fiber's scope. This means when the parent fiber
  * terminates, the child fiber will be terminated as well, ensuring that no
- * fibers leak. This behavior is called "auto supervision", and if this
+ * fibers leak. This behavior is called "None supervision", and if this
  * behavior is not desired, you may use the `forkDaemon` or `forkIn`
  * methods.
  *
@@ -3586,7 +3586,7 @@ export function partition<R, E, A, B>(
   return (fas) => partition_(fas, f)
 }
 
-export function partitionMapW_<F extends HKT.URIS, C = HKT.Auto>(W: Witherable<F, C>) {
+export function partitionMapW_<F extends HKT.HKT, C = HKT.None>(W: Witherable<F, C>) {
   return <K, Q, W, X, I, S, R, E, A, R1, E1, B>(
     wa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     f: (a: A) => IO<R1, E1, B>
@@ -3594,7 +3594,7 @@ export function partitionMapW_<F extends HKT.URIS, C = HKT.Auto>(W: Witherable<F
     W.wilt_(_Applicative)(wa, flow(f, either))
 }
 
-export function partitionMapW<F extends HKT.URIS, C = HKT.Auto>(W: Witherable<F, C>) {
+export function partitionMapW<F extends HKT.HKT, C = HKT.None>(W: Witherable<F, C>) {
   const partitionMapFF_ = partitionMapW_(W)
   return <A, R1, E1, B>(f: (a: A) => IO<R1, E1, B>) =>
     <K, Q, W, X, I, S, R, E>(
@@ -4183,7 +4183,7 @@ export function timedWith<R1, E1>(
   return (ma) => traceCall(timedWith_, trace)(ma, msTime)
 }
 
-const _Applicative = Applicative<[HKT.URI<IOURI>], HKT.V<'R', '-'> & HKT.V<'E', '+'>>({
+const _Applicative = Applicative<IOF>({
   map_,
   crossWith_,
   cross_,
@@ -4194,7 +4194,7 @@ const _Applicative = Applicative<[HKT.URI<IOURI>], HKT.V<'R', '-'> & HKT.V<'E', 
 /**
  * Maps an arbitrary `Traversable` to an effectful computation
  */
-export function traverseT_<F extends HKT.URIS, C = HKT.Auto>(
+export function traverseT_<F extends HKT.HKT, C = HKT.None>(
   T: Traversable<F, C>
 ): <K, Q, W, X, I, S, R, E, A, R1, E1, B>(
   ta: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
@@ -4212,7 +4212,7 @@ export function traverseT_<F extends HKT.URIS, C = HKT.Auto>(
  *
  * @dataFirst traverse_
  */
-export function traverseT<F extends HKT.URIS, C = HKT.Auto>(
+export function traverseT<F extends HKT.HKT, C = HKT.None>(
   T: Traversable<F, C>
 ): <A, R1, E1, B>(
   f: (a: A) => IO<R1, E1, B>

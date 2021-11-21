@@ -1,48 +1,47 @@
-import type * as HKT from './HKT'
+import type * as H from './HKT'
 
-export interface Pure<F extends HKT.URIS, C = HKT.Auto> extends HKT.Base<F, C> {
+export interface Pure<F extends H.HKT, C = H.None> extends H.Typeclass<F, C> {
   readonly pure: PureFn<F, C>
 }
 
-export type PureMin<F extends HKT.URIS, C = HKT.Auto> = {
+export type PureMin<F extends H.HKT, C = H.None> = {
   readonly pure: PureFn<F, C>
 }
 
-export interface Pure2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
-  extends HKT.CompositionBase2<F, G, CF, CG> {
+export interface Pure2<F extends H.HKT, G extends H.HKT, CF = H.None, CG = H.None> extends H.Typeclass2<F, G, CF, CG> {
   readonly pure: PureFn2<F, G, CF, CG>
 }
 
-export interface PureFn<F extends HKT.URIS, C = HKT.Auto> {
+export interface PureFn<F extends H.HKT, C = H.None> {
   <
     A,
-    K = HKT.Initial<C, 'K'>,
-    Q = HKT.Initial<C, 'Q'>,
-    W = HKT.Initial<C, 'W'>,
-    X = HKT.Initial<C, 'X'>,
-    I = HKT.Initial<C, 'I'>,
-    S = HKT.Initial<C, 'S'>,
-    R = HKT.Initial<C, 'R'>,
-    E = HKT.Initial<C, 'E'>
+    K = H.Low<F, 'K'>,
+    Q = H.Low<F, 'Q'>,
+    W = H.Low<F, 'W'>,
+    X = H.Low<F, 'X'>,
+    I = H.Low<F, 'I'>,
+    S = H.Low<F, 'S'>,
+    R = H.Low<F, 'R'>,
+    E = H.Low<F, 'E'>
   >(
     a: A
-  ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+  ): H.Kind<F, C, K, Q, W, X, I, S, R, E, A>
 }
 
-export interface PureFn2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto> {
+export interface PureFn2<F extends H.HKT, G extends H.HKT, CF = H.None, CG = H.None> {
   <
     A,
-    K = HKT.Initial<CF, 'K'>,
-    Q = HKT.Initial<CF, 'Q'>,
-    W = HKT.Initial<CF, 'W'>,
-    X = HKT.Initial<CF, 'X'>,
-    I = HKT.Initial<CF, 'I'>,
-    S = HKT.Initial<CF, 'S'>,
-    R = HKT.Initial<CF, 'R'>,
-    E = HKT.Initial<CF, 'E'>
+    K = H.Low<F, 'K'>,
+    Q = H.Low<F, 'Q'>,
+    W = H.Low<F, 'W'>,
+    X = H.Low<F, 'X'>,
+    I = H.Low<F, 'I'>,
+    S = H.Low<F, 'S'>,
+    R = H.Low<F, 'R'>,
+    E = H.Low<F, 'E'>
   >(
     a: A
-  ): HKT.Kind<
+  ): H.Kind<
     F,
     CF,
     K,
@@ -53,17 +52,17 @@ export interface PureFn2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, 
     S,
     R,
     E,
-    HKT.Kind<
+    H.Kind<
       G,
       CG,
-      HKT.Initial<CG, 'K'>,
-      HKT.Initial<CG, 'Q'>,
-      HKT.Initial<CG, 'W'>,
-      HKT.Initial<CG, 'X'>,
-      HKT.Initial<CG, 'I'>,
-      HKT.Initial<CG, 'S'>,
-      HKT.Initial<CG, 'R'>,
-      HKT.Initial<CG, 'E'>,
+      H.Low<G, 'K'>,
+      H.Low<G, 'Q'>,
+      H.Low<G, 'W'>,
+      H.Low<G, 'X'>,
+      H.Low<G, 'I'>,
+      H.Low<G, 'S'>,
+      H.Low<G, 'R'>,
+      H.Low<G, 'E'>,
       A
     >
   >

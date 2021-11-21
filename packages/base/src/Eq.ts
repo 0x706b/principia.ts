@@ -71,5 +71,3 @@ export function contramap_<A, B>(fa: Eq<A>, f: (b: B) => A): Eq<B> {
 export function contramap<A, B>(f: (b: B) => A): (fa: Eq<A>) => Eq<B> {
   return (fa) => contramap_(fa, f)
 }
-
-export { EqURI } from './Modules'

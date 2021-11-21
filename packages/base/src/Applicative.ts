@@ -13,15 +13,15 @@ import { getMonoidalFunctorComposition } from './MonoidalFunctor'
  *
  * `Applicative` is isomorphic to `MonoidalFunctor`
  */
-export interface Applicative<F extends HKT.URIS, C = HKT.Auto> extends Apply<F, C>, Unit<F, C>, Pure<F, C> {}
+export interface Applicative<F extends HKT.HKT, C = HKT.None> extends Apply<F, C>, Unit<F, C>, Pure<F, C> {}
 
-export type ApplicativeMin<F extends HKT.URIS, C = HKT.Auto> =
+export type ApplicativeMin<F extends HKT.HKT, C = HKT.None> =
   | (ApplyMin<F, C> & (PureMin<F, C> | UnitMin<F, C>))
   | (ApplyMin<F, C> & PureMin<F, C> & UnitMin<F, C>)
   | (MonoidalFunctorMin<F, C> & PureMin<F, C>)
   | MonoidalFunctorMin<F, C>
 
-export function Applicative<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeMin<F, C>): Applicative<F, C> {
+export function Applicative<F extends HKT.HKT, C = HKT.None>(F: ApplicativeMin<F, C>): Applicative<F, C> {
   const ApplyF = Apply(F)
   if ('pure' in F) {
     return HKT.instance<Applicative<F, C>>({
@@ -38,12 +38,12 @@ export function Applicative<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeMin<
   }
 }
 
-export interface Applicative2<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>
+export interface Applicative2<F extends HKT.HKT, G extends HKT.HKT, CF = HKT.None, CG = HKT.None>
   extends Apply2<F, G, CF, CG>,
     Unit2<F, G, CF, CG>,
     Pure2<F, G, CF, CG> {}
 
-export function getApplicativeComposition<F extends HKT.URIS, G extends HKT.URIS, CF = HKT.Auto, CG = HKT.Auto>(
+export function getApplicativeComposition<F extends HKT.HKT, G extends HKT.HKT, CF = HKT.None, CG = HKT.None>(
   F: Applicative<F, CF>,
   G: Applicative<G, CG>
 ): Applicative2<F, G, CF, CG> {
@@ -54,7 +54,7 @@ export function getApplicativeComposition<F extends HKT.URIS, G extends HKT.URIS
   })
 }
 
-export function pureF<F extends HKT.URIS, C = HKT.Auto>(F: ApplicativeMin<F, C>): PureFn<F, C> {
+export function pureF<F extends HKT.HKT, C = HKT.None>(F: ApplicativeMin<F, C>): PureFn<F, C> {
   if ('pure' in F) {
     return F.pure
   } else {
