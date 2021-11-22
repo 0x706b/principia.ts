@@ -523,6 +523,10 @@ export function pure<A>(a: A): Observable<never, A> {
   })
 }
 
+export function unit(): Observable<never, void> {
+  return pure(undefined)
+}
+
 /*
  * -------------------------------------------------------------------------------------------------
  * Apply
@@ -552,6 +556,14 @@ export function cross<E1, B>(
   fb: Observable<E1, B>
 ): <E, A>(fa: Observable<E, A>) => Observable<E | E1, readonly [A, B]> {
   return (fa) => cross_(fa, fb)
+}
+
+export function ap_<E, A, E1, B>(fab: Observable<E, (a: A) => B>, fa: Observable<E1, A>): Observable<E | E1, B> {
+  return crossWith_(fab, fa, (f, a) => f(a))
+}
+
+export function ap<E1, A>(fa: Observable<E1, A>): <E, B>(fab: Observable<E, (a: A) => B>) => Observable<E | E1, B> {
+  return (fab) => ap_(fab, fa)
 }
 
 /*
@@ -756,6 +768,14 @@ export function concatMap<A, E1, B>(
   f: (a: A, i: number) => ObservableInput<E1, B>
 ): <E>(ma: Observable<E, A>) => Observable<E | E1, B> {
   return (ma) => concatMap_(ma, f)
+}
+
+export function flatten<E, E1, A>(mma: Observable<E, Observable<E1, A>>): Observable<E | E1, A> {
+  return concatAll(mma)
+}
+
+export function switchFlatten<E, E1, A>(mma: Observable<E, Observable<E1, A>>): Observable<E | E1, A> {
+  return switchMap_(mma, identity)
 }
 
 /*
