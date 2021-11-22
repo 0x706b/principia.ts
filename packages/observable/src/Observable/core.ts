@@ -6,11 +6,17 @@ import type { SchedulerAction, SchedulerLike } from '../Scheduler'
 import type { Subscriber } from '../Subscriber'
 import type { Finalizer, Unsubscribable } from '../Subscription'
 import type { Either } from '@principia/base/Either'
+import type { FiberContext } from '@principia/base/Fiber'
+import type { IOEnv } from '@principia/base/IOEnv'
 import type { Eq, PredicateWithIndex, RefinementWithIndex } from '@principia/base/prelude'
 
 import * as A from '@principia/base/Array'
+import * as Ca from '@principia/base/Cause'
 import * as E from '@principia/base/Either'
+import * as Ex from '@principia/base/Exit'
+import * as Fi from '@principia/base/Fiber'
 import { identity, pipe } from '@principia/base/function'
+import * as IO from '@principia/base/IO'
 import * as M from '@principia/base/Maybe'
 import * as HS from '@principia/base/MutableHashSet'
 import { tuple } from '@principia/base/tuple'
@@ -48,6 +54,7 @@ export type ObservableInput<E = never, A = never> =
   | ArrayLike<A>
   | Iterable<A>
   | ReadableStreamLike<A>
+  | IO.IO<IOEnv, E, A>
 
 export type TypeOf<X> = X extends ObservableInput<any, infer A> ? A : never
 export type ErrorOf<X> = X extends ObservableInput<infer E, any> ? E : never
@@ -160,6 +167,9 @@ export function from<E = never, A = never>(input: ObservableInput<E, A>): Observ
   }
   if (isReadableStream(input)) {
     return fromReadableStreamLike(input)
+  }
+  if (IO.isIO(input)) {
+    return fromIO(input)
   }
   if ('subscribe' in input) {
     return fromSubscribable(input)
@@ -283,8 +293,14 @@ export function interval(period = 0, scheduler: SchedulerLike = asyncScheduler):
 }
 
 export function merge<O extends ReadonlyArray<ObservableInput<any, any>>>(
+  ...sources: O
+): Observable<ErrorOf<O[number]>, TypeOf<O[number]>>
+export function merge<O extends ReadonlyArray<ObservableInput<any, any>>>(
   ...sources: [...O, number?]
-): Observable<ErrorOf<O[number]>, { [K in keyof O]: TypeOf<O[K]> }> {
+): Observable<ErrorOf<O[number]>, TypeOf<O[number]>>
+export function merge<O extends ReadonlyArray<ObservableInput<any, any>>>(
+  ...sources: [...O, number?]
+): Observable<ErrorOf<O[number]>, TypeOf<O[number]>> {
   const concurrency = popNumber(sources, Infinity)
   return !sources.length
     ? empty()
@@ -508,6 +524,52 @@ export function zip<O extends ReadonlyArray<ObservableInput<any, any>>>(
         }
       })
     : empty()
+}
+
+export class InterruptedDefect<Id> {
+  readonly _tag = 'InterruptedDefect'
+  constructor(readonly id: Id) {}
+}
+
+export function fromIO<E, A>(io: IO.IO<IOEnv, E, A>): Observable<E, A> {
+  return new Observable((s) => {
+    let fiber: FiberContext<E, A>
+    const scheduled = asyncScheduler.schedule(() => {
+      fiber = IO.runFiber(io)
+      fiber.runAsync((exit) => {
+        if (!s.closed) {
+          pipe(
+            exit,
+            Ex.match(
+              Ca.fold(
+                noop,
+                (e) => {
+                  s.error(e)
+                },
+                (u) => {
+                  s.defect(u)
+                },
+                (id) => {
+                  s.defect(new InterruptedDefect(id))
+                },
+                noop,
+                noop,
+                noop
+              ),
+              (a) => {
+                s.next(a)
+              }
+            )
+          )
+          s.complete()
+        }
+      })
+    })
+    return () => {
+      scheduled.unsubscribe()
+      fiber && IO.run_(Fi.interrupt(fiber))
+    }
+  })
 }
 
 /*
