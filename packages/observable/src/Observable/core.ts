@@ -15,7 +15,7 @@ import * as Ca from '@principia/base/Cause'
 import * as E from '@principia/base/Either'
 import * as Ex from '@principia/base/Exit'
 import * as Fi from '@principia/base/Fiber'
-import { identity, pipe } from '@principia/base/function'
+import { flow, identity, pipe } from '@principia/base/function'
 import * as IO from '@principia/base/IO'
 import * as M from '@principia/base/Maybe'
 import * as HS from '@principia/base/MutableHashSet'
@@ -541,21 +541,29 @@ export function fromIO<E, A>(io: IO.IO<IOEnv, E, A>): Observable<E, A> {
           pipe(
             exit,
             Ex.match(
-              Ca.fold(
-                noop,
-                (e) => {
-                  s.error(e)
-                },
-                (u) => {
-                  s.defect(u)
-                },
-                (id) => {
-                  s.defect(new InterruptedDefect(id))
-                },
-                noop,
-                noop,
-                noop
-              ),
+              (cause) =>
+                pipe(
+                  cause,
+                  Ca.failureOrCause,
+                  E.match(
+                    (e) => {
+                      s.error(e)
+                    },
+                    flow(
+                      Ca.haltOption,
+                      M.orElse(() =>
+                        pipe(
+                          cause,
+                          Ca.interruptOption,
+                          M.map((id) => new InterruptedDefect(id))
+                        )
+                      ),
+                      M.match(noop, (defect) => {
+                        s.defect(defect)
+                      })
+                    )
+                  )
+                ),
               (a) => {
                 s.next(a)
               }
