@@ -259,6 +259,14 @@ export function failLazy<E>(e: () => E): Z<never, unknown, never, unknown, E, ne
   return failCauseLazy(() => Ca.fail(e()))
 }
 
+export function halt(defect: unknown): Z<never, unknown, never, unknown, never, never> {
+  return failCause(Ca.halt(defect))
+}
+
+export function haltLazy(defect: () => unknown): Z<never, unknown, never, unknown, never, never> {
+  return failCauseLazy(() => Ca.halt(defect()))
+}
+
 export function fromEither<E, A>(either: E.Either<E, A>): Z<never, unknown, never, unknown, E, A> {
   return E.match_(either, fail, succeed)
 }
