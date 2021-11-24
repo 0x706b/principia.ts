@@ -11,8 +11,7 @@ export type EitherTypeId = typeof EitherTypeId
 const _leftHash  = hashString('@principia/base/Either/Left')
 const _rightHash = hashString('@principia/base/Either/Right')
 
-export interface Left<E> extends Equatable, Hashable {
-  readonly [EitherTypeId]: EitherTypeId
+export interface Left<E> {
   readonly _tag: 'Left'
   readonly left: E
 }
@@ -33,8 +32,7 @@ export function Left<E>(left: E): Left<E> {
   return new LeftConstructor(left)
 }
 
-export interface Right<A> extends Equatable, Hashable {
-  readonly [EitherTypeId]: EitherTypeId
+export interface Right<A> {
   readonly _tag: 'Right'
   readonly right: A
 }
@@ -61,7 +59,11 @@ export type Either<E, A> = Left<E> | Right<A>
  * @internal
  */
 export function isEither(u: unknown): u is Either<unknown, unknown> {
-  return isObject(u) && EitherTypeId in u
+  return (
+    isObject(u) &&
+    (EitherTypeId in u ||
+      ('_tag' in u && typeof u['_tag'] === 'string' && (u['_tag'] === 'Left' || u['_tag'] === 'Right')))
+  )
 }
 
 /**

@@ -12,8 +12,7 @@ const _bothHash  = hashString('@principia/base/These/Both')
 const _leftHash  = hashString('@principia/base/These/Left')
 const _rightHash = hashString('@principia/base/These/Right')
 
-export interface Both<E, A> extends Equatable, Hashable {
-  readonly [TheseTypeId]: TheseTypeId
+export interface Both<E, A> {
   readonly _tag: 'Both'
   readonly left: E
   readonly right: A
@@ -35,8 +34,7 @@ export function Both<E, A>(left: E, right: A): Both<E, A> {
   return new BothConstructor(left, right)
 }
 
-export interface Left<E> extends Equatable, Hashable {
-  readonly [TheseTypeId]: TheseTypeId
+export interface Left<E> {
   readonly _tag: 'Left'
   readonly left: E
 }
@@ -57,8 +55,7 @@ export function Left<E>(left: E): Left<E> {
   return new LeftConstructor(left)
 }
 
-export interface Right<A> extends Equatable, Hashable {
-  readonly [TheseTypeId]: TheseTypeId
+export interface Right<A> {
   readonly _tag: 'Right'
   readonly right: A
 }
@@ -80,7 +77,13 @@ export function Right<A>(right: A): Right<A> {
 }
 
 export function isThese(u: unknown): u is These<unknown, unknown> {
-  return isObject(u) && TheseTypeId in u
+  return (
+    isObject(u) &&
+    (TheseTypeId in u ||
+      ('_tag' in u &&
+        typeof u['_tag'] === 'string' &&
+        (u['_tag'] === 'Left' || u['_tag'] === 'Right' || u['_tag'] === 'Both')))
+  )
 }
 
 function isBoth(u: unknown): u is Both<unknown, unknown> {

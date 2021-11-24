@@ -15,8 +15,7 @@ const _nothingHash = hashString('@principia/base/Maybe/Nothing')
 
 const _justHash = hashString('@principia/base/Maybe/Just')
 
-export interface Nothing extends Equatable, Hashable {
-  readonly [MaybeTypeId]: MaybeTypeId
+export interface Nothing {
   readonly _tag: 'Nothing'
 }
 
@@ -39,8 +38,7 @@ export function Nothing(): Nothing {
   return _Nothing
 }
 
-export interface Just<A> extends Equatable, Hashable {
-  readonly [MaybeTypeId]: MaybeTypeId
+export interface Just<A> {
   readonly _tag: 'Just'
   readonly value: A
 }
@@ -64,7 +62,11 @@ export function Just<A>(value: A): Just<A> {
 export type Maybe<A> = Nothing | Just<A>
 
 export function isMaybe(u: unknown): u is Maybe<unknown> {
-  return isObject(u) && MaybeTypeId in u
+  return (
+    isObject(u) &&
+    (MaybeTypeId in u ||
+      ('_tag' in u && typeof u['_tag'] === 'string' && (u['_tag'] === 'Nothing' || u['_tag'] === 'Just')))
+  )
 }
 
 export function isNothing<A>(u: Maybe<A>): u is Nothing {
