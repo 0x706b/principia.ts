@@ -16,7 +16,8 @@ import * as HS from '../HashSet'
 import * as L from '../List/core'
 import * as M from '../Maybe'
 import { tailRec_ } from '../prelude'
-import * as St from '../Structural'
+import * as Equ from '../Structural/Equatable'
+import * as Ha from '../Structural/Hashable'
 import { tuple } from '../tuple'
 import { isObject } from '../util/predicates'
 import { makeStack } from '../util/support/Stack'
@@ -40,7 +41,7 @@ export const CauseTag = {
   Traced: 'Traced'
 } as const
 
-const _emptyHash = St.opt(St.randomInt())
+const _emptyHash = Ha.opt(Ha.randomInt())
 
 export interface Empty extends Equatable, Hashable {
   readonly _E: () => never
@@ -55,10 +56,10 @@ export const EmptyConstructor = class Empty {
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
   readonly _tag = CauseTag.Empty
 
-  get [St.$hash](): number {
+  get [Ha.$hash](): number {
     return _emptyHash
   }
-  [St.$equals](that: unknown): boolean {
+  [Equ.$equals](that: unknown): boolean {
     return isCause(that) && this.equalsEval(that).value
   }
 
@@ -99,10 +100,10 @@ export const FailConstructor = class Fail<E> implements Fail<E> {
 
   constructor(readonly value: E) {}
 
-  get [St.$hash](): number {
-    return St._combineHash(St.hash(this._tag), St.hash(this.value))
+  get [Ha.$hash](): number {
+    return Ha._combineHash(Ha.hash(this._tag), Ha.hash(this.value))
   }
-  [St.$equals](that: unknown): boolean {
+  [Equ.$equals](that: unknown): boolean {
     return isCause(that) && this.equalsEval(that).value
   }
 
@@ -111,7 +112,7 @@ export const FailConstructor = class Fail<E> implements Fail<E> {
     return Ev.gen(function* (_) {
       switch (that._tag) {
         case CauseTag.Fail:
-          return St.equals(self.value, that.value)
+          return Equ.equals(self.value, that.value)
         case CauseTag.Both:
         case CauseTag.Then:
           return yield* _(structuralSymmetric(structuralEqualEmpty)(self, that))
@@ -144,10 +145,10 @@ export const HaltConstructor = class Halt implements Halt {
 
   constructor(readonly value: unknown) {}
 
-  get [St.$hash](): number {
-    return St._combineHash(St.hash(this._tag), St.hash(this.value))
+  get [Ha.$hash](): number {
+    return Ha._combineHash(Ha.hash(this._tag), Ha.hash(this.value))
   }
-  [St.$equals](that: unknown): boolean {
+  [Equ.$equals](that: unknown): boolean {
     return isCause(that) && this.equalsEval(that).value
   }
 
@@ -156,7 +157,7 @@ export const HaltConstructor = class Halt implements Halt {
     return Ev.gen(function* (_) {
       switch (that._tag) {
         case CauseTag.Halt:
-          return St.equals(self.value, that.value)
+          return Equ.equals(self.value, that.value)
         case CauseTag.Then:
         case CauseTag.Both:
           return yield* _(structuralSymmetric(structuralEqualEmpty)(self, that))
@@ -189,11 +190,11 @@ export const InterruptConstructor = class Interrupt<Id> implements Interrupt<Id>
 
   constructor(readonly id: Id) {}
 
-  get [St.$hash](): number {
-    return St._combineHash(St.hash(this._tag), St.hash(this.id))
+  get [Ha.$hash](): number {
+    return Ha._combineHash(Ha.hash(this._tag), Ha.hash(this.id))
   }
 
-  [St.$equals](that: unknown): boolean {
+  [Equ.$equals](that: unknown): boolean {
     return isCause(that) && this.equalsEval(that).value
   }
 
@@ -202,7 +203,7 @@ export const InterruptConstructor = class Interrupt<Id> implements Interrupt<Id>
     return Ev.gen(function* (_) {
       switch (that._tag) {
         case CauseTag.Interrupt:
-          return St.equals(self.id, that.id)
+          return Equ.equals(self.id, that.id)
         case CauseTag.Then:
         case CauseTag.Both:
           return yield* _(structuralSymmetric(structuralEqualEmpty)(self, that))
@@ -236,11 +237,11 @@ export const ThenConstructor = class Then<Id, E> {
 
   constructor(readonly left: PCause<Id, E>, readonly right: PCause<Id, E>) {}
 
-  get [St.$hash](): number {
+  get [Ha.$hash](): number {
     return hashCode(this)
   }
 
-  [St.$equals](that: unknown): boolean {
+  [Equ.$equals](that: unknown): boolean {
     return isCause(that) && this.equalsEval(that).value
   }
 
@@ -281,11 +282,11 @@ export const BothConstructor = class Both<Id, E> {
 
   constructor(readonly left: PCause<Id, E>, readonly right: PCause<Id, E>) {}
 
-  get [St.$hash](): number {
+  get [Ha.$hash](): number {
     return hashCode(this)
   }
 
-  [St.$equals](that: unknown): boolean {
+  [Equ.$equals](that: unknown): boolean {
     return isCause(that) && this.equalsEval(that).value
   }
 
@@ -326,11 +327,11 @@ export const TracedConstructor = class Traced<Id, E> {
 
   constructor(readonly cause: PCause<Id, E>, readonly trace: Trace) {}
 
-  get [St.$hash](): number {
-    return this.cause[St.$hash]
+  get [Ha.$hash](): number {
+    return this.cause[Ha.$hash]
   }
 
-  [St.$equals](that: unknown): boolean {
+  [Equ.$equals](that: unknown): boolean {
     return isCause(that) && this.equalsEval(that).value
   }
 
@@ -2208,9 +2209,9 @@ function hashCode<Id, A>(cause: PCause<Id, A>): number {
   if (size === 0) {
     return _emptyHash
   } else if (size === 1 && (head = L.unsafeHead(flattened)!) && HS.size(head) === 1) {
-    return L.unsafeHead(L.from(head))![St.$hash]
+    return L.unsafeHead(L.from(head))![Ha.$hash]
   } else {
-    return St.hashIterator(flattened[Symbol.iterator]())
+    return Ha.hashIterator(flattened[Symbol.iterator]())
   }
 }
 
@@ -2256,7 +2257,7 @@ function _equalHalt<Id, A>(EId: P.Eq<Id>, E: P.Eq<A>): (l: Halt, r: PCause<Id, A
   return (l, r) => {
     switch (r._tag) {
       case CauseTag.Halt:
-        return Ev.now(St.equals(l.value, r.value))
+        return Ev.now(Equ.equals(l.value, r.value))
       case CauseTag.Then:
       case CauseTag.Both:
         return symmetric(equalEmpty)(EId, E, l, r)

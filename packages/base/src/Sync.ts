@@ -711,14 +711,14 @@ export function asService<A>(has: Tag<A>): <R, E>(fa: Sync<R, E, A>) => Sync<R, 
  * -------------------------------------------------------------------------------------------------
  */
 
-export const runEither: <E, A>(sync: Sync<unknown, E, A>) => E.Either<E, A> = Z.runEither
+export const runExit: <E, A>(sync: Sync<unknown, E, A>) => Z.Exit<E, A> = Z.runExit
 
-export const runEitherEnv_: <R, E, A>(sync: Sync<R, E, A>, env: R) => E.Either<E, A> = Z.runReaderEither_
+export const runReaderExit_: <R, E, A>(sync: Sync<R, E, A>, env: R) => Z.Exit<E, A> = Z.runReaderExit_
 
 /**
- * @dataFirst runEitherEnv_
+ * @dataFirst runReaderExit_
  */
-export const runEitherEnv: <R>(env: R) => <E, A>(sync: Sync<R, E, A>) => E.Either<E, A> = Z.runReaderEither
+export const runReaderExit: <R>(env: R) => <E, A>(sync: Sync<R, E, A>) => Z.Exit<E, A> = Z.runReaderExit
 
 export const run: <A>(sync: Sync<unknown, never, A>) => A = Z.runResult
 

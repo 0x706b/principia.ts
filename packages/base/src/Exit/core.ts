@@ -9,7 +9,8 @@ import * as E from '../Either'
 import { flow, identity, pipe } from '../function'
 import * as M from '../Maybe'
 import { tailRec_ } from '../prelude'
-import * as St from '../Structural'
+import * as Eq from '../Structural/Equatable'
+import * as Ha from '../Structural/Hashable'
 import { tuple } from '../tuple'
 import { isObject } from '../util/predicates'
 
@@ -45,11 +46,11 @@ export const FailureConstructor = class Failure<Id, E> {
   readonly _tag = ExitTag.Failure
   constructor(readonly cause: C.PCause<Id, E>) {}
 
-  get [St.$hash](): number {
-    return St.hash(this.cause)
+  get [Ha.$hash](): number {
+    return Ha.hash(this.cause)
   }
-  [St.$equals](that: unknown): boolean {
-    return isExit(that) && isFailure(that) && St.equals(this.cause, that.cause)
+  [Eq.$equals](that: unknown): boolean {
+    return isExit(that) && isFailure(that) && Eq.equals(this.cause, that.cause)
   }
 }
 
@@ -73,11 +74,11 @@ export const SuccessConstructor = class Success<A> implements Hashable, Equatabl
   readonly _tag = ExitTag.Success
   constructor(readonly value: A) {}
 
-  get [St.$hash](): number {
-    return St.hash(this.value)
+  get [Ha.$hash](): number {
+    return Ha.hash(this.value)
   }
-  [St.$equals](that: unknown): boolean {
-    return isExit(that) && isSuccess(that) && St.equals(this.value, that.value)
+  [Eq.$equals](that: unknown): boolean {
+    return isExit(that) && isSuccess(that) && Eq.equals(this.value, that.value)
   }
 }
 

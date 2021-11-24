@@ -473,7 +473,7 @@ export function fromPromiseHalt<A>(promise: () => Promise<A>): FIO<never, A> {
  */
 export function fromSync<R, E, A>(effect: Sync<R, E, A>): IO<R, E, A> {
   const trace = accessCallTrace()
-  return asksIO(traceAs(trace, (_: R) => pipe(effect, S.giveAll(_), S.runEither, E.match(fail, succeed))))
+  return asksIO(traceAs(trace, (_: R) => pipe(effect, S.giveAll(_), S.runExit, fromExit)))
 }
 
 /**

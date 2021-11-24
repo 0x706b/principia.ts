@@ -2,16 +2,16 @@
  * Ported from https://github.com/zio/zio-prelude/blob/master/core/shared/src/main/scala/zio/prelude/fx/ZPure.scala
  */
 import type { Eq } from './Eq'
-import type { FreeSemiring } from './FreeSemiring'
 import type * as HKT from './HKT'
 import type { Predicate } from './Predicate'
 import type { _E, _R } from './prelude'
 import type { Stack } from './util/support/Stack'
 
 import * as A from './Array/core'
+import * as Ca from './Cause'
 import * as C from './Chunk/core'
 import * as E from './Either'
-import * as FS from './FreeSemiring'
+import * as Ex from './Exit'
 import { flow, identity, pipe } from './function'
 import * as I from './Iterable/core'
 import * as L from './List/core'
@@ -30,7 +30,8 @@ import { makeStack } from './util/support/Stack'
 export const ZTypeId = Symbol.for('@principia/base/Z')
 export type ZTypeId = typeof ZTypeId
 
-export type Cause<E> = FreeSemiring<never, E>
+export type Cause<E> = Ca.PCause<never, E>
+export type Exit<E, A> = Ex.PExit<never, E, A>
 
 /**
  * `Z<W, S1, S2, R, E, A>` is a purely functional description of a synchronous computation
@@ -251,11 +252,11 @@ export function tryCatch<A, E>(
 }
 
 export function fail<E>(e: E): Z<never, unknown, never, unknown, E, never> {
-  return failCause(FS.single(e))
+  return failCause(Ca.fail(e))
 }
 
 export function failLazy<E>(e: () => E): Z<never, unknown, never, unknown, E, never> {
-  return failCauseLazy(() => FS.single(e()))
+  return failCauseLazy(() => Ca.fail(e()))
 }
 
 export function fromEither<E, A>(either: E.Either<E, A>): Z<never, unknown, never, unknown, E, A> {
@@ -509,7 +510,15 @@ export function matchLogZ_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2
   onFailure: (ws: C.Chunk<W>, e: E) => Z<W1, S5, S3, R1, E1, B>,
   onSuccess: (ws: C.Chunk<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
 ): Z<W | W1 | W2, S1 & S5, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
-  return matchLogCauseZ_(fa, (ws, e) => onFailure(ws, FS.first(e)), onSuccess)
+  return matchLogCauseZ_(
+    fa,
+    (ws, cause) =>
+      pipe(
+        Ca.failureOrCause(cause),
+        E.match((e) => onFailure(ws, e), failCause)
+      ),
+    onSuccess
+  )
 }
 
 /**
@@ -534,7 +543,7 @@ export function matchZ_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E
   onFailure: (e: E) => Z<W1, S5, S3, R1, E1, B>,
   onSuccess: (a: A) => Z<W2, S2, S4, R2, E2, C>
 ): Z<W | W1 | W2, S1 & S5, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
-  return matchCauseZ_(fa, flow(FS.first, onFailure), onSuccess)
+  return matchCauseZ_(fa, flow(Ca.failureOrCause, E.match(onFailure, failCause)), onSuccess)
 }
 
 /**
@@ -690,7 +699,7 @@ export function crossWithPar_<W, S, R, E, A, R1, E1, B, C>(
         pipe(
           fb,
           matchCauseZ(
-            (c2) => failCause(FS.both(c1, c2)),
+            (c2) => failCause(Ca.both(c1, c2)),
             (_) => failCause(c1)
           )
         ),
@@ -1498,7 +1507,7 @@ type Frame = MatchFrame | ApplyFrame
 export function runAll_<W, S1, S2, E, A>(
   ma: Z<W, S1, S2, unknown, E, A>,
   s: S1
-): readonly [C.Chunk<W>, E.Either<Cause<E>, readonly [S2, A]>] {
+): readonly [C.Chunk<W>, Exit<E, readonly [S2, A]>] {
   let frames = undefined as Stack<Frame> | undefined
 
   let s0            = s as any
@@ -1679,10 +1688,10 @@ export function runAll_<W, S1, S2, E, A>(
   }
 
   if (failed) {
-    return [log, E.left(result)]
+    return [log, Ex.failCause(result)]
   }
 
-  return [log, E.right([s0, result])]
+  return [log, Ex.succeed([s0, result])]
 }
 
 /**
@@ -1693,7 +1702,7 @@ export function runAll_<W, S1, S2, E, A>(
  */
 export function runAll<S1>(
   s: S1
-): <W, S2, E, A>(fa: Z<W, S1, S2, unknown, E, A>) => readonly [C.Chunk<W>, E.Either<Cause<E>, readonly [S2, A]>] {
+): <W, S2, E, A>(fa: Z<W, S1, S2, unknown, E, A>) => readonly [C.Chunk<W>, Exit<E, readonly [S2, A]>] {
   return (fa) => runAll_(fa, s)
 }
 
@@ -1702,7 +1711,14 @@ export function runAll<S1>(
  * the updated state and the result.
  */
 export function run_<W, S1, S2, A>(ma: Z<W, S1, S2, unknown, never, A>, s: S1): readonly [S2, A] {
-  return (runAll_(ma, s) as [C.Chunk<W>, E.Right<readonly [S2, A]>])[1].right
+  return pipe(ma, runAll(s), ([, exit]) =>
+    pipe(
+      exit,
+      Ex.match((cause) => {
+        throw Ca.squash_(P.Show((_: never) => ''))(cause, identity)
+      }, identity)
+    )
+  )
 }
 
 /**
@@ -1761,7 +1777,17 @@ export function runState<S1>(s: S1): <W, S2, A>(ma: Z<W, S1, S2, unknown, never,
  * result and discarding the updated state.
  */
 export function runStateResult_<W, S1, S2, A>(ma: Z<W, S1, S2, unknown, never, A>, s: S1): A {
-  return (runAll_(ma, s) as readonly [C.Chunk<W>, E.Right<readonly [S2, A]>])[1].right[1]
+  return pipe(ma, runAll(s), ([, exit]) =>
+    pipe(
+      exit,
+      Ex.match(
+        (cause) => {
+          throw Ca.squash_(P.Show((_: never) => ''))(cause, identity)
+        },
+        ([, a]) => a
+      )
+    )
+  )
 }
 
 /**
@@ -1777,28 +1803,36 @@ export function runStateResult<S1>(s: S1): <W, S2, A>(ma: Z<W, S1, S2, unknown, 
 /**
  * Runs this computation returning either the result or error
  */
-export function runEither<E, A>(ma: Z<never, unknown, unknown, unknown, E, A>): E.Either<E, A> {
+export function runExit<E, A>(ma: Z<never, unknown, unknown, unknown, E, A>): Exit<E, A> {
   return pipe(
     runAll_(ma, {} as never)[1],
-    E.map(([, x]) => x),
-    E.mapLeft(FS.first)
+    Ex.map(([, a]) => a)
   )
 }
 
-export function runReaderEither_<R, E, A>(ma: Z<never, unknown, unknown, R, E, A>, env: R): E.Either<E, A> {
-  return runEither(giveAll_(ma, env))
+export function runReaderExit_<R, E, A>(ma: Z<never, unknown, unknown, R, E, A>, env: R): Exit<E, A> {
+  return runExit(giveAll_(ma, env))
 }
 
 /**
- * @dataFirst runReaderEither_
+ * @dataFirst runReaderExit_
  */
-export function runReaderEither<R>(env: R): <E, A>(ma: Z<never, unknown, unknown, R, E, A>) => E.Either<E, A> {
-  return (ma) => runReaderEither_(ma, env)
+export function runReaderExit<R>(env: R): <E, A>(ma: Z<never, unknown, unknown, R, E, A>) => Exit<E, A> {
+  return (ma) => runReaderExit_(ma, env)
 }
 
 export function runWriter<W, A>(ma: Z<W, unknown, unknown, unknown, never, A>): readonly [C.Chunk<W>, A] {
-  const [log, result] = runAll_(ma, {}) as readonly [C.Chunk<W>, E.Right<[never, A]>]
-  return [log, result.right[1]]
+  return pipe(ma, runAll({}), ([w, exit]) =>
+    pipe(
+      exit,
+      Ex.match(
+        (cause) => {
+          throw Ca.squash_(P.Show((_: never) => ''))(cause, identity)
+        },
+        ([, a]) => [w, a]
+      )
+    )
+  )
 }
 
 /*
