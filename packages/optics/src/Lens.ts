@@ -7,7 +7,10 @@ import type { PTraversal, Traversal } from './Traversal'
 import type * as O from '@principia/base/Maybe'
 import type { Predicate } from '@principia/base/Predicate'
 import type { Refinement } from '@principia/base/Refinement'
+import type { List } from '@principia/typelevel/List'
+import type { AutoPath, Path } from '@principia/typelevel/Object'
 
+import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import { flow, identity, pipe } from '@principia/base/function'
 import * as HKT from '@principia/base/HKT'
@@ -116,7 +119,7 @@ export function andThenTraversal<A, B, C, D>(
  * -------------------------------------------
  */
 
-export function id<S, T>(): PLens<S, T, S, T> {
+export function id<S, T = S>(): PLens<S, T, S, T> {
   return PLens({
     get: identity,
     replace_: (_, t) => t
@@ -236,6 +239,80 @@ export function prop_<S, A, P extends keyof A>(lens: Lens<S, A>, prop: P): Lens<
  */
 export function prop<A, P extends keyof A>(prop: P): <S>(sa: Lens<S, A>) => Lens<S, A[P]> {
   return (lens) => prop_(lens, prop)
+}
+
+function nestPath<A>(p: ReadonlyArray<string>, a: A): {} {
+  const out = {}
+  let view  = out
+  let last  = ''
+
+  for (let i = 0; i < p.length; i++) {
+    view[p[i]] = {}
+    if (!(i === p.length - 1)) {
+      view = view[p[i]]
+    }
+    last = p[i]
+  }
+
+  view[last] = a
+  return out
+}
+
+/**
+ * Return a `Lens` from a `Lens` and a path
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export function path_<S, A, P extends List<string>>(lens: Lens<S, A>, path: [...AutoPath<A, P>]): Lens<S, Path<A, P>> {
+  return PLens({
+    get: (s) =>
+      pipe(
+        path,
+        A.foldl(lens.get(s), (b, p) => b[p as string])
+      ) as Path<A, P>,
+    replace_: (s, a) => {
+      const os = lens.get(s)
+      const oa = pipe(
+        path,
+        A.foldl(os, (b, p) => b[p as string])
+      )
+      if (a === oa) {
+        return s
+      }
+      return lens.replace_(s, Object.assign({}, os, nestPath(path, a)))
+    }
+  })
+}
+
+/**
+ * Return a `Lens` from a `Lens` and a path
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export function path<A, P extends List<string>>(
+  path: [...AutoPath<A, P>]
+): <S>(lens: Lens<S, A>) => Lens<S, Path<A, P>> {
+  return (lens) =>
+    PLens({
+      get: (s) =>
+        pipe(
+          path,
+          A.foldl(lens.get(s), (b, p) => b[p as string])
+        ) as Path<A, P>,
+      replace_: (s, a) => {
+        const os = lens.get(s)
+        const oa = pipe(
+          path,
+          A.foldl(os, (b, p) => b[p as string])
+        )
+        if (a === oa) {
+          return s
+        }
+        return lens.replace_(s, Object.assign({}, os, nestPath(path, a)))
+      }
+    })
 }
 
 export function props_<S, A, P extends keyof A>(

@@ -4,6 +4,7 @@ import type { ConnectionContext } from 'subscriptions-transport-ws'
 
 import { asyncIterable } from '@principia/base/AsyncIterable'
 import * as E from '@principia/base/Either'
+import * as Ex from '@principia/base/Exit'
 import { identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as M from '@principia/base/Managed'
@@ -107,8 +108,8 @@ export function transformScalarResolvers(
         pipe(
           resolver.functions.parseLiteral(u),
           Sy.giveAll(env),
-          Sy.runEither,
-          E.match((e) => {
+          Sy.runExit,
+          Ex.match((e) => {
             throw e
           }, identity)
         ),
@@ -116,8 +117,8 @@ export function transformScalarResolvers(
         pipe(
           resolver.functions.parseValue(u),
           Sy.giveAll(env),
-          Sy.runEither,
-          E.match((e) => {
+          Sy.runExit,
+          Ex.match((e) => {
             throw e
           }, identity)
         ),
@@ -125,8 +126,8 @@ export function transformScalarResolvers(
         pipe(
           resolver.functions.serialize(u),
           Sy.giveAll(env),
-          Sy.runEither,
-          E.match((e) => {
+          Sy.runExit,
+          Ex.match((e) => {
             throw e
           }, identity)
         )

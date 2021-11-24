@@ -52,7 +52,8 @@
       "@principia/actors-node/*": ["packages/actors-node/dist/*"],
       "@principia/actors-node": ["packages/actors-node/dist/index"],
       "@principia/observable": ["packages/observable/dist/index"],
-      "@principia/observable/*": ["packages/observable/dist/*"]
+      "@principia/observable/*": ["packages/observable/dist/*"],
+      "@principia/typelevel/*": ["packages/typelevel/dist/*"]
     }
   },
   "exclude": ["build", "node_modules", "dist"]
