@@ -1,10 +1,10 @@
 import type { GetFn, Getter } from './Getter'
-import type { LensURI } from './Modules'
 import type { Optional, POptional } from './Optional'
 import type { PPrism } from './Prism'
 import type { ReplaceFn_ } from './Setter'
 import type { PTraversal, Traversal } from './Traversal'
 import type * as O from '@principia/base/Maybe'
+import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type { Predicate } from '@principia/base/Predicate'
 import type { Refinement } from '@principia/base/Refinement'
 import type { List } from '@principia/typelevel/List'
@@ -241,7 +241,7 @@ export function prop<A, P extends keyof A>(prop: P): <S>(sa: Lens<S, A>) => Lens
   return (lens) => prop_(lens, prop)
 }
 
-function nestPath<A>(p: ReadonlyArray<string>, a: A): {} {
+function nestPath<A>(p: NonEmptyArray<string>, a: A): {} {
   const out = {}
   let view  = out
   let last  = ''
@@ -280,7 +280,7 @@ export function path_<S, A, P extends List<string>>(lens: Lens<S, A>, path: [...
       if (a === oa) {
         return s
       }
-      return lens.replace_(s, Object.assign({}, os, nestPath(path, a)))
+      return lens.replace_(s, Object.assign({}, os, A.isNonEmpty(path) ? nestPath(path, a) : a))
     }
   })
 }
@@ -310,7 +310,7 @@ export function path<A, P extends List<string>>(
         if (a === oa) {
           return s
         }
-        return lens.replace_(s, Object.assign({}, os, nestPath(path, a)))
+        return lens.replace_(s, Object.assign({}, os, A.isNonEmpty(path) ? nestPath(path, a) : a))
       }
     })
 }
