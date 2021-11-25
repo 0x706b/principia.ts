@@ -88,7 +88,7 @@ export class ContinuationFinalizer<Env, OutErr, OutDone> extends Continuation<
 }
 
 /**
- * @optimize identity
+ * @optimize remove
  */
 export function concreteContinuation<Env, InErr, InElem, InDone, OutErr, OutErr2, OutElem, OutDone, OutDone2>(
   _: Continuation<Env, InErr, InElem, InDone, OutErr, OutErr2, OutElem, OutDone, OutDone2>
