@@ -1,17 +1,22 @@
+import * as A from '@principia/base/Array'
 import * as Ca from '@principia/base/Cause'
 import * as Ch from '@principia/base/Chunk'
 import * as E from '@principia/base/Either'
 import { IllegalArgumentError, isIllegalArgumentError, isIllegalStateError } from '@principia/base/Error'
 import { RuntimeException } from '@principia/base/Exception'
 import * as Ex from '@principia/base/Exit'
-import { identity, pipe } from '@principia/base/function'
+import { flow, identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as M from '@principia/base/Maybe'
 import * as Ref from '@principia/base/Ref'
 import {
+  all,
+  allIO,
+  anything,
   assert,
   assert_,
   assertIO_,
+  check,
   checkM,
   deepStrictEqualTo,
   DefaultRunnableSpec,
@@ -20,9 +25,11 @@ import {
   halts,
   isInterrupted,
   isLeft,
+  isRight,
   isTrue,
   not,
   suite,
+  test,
   testIO
 } from '@principia/test'
 import { TestClock } from '@principia/test/environment/TestClock'
@@ -33,6 +40,31 @@ const IOExampleError = I.fail(ExampleError)
 const IOExampleDie   = I.succeedLazy(() => {
   throw ExampleError
 })
+
+function exactlyOnce<A, R, A1>(value: A, func: (_: I.UIO<A>) => I.IO<R, string, A1>): I.IO<R, string, A1> {
+  return pipe(
+    Ref.make(0),
+    I.chain((ref) =>
+      I.gen(function* (_) {
+        const res = yield* _(
+          func(
+            pipe(
+              Ref.update_(ref, (n) => n + 1),
+              I.as(value)
+            )
+          )
+        )
+        const count = yield* _(ref.get)
+        if (count != 1) {
+          yield* _(I.fail('Accessed more than once'))
+        } else {
+          yield* _(I.unit())
+        }
+        return res
+      })
+    )
+  )
+}
 
 class IOSpec extends DefaultRunnableSpec {
   spec = suite(
@@ -350,6 +382,44 @@ class IOSpec extends DefaultRunnableSpec {
       })
     ),
     suite(
+      'collect',
+      testIO('returns failure ignoring value', () =>
+        I.gen(function* (_) {
+          const goodCase = yield* _(
+            pipe(
+              exactlyOnce(
+                0,
+                I.collect(
+                  () => 'value was not 0',
+                  (n) => (n === 0 ? M.just(n) : M.nothing())
+                )
+              ),
+              I.sandbox,
+              I.either
+            )
+          )
+          const badCase = yield* _(
+            pipe(
+              exactlyOnce(
+                1,
+                I.collect(
+                  () => 'value was not 0',
+                  (n) => (n === 0 ? M.just(n) : M.nothing())
+                )
+              ),
+              I.sandbox,
+              I.either,
+              I.map(E.match(flow(Ca.failureOrCause, E.left), E.right))
+            )
+          )
+          return all(
+            pipe(goodCase, assert(isRight(equalTo(0)))),
+            pipe(badCase, assert(isLeft(isLeft(equalTo('value was not 0')))))
+          )
+        })
+      )
+    ),
+    suite(
       'collectAllPar',
       testIO('returns the list in the same order', () => {
         const list = [1, 2, 3].map(I.succeed)
@@ -374,6 +444,66 @@ class IOSpec extends DefaultRunnableSpec {
         const res  = I.collectAllParN(2)(list)
         return assertIO_(res, equalTo(Ch.make(1, 2, 3)))
       })
+    ),
+    suite(
+      'collectAllUnitParN',
+      testIO('preserves failures', () => {
+        const tasks = A.replicate(10, I.fail(new RuntimeException('')))
+        return assertIO_(pipe(I.collectAllUnitParN(5)(tasks), I.swap), anything)
+      })
+    ),
+    suite(
+      'collectIO',
+      testIO('returns failure ignoring value', () =>
+        I.gen(function* (_) {
+          const goodCase = yield* _(
+            pipe(
+              exactlyOnce(
+                0,
+                I.collectIO(
+                  () => 'Predicate failed!',
+                  (n): M.Maybe<I.UIO<number>> => (n === 0 ? M.just(I.succeed(0)) : M.nothing())
+                )
+              ),
+              I.sandbox,
+              I.either
+            )
+          )
+          const partialBadCase = yield* _(
+            pipe(
+              exactlyOnce(
+                0,
+                I.collectIO(
+                  () => 'Predicate failed!',
+                  (n): M.Maybe<I.FIO<string, never>> => (n === 0 ? M.just(I.fail('Partial failed!')) : M.nothing())
+                )
+              ),
+              I.sandbox,
+              I.either,
+              I.map(E.match(flow(Ca.failureOrCause, E.left), E.right))
+            )
+          )
+          const badCase = yield* _(
+            pipe(
+              exactlyOnce(
+                1,
+                I.collectIO(
+                  () => 'Predicate failed!',
+                  (n): M.Maybe<I.UIO<number>> => (n === 0 ? M.just(I.succeed(n)) : M.nothing())
+                )
+              ),
+              I.sandbox,
+              I.either,
+              I.map(E.match(flow(Ca.failureOrCause, E.left), E.right))
+            )
+          )
+          return all(
+            pipe(goodCase, assert(isRight(equalTo(0)))),
+            pipe(partialBadCase, assert(isLeft(isLeft(equalTo('Partial failed!'))))),
+            pipe(badCase, assert(isLeft(isLeft(equalTo('Predicate failed!')))))
+          )
+        })
+      )
     ),
     testIO('subsumeEither', () =>
       checkM(Gen.alphaNumericString(), (str) => {
