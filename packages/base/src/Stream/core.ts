@@ -1304,9 +1304,9 @@ export function loopOnPartialChunksElements_<R, E, A, R1, E1, A1>(
  */
 export function run_<R, E, A, R2, E2, Z>(
   stream: Stream<R, E, A>,
-  sink: Sink.Sink<R2, E, A, E2, unknown, Z>
-): I.IO<R & R2, E2, Z> {
-  return Ch.runDrain(Ch.pipeTo_(stream.channel, sink.channel))
+  sink: Sink.Sink<R2, E2, A, unknown, Z>
+): I.IO<R & R2, E | E2, Z> {
+  return Ch.runDrain(Ch.pipeToOrFail_(stream.channel, sink.channel))
 }
 
 /**
@@ -1314,9 +1314,9 @@ export function run_<R, E, A, R2, E2, Z>(
  *
  * @dataFirst run_
  */
-export function run<E, A, R2, E2, Z>(
-  sink: Sink.Sink<R2, E, A, E2, unknown, Z>
-): <R>(stream: Stream<R, E, A>) => I.IO<R & R2, E2, Z> {
+export function run<A, R2, E2, Z>(
+  sink: Sink.Sink<R2, E2, A, unknown, Z>
+): <R, E>(stream: Stream<R, E, A>) => I.IO<R & R2, E | E2, Z> {
   return (stream) => run_(stream, sink)
 }
 
@@ -1325,9 +1325,9 @@ export function run<E, A, R2, E2, Z>(
  */
 export function runManaged_<R, E, A, R2, E2, Z>(
   stream: Stream<R, E, A>,
-  sink: Sink.Sink<R2, E, A, E2, unknown, Z>
+  sink: Sink.Sink<R2, E2, A, unknown, Z>
 ): Ma.Managed<R & R2, E | E2, Z> {
-  return Ch.runManaged(Ch.drain(Ch.pipeTo_(stream.channel, sink.channel)))
+  return Ch.runManaged(Ch.drain(Ch.pipeToOrFail_(stream.channel, sink.channel)))
 }
 
 /**
@@ -1335,9 +1335,9 @@ export function runManaged_<R, E, A, R2, E2, Z>(
  *
  * @dataFirst runManaged_
  */
-export function runManaged<E, A, R2, E2, Z>(
-  sink: Sink.Sink<R2, E, A, E2, unknown, Z>
-): <R>(stream: Stream<R, E, A>) => Ma.Managed<R & R2, E | E2, Z> {
+export function runManaged<A, R2, E2, Z>(
+  sink: Sink.Sink<R2, E2, A, unknown, Z>
+): <R, E>(stream: Stream<R, E, A>) => Ma.Managed<R & R2, E | E2, Z> {
   return (stream) => runManaged_(stream, sink)
 }
 
@@ -1543,10 +1543,10 @@ export function subsumeEither<R, E, E2, A>(xs: Stream<R, E, E.Either<E2, A>>): S
  * Any sink can be used here, but see `Sink.foldWeightedM` and `Sink.foldUntilM` for
  * sinks that cover the common usecases.
  */
-export function aggregateAsync_<R, R1, E extends E1, E1, E2, A extends A1, A1, B>(
+export function aggregateAsync_<R, E, A extends A1, R1, E1, A1, B>(
   stream: Stream<R, E, A>,
-  sink: SK.Sink<R1, E1, A1, E2, A1, B>
-): Stream<R & R1 & Has<Clock>, E2, B> {
+  sink: SK.Sink<R1, E1, A1, A1, B>
+): Stream<R & R1 & Has<Clock>, E | E1, B> {
   return aggregateAsyncWithin_(stream, sink, SC.forever)
 }
 
@@ -1562,18 +1562,18 @@ export function aggregateAsync_<R, R1, E extends E1, E1, E2, A extends A1, A1, B
  * Any sink can be used here, but see `Sink.foldWeightedM` and `Sink.foldUntilM` for
  * sinks that cover the common usecases.
  */
-export function aggregateAsync<R1, E1, E2, A1, B>(sink: SK.Sink<R1, E1, A1, E2, A1, B>) {
-  return <R, E extends E1, A extends A1>(stream: Stream<R, E, A>) => aggregateAsync_(stream, sink)
+export function aggregateAsync<A1, R1, E1, B>(sink: SK.Sink<R1, E1, A1, A1, B>) {
+  return <R, E, A extends A1>(stream: Stream<R, E, A>) => aggregateAsync_(stream, sink)
 }
 
 /**
  * Like `aggregateAsyncWithinEither`, but only returns the `Right` results.
  */
-export function aggregateAsyncWithin_<R, R1, R2, E extends E1, E1, E2, A extends A1, A1, B, C>(
+export function aggregateAsyncWithin_<R, E, A extends A1, R1, E1, A1, B, R2, C>(
   stream: Stream<R, E, A>,
-  sink: SK.Sink<R1, E1, A1, E2, A1, B>,
+  sink: SK.Sink<R1, E1, A1, A1, B>,
   schedule: SC.Schedule<R2, M.Maybe<B>, C>
-): Stream<R & R1 & R2 & Has<Clock>, E2, B> {
+): Stream<R & R1 & R2 & Has<Clock>, E | E1, B> {
   return collect_(
     aggregateAsyncWithinEither_(stream, sink, schedule),
     E.match(
@@ -1586,11 +1586,11 @@ export function aggregateAsyncWithin_<R, R1, R2, E extends E1, E1, E2, A extends
 /**
  * Like `aggregateAsyncWithinEither`, but only returns the `Right` results.
  */
-export function aggregateAsyncWithin<R1, R2, E1, E2, A1, B, C>(
-  sink: SK.Sink<R1, E1, A1, E2, A1, B>,
+export function aggregateAsyncWithin<R1, E1, A1, B, R2, C>(
+  sink: SK.Sink<R1, E1, A1, A1, B>,
   schedule: SC.Schedule<R2, M.Maybe<B>, C>
 ) {
-  return <R, E extends E1, A extends A1>(stream: Stream<R, E, A>) => aggregateAsyncWithin_(stream, sink, schedule)
+  return <R, E, A extends A1>(stream: Stream<R, E, A>) => aggregateAsyncWithin_(stream, sink, schedule)
 }
 
 /**
@@ -1605,12 +1605,12 @@ export function aggregateAsyncWithin<R1, R2, E1, E2, A1, B, C>(
  * Aggregated elements will be fed into the schedule to determine the delays between
  * pulls.
  */
-export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A extends A1, A1, B, C>(
+export function aggregateAsyncWithinEither_<R, E, A extends A1, R1, E1, A1, B, R2, C>(
   stream: Stream<R, E, A>,
-  sink: SK.Sink<R1, E1, A1, E2, A1, B>,
+  sink: SK.Sink<R1, E1, A1, A1, B>,
   schedule: SC.Schedule<R2, M.Maybe<B>, C>
-): Stream<R & R1 & R2 & Has<Clock>, E2, E.Either<C, B>> {
-  type HandoffSignal = HO.HandoffSignal<C, E1, A>
+): Stream<R & R1 & R2 & Has<Clock>, E | E1, E.Either<C, B>> {
+  type HandoffSignal = HO.HandoffSignal<C, E | E1, A1>
   type SinkEndReason = SER.SinkEndReason<C>
 
   const deps = I.sequenceT(
@@ -1621,14 +1621,14 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
   )
 
   return chain_(fromIO(deps), ([handoff, sinkEndReason, sinkLeftovers, scheduleDriver]) => {
-    const handoffProducer: Ch.Channel<unknown, E1, C.Chunk<A>, unknown, never, never, any> = Ch.readWithCause(
-      (_in: C.Chunk<A>) => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, new HO.Emit(_in))), handoffProducer),
-      (cause: Ca.Cause<E1>) => Ch.fromIO(HO.offer(handoff, new HO.Halt(cause))),
+    const handoffProducer: Ch.Channel<unknown, E | E1, C.Chunk<A1>, unknown, never, never, any> = Ch.readWithCause(
+      (_in: C.Chunk<A1>) => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, new HO.Emit(_in))), handoffProducer),
+      (cause: Ca.Cause<E | E1>) => Ch.fromIO(HO.offer(handoff, new HO.Halt(cause))),
       (_: any) => Ch.fromIO(HO.offer(handoff, new HO.End(new SER.UpstreamEnd())))
     )
 
-    const handoffConsumer: Ch.Channel<unknown, unknown, unknown, unknown, E1, C.Chunk<A1>, void> = Ch.unwrap(
-      I.chain_(Ref.getAndSet_(sinkLeftovers, C.empty<A1>()), (leftovers) => {
+    const handoffConsumer: Ch.Channel<unknown, unknown, unknown, unknown, E | E1, C.Chunk<A1>, void> = Ch.unwrap(
+      I.chain_(Ref.getAndSet_(sinkLeftovers, C.empty<A>()), (leftovers) => {
         if (C.isEmpty(leftovers)) {
           return I.succeed(Ch.crossSecond_(Ch.write(leftovers), handoffConsumer))
         } else {
@@ -1648,7 +1648,7 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
 
     const scheduledAggregator = (
       lastB: M.Maybe<B>
-    ): Ch.Channel<R1 & R2 & Has<Clock>, unknown, unknown, unknown, E2, C.Chunk<E.Either<C, B>>, any> => {
+    ): Ch.Channel<R1 & R2 & Has<Clock>, unknown, unknown, unknown, E | E1, C.Chunk<E.Either<C, B>>, any> => {
       const timeout = I.matchCauseIO_(
         scheduleDriver.next(lastB),
         (_) =>
@@ -1662,7 +1662,7 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
 
       return pipe(
         Ch.managed_(I.forkManaged(timeout), (fiber) => {
-          return Ch.chain_(Ch.doneCollect(Ch.pipeTo_(handoffConsumer, sink.channel)), ([leftovers, b]) => {
+          return Ch.chain_(Ch.doneCollect(Ch.pipeToOrFail_(handoffConsumer, sink.channel)), ([leftovers, b]) => {
             return Ch.crossSecond_(
               Ch.fromIO(I.crossSecond_(F.interrupt(fiber), Ref.set_(sinkLeftovers, C.flatten(leftovers)))),
               Ch.unwrap(
@@ -1714,11 +1714,11 @@ export function aggregateAsyncWithinEither_<R, R1, R2, E extends E1, E1, E2, A e
  * Aggregated elements will be fed into the schedule to determine the delays between
  * pulls.
  */
-export function aggregateAsyncWithinEither<R1, R2, E1, E2, A1, B, C>(
-  sink: SK.Sink<R1, E1, A1, E2, A1, B>,
+export function aggregateAsyncWithinEither<A, R1, E1, B, R2, C>(
+  sink: SK.Sink<R1, E1, A, A, B>,
   schedule: SC.Schedule<R2, M.Maybe<B>, C>
 ) {
-  return <R, E extends E1, A extends A1>(stream: Stream<R, E, A>) => aggregateAsyncWithinEither_(stream, sink, schedule)
+  return <R, E>(stream: Stream<R, E, A>) => aggregateAsyncWithinEither_(stream, sink, schedule)
 }
 
 /**
@@ -3634,13 +3634,13 @@ type PeelSignal<E, A> = PeelEmit<A> | PeelHalt<E> | PeelEnd
  */
 export function peel_<R, E, A extends A1, R1, E1, A1, Z>(
   stream: Stream<R, E, A>,
-  sink: Sink.Sink<R1, E, A, E1, A1, Z>
+  sink: Sink.Sink<R1, E1, A1, A1, Z>
 ): Ma.Managed<R & R1, E1, readonly [Z, Stream<unknown, E | E1, A1>]> {
   return Ma.gen(function* (_) {
     const p       = yield* _(Pr.make<E1, Z>())
     const handoff = yield* _(HO.make<PeelSignal<E, A1>>())
 
-    const consumer = pipe(
+    const consumer: SK.Sink<R & R1, E | E1, A1, A1, void> = pipe(
       Sink.exposeLeftover(sink),
       Sink.matchSink(
         (e) => Sink.apr_(Sink.fromIO(Pr.fail_(p, e)), Sink.fail(e)),
@@ -3658,7 +3658,7 @@ export function peel_<R, E, A extends A1, R1, E1, A1, Z>(
             )
           )
         }
-      )
+      ),
     )
     const producer: Ch.Channel<unknown, unknown, unknown, unknown, E | E1, C.Chunk<A1>, void> = Ch.unwrap(
       I.map_(HO.take(handoff), (signal) => {
@@ -3685,24 +3685,24 @@ export function peel_<R, E, A extends A1, R1, E1, A1, Z>(
  * stream is valid only within the scope of `Managed`.
  */
 export function peel<E, A extends A1, R1, E1, A1, Z>(
-  sink: Sink.Sink<R1, E, A, E1, A1, Z>
-): <R>(stream: Stream<R, E, A>) => Ma.Managed<R & R1, E1, readonly [Z, Stream<unknown, E | E1, A1>]> {
+  sink: Sink.Sink<R1, E, A1, A1, Z>
+): <R>(stream: Stream<R, E, A>) => Ma.Managed<R & R1, E | E1, readonly [Z, Stream<unknown, E | E1, A1>]> {
   return (stream) => peel_(stream, sink)
 }
 
-export function pipeThrough_<R, E extends E1, A, R1, E1, E2, L, Z>(
+export function pipeThrough_<R, E, A, R1, E1, L, Z>(
   ma: Stream<R, E, A>,
-  sa: Sink.Sink<R1, E1, A, E2, L, Z>
-): Stream<R & R1, E1 | E2, L> {
-  return new Stream(Ch.pipeTo_(ma.channel, sa.channel))
+  sa: Sink.Sink<R1, E1, A, L, Z>
+): Stream<R & R1, E | E1, L> {
+  return new Stream(Ch.pipeToOrFail_(ma.channel, sa.channel))
 }
 
 /**
  * @dataFirst pipeThrough_
  */
-export function pipeThrough<E extends E1, A, R1, E1, E2, L, Z>(
-  sa: Sink.Sink<R1, E1, A, E2, L, Z>
-): <R>(ma: Stream<R, E, A>) => Stream<R & R1, E1 | E2, L> {
+export function pipeThrough<E, A, R1, E1, L, Z>(
+  sa: Sink.Sink<R1, E1, A, L, Z>
+): <R>(ma: Stream<R, E, A>) => Stream<R & R1, E | E1, L> {
   return (ma) => pipeThrough_(ma, sa)
 }
 

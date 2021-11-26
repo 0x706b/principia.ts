@@ -21,40 +21,40 @@ import { AtomicReference } from '../util/support/AtomicReference'
  * of type `OutErr`, emits outputs of type `L` and ends with a value
  * of type `Z`.
  */
-export class Sink<R, InErr, In, OutErr, L, Z> {
-  constructor(readonly channel: Ch.Channel<R, InErr, C.Chunk<In>, unknown, OutErr, C.Chunk<L>, Z>) {}
+export class Sink<R, E, In, L, Z> {
+  constructor(readonly channel: Ch.Channel<R, never, C.Chunk<In>, unknown, E, C.Chunk<L>, Z>) {}
 }
 
-export function succeedLazy<A>(a: () => A): Sink<unknown, unknown, unknown, never, never, A> {
+export function succeedLazy<A>(a: () => A): Sink<unknown, unknown, never, never, A> {
   return new Sink(Ch.succeedLazy(a))
 }
 
-export function fromIO<R, E, Z>(io: I.IO<R, E, Z>): Sink<R, unknown, unknown, E, never, Z> {
+export function fromIO<R, E, Z>(io: I.IO<R, E, Z>): Sink<R, E, unknown, never, Z> {
   return new Sink(Ch.fromIO(io))
 }
 
-export function fail<E>(e: E): Sink<unknown, unknown, unknown, E, never, never> {
+export function fail<E>(e: E): Sink<unknown, E, unknown, never, never> {
   return new Sink(Ch.fail(e))
 }
 
-export function failLazy<E>(e: () => E): Sink<unknown, unknown, unknown, E, never, never> {
+export function failLazy<E>(e: () => E): Sink<unknown, unknown, E, never, never> {
   return new Sink(Ch.failLazy(e))
 }
 
-export function managed_<R, E, A, Env, InErr, In, OutErr, L, Z>(
+export function managed_<R, E, A, R1, E1, In, L, Z>(
   resource: Ma.Managed<R, E, A>,
-  use: (a: A) => Sink<Env, InErr, In, OutErr, L, Z>
-): Sink<R & Env, InErr, In, E | OutErr, L, Z> {
+  use: (a: A) => Sink<R1, E1, In, L, Z>
+): Sink<R & R1, E | E1, In, L, Z> {
   return new Sink(Ch.managed_(resource, (a) => use(a).channel))
 }
 
-export function managed<A, Env, InErr, In, OutErr, L, Z>(
-  use: (a: A) => Sink<Env, InErr, In, OutErr, L, Z>
-): <R, E>(resource: Ma.Managed<R, E, A>) => Sink<R & Env, InErr, In, E | OutErr, L, Z> {
+export function managed<A, R1, E1, In, L, Z>(
+  use: (a: A) => Sink<R1, E1, In, L, Z>
+): <R, E>(resource: Ma.Managed<R, E, A>) => Sink<R & R1, E | E1, In, L, Z> {
   return (resource) => managed_(resource, use)
 }
 
-export function succeed<A>(a: A): Sink<unknown, unknown, unknown, never, never, A> {
+export function succeed<A>(a: A): Sink<unknown, unknown, never, never, A> {
   return new Sink(Ch.succeed(a))
 }
 
@@ -67,10 +67,7 @@ export function succeed<A>(a: A): Sink<unknown, unknown, unknown, never, never, 
 /**
  * Transforms this sink's input elements.
  */
-export function contramap_<R, InErr, In, OutErr, L, Z, In1>(
-  sink: Sink<R, InErr, In, OutErr, L, Z>,
-  f: (_: In1) => In
-): Sink<R, InErr, In1, OutErr, L, Z> {
+export function contramap_<R, E, In, L, Z, In1>(sink: Sink<R, E, In, L, Z>, f: (_: In1) => In): Sink<R, E, In1, L, Z> {
   return contramapChunks_(sink, C.map(f))
 }
 
@@ -79,26 +76,26 @@ export function contramap_<R, InErr, In, OutErr, L, Z, In1>(
  */
 export function contramap<In, In1>(
   f: (_: In1) => In
-): <R, InErr, OutErr, L, Z>(sink: Sink<R, InErr, In, OutErr, L, Z>) => Sink<R, InErr, In1, OutErr, L, Z> {
+): <R, E, L, Z>(sink: Sink<R, E, In, L, Z>) => Sink<R, E, In1, L, Z> {
   return (sink) => contramap_(sink, f)
 }
 
 /**
  * Effectfully transforms this sink's input elements.
  */
-export function contramapIO_<R, InErr, In, OutErr, L, Z, R1, InErr1, In1>(
-  sink: Sink<R, InErr, In, OutErr, L, Z>,
-  f: (_: In1) => I.IO<R1, InErr1, In>
-): Sink<R & R1, InErr & InErr1, In1, OutErr, L, Z> {
+export function contramapIO_<R, E, In, L, Z, R1, E1, In1>(
+  sink: Sink<R, E, In, L, Z>,
+  f: (_: In1) => I.IO<R1, E1, In>
+): Sink<R & R1, E | E1, In1, L, Z> {
   return contramapChunksIO_(sink, C.mapIO(f))
 }
 
 /**
  * Effectfully transforms this sink's input elements.
  */
-export function contramapIO<In, R1, InErr1, In1>(
-  f: (_: In1) => I.IO<R1, InErr1, In>
-): <R, InErr, OutErr, L, Z>(sink: Sink<R, InErr, In, OutErr, L, Z>) => Sink<R & R1, InErr & InErr1, In1, OutErr, L, Z> {
+export function contramapIO<In, R1, E1, In1>(
+  f: (_: In1) => I.IO<R1, E1, In>
+): <R, E, L, Z>(sink: Sink<R, E, In, L, Z>) => Sink<R & R1, E | E1, In1, L, Z> {
   return (sink) => contramapIO_(sink, f)
 }
 
@@ -106,16 +103,16 @@ export function contramapIO<In, R1, InErr1, In1>(
  * Transforms this sink's input chunks.
  * `f` must preserve chunking-invariance
  */
-export function contramapChunks_<R, InErr, In, OutErr, L, Z, In1>(
-  sink: Sink<R, InErr, In, OutErr, L, Z>,
+export function contramapChunks_<R, E, In, L, Z, In1>(
+  sink: Sink<R, E, In, L, Z>,
   f: (chunk: C.Chunk<In1>) => C.Chunk<In>
-): Sink<R, InErr, In1, OutErr, L, Z> {
-  const loop: Ch.Channel<R, InErr, C.Chunk<In1>, unknown, InErr, C.Chunk<In>, unknown> = Ch.readWith(
+): Sink<R, E, In1, L, Z> {
+  const loop: Ch.Channel<R, never, C.Chunk<In1>, unknown, never, C.Chunk<In>, unknown> = Ch.readWith(
     (chunk) => Ch.crossSecond_(Ch.write(f(chunk)), loop),
     Ch.fail,
     Ch.succeed
   )
-  return new Sink(Ch.pipeTo_(loop, sink.channel))
+  return new Sink(Ch.pipeToOrFail_(loop, sink.channel))
 }
 
 /**
@@ -124,7 +121,7 @@ export function contramapChunks_<R, InErr, In, OutErr, L, Z, In1>(
  */
 export function contramapChunks<In, In1>(
   f: (chunk: C.Chunk<In1>) => C.Chunk<In>
-): <R, InErr, OutErr, L, Z>(sink: Sink<R, InErr, In, OutErr, L, Z>) => Sink<R, InErr, In1, OutErr, L, Z> {
+): <R, E, L, Z>(sink: Sink<R, E, In, L, Z>) => Sink<R, E, In1, L, Z> {
   return (sink) => contramapChunks_(sink, f)
 }
 
@@ -132,21 +129,17 @@ export function contramapChunks<In, In1>(
  * Effectfully transforms this sink's input chunks.
  * `f` must preserve chunking-invariance
  */
-export function contramapChunksIO_<R, InErr, In, OutErr, L, Z, R1, InErr1, In1>(
-  sink: Sink<R, InErr, In, OutErr, L, Z>,
-  f: (chunk: C.Chunk<In1>) => I.IO<R1, InErr1, C.Chunk<In>>
-): Sink<R & R1, InErr & InErr1, In1, OutErr, L, Z> {
-  const loop: Ch.Channel<
-    R & R1,
-    InErr & InErr1,
-    C.Chunk<In1>,
-    unknown,
-    InErr | InErr1,
-    C.Chunk<In>,
-    unknown
-  > = Ch.readWith((chunk) => pipe(Ch.fromIO(f(chunk)), Ch.chain(Ch.write), Ch.crossSecond(loop)), Ch.fail, Ch.succeed)
+export function contramapChunksIO_<R, E, In, L, Z, R1, E1, In1>(
+  sink: Sink<R, E, In, L, Z>,
+  f: (chunk: C.Chunk<In1>) => I.IO<R1, E1, C.Chunk<In>>
+): Sink<R & R1, E | E1, In1, L, Z> {
+  const loop: Ch.Channel<R & R1, never, C.Chunk<In1>, unknown, E | E1, C.Chunk<In>, unknown> = Ch.readWith(
+    (chunk) => pipe(Ch.fromIO(f(chunk)), Ch.chain(Ch.write), Ch.crossSecond(loop)),
+    Ch.fail,
+    Ch.succeed
+  )
   return new Sink(
-    Ch.pipeTo_(loop, sink.channel as Ch.Channel<R, InErr | InErr1, C.Chunk<In>, unknown, OutErr, C.Chunk<L>, Z>)
+    Ch.pipeToOrFail_(loop, sink.channel as Ch.Channel<R, never, C.Chunk<In>, unknown, E | E1, C.Chunk<L>, Z>)
   )
 }
 
@@ -154,9 +147,9 @@ export function contramapChunksIO_<R, InErr, In, OutErr, L, Z, R1, InErr1, In1>(
  * Effectfully transforms this sink's input chunks.
  * `f` must preserve chunking-invariance
  */
-export function contramapChunksIO<In, R1, InErr1, In1>(
-  f: (chunk: C.Chunk<In1>) => I.IO<R1, InErr1, C.Chunk<In>>
-): <R, InErr, OutErr, L, Z>(sink: Sink<R, InErr, In, OutErr, L, Z>) => Sink<R & R1, InErr & InErr1, In1, OutErr, L, Z> {
+export function contramapChunksIO<In, R1, E1, In1>(
+  f: (chunk: C.Chunk<In1>) => I.IO<R1, E1, C.Chunk<In>>
+): <R, E, L, Z>(sink: Sink<R, E, In, L, Z>) => Sink<R & R1, E | E1, In1, L, Z> {
   return (sink) => contramapChunksIO_(sink, f)
 }
 
@@ -169,34 +162,27 @@ export function contramapChunksIO<In, R1, InErr1, In1>(
 /**
  * Transforms this sink's result.
  */
-export function map_<R, InErr, In, OutErr, L, Z, Z2>(
-  sink: Sink<R, InErr, In, OutErr, L, Z>,
-  f: (z: Z) => Z2
-): Sink<R, InErr, In, OutErr, L, Z2> {
+export function map_<R, E, In, L, Z, Z2>(sink: Sink<R, E, In, L, Z>, f: (z: Z) => Z2): Sink<R, E, In, L, Z2> {
   return new Sink(Ch.map_(sink.channel, f))
 }
 
 /**
  * Transforms this sink's result.
  */
-export function map<Z, Z2>(
-  f: (z: Z) => Z2
-): <R, InErr, In, OutErr, L>(sink: Sink<R, InErr, In, OutErr, L, Z>) => Sink<R, InErr, In, OutErr, L, Z2> {
+export function map<Z, Z2>(f: (z: Z) => Z2): <R, E, In, L>(sink: Sink<R, E, In, L, Z>) => Sink<R, E, In, L, Z2> {
   return (sink) => map_(sink, f)
 }
 
-export function mapIO_<R, InErr, In, OutErr, L, Z, R1, OutErr1, Z1>(
-  sink: Sink<R, InErr, In, OutErr, L, Z>,
-  f: (z: Z) => I.IO<R1, OutErr1, Z1>
-): Sink<R & R1, InErr, In, OutErr | OutErr1, L, Z1> {
+export function mapIO_<R, E, In, L, Z, R1, E1, Z1>(
+  sink: Sink<R, E, In, L, Z>,
+  f: (z: Z) => I.IO<R1, E1, Z1>
+): Sink<R & R1, E | E1, In, L, Z1> {
   return new Sink(Ch.mapIO_(sink.channel, f))
 }
 
-export function mapIO<Z, R1, OutErr1, Z1>(
-  f: (z: Z) => I.IO<R1, OutErr1, Z1>
-): <R, InErr, In, OutErr, L>(
-  sink: Sink<R, InErr, In, OutErr, L, Z>
-) => Sink<R & R1, InErr, In, OutErr | OutErr1, L, Z1> {
+export function mapIO<Z, R1, E1, Z1>(
+  f: (z: Z) => I.IO<R1, E1, Z1>
+): <R, E, In, L>(sink: Sink<R, E, In, L, Z>) => Sink<R & R1, E | E1, In, L, Z1> {
   return (sink) => mapIO_(sink, f)
 }
 
@@ -206,16 +192,11 @@ export function mapIO<Z, R1, OutErr1, Z1>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function mapError_<R, InErr, In, OutErr, L, Z, OutErr2>(
-  sink: Sink<R, InErr, In, OutErr, L, Z>,
-  f: (e: OutErr) => OutErr2
-): Sink<R, InErr, In, OutErr2, L, Z> {
+export function mapError_<R, E, In, L, Z, E1>(sink: Sink<R, E, In, L, Z>, f: (e: E) => E1): Sink<R, E1, In, L, Z> {
   return new Sink(Ch.mapError_(sink.channel, f))
 }
 
-export function mapError<OutErr, OutErr2>(
-  f: (e: OutErr) => OutErr2
-): <R, InErr, In, L, Z>(sink: Sink<R, InErr, In, OutErr, L, Z>) => Sink<R, InErr, In, OutErr2, L, Z> {
+export function mapError<E, E1>(f: (e: E) => E1): <R, In, L, Z>(sink: Sink<R, E, In, L, Z>) => Sink<R, E1, In, L, Z> {
   return (sink) => mapError_(sink, f)
 }
 
@@ -227,33 +208,30 @@ export function mapError<OutErr, OutErr2>(
 
 export function matchSink_<
   R,
-  InErr,
+  E,
   In,
-  OutErr,
   L extends In1 & In2 & (L1 | L2),
   Z,
   R1,
-  InErr1,
+  E1,
   In1 extends In,
-  OutErr1,
   L1,
   Z1,
   R2,
-  InErr2,
+  E2,
   In2 extends In,
-  OutErr2,
   L2,
   Z2
 >(
-  sink: Sink<R, InErr, In, OutErr, L, Z>,
-  onFailure: (err: OutErr) => Sink<R1, InErr1, In1, OutErr1, L1, Z1>,
-  onSuccess: (z: Z) => Sink<R2, InErr2, In2, OutErr2, L2, Z2>
-): Sink<R & R1 & R2, InErr & InErr1 & InErr2, In1 & In2, OutErr1 | OutErr2, L1 | L2, Z1 | Z2> {
+  sink: Sink<R, E, In, L, Z>,
+  onFailure: (err: E) => Sink<R1, E1, In1, L1, Z1>,
+  onSuccess: (z: Z) => Sink<R2, E2, In2, L2, Z2>
+): Sink<R & R1 & R2, E1 | E2, In1 & In2, L1 | L2, Z1 | Z2> {
   return new Sink(
     pipe(
       sink.channel,
       Ch.doneCollect,
-      Ch.matchIO(
+      Ch.matchChannel(
         (err) => onFailure(err).channel,
         ([leftovers, z]) =>
           Ch.deferTotal(() => {
@@ -264,7 +242,7 @@ export function matchSink_<
               Ch.succeedLazy(() => leftoversRef.getAndSet(C.empty())),
               (chunk) => Ch.writeChunk(chunk as unknown as C.Chunk<C.Chunk<In1 & In2>>)
             )
-            const passthrough      = Ch.id<InErr2, C.Chunk<In1 & In2>, unknown>()
+            const passthrough      = Ch.id<never, C.Chunk<In1 & In2>, unknown>()
             const continuationSink = pipe(refReader, Ch.crossSecond(passthrough), Ch.pipeTo(onSuccess(z).channel))
 
             return Ch.chain_(Ch.doneCollect(continuationSink), ([newLeftovers, z1]) =>
@@ -282,27 +260,25 @@ export function matchSink_<
 
 export function matchSink<
   In,
-  OutErr,
+  E,
   L0 extends In1 & In2 & (L1 | L2),
   Z,
   R1,
-  InErr1,
-  OutErr1,
+  E1,
   In1 extends In,
   L1,
   Z1,
   R2,
-  InErr2,
+  E2,
   In2 extends In,
-  OutErr2,
   L2,
   Z2
 >(
-  onFailure: (err: OutErr) => Sink<R1, InErr1, In1, OutErr1, L1, Z1>,
-  onSuccess: (z: Z) => Sink<R2, InErr2, In2, OutErr2, L2, Z2>
-): <R, InErr, L extends L0>(
-  sink: Sink<R, InErr, In, OutErr, L0 | L, Z>
-) => Sink<R & R1 & R2, InErr & InErr1 & InErr2, In1 & In2, OutErr1 | OutErr2, L1 | L2, Z1 | Z2> {
+  onFailure: (err: E) => Sink<R1, E1, In1, L1, Z1>,
+  onSuccess: (z: Z) => Sink<R2, E2, In2, L2, Z2>
+): <R, L extends L0>(
+  sink: Sink<R, E, In, L0 | L, Z>
+) => Sink<R & R1 & R2, E1 | E2, In1 & In2, L1 | L2, Z1 | Z2> {
   return (sink) => matchSink_(sink, onFailure, onSuccess)
 }
 
@@ -312,18 +288,16 @@ export function matchSink<
  * -------------------------------------------------------------------------------------------------
  */
 
-export function chain_<R, InErr, In, OutErr, L extends In1 & L1, Z, R1, InErr1, In1 extends In, OutErr1, L1, Z1>(
-  sink: Sink<R, InErr, In, OutErr, L, Z>,
-  f: (z: Z) => Sink<R1, InErr1, In1, OutErr1, L1, Z1>
-): Sink<R & R1, InErr & InErr1, In1, OutErr | OutErr1, L1, Z1> {
+export function chain_<R, E, In, L extends In1 & L1, Z, R1, E1, In1 extends In, L1, Z1>(
+  sink: Sink<R, E, In, L, Z>,
+  f: (z: Z) => Sink<R1, E1, In1, L1, Z1>
+): Sink<R & R1, E | E1, In1, L1, Z1> {
   return matchSink_(sink, (err) => fail(err), f)
 }
 
-export function chain<In, L extends In1 & L1, Z, R1, InErr1, In1 extends In, OutErr1, L1, Z1>(
-  f: (z: Z) => Sink<R1, InErr1, In1, OutErr1, L1, Z1>
-): <R, InErr, OutErr>(
-  sink: Sink<R, InErr, In, OutErr, L, Z>
-) => Sink<R & R1, InErr & InErr1, In1, OutErr | OutErr1, L1, Z1> {
+export function chain<In, L extends In1 & L1, Z, R1, E1, In1 extends In, L1, Z1>(
+  f: (z: Z) => Sink<R1, E1, In1, L1, Z1>
+): <R, E>(sink: Sink<R, E, In, L, Z>) => Sink<R & R1, E | E1, In1, L1, Z1> {
   return (sink) => chain_(sink, f)
 }
 
@@ -333,38 +307,24 @@ export function chain<In, L extends In1 & L1, Z, R1, InErr1, In1 extends In, Out
  * -------------------------------------------------------------------------------------------------
  */
 
-export function crossWith_<
-  R,
-  InErr,
-  In,
-  OutErr,
-  L extends In1 & L1,
-  Z,
-  R1,
-  InErr1,
-  In1 extends In,
-  OutErr1,
-  L1,
-  Z1,
-  Z2
->(
-  fa: Sink<R, InErr, In, OutErr, L, Z>,
-  fb: Sink<R1, InErr1, In1, OutErr1, L1, Z1>,
+export function crossWith_<R, E, In, L extends In1 & L1, Z, R1, E1, In1 extends In, L1, Z1, Z2>(
+  fa: Sink<R, E, In, L, Z>,
+  fb: Sink<R1, E1, In1, L1, Z1>,
   f: (a: Z, b: Z1) => Z2
-): Sink<R & R1, InErr & InErr1, In & In1, OutErr | OutErr1, L1, Z2> {
+): Sink<R & R1, E | E1, In & In1, L1, Z2> {
   return chain_(fa, (z) => map_(fb, (z1) => f(z, z1)))
 }
 
-export function apr_<R, InErr, In, OutErr, L extends In1 & L1, Z, R1, InErr1, In1 extends In, OutErr1, L1, Z1>(
-  fa: Sink<R, InErr, In, OutErr, L, Z>,
-  fb: Sink<R1, InErr1, In1, OutErr1, L1, Z1>
-): Sink<R & R1, InErr & InErr1, In1, OutErr | OutErr1, L1, Z1> {
+export function apr_<R, E, In, L extends In1 & L1, Z, R1, E1, In1 extends In, L1, Z1>(
+  fa: Sink<R, E, In, L, Z>,
+  fb: Sink<R1, E1, In1, L1, Z1>
+): Sink<R & R1, E | E1, In1, L1, Z1> {
   return crossWith_(fa, fb, (_, b) => b)
 }
 
-export function exposeLeftover<R, InErr, In, OutErr, L, Z>(
-  sink: Sink<R, InErr, In, OutErr, L, Z>
-): Sink<R, InErr, In, OutErr, never, readonly [Z, C.Chunk<L>]> {
+export function exposeLeftover<R, E, In, L, Z>(
+  sink: Sink<R, E, In, L, Z>
+): Sink<R, E, In, never, readonly [Z, C.Chunk<L>]> {
   return new Sink(
     pipe(
       Ch.doneCollect(sink.channel),
@@ -379,15 +339,13 @@ export function exposeLeftover<R, InErr, In, OutErr, L, Z>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function dropLeftover<R, InErr, In, OutErr, L, Z>(
-  sink: Sink<R, InErr, In, OutErr, L, Z>
-): Sink<R, InErr, In, OutErr, never, Z> {
+export function dropLeftover<R, E, In, L, Z>(sink: Sink<R, E, In, L, Z>): Sink<R, E, In, never, Z> {
   return new Sink(Ch.drain(sink.channel))
 }
 
-export function unwrapManaged<R, OutErr, R1, InErr, In, OutErr1, L, Z>(
-  managed: Ma.Managed<R, OutErr, Sink<R1, InErr, In, OutErr1, L, Z>>
-): Sink<R & R1, InErr, In, OutErr | OutErr1, L, Z> {
+export function unwrapManaged<R, E, R1, E1, In, L, Z>(
+  managed: Ma.Managed<R, E, Sink<R1, E1, In, L, Z>>
+): Sink<R & R1, E | E1, In, L, Z> {
   return new Sink(Ch.unwrapManaged(Ma.map_(managed, (_) => _.channel)))
 }
 
@@ -417,8 +375,8 @@ export function collectAll<Err, A>() {
 /**
  * A sink that ignores all of its inputs.
  */
-export function drain<Err, A>() {
-  const drain: Ch.Channel<unknown, Err, C.Chunk<A>, unknown, Err, C.Chunk<never>, void> = Ch.readWithCause(
+export function drain() {
+  const drain: Ch.Channel<unknown, never, C.Chunk<unknown>, unknown, never, C.Chunk<never>, void> = Ch.readWithCause(
     (_) => drain,
     Ch.failCause,
     (_) => Ch.unit()
@@ -427,18 +385,18 @@ export function drain<Err, A>() {
   return new Sink(drain)
 }
 
-export function dropWhile<Err, In>(predicate: Predicate<In>): Sink<unknown, Err, In, Err, In, any> {
-  const loop: Ch.Channel<unknown, Err, C.Chunk<In>, any, Err, C.Chunk<In>, any> = Ch.readWith(
+export function dropWhile<Err, In>(predicate: Predicate<In>): Sink<unknown, never, In, In, any> {
+  const loop: Ch.Channel<unknown, never, C.Chunk<In>, any, never, C.Chunk<In>, any> = Ch.readWith(
     (inp: C.Chunk<In>) => {
       const leftover = C.dropWhile_(inp, predicate)
       const more     = C.isEmpty(leftover)
       if (more) {
         return loop
       } else {
-        return pipe(Ch.write(leftover), Ch.crossSecond(Ch.id<Err, C.Chunk<In>, any>()))
+        return pipe(Ch.write(leftover), Ch.crossSecond(Ch.id<never, C.Chunk<In>, any>()))
       }
     },
-    (err: Err) => Ch.fail(err),
+    (err: never) => Ch.fail(err),
     () => Ch.unit()
   )
   return new Sink(loop)
@@ -464,11 +422,11 @@ function foldChunkSplit<In, S>(
   return [s, C.empty()]
 }
 
-function foldReader<Err, In, S>(
+function foldReader<In, S>(
   s0: S,
   cont: (s: S) => boolean,
   f: (s: S, inp: In) => S
-): Ch.Channel<unknown, Err, C.Chunk<In>, unknown, Err, C.Chunk<In>, S> {
+): Ch.Channel<unknown, never, C.Chunk<In>, unknown, never, C.Chunk<In>, S> {
   if (!cont(s0)) {
     return Ch.end(s0)
   } else {
@@ -490,15 +448,15 @@ export function fold<Err, In, S>(
   s: S,
   cont: (s: S) => boolean,
   f: (s: S, i: In) => S
-): Sink<unknown, Err, In, Err, In, S> {
+): Sink<unknown, never, In, In, S> {
   return new Sink(foldReader(s, cont, f))
 }
 
-function foldChunksReader<Err, In, S>(
+function foldChunksReader<In, S>(
   s: S,
   cont: (s: S) => boolean,
   f: (s: S, inp: C.Chunk<In>) => S
-): Ch.Channel<unknown, Err, C.Chunk<In>, unknown, Err, never, S> {
+): Ch.Channel<unknown, never, C.Chunk<In>, unknown, never, never, S> {
   return Ch.readWith(
     (inp: C.Chunk<In>) => {
       const nextS = f(s, inp)
@@ -518,7 +476,7 @@ export function foldChunks<Err, In, S>(
   s: S,
   cont: (s: S) => boolean,
   f: (s: S, inp: C.Chunk<In>) => S
-): Sink<unknown, Err, In, Err, never, S> {
+): Sink<unknown, never, In, never, S> {
   return new Sink(cont(s) ? foldChunksReader(s, cont, f) : Ch.end(s))
 }
 
@@ -544,7 +502,7 @@ export function foldChunksIO<Env, Err, In, S>(
   s: S,
   cont: (s: S) => boolean,
   f: (s: S, inp: C.Chunk<In>) => I.IO<Env, Err, S>
-): Sink<Env, Err, In, Err, In, S> {
+): Sink<Env, Err, In, In, S> {
   return new Sink(cont(s) ? foldChunksIOReader(s, cont, f) : Ch.end(s))
 }
 
@@ -592,14 +550,14 @@ export function foldIO<Env, Err, In, S>(
   s: S,
   cont: (s: S) => boolean,
   f: (s: S, inp: In) => I.IO<Env, Err, S>
-): Sink<Env, Err, In, Err, In, S> {
+): Sink<Env, Err, In, In, S> {
   return new Sink(cont(s) ? foldIOReader(s, cont, f) : Ch.end(s))
 }
 
 /**
  * A sink that folds its inputs with the provided function and initial state.
  */
-export function foldl<Err, In, S>(s: S, f: (s: S, inp: In) => S): Sink<unknown, Err, In, Err, never, S> {
+export function foldl<Err, In, S>(s: S, f: (s: S, inp: In) => S): Sink<unknown, Err, In, never, S> {
   return dropLeftover(fold(s, () => true, f))
 }
 
@@ -607,7 +565,7 @@ export function foldl<Err, In, S>(s: S, f: (s: S, inp: In) => S): Sink<unknown, 
  * A sink that folds its input chunks with the provided function and initial state.
  * `f` must preserve chunking-invariance.
  */
-export function foldlChunks<Err, In, S>(s: S, f: (s: S, inp: C.Chunk<In>) => S): Sink<unknown, Err, In, Err, never, S> {
+export function foldlChunks<Err, In, S>(s: S, f: (s: S, inp: C.Chunk<In>) => S): Sink<unknown, Err, In, never, S> {
   return foldChunks(s, () => true, f)
 }
 
@@ -618,14 +576,14 @@ export function foldlChunks<Err, In, S>(s: S, f: (s: S, inp: C.Chunk<In>) => S):
 export function foldlChunksIO<R, Err, In, S>(
   s: S,
   f: (s: S, inp: C.Chunk<In>) => I.IO<R, Err, S>
-): Sink<R, Err, In, Err, never, S> {
+): Sink<R, Err, In, never, S> {
   return dropLeftover(foldChunksIO(s, () => true, f))
 }
 
 /**
  * A sink that effectfully folds its inputs with the provided function and initial state.
  */
-export function foldlIO<R, Err, In, S>(s: S, f: (s: S, inp: In) => I.IO<R, Err, S>): Sink<R, Err, In, Err, In, S> {
+export function foldlIO<R, Err, In, S>(s: S, f: (s: S, inp: In) => I.IO<R, Err, S>): Sink<R, Err, In, In, S> {
   return foldIO(s, () => true, f)
 }
 
@@ -635,7 +593,7 @@ export function foldlIO<R, Err, In, S>(s: S, f: (s: S, inp: In) => I.IO<R, Err, 
  *
  * Like foldWeighted, but with a constant cost function of 1.
  */
-export function foldUntil<Err, In, S>(s: S, max: number, f: (s: S, inp: In) => S): Sink<unknown, Err, In, Err, In, S> {
+export function foldUntil<Err, In, S>(s: S, max: number, f: (s: S, inp: In) => S): Sink<unknown, Err, In, In, S> {
   return pipe(
     fold<Err, In, readonly [S, number]>(
       tuple(s, 0),
@@ -656,7 +614,7 @@ export function foldUntilIO<Env, In, Err, S>(
   s: S,
   max: number,
   f: (s: S, inp: In) => I.IO<Env, Err, S>
-): Sink<Env, Err, In, Err, In, S> {
+): Sink<Env, Err, In, In, S> {
   return pipe(
     foldIO<Env, Err, In, readonly [S, number]>(
       tuple(s, 0),
@@ -681,11 +639,11 @@ export function foldWeighted<Err, In, S>(
   costFn: (s: S, inp: In) => number,
   max: number,
   f: (s: S, inp: In) => S
-): Sink<unknown, Err, In, Err, In, S> {
+): Sink<unknown, Err, In, In, S> {
   return foldWeightedDecompose(s, costFn, max, C.single, f)
 }
 
-function foldWeightedDecomposeLoop<Err, In, S>(
+function foldWeightedDecomposeLoop<In, S>(
   s0: S,
   costFn: (s: S, inp: In) => number,
   max: number,
@@ -693,7 +651,7 @@ function foldWeightedDecomposeLoop<Err, In, S>(
   f: (s: S, inp: In) => S,
   cost0: number,
   dirty0: boolean
-): Ch.Channel<unknown, Err, C.Chunk<In>, unknown, Err, C.Chunk<In>, S> {
+): Ch.Channel<unknown, never, C.Chunk<In>, unknown, never, C.Chunk<In>, S> {
   return Ch.readWith(
     (inp: C.Chunk<In>) => {
       let idx   = 0
@@ -760,13 +718,13 @@ function foldWeightedDecomposeLoop<Err, In, S>(
  * to return a `ZIO` value, and consequently it allows the sink
  * to fail.
  */
-export function foldWeightedDecompose<Err, In, S>(
+export function foldWeightedDecompose<In, S>(
   s: S,
   costFn: (s: S, inp: In) => number,
   max: number,
   decompose: (inp: In) => C.Chunk<In>,
   f: (s: S, inp: In) => S
-): Sink<unknown, Err, In, Err, In, S> {
+): Sink<unknown, never, In, In, S> {
   return new Sink(foldWeightedDecomposeLoop(s, costFn, max, decompose, f, 0, false))
 }
 
@@ -784,7 +742,7 @@ export function foldWeightedIO<Env, Err, In, S, Env1, Err1, Env2, Err2>(
   costFn: (s: S, inp: In) => I.IO<Env1, Err1, number>,
   max: number,
   f: (s: S, inp: In) => I.IO<Env2, Err2, S>
-): Sink<Env & Env1 & Env2, Err, In, Err | Err1 | Err2, In, S> {
+): Sink<Env & Env1 & Env2, Err | Err1 | Err2, In, In, S> {
   return foldWeightedDecomposeIO(s, costFn, max, flow(C.single, I.succeed), f)
 }
 
@@ -866,21 +824,21 @@ export function foldWeightedDecomposeIO<Env, Err, In, S, Env1, Err1, Env2, Err2,
   max: number,
   decompose: (inp: In) => I.IO<Env2, Err2, C.Chunk<In>>,
   f: (s: S, inp: In) => I.IO<Env3, Err3, S>
-): Sink<Env & Env1 & Env2 & Env3, Err, In, Err | Err1 | Err2 | Err3, In, S> {
+): Sink<Env & Env1 & Env2 & Env3, Err | Err1 | Err2 | Err3, In, In, S> {
   return new Sink(foldWeightedDecomposeIOLoop(s, costFn, max, decompose, f, 0, false))
 }
 
 /**
  * A sink that executes the provided effectful function for every element fed to it.
  */
-export function foreach<R, Err, In>(f: (inp: In) => I.IO<R, Err, any>): Sink<R, Err, In, Err, In, void> {
+export function foreach<R, Err, In>(f: (inp: In) => I.IO<R, Err, any>): Sink<R, Err, In, In, void> {
   return foreachWhile(flow(f, I.as(true)))
 }
 
 /**
  * A sink that executes the provided effectful function for every chunk fed to it.
  */
-export function foreachChunk<R, Err, In>(f: (inp: C.Chunk<In>) => I.IO<R, Err, any>): Sink<R, Err, In, Err, In, void> {
+export function foreachChunk<R, Err, In>(f: (inp: C.Chunk<In>) => I.IO<R, Err, any>): Sink<R, Err, In, In, void> {
   return foreachChunkWhile(flow(f, I.as(true)))
 }
 
@@ -905,7 +863,7 @@ function foreachWhileLoop<R, Err, In>(
  * A sink that executes the provided effectful function for every element fed to it
  * until `f` evaluates to `false`.
  */
-export function foreachWhile<R, Err, In>(f: (_: In) => I.IO<R, Err, boolean>): Sink<R, Err, In, Err, In, void> {
+export function foreachWhile<R, Err, In>(f: (_: In) => I.IO<R, Err, boolean>): Sink<R, Err, In, In, void> {
   const process: Ch.Channel<R, Err, C.Chunk<In>, unknown, Err, C.Chunk<In>, void> = Ch.readWithCause(
     (inp: C.Chunk<In>) => foreachWhileLoop(f, inp, 0, inp.length, process),
     Ch.failCause,
@@ -920,7 +878,7 @@ export function foreachWhile<R, Err, In>(f: (_: In) => I.IO<R, Err, boolean>): S
  */
 export function foreachChunkWhile<R, Err, In>(
   f: (chunk: C.Chunk<In>) => I.IO<R, Err, boolean>
-): Sink<R, Err, In, Err, In, void> {
+): Sink<R, Err, In, In, void> {
   const reader: Ch.Channel<R, Err, C.Chunk<In>, unknown, Err, C.Chunk<In>, void> = Ch.readWith(
     (inp: C.Chunk<In>) => Ch.chain_(Ch.fromIO(f(inp)), (cont) => (cont ? reader : Ch.end(undefined))),
     (err: Err) => Ch.fail(err),
@@ -929,7 +887,7 @@ export function foreachChunkWhile<R, Err, In>(
   return new Sink(reader)
 }
 
-export function head<Err, In>(): Sink<unknown, Err, In, Err, In, M.Maybe<In>> {
+export function head<Err, In>(): Sink<unknown, Err, In, In, M.Maybe<In>> {
   return fold(M.nothing(), M.isNothing, (s, i) =>
     M.match_(
       s,
@@ -939,15 +897,15 @@ export function head<Err, In>(): Sink<unknown, Err, In, Err, In, M.Maybe<In>> {
   )
 }
 
-export function last<Err, In>(): Sink<unknown, Err, In, Err, In, M.Maybe<In>> {
+export function last<Err, In>(): Sink<unknown, Err, In, In, M.Maybe<In>> {
   return foldl(M.nothing(), (_, i) => M.just(i))
 }
 
-export function leftover<L>(c: C.Chunk<L>): Sink<unknown, unknown, unknown, never, L, void> {
+export function leftover<L>(c: C.Chunk<L>): Sink<unknown, never, unknown, L, void> {
   return new Sink(Ch.write(c))
 }
 
-export function take<Err, In>(n: number): Sink<unknown, Err, In, Err, In, C.Chunk<In>> {
+export function take<Err, In>(n: number): Sink<unknown, Err, In, In, C.Chunk<In>> {
   return chain_(
     foldChunks<Err, In, C.Chunk<In>>(C.empty(), (c) => c.length < n, C.concat_),
     (acc) => {
@@ -957,11 +915,11 @@ export function take<Err, In>(n: number): Sink<unknown, Err, In, Err, In, C.Chun
   )
 }
 
-export function summarized_<R, InErr, In, OutErr, L, Z, R1, E1, B, C>(
-  sink: Sink<R, InErr, In, OutErr, L, Z>,
+export function summarized_<R, E, In, L, Z, R1, E1, B, C>(
+  sink: Sink<R, E, In, L, Z>,
   summary: I.IO<R1, E1, B>,
   f: (b1: B, b2: B) => C
-): Sink<R & R1, InErr, In, OutErr | E1, L, readonly [Z, C]> {
+): Sink<R & R1, E | E1, In, L, readonly [Z, C]> {
   return new Sink(
     Ch.chain_(Ch.fromIO(summary), (start) =>
       Ch.chain_(sink.channel, (done) => Ch.map_(Ch.fromIO(summary), (end) => [done, f(start, end)]))
@@ -969,68 +927,74 @@ export function summarized_<R, InErr, In, OutErr, L, Z, R1, E1, B, C>(
   )
 }
 
-export function timed<R, InErr, In, OutErr, L, Z>(
-  sink: Sink<R & Has<Clock>, InErr, In, OutErr, L, Z>
-): Sink<R & Has<Clock>, InErr, In, OutErr, L, readonly [Z, number]> {
+export function timed<R, E, In, L, Z>(
+  sink: Sink<R & Has<Clock>, E, In, L, Z>
+): Sink<R & Has<Clock>, E, In, L, readonly [Z, number]> {
   return summarized_(sink, Clock.currentTime, (start, end) => end - start)
+}
+
+export function raceWith_<R, E, In, L extends In1 & L1, Z, R1, E1, In1 extends In, L1, Z1, R2, E2, Z2, R3, E3, Z3>(
+  sink: Sink<R, E, In, L, Z>,
+  that: Sink<R1, E1, In1, L1, Z1>,
+  leftDone: (exit: Ex.Exit<E, Z>) => MD.MergeDecision<R2, E1, Z1, E2, Z2>,
+  rightDone: (exit: Ex.Exit<E1, Z1>) => MD.MergeDecision<R3, E, Z, E3, Z3>,
+  capacity = 16
+): Sink<R & R1 & R2 & R3, E | E1 | E2 | E3, In & In1, L | L1, Z2 | Z3> {
+  const managed = Ma.gen(function* (_) {
+    const hub    = yield* _(H.makeBounded<E.Either<Ex.Exit<never, any>, C.Chunk<In & In1>>>(capacity))
+    const left   = yield* _(Ch.fromHubManaged(hub))
+    const right  = yield* _(Ch.fromHubManaged(hub))
+    const reader = Ch.toHub<never, any, C.Chunk<In1>>(hub)
+    const writer = pipe(
+      left,
+      Ch.pipeTo(sink.channel),
+      Ch.mergeWith(pipe(right, Ch.pipeTo(that.channel)), leftDone, rightDone)
+    )
+    const channel = pipe(
+      reader,
+      Ch.mergeWith(
+        writer,
+        (_) => MD.await(I.fromExit),
+        (done) => MD.done(I.fromExit(done))
+      )
+    )
+    return new Sink(channel)
+  })
+  return unwrapManaged(managed)
 }
 
 /**
  * Runs both sinks in parallel on the input and combines the results
  * using the provided function.
  */
-export function crossWithPar_<
-  R,
-  InErr,
-  In,
-  OutErr,
-  L extends In1 & L1,
-  Z,
-  R1,
-  InErr1,
-  OutErr1,
-  In1 extends In,
-  L1,
-  Z1,
-  Z2
->(
-  fa: Sink<R, InErr, In, OutErr, L, Z>,
-  fb: Sink<R1, InErr1, In1, OutErr1, L1, Z1>,
+export function crossWithPar_<R, E, In, L extends In1 & L1, Z, R1, E1, In1 extends In, L1, Z1, Z2>(
+  fa: Sink<R, E, In, L, Z>,
+  fb: Sink<R1, E1, In1, L1, Z1>,
   f: (a: Z, b: Z1) => Z2,
   capacity = 16
-): Sink<R & R1, InErr & InErr1, In & In1, OutErr | OutErr1, L1, Z2> {
-  return new Sink(
-    Ch.unwrapManaged(
-      Ma.gen(function* (_) {
-        const hub    = yield* _(H.makeBounded<E.Either<Ex.Exit<InErr & InErr1, any>, C.Chunk<In & In1>>>(capacity))
-        const left   = yield* _(Ch.fromHubManaged(hub))
-        const right  = yield* _(Ch.fromHubManaged(hub))
-        const reader = Ch.toHub<InErr & InErr1, any, C.Chunk<In1>>(hub)
-        const c1     = Ch.pipeTo_(left, fa.channel)
-        const c2     = Ch.pipeTo_(right, fb.channel)
-        const writer = pipe(
-          c1,
-          Ch.mergeWith(
-            c2,
-            Ex.match(
-              (err) => MD.done<unknown, OutErr | OutErr1, never>(I.failCause(err)),
-              (lz) => MD.await(Ex.match(I.failCause, (rz) => I.succeed(f(lz, rz))))
-            ),
-            Ex.match(
-              (err) => MD.done<unknown, OutErr | OutErr1, never>(I.failCause(err)),
-              (rz) => MD.await(Ex.match(I.failCause, (lz) => I.succeed(f(lz, rz))))
-            )
+): Sink<R & R1, E | E1, In & In1, L1, Z2> {
+  return raceWith_(
+    fa,
+    fb,
+    Ex.match(
+      (err) => MD.done(I.failCause(err)),
+      (lz): MD.MergeDecision<unknown, E | E1, Z1, E | E1, Z2> =>
+        MD.await(
+          Ex.match(
+            (cause) => I.failCause(cause),
+            (rz) => I.succeed(f(lz, rz))
           )
         )
-        return pipe(
-          reader,
-          Ch.mergeWith(
-            writer,
-            () => MD.await(Ex.match(I.failCause, I.succeed)),
-            Ex.match(flow(I.failCause, MD.done), flow(I.succeed, MD.done))
+    ),
+    Ex.match(
+      (err) => MD.done(I.failCause(err)),
+      (rz): MD.MergeDecision<unknown, E | E1, Z, E | E1, Z2> =>
+        MD.await(
+          Ex.match(
+            (cause) => I.failCause(cause),
+            (lz) => I.succeed(f(lz, rz))
           )
         )
-      })
     )
   )
 }
@@ -1039,11 +1003,9 @@ export function crossWithPar_<
  * Runs both sinks in parallel on the input and combines the results
  * using the provided function.
  */
-export function crossWithPar<In, L extends In1 & L1, Z, R1, InErr1, In1 extends In, OutErr1, L1, Z1, Z2>(
-  fb: Sink<R1, InErr1, In1, OutErr1, L1, Z1>,
+export function crossWithPar<In, L extends In1 & L1, Z, R1, E1, In1 extends In, L1, Z1, Z2>(
+  fb: Sink<R1, E1, In1, L1, Z1>,
   f: (a: Z, b: Z1) => Z2
-): <R, InErr, OutErr>(
-  fa: Sink<R, InErr, In, OutErr, L, Z>
-) => Sink<R & R1, InErr & InErr1, In & In1, OutErr | OutErr1, L1, Z2> {
+): <R, E>(fa: Sink<R, E, In, L, Z>) => Sink<R & R1, E | E1, In & In1, L1, Z2> {
   return (fa) => crossWithPar_(fa, fb, f)
 }

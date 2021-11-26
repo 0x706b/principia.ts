@@ -512,6 +512,10 @@ export function isFail<Id, E>(cause: PCause<Id, E>): cause is Fail<E> {
   return cause._tag === CauseTag.Fail
 }
 
+export function isHalt<Id, E>(cause: PCause<Id, E>): cause is Halt {
+  return cause._tag === CauseTag.Halt
+}
+
 /**
  * A type-guard matching `Then`
  *

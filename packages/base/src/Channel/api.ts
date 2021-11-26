@@ -22,6 +22,7 @@ import * as Ex from '../IO/Exit'
 import * as Ma from '../Managed'
 import * as RM from '../Managed/ReleaseMap'
 import * as M from '../Maybe'
+import { isObject } from '../prelude'
 import * as Q from '../Queue'
 import * as Ref from '../Ref'
 import * as Sem from '../Semaphore'
@@ -92,6 +93,41 @@ export function pipeTo<OutErr, OutElem, OutDone, Env1, OutErr1, OutElem1, OutDon
   left: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
 ) => Channel<Env & Env1, InErr, InElem, InDone, OutErr1, OutElem1, OutDone1> {
   return (left) => pipeTo_(left, right)
+}
+
+const ChannelFailureTypeId = Symbol.for('@principia/base/Channel/ChannelFailure')
+class ChannelFailure<E> {
+  readonly [ChannelFailureTypeId] = ChannelFailureTypeId
+  constructor(readonly error: E) {}
+}
+
+function isChannelFailure<E>(u: unknown): u is ChannelFailure<E> {
+  return isObject(u) && ChannelFailureTypeId in u
+}
+
+export function pipeToOrFail_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, Env1, OutErr1, OutElem1, OutDone1>(
+  left: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
+  right: Channel<Env1, never, OutElem, OutDone, OutErr1, OutElem1, OutDone1>
+): Channel<Env & Env1, InErr, InElem, InDone, OutErr | OutErr1, OutElem1, OutDone1> {
+  return pipe(
+    left,
+    catchAll((err) => failCause(Ca.halt(new ChannelFailure(err)))),
+    pipeTo(right),
+    catchAllCause((cause) =>
+      Ca.isHalt(cause) && isChannelFailure(cause.value) ? fail(cause.value.error as OutErr) : halt(cause)
+    )
+  )
+}
+
+/**
+ * @dataFirst pipeToOrFail_
+ */
+export function pipeToOrFail<OutElem, OutDone, Env1, OutErr1, OutElem1, OutDone1>(
+  right: Channel<Env1, unknown, OutElem, OutDone, OutErr1, OutElem1, OutDone1>
+): <Env, InErr, InElem, InDone, OutErr>(
+  left: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
+) => Channel<Env & Env1, InErr, InElem, InDone, OutErr | OutErr1, OutElem1, OutDone1> {
+  return (left) => pipeToOrFail_(left, right)
 }
 
 /**
@@ -435,7 +471,7 @@ export function concatMap<OutElem, OutElem2, OutDone, Env2, InErr2, InElem2, InD
 /**
  * Fold the channel exposing success and full error cause
  */
-export function matchCauseIO_<
+export function matchCauseChannel_<
   Env,
   Env1,
   Env2,
@@ -499,9 +535,9 @@ export function matchCauseIO_<
 /**
  * Fold the channel exposing success and full error cause
  *
- * @dataFirst matchCauseIO_
+ * @dataFirst matchCauseChannel_
  */
-export function matchCauseIO<
+export function matchCauseChannel<
   Env1,
   Env2,
   InErr1,
@@ -532,7 +568,7 @@ export function matchCauseIO<
   OutElem | OutElem1 | OutElem2,
   OutDone2 | OutDone3
 > {
-  return (self) => matchCauseIO_(self, onErr, onSucc)
+  return (self) => matchCauseChannel_(self, onErr, onSucc)
 }
 
 /**
@@ -1142,7 +1178,7 @@ export function ensuring<Env1, Z>(finalizer: URIO<Env1, Z>) {
   ) => ensuring_(self, finalizer)
 }
 
-export function matchIO_<
+export function matchChannel_<
   Env,
   Env1,
   Env2,
@@ -1177,13 +1213,13 @@ export function matchIO_<
   OutElem | OutElem2 | OutElem1,
   OutDone2 | OutDone1
 > {
-  return matchCauseIO_(self, flow(Ca.failureOrCause, E.match(onError, failCause)), onSuccess)
+  return matchCauseChannel_(self, flow(Ca.failureOrCause, E.match(onError, failCause)), onSuccess)
 }
 
 /**
- * @dataFirst matchIO_
+ * @dataFirst matchChannel_
  */
-export function matchIO<
+export function matchChannel<
   Env1,
   Env2,
   InErr1,
@@ -1214,7 +1250,7 @@ export function matchIO<
   OutElem1 | OutElem2 | OutElem,
   OutDone1 | OutDone2
 > {
-  return (self) => matchIO_(self, onFailure, onSuccess)
+  return (self) => matchChannel_(self, onFailure, onSuccess)
 }
 
 /**
@@ -1698,6 +1734,8 @@ export function mergeMap<OutElem, Env1, InErr1, InElem1, InDone1, OutErr1, OutEl
 export function mergeWith_<
   Env,
   Env1,
+  Env2,
+  Env3,
   InErr,
   InErr1,
   InElem,
@@ -1717,10 +1755,10 @@ export function mergeWith_<
 >(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
   that: Channel<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>,
-  leftDone: (ex: Ex.Exit<OutErr, OutDone>) => MD.MergeDecision<Env1, OutErr1, OutDone1, OutErr2, OutDone2>,
-  rightDone: (ex: Ex.Exit<OutErr1, OutDone1>) => MD.MergeDecision<Env1, OutErr, OutDone, OutErr3, OutDone3>
+  leftDone: (ex: Ex.Exit<OutErr, OutDone>) => MD.MergeDecision<Env2, OutErr1, OutDone1, OutErr2, OutDone2>,
+  rightDone: (ex: Ex.Exit<OutErr1, OutDone1>) => MD.MergeDecision<Env3, OutErr, OutDone, OutErr3, OutDone3>
 ): Channel<
-  Env1 & Env,
+  Env & Env1 & Env2 & Env3,
   InErr & InErr1,
   InElem & InElem1,
   InDone & InDone1,
@@ -1735,7 +1773,7 @@ export function mergeWith_<
       const pullL       = yield* _(toPull(pipeTo_(queueReader, self)))
       const pullR       = yield* _(toPull(pipeTo_(queueReader, that)))
       type MergeState = MS.MergeState<
-        Env & Env1,
+        Env & Env1 & Env2 & Env3,
         OutErr,
         OutErr1,
         OutErr2 | OutErr3,
@@ -1748,26 +1786,26 @@ export function mergeWith_<
         <Err, Done, Err2, Done2>(
           exit: Ex.Exit<Err, E.Either<Done, OutElem | OutElem1>>,
           fiber: F.Fiber<Err2, E.Either<Done2, OutElem | OutElem1>>,
-          pull: IO<Env & Env1, Err, E.Either<Done, OutElem | OutElem1>>
+          pull: IO<Env & Env1 & Env2 & Env3, Err, E.Either<Done, OutElem | OutElem1>>
         ) =>
         (
           done: (
             ex: Ex.Exit<Err, Done>
-          ) => MD.MergeDecision<Env & Env1, Err2, Done2, OutErr2 | OutErr3, OutDone2 | OutDone3>,
+          ) => MD.MergeDecision<Env & Env1 & Env2 & Env3, Err2, Done2, OutErr2 | OutErr3, OutDone2 | OutDone3>,
           both: (
             f1: F.Fiber<Err, E.Either<Done, OutElem | OutElem1>>,
             f2: F.Fiber<Err2, E.Either<Done2, OutElem | OutElem1>>
           ) => MergeState,
           single: (
-            f: (ex: Ex.Exit<Err2, Done2>) => IO<Env & Env1, OutErr2 | OutErr3, OutDone2 | OutDone3>
+            f: (ex: Ex.Exit<Err2, Done2>) => IO<Env & Env1 & Env2 & Env3, OutErr2 | OutErr3, OutDone2 | OutDone3>
           ) => MergeState
         ): IO<
-          Env & Env1,
+          Env & Env1 & Env2 & Env3,
           never,
-          Channel<Env & Env1, unknown, unknown, unknown, OutErr2 | OutErr3, OutElem | OutElem1, OutDone2 | OutDone3>
+          Channel<Env & Env1 & Env2 & Env3, unknown, unknown, unknown, OutErr2 | OutErr3, OutElem | OutElem1, OutDone2 | OutDone3>
         > => {
           const onDecision = (
-            decision: MD.MergeDecision<Env & Env1, Err2, Done2, OutErr2 | OutErr3, OutDone2 | OutDone3>
+            decision: MD.MergeDecision<Env & Env1 & Env2 & Env3, Err2, Done2, OutErr2 | OutErr3, OutDone2 | OutDone3>
           ) => {
             MD.concrete(decision)
             switch (decision._tag) {
@@ -1804,11 +1842,11 @@ export function mergeWith_<
 
       const go = (
         state: MergeState
-      ): Channel<Env & Env1, unknown, unknown, unknown, OutErr2 | OutErr3, OutElem | OutElem1, OutDone2 | OutDone3> => {
+      ): Channel<Env & Env1 & Env2 & Env3, unknown, unknown, unknown, OutErr2 | OutErr3, OutElem | OutElem1, OutDone2 | OutDone3> => {
         switch (state._tag) {
           case MS.MergeStateTag.BothRunning: {
-            const lj: IO<Env1, OutErr, E.Either<OutDone, OutElem | OutElem1>>   = F.join(state.left)
-            const rj: IO<Env1, OutErr1, E.Either<OutDone1, OutElem | OutElem1>> = F.join(state.right)
+            const lj: IO<Env2, OutErr, E.Either<OutDone, OutElem | OutElem1>>   = F.join(state.left)
+            const rj: IO<Env3, OutErr1, E.Either<OutDone1, OutElem | OutElem1>> = F.join(state.right)
 
             return unwrap(
               I.raceWith_(
@@ -1883,6 +1921,8 @@ export function mergeWith_<
  */
 export function mergeWith<
   Env1,
+  Env2,
+  Env3,
   InErr1,
   InElem1,
   InDone1,
@@ -1897,12 +1937,12 @@ export function mergeWith<
   OutDone3
 >(
   that: Channel<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>,
-  leftDone: (ex: Ex.Exit<OutErr, OutDone>) => MD.MergeDecision<Env1, OutErr1, OutDone1, OutErr2, OutDone2>,
-  rightDone: (ex: Ex.Exit<OutErr1, OutDone1>) => MD.MergeDecision<Env1, OutErr, OutDone, OutErr3, OutDone3>
+  leftDone: (ex: Ex.Exit<OutErr, OutDone>) => MD.MergeDecision<Env2, OutErr1, OutDone1, OutErr2, OutDone2>,
+  rightDone: (ex: Ex.Exit<OutErr1, OutDone1>) => MD.MergeDecision<Env3, OutErr, OutDone, OutErr3, OutDone3>
 ): <Env, InErr, InElem, InDone, OutElem>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
 ) => Channel<
-  Env1 & Env,
+  Env & Env1 & Env2 & Env3,
   InErr & InErr1,
   InElem & InElem1,
   InDone & InDone1,
