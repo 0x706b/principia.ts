@@ -125,7 +125,7 @@ interface CreateWriteSinkOptions {
 export function createWriteSink<InErr>(
   path: fs.PathLike,
   options?: CreateWriteSinkOptions
-): Sink.Sink<unknown, InErr, Byte, InErr | ErrnoException, never, void> {
+): Sink.Sink<unknown, InErr | ErrnoException, Byte, never, void> {
   return new Sink.Sink(
     Ch.unwrapManaged(
       Ma.gen(function* (_) {

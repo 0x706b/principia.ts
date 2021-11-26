@@ -77,7 +77,7 @@ function stdoutLoop<E>(): Ch.Channel<unknown, E, C.Chunk<Buffer>, unknown, Stdou
   )
 }
 
-export function stdout<E>(): Sink.Sink<unknown, E, Buffer, StdoutError | E, never, void> {
+export function stdout<E>(): Sink.Sink<unknown, E | StdoutError, Buffer, never, void> {
   return new Sink.Sink(stdoutLoop<E>())
 }
 

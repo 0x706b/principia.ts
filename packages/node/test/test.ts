@@ -1,6 +1,6 @@
 import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
-import * as S from '@principia/base/IO/experimental/Stream'
+import * as S from '@principia/base/Stream'
 
 import * as fs from '../src/fs'
 import * as zlib from '../src/zlib'

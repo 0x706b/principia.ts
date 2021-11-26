@@ -64,7 +64,7 @@ export class WritableError {
  */
 export function sinkFromWritable<InErr>(
   w: () => stream.Writable
-): Sink.Sink<unknown, InErr, Byte, WritableError | InErr, never, void> {
+): Sink.Sink<unknown, InErr | WritableError, Byte, never, void> {
   return new Sink.Sink(
     Ch.unwrapManaged(
       pipe(
