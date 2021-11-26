@@ -5,9 +5,11 @@ import * as E from '@principia/base/Either'
 import { IllegalArgumentError, isIllegalArgumentError, isIllegalStateError } from '@principia/base/Error'
 import { RuntimeException } from '@principia/base/Exception'
 import * as Ex from '@principia/base/Exit'
-import { flow, identity, pipe } from '@principia/base/function'
+import { fiberId } from '@principia/base/Fiber'
+import { decrement, flow, identity, increment, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as M from '@principia/base/Maybe'
+import * as Q from '@principia/base/Queue'
 import * as Ref from '@principia/base/Ref'
 import {
   all,
@@ -502,6 +504,157 @@ class IOSpec extends DefaultRunnableSpec {
             pipe(partialBadCase, assert(isLeft(isLeft(equalTo('Partial failed!'))))),
             pipe(badCase, assert(isLeft(isLeft(equalTo('Predicate failed!')))))
           )
+        })
+      )
+    ),
+    suite(
+      'fromExit',
+      testIO('lifts exit into IO', () => {
+        const id    = fiberId(0, 123)
+        const error = ExampleError
+        return I.gen(function* (_) {
+          const completed   = yield* _(I.fromExit(Ex.succeed(1)))
+          const interrupted = yield* _(pipe(I.fromExit(Ex.interrupt(id)), I.result))
+          const terminated  = yield* _(pipe(I.fromExit(Ex.halt(error)), I.result))
+          const failed      = yield* _(pipe(I.fromExit(Ex.fail(error)), I.result))
+          return all(
+            pipe(completed, assert(equalTo(1))),
+            pipe(interrupted, assert(isInterrupted)),
+            pipe(terminated, assert(halts(equalTo(error)))),
+            pipe(failed, assert(fails(equalTo(error))))
+          )
+        })
+      })
+    ),
+    suite(
+      'repeatUntil',
+      testIO('repeats until condition is true', () =>
+        I.gen(function* (_) {
+          const inp = yield* _(Ref.make(10))
+          const out = yield* _(Ref.make(0))
+          yield* _(
+            pipe(
+              inp,
+              Ref.updateAndGet(decrement),
+              I.crossFirst(pipe(out, Ref.update(increment))),
+              I.repeatUntil((n) => n === 0)
+            )
+          )
+          const result = yield* _(out.get)
+          return pipe(result, assert(equalTo(10)))
+        })
+      ),
+      testIO('always evaluates effect at least once', () =>
+        I.gen(function* (_) {
+          const ref = yield* _(Ref.make(0))
+          yield* _(
+            pipe(
+              ref,
+              Ref.update(increment),
+              I.repeatUntil(() => true)
+            )
+          )
+          const result = yield* _(ref.get)
+          return pipe(result, assert(equalTo(1)))
+        })
+      )
+    ),
+    suite(
+      'repeatUntilIO',
+      testIO('repeats until effectful condition is true', () =>
+        I.gen(function* (_) {
+          const inp = yield* _(Ref.make(10))
+          const out = yield* _(Ref.make(0))
+          yield* _(
+            pipe(
+              inp,
+              Ref.updateAndGet(decrement),
+              I.crossFirst(pipe(out, Ref.update(increment))),
+              I.repeatUntilIO((v) => I.succeed(v === 0))
+            )
+          )
+          const result = yield* _(out.get)
+          return pipe(result, assert(equalTo(10)))
+        })
+      ),
+      testIO('always evaluates effect at least once', () =>
+        I.gen(function* (_) {
+          const ref = yield* _(Ref.make(0))
+          yield* _(
+            pipe(
+              ref,
+              Ref.update(increment),
+              I.repeatUntilIO(() => I.succeed(true))
+            )
+          )
+          const result = yield* _(Ref.get(ref))
+          return pipe(result, assert(equalTo(1)))
+        })
+      )
+    ),
+    suite(
+      'repeatWhile',
+      testIO('repeats while condition is true', () =>
+        I.gen(function* (_) {
+          const inp = yield* _(Ref.make(10))
+          const out = yield* _(Ref.make(0))
+          yield* _(
+            pipe(
+              inp,
+              Ref.updateAndGet(decrement),
+              I.crossFirst(pipe(out, Ref.update(increment))),
+              I.repeatWhile((n) => n >= 0)
+            )
+          )
+          const result = yield* _(out.get)
+          return pipe(result, assert(equalTo(11)))
+        })
+      ),
+      testIO('always evaluates effect at least once', () =>
+        I.gen(function* (_) {
+          const ref = yield* _(Ref.make(0))
+          yield* _(
+            pipe(
+              ref,
+              Ref.update(increment),
+              I.repeatWhile(() => false)
+            )
+          )
+          const result = yield* _(ref.get)
+          return pipe(result, assert(equalTo(1)))
+        })
+      )
+    ),
+    suite(
+      'repeatWhileIO',
+      testIO('repeats while effectful condition is true', () =>
+        I.gen(function* (_) {
+          const inp = yield* _(Ref.make(10))
+          const out = yield* _(Ref.make(0))
+          yield* _(
+            pipe(
+              inp,
+              Ref.updateAndGet(decrement),
+              I.crossFirst(pipe(out, Ref.update(increment))),
+              I.repeatWhileIO((v) => I.succeed(v >= 0))
+            )
+          )
+          const result = yield* _(out.get)
+          return pipe(result, assert(equalTo(11)))
+        })
+      ),
+      testIO('always evaluates effect at least once', () =>
+        I.gen(function* (_) {
+          const ref = yield* _(Ref.make(0))
+          yield* _(
+            pipe(
+              ref,
+              Ref.update(increment),
+              I.repeatWhileIO(() => I.succeed(false))
+            )
+          )
+          const result = yield* _(Ref.get(ref))
+          return pipe(result, assert(equalTo(1)))
         })
       )
     ),
