@@ -131,6 +131,15 @@ export function fromManaged<R, E, A>(stream: Ma.Managed<R, E, A>): Stream<R, E, 
   return new Stream(Ch.managedOut(Ma.map_(stream, C.single)))
 }
 
+export function fromPull<R, E, A>(managedPull: Ma.Managed<R, never, I.IO<R, M.Maybe<E>, C.Chunk<A>>>): Stream<R, E, A> {
+  return unwrapManaged(
+    pipe(
+      managedPull,
+      Ma.map((pull) => repeatIOChunkOption(pull))
+    )
+  )
+}
+
 /**
  * Creates a single-valued pure stream
  */
@@ -3691,6 +3700,22 @@ export function mergeWith<A, R1, E1, A1, B, C>(
   return (sa) => mergeWith_(sa, sb, l, r, strategy)
 }
 
+export function mergeEither_<R, E, A, R1, E1, B>(
+  fa: Stream<R, E, A>,
+  fb: Stream<R1, E1, B>
+): Stream<R & R1, E | E1, E.Either<A, B>> {
+  return mergeWith_(fa, fb, E.left, E.right)
+}
+
+/**
+ * @dataFirst mergeEither_
+ */
+export function mergeEither<R1, E1, B>(
+  fb: Stream<R1, E1, B>
+): <R, E, A>(fa: Stream<R, E, A>) => Stream<R & R1, E | E1, E.Either<A, B>> {
+  return (fa) => mergeEither_(fa, fb)
+}
+
 /**
  * Runs the specified effect if this stream fails, providing the error to the effect if it exists.
  *
@@ -5104,4 +5129,129 @@ export function zipFirst_<R, R1, E, E1, A, A1>(
  */
 export function zipFirst<R, R1, E, E1, A, A1>(that: Stream<R1, E1, A1>) {
   return (stream: Stream<R, E, A>) => zipFirst_(stream, that)
+}
+
+/**
+ * Zips the two streams so that when a value is emitted by either of the two
+ * streams, it is combined with the latest value from the other stream to
+ * produce a result.
+ *
+ * Note: tracking the latest value is done on a per-chunk basis. That means
+ * that emitted elements that are not the last value in chunks will never be
+ * used for zipping.
+ */
+export function zipWithLatest_<R, E, A, R1, E1, B, C>(
+  fa: Stream<R, E, A>,
+  fb: Stream<R1, E1, B>,
+  f: (a: A, b: B) => C
+): Stream<R & R1, E | E1, C> {
+  function pullNonEmpty<R, E, A>(pull: I.IO<R, M.Maybe<E>, C.Chunk<A>>): I.IO<R, M.Maybe<E>, C.Chunk<A>> {
+    return pipe(
+      pull,
+      I.chain((chunk) => (C.isNonEmpty(chunk) ? pullNonEmpty(pull) : I.succeed(chunk)))
+    )
+  }
+  return fromPull(
+    Ma.gen(function* (_) {
+      const left  = yield* _(pipe(fa, toPull, Ma.map(pullNonEmpty)))
+      const right = yield* _(pipe(fb, toPull, Ma.map(pullNonEmpty)))
+      return yield* _(
+        pipe(
+          left,
+          I.raceWith(
+            right,
+            (leftDone, rightFiber): I.IO<unknown, M.Maybe<E | E1>, readonly [C.Chunk<A>, C.Chunk<B>, boolean]> =>
+              pipe(
+                leftDone,
+                I.fromExit,
+                I.crossWith(F.join(rightFiber), (l, r) => tuple(l, r, true))
+              ),
+            (rightDone, leftFiber) =>
+              pipe(
+                rightDone,
+                I.fromExit,
+                I.crossWith(F.join(leftFiber), (r, l) => tuple(l, r, false))
+              )
+          ),
+          fromIOOption,
+          chain(([l, r, leftFirst]) =>
+            pipe(
+              fromIO(Ref.make(tuple(C.unsafeGet_(l, l.length - 1), C.unsafeGet_(r, r.length - 1)))),
+              chain((latest) =>
+                pipe(
+                  fromChunk(
+                    leftFirst
+                      ? pipe(
+                          r,
+                          C.map((b) => f(C.unsafeGet_(l, l.length - 1), b))
+                        )
+                      : pipe(
+                          l,
+                          C.map((a) => f(a, C.unsafeGet_(r, r.length - 1)))
+                        )
+                  ),
+                  concat(
+                    pipe(
+                      repeatIOOption(left),
+                      mergeEither(repeatIOOption(right)),
+                      mapIO(
+                        E.match(
+                          (leftChunk) =>
+                            pipe(
+                              latest,
+                              Ref.modify(([, rightLatest]) =>
+                                tuple(
+                                  pipe(
+                                    leftChunk,
+                                    C.map((a) => f(a, rightLatest))
+                                  ),
+                                  tuple(C.unsafeGet_(leftChunk, leftChunk.length - 1), rightLatest)
+                                )
+                              )
+                            ),
+                          (rightChunk) =>
+                            pipe(
+                              latest,
+                              Ref.modify(([leftLatest, _]) =>
+                                tuple(
+                                  pipe(
+                                    rightChunk,
+                                    C.map((b) => f(leftLatest, b))
+                                  ),
+                                  tuple(leftLatest, C.unsafeGet_(rightChunk, rightChunk.length - 1))
+                                )
+                              )
+                            )
+                        )
+                      ),
+                      chain(fromChunk)
+                    )
+                  )
+                )
+              )
+            )
+          ),
+          toPull
+        )
+      )
+    })
+  )
+}
+
+/**
+ * Zips the two streams so that when a value is emitted by either of the two
+ * streams, it is combined with the latest value from the other stream to
+ * produce a result.
+ *
+ * Note: tracking the latest value is done on a per-chunk basis. That means
+ * that emitted elements that are not the last value in chunks will never be
+ * used for zipping.
+ *
+ * @dataFirst zipWithLatest_
+ */
+export function zipWithLatest<A, R1, E1, B, C>(
+  fb: Stream<R1, E1, B>,
+  f: (a: A, b: B) => C
+): <R, E>(fa: Stream<R, E, A>) => Stream<R & R1, E | E1, C> {
+  return (fa) => zipWithLatest_(fa, fb, f)
 }
