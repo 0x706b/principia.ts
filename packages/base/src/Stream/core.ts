@@ -657,10 +657,28 @@ export function crossSecond<R1, E1, A1>(that: Stream<R1, E1, A1>) {
 /**
  * Composes this stream with the specified stream to create a cartesian product of elements
  * with a specified function.
- * The `that` stream would be run multiple times, for every element in the `this` stream.
+ * The `fb` stream would be run multiple times, for every element in the `fa` stream.
  */
-export function crossWith<R, R1, E, E1, A, A1>(stream: Stream<R, E, A>, that: Stream<R1, E1, A1>) {
-  return <C>(f: (a: A, a1: A1) => C): Stream<R & R1, E | E1, C> => chain_(stream, (l) => map_(that, (r) => f(l, r)))
+export function crossWith_<R, E, A, R1, E1, B, C>(
+  fa: Stream<R, E, A>,
+  fb: Stream<R1, E1, B>,
+  f: (a: A, b: B) => C
+): Stream<R & R1, E | E1, C> {
+  return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
+}
+
+/**
+ * Composes this stream with the specified stream to create a cartesian product of elements
+ * with a specified function.
+ * The `fb` stream would be run multiple times, for every element in the `fa` stream.
+ *
+ * @dataFirst crossWith_
+ */
+export function crossWith<A, R1, E1, B, C>(
+  fb: Stream<R1, E1, B>,
+  f: (a: A, b: B) => C
+): <R, E>(fa: Stream<R, E, A>) => Stream<R & R1, E | E1, C> {
+  return (fa) => crossWith_(fa, fb, f)
 }
 
 /*
@@ -1226,6 +1244,81 @@ export function combineChunks<R, E, A, R1, E1, A1, S, R2, A2>(
   ) => I.IO<R2, never, Ex.Exit<M.Maybe<E | E1>, readonly [C.Chunk<A2>, S]>>
 ): (stream: Stream<R, E, A>) => Stream<R1 & R & R2, E | E1, A2> {
   return (stream) => combineChunks_(stream, that, s, f)
+}
+
+function defaultIfEmptyWriter<R, E, A, R1, E1, B>(
+  fb: Stream<R1, E1, B>
+): Ch.Channel<R & R1, E, C.Chunk<A>, unknown, E | E1, C.Chunk<A | B>, unknown> {
+  return Ch.readWith(
+    (i: C.Chunk<A>) =>
+      C.isEmpty(i) ? defaultIfEmptyWriter(fb) : pipe(Ch.write(i), Ch.crossSecond(Ch.id<E, C.Chunk<A>, unknown>())),
+    (e: E) => Ch.fail(e),
+    () => fb.channel
+  )
+}
+
+/**
+ * Switches to the provided stream in case this one is empty.
+ */
+export function defaultIfEmpty_<R, E, A, R1, E1, B>(
+  fa: Stream<R, E, A>,
+  fb: Stream<R1, E1, B>
+): Stream<R & R1, E | E1, A | B> {
+  return new Stream(pipe(fa.channel, Ch.pipeTo(defaultIfEmptyWriter(fb))))
+}
+
+/**
+ * Switches to the provided stream in case this one is empty.
+ */
+export function defaultIfEmpty<R1, E1, B>(
+  fb: Stream<R1, E1, B>
+): <R, E, A>(fa: Stream<R, E, A>) => Stream<R & R1, E | E1, A | B> {
+  return (fa) => defaultIfEmpty_(fa, fb)
+}
+
+/**
+ * Converts this stream to a stream that executes its effects but emits no
+ * elements. Useful for sequencing effects using streams.
+ */
+export function drain<R, E, A>(fa: Stream<R, E, A>): Stream<R, E, void> {
+  return new Stream(Ch.drain(fa.channel))
+}
+
+/**
+ * Drains the provided stream in the background for as long as this stream is
+ * running. If `fa` ends before `fb`, `fb` will be interrupted.
+ * If `fb` fails, `fa` will fail with that error.
+ */
+export function drainFork_<R, E, A, R1, E1, B>(fa: Stream<R, E, A>, fb: Stream<R1, E1, B>): Stream<R & R1, E | E1, A> {
+  return pipe(
+    fromIO(Pr.make<E1, unknown>()),
+    chain((bgDied) =>
+      pipe(
+        fromManaged(
+          pipe(
+            fb,
+            runForeachManaged(() => I.unit()),
+            Ma.catchAllCause((cause) => pipe(bgDied, Pr.failCause(cause), I.toManaged())),
+            Ma.fork
+          )
+        ),
+        crossSecond(pipe(fa, interruptWhenFuture(bgDied)))
+      )
+    )
+  )
+}
+
+/**
+ * Drains the provided stream in the background for as long as this stream is
+ * running. If `fa` ends before `fb`, `fb` will be interrupted.
+ * If `fb` fails, `fa` will fail with that error.
+ *
+ * @dataFirst drainFork_
+ */
+export function drainFork<R1, E1, B>(
+  fb: Stream<R1, E1, B>
+): <R, E, A>(fa: Stream<R, E, A>) => Stream<R & R1, E | E1, A> {
+  return (fa) => drainFork_(fa, fb)
 }
 
 /**
@@ -1911,7 +2004,7 @@ export function buffer(capacity: number): <R, E, A>(stream: Stream<R, E, A>) => 
 
 export function bufferDropping_<R, E, A>(stream: Stream<R, E, A>, capacity: number): Stream<R, E, A> {
   const queue = Ma.bracket_(Q.makeDropping<readonly [Take.Take<E, A>, Pr.Future<never, void>]>(capacity), Q.shutdown)
-  return new Stream(bufferSignal(queue, chunkN_(stream, 1).channel))
+  return new Stream(bufferSignal(queue, rechunk_(stream, 1).channel))
 }
 
 export function bufferDropping(capacity: number): <R, E, A>(stream: Stream<R, E, A>) => Stream<R, E, A> {
@@ -1920,7 +2013,7 @@ export function bufferDropping(capacity: number): <R, E, A>(stream: Stream<R, E,
 
 export function bufferSliding_<R, E, A>(stream: Stream<R, E, A>, capacity: number): Stream<R, E, A> {
   const queue = Ma.bracket_(Q.makeSliding<readonly [Take.Take<E, A>, Pr.Future<never, void>]>(capacity), Q.shutdown)
-  return new Stream(bufferSignal(queue, chunkN_(stream, 1).channel))
+  return new Stream(bufferSignal(queue, rechunk_(stream, 1).channel))
 }
 
 export function bufferSliding(capacity: number): <R, E, A>(stream: Stream<R, E, A>) => Stream<R, E, A> {
@@ -2214,7 +2307,7 @@ export function changes<A>(E: P.Eq<A>): <R, E>(stream: Stream<R, E, A>) => Strea
  * `n` elements each.
  * The last chunk might contain less than `n` elements
  */
-export function chunkN_<R, E, A>(stream: Stream<R, E, A>, n: number): Stream<R, E, A> {
+export function rechunk_<R, E, A>(stream: Stream<R, E, A>, n: number): Stream<R, E, A> {
   return unwrap(
     I.succeedLazy(() => {
       const rechunker = new Rechunker<A>(n)
@@ -2258,8 +2351,8 @@ export function chunkN_<R, E, A>(stream: Stream<R, E, A>, n: number): Stream<R, 
  * `n` elements each.
  * The last chunk might contain less than `n` elements
  */
-export function chunkN(n: number) {
-  return <R, E, A>(stream: Stream<R, E, A>) => chunkN_(stream, n)
+export function rechunk(n: number) {
+  return <R, E, A>(stream: Stream<R, E, A>) => rechunk_(stream, n)
 }
 
 /**
@@ -3016,6 +3109,112 @@ export function endWhen<R1, E1>(
   return (stream) => endWhen_(stream, io)
 }
 
+function haltWhenWriter<R, E, A, R1, E1>(
+  fiber: F.Fiber<E1, any>
+): Ch.Channel<R & R1, E | E1, C.Chunk<A>, unknown, E | E1, C.Chunk<A>, void> {
+  return Ch.unwrap(
+    pipe(
+      fiber.poll,
+      I.map(
+        M.match(
+          () =>
+            Ch.readWith(
+              (i: C.Chunk<A>) => pipe(Ch.write(i), Ch.crossSecond(haltWhenWriter<R, E, A, R1, E1>(fiber))),
+              (err: E | E1) => Ch.fail(err),
+              () => Ch.unit()
+            ),
+          Ex.match(
+            (cause) => Ch.failCause(cause),
+            () => Ch.unit()
+          )
+        )
+      )
+    )
+  )
+}
+
+/**
+ * Halts the evaluation of this stream when the provided IO completes. The
+ * given IO will be forked as part of the returned stream, and its success
+ * will be discarded.
+ *
+ * An element in the process of being pulled will not be interrupted when the
+ * IO completes. See `interruptWhen` for this behavior.
+ *
+ * If the IO completes with a failure, the stream will emit that failure.
+ */
+export function haltWhen_<R, E, A, R1, E1>(fa: Stream<R, E, A>, io: I.IO<R1, E1, any>): Stream<R & R1, E | E1, A> {
+  return new Stream(
+    Ch.unwrapManaged(
+      pipe(
+        io,
+        I.forkManaged,
+        Ma.map((fiber) => pipe(fa.channel, Ch.pipeTo(haltWhenWriter(fiber))))
+      )
+    )
+  )
+}
+
+/**
+ * Halts the evaluation of this stream when the provided IO completes. The
+ * given IO will be forked as part of the returned stream, and its success
+ * will be discarded.
+ *
+ * An element in the process of being pulled will not be interrupted when the
+ * IO completes. See `interruptWhen` for this behavior.
+ *
+ * If the IO completes with a failure, the stream will emit that failure.
+ *
+ * @dataFirst haltWhen_
+ */
+export function haltWhen<R1, E1>(io: I.IO<R1, E1, any>): <R, E, A>(fa: Stream<R, E, A>) => Stream<R & R1, E | E1, A> {
+  return (fa) => haltWhen_(fa, io)
+}
+
+function haltWhenFutureWriter<R, E, A, E1>(
+  future: Pr.Future<E1, unknown>
+): Ch.Channel<R, E | E1, C.Chunk<A>, unknown, E | E1, C.Chunk<A>, void> {
+  return Ch.unwrap(
+    pipe(
+      Pr.poll(future),
+      I.map(
+        M.match(
+          () =>
+            Ch.readWith(
+              (i: C.Chunk<A>) => pipe(Ch.write(i), Ch.crossSecond(haltWhenFutureWriter<R, E, A, E1>(future))),
+              (err: E | E1) => Ch.fail(err),
+              () => Ch.unit()
+            ),
+          flow(
+            I.match(Ch.fail, () => Ch.unit()),
+            Ch.unwrap
+          )
+        )
+      )
+    )
+  )
+}
+
+/**
+ * Halts the evaluation of this stream when the provided promise resolves.
+ *
+ * If the promise completes with a failure, the stream will emit that failure.
+ */
+export function haltWhenFuture_<R, E, A, E1>(fa: Stream<R, E, A>, future: Pr.Future<E1, any>): Stream<R, E | E1, A> {
+  return new Stream(pipe(fa.channel, Ch.pipeTo(haltWhenFutureWriter(future))))
+}
+
+/**
+ * Halts the evaluation of this stream when the provided promise resolves.
+ *
+ * If the promise completes with a failure, the stream will emit that failure.
+ *
+ * @dataFirst haltWhenFuture_
+ */
+export function haltWhenFuture<E1>(future: Pr.Future<E1, any>): <R, E, A>(fa: Stream<R, E, A>) => Stream<R, E | E1, A> {
+  return (fa) => haltWhenFuture_(fa, future)
+}
+
 export function interleave_<R, E, A, R1, E1, B>(
   sa: Stream<R, E, A>,
   sb: Stream<R1, E1, B>
@@ -3181,6 +3380,19 @@ export function interruptWhen<R1, E1>(
   io: I.IO<R1, E1, any>
 ): <R, E, A>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, A> {
   return (stream) => interruptWhen_(stream, io)
+}
+
+export function interruptWhenFuture_<R, E, A, E1>(
+  fa: Stream<R, E, A>,
+  future: Pr.Future<E1, unknown>
+): Stream<R, E | E1, A> {
+  return new Stream(Ch.interruptWhenP_(fa.channel, future))
+}
+
+export function interruptWhenFuture<E1>(
+  future: Pr.Future<E1, unknown>
+): <R, E, A>(fa: Stream<R, E, A>) => Stream<R, E | E1, A> {
+  return (fa) => interruptWhenFuture_(fa, future)
 }
 
 function mapAccumAccumulator<S, E = never, A = never, B = never>(
@@ -3658,7 +3870,7 @@ export function peel_<R, E, A extends A1, R1, E1, A1, Z>(
             )
           )
         }
-      ),
+      )
     )
     const producer: Ch.Channel<unknown, unknown, unknown, unknown, E | E1, C.Chunk<A1>, void> = Ch.unwrap(
       I.map_(HO.take(handoff), (signal) => {

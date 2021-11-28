@@ -30,6 +30,6 @@ export function andThen<A, EC, R1, E1, B extends A>(
   return (aspectA) => andThen_(aspectA, aspectB)
 }
 
-export function chunkN(n: number): StreamAspect<unknown, never, unknown> {
-  return new StreamAspect((s) => S.chunkN_(s, n))
+export function rechunk(n: number): StreamAspect<unknown, never, unknown> {
+  return new StreamAspect((s) => S.rechunk_(s, n))
 }
