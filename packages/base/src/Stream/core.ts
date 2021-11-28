@@ -4361,7 +4361,7 @@ export function runIntoManaged<R1, E1, A>(
 
 /**
  * Statefully maps over the elements of this stream to produce all intermediate results
- * of type `S` given an initial S.
+ * of type `B` given an initial B.
  */
 export function scan_<R, E, A, B>(sa: Stream<R, E, A>, b: B, f: (b: B, a: A) => B): Stream<R, E, B> {
   return scanIO_(sa, b, (b, a) => I.succeed(f(b, a)))
@@ -4369,7 +4369,7 @@ export function scan_<R, E, A, B>(sa: Stream<R, E, A>, b: B, f: (b: B, a: A) => 
 
 /**
  * Statefully maps over the elements of this stream to produce all intermediate results
- * of type `S` given an initial S.
+ * of type `B` given an initial B.
  */
 export function scan<A, B>(b: B, f: (b: B, a: A) => B): <R, E>(sa: Stream<R, E, A>) => Stream<R, E, B> {
   return (sa) => scan_(sa, b, f)
@@ -4377,7 +4377,7 @@ export function scan<A, B>(b: B, f: (b: B, a: A) => B): <R, E>(sa: Stream<R, E, 
 
 /**
  * Statefully and effectfully maps over the elements of this stream to produce all
- * intermediate results of type `S` given an initial S.
+ * intermediate results of type `B` given an initial B.
  */
 export function scanIO_<R, E, A, R1, E1, B>(
   sa: Stream<R, E, A>,
@@ -4392,13 +4392,66 @@ export function scanIO_<R, E, A, R1, E1, B>(
 
 /**
  * Statefully and effectfully maps over the elements of this stream to produce all
- * intermediate results of type `S` given an initial S.
+ * intermediate results of type `B` given an initial B.
  */
 export function scanIO<A, R1, E1, B>(
   b: B,
   f: (b: B, a: A) => I.IO<R1, E1, B>
 ): <R, E>(sa: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
   return (sa) => scanIO_(sa, b, f)
+}
+
+/**
+ * Statefully and effectfully maps over the elements of this stream to produce
+ * all intermediate results.
+ */
+export function scanReduceIO_<R, E, A extends B, R1, E1, B>(
+  fa: Stream<R, E, A>,
+  f: (b: B, a: A) => I.IO<R1, E1, B>
+): Stream<R & R1, E | E1, B> {
+  return mapAccumIO_(fa, M.nothing<B>(), (s, a) =>
+    pipe(
+      s,
+      M.match(
+        () => I.succeed([a, M.just(a)]),
+        (b) =>
+          pipe(
+            f(b, a),
+            I.map((b1) => [b, M.just(b1)])
+          )
+      )
+    )
+  )
+}
+
+/**
+ * Statefully and effectfully maps over the elements of this stream to produce
+ * all intermediate results.
+ *
+ * @dataFirst scanReduceIO_
+ */
+export function scanReduceIO<A extends B, R1, E1, B>(
+  f: (b: B, a: A) => I.IO<R1, E1, B>
+): <R, E>(fa: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
+  return (fa) => scanReduceIO_(fa, f)
+}
+
+/**
+ * Statefully maps over the elements of this stream to produce all
+ * intermediate results.
+ */
+export function scanReduce_<R, E, A extends B, B>(fa: Stream<R, E, A>, f: (b: B, a: A) => B): Stream<R, E, B> {
+  return scanReduceIO_(fa, (b, a) => I.succeed(f(b, a)))
+}
+
+/**
+ * Statefully maps over the elements of this stream to produce all
+ * intermediate results.
+ *
+ * @dataFirst scanReduce_
+ */
+export function scanReduce<A extends B, B>(f: (b: B, a: A) => B): <R, E>(fa: Stream<R, E, A>) => Stream<R, E, B> {
+  return (fa) => scanReduce_(fa, f)
 }
 
 /**
