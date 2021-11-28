@@ -48,7 +48,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@principia/base": "^0.27.0"
+    "@principia/base": "^0.27.0",
+    "@principia/typelevel": "^0.0.1"
   },
   "publishConfig": {
     "access": "public",

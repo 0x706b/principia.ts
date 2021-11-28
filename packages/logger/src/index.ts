@@ -111,7 +111,7 @@ function _log(message: ChalkFn, level: LogLevel) {
   })
 }
 
-export const LiveLogger = L.create(Logger).fromEffect(
+export const LiveLogger = L.fromIO(Logger)(
   I.asksServices({ config: LoggerConfigTag, console: ConsoleTag, chalk: ChalkTag })(
     ({ config, console, chalk }): Logger => ({
       debug: (m) => _log(m, 'debug').giveServicesT(ConsoleTag, LoggerConfigTag, ChalkTag)(console, config, chalk),

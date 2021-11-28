@@ -46,10 +46,16 @@ export abstract class Layer<R, E, A> {
     return this
   }
 
+  /**
+   * Symbolic alias for `andThen`
+   */
   ['>=>']<E1, A1>(that: Layer<A, E1, A1>): Layer<R, E | E1, A1> {
     return andThen_(this, that)
   }
 
+  /**
+   * Symbolic alias for `compose`
+   */
   ['<=<']<R1, E1>(that: Layer<R1, E1, R>): Layer<R1, E | E1, A> {
     return that['>=>'](this)
   }
@@ -73,10 +79,6 @@ export abstract class Layer<R, E, A> {
     return this['+++'](identity<R1>())['>=>'](to)
   }
 
-  ['+>>']<R1, E1, A1>(to: Layer<A & R1, E1, A1>): Layer<R & R1, E | E1, A1> {
-    return andThen_(this['+++'](identity<R1>()), to)
-  }
-
   /**
    * Feeds the output services of this layer into the input of the specified
    * layer, resulting in a new layer with the inputs of this layer, and the
@@ -98,17 +100,14 @@ export abstract class Layer<R, E, A> {
     return and_(that, this)
   }
 
-  /**
-   * Symbolic alias for crossPar
-   */
-  ['<&>']<R1, E1, A1>(lb: Layer<R1, E1, A1>): Layer<R & R1, E | E1, readonly [A, A1]> {
-    return crossPar_(this, lb)
-  }
-
   use<R1, E1, A1>(io: I.IO<R1 & A, E1, A1>): I.IO<R & R1, E | E1, A1> {
     return Ma.use_(build(this['+++'](identity<R1>())), (a) => I.giveAll_(io, a))
   }
 }
+
+export type ULayer<A> = Layer<unknown, never, A>
+export type URLayer<R, A> = Layer<R, never, A>
+export type FLayer<E, A> = Layer<unknown, E, A>
 
 /**
  * @optimize remove
@@ -256,8 +255,6 @@ export class AllSeq<Ls extends Layer<any, any, any>[]> extends Layer<MergeR<Ls>,
   }
 }
 
-export type RIO<R, A> = Layer<R, never, A>
-
 function scope<R, E, A>(l: Layer<R, E, A>): Managed<unknown, never, (_: MemoMap) => Managed<R, E, A>> {
   concrete(l)
 
@@ -336,13 +333,6 @@ export function build<R, E, A>(layer: Layer<R, E, A>): Ma.Managed<R, E, A> {
 /**
  * Constructs a layer from the specified value.
  */
-export function succeed_<A>(a: A, tag: H.Tag<A>): Layer<unknown, never, H.Has<A>> {
-  return fromManaged(tag)(Ma.succeed(a))
-}
-
-/**
- * Constructs a layer from the specified value.
- */
 export function succeed<A>(tag: H.Tag<A>): (a: A) => Layer<unknown, never, H.Has<A>> {
   return (resource) => fromManaged(tag)(Ma.succeed(resource))
 }
@@ -371,40 +361,18 @@ export function prepare<T>(tag: H.Tag<T>) {
   })
 }
 
-export function create<T>(tag: H.Tag<T>) {
-  return {
-    fromEffect: fromIO(tag),
-    fromManaged: fromManaged(tag),
-    pure: succeed(tag),
-    prepare: prepare(tag)
-  }
-}
-
 /**
  * Constructs a layer from the specified effect.
- */
-export function fromIO_<R, E, T>(resource: I.IO<R, E, T>, tag: H.Tag<T>): Layer<R, E, H.Has<T>> {
-  return fromManaged_(Ma.fromIO(resource), tag)
-}
-
-/**
- * Constructs a layer from the specified effect.
- *
- * @dataFirst fromIO_
  */
 export function fromIO<T>(tag: H.Tag<T>): <R, E>(resource: I.IO<R, E, T>) => Layer<R, E, H.Has<T>> {
-  return (resource) => fromIO_(resource, tag)
-}
-
-export function fromManaged_<R, E, T>(resource: Managed<R, E, T>, has: H.Tag<T>): Layer<R, E, H.Has<T>> {
-  return new FromManaged(Ma.chain_(resource, (a) => environmentFor(has, a))).setKey(has.key)
+  return (resource) => fromManaged(tag)(Ma.fromIO(resource))
 }
 
 /**
  * Constructs a layer from a managed resource.
  */
 export function fromManaged<T>(tag: H.Tag<T>): <R, E>(resource: Managed<R, E, T>) => Layer<R, E, H.Has<T>> {
-  return (resource) => fromManaged_(resource, tag)
+  return (resource) => new FromManaged(Ma.chain_(resource, (a) => environmentFor(tag, a))).setKey(tag.key)
 }
 
 export function fromRawManaged<R, E, A>(resource: Managed<R, E, A>): Layer<R, E, A> {
@@ -427,25 +395,15 @@ export function fromRawFunctionManaged<R0, R, E, A>(f: (r0: R0) => Managed<R, E,
   return fromRawManaged(Ma.asksManaged(f))
 }
 
-export function fromFunctionManaged_<A, R, E, T>(
-  f: (a: A) => Managed<R, E, T>,
-  tag: H.Tag<T>
-): Layer<R & A, E, H.Has<T>> {
-  return fromManaged_(Ma.asksManaged(f), tag)
-}
-
 export function fromFunctionManaged<T>(
   tag: H.Tag<T>
 ): <A, R, E>(f: (a: A) => Managed<R, E, T>) => Layer<R & A, E, H.Has<T>> {
-  return (f) => fromFunctionManaged_(f, tag)
+  return (f) => fromManaged(tag)(Ma.asksManaged(f))
 }
 
-export function fromFunctionIO_<A, R, E, T>(f: (a: A) => I.IO<R, E, T>, tag: H.Tag<T>): Layer<R & A, E, H.Has<T>> {
-  return fromFunctionManaged_((a: A) => I.toManaged_(f(a)), tag)
-}
-
-export function fromFunctionIO<T>(tag: H.Tag<T>): <A, R, E>(f: (a: A) => I.IO<R, E, T>) => Layer<R & A, E, H.Has<T>> {
-  return (f) => fromFunctionIO_(f, tag)
+export function fromFunctionIO<T>(tag: H.Tag<T>) {
+  return <A, R, E>(f: (a: A) => I.IO<R, E, T>): Layer<R & A, E, H.Has<T>> =>
+    fromFunctionManaged(tag)((a: A) => I.toManaged_(f(a)))
 }
 
 export function fromConstructor<S>(
@@ -501,6 +459,18 @@ export function fromConstructorManaged<S>(
           (_) => _
         )
       )
+}
+
+export function bracket_<A>(
+  tag: H.Tag<A>
+): <R, E, R1>(acquire: I.IO<R, E, A>, release: (a: A) => I.URIO<R1, any>) => Layer<R & R1, E, H.Has<A>> {
+  return (acquire, release) => fromManaged(tag)(Ma.bracket_(acquire, release))
+}
+
+export function bracket<A>(
+  tag: H.Tag<A>
+): <R1>(release: (a: A) => I.URIO<R1, any>) => <R, E>(acquire: I.IO<R, E, A>) => Layer<R & R1, E, H.Has<A>> {
+  return (release) => (acquire) => bracket_(tag)(acquire, release)
 }
 
 export function bracketConstructor<S>(
@@ -786,12 +756,14 @@ export function andSeq<R1, E1, A1>(
   return (layer) => andSeq_(layer, that)
 }
 
-function environmentFor<T>(has: H.Tag<T>, a: T): Managed<unknown, never, H.Has<T>>
-function environmentFor<T>(has: H.Tag<T>, a: T): Managed<unknown, never, any> {
+function environmentFor<T>(has: H.Tag<T>, a: T): Managed<unknown, never, H.Has<T>> {
   return Ma.fromIO(
-    I.asks((r) => ({
-      [has.key]: mergeEnvironments(has, r, a as any)[has.key]
-    }))
+    I.asks(
+      (r) =>
+        ({
+          [has.key]: mergeEnvironments(has, r, a)[has.key]
+        } as H.Has<T>)
+    )
   )
 }
 
@@ -941,6 +913,10 @@ export function orElse_<R, E, A, R1, E1, A1>(
   return catchAll_(la, first<R1>()['>=>'](that))
 }
 
+/**
+ * Executes this layer and returns its output, if it succeeds, but otherwise
+ * executes the specified layer.
+ */
 export function orElse<R1, E1, A1>(
   that: Layer<R1, E1, A1>
 ): <R, E, A>(la: Layer<R, E, A>) => Layer<R & R1, E | E1, A | A1> {
