@@ -7,16 +7,20 @@ import { RuntimeException } from '@principia/base/Exception'
 import * as Ex from '@principia/base/Exit'
 import { fiberId } from '@principia/base/Fiber'
 import { decrement, flow, identity, increment, pipe } from '@principia/base/function'
+import * as Fu from '@principia/base/Future'
 import * as I from '@principia/base/IO'
 import * as M from '@principia/base/Maybe'
+import * as N from '@principia/base/number'
 import * as Q from '@principia/base/Queue'
 import * as Ref from '@principia/base/Ref'
+import * as S from '@principia/base/Set'
 import {
   all,
   allIO,
   anything,
   assert,
   assert_,
+  assertIO,
   assertIO_,
   check,
   checkM,
@@ -658,6 +662,89 @@ class IOSpec extends DefaultRunnableSpec {
         })
       )
     ),
+    suite(
+      'eventually',
+      testIO('succeeds eventually', () => {
+        const effect = (ref: Ref.URef<number>) =>
+          pipe(
+            ref,
+            Ref.get,
+            I.chain((n) => (n < 10 ? pipe(ref, Ref.update(increment), I.crossSecond(I.fail('Ouch'))) : I.succeed(n)))
+          )
+        const test = I.gen(function* (_) {
+          const ref = yield* _(Ref.make(0))
+          return yield* _(pipe(ref, effect, I.eventually))
+        })
+        return assertIO_(test, equalTo(10))
+      })
+    ),
+    suite(
+      'filter',
+      testIO('filters a collection using an effectual predicate', () => {
+        const as = [2, 4, 6, 3, 5, 6]
+        return I.gen(function* (_) {
+          const ref     = yield* _(Ref.make(Ch.empty<number>()))
+          const results = yield* _(
+            pipe(
+              as,
+              I.filter((a) => pipe(ref, Ref.update(Ch.append(a)), I.as(a % 2 === 0)))
+            )
+          )
+          const effects = yield* _(ref.get)
+          return all(
+            pipe(results, assert(equalTo(Ch.make(2, 4, 6, 6)))),
+            pipe(effects, assert(equalTo(Ch.make(2, 4, 6, 3, 5, 6))))
+          )
+        })
+      }),
+      testIO('filters a set using an effectual predicate', () => {
+        const as = new Set([2, 3, 4, 5, 6, 7])
+        return I.gen(function* (_) {
+          const ref     = yield* _(Ref.make(S.empty<number>()))
+          const results = yield* _(
+            pipe(
+              as,
+              I.filter((a) => pipe(ref, Ref.update(S.insert(N.Eq)(a)), I.as(a % 2 === 0)))
+            )
+          )
+          const effects = yield* _(pipe(ref, Ref.get, I.map(S.map(N.Eq)(increment))))
+          return all(
+            pipe(results, assert(equalTo(Ch.make(2, 4, 6)))),
+            pipe(effects, assert(deepStrictEqualTo(new Set([3, 4, 5, 6, 7, 8]))))
+          )
+        })
+      })
+    ),
+    suite(
+      'foreach',
+      testIO('returns the list of results', () =>
+        pipe(
+          [1, 2, 3, 4, 5, 6],
+          I.foreach((a) => I.succeed(a + 1)),
+          assertIO(equalTo(Ch.make(2, 3, 4, 5, 6, 7)))
+        )
+      ),
+      testIO('both evaluates effects and returns the list of results in the same order', () => {
+        const list: ReadonlyArray<string> = ['1', '2', '3']
+        return I.gen(function* (_) {
+          const ref = yield* _(Ref.make(A.empty<string>()))
+          const res = yield* _(
+            pipe(
+              list,
+              I.foreach((x) =>
+                pipe(
+                  ref,
+                  Ref.update((xs) => [...xs, x]),
+                  I.crossSecond(I.succeedLazy(() => parseInt(x)))
+                )
+              )
+            )
+          )
+          const effects = yield* _(Ref.get(ref))
+          return all(pipe(effects, assert(deepStrictEqualTo(list))), pipe(res, assert(equalTo(Ch.make(1, 2, 3)))))
+        })
+      })
+    ),
     testIO('subsumeEither', () =>
       checkM(Gen.alphaNumericString(), (str) => {
         const ioEither = I.succeed(E.right(str))
@@ -717,6 +804,39 @@ class IOSpec extends DefaultRunnableSpec {
           I.result
         )
         return assertIO_(results, halts(equalTo('boom!')))
+      })
+    ),
+    suite(
+      'foreachParN',
+      testIO('returns the list of results in the appropriate order', () => {
+        const list = [1, 2, 3]
+        const res  = I.foreachParN_(list, 2, (x) => I.succeedLazy(() => x.toString()))
+        return assertIO_(res, equalTo(Ch.make('1', '2', '3')))
+      }),
+      testIO('works on large lists', () => {
+        const n   = 10
+        const seq = Ch.range(0, 100000)
+        const res = I.foreachParN_(seq, n, I.succeed)
+        return assertIO_(res, equalTo(seq))
+      }),
+      testIO('runs effects in parallel', () => {
+        const io = I.gen(function* (_) {
+          const p = yield* _(Fu.make<never, void>())
+          yield* _(pipe([I.never, Fu.succeed_(p, undefined)], I.foreachParN(2, identity), I.fork))
+          yield* _(Fu.await(p))
+          return true
+        })
+        return assertIO_(io, isTrue)
+      }),
+      testIO('propagates error', () => {
+        const ints = [1, 2, 3, 4, 5, 6]
+        const odds = I.foreachParN_(ints, 4, (n) => (n % 2 !== 0 ? I.succeed(n) : I.fail('not odd')))
+        return assertIO_(I.either(odds), isLeft(equalTo('not odd')))
+      }),
+      testIO('interrupts effects on first failure', () => {
+        const actions = [I.never, I.succeed(1), I.fail('C')]
+        const io      = I.foreachParN_(actions, 4, identity)
+        return assertIO_(I.either(io), isLeft(equalTo('C')))
       })
     )
   )

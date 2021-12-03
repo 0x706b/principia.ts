@@ -20,6 +20,8 @@ export const never: Iterable<never> = It.never
 
 export const empty: <A>() => Iterable<A> = It.empty
 
+export const size = <A>(as: Iterable<A>): number => foldl_(as, 0, (b) => b + 1)
+
 export const iterable = It.iterable
 
 export function singleton<A>(a: A): Iterable<A> {
@@ -120,6 +122,32 @@ export function zipWith_<A, B, C>(fa: Iterable<A>, fb: Iterable<B>, f: (a: A, b:
  */
 export function zipWith<A, B, C>(fb: Iterable<B>, f: (a: A, b: B) => C): (fa: Iterable<A>) => Iterable<C> {
   return (fa) => zipWith_(fa, fb, f)
+}
+
+export function zipWithIndex<A>(fa: Iterable<A>): Iterable<readonly [A, number]> {
+  return iterable<readonly [A, number]>(() => {
+    let n        = 0
+    let done     = false
+    let iterator = fa[Symbol.iterator]()
+    return {
+      next() {
+        if (done) {
+          this.return!()
+        }
+        const v = iterator.next()
+        return v.done ? this.return!() : { done: false, value: [v.value, n++] }
+      },
+      return(value?: unknown) {
+        if (!done) {
+          done = true
+          if (typeof iterator.return === 'function') {
+            iterator.return()
+          }
+        }
+        return { done: true, value }
+      }
+    }
+  })
 }
 
 export function ap_<A, B>(fab: Iterable<(a: A) => B>, fa: Iterable<A>): Iterable<B> {
