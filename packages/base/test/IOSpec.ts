@@ -6,6 +6,7 @@ import { IllegalArgumentError, isIllegalArgumentError, isIllegalStateError } fro
 import { RuntimeException } from '@principia/base/Exception'
 import * as Ex from '@principia/base/Exit'
 import { fiberId } from '@principia/base/Fiber'
+import * as Fi from '@principia/base/Fiber'
 import { decrement, flow, identity, increment, pipe } from '@principia/base/function'
 import * as Fu from '@principia/base/Future'
 import * as I from '@principia/base/IO'
@@ -13,6 +14,7 @@ import * as M from '@principia/base/Maybe'
 import * as N from '@principia/base/number'
 import * as Q from '@principia/base/Queue'
 import * as Ref from '@principia/base/Ref'
+import * as Scope from '@principia/base/Scope'
 import * as S from '@principia/base/Set'
 import {
   all,
@@ -20,6 +22,7 @@ import {
   anything,
   assert,
   assert_,
+  assertCompletes,
   assertIO,
   assertIO_,
   check,
@@ -29,15 +32,16 @@ import {
   equalTo,
   fails,
   halts,
+  isFalse,
   isInterrupted,
+  isJust,
   isLeft,
   isRight,
   isTrue,
   not,
   suite,
   test,
-  testIO
-} from '@principia/test'
+  testIO } from '@principia/test'
 import { TestClock } from '@principia/test/environment/TestClock'
 import * as Gen from '@principia/test/Gen'
 
@@ -838,6 +842,92 @@ class IOSpec extends DefaultRunnableSpec {
         const io      = I.foreachParN_(actions, 4, identity)
         return assertIO_(I.either(io), isLeft(equalTo('C')))
       })
+    ),
+    suite(
+      'forkAll',
+      testIO('returns the list of results in the same order', () => {
+        const list = [1, 2, 3].map((n) => I.succeedLazy(() => n))
+        const res  = pipe(I.forkAll(list), I.chain(Fi.join))
+        return assertIO_(res, equalTo(Ch.make(1, 2, 3)))
+      }),
+      testIO('happy path', () => {
+        const list = A.range(1, 1000)
+        return pipe(
+          list,
+          A.map((n) => I.succeedLazy(() => n)),
+          I.forkAll,
+          I.chain(Fi.join),
+          assertIO(equalTo(Ch.range(1, 1000)))
+        )
+      }),
+      testIO('empty input', () => {
+        return assertIO_(pipe(I.forkAll(A.empty<I.IO<unknown, never, void>>()), I.chain(Fi.join)), equalTo(Ch.empty()))
+      }),
+      testIO('propagates failures', () => {
+        const boom = new Error()
+        const fail = I.fail(boom)
+        return I.gen(function* (_) {
+          const fiber  = yield* _(I.forkAll([fail]))
+          const result = yield* _(pipe(Fi.join(fiber), I.swap))
+          return assert_(result, equalTo(boom))
+        })
+      }),
+      testIO('propagates defects', () => {
+        const boom       = new Error('boom')
+        const halt       = I.halt(boom)
+        const joinDefect = (fiber: Fi.Fiber<never, any>) => pipe(fiber, Fi.join, I.sandbox, I.swap)
+        return I.gen(function* (_) {
+          const fiber1 = yield* _(I.forkAll([halt]))
+          const fiber2 = yield* _(I.forkAll([halt, I.succeed(42)]))
+          const fiber3 = yield* _(I.forkAll([halt, I.succeed(42), I.never]))
+
+          const result1 = yield* _(joinDefect(fiber1))
+          const result2 = yield* _(joinDefect(fiber2))
+          const result3 = yield* _(joinDefect(fiber3))
+
+          return all(
+            pipe(result1, assert(equalTo(Ca.halt(boom)))),
+            pipe(result2, assert(equalTo(Ca.halt(boom))))['||'](
+              all(
+                pipe(result2, Ca.haltOption, assert(isJust(equalTo(boom as unknown)))),
+                pipe(result2, Ca.interrupted, assert(isTrue))
+              )
+            ),
+            pipe(result3, Ca.haltOption, assert(isJust(equalTo(boom as unknown)))),
+            pipe(result3, Ca.interrupted, assert(isTrue))
+          )
+        })
+      })
+    ),
+    suite(
+      'forkIn',
+      testIO('fiber forked in a closed scope does not run', () =>
+        I.gen(function* (_) {
+          const ref  = yield* _(Ref.make(false))
+          const open = yield* _(Scope.makeScope<Ex.PExit<Fi.FiberId, any, any>>())
+          yield* _(open.close(Ex.unit()))
+          const fiber = yield* _(pipe(ref, Ref.set(true), I.forkIn(open.scope)))
+          const exit  = yield* _(fiber.await)
+          const value = yield* _(Ref.get(ref))
+          return all(pipe(exit, assert(isInterrupted)), pipe(value, assert(isFalse)))
+        })
+      )
+    ),
+    suite(
+      'forkWithErrorHandler',
+      testIO('calls provided function when task fails', () =>
+        I.gen(function* (_) {
+          const f = yield* _(Fu.make<never, void>())
+          yield* _(
+            pipe(
+              I.fail(undefined),
+              I.forkWithErrorHandler(() => pipe(f, Fu.succeed<void>(undefined), I.asUnit))
+            )
+          )
+          yield* _(Fu.await(f))
+          return assertCompletes
+        })
+      )
     )
   )
 }

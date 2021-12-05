@@ -257,6 +257,8 @@ export function equalTo<A>(expected: WidenLiteral<A>, custom?: Custom<WidenLiter
 
 export const isTrue: Assertion<boolean> = assertion('isTrue', [], identity)
 
+export const isFalse: Assertion<boolean> = assertion('isFalse', [], (b) => !b)
+
 export function isLeft<A>(assertion: Assertion<A>): Assertion<E.Either<A, any>> {
   return assertionRec(
     'isLeft',
