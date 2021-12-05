@@ -4676,6 +4676,36 @@ export function flattenChunks<R, E, A>(stream: Stream<R, E, C.Chunk<A>>): Stream
   return new Stream(Ch.mapOut_(stream.channel, C.flatten))
 }
 
+/**
+ * Sends all elements emitted by this stream to the specified sink in addition
+ * to emitting them.
+ */
+export function tapSink_<R, E, A, R1, E1>(
+  fa: Stream<R, E, A>,
+  sink: Sink.Sink<R1, E1, A, any, any>,
+  maximumLag: number
+): Stream<R & R1, E | E1, A> {
+  return pipe(
+    fa,
+    broadcast(2, maximumLag),
+    fromManaged,
+    chain((streams) => pipe(streams, C.unsafeGet(0), drainFork(pipe(streams, C.unsafeGet(1), run(sink), fromIO))))
+  )
+}
+
+/**
+ * Sends all elements emitted by this stream to the specified sink in addition
+ * to emitting them.
+ *
+ * @dataFirst tapSink_
+ */
+export function tapSink<A, R1, E1>(
+  sink: Sink.Sink<R1, E1, A, any, any>,
+  maximumLag: number
+): <R, E>(fa: Stream<R, E, A>) => Stream<R & R1, E | E1, A> {
+  return (fa) => tapSink_(fa, sink, maximumLag)
+}
+
 export const DEFAULT_CHUNK_SIZE = 4096
 
 /**
