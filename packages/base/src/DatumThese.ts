@@ -235,15 +235,23 @@ export function map<A, B>(f: (a: A) => B): <E>(fa: DatumThese<E, A>) => DatumThe
  * -------------------------------------------------------------------------------------------------
  */
 
-export function getSemimonoidalFunctor<E>(SE: P.Semigroup<E>): P.SemimonoidalFunctor<DatumTheseF, HKT.Fix<'E', E>> {
-  const TheseF = T.getSemimonoidal(SE)
+export function crossWith_<E>(
+  SE: P.Semigroup<E>
+): <A, B, C>(fa: DatumThese<E, A>, fb: DatumThese<E, B>, f: (a: A, b: B) => C) => DatumThese<E, C> {
+  return (fa, fb, f) => Dt.crossWith_(fa, fb, (a, b) => T.crossWith_(SE)(a, b, f))
+}
 
-  const crossWith_: P.CrossWithFn_<DatumTheseF, HKT.Fix<'E', E>> = (fa, fb, f) =>
-    Dt.crossWith_(fa, fb, (a, b) => TheseF.crossWith_(a, b, f))
+export function crossWith<E>(
+  SE: P.Semigroup<E>
+): <A, B, C>(fb: DatumThese<E, B>, f: (a: A, b: B) => C) => (fa: DatumThese<E, A>) => DatumThese<E, C> {
+  return (fb, f) => (fa) => crossWith_(SE)(fa, fb, f)
+}
+
+export function getSemimonoidalFunctor<E>(SE: P.Semigroup<E>): P.SemimonoidalFunctor<DatumTheseF, HKT.Fix<'E', E>> {
   return P.SemimonoidalFunctor({
     map_,
-    crossWith_,
-    cross_: (fa, fb) => crossWith_(fa, fb, tuple)
+    crossWith_: crossWith_(SE),
+    cross_: (fa, fb) => crossWith_(SE)(fa, fb, tuple)
   })
 }
 
@@ -262,6 +270,18 @@ export function unit(): DatumThese<never, void> {
  * Apply
  * -------------------------------------------------------------------------------------------------
  */
+
+export function ap_<E>(
+  SE: P.Semigroup<E>
+): <A, B>(fab: DatumThese<E, (a: A) => B>, fa: DatumThese<E, A>) => DatumThese<E, B> {
+  return (fab, fa) => Dt.crossWith_(fab, fa, (tf, ta) => T.crossWith_(SE)(tf, ta, (f, a) => f(a)))
+}
+
+export function ap<E>(
+  SE: P.Semigroup<E>
+): <A>(fa: DatumThese<E, A>) => <B>(fab: DatumThese<E, (a: A) => B>) => DatumThese<E, B> {
+  return (fa) => (fab) => ap_(SE)(fab, fa)
+}
 
 export function getApply<E>(SE: P.Semigroup<E>): P.Apply<DatumTheseF, HKT.Fix<'E', E>> {
   const TheseF = T.getApply(SE)
@@ -293,8 +313,10 @@ export function getApplicative<E>(SE: P.Semigroup<E>): P.Applicative<DatumTheseF
  * -------------------------------------------------------------------------------------------------
  */
 
-export function getMonad<E>(SE: P.Semigroup<E>): P.Monad<DatumTheseF, HKT.Fix<'E', E>> {
-  const chain_: P.ChainFn_<DatumTheseF, HKT.Fix<'E', E>> = (ma, f) =>
+export function chain_<E>(
+  SE: P.Semigroup<E>
+): <A, B>(ma: DatumThese<E, A>, f: (a: A) => DatumThese<E, B>) => DatumThese<E, B> {
+  return (ma, f) =>
     Dt.chain_(ma, (a) =>
       T.match_(a, repleteLeft, f, (e, a) =>
         pipe(
@@ -309,8 +331,17 @@ export function getMonad<E>(SE: P.Semigroup<E>): P.Monad<DatumTheseF, HKT.Fix<'E
         )
       )
     )
+}
+
+export function chain<E>(
+  SE: P.Semigroup<E>
+): <A, B>(f: (a: A) => DatumThese<E, B>) => (ma: DatumThese<E, A>) => DatumThese<E, B> {
+  return (f) => (ma) => chain_(SE)(ma, f)
+}
+
+export function getMonad<E>(SE: P.Semigroup<E>): P.Monad<DatumTheseF, HKT.Fix<'E', E>> {
   return P.Monad({
     ...getApplicative(SE),
-    chain_
+    chain_: chain_(SE)
   })
 }

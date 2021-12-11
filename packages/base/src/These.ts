@@ -181,6 +181,14 @@ export function getApplicative<E>(SE: P.Semigroup<E>): P.Applicative<TheseF, HKT
  * -------------------------------------------------------------------------------------------------
  */
 
+export function catchAll_<E, A, B>(fa: These<E, A>, f: (e: E) => These<E, B>): These<E, A | B> {
+  return isLeft(fa) ? f(fa.left) : fa
+}
+
+export function catchAll<E, B>(f: (e: E) => These<E, B>): <A>(fa: These<E, A>) => These<E, A | B> {
+  return (fa) => catchAll_(fa, f)
+}
+
 export function getApplicativeExcept<E>(SE: P.Semigroup<E>) {
   const catchAll_: P.CatchAllFn_<TheseF, HKT.Fix<'E', E>> = (fa, f) => (fa._tag === 'Left' ? f(fa.left) : fa)
 
@@ -197,8 +205,10 @@ export function getApplicativeExcept<E>(SE: P.Semigroup<E>) {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function getSemimonoidal<E>(SE: P.Semigroup<E>): P.SemimonoidalFunctor<TheseF, HKT.Fix<'E', E>> {
-  const crossWith_: P.CrossWithFn_<TheseF, HKT.Fix<'E', E>> = (fa, fb, f) =>
+export function crossWith_<E>(
+  SE: P.Semigroup<E>
+): <A, B, C>(fa: These<E, A>, fb: These<E, B>, f: (a: A, b: B) => C) => These<E, C> {
+  return (fa, fb, f) =>
     isLeft(fa)
       ? isLeft(fb)
         ? left(SE.combine_(fa.left, fb.left))
@@ -216,10 +226,18 @@ export function getSemimonoidal<E>(SE: P.Semigroup<E>): P.SemimonoidalFunctor<Th
       : isRight(fb)
       ? both(fa.left, f(fa.right, fb.right))
       : both(SE.combine_(fa.left, fb.left), f(fa.right, fb.right))
+}
 
+export function crossWith<E>(
+  SE: P.Semigroup<E>
+): <A, B, C>(fb: These<E, B>, f: (a: A, b: B) => C) => (fa: These<E, A>) => These<E, C> {
+  return (fb, f) => (fa) => crossWith_(SE)(fa, fb, f)
+}
+
+export function getSemimonoidal<E>(SE: P.Semigroup<E>): P.SemimonoidalFunctor<TheseF, HKT.Fix<'E', E>> {
   return P.SemimonoidalFunctor({
     map_,
-    crossWith_
+    crossWith_: crossWith_(SE)
   })
 }
 
@@ -333,8 +351,8 @@ export function map<A, B>(f: (a: A) => B): <E>(fa: These<E, A>) => These<E, B> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function getMonad<E>(SE: P.Semigroup<E>): P.Monad<TheseF, HKT.Fix<'E', E>> {
-  const chain_: P.ChainFn_<TheseF, HKT.Fix<'E', E>> = (ma, f) => {
+export function chain_<E>(SE: P.Semigroup<E>): <A, B>(ma: These<E, A>, f: (a: A) => These<E, B>) => These<E, B> {
+  return (ma, f) => {
     if (isLeft(ma)) {
       return ma
     }
@@ -348,9 +366,16 @@ export function getMonad<E>(SE: P.Semigroup<E>): P.Monad<TheseF, HKT.Fix<'E', E>
       ? both(ma.left, fb.right)
       : both(SE.combine_(ma.left, fb.left), fb.right)
   }
+}
+
+export function chain<E>(SE: P.Semigroup<E>): <A, B>(f: (a: A) => These<E, B>) => (ma: These<E, A>) => These<E, B> {
+  return (f) => (ma) => chain_(SE)(ma, f)
+}
+
+export function getMonad<E>(SE: P.Semigroup<E>): P.Monad<TheseF, HKT.Fix<'E', E>> {
   return P.Monad({
     ...getApplicative(SE),
-    chain_
+    chain_: chain_(SE)
   })
 }
 
