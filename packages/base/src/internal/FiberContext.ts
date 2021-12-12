@@ -999,6 +999,9 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
                   case IOTag.Async: {
+                    if (this.inTracingRegion && this.platform.traceEffects) {
+                      this.addTrace(current.register)
+                    }
                     const epoch     = this.asyncEpoch
                     this.asyncEpoch = epoch + 1
                     this.enterAsync(epoch, current.blockingOn())
