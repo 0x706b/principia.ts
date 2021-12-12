@@ -6,7 +6,7 @@ import type { Maybe } from './Maybe'
 
 import * as E from './Either'
 import { pipe } from './function'
-import { asyncInterruptEither, interruptAs as interruptAsIO, uninterruptibleMask } from './IO/combinators/interrupt'
+import { interruptAs as interruptAsIO, uninterruptibleMask } from './IO/combinators/interrupt'
 import * as I from './IO/core'
 import * as M from './Maybe'
 import { AtomicReference } from './util/support/AtomicReference'
@@ -287,28 +287,32 @@ export function unsafeMake<E, A>(fiberId: FiberId) {
  * until the result is available.
  */
 function wait<E, A>(future: Future<E, A>): I.IO<unknown, E, A> {
-  return asyncInterruptEither<unknown, E, A>((k) => {
-    let result
-    let retry = true
-    while (retry) {
-      const oldState = future.state.get
-      let newState
-      switch (oldState._tag) {
-        case 'Done': {
-          newState = oldState
-          result   = E.right(oldState.value)
-          break
+  return I.asyncInterrupt<unknown, E, A>(
+    (k) => {
+      let result
+      let retry = true
+      while (retry) {
+        const oldState = future.state.get
+        let newState
+        switch (oldState._tag) {
+          case 'Done': {
+            newState = oldState
+            result   = E.right(oldState.value)
+            break
+          }
+          case 'Pending': {
+            newState = new Pending([k, ...oldState.joiners])
+            result   = E.left(interruptJoiner(future, k))
+            break
+          }
         }
-        case 'Pending': {
-          newState = new Pending([k, ...oldState.joiners])
-          result   = E.left(interruptJoiner(future, k))
-          break
-        }
+        retry = !future.state.compareAndSet(oldState, newState)
       }
-      retry = !future.state.compareAndSet(oldState, newState)
-    }
-    return result as any
-  }, future.blockingOn)
+      return result as any
+      // TODO
+    },
+    () => future.blockingOn[0]
+  )
 }
 
 export { wait as await }

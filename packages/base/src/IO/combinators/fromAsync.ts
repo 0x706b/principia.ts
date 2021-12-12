@@ -3,11 +3,11 @@ import type { Async } from '../../Async'
 import { accessCallTrace, traceAs } from '@principia/compile/util'
 
 import { runAsyncEnv_ } from '../../Async'
+import * as E from '../../Either'
 import { flow } from '../../function'
 import * as C from '../Cause'
 import * as I from '../core'
 import * as Ex from '../Exit'
-import { asyncInterrupt } from './interrupt'
 
 /**
  * Lifts an `Async` computation into an `IO`
@@ -19,7 +19,7 @@ export function fromAsync<R, E, A>(effect: Async<R, E, A>): I.IO<R, E, A> {
   return I.deferWith((_, id) =>
     I.asksIO(
       traceAs(trace, (env: R) =>
-        asyncInterrupt<unknown, E, A>((k) => {
+        I.asyncInterrupt<unknown, E, A>((k) => {
           const canceller = runAsyncEnv_(
             effect,
             env,
@@ -40,7 +40,7 @@ export function fromAsync<R, E, A>(effect: Async<R, E, A>): I.IO<R, E, A> {
             )
           )
 
-          return I.succeedLazy(canceller)
+          return E.left(I.succeedLazy(canceller))
         })
       )
     )

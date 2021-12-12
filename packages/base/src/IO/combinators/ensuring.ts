@@ -6,6 +6,7 @@ import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
 import * as C from '../Cause'
 import { failCause, matchCauseIO_, pure } from '../core'
+import { Ensuring } from '../primitives'
 import { uninterruptibleMask } from './interrupt'
 
 /**
@@ -22,26 +23,27 @@ import { uninterruptibleMask } from './interrupt'
  * @trace call
  */
 export function ensuring_<R, E, A, R1>(ma: IO<R, E, A>, finalizer: IO<R1, never, any>): IO<R & R1, E, A> {
-  const trace = accessCallTrace()
-  return uninterruptibleMask(
-    traceFrom(trace, ({ restore }) =>
-      matchCauseIO_(
-        restore(ma),
-        (cause1) =>
-          matchCauseIO_(
-            finalizer,
-            (cause2) => failCause(C.then(cause1, cause2)),
-            (_) => failCause(cause1)
-          ),
-        (value) =>
-          matchCauseIO_(
-            finalizer,
-            (cause1) => failCause(cause1),
-            (_) => pure(value)
-          )
-      )
-    )
-  )
+  return new Ensuring(ma, finalizer)
+  // const trace = accessCallTrace()
+  // return uninterruptibleMask(
+  //   traceFrom(trace, ({ restore }) =>
+  //     matchCauseIO_(
+  //       restore(ma),
+  //       (cause1) =>
+  //         matchCauseIO_(
+  //           finalizer,
+  //           (cause2) => failCause(C.then(cause1, cause2)),
+  //           (_) => failCause(cause1)
+  //         ),
+  //       (value) =>
+  //         matchCauseIO_(
+  //           finalizer,
+  //           (cause1) => failCause(cause1),
+  //           (_) => pure(value)
+  //         )
+  //     )
+  //   )
+  // )
 }
 
 /**

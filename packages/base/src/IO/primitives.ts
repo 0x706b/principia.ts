@@ -3,7 +3,7 @@
 import type { Either } from '../Either'
 import type { Fiber, FiberContext, FiberDescriptor, InterruptStatus, Platform } from '../Fiber'
 import type { FiberId } from '../Fiber/FiberId'
-import type { Trace } from '../Fiber/trace'
+import type { Trace } from '../Fiber/Trace'
 import type { FiberRef } from '../FiberRef'
 import type { Maybe } from '../Maybe'
 import type { Scope } from '../Scope'
@@ -55,7 +55,8 @@ export const IOTag = {
   GetTrace: 'GetTrace',
   SetTracingStatus: 'SetTracingStatus',
   GetTracingStatus: 'GetTracingStatus',
-  GetPlatform: 'GetPlatform'
+  GetPlatform: 'GetPlatform',
+  Ensuring: 'Ensuring'
 } as const
 
 export const IOTypeId = Symbol.for('@principia/base/IO')
@@ -154,12 +155,12 @@ export class SucceedLazy<A> extends IO<unknown, never, A> {
 /**
  * @internal
  */
-export class Async<R, E, A> extends IO<R, E, A> {
+export class Async<R, E, A, R1> extends IO<R & R1, E, A> {
   readonly [IOTypeId]: IOTypeId = IOTypeId
   readonly _tag = IOTag.Async
   constructor(
-    readonly register: (f: (_: IO<R, E, A>) => void) => Maybe<IO<R, E, A>>,
-    readonly blockingOn: ReadonlyArray<FiberId>
+    readonly register: (f: (_: IO<R, E, A>) => void) => Either<Canceler<R1>, IO<R, E, A>>,
+    readonly blockingOn: () => FiberId
   ) {
     super()
   }
@@ -419,6 +420,14 @@ export class GetPlatform<R, E, A> extends IO<R, E, A> {
   }
 }
 
+export class Ensuring<R, E, A, R1> extends IO<R & R1, E, A> {
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag = IOTag.Ensuring
+  constructor(readonly io: IO<R, E, A>, readonly finalizer: IO<R1, never, any>) {
+    super()
+  }
+}
+
 export const ffiNotImplemented = new Fail(() => Halt(new Error('Integration not implemented or unsupported')))
 
 export type Instruction =
@@ -426,7 +435,7 @@ export type Instruction =
   | Succeed<any>
   | TryCatch<any, any>
   | SucceedLazy<any>
-  | Async<any, any, any>
+  | Async<any, any, any, any>
   | Match<any, any, any, any, any, any, any, any, any>
   | Fork<any, any, any>
   | SetInterrupt<any, any, any>
@@ -451,6 +460,7 @@ export type Instruction =
   | GetTracingStatus<any, any, any>
   | SetTracingStatus<any, any, any>
   | GetPlatform<any, any, any>
+  | Ensuring<any, any, any, any>
 
 /**
  * @optimize identity

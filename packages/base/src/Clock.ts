@@ -3,8 +3,8 @@
  *
  * Copyright 2020 Michael Arnaldi and the Matechs Garage Contributors.
  */
+import * as E from './Either'
 import { tag } from './Has'
-import { asyncInterrupt } from './IO/combinators/interrupt'
 import * as I from './IO/core'
 
 /**
@@ -20,14 +20,16 @@ export class LiveClock implements Clock {
   currentTime: I.UIO<number> = I.succeedLazy(() => new Date().getTime())
 
   sleep = (ms: number): I.UIO<void> =>
-    asyncInterrupt((cb) => {
+    I.asyncInterrupt((cb) => {
       const timeout = setTimeout(() => {
         cb(I.unit())
       }, ms)
 
-      return I.succeedLazy(() => {
-        clearTimeout(timeout)
-      })
+      return E.left(
+        I.succeedLazy(() => {
+          clearTimeout(timeout)
+        })
+      )
     })
 }
 

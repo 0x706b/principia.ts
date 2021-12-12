@@ -1,4 +1,4 @@
-import type { Trace } from '../Fiber/trace'
+import type { Trace } from '../Fiber/Trace'
 import type { HashSet } from '../HashSet'
 import type { Predicate } from '../Predicate'
 import type * as P from '../prelude'

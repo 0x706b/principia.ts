@@ -2,7 +2,7 @@
 
 import type { Chunk } from '../Chunk/core'
 import type { FiberId } from '../Fiber/FiberId'
-import type { Trace } from '../Fiber/trace'
+import type { Trace } from '../Fiber/Trace'
 import type { Has, Tag } from '../Has'
 import type { Cause } from '../IO/Cause'
 import type { Exit } from '../IO/Exit'

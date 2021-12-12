@@ -1,5 +1,5 @@
 import type { FiberId } from '../Fiber'
-import type { Callback } from '../Fiber/core'
+import type { Callback } from '../Fiber/FiberState'
 import type { FailureReporter } from '../Fiber/internal/io'
 import type { IOEnv } from '../IOEnv'
 import type { Exit } from './Exit'

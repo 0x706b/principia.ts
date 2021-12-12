@@ -1,7 +1,7 @@
 import type { FiberId } from '../Fiber/FiberId'
 
 import * as C from '../Cause'
-import { prettyTrace } from '../Fiber/trace'
+import { prettyTrace } from '../Fiber/Trace'
 
 export * from '../Cause'
 

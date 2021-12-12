@@ -1,6 +1,6 @@
-import type { Callback, Fiber, InterruptStatus, RuntimeFiber } from '../Fiber/core'
+import type { Fiber, InterruptStatus, RuntimeFiber } from '../Fiber/core'
 import type { FiberId } from '../Fiber/FiberId'
-import type { TraceElement } from '../Fiber/trace'
+import type { TraceElement } from '../Fiber/Trace'
 import type { FiberRef } from '../FiberRef'
 import type { Exit } from '../IO/Exit/core'
 import type { Instruction, IO, Match, Race, UIO } from '../IO/primitives'
@@ -14,24 +14,20 @@ import { traceAs } from '@principia/compile/util'
 import * as A from '../Array/core'
 import * as E from '../Either'
 import { RuntimeException } from '../Exception'
-import {
-  FiberDescriptor,
-  FiberStateDone,
-  FiberStateExecuting,
-  initial,
-  interrupting,
-  interruptStatus
-} from '../Fiber/core'
-import * as Status from '../Fiber/core'
+import * as CS from '../Fiber/CancellerState'
+import { FiberDescriptor, interruptStatus } from '../Fiber/core'
 import { newFiberId } from '../Fiber/FiberId'
-import { SourceLocation, Trace, traceLocation, truncatedParentTrace } from '../Fiber/trace'
+import * as State from '../Fiber/FiberState'
+import * as Status from '../Fiber/FiberStatus'
+import { SourceLocation, Trace, traceLocation, truncatedParentTrace } from '../Fiber/Trace'
 import * as FR from '../FiberRef'
 import { constVoid, flow } from '../function'
 import * as C from '../IO/Cause'
 import { bracket_ } from '../IO/combinators/bracket'
-import { asyncInterruptEither, interruptAs } from '../IO/combinators/interrupt'
+import { interruptAs } from '../IO/combinators/interrupt'
 import {
   async,
+  asyncInterrupt,
   chain_,
   defer,
   fail,
@@ -39,6 +35,8 @@ import {
   foreachUnit_,
   fromExit,
   halt,
+  map_,
+  matchCauseIO_,
   succeed,
   succeedLazy,
   unit
@@ -76,12 +74,18 @@ export class ApplyFrame {
   constructor(readonly apply: (a: any) => IO<any, any, any>) {}
 }
 
+export class Finalizer {
+  readonly _tag = 'Finalizer'
+  constructor(readonly finalizer: UIO<any>, readonly apply: (a: any) => IO<any, any, any>) {}
+}
+
 export type Frame =
   | InterruptExit
   | Match<any, any, any, any, any, any, any, any, any>
   | HandlerFrame
   | ApplyFrame
   | TracingExit
+  | Finalizer
 
 export const currentFiber = new AtomicReference<FiberContext<any, any> | null>(null)
 
@@ -95,7 +99,7 @@ export function unsafeCurrentFiber(): M.Maybe<FiberContext<any, any>> {
 export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   readonly _tag = 'RuntimeFiber'
 
-  private readonly state = new AtomicReference(initial<E, A>())
+  private readonly state = new AtomicReference(State.initial<E, A>())
 
   private asyncEpoch = 0 | 0
   private scopeKey = undefined as Scope.Key | undefined
@@ -178,16 +182,26 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     }
   })
 
+  private ensure(finalizer: UIO<any>): void {
+    this.pushContinuation(
+      new Finalizer(finalizer, (v) => {
+        this.pushInterruptStatus(false)
+        this.pushContinuation(this.interruptExit)
+        return map_(finalizer, () => v)
+      })
+    )
+  }
+
   get isInterruptible() {
     return this.interruptStatus ? this.interruptStatus.value : false
   }
 
   get isInterrupted() {
-    return !C.isEmpty(this.state.get.interrupted)
+    return this.state.get.interruptors.size !== 0
   }
 
   get isInterrupting() {
-    return interrupting(this.state.get)
+    return Status.isInterrupting(this.state.get.status)
   }
 
   get shouldInterrupt() {
@@ -254,11 +268,27 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     this.stackTraces!.pop()
   }
 
-  runAsync(k: Callback<E, A>) {
+  runAsync(k: State.Callback<E, A>) {
     const v = this.registerObserver((xx) => k(Ex.flatten(xx)))
 
     if (v) {
       k(v)
+    }
+  }
+
+  private addSupressedCause(cause: C.Cause<never>): void {
+    if (!C.isEmpty(cause)) {
+      const oldState = this.state.get
+      if (oldState._tag === 'Executing') {
+        const newState = new State.Executing(
+          oldState.status,
+          oldState.observers,
+          C.then(oldState.suppressed, cause),
+          oldState.interruptors,
+          oldState.asyncCanceller
+        )
+        this.state.set(newState)
+      }
     }
   }
 
@@ -282,6 +312,26 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
         }
         case 'TracingExit': {
           this.popTracingStatus()
+          break
+        }
+        case 'Finalizer': {
+          this.pushInterruptStatus(false)
+          this.pushContinuation(
+            new ApplyFrame((cause) =>
+              matchCauseIO_(
+                frame.finalizer,
+                (finalizerCause) => {
+                  this.popInterruptStatus()
+                  this.addSupressedCause(finalizerCause)
+                  return failCause(cause)
+                },
+                () => {
+                  this.popInterruptStatus()
+                  return failCause(cause)
+                }
+              )
+            )
+          )
           break
         }
         case IOTag.Match: {
@@ -308,7 +358,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     return discardedFolds
   }
 
-  private registerObserver(k: Callback<never, Exit<E, A>>): Exit<E, A> | null {
+  private registerObserver(k: State.Callback<never, Exit<E, A>>): Exit<E, A> | null {
     const oldState = this.state.get
 
     switch (oldState._tag) {
@@ -318,7 +368,15 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       case 'Executing': {
         const observers = [k, ...oldState.observers]
 
-        this.state.set(new FiberStateExecuting(oldState.status, observers, oldState.interrupted))
+        this.state.set(
+          new State.Executing(
+            oldState.status,
+            observers,
+            oldState.suppressed,
+            oldState.interruptors,
+            oldState.asyncCanceller
+          )
+        )
 
         return null
       }
@@ -343,7 +401,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     }
   }
 
-  private notifyObservers(v: Exit<E, A>, observers: Callback<never, Exit<E, A>>[]) {
+  private notifyObservers(v: Exit<E, A>, observers: State.Callback<never, Exit<E, A>>[]) {
     const result = Ex.succeed(v)
 
     observers
@@ -352,7 +410,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       .forEach((k) => k(result))
   }
 
-  private observe(k: Callback<never, Exit<E, A>>): Maybe<UIO<Exit<E, A>>> {
+  private observe(k: State.Callback<never, Exit<E, A>>): Maybe<UIO<Exit<E, A>>> {
     const x = this.registerObserver(k)
 
     if (x != null) {
@@ -363,22 +421,30 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   get await(): UIO<Exit<E, A>> {
-    return asyncInterruptEither(
+    return asyncInterrupt(
       (k): E.Either<UIO<void>, UIO<Exit<E, A>>> => {
-        const cb: Callback<never, Exit<E, A>> = (x) => k(fromExit(x))
+        const cb: State.Callback<never, Exit<E, A>> = (x) => k(fromExit(x))
         return M.match_(this.observe(cb), () => E.left(succeedLazy(() => this.interruptObserver(cb))), E.right)
       },
-      [this.fiberId]
+      () => this.fiberId
     )
   }
 
-  private interruptObserver(k: Callback<never, Exit<E, A>>) {
+  private interruptObserver(k: State.Callback<never, Exit<E, A>>) {
     const oldState = this.state.get
 
     if (oldState._tag === 'Executing') {
       const observers = oldState.observers.filter((o) => o !== k)
 
-      this.state.set(new FiberStateExecuting(oldState.status, observers, oldState.interrupted))
+      this.state.set(
+        new State.Executing(
+          oldState.status,
+          observers,
+          oldState.suppressed,
+          oldState.interruptors,
+          oldState.asyncCanceller
+        )
+      )
     }
   }
 
@@ -391,17 +457,29 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
         oldState._tag === 'Executing' &&
         oldState.status._tag === 'Suspended' &&
         oldState.status.interruptible &&
-        !interrupting(oldState)
+        oldState.asyncCanceller._tag === 'Registered'
       ) {
-        const newCause = C.then(oldState.interrupted, interruptedCause)
-        this.state.set(
-          new FiberStateExecuting(Status.withInterrupting(true)(oldState.status), oldState.observers, newCause)
+        const newState = new State.Executing(
+          Status.withInterrupting(true)(oldState.status),
+          oldState.observers,
+          oldState.suppressed,
+          new Set(oldState.interruptors).add(fiberId),
+          new CS.Empty()
         )
-
-        this.evaluateLater(concrete(interruptAs(fiberId)))
+        this.state.set(newState)
+        const interrupt = failCause(interruptedCause)
+        this.evaluateLater(concrete(interrupt))
       } else if (oldState._tag === 'Executing') {
-        const newCause = C.then(oldState.interrupted, interruptedCause)
-        this.state.set(new FiberStateExecuting(oldState.status, oldState.observers, newCause))
+        const newCause = C.then(oldState.suppressed, interruptedCause)
+        this.state.set(
+          new State.Executing(
+            oldState.status,
+            oldState.observers,
+            newCause,
+            new Set(oldState.interruptors).add(fiberId),
+            oldState.asyncCanceller
+          )
+        )
       }
       return this.await
     })
@@ -417,28 +495,54 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       }
       case 'Executing': {
         if (this.openScope.scope.unsafeClosed) {
+          const interruptorsCause = State.interruptorsCause(oldState)
+          const newExit           = C.isEmpty(interruptorsCause)
+            ? v
+            : Ex.mapErrorCause_(v, (cause) => {
+                if (C.contains_(cause, interruptorsCause)) {
+                  return cause
+                } else {
+                  return C.then(cause, interruptorsCause)
+                }
+              })
           /*
            * We are truly "done" because all the children of this fiber have terminated,
            * and there are no more pending effects that we have to execute on the fiber.
            */
-          this.state.set(new FiberStateDone(v))
-          this.reportUnhandled(v)
-          this.notifyObservers(v, oldState.observers)
+          this.state.set(new State.Done(newExit))
+          this.reportUnhandled(newExit)
+          this.notifyObservers(newExit, oldState.observers)
 
           return undefined
         } else {
           /*
-           * We are not done yet, because there are children to interrupt, or
-           * because there are effects to execute on the fiber.
+           * We are not done yet, because we have to close the fiber's scope
            */
-          this.state.set(
-            new FiberStateExecuting(Status.toFinishing(oldState.status), oldState.observers, oldState.interrupted)
-          )
-
           this.setInterrupting(true)
 
           return concrete(chain_(this.openScope.close(v), () => fromExit(v)))
         }
+      }
+    }
+  }
+
+  private setAsyncCanceller(epoch: number, asyncCanceller0: IO<any, any, any> | undefined): void {
+    const oldState       = this.state.get
+    const asyncCanceller = !asyncCanceller0 ? unit() : asyncCanceller0
+    if (oldState._tag === 'Executing') {
+      if (
+        oldState.status._tag === 'Suspended' &&
+        oldState.asyncCanceller._tag === 'Pending' &&
+        oldState.status.epoch === epoch
+      ) {
+        const newState = new State.Executing(
+          oldState.status,
+          oldState.observers,
+          oldState.suppressed,
+          oldState.interruptors,
+          new CS.Registered(asyncCanceller)
+        )
+        this.state.set(newState)
       }
     }
   }
@@ -455,10 +559,12 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     switch (oldState._tag) {
       case 'Executing': {
         this.state.set(
-          new FiberStateExecuting(
+          new State.Executing(
             Status.withInterrupting(value)(oldState.status),
             oldState.observers,
-            oldState.interrupted
+            oldState.suppressed,
+            oldState.interruptors,
+            oldState.asyncCanceller
           )
         )
         return
@@ -469,49 +575,37 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     }
   }
 
-  private enterAsync(epoch: number, blockingOn: ReadonlyArray<FiberId>): Instruction | undefined {
+  private enterAsync(epoch: number, blockingOn: FiberId): void {
     const oldState = this.state.get
 
-    switch (oldState._tag) {
-      case 'Done': {
-        throw new RuntimeException(`Unexpected fiber completion ${this.fiberId}`)
-      }
-      case 'Executing': {
-        const newState = new FiberStateExecuting(
-          new Status.Suspended(oldState.status, this.isInterruptible, epoch, blockingOn),
-          oldState.observers,
-          oldState.interrupted
-        )
-
-        this.state.set(newState)
-
-        if (this.shouldInterrupt) {
-          // Fiber interrupted, so go back into running state:
-          this.exitAsync(epoch)
-          return concrete(failCause(this.state.get.interrupted))
-        } else {
-          return undefined
-        }
-      }
+    if (oldState._tag === 'Executing' && oldState.asyncCanceller._tag === 'Empty') {
+      const newStatus = new Status.Suspended(oldState.status, this.isInterruptible, epoch, blockingOn)
+      const newState  = new State.Executing(
+        newStatus,
+        oldState.observers,
+        oldState.suppressed,
+        oldState.interruptors,
+        new CS.Pending()
+      )
+      this.state.set(newState)
     }
   }
 
   private exitAsync(epoch: number): boolean {
     const oldState = this.state.get
-
-    switch (oldState._tag) {
-      case 'Done': {
-        return false
-      }
-      case 'Executing': {
-        if (oldState.status._tag === 'Suspended' && epoch === oldState.status.epoch) {
-          this.state.set(new FiberStateExecuting(oldState.status.previous, oldState.observers, oldState.interrupted))
-          return true
-        } else {
-          return false
-        }
-      }
+    if (oldState._tag === 'Executing' && oldState.status._tag === 'Suspended' && oldState.status.epoch === epoch) {
+      this.state.set(
+        new State.Executing(
+          oldState.status.previous,
+          oldState.observers,
+          oldState.suppressed,
+          oldState.interruptors,
+          new CS.Empty()
+        )
+      )
+      return true
     }
+    return false
   }
 
   private resumeAsync(epoch: number) {
@@ -636,7 +730,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     }
   }
 
-  onDone(k: Callback<never, Exit<E, A>>): void {
+  onDone(k: State.Callback<never, Exit<E, A>>): void {
     const oldState = this.state.get
 
     switch (oldState._tag) {
@@ -645,7 +739,36 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
         return
       }
       case 'Executing': {
-        this.state.set(new FiberStateExecuting(oldState.status, [k, ...oldState.observers], oldState.interrupted))
+        this.state.set(
+          new State.Executing(
+            oldState.status,
+            [k, ...oldState.observers],
+            oldState.suppressed,
+            oldState.interruptors,
+            oldState.asyncCanceller
+          )
+        )
+        return
+      }
+    }
+  }
+
+  private clearSuppressedCause(): C.Cause<never> {
+    const oldState = this.state.get
+    switch (oldState._tag) {
+      case 'Executing': {
+        const newState = new State.Executing(
+          oldState.status,
+          oldState.observers,
+          C.empty,
+          oldState.interruptors,
+          oldState.asyncCanceller
+        )
+        this.state.set(newState)
+        return oldState.suppressed
+      }
+      case 'Done': {
+        return C.empty
       }
     }
   }
@@ -654,7 +777,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     return new FiberDescriptor(
       this.fiberId,
       this.state.get.status,
-      C.interruptors(this.state.get.interrupted),
+      this.state.get.interruptors,
       interruptStatus(this.isInterruptible),
       this.scope
     )
@@ -719,7 +842,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
           }
         }
       }),
-      [left.fiberId, right.fiberId]
+      () => left.fiberId // [left.fiberId, right.fiberId]
     )
   }
 
@@ -827,22 +950,18 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     }
                     const fast = fastPathChainContinuationTrace.get
                     fastPathChainContinuationTrace.set(undefined)
-                    const fullCause          = current.fill(() => this.captureTrace(fast))
-                    const discardedFolds     = this.unwindStack()
-                    const maybeRedactedCause = discardedFolds ? C.stripFailures(fullCause) : fullCause
+                    const tracedCause    = current.fill(() => this.captureTrace(fast))
+                    const discardedFolds = this.unwindStack()
+                    const fullCause      = C.then(
+                      discardedFolds ? C.stripFailures(tracedCause) : tracedCause,
+                      this.clearSuppressedCause()
+                    )
                     if (this.isStackEmpty) {
-                      const cause = () => {
-                        const interrupted       = this.state.get.interrupted
-                        const causeAndInterrupt = !C.contains(interrupted)(maybeRedactedCause)
-                          ? C.then(maybeRedactedCause, interrupted)
-                          : maybeRedactedCause
-                        return causeAndInterrupt
-                      }
                       this.setInterrupting(true)
-                      current = this.done(Ex.failCause(cause()))
+                      current = this.done(Ex.failCause(fullCause))
                     } else {
                       this.setInterrupting(false)
-                      current = this.next(maybeRedactedCause)
+                      current = this.next(fullCause)
                     }
                     break
                   }
@@ -882,25 +1001,28 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                   case IOTag.Async: {
                     const epoch     = this.asyncEpoch
                     this.asyncEpoch = epoch + 1
-                    const c         = current
-                    current         = this.enterAsync(epoch, c.blockingOn)
-                    if (!current) {
-                      const onResolve = c.register
-                      const h         = onResolve(this.resumeAsync(epoch))
-                      if (this.platform.traceEffects && this.inTracingRegion) {
-                        this.addTrace(onResolve)
-                      }
-                      switch (h._tag) {
-                        case 'Nothing': {
-                          current = undefined
-                          break
-                        }
-                        case 'Just': {
+                    this.enterAsync(epoch, current.blockingOn())
+                    const r = current.register(this.resumeAsync(epoch))
+                    switch (r._tag) {
+                      case 'Left': {
+                        this.setAsyncCanceller(epoch, r.left)
+                        if (this.shouldInterrupt) {
                           if (this.exitAsync(epoch)) {
-                            current = concrete(h.value)
+                            this.setInterrupting(true)
+                            current = concrete(chain_(r.left, () => failCause(this.clearSuppressedCause())))
                           } else {
                             current = undefined
                           }
+                        } else {
+                          current = undefined
+                        }
+                        break
+                      }
+                      case 'Right': {
+                        if (!this.exitAsync(epoch)) {
+                          current = undefined
+                        } else {
+                          current = concrete(r.right)
                         }
                       }
                     }
@@ -1076,6 +1198,11 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     )
                     break
                   }
+                  case IOTag.Ensuring: {
+                    this.ensure(current.finalizer)
+                    current = concrete(current.io)
+                    break
+                  }
                   default: {
                     console.log('Unrecognized Instruction', current)
                     throw new Error('Unrecognized Instruction')
@@ -1083,7 +1210,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                 }
               }
             } else {
-              current = concrete(failCause(this.state.get.interrupted))
+              current = concrete(failCause(this.clearSuppressedCause()))
               this.setInterrupting(true)
             }
             opCount++

@@ -2,8 +2,8 @@
 
 import type { UIO } from '../core'
 
-import { defer, succeedLazy } from '../core'
-import { asyncInterrupt } from './interrupt'
+import * as E from '../../Either'
+import { asyncInterrupt, defer, succeedLazy } from '../core'
 
 /**
  * Returns a `IO` that will never produce anything. The moral equivalent of
@@ -14,8 +14,10 @@ export const never: UIO<never> = defer(() =>
     const interval = setInterval(() => {
       //
     }, 60000)
-    return succeedLazy(() => {
-      clearInterval(interval)
-    })
+    return E.left(
+      succeedLazy(() => {
+        clearInterval(interval)
+      })
+    )
   })
 )
