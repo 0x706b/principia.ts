@@ -5,7 +5,7 @@ import type { Eval } from '../Eval'
 import type { Platform } from '../Fiber'
 import type { FiberDescriptor, InterruptStatus } from '../Fiber/core'
 import type { FiberId } from '../Fiber/FiberId'
-import type { Trace } from '../Fiber/trace'
+import type { Trace } from '../Fiber/Trace'
 import type { Has, Tag } from '../Has'
 import type * as HKT from '../HKT'
 import type { FiberContext } from '../internal/FiberContext'
@@ -27,7 +27,7 @@ import type * as P from '../prelude'
 import type { Refinement } from '../Refinement'
 import type { Supervisor } from '../Supervisor'
 import type { Sync } from '../Sync'
-import type { IOF, IOURI } from '.'
+import type { IOF } from '.'
 import type { Cause } from './Cause'
 import type { Exit } from './Exit/core'
 import type { FailureReporter, FIO, IO, UIO, URIO } from './primitives'
@@ -40,7 +40,7 @@ import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
 import * as Ev from '../Eval'
 import { RuntimeException } from '../Exception'
-import { showFiberId } from '../Fiber/FiberId'
+import { emptyFiberId, showFiberId } from '../Fiber/FiberId'
 import { constant, flow, identity, pipe } from '../function'
 import { isTag, mergeEnvironments } from '../Has'
 import * as I from '../Iterable'
@@ -87,11 +87,49 @@ export function succeedLazy<A>(lazyValue: () => A): UIO<A> {
 }
 
 /**
+ * Imports a total synchronous effect into a pure `IO` value.
+ * The effect must not throw any exceptions. If you wonder if the effect
+ * throws exceptions, then do not use this method, use `IO.try`
+ *
+ * @category Constructors
+ * @since 1.0.0
+ * @trace 0
+ */
+export function succeedLazyWith<A>(effect: (platform: Platform<unknown>, fiberId: FiberId) => A): UIO<A> {
+  return new Primitives.SucceedLazyWith(effect)
+}
+
+/**
  * Returns an effect that yields to the runtime system, starting on a fresh
  * stack. Manual use of this method can improve fairness, at the cost of
  * overhead.
  */
 export const yieldNow: UIO<void> = new Primitives.Yield()
+
+/**
+ * Imports an asynchronous side-effect into an IO. The side-effect
+ * has the option of returning the value synchronously, which is useful in
+ * cases where it cannot be determined if the effect is synchronous or
+ * asynchronous until the side-effect is actually executed. The effect also
+ * has the option of returning a canceler, which will be used by the runtime
+ * to cancel the asynchronous effect if the fiber executing the effect is
+ * interrupted.
+ *
+ * If the register function returns a value synchronously, then the callback
+ * function must not be called. Otherwise the callback function must be called
+ * at most once.
+ *
+ * The list of fibers, that may complete the async callback, is used to
+ * provide better diagnostics.
+ *
+ * @trace 0
+ */
+export function asyncInterrupt<R, E, A>(
+  register: (cb: (resolve: IO<R, E, A>) => void) => E.Either<Primitives.Canceler<R>, IO<R, E, A>>,
+  blockingOn: ReadonlyArray<FiberId> = []
+): IO<R, E, A> {
+  return new Primitives.Async(register, blockingOn)
+}
 
 /**
  * Imports an asynchronous side-effect into a `IO`
@@ -105,7 +143,7 @@ export function async<R, E, A>(
   register: (resolve: (_: IO<R, E, A>) => void) => void,
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
-  return new Primitives.Async(
+  return asyncMaybe(
     traceAs(register, (cb) => {
       register(cb)
       return M.nothing()
@@ -128,7 +166,14 @@ export function asyncMaybe<R, E, A>(
   register: (resolve: (_: IO<R, E, A>) => void) => M.Maybe<IO<R, E, A>>,
   blockingOn: ReadonlyArray<FiberId> = []
 ): IO<R, E, A> {
-  return new Primitives.Async(register, blockingOn)
+  return asyncInterrupt(
+    (cb) =>
+      pipe(
+        register(cb),
+        M.match(() => E.left(unit()), E.right)
+      ),
+    blockingOn
+  )
 }
 
 /**
@@ -138,7 +183,13 @@ export function asyncMaybe<R, E, A>(
  * @trace 0
  */
 function try_<A>(effect: () => A): FIO<unknown, A> {
-  return new Primitives.TryCatch(effect, identity)
+  return succeedLazy(() => {
+    try {
+      return effect()
+    } catch (u) {
+      throw new Primitives.IOError(Ex.fail(u))
+    }
+  })
 }
 
 export { try_ as try }
@@ -154,7 +205,13 @@ export { try_ as try }
  * @trace 1
  */
 export function tryCatch<E, A>(effect: () => A, onThrow: (error: unknown) => E): FIO<E, A> {
-  return new Primitives.TryCatch(effect, onThrow)
+  return succeedLazy(() => {
+    try {
+      return effect()
+    } catch (u) {
+      throw new Primitives.IOError(Ex.fail(onThrow(u)))
+    }
+  })
 }
 
 /**
@@ -164,7 +221,13 @@ export function tryCatch<E, A>(effect: () => A, onThrow: (error: unknown) => E):
  * @trace 0
  */
 export function deferTry<R, E, A>(io: () => IO<R, E, A>): IO<R, unknown, A> {
-  return new Primitives.DeferTryCatchWith(io, identity)
+  return defer(() => {
+    try {
+      return io()
+    } catch (u) {
+      throw new Primitives.IOError(Ex.fail(u))
+    }
+  })
 }
 
 /**
@@ -176,7 +239,13 @@ export function deferTry<R, E, A>(io: () => IO<R, E, A>): IO<R, unknown, A> {
 export function deferTryWith<R, E, A>(
   io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>
 ): IO<R, unknown, A> {
-  return new Primitives.DeferTryCatchWith(io, identity)
+  return deferWith((platform, id) => {
+    try {
+      return io(platform, id)
+    } catch (u) {
+      throw new Primitives.IOError(Ex.fail(u))
+    }
+  })
 }
 
 /**
@@ -189,7 +258,13 @@ export function deferTryWith<R, E, A>(
  * @trace 1
  */
 export function deferTryCatch<R, E, A, E1>(io: () => IO<R, E, A>, onThrow: (error: unknown) => E1): IO<R, E | E1, A> {
-  return new Primitives.DeferTryCatchWith(io, onThrow)
+  return defer(() => {
+    try {
+      return io()
+    } catch (u) {
+      throw new Primitives.IOError(Ex.fail(onThrow(u)))
+    }
+  })
 }
 
 /**
@@ -205,16 +280,13 @@ export function deferTryCatchWith<R, E, A, E1>(
   io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>,
   onThrow: (error: unknown) => E1
 ): IO<R, E | E1, A> {
-  return new Primitives.DeferTryCatchWith(io, onThrow)
-}
-
-/**
- * @trace 0
- */
-export function deferMaybeWith<E, A, R, E1, A1>(
-  io: (platform: Platform<unknown>, id: FiberId) => E.Either<Exit<E, A>, IO<R, E1, A1>>
-): IO<R, E | E1, A | A1> {
-  return new Primitives.DeferMaybeWith(io)
+  return deferWith((platform, id) => {
+    try {
+      return io(platform, id)
+    } catch (u) {
+      throw new Primitives.IOError(Ex.fail(onThrow(u)))
+    }
+  })
 }
 
 /**
@@ -1125,7 +1197,7 @@ export function tapErrorCause<E, R1, E1>(
  * @trace 0
  */
 export function asks<R, A>(f: (_: R) => A): URIO<R, A> {
-  return new Primitives.Read(traceAs(f, (_: R) => new Primitives.Succeed(f(_))))
+  return new Primitives.Access(traceAs(f, (_: R) => new Primitives.Succeed(f(_))))
 }
 
 /**
@@ -1137,7 +1209,7 @@ export function asks<R, A>(f: (_: R) => A): URIO<R, A> {
  * @trace 0
  */
 export function asksIO<R0, R, E, A>(f: (r: R0) => IO<R, E, A>): IO<R & R0, E, A> {
-  return new Primitives.Read(f)
+  return new Primitives.Access(f)
 }
 
 /**
@@ -1153,7 +1225,7 @@ export function asksIO<R0, R, E, A>(f: (r: R0) => IO<R, E, A>): IO<R & R0, E, A>
  */
 export function giveAll_<R, E, A>(ma: IO<R, E, A>, r: R): FIO<E, A> {
   const trace = accessCallTrace()
-  return new Primitives.Give(ma, r, trace)
+  return new Primitives.Provide(ma, r, trace)
 }
 
 /**
@@ -1959,7 +2031,7 @@ export function condIO<R, A, R1, E>(onTrue: URIO<R, A>, onFalse: URIO<R1, E>): (
  * @trace 0
  */
 export function descriptorWith<R, E, A>(f: (d: FiberDescriptor) => IO<R, E, A>): IO<R, E, A> {
-  return new Primitives.CheckDescriptor(f)
+  return new Primitives.GetDescriptor(f)
 }
 
 /**

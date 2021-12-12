@@ -6,7 +6,7 @@ import type { Maybe } from './Maybe'
 
 import * as E from './Either'
 import { pipe } from './function'
-import { asyncInterruptEither, interruptAs as interruptAsIO, uninterruptibleMask } from './IO/combinators/interrupt'
+import { interruptAs as interruptAsIO, uninterruptibleMask } from './IO/combinators/interrupt'
 import * as I from './IO/core'
 import * as M from './Maybe'
 import { AtomicReference } from './util/support/AtomicReference'
@@ -287,7 +287,7 @@ export function unsafeMake<E, A>(fiberId: FiberId) {
  * until the result is available.
  */
 function wait<E, A>(future: Future<E, A>): I.IO<unknown, E, A> {
-  return asyncInterruptEither<unknown, E, A>((k) => {
+  return I.asyncInterrupt<unknown, E, A>((k) => {
     let result
     let retry = true
     while (retry) {

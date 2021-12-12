@@ -14,7 +14,7 @@ export class Platform<A> {
   public ancestryLength: number
   public renderer: Renderer<FiberId>
   public reportFailure: (e: Cause<unknown>) => void
-  public maxOp: number
+  public maxYieldOp: number
   public supervisor: Supervisor<A>
   constructor(value: {
     executionTraceLength: number
@@ -28,7 +28,7 @@ export class Platform<A> {
     ancestryLength: number
     renderer: Renderer<FiberId>
     reportFailure: (e: Cause<unknown>) => void
-    maxOp: number
+    maxYieldOp: number
     supervisor: Supervisor<A>
   }) {
     this.executionTraceLength         = value.executionTraceLength
@@ -42,7 +42,7 @@ export class Platform<A> {
     this.ancestryLength               = value.ancestryLength
     this.renderer                     = value.renderer
     this.reportFailure                = value.reportFailure
-    this.maxOp                        = value.maxOp
+    this.maxYieldOp                   = value.maxYieldOp
     this.supervisor                   = value.supervisor
   }
 }

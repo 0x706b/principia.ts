@@ -1,4 +1,4 @@
-import type { Trace } from '../Fiber/trace'
+import type { Trace } from '../Fiber/Trace'
 import type { NonEmptyArray } from '../NonEmptyArray'
 import type { PCause } from './core'
 

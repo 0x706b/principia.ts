@@ -1,5 +1,5 @@
 import type { FiberId } from '../Fiber'
-import type { Callback } from '../Fiber/core'
+import type { Callback } from '../Fiber/FiberState'
 import type { FailureReporter } from '../Fiber/internal/io'
 import type { IOEnv } from '../IOEnv'
 import type { Exit } from './Exit'
@@ -47,7 +47,7 @@ export const defaultPlatform = new Platform({
   ancestryLength: 25,
   renderer: C.defaultRenderer,
   reportFailure: constVoid,
-  maxOp: 128,
+  maxYieldOp: 128,
   supervisor: Super.trackMainFibers
 })
 
@@ -66,7 +66,7 @@ export class CustomRuntime<R, A> {
     const initialIS  = interruptible
     const fiberId    = newFiberId()
     const scope      = Scope.unsafeMakeScope<Exit<E, A>>()
-    const supervisor = Super.none
+    const supervisor = this.platform.supervisor
 
     const context = new FiberContext<E, A>(
       fiberId,
@@ -75,12 +75,13 @@ export class CustomRuntime<R, A> {
       new Map(),
       supervisor,
       scope,
-      this.platform.maxOp,
+      this.platform.maxYieldOp,
       this.platform.reportFailure,
       this.platform,
       M.nothing()
     )
 
+    // @ts-expect-error
     if (supervisor !== Super.none) {
       supervisor.unsafeOnStart(this.env, effect, M.nothing(), context)
       context.onDone((exit) => supervisor.unsafeOnEnd(Ex.flatten(exit), context))
@@ -101,7 +102,7 @@ export class CustomRuntime<R, A> {
    */
   run_<E, A>(_: I.IO<R, E, A>, cb?: Callback<E, A>) {
     const context = this.fiberContext<E, A>(_)
-    context.runAsync(cb || constVoid)
+    context.awaitAsync(cb || constVoid)
   }
 
   /**
@@ -117,7 +118,7 @@ export class CustomRuntime<R, A> {
   runAsap_<E, A>(_: I.IO<R, E, A>, cb?: Callback<E, A>) {
     const context = this.fiberContext<E, A>(_)
 
-    context.runAsync(cb || constVoid)
+    context.awaitAsync(cb || constVoid)
   }
 
   /**
@@ -134,7 +135,7 @@ export class CustomRuntime<R, A> {
   runCancel_<E, A>(_: I.IO<R, E, A>, cb?: Callback<E, A>): AsyncCancel<E, A> {
     const context = this.fiberContext<E, A>(_)
 
-    context.runAsync(cb || constVoid)
+    context.awaitAsync(cb || constVoid)
 
     return context.interruptAs(context.id)
   }
@@ -154,7 +155,7 @@ export class CustomRuntime<R, A> {
     const context = this.fiberContext<E, A>(_)
 
     return new Promise((res, rej) => {
-      context.runAsync(Ex.match(flow(C.squash(showFiberId)(identity), rej), res))
+      context.awaitAsync(Ex.match(flow(C.squash(showFiberId)(identity), rej), res))
     })
   }
 
@@ -166,7 +167,7 @@ export class CustomRuntime<R, A> {
     const context = this.fiberContext<E, A>(_)
 
     return new Promise((res) => {
-      context.runAsync((exit) => {
+      context.awaitAsync((exit) => {
         res(exit)
       })
     })
@@ -301,7 +302,7 @@ export class CustomRuntime<R, A> {
       this.env,
       new Platform({
         ...this.platform,
-        maxOp
+        maxYieldOp: maxOp
       })
     )
   }

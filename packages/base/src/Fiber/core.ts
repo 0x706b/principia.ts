@@ -1,13 +1,13 @@
+import type * as C from '../IO/Cause'
 import type { UIO } from '../IO/core'
 import type { Exit } from '../IO/Exit/core'
 import type { Maybe } from '../Maybe'
 import type { Scope } from '../Scope'
 import type { FiberId } from './FiberId'
+import type { FiberStatus } from './FiberStatus'
 
-import * as Ev from '../Eval'
 import { FiberRef } from '../FiberRef/core'
 import { identity } from '../function'
-import * as C from '../IO/Cause'
 import * as I from '../IO/core'
 import * as Ex from '../IO/Exit/core'
 import * as M from '../Maybe'
@@ -188,175 +188,5 @@ export function match<E, A, B>(
 export function unit(): Fiber<never, void> {
   return succeed(undefined)
 }
-
-/*
- * -------------------------------------------------------------------------------------------------
- * FiberState
- * -------------------------------------------------------------------------------------------------
- */
-
-export type FiberState<E, A> = FiberStateExecuting<E, A> | FiberStateDone<E, A>
-
-export type Callback<E, A> = (exit: Exit<E, A>) => void
-
-export class FiberStateExecuting<E, A> {
-  readonly _tag = 'Executing'
-
-  constructor(
-    readonly status: FiberStatus,
-    readonly observers: Callback<never, Exit<E, A>>[],
-    readonly interrupted: C.Cause<never>
-  ) {}
-}
-
-export class FiberStateDone<E, A> {
-  readonly _tag = 'Done'
-
-  readonly interrupted = C.empty
-  readonly status: FiberStatus = new Done()
-
-  constructor(readonly value: Exit<E, A>) {}
-}
-
-export function initial<E, A>(): FiberState<E, A> {
-  return new FiberStateExecuting(new Running(false), [], C.empty)
-}
-
-export function interrupting<E, A>(state: FiberState<E, A>): boolean {
-  let current: FiberStatus | undefined = state.status
-  while (current) {
-    switch (current._tag) {
-      case 'Running': {
-        return current.interrupting
-      }
-      case 'Finishing': {
-        return current.interrupting
-      }
-      case 'Done': {
-        return false
-      }
-      case 'Suspended': {
-        current = current.previous
-        break
-      }
-    }
-  }
-  throw new Error('BUG: Fake throw to make Typescript happy. If execution ended up here, something is wrong')
-}
-
-/*
- * -------------------------------------------------------------------------------------------------
- * FiberStatus
- * -------------------------------------------------------------------------------------------------
- */
-
-export type FiberStatus = Done | Finishing | Running | Suspended
-
-export class Done {
-  readonly _tag = 'Done'
-}
-
-export class Finishing {
-  readonly _tag = 'Finishing'
-
-  constructor(readonly interrupting: boolean) {}
-}
-
-export class Running {
-  readonly _tag = 'Running'
-
-  constructor(readonly interrupting: boolean) {}
-}
-
-export class Suspended {
-  readonly _tag = 'Suspended'
-
-  constructor(
-    readonly previous: FiberStatus,
-    readonly interruptible: boolean,
-    readonly epoch: number,
-    readonly blockingOn: ReadonlyArray<FiberId>
-  ) {}
-}
-
-/**
- * @internal
- */
-export function withInterruptingEval(s: FiberStatus, b: boolean): Ev.Eval<FiberStatus> {
-  return Ev.gen(function* (_) {
-    switch (s._tag) {
-      case 'Done': {
-        return s
-      }
-      case 'Finishing': {
-        return new Finishing(b)
-      }
-      case 'Running': {
-        return new Running(b)
-      }
-      case 'Suspended': {
-        return new Suspended(yield* _(withInterruptingEval(s.previous, b)), s.interruptible, s.epoch, s.blockingOn)
-      }
-    }
-  })
-}
-
-export function withInterrupting(b: boolean): (s: FiberStatus) => FiberStatus {
-  return (s) => withInterruptingEval(s, b).value
-}
-
-/**
- * @internal
- */
-export function toFinishingEval(s: FiberStatus): Ev.Eval<FiberStatus> {
-  return Ev.gen(function* (_) {
-    switch (s._tag) {
-      case 'Done': {
-        return s
-      }
-      case 'Finishing': {
-        return s
-      }
-      case 'Running': {
-        return s
-      }
-      case 'Suspended': {
-        return yield* _(toFinishingEval(s.previous))
-      }
-    }
-  })
-}
-
-export function toFinishing(s: FiberStatus): FiberStatus {
-  return toFinishingEval(s).value
-}
-
-/*
- * -------------------------------------------------------------------------------------------------
- * FiberDump
- * -------------------------------------------------------------------------------------------------
- */
-
-export interface FiberDump {
-  _tag: 'FiberDump'
-  fiberId: FiberId
-  fiberName: Maybe<string>
-  status: FiberStatus
-}
-
-export function FiberDump(fiberId: FiberId, fiberName: Maybe<string>, status: FiberStatus): FiberDump {
-  return {
-    _tag: 'FiberDump',
-    fiberId,
-    fiberName,
-    status
-  }
-}
-
-/*
- * -------------------------------------------------------------------------------------------------
- * FiberName
- * -------------------------------------------------------------------------------------------------
- */
 
 export const fiberName = new FiberRef<M.Maybe<string>>(M.nothing(), identity, identity)

@@ -1,10 +1,8 @@
 // tracing: off
 
-import type { Either } from '../../Either'
 import type { InterruptStatus } from '../../Fiber/core'
 import type { FiberId } from '../../Fiber/FiberId'
-import type { Maybe } from '../../Maybe'
-import type { Canceler, FIO, IO, UIO } from '../core'
+import type { Canceler, FIO, IO } from '../core'
 
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
 
@@ -12,26 +10,18 @@ import { left } from '../../Either'
 import { join } from '../../Fiber/combinators/join'
 import * as F from '../../Fiber/core'
 import { pipe } from '../../function'
-import { just, nothing } from '../../Maybe'
-import { AtomicReference } from '../../util/support/AtomicReference'
-import { OneShot } from '../../util/support/OneShot'
 import * as C from '../Cause'
 import {
-  asyncMaybe,
-  chain,
+  asyncInterrupt,
   chain_,
   checkInterruptible,
-  defer,
   failCause,
   fiberId,
   flatten,
   fromPromiseHalt,
   matchCauseIO_,
-  pure,
   SetInterrupt,
-  succeed,
-  succeedLazy,
-  unit
+  succeed
 } from '../core'
 import { forkDaemon } from './core-scope'
 
@@ -241,84 +231,13 @@ export class InterruptStatusRestore {
 }
 
 /**
- * Imports an asynchronous side-effect into an IO. The side-effect
- * has the option of returning the value synchronously, which is useful in
- * cases where it cannot be determined if the effect is synchronous or
- * asynchronous until the side-effect is actually executed. The effect also
- * has the option of returning a canceler, which will be used by the runtime
- * to cancel the asynchronous effect if the fiber executing the effect is
- * interrupted.
- *
- * If the register function returns a value synchronously, then the callback
- * function must not be called. Otherwise the callback function must be called
- * at most once.
- *
- * The list of fibers, that may complete the async callback, is used to
- * provide better diagnostics.
- *
- * @trace 0
- */
-export function asyncInterruptEither<R, E, A>(
-  register: (cb: (resolve: IO<R, E, A>) => void) => Either<Canceler<R>, IO<R, E, A>>,
-  blockingOn: ReadonlyArray<FiberId> = []
-): IO<R, E, A> {
-  return pipe(
-    succeedLazy(() => [new AtomicReference(false), new OneShot<Canceler<R>>()] as const),
-    chain(([started, cancel]) =>
-      pipe(
-        asyncMaybe<R, E, IO<R, E, A>>(
-          traceAs(register, (k) => {
-            started.set(true)
-            const ret = new AtomicReference<Maybe<UIO<IO<R, E, A>>>>(nothing())
-            try {
-              const res = register((io) => k(pure(io)))
-              switch (res._tag) {
-                case 'Right': {
-                  ret.set(just(pure(res.right)))
-                  break
-                }
-                case 'Left': {
-                  cancel.set(res.left)
-                  break
-                }
-              }
-            } finally {
-              if (!cancel.isSet()) {
-                cancel.set(unit())
-              }
-            }
-            return ret.get
-          }),
-          blockingOn
-        ),
-        flatten,
-        onInterrupt(() => defer(() => (started.get ? cancel.get() : unit())))
-      )
-    )
-  )
-}
-
-/**
- * @trace 0
- */
-export function asyncInterrupt<R, E, A>(
-  register: (cb: (_: IO<R, E, A>) => void) => Canceler<R>,
-  blockingOn: ReadonlyArray<FiberId> = []
-): IO<R, E, A> {
-  return asyncInterruptEither<R, E, A>(
-    traceAs(register, (cb) => left(register(cb))),
-    blockingOn
-  )
-}
-
-/**
  * @trace 0
  */
 export function asyncInterruptPromise<R, E, A>(
   register: (cb: (_: IO<R, E, A>) => void) => Promise<Canceler<R>>,
-  blockingOn: ReadonlyArray<FiberId> = []
+  blockingOn: ReadonlyArray<FiberId>
 ): IO<R, E, A> {
-  return asyncInterruptEither<R, E, A>(
+  return asyncInterrupt<R, E, A>(
     traceAs(register, (cb) => left(pipe(register(cb), (p) => fromPromiseHalt(() => p), flatten))),
     blockingOn
   )
