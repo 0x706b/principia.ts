@@ -267,7 +267,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     }
   }
 
-  private addSupressedCause(cause: C.Cause<never>): void {
+  private addSuppressedCause(cause: C.Cause<never>): void {
     if (!C.isEmpty(cause)) {
       const oldState = this.state.get
       if (oldState._tag === 'Executing') {
@@ -313,7 +313,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                 frame.finalizer,
                 (finalizerCause) => {
                   this.popInterruptStatus()
-                  this.addSupressedCause(finalizerCause)
+                  this.addSuppressedCause(finalizerCause)
                   return failCause(cause)
                 },
                 () => {
@@ -323,6 +323,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
               )
             )
           )
+          unwinding = false
           break
         }
         case IOTag.Match: {

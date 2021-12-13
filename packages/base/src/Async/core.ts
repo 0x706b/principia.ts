@@ -62,7 +62,7 @@ export const AsyncTag = {
   Asks: 'Asks',
   Done: 'Done',
   Give: 'Give',
-  Finalize: 'Finalize',
+  Ensuring: 'Ensuring',
   All: 'All',
   Fail: 'Fail',
   Interrupt: 'Interrupt'
@@ -81,7 +81,7 @@ export type Concrete =
   | Asks<any, any, any, any>
   | Done<any, any>
   | Give<any, any, any>
-  | Finalize<any, any, any, any, any>
+  | Ensuring<any, any, any, any, any>
   | All<any, any, any>
   | Fail<any>
   | Total<any>
@@ -202,8 +202,8 @@ export class Match<R, E, A, R1, E1, B, R2, E2, C> extends Async<R & R1 & R2, E1 
   }
 }
 
-export class Finalize<R, E, A, R1, B> extends Async<R & R1, E, A> {
-  readonly _asyncTag = AsyncTag.Finalize
+export class Ensuring<R, E, A, R1, B> extends Async<R & R1, E, A> {
+  readonly _asyncTag = AsyncTag.Ensuring
 
   constructor(readonly async: Async<R, E, A>, readonly finalizer: Async<R1, never, B>) {
     super()
@@ -976,7 +976,7 @@ export function bracket<A, R1, E1, A1, R2, E2>(
 }
 
 export function ensuring_<R, E, A, R1>(ma: Async<R, E, A>, finalizer: Async<R1, never, void>): Async<R & R1, E, A> {
-  return new Finalize(ma, finalizer)
+  return new Ensuring(ma, finalizer)
 }
 
 /**
@@ -1006,7 +1006,12 @@ class ApplyFrame {
   constructor(readonly apply: (a: any) => Async<any, any, any>) {}
 }
 
-type Frame = FoldFrame | ApplyFrame
+class Finalizer {
+  readonly _tag = 'Finalizer'
+  constructor(readonly finalizer: Async<any, never, any>, readonly apply: (a: any) => Async<any, any, any>) {}
+}
+
+type Frame = FoldFrame | ApplyFrame | Finalizer
 
 export function runPromiseExitEnv_<R, E, A>(
   async: Async<R, E, A>,
@@ -1019,20 +1024,9 @@ export function runPromiseExitEnv_<R, E, A>(
     let env: Stack<any> | undefined = makeStack(r)
     let failed = false
     let current: Async<any, any, any> | undefined = async
-    let instructionCount = 0
-    let interrupted      = false
-    let finalizers: L.List<Async<any, any, any>> = L.empty()
-
-    async function runAllFinalizers(): Promise<Exit<any, any>> {
-      const exits: Array<Exit<any, any>> = []
-      for (const f of finalizers) {
-        await runPromiseExitEnv_(f, env?.value).then((ex) => {
-          exits.push(ex)
-        })
-      }
-      finalizers = null!
-      return M.getOrElse_(Ex.collectAll(...exits), () => Ex.unit())
-    }
+    let instructionCount              = 0
+    let interrupted                   = false
+    let suppressedCause: Cause<never> = C.empty
 
     function isInterrupted() {
       return interrupted || interruptionState.interrupted
@@ -1058,21 +1052,53 @@ export function runPromiseExitEnv_<R, E, A>(
       env = makeStack(k, env)
     }
 
+    function addSuppressedCause(cause: Cause<never>): void {
+      if (!C.isEmpty(cause)) {
+        suppressedCause = C.then(suppressedCause, cause)
+      }
+    }
+
+    function clearSuppressedCause(): Cause<never> {
+      const oldSuppressedCause = suppressedCause
+      suppressedCause          = C.empty
+      return oldSuppressedCause
+    }
+
     function unwindStack() {
       let unwinding = true
       while (unwinding) {
         const next = popContinuation()
         if (next == null) {
           unwinding = false
-        } else if (next._tag === 'FoldFrame') {
-          unwinding = false
-          pushContinuation(new ApplyFrame(next.recover))
+        } else {
+          switch (next._tag) {
+            case 'FoldFrame': {
+              unwinding = false
+              pushContinuation(new ApplyFrame(next.recover))
+              break
+            }
+            case 'Finalizer': {
+              pushContinuation(
+                new ApplyFrame((cause) =>
+                  matchCauseAsync_(
+                    next.finalizer,
+                    (finalizerCause) => {
+                      addSuppressedCause(finalizerCause)
+                      return failCause(cause)
+                    },
+                    () => failCause(cause)
+                  )
+                )
+              )
+              unwinding = false
+            }
+          }
         }
       }
     }
 
-    try {
-      while (current != null && !isInterrupted()) {
+    while (current != null && !isInterrupted()) {
+      try {
         if (instructionCount > 10000) {
           await new Promise((resolve) => {
             setTimeout(() => {
@@ -1145,12 +1171,13 @@ export function runPromiseExitEnv_<R, E, A>(
           }
           case AsyncTag.Fail: {
             unwindStack()
-            const next = popContinuation()
+            const fullCause = C.then(I.e, clearSuppressedCause())
+            const next      = popContinuation()
             if (next) {
-              current = next.apply(I.e)
+              current = next.apply(fullCause)
             } else {
               failed  = true
-              result  = I.e
+              result  = fullCause
               current = undefined
             }
             break
@@ -1247,24 +1274,22 @@ export function runPromiseExitEnv_<R, E, A>(
             }
             break
           }
-          case 'Finalize': {
-            finalizers = L.append_(finalizers, I.finalizer)
-            current    = I.async
+          case AsyncTag.Ensuring: {
+            pushContinuation(new Finalizer(I.finalizer, (a) => map_(I.finalizer, () => a)))
+            current = I.async
           }
         }
+      } catch (e) {
+        current = halt(e)
       }
-      await runAllFinalizers()
-      if (interruptionState.interrupted) {
-        return Ex.interrupt(void 0)
-      }
-      if (failed) {
-        return Ex.failCause<void, never, any>(result)
-      }
-      return Ex.succeed(result)
-    } catch (e) {
-      await runAllFinalizers()
-      return Ex.halt(e)
     }
+    if (interruptionState.interrupted) {
+      return Ex.interrupt(void 0)
+    }
+    if (failed) {
+      return Ex.failCause<void, never, any>(result)
+    }
+    return Ex.succeed(result)
   })()
 }
 
