@@ -187,7 +187,7 @@ function try_<A>(effect: () => A): FIO<unknown, A> {
     try {
       return effect()
     } catch (u) {
-      throw new Primitives.IOError(Ex.fail(u))
+      throw new Primitives.IOError(C.fail(u))
     }
   })
 }
@@ -209,7 +209,7 @@ export function tryCatch<E, A>(effect: () => A, onThrow: (error: unknown) => E):
     try {
       return effect()
     } catch (u) {
-      throw new Primitives.IOError(Ex.fail(onThrow(u)))
+      throw new Primitives.IOError(C.fail(onThrow(u)))
     }
   })
 }
@@ -225,7 +225,7 @@ export function deferTry<R, E, A>(io: () => IO<R, E, A>): IO<R, unknown, A> {
     try {
       return io()
     } catch (u) {
-      throw new Primitives.IOError(Ex.fail(u))
+      throw new Primitives.IOError(C.fail(u))
     }
   })
 }
@@ -243,7 +243,7 @@ export function deferTryWith<R, E, A>(
     try {
       return io(platform, id)
     } catch (u) {
-      throw new Primitives.IOError(Ex.fail(u))
+      throw new Primitives.IOError(C.fail(u))
     }
   })
 }
@@ -262,7 +262,7 @@ export function deferTryCatch<R, E, A, E1>(io: () => IO<R, E, A>, onThrow: (erro
     try {
       return io()
     } catch (u) {
-      throw new Primitives.IOError(Ex.fail(onThrow(u)))
+      throw new Primitives.IOError(C.fail(onThrow(u)))
     }
   })
 }
@@ -284,7 +284,7 @@ export function deferTryCatchWith<R, E, A, E1>(
     try {
       return io(platform, id)
     } catch (u) {
-      throw new Primitives.IOError(Ex.fail(onThrow(u)))
+      throw new Primitives.IOError(C.fail(onThrow(u)))
     }
   })
 }

@@ -949,10 +949,11 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     fastPathChainContinuationTrace.set(undefined)
                     const tracedCause    = current.fill(() => this.captureTrace(fast))
                     const discardedFolds = this.unwindStack()
-                    const fullCause      = C.then(
-                      discardedFolds ? C.stripFailures(tracedCause) : tracedCause,
-                      this.clearSuppressedCause()
-                    )
+                    const strippedCause  = discardedFolds ? C.stripFailures(tracedCause) : tracedCause
+                    const suppressed     = this.clearSuppressedCause()
+                    const fullCause      = C.contains_(strippedCause, suppressed)
+                      ? strippedCause
+                      : C.then(discardedFolds ? C.stripFailures(tracedCause) : tracedCause, this.clearSuppressedCause())
                     if (this.isStackEmpty) {
                       this.setInterrupting(true)
                       current = this.done(Ex.failCause(fullCause))
@@ -1149,16 +1150,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
           }
         } catch (e) {
           if (isIOError(e)) {
-            switch (e.exit._tag) {
-              case 'Success': {
-                current = this.next(e.exit.value)
-                break
-              }
-              case 'Failure': {
-                current = concrete(failCause(e.exit.cause))
-                break
-              }
-            }
+            current = concrete(failCause(e.cause))
           } else {
             this.setInterrupting(true)
             current = concrete(halt(e))

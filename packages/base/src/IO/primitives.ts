@@ -464,11 +464,11 @@ export abstract class FFI<R, E, A> extends IO<R, E, A> {
 export const IOErrorTypeId = Symbol.for('@principia/IO/IOError')
 export type IOErrorTypeId = typeof IOErrorTypeId
 
-export class IOError<E, A> {
+export class IOError<E> {
   readonly [IOErrorTypeId]: IOErrorTypeId = IOErrorTypeId
-  constructor(readonly exit: Exit<E, A>) {}
+  constructor(readonly cause: Cause<E>) {}
 }
 
-export function isIOError(u: unknown): u is IOError<unknown, unknown> {
+export function isIOError(u: unknown): u is IOError<unknown> {
   return isObject(u) && IOErrorTypeId in u
 }
