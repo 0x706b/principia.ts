@@ -1,7 +1,7 @@
 // tracing: off
 
 import type { Fiber, RuntimeFiber } from '../../Fiber/core'
-import type { FiberContext } from '../../internal/FiberContext'
+import type { FiberContext } from '../../Fiber/FiberContext'
 import type { Maybe } from '../../Maybe'
 import type { Scope } from '../../Scope'
 import type { FailureReporter, IO, UIO, URIO } from '../core'

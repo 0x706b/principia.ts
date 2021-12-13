@@ -2,7 +2,7 @@
 
 import type { Chunk } from '../../Chunk/core'
 import type { Fiber } from '../../Fiber/core'
-import type { FiberContext } from '../../internal/FiberContext'
+import type { FiberContext } from '../../Fiber/FiberContext'
 import type { Exit } from '../Exit/core'
 
 import { traceAs } from '@principia/compile/util'
