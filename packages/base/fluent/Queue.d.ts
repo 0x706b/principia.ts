@@ -14,19 +14,19 @@ declare global {
 
 interface QueueStaticOps {
   /**
-   * @rewriteStatic makeSliding from "@principia/base/IO/Queue"
+   * @rewriteStatic makeSliding from "@principia/base/Queue"
    */
   makeSliding: typeof Q.makeSliding
   /**
-   * @rewriteStatic makeBounded from "@principia/base/IO/Queue"
+   * @rewriteStatic makeBounded from "@principia/base/Queue"
    */
   makeBounded: typeof Q.makeBounded
   /**
-   * @rewriteStatic makeUnbounded from "@principia/base/IO/Queue"
+   * @rewriteStatic makeUnbounded from "@principia/base/Queue"
    */
   makeUnbounded: typeof Q.makeUnbounded
   /**
-   * @rewriteStatic makeDropping from "@principia/base/IO/Queue"
+   * @rewriteStatic makeDropping from "@principia/base/Queue"
    */
   makeDropping: typeof Q.makeDropping
 }

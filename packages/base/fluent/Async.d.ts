@@ -282,14 +282,8 @@ declare module '@principia/base/Async' {
 
     /**
      * @rewrite give_ from "@principia/base/Async"
-     * @trace call
      */
-    give<R0, E, A, R>(this: As.Async<R0, E, A>, r: R): As.Async<Erase<R0, R>, E, A>
-
-    /**
-     * @rewrite giveAll_ from "@principia/base/Async"
-     */
-    giveAll<R, E, A>(this: As.Async<R, E, A>, env: R): As.Async<unknown, E, A>
+    give<R, E, A>(this: As.Async<R, E, A>, env: R): As.Async<unknown, E, A>
 
     /**
      * @rewrite giveService_ from "@principia/base/Async"
@@ -304,6 +298,12 @@ declare module '@principia/base/Async' {
       this: As.Async<R, E, A>,
       tag: Tag<T>
     ): <R1, E1>(service: As.Async<R1, E1, T>) => As.Async<Erase<R & R1, Has<T>>, E | E1, A>
+
+    /**
+     * @rewrite giveSome_ from "@principia/base/Async"
+     * @trace call
+     */
+    giveSome<R0, E, A, R>(this: As.Async<R0, E, A>, r: R): As.Async<Erase<R0, R>, E, A>
 
     /**
      * @rewrite map_ from "@principia/base/Async"

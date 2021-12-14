@@ -1020,9 +1020,9 @@ export function runPromiseExitEnv_<R, E, A>(
 ): Promise<Exit<E, A>> {
   return defaultPromiseTracingContext.traced(async () => {
     let frames: Stack<Frame> | undefined = undefined
-    let result = null
-    let env: Stack<any> | undefined = makeStack(r)
-    let failed = false
+    let result             = null
+    let currentEnvironment = r
+    let failed             = false
     let current: Async<any, any, any> | undefined = async
     let instructionCount              = 0
     let interrupted                   = false
@@ -1040,16 +1040,6 @@ export function runPromiseExitEnv_<R, E, A>(
 
     function pushContinuation(continuation: Frame): void {
       frames = makeStack(continuation, frames)
-    }
-
-    function popEnv() {
-      const current = env?.value
-      env           = env?.previous
-      return current
-    }
-
-    function pushEnv(k: any) {
-      env = makeStack(k, env)
     }
 
     function addSuppressedCause(cause: Cause<never>): void {
@@ -1095,6 +1085,10 @@ export function runPromiseExitEnv_<R, E, A>(
           }
         }
       }
+    }
+
+    function ensuring(finalizer: Async<any, never, any>): void {
+      pushContinuation(new Finalizer(finalizer, (a) => map_(finalizer, () => a)))
     }
 
     while (current != null && !isInterrupted()) {
@@ -1207,26 +1201,23 @@ export function runPromiseExitEnv_<R, E, A>(
             break
           }
           case AsyncTag.Asks: {
-            current = I.f(env.value || {})
+            current = I.f(currentEnvironment)
             break
           }
           case AsyncTag.Give: {
-            current = pipe(
+            const oldEnvironment = currentEnvironment
+            currentEnvironment   = I.env
+            ensuring(
               succeedLazy(() => {
-                pushEnv(I.env)
-              }),
-              chain(() => I.async),
-              tap(() =>
-                succeedLazy(() => {
-                  popEnv()
-                })
-              )
+                currentEnvironment = oldEnvironment
+              })
             )
+            current = I.async
             break
           }
           case AsyncTag.All: {
             const exits: ReadonlyArray<Exit<any, any>> = await Promise.all(
-              A.map_(I.asyncs, (a) => runPromiseExitEnv_(a, env?.value || {}, interruptionState))
+              A.map_(I.asyncs, (a) => runPromiseExitEnv_(a, currentEnvironment, interruptionState))
             )
             const results = []
             let errored   = false
@@ -1275,7 +1266,7 @@ export function runPromiseExitEnv_<R, E, A>(
             break
           }
           case AsyncTag.Ensuring: {
-            pushContinuation(new Finalizer(I.finalizer, (a) => map_(I.finalizer, () => a)))
+            ensuring(I.finalizer)
             current = I.async
           }
         }

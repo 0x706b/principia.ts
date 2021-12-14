@@ -1224,22 +1224,10 @@ export interface IOOps<R, E, A> {
   get<R, E, A>(this: IO<R, E, Maybe<A>>): IO<R, Maybe<E>, A>
 
   /**
-   * @rewrite giveLayer_ from "@principia/base/IO"
-   * @trace call
-   */
-  give<R, E, A, R1, E1, A1>(this: I.IO<R, E, A>, layer: L.Layer<R1, E1, A1>): I.IO<Erase<R, A1> & R1, E | E1, A>
-
-  /**
    * @rewrite give_ from "@principia/base/IO"
    * @trace call
    */
-  give<R0, E, A, R>(this: I.IO<R0, E, A>, r: R): I.IO<Erase<R0, R>, E, A>
-
-  /**
-   * @rewrite giveAll_ from "@principia/base/IO"
-   * @trace call
-   */
-  giveAll<R, E, A>(this: I.IO<R, E, A>, r: R): I.IO<unknown, E, A>
+  give<R, E, A>(this: I.IO<R, E, A>, r: R): I.IO<unknown, E, A>
 
   /**
    * @rewriteConstraint giveService_ from "@principia/base/IO"
@@ -1257,9 +1245,9 @@ export interface IOOps<R, E, A> {
   ): <R1, E1>(service: I.IO<R1, E1, T>) => I.IO<Erase<R & R1, Has<T>>, E | E1, A>
 
   /**
-   * @rewriteConstraint giveServicesS_ from "@principia/base/IO"
+   * @rewriteConstraint giveServices_ from "@principia/base/IO"
    */
-  giveServicesS<R, E, A, SS extends Record<string, Tag<any>>>(
+  giveServices<R, E, A, SS extends Record<string, Tag<any>>>(
     this: I.IO<R, E, A>,
     tags: SS
   ): (
@@ -1271,9 +1259,9 @@ export interface IOOps<R, E, A> {
   >
 
   /**
-   * @rewriteConstraint giveServicesSIO_ from "@principia/base/IO"
+   * @rewriteConstraint giveServicesIO_ from "@principia/base/IO"
    */
-  giveServicesSIO<R, E, A, SS extends Record<string, Tag<any>>>(
+  giveServicesIO<R, E, A, SS extends Record<string, Tag<any>>>(
     this: I.IO<R, E, A>,
     tags: SS
   ): <R1, E1>(
@@ -1314,6 +1302,18 @@ export interface IOOps<R, E, A> {
     E | E1,
     A
   >
+
+  /**
+   * @rewrite giveSome_ from "@principia/base/IO"
+   * @trace call
+   */
+  giveSome<R0, E, A, R>(this: I.IO<R0, E, A>, r: R): I.IO<Erase<R0, R>, E, A>
+
+  /**
+   * @rewrite giveSomeLayer_ from "@principia/base/IO"
+   * @trace call
+   */
+  giveSome<R, E, A, R1, E1, A1>(this: I.IO<R, E, A>, layer: L.Layer<R1, E1, A1>): I.IO<Erase<R, A1> & R1, E | E1, A>
 
   /**
    * @rewrite gives_ from "@principia/base/IO"

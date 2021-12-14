@@ -298,11 +298,11 @@ declare module '@principia/base/Z' {
     /**
      * @rewrite give_ from "@principia/base/Z"
      */
-    give<W, S1, S2, R, E, A, R0>(this: Z<W, S1, S2, R, E, A>, r: R0): Z<W, S1, S2, Erase<R, R0>, E, A>
+    give(r: R): Z<W, S1, S2, unknown, E, A>
     /**
-     * @rewrite giveAll_ from "@principia/base/Z"
+     * @rewrite giveSome_ from "@principia/base/Z"
      */
-    giveAll(r: R): Z<W, S1, S2, unknown, E, A>
+    giveSome_<W, S1, S2, R, E, A, R0>(this: Z<W, S1, S2, R, E, A>, r: R0): Z<W, S1, S2, Erase<R, R0>, E, A>
     /**
      * @rewrite giveState_ from "@principia/base/Z"
      */

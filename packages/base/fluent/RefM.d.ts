@@ -15,27 +15,27 @@ declare global {
 
 export interface RefMStaticOps {
   /**
-   * @rewriteStatic make from "@principia/base/IO/RefM"
+   * @rewriteStatic make from "@principia/base/RefM"
    */
   make: typeof RM.make
   /**
-   * @rewriteStatic makeManaged from "@principia/base/IO/RefM"
+   * @rewriteStatic makeManaged from "@principia/base/RefM"
    */
   makeManaged: typeof RM.makeManaged
   /**
-   * @rewriteStatic unsafeMake from "@principia/base/IO/RefM"
+   * @rewriteStatic unsafeMake from "@principia/base/RefM"
    */
   unsafeMake: typeof RM.unsafeMake
 }
 
-declare module '@principia/base/IO/RefM' {
+declare module '@principia/base/RefM' {
   export interface RefM<RA, RB, EA, EB, A, B> {
     /**
      * Maps and filters the `get` value of the `RefM` with the specified partial
      * function, returning a `RefM` with a `get` value that succeeds with the
      * result of the partial function if it is defined or else fails with `None`.
      *
-     * @rewrite collect_ from "@principia/base/IO/RefM"
+     * @rewrite collect_ from "@principia/base/RefM"
      * @trace 0
      */
     collect<RA, RB, EA, EB, A, B, C>(
@@ -49,7 +49,7 @@ declare module '@principia/base/IO/RefM' {
      * succeeds with the result of the partial function if it is defined or else
      * fails with `None`.
      *
-     * @rewrite collectIO_ from "@principia/base/IO/RefM"
+     * @rewrite collectIO_ from "@principia/base/RefM"
      * @trace 0
      */
     collectIO<RA, RB, EA, EB, A, B, RC, EC, C>(
@@ -60,7 +60,7 @@ declare module '@principia/base/IO/RefM' {
     /**
      * Transforms the `set` value of the `RefM` with the specified function.
      *
-     * @rewrite contramap_ from "@principia/base/IO/RefM"
+     * @rewrite contramap_ from "@principia/base/RefM"
      * @trace 0
      */
     contramap<RA, RB, EA, EB, A, B, C>(this: RefM<RA, RB, EA, EB, A, B>, f: (_: C) => A): RefM<RA, RB, EA, EB, C, B>
@@ -69,7 +69,7 @@ declare module '@principia/base/IO/RefM' {
      * Transforms the `set` value of the `RefM` with the specified effectful
      * function.
      *
-     * @rewrite contramapIO_ from "@principia/base/IO/RefM"
+     * @rewrite contramapIO_ from "@principia/base/RefM"
      * @trace 0
      */
     contramapIO<RA, RB, EA, EB, A, B, RC, EC, C>(
@@ -81,7 +81,7 @@ declare module '@principia/base/IO/RefM' {
      * Transforms both the `set` and `get` errors of the `RefM` with the
      * specified functions.
      *
-     * @rewrite dimapError_ from "@principia/base/IO/RefM"
+     * @rewrite dimapError_ from "@principia/base/RefM"
      * @trace 0
      * @trace 1
      */
@@ -95,7 +95,7 @@ declare module '@principia/base/IO/RefM' {
      * Transforms both the `set` and `get` values of the `RefM` with the
      * specified effectual functions.
      *
-     * @rewrite dimapIO_ from "@principia/base/IO/RefM"
+     * @rewrite dimapIO_ from "@principia/base/RefM"
      * @trace 0
      * @trace 1
      */
@@ -110,7 +110,7 @@ declare module '@principia/base/IO/RefM' {
      * predicate, returning a `RefM` with a `set` value that succeeds if the
      * predicate is satisfied or else fails with `None`.
      *
-     * @rewrite filterInput_ from "@principia/base/IO/RefM"
+     * @rewrite filterInput_ from "@principia/base/RefM"
      * @trace 0
      */
     filterInput<RA, RB, EA, EB, A, B, A1 extends A>(
@@ -123,7 +123,7 @@ declare module '@principia/base/IO/RefM' {
      * predicate, returning a `RefM` with a `set` value that succeeds if the
      * predicate is satisfied or else fails with `None`.
      *
-     * @rewrite filterInputIO_ from "@principia/base/IO/RefM"
+     * @rewrite filterInputIO_ from "@principia/base/RefM"
      * @trace 0
      */
     filterInputIO<RA, RB, EA, EB, A, B, RC, EC, A1 extends A>(
@@ -136,7 +136,7 @@ declare module '@principia/base/IO/RefM' {
      * returning a `RefM` with a `get` value that succeeds if the predicate is
      * satisfied or else fails with `None`.
      *
-     * @rewrite filterOutput_ from "@principia/base/IO/RefM"
+     * @rewrite filterOutput_ from "@principia/base/RefM"
      * @trace 0
      */
     filterOutput(predicate: Predicate<B>): RefM<RA, RB, EA, Maybe<EB>, A, B>
@@ -146,7 +146,7 @@ declare module '@principia/base/IO/RefM' {
      * returning a `RefM` with a `get` value that succeeds if the predicate is
      * satisfied or else fails with `None`.
      *
-     * @rewrite filterOutputIO_ from "@principia/base/IO/RefM"
+     * @rewrite filterOutputIO_ from "@principia/base/RefM"
      * @trace 0
      */
     filterOutputIO<RA, RB, EA, EB, A, B, RC, EC>(
@@ -157,7 +157,7 @@ declare module '@principia/base/IO/RefM' {
     /**
      * Reads the value from the `RefM`.
      *
-     * @rewriteGetter get from "@principia/base/IO/RefM"
+     * @rewriteGetter get from "@principia/base/RefM"
      * @trace getter
      */
     readonly get: IO<RB, EB, B>
@@ -166,13 +166,13 @@ declare module '@principia/base/IO/RefM' {
      * Writes a new value to the `RefM`, returning the value immediately before
      * modification.
      *
-     * @rewrite getAndSet_ from "@principia/base/IO/RefM"
+     * @rewrite getAndSet_ from "@principia/base/RefM"
      * @trace call
      */
     getAndSet<RA, RB, EA, EB, A>(this: RefM<RA, RB, EA, EB, A, A>, a: A): IO<RA & RB, EA | EB, A>
 
     /**
-     * @rewrite getAndUpdateIO_ from "@principia/base/IO/RefM"
+     * @rewrite getAndUpdateIO_ from "@principia/base/RefM"
      * @trace 0
      */
     getAndUpdateIO<RA, RB, EA, EB, A, R1, E1>(
@@ -181,7 +181,7 @@ declare module '@principia/base/IO/RefM' {
     ): IO<RA & RB & R1, EA | EB | E1, A>
 
     /**
-     * @rewrite getAndUpdateJustIO_ from "@principia/base/IO/RefM"
+     * @rewrite getAndUpdateJustIO_ from "@principia/base/RefM"
      * @trace 0
      */
     getAndUpdateJustIO<RA, RB, EA, EB, A, R1, E1>(
@@ -192,7 +192,7 @@ declare module '@principia/base/IO/RefM' {
     /**
      * Transforms the `get` value of the `RefM` with the specified function.
      *
-     * @rewrite map_ from "@principia/base/IO/RefM"
+     * @rewrite map_ from "@principia/base/RefM"
      * @trace 0
      */
     map<RA, RB, EA, EB, A, B, C>(this: RefM<RA, RB, EA, EB, A, B>, f: (b: B) => C): RefM<RA, RB, EA, EB, A, C>
@@ -201,7 +201,7 @@ declare module '@principia/base/IO/RefM' {
      * Transforms the `get` value of the `RefM` with the specified effectful
      * function.
      *
-     * @rewrite mapIO_ from "@principia/base/IO/RefM"
+     * @rewrite mapIO_ from "@principia/base/RefM"
      * @trace 0
      */
     mapIO<RA, RB, EA, EB, A, B, RC, EC, C>(
@@ -217,7 +217,7 @@ declare module '@principia/base/IO/RefM' {
      * ergonomic but this method is extremely useful for implementing new
      * combinators.
      *
-     * @rewrite match_ from "@principia/base/IO/RefM"
+     * @rewrite match_ from "@principia/base/RefM"
      * @trace 0
      * @trace 1
      * @trace 2
@@ -235,7 +235,7 @@ declare module '@principia/base/IO/RefM' {
      * the state in transforming the `set` value. This is a more powerful version
      * of `matchIO` but requires unifying the environment and error types.
      *
-     * @rewrite matchAllIO_ from "@principia/base/IO/RefM"
+     * @rewrite matchAllIO_ from "@principia/base/RefM"
      * @trace 0
      * @trace 1
      * @trace 2
@@ -258,7 +258,7 @@ declare module '@principia/base/IO/RefM' {
      * ergonomic but this method is extremely useful for implementing new
      * combinators.
      *
-     * @rewrite matchIO_ from "@principia/base/IO/RefM"
+     * @rewrite matchIO_ from "@principia/base/RefM"
      * @trace 0
      * @trace 1
      * @trace 2
@@ -276,7 +276,7 @@ declare module '@principia/base/IO/RefM' {
      * a return value for the modification. This is a more powerful version of
      * `update`.
      *
-     * @rewrite modifyIO_ from "@principia/base/IO/RefM"
+     * @rewrite modifyIO_ from "@principia/base/RefM"
      * @trace 0
      */
     modifyIO<RA, RB, EA, EB, A, B, R1, E1>(
@@ -290,7 +290,7 @@ declare module '@principia/base/IO/RefM' {
      * otherwise it returns a default value.
      * This is a more powerful version of `updateJust`.
      *
-     * @rewrite modifyJustIO_ from "@principia/base/IO/RefM"
+     * @rewrite modifyJustIO_ from "@principia/base/RefM"
      * @trace 1
      */
     modifyJustIO<RA, RB, EA, EB, A, R1, E1, B>(
@@ -303,7 +303,7 @@ declare module '@principia/base/IO/RefM' {
      * Writes a new value to the `RefM`, with a guarantee of immediate
      * consistency (at some cost to performance).
      *
-     * @rewrite set_ from "@principia/base/IO/RefM"
+     * @rewrite set_ from "@principia/base/RefM"
      * @trace call
      */
     readonly set: (a: A) => IO<RA, EA, void>
@@ -312,7 +312,7 @@ declare module '@principia/base/IO/RefM' {
      * Performs the specified effect every time a value is written to this
      * `RefM`.
      *
-     * @rewrite tapInput_ from "@principia/base/IO/RefM"
+     * @rewrite tapInput_ from "@principia/base/RefM"
      * @trace 0
      */
     tapInput<RA, RB, EA, EB, A, B, RC, EC>(
@@ -324,7 +324,7 @@ declare module '@principia/base/IO/RefM' {
      * Performs the specified effect every time a value is read from this
      * `RefM`.
      *
-     * @rewrite tapOutput_ from "@principia/base/IO/RefM"
+     * @rewrite tapOutput_ from "@principia/base/RefM"
      * @trace 0
      */
     tapOutput<RA, RB, EA, EB, A, B, RC, EC>(
@@ -333,7 +333,7 @@ declare module '@principia/base/IO/RefM' {
     ): RefM<RA, RB & RC, EA, EB | EC, A, B>
 
     /**
-     * @rewrite updateAndGetIO_ from "@principia/base/IO/RefM"
+     * @rewrite updateAndGetIO_ from "@principia/base/RefM"
      * @trace 0
      */
     updateAndGetIO<RA, RB, EA, EB, A, R1, E1>(
@@ -342,7 +342,7 @@ declare module '@principia/base/IO/RefM' {
     ): IO<RA & RB & R1, EA | EB | E1, A>
 
     /**
-     * @rewrite updateIO_ from "@principia/base/IO/RefM"
+     * @rewrite updateIO_ from "@principia/base/RefM"
      * @trace 0
      */
     updateIO<RA, RB, EA, EB, A, R1, E1>(
@@ -351,7 +351,7 @@ declare module '@principia/base/IO/RefM' {
     ): IO<RA & RB & R1, EA | EB | E1, void>
 
     /**
-     * @rewrite updateJustAndGetIO_ from "@principia/base/IO/RefM"
+     * @rewrite updateJustAndGetIO_ from "@principia/base/RefM"
      * @trace 0
      */
     updateJustAndGetIO<RA, RB, EA, EB, A, R1, E1>(
@@ -360,7 +360,7 @@ declare module '@principia/base/IO/RefM' {
     ): IO<RA & RB & R1, EA | EB | E1, A>
 
     /**
-     * @rewrite updateJustIO_ from "@principia/base/IO/RefM"
+     * @rewrite updateJustIO_ from "@principia/base/RefM"
      * @trace 0
      */
     updateJustIO<RA, RB, EA, EB, A, R1, E1>(

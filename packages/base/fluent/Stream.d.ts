@@ -512,17 +512,17 @@ declare module '@principia/base/Stream/core' {
      */
     forever: Stream<R, E, A>
     /**
-     * @rewrite giveLayer_ from "@principia/base/Stream"
-     */
-    give<R, E, A, R0, E1, A1>(this: Stream<R, E, A>, layer: Layer<R0, E1, A1>): Stream<Erase<R, A1>, E | E1, A>
-    /**
      * @rewrite give_ from "@principia/base/Stream"
      */
-    give<R, E, A, R0>(this: Stream<R, E, A>, r: R0): Stream<Erase<R, R0>, E, A>
+    give(r: R): Stream<unknown, E, A>
     /**
-     * @rewrite giveAll_ from "@principia/base/Stream"
+     * @rewrite giveSome_ from "@principia/base/Stream"
      */
-    giveAll(r: R): Stream<unknown, E, A>
+    giveSome<R, E, A, R0>(this: Stream<R, E, A>, r: R0): Stream<Erase<R, R0>, E, A>
+    /**
+     * @rewrite giveSomeLayer_ from "@principia/base/Stream"
+     */
+    giveSome<R, E, A, R0, E1, A1>(this: Stream<R, E, A>, layer: Layer<R0, E1, A1>): Stream<Erase<R, A1>, E | E1, A>
     /**
      * @rewrite groupBy_ from "@principia/base/Stream"
      */
