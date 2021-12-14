@@ -213,7 +213,7 @@ function forkManaged<R, E, A>(self: Managed<R, E, A>): Managed<R, never, FiberCo
             self.io,
             I.map(([, a]) => a),
             forkDaemon,
-            I.giveAll(tuple(r, innerReleaseMap)),
+            I.give(tuple(r, innerReleaseMap)),
             restore
           )
         )

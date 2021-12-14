@@ -59,15 +59,15 @@ export function gives<Q, R>(f: (q: Q) => R): <A>(ra: Reader<R, A>) => Reader<Q, 
   return (ra) => gives_(ra, f)
 }
 
-export function giveAll_<R, A>(ra: Reader<R, A>, r: R): Reader<unknown, A> {
+export function give_<R, A>(ra: Reader<R, A>, r: R): Reader<unknown, A> {
   return () => ra(r)
 }
 
 /**
- * @dataFirst giveAll_
+ * @dataFirst give_
  */
-export function giveAll<R>(r: R): <A>(ra: Reader<R, A>) => Reader<unknown, A> {
-  return (ra) => giveAll_(ra, r)
+export function give<R>(r: R): <A>(ra: Reader<R, A>) => Reader<unknown, A> {
+  return (ra) => give_(ra, r)
 }
 
 export function runReader_<A>(ra: Reader<unknown, A>): A
@@ -332,7 +332,7 @@ export const MonadEnv = P.MonadEnv<ReaderF>({
   chain_,
   flatten,
   asks,
-  giveAll_
+  give_
 })
 
 export const Profunctor = P.Profunctor<ReaderF>({

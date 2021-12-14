@@ -464,19 +464,19 @@ export const gives_: <R0, R, E, A>(ra: Sync<R, E, A>, f: (r0: R0) => R) => Sync<
  */
 export const gives: <R0, R>(f: (r0: R0) => R) => <E, A>(ra: Sync<R, E, A>) => Sync<R0, E, A> = Z.gives
 
-export const giveAll_: <R, E, A>(ra: Sync<R, E, A>, env: R) => Sync<unknown, E, A> = Z.giveAll_
+export const giveAll_: <R, E, A>(ra: Sync<R, E, A>, env: R) => Sync<unknown, E, A> = Z.give_
 
 /**
  * @dataFirst giveAll_
  */
-export const giveAll: <R>(env: R) => <E, A>(ra: Sync<R, E, A>) => Sync<unknown, E, A> = Z.giveAll
+export const giveAll: <R>(env: R) => <E, A>(ra: Sync<R, E, A>) => Sync<unknown, E, A> = Z.give
 
-export const give_: <R0, R, E, A>(ra: Sync<R & R0, E, A>, env: R) => Sync<R0, E, A> = Z.give_
+export const give_: <R0, R, E, A>(ra: Sync<R & R0, E, A>, env: R) => Sync<R0, E, A> = Z.giveSome_
 
 /**
  * @dataFirst give_
  */
-export const give: <R>(env: R) => <R0, E, A>(ra: Sync<R & R0, E, A>) => Sync<R0, E, A> = Z.give
+export const give: <R>(env: R) => <R0, E, A>(ra: Sync<R & R0, E, A>) => Sync<R0, E, A> = Z.giveSome
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -642,7 +642,7 @@ export function giveServiceSync<T>(
 ): <R, E>(f: Sync<R, E, T>) => <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R & R1, E | E1, A1> {
   return <R, E>(f: Sync<R, E, T>) =>
     <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>): Sync<R & R1, E | E1, A1> =>
-      Z.asksZ((r: R & R1) => Z.chain_(f, (t) => Z.giveAll_(ma, mergeEnvironments(_, r, t))))
+      Z.asksZ((r: R & R1) => Z.chain_(f, (t) => Z.give_(ma, mergeEnvironments(_, r, t))))
 }
 
 /**

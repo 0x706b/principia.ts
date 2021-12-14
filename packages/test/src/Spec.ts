@@ -285,25 +285,23 @@ export function gives<R0, R>(f: (r0: R0) => R): <E, T>(spec: Spec<R, E, T>) => S
   return (spec) => gives_(spec, f)
 }
 
-export function give_<R0, R, E, T>(spec: Spec<R & R0, E, T>, r: R): Spec<R0, E, T> {
+export function giveSome_<R0, R, E, T>(spec: Spec<R & R0, E, T>, r: R): Spec<R0, E, T> {
   return gives_(spec, (r0) => ({ ...r, ...r0 }))
 }
 
-export function give<R>(r: R): <R0, E, T>(spec: Spec<R & R0, E, T>) => Spec<R0, E, T> {
+export function giveSome<R>(r: R): <R0, E, T>(spec: Spec<R & R0, E, T>) => Spec<R0, E, T> {
   return (spec) => gives_(spec, (r0) => ({ ...r, ...r0 }))
 }
 
-export function giveAll_<R, E, T>(spec: Spec<R, E, T>, r: R): Spec<unknown, E, T> {
+export function give_<R, E, T>(spec: Spec<R, E, T>, r: R): Spec<unknown, E, T> {
   return gives_(spec, () => r)
 }
 
-export function giveAll<R>(r: R): <E, T>(spec: Spec<R, E, T>) => Spec<unknown, E, T> {
-  return (spec) => giveAll_(spec, r)
+export function give<R>(r: R): <E, T>(spec: Spec<R, E, T>) => Spec<unknown, E, T> {
+  return (spec) => give_(spec, r)
 }
 
-export function giveLayer<R1, E1, A1>(
-  layer: L.Layer<R1, E1, A1>
-): <R, E, T>(spec: Spec<R & A1, E, T>) => Spec<R & R1, E | E1, T> {
+export function giveLayer<R, R1, E1>(layer: L.Layer<R1, E1, R>): <E, T>(spec: Spec<R, E, T>) => Spec<R1, E | E1, T> {
   return (spec) =>
     transform_(
       spec,
@@ -343,7 +341,7 @@ export function execute<R, E, T>(
   spec: Spec<R, E, T>,
   defExec: ExecutionStrategy
 ): Ma.Managed<R, never, Spec<unknown, E, T>> {
-  return Ma.asksManaged((r: R) => pipe(spec, giveAll(r), foreachExec(I.failCause, I.succeed, defExec)))
+  return Ma.asksManaged((r: R) => pipe(spec, give(r), foreachExec(I.failCause, I.succeed, defExec)))
 }
 
 export function whenM_<R, E, R1, E1>(

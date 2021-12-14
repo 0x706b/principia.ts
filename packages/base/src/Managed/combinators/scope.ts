@@ -35,7 +35,7 @@ export function scope(): Managed<unknown, never, ManagedScope> {
             <R, E, A>(managed: Managed<R, E, A>): I.IO<R, E, readonly [Finalizer, A]> =>
               pipe(
                 I.ask<R>(),
-                I.chain((r) => I.giveAll_(managed.io, tuple(r, finalizers)))
+                I.chain((r) => I.give_(managed.io, tuple(r, finalizers)))
               )
           )
       )

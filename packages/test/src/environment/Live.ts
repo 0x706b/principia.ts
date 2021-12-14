@@ -19,7 +19,7 @@ export abstract class Live {
     M.asks((ioenv) => {
       return new (class extends Live {
         provide<E, A>(io: IO<IOEnv, E, A>): IO<unknown, E, A> {
-          return I.giveAll_(io, ioenv)
+          return I.give_(io, ioenv)
         }
       })()
     })
@@ -36,7 +36,7 @@ export function withLive_<R, E, A, E1, B>(
 ): IO<P.Erase<R, Has<Live>>, E | E1, B> {
   return pipe(
     I.ask<R & Has<Live>>(),
-    I.chain((r) => Live.live(f(I.giveAll_(io, r))))
+    I.chain((r) => Live.live(f(I.give_(io, r))))
   ) as any
 }
 

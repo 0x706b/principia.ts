@@ -1,7 +1,7 @@
 import '@principia/base/Operators'
 
+import { putStrLn } from '@principia/base/Console'
 import * as I from '@principia/base/IO'
-import { putStrLn } from '@principia/base/IO/Console'
 
 import * as Http from '../src/HttpServer'
 import * as Routes from '../src/Route'
@@ -36,4 +36,4 @@ function RequestURLLogger<R, E>(routes: Routes.Routes<R, E>) {
 
 const routes = Routes.empty['|>'](r1)['|>'](RequestTimer)['|>'](RequestURLLogger)['|>'](Routes.HttpExceptionHandler)
 
-Routes.drain(routes)['|>'](I.giveLayer(server))['|>'](I.run())
+Routes.drain(routes)['|>'](I.giveSomeLayer(server))['|>'](I.run())

@@ -1197,7 +1197,7 @@ export function tapErrorCause<E, R1, E1>(
  * @trace 0
  */
 export function asks<R, A>(f: (_: R) => A): URIO<R, A> {
-  return new Primitives.Access(traceAs(f, (_: R) => new Primitives.Succeed(f(_))))
+  return new Primitives.Asks(traceAs(f, (_: R) => new Primitives.Succeed(f(_))))
 }
 
 /**
@@ -1209,7 +1209,7 @@ export function asks<R, A>(f: (_: R) => A): URIO<R, A> {
  * @trace 0
  */
 export function asksIO<R0, R, E, A>(f: (r: R0) => IO<R, E, A>): IO<R & R0, E, A> {
-  return new Primitives.Access(f)
+  return new Primitives.Asks(f)
 }
 
 /**
@@ -1223,9 +1223,9 @@ export function asksIO<R0, R, E, A>(f: (r: R0) => IO<R, E, A>): IO<R & R0, E, A>
  *
  * @trace call
  */
-export function giveAll_<R, E, A>(ma: IO<R, E, A>, r: R): FIO<E, A> {
+export function give_<R, E, A>(ma: IO<R, E, A>, r: R): FIO<E, A> {
   const trace = accessCallTrace()
-  return new Primitives.Provide(ma, r, trace)
+  return new Primitives.Give(ma, r, trace)
 }
 
 /**
@@ -1237,12 +1237,12 @@ export function giveAll_<R, E, A>(ma: IO<R, E, A>, r: R): FIO<E, A> {
  * @category MonadEnv
  * @since 1.0.0
  *
- * @dataFirst giveAll_
+ * @dataFirst give_
  * @trace call
  */
-export function giveAll<R>(r: R): <E, A>(ma: IO<R, E, A>) => IO<unknown, E, A> {
+export function give<R>(r: R): <E, A>(ma: IO<R, E, A>) => IO<unknown, E, A> {
   const trace = accessCallTrace()
-  return (ma) => traceCall(giveAll_, trace)(ma, r)
+  return (ma) => traceCall(give_, trace)(ma, r)
 }
 
 /**
@@ -1257,7 +1257,7 @@ export function giveAll<R>(r: R): <E, A>(ma: IO<R, E, A>) => IO<unknown, E, A> {
  * @trace 1
  */
 export function gives_<R0, R, E, A>(ma: IO<R, E, A>, f: (r0: R0) => R) {
-  return asksIO(traceAs(f, (r0: R0) => giveAll_(ma, f(r0))))
+  return asksIO(traceAs(f, (r0: R0) => give_(ma, f(r0))))
 }
 
 /**
@@ -1287,7 +1287,7 @@ export function gives<R0, R>(f: (r0: R0) => R): <E, A>(ma: IO<R, E, A>) => IO<R0
  *
  * @trace call
  */
-export function give_<E, A, R = unknown, R0 = unknown>(ma: IO<R & R0, E, A>, r: R): IO<R0, E, A> {
+export function giveSome_<E, A, R = unknown, R0 = unknown>(ma: IO<R & R0, E, A>, r: R): IO<R0, E, A> {
   const trace = accessCallTrace()
   return traceFrom(trace, gives_)(ma, (r0) => ({ ...r0, ...r }))
 }
@@ -1301,12 +1301,12 @@ export function give_<E, A, R = unknown, R0 = unknown>(ma: IO<R & R0, E, A>, r: 
  * @category MonadEnv
  * @since 1.0.0
  *
- * @dataFirst give_
+ * @dataFirst giveSome_
  * @trace call
  */
-export function give<R = unknown>(r: R): <E, A, R0 = unknown>(ma: IO<R & R0, E, A>) => IO<R0, E, A> {
+export function giveSome<R = unknown>(r: R): <E, A, R0 = unknown>(ma: IO<R & R0, E, A>) => IO<R0, E, A> {
   const trace = accessCallTrace()
-  return (ma) => traceCall(give_, trace)(ma, r)
+  return (ma) => traceCall(giveSome_, trace)(ma, r)
 }
 
 /**
@@ -1492,7 +1492,7 @@ export function and<R1, E1>(mb: IO<R1, E1, boolean>): <R, E>(ma: IO<R, E, boolea
  */
 export function andThen_<R, E, A, E1, B>(ra: IO<R, E, A>, ab: IO<A, E1, B>): IO<R, E | E1, B> {
   const trace = accessCallTrace()
-  return pipe(ra, chain(traceFrom(trace, (a) => giveAll_(ab, a))))
+  return pipe(ra, chain(traceFrom(trace, (a) => give_(ab, a))))
 }
 
 /**
@@ -1997,7 +1997,7 @@ export function compose_<R, E, A, R0, E1>(me: IO<R, E, A>, that: IO<R0, E1, R>):
   const trace = accessCallTrace()
   return chain_(
     that,
-    traceFrom(trace, (r) => giveAll_(me, r))
+    traceFrom(trace, (r) => give_(me, r))
   )
 }
 
@@ -3180,8 +3180,8 @@ export function join_<R, E, A, R1, E1, A1>(io: IO<R, E, A>, that: IO<R1, E1, A1>
       (_: E.Either<R, R1>): IO<E.Either<R, R1>, E | E1, A | A1> =>
         E.match_(
           _,
-          (r) => giveAll_(io, r),
-          (r1) => giveAll_(that, r1)
+          (r) => give_(io, r),
+          (r1) => give_(that, r1)
         )
     )
   )
@@ -3216,8 +3216,8 @@ export function joinEither_<R, E, A, R1, E1, A1>(
       (_: E.Either<R, R1>): IO<E.Either<R, R1>, E | E1, E.Either<A, A1>> =>
         E.match_(
           _,
-          (r) => map_(giveAll_(ma, r), E.left),
-          (r1) => map_(giveAll_(mb, r1), E.right)
+          (r) => map_(give_(ma, r), E.left),
+          (r1) => map_(give_(mb, r1), E.right)
         )
     )
   )
@@ -4512,14 +4512,14 @@ export function asService<T>(tag: Tag<T>): <R, E>(ma: IO<R, E, T>) => IO<R, E, H
 /**
  * Accesses the specified services in the environment of the effect.
  */
-export function askServices<SS extends Record<string, Tag<any>>>(s: SS): IO<HasStruct<SS>, never, ServicesStruct<SS>> {
+export function services<SS extends Record<string, Tag<any>>>(s: SS): IO<HasStruct<SS>, never, ServicesStruct<SS>> {
   return asks((r) => R.map_(s, (tag) => tag.read(r as Has<any>)) as any)
 }
 
 /**
  * Accesses the specified services in the environment of the effect.
  */
-export function askServicesT<SS extends ReadonlyArray<Tag<any>>>(...s: SS): IO<HasTuple<SS>, never, ServicesTuple<SS>> {
+export function servicesT<SS extends ReadonlyArray<Tag<any>>>(...s: SS): IO<HasTuple<SS>, never, ServicesTuple<SS>> {
   return asks((r) => A.map_(s, (tag) => tag.read(r as Has<any>)) as any)
 }
 
@@ -4570,14 +4570,14 @@ export function asksService<T>(s: Tag<T>): <B>(f: (a: T) => B) => IO<Has<T>, nev
 /**
  * Access a service with the required Service Entry
  */
-export function askService<T>(s: Tag<T>): IO<Has<T>, never, T> {
+export function service<T>(s: Tag<T>): IO<Has<T>, never, T> {
   return asksServiceIO(s)(succeed)
 }
 
-export function giveServicesS_<SS extends Record<string, Tag<any>>>(tags: SS) {
+export function giveServices_<SS extends Record<string, Tag<any>>>(tags: SS) {
   return <R, E, A>(io: IO<R & HasStruct<SS>, E, A>, services: ServicesStruct<SS>): IO<R, E, A> =>
     asksIO((r: R) =>
-      giveAll_(
+      give_(
         io,
         Object.assign(
           {},
@@ -4591,23 +4591,23 @@ export function giveServicesS_<SS extends Record<string, Tag<any>>>(tags: SS) {
 /**
  * Provides the IO with the required services
  */
-export function giveServicesS<SS extends Record<string, Tag<any>>>(s: SS) {
+export function giveServices<SS extends Record<string, Tag<any>>>(s: SS) {
   return (services: ServicesStruct<SS>) =>
     <R, E, A>(io: IO<R & HasStruct<SS>, E, A>): IO<R, E, A> =>
-      giveServicesS_(s)(io, services)
+      giveServices_(s)(io, services)
 }
 
 /**
  * Effectfully provides the IO with the required services
  */
-export function giveServicesSIO_<SS extends Record<string, Tag<any>>>(tags: SS) {
+export function giveServicesIO_<SS extends Record<string, Tag<any>>>(tags: SS) {
   return <R, E, A, R1, E1>(
     io: IO<R & HasStruct<SS>, E, A>,
     services: IO<R1, E1, ServicesStruct<SS>>
   ): IO<R & R1, E | E1, A> =>
     asksIO((r: R & R1) =>
       chain_(services, (svcs) =>
-        giveAll_(
+        give_(
           io,
           Object.assign(
             {},
@@ -4622,10 +4622,10 @@ export function giveServicesSIO_<SS extends Record<string, Tag<any>>>(tags: SS) 
 /**
  * Effectfully provides the IO with the required services
  */
-export function giveServicesSIO<SS extends Record<string, Tag<any>>>(tags: SS) {
+export function giveServicesIO<SS extends Record<string, Tag<any>>>(tags: SS) {
   return <R, E>(services: IO<R, E, ServicesStruct<SS>>) =>
     <R1, E1, A>(io: IO<R1 & HasStruct<SS>, E1, A>): IO<R & R1, E | E1, A> =>
-      giveServicesSIO_(tags)(io, services)
+      giveServicesIO_(tags)(io, services)
 }
 
 /**
@@ -4634,7 +4634,7 @@ export function giveServicesSIO<SS extends Record<string, Tag<any>>>(tags: SS) {
 export function giveServicesT_<SS extends ReadonlyArray<Tag<any>>>(...tags: SS) {
   return <R, E, A>(io: IO<R & HasTuple<SS>, E, A>, ...services: ServicesTuple<SS>): IO<R, E, A> =>
     asksIO((r: R) =>
-      giveAll_(
+      give_(
         io,
         Object.assign(
           {},
@@ -4664,7 +4664,7 @@ export function giveServicesTIO_<SS extends ReadonlyArray<Tag<any>>>(...tags: SS
   ): IO<R & R1, E | E1, A> =>
     asksIO((r: R & R1) =>
       chain_(services, (svcs) =>
-        giveAll_(
+        give_(
           io,
           Object.assign(
             {},
@@ -4706,7 +4706,7 @@ export function giveService<T>(tag: Tag<T>) {
  */
 export function giveServiceIO_<T>(tag: Tag<T>) {
   return <R, E, A, R1, E1>(ma: IO<R & Has<T>, E, A>, service: IO<R1, E1, T>): IO<R & R1, E | E1, A> =>
-    asksIO((r: R & R1) => chain_(service, (t) => giveAll_(ma, mergeEnvironments(tag, r, t))))
+    asksIO((r: R & R1) => chain_(service, (t) => give_(ma, mergeEnvironments(tag, r, t))))
 }
 
 /**
@@ -4792,7 +4792,7 @@ export const __adapter = (_: any, __?: any) => {
     return __ ? (_._tag === 'Nothing' ? fail(__()) : pure(_.value)) : getOrFail(_)
   }
   if (isTag(_)) {
-    return askService(_)
+    return service(_)
   }
   if (S.isSync(_)) {
     return fromSync(_)

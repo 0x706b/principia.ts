@@ -1080,16 +1080,16 @@ export function asksStream<R0, R, E, A>(f: (r0: R0) => Stream<R, E, A>): Stream<
  * Provides the stream with its required environment, which eliminates
  * its dependency on `R`.
  */
-export function giveAll_<R, E, A>(ra: Stream<R, E, A>, r: R): Stream<unknown, E, A> {
-  return new Stream(Ch.giveAll_(ra.channel, r))
+export function give_<R, E, A>(ra: Stream<R, E, A>, r: R): Stream<unknown, E, A> {
+  return new Stream(Ch.give_(ra.channel, r))
 }
 
 /**
  * Provides the stream with its required environment, which eliminates
  * its dependency on `R`.
  */
-export function giveAll<R>(r: R): <E, A>(ra: Stream<R, E, A>) => Stream<unknown, E, A> {
-  return (ra) => giveAll_(ra, r)
+export function give<R>(r: R): <E, A>(ra: Stream<R, E, A>) => Stream<unknown, E, A> {
+  return (ra) => give_(ra, r)
 }
 
 /**
@@ -1097,7 +1097,7 @@ export function giveAll<R>(r: R): <E, A>(ra: Stream<R, E, A>) => Stream<unknown,
  * leaving the remainder `R0`.
  */
 export function gives_<R, E, A, R0>(ra: Stream<R, E, A>, f: (r0: R0) => R): Stream<R0, E, A> {
-  return chain_(ask<R0>(), (r0) => giveAll_(ra, f(r0)))
+  return chain_(ask<R0>(), (r0) => give_(ra, f(r0)))
 }
 
 /**
@@ -1108,18 +1108,18 @@ export function gives<R, R0>(f: (r0: R0) => R): <E, A>(ra: Stream<R, E, A>) => S
   return (ra) => gives_(ra, f)
 }
 
-export function give_<R, E, A, R0>(ra: Stream<R0 & R, E, A>, r: R): Stream<R0, E, A> {
+export function giveSome_<R, E, A, R0>(ra: Stream<R0 & R, E, A>, r: R): Stream<R0, E, A> {
   return gives_(ra, (r0) => ({ ...r0, ...r }))
 }
 
-export function give<R>(r: R): <R0, E, A>(ra: Stream<R0 & R, E, A>) => Stream<R0, E, A> {
-  return (ra) => give_(ra, r)
+export function giveSome<R>(r: R): <R0, E, A>(ra: Stream<R0 & R, E, A>) => Stream<R0, E, A> {
+  return (ra) => giveSome_(ra, r)
 }
 
 /**
  * Provides a layer to the stream, which translates it to another level.
  */
-export function giveLayer_<R, E, A, R0, E1, R1>(
+export function giveSomeLayer_<R, E, A, R0, E1, R1>(
   ra: Stream<R & R1, E, A>,
   layer: Layer<R0, E1, R1>
 ): Stream<R0 & R, E | E1, A> {
@@ -1129,7 +1129,7 @@ export function giveLayer_<R, E, A, R0, E1, R1>(
 /**
  * Provides a layer to the stream, which translates it to another level.
  */
-export function giveLayer<R0, E1, R1>(
+export function giveSomeLayer<R0, E1, R1>(
   layer: Layer<R0, E1, R1>
 ): <R, E, A>(ra: Stream<R & R1, E, A>) => Stream<R0 & R, E | E1, A> {
   return <R, E, A>(ra: Stream<R & R1, E, A>): Stream<R0 & R, E | E1, A> =>

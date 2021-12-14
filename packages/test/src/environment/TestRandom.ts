@@ -223,7 +223,7 @@ export class TestRandom implements Random {
   }
 
   static random(): L.Layer<Has<Clock>, never, Has<Random> & Has<TestRandom>> {
-    return L.fromIO(ClockTag)(I.askService(ClockTag))
+    return L.fromIO(ClockTag)(I.service(ClockTag))
       ['+++'](this.determinictic)
       ['>>>'](
         L.fromRawFunctionIO((env: Has<Clock> & Has<Random> & Has<TestRandom>) => {

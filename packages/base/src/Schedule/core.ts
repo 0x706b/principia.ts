@@ -258,17 +258,17 @@ export function as<O1>(o: O1) {
  * -------------------------------------------------------------------------------------------------
  */
 
-const giveAllLoop =
+const giveLoop =
   <R, I, O>(self: StepFunction<R, I, O>, r: R): StepFunction<unknown, I, O> =>
   (now, i) =>
-    I.giveAll(r)(
+    I.give(r)(
       I.map_(self(now, i), (d) => {
         switch (d._tag) {
           case 'Done': {
             return makeDone(d.out)
           }
           case 'Continue': {
-            return makeContinue(d.out, d.interval, giveAllLoop(d.next, r))
+            return makeContinue(d.out, d.interval, giveLoop(d.next, r))
           }
         }
       })
@@ -278,16 +278,16 @@ const giveAllLoop =
  * Returns a new schedule with its environment provided to it, so the resulting
  * schedule does not require any environment.
  */
-export function giveAll_<R, I, O>(sc: Schedule<R, I, O>, r: R): Schedule<unknown, I, O> {
-  return new Schedule(giveAllLoop(sc.step, r))
+export function give_<R, I, O>(sc: Schedule<R, I, O>, r: R): Schedule<unknown, I, O> {
+  return new Schedule(giveLoop(sc.step, r))
 }
 
 /**
  * Returns a new schedule with its environment provided to it, so the resulting
  * schedule does not require any environment.
  */
-export function giveAll<R>(r: R): <I, O>(sc: Schedule<R, I, O>) => Schedule<unknown, I, O> {
-  return (sc) => giveAll_(sc, r)
+export function give<R>(r: R): <I, O>(sc: Schedule<R, I, O>) => Schedule<unknown, I, O> {
+  return (sc) => give_(sc, r)
 }
 
 const givesLoop =

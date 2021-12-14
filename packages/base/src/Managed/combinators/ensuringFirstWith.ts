@@ -37,7 +37,7 @@ export function ensuringFirstWith_<R, E, A, R1>(
               self.io,
               I.map(([, a]) => a),
               I.result,
-              I.giveAll(tuple(r, innerReleaseMap)),
+              I.give(tuple(r, innerReleaseMap)),
               restore
             )
           )
@@ -45,7 +45,7 @@ export function ensuringFirstWith_<R, E, A, R1>(
             add(outerReleaseMap, (e) =>
               pipe(
                 cleanup(exitEA),
-                I.giveAll(r),
+                I.give(r),
                 I.result,
                 I.crossWith(
                   I.result(releaseAll_(innerReleaseMap, e, sequential)),

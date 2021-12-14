@@ -101,7 +101,7 @@ export abstract class Layer<R, E, A> {
   }
 
   use<R1, E1, A1>(io: I.IO<R1 & A, E1, A1>): I.IO<R & R1, E | E1, A1> {
-    return Ma.use_(build(this['+++'](identity<R1>())), (a) => I.giveAll_(io, a))
+    return Ma.use_(build(this['+++'](identity<R1>())), (a) => I.give_(io, a))
   }
 }
 
@@ -305,7 +305,7 @@ function scope<R, E, A>(l: Layer<R, E, A>): Managed<unknown, never, (_: MemoMap)
               I.toManaged()(I.ask<any>()),
               Ma.chain((r) => Ma.gives_(memo.getOrElseMemoize(l.onFailure), () => tuple(r, e)))
             ),
-          (r) => Ma.giveAll_(memo.getOrElseMemoize(l.onSuccess), r)
+          (r) => Ma.give_(memo.getOrElseMemoize(l.onSuccess), r)
         )
       )
     }
@@ -1034,7 +1034,7 @@ export class MemoMap {
                       scope(layer),
                       Ma.chain((_) => _(self)),
                       (_) => _.io,
-                      I.giveAll(tuple(a, innerReleaseMap)),
+                      I.give(tuple(a, innerReleaseMap)),
                       I.result,
                       I.chain((ex) =>
                         Ex.match_(

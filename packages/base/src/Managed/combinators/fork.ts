@@ -3,8 +3,8 @@
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
 import { sequential } from '../../ExecutionStrategy'
-import { pipe } from '../../function'
 import * as F from '../../Fiber'
+import { pipe } from '../../function'
 import { tuple } from '../../tuple'
 import { Managed } from '../core'
 import * as I from '../internal/io'
@@ -31,7 +31,7 @@ export function fork<R, E, A>(self: Managed<R, E, A>): Managed<R, never, F.Fiber
               self.io,
               I.map(([, a]) => a),
               I.forkDaemon,
-              I.giveAll(tuple(r, innerReleaseMap)),
+              I.give(tuple(r, innerReleaseMap)),
               restore
             )
           )

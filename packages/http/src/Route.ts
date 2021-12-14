@@ -240,7 +240,7 @@ export function drain<R>(rs: Routes<R, never>) {
                   I.orHalt
                 )
               )
-              return yield* _(I.giveAll_(a(method, url)(ctx, b(ctx)), env))
+              return yield* _(I.give_(a(method, url)(ctx, b(ctx)), env))
             })
         )
       )

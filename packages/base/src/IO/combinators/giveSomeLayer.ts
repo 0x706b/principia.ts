@@ -14,11 +14,11 @@ import { giveLayer } from './giveLayer'
  *
  * @trace call
  */
-export function giveSomeLayer<R1, E1, A1>(
-  layer: Layer<R1, E1, A1>
-): <R, E, A>(ma: IO<R & A1, E, A>) => IO<R & R1, E | E1, A> {
-  const trace = accessCallTrace()
-  return (ma) => traceFrom(trace, giveLayer)(layer['+++'](L.identity<R1>()))(ma)
+export function giveSomeLayer<R1, E1, A1>(layer: Layer<R1, E1, A1>) {
+  return <R, E, A>(ma: IO<R & A1, E, A>): IO<R & R1, E | E1, A> => {
+    const trace = accessCallTrace()
+    return traceFrom(trace, giveLayer)(layer['+++'](L.identity<R>()))(ma)
+  }
 }
 
 /**

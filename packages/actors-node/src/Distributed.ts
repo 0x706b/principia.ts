@@ -264,7 +264,7 @@ export const distributed = <R, S, F1 extends Msg.AnyMessage>(
   }
 ) =>
   new A.ActorProxy(stateful.messages, (queue, context, initial: (id: string) => S) =>
-    I.give(opts?.shards ? ShardConfig.of({ shards: opts.shards }) : {})(
+    I.giveSome(opts?.shards ? ShardConfig.of({ shards: opts.shards }) : {})(
       Ma.useNow(
         Ma.gen(function* (_) {
           const cluster = yield* _(Cluster)

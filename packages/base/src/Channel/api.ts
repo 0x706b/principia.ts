@@ -619,36 +619,36 @@ export function bracketOutExit<R2, Z>(
  * Provides the channel with its required environment, which eliminates
  * its dependency on `Env`.
  */
-export function giveAll_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
+export function give_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
   env: Env
 ): Channel<unknown, InErr, InElem, InDone, OutErr, OutElem, OutDone> {
   return new Give(env, self)
 }
 
-export function ask<Env>(): Channel<Env, unknown, unknown, unknown, never, never, Env> {
-  return fromIO(I.ask<Env>())
-}
-
 /**
  * Provides the channel with its required environment, which eliminates
  * its dependency on `Env`.
  *
- * @dataFirst giveAll_
+ * @dataFirst give_
  */
-export function giveAll<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
+export function give<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   env: Env
 ): (
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
 ) => Channel<unknown, InErr, InElem, InDone, OutErr, OutElem, OutDone> {
-  return (self) => giveAll_(self, env)
+  return (self) => give_(self, env)
+}
+
+export function ask<Env>(): Channel<Env, unknown, unknown, unknown, never, never, Env> {
+  return fromIO(I.ask<Env>())
 }
 
 export function gives_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, Env0>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
   f: (env0: Env0) => Env
 ): Channel<Env0, InErr, InElem, InDone, OutErr, OutElem, OutDone> {
-  return chain_(ask<Env0>(), (env0) => giveAll_(self, f(env0)))
+  return chain_(ask<Env0>(), (env0) => give_(self, f(env0)))
 }
 
 export function gives<Env0, Env>(
@@ -1802,7 +1802,15 @@ export function mergeWith_<
         ): IO<
           Env & Env1 & Env2 & Env3,
           never,
-          Channel<Env & Env1 & Env2 & Env3, unknown, unknown, unknown, OutErr2 | OutErr3, OutElem | OutElem1, OutDone2 | OutDone3>
+          Channel<
+            Env & Env1 & Env2 & Env3,
+            unknown,
+            unknown,
+            unknown,
+            OutErr2 | OutErr3,
+            OutElem | OutElem1,
+            OutDone2 | OutDone3
+          >
         > => {
           const onDecision = (
             decision: MD.MergeDecision<Env & Env1 & Env2 & Env3, Err2, Done2, OutErr2 | OutErr3, OutDone2 | OutDone3>
@@ -1842,7 +1850,15 @@ export function mergeWith_<
 
       const go = (
         state: MergeState
-      ): Channel<Env & Env1 & Env2 & Env3, unknown, unknown, unknown, OutErr2 | OutErr3, OutElem | OutElem1, OutDone2 | OutDone3> => {
+      ): Channel<
+        Env & Env1 & Env2 & Env3,
+        unknown,
+        unknown,
+        unknown,
+        OutErr2 | OutErr3,
+        OutElem | OutElem1,
+        OutDone2 | OutDone3
+      > => {
         switch (state._tag) {
           case MS.MergeStateTag.BothRunning: {
             const lj: IO<Env2, OutErr, E.Either<OutDone, OutElem | OutElem1>>   = F.join(state.left)

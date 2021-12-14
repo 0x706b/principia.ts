@@ -808,29 +808,29 @@ export function gives<R, R0>(f: Described<(r0: R0) => R>): <E, A>(ra: Query<R, E
   return (ra) => gives_(ra, f)
 }
 
-export function giveAll_<R, E, A>(ra: Query<R, E, A>, r: Described<R>): Query<unknown, E, A> {
+export function give_<R, E, A>(ra: Query<R, E, A>, r: Described<R>): Query<unknown, E, A> {
   return gives_(
     ra,
     Described(() => r.value, `() => ${r.description}`)
   )
 }
 
-export function giveAll<R>(r: Described<R>): <E, A>(ra: Query<R, E, A>) => Query<unknown, E, A> {
-  return (ra) => giveAll_(ra, r)
+export function give<R>(r: Described<R>): <E, A>(ra: Query<R, E, A>) => Query<unknown, E, A> {
+  return (ra) => give_(ra, r)
 }
 
-export function give_<E, A, R = unknown, R0 = unknown>(ra: Query<R & R0, E, A>, r: Described<R>): Query<R0, E, A> {
+export function giveSome_<E, A, R = unknown, R0 = unknown>(ra: Query<R & R0, E, A>, r: Described<R>): Query<R0, E, A> {
   return gives_(
     ra,
     Described((r0: R0) => ({ ...r0, ...r.value }), r.description)
   )
 }
 
-export function give<R>(r: Described<R>): <E, A, R0 = unknown>(ra: Query<R & R0, E, A>) => Query<R0, E, A> {
-  return (ra) => give_(ra, r)
+export function giveSome<R>(r: Described<R>): <E, A, R0 = unknown>(ra: Query<R & R0, E, A>) => Query<R0, E, A> {
+  return (ra) => giveSome_(ra, r)
 }
 
-export function giveLayer_<R, E, A, R1, E1, A1>(
+export function giveSomeLayer_<R, E, A, R1, E1, A1>(
   ra: Query<R & A1, E, A>,
   layer: Described<L.Layer<R1, E1, A1>>
 ): Query<R & R1, E | E1, A> {
@@ -853,7 +853,7 @@ export function giveLayer_<R, E, A, R1, E1, A1>(
   )
 }
 
-export function giveLayer<R1, E1, A1>(
+export function giveSomeLayer<R1, E1, A1>(
   layer: Described<L.Layer<R1, E1, A1>>
 ): <R, E, A>(ra: Query<R & A1, E, A>) => Query<R & R1, E | E1, A> {
   return <R, E, A>(ra: Query<R & A1, E, A>) =>
@@ -881,7 +881,7 @@ export function giveServiceIO_<T>(
 ): <R, E, A, R1, E1>(ma: Query<R & Has<T>, E, A>, f: Described<IO<R1, E1, T>>) => Query<R & R1, E | E1, A> {
   return <R, E, A, R1, E1>(ma: Query<R & Has<T>, E, A>, f: Described<IO<R1, E1, T>>): Query<R & R1, E | E1, A> =>
     asksQuery((r: R & R1) =>
-      chain_(fromIO(f.value), (t) => giveAll_(ma, Described(mergeEnvironments(_, r, t), f.description)))
+      chain_(fromIO(f.value), (t) => give_(ma, Described(mergeEnvironments(_, r, t), f.description)))
     )
 }
 

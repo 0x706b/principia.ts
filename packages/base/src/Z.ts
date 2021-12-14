@@ -784,7 +784,7 @@ export function andThen_<W, S1, S2, A, E, B, W1, S3, E1, C>(
   ab: Z<W, S1, S2, A, E, B>,
   bc: Z<W1, S2, S3, B, E1, C>
 ): Z<W | W1, S1, S3, A, E | E1, C> {
-  return chain_(ab, (b) => giveAll_(bc, b))
+  return chain_(ab, (b) => give_(bc, b))
 }
 
 /**
@@ -1030,19 +1030,19 @@ export function asks<R0, A>(f: (r: R0) => A): Z<never, unknown, never, R0, never
   return asksZ((r: R0) => succeed(f(r)))
 }
 
-export function giveAll_<W, S1, S2, R, E, A>(fa: Z<W, S1, S2, R, E, A>, r: R): Z<W, S1, S2, unknown, E, A> {
+export function give_<W, S1, S2, R, E, A>(fa: Z<W, S1, S2, R, E, A>, r: R): Z<W, S1, S2, unknown, E, A> {
   return new Give(fa, r)
 }
 
 /**
- * @dataFirst giveAll_
+ * @dataFirst give_
  */
-export function giveAll<R>(r: R): <W, S1, S2, E, A>(fa: Z<W, S1, S2, R, E, A>) => Z<W, S1, S2, unknown, E, A> {
-  return (fa) => giveAll_(fa, r)
+export function give<R>(r: R): <W, S1, S2, E, A>(fa: Z<W, S1, S2, R, E, A>) => Z<W, S1, S2, unknown, E, A> {
+  return (fa) => give_(fa, r)
 }
 
 export function gives_<R0, W, S1, S2, R, E, A>(ma: Z<W, S1, S2, R, E, A>, f: (r0: R0) => R): Z<W, S1, S2, R0, E, A> {
-  return asksZ((r: R0) => giveAll_(ma, f(r)))
+  return asksZ((r: R0) => give_(ma, f(r)))
 }
 
 /**
@@ -1052,15 +1052,15 @@ export function gives<R0, R>(f: (r0: R0) => R): <W, S1, S2, E, A>(ma: Z<W, S1, S
   return (ma) => gives_(ma, f)
 }
 
-export function give_<W, S1, S2, R, E, A, R0>(ma: Z<W, S1, S2, R & R0, E, A>, r: R): Z<W, S1, S2, R0, E, A> {
+export function giveSome_<W, S1, S2, R, E, A, R0>(ma: Z<W, S1, S2, R & R0, E, A>, r: R): Z<W, S1, S2, R0, E, A> {
   return gives_(ma, (r0) => ({ ...r, ...r0 }))
 }
 
 /**
- * @dataFirst give_
+ * @dataFirst giveSome_
  */
-export function give<R>(r: R): <W, S1, S2, R0, E, A>(ma: Z<W, S1, S2, R & R0, E, A>) => Z<W, S1, S2, R0, E, A> {
-  return (ma) => give_(ma, r)
+export function giveSome<R>(r: R): <W, S1, S2, R0, E, A>(ma: Z<W, S1, S2, R & R0, E, A>) => Z<W, S1, S2, R0, E, A> {
+  return (ma) => giveSome_(ma, r)
 }
 
 /*
@@ -1750,7 +1750,7 @@ export function runResult<W, A>(ma: Z<W, unknown, unknown, unknown, never, A>): 
  * Runs this computation with the given environment, returning the result.
  */
 export function runReader_<W, R, A>(ma: Z<W, unknown, never, R, never, A>, r: R): A {
-  return runResult(giveAll_(ma, r))
+  return runResult(give_(ma, r))
 }
 
 /**
@@ -1819,7 +1819,7 @@ export function runExit<E, A>(ma: Z<never, unknown, unknown, unknown, E, A>): Ex
 }
 
 export function runReaderExit_<R, E, A>(ma: Z<never, unknown, unknown, R, E, A>, env: R): Exit<E, A> {
-  return runExit(giveAll_(ma, env))
+  return runExit(give_(ma, env))
 }
 
 /**
@@ -1954,7 +1954,7 @@ export const MonadEnv = P.MonadEnv<ZF>({
   chain_,
   flatten,
   asks,
-  giveAll_
+  give_
 })
 
 export const MonadState = P.MonadState<ZF>({

@@ -536,7 +536,7 @@ export function fromIO<E, A>(io: IO.IO<IOEnv, E, A>): Observable<E, A> {
     let fiber: FiberContext<E, A>
     const scheduled = asyncScheduler.schedule(() => {
       fiber = IO.runFiber(io)
-      fiber.runAsync((exit) => {
+      fiber.awaitAsync((exit) => {
         if (!s.closed) {
           pipe(
             exit,

@@ -74,7 +74,7 @@ export function succeed<E = never, A = never>(a: A): Managed<unknown, E, A> {
 export function fromIO<R, E, A>(effect: I.IO<R, E, A>) {
   const trace = accessCallTrace()
   return new Managed<R, E, A>(
-    I.map_(I.asksIO(traceFrom(trace, (_: readonly [R, ReleaseMap]) => I.giveAll_(effect, _[0]))), (a) => [
+    I.map_(I.asksIO(traceFrom(trace, (_: readonly [R, ReleaseMap]) => I.give_(effect, _[0]))), (a) => [
       noopFinalizer,
       a
     ])
@@ -305,11 +305,11 @@ export function bracketExit_<R, E, A, R1>(
         traceAs(acquire, (r) =>
           pipe(
             acquire,
-            I.giveAll(r[0]),
+            I.give(r[0]),
             I.chain(
               traceFrom(trace, (a) =>
                 pipe(
-                  add(r[1], (ex) => pipe(release(a, ex), I.giveAll(r[0]))),
+                  add(r[1], (ex) => pipe(release(a, ex), I.give(r[0]))),
                   I.map((rm) => tuple(rm, a))
                 )
               )
@@ -339,8 +339,8 @@ export function makeReserve<R, E, R2, E2, A>(reservation: I.IO<R, E, Reservation
       traceFrom(trace, ({ restore }) =>
         I.gen(function* (_) {
           const [r, releaseMap] = yield* _(I.ask<readonly [R & R2, ReleaseMap]>())
-          const reserved        = yield* _(I.giveAll_(reservation, r))
-          const releaseKey      = yield* _(addIfOpen(releaseMap, (x) => I.giveAll_(reserved.release(x), r)))
+          const reserved        = yield* _(I.give_(reservation, r))
+          const releaseKey      = yield* _(addIfOpen(releaseMap, (x) => I.give_(reserved.release(x), r)))
           const finalizerAndA   = yield* _(
             I.defer(() => {
               switch (releaseKey._tag) {
@@ -1166,7 +1166,7 @@ export function asksManaged<R0, R, E, A>(f: (r: R0) => Managed<R, E, A>): Manage
  * @trace 1
  */
 export function gives_<R, E, A, R0>(ma: Managed<R, E, A>, f: (r0: R0) => R): Managed<R0, E, A> {
-  return new Managed(I.asksIO(traceAs(f, ([r0, rm]: readonly [R0, ReleaseMap]) => I.giveAll_(ma.io, [f(r0), rm]))))
+  return new Managed(I.asksIO(traceAs(f, ([r0, rm]: readonly [R0, ReleaseMap]) => I.give_(ma.io, [f(r0), rm]))))
 }
 
 /**
@@ -1185,7 +1185,7 @@ export function gives<R0, R>(f: (r0: R0) => R): <E, A>(ma: Managed<R, E, A>) => 
  *
  * @trace call
  */
-export function giveAll_<R, E, A>(ma: Managed<R, E, A>, env: R): Managed<unknown, E, A> {
+export function give_<R, E, A>(ma: Managed<R, E, A>, env: R): Managed<unknown, E, A> {
   const trace = accessCallTrace()
   return gives_(
     ma,
@@ -1197,17 +1197,17 @@ export function giveAll_<R, E, A>(ma: Managed<R, E, A>, env: R): Managed<unknown
  * Provides the `Managed` effect with its required environment, which eliminates
  * its dependency on `R`.
  *
- * @dataFirst giveAll_
+ * @dataFirst give_
  * @trace call
  */
-export function giveAll<R>(env: R): <E, A>(ma: Managed<R, E, A>) => Managed<unknown, E, A> {
-  return (ma) => giveAll_(ma, env)
+export function give<R>(env: R): <E, A>(ma: Managed<R, E, A>) => Managed<unknown, E, A> {
+  return (ma) => give_(ma, env)
 }
 
 /**
  * @trace call
  */
-export function give_<E, A, R = unknown, R0 = unknown>(ma: Managed<R & R0, E, A>, env: R): Managed<R0, E, A> {
+export function giveSome_<E, A, R = unknown, R0 = unknown>(ma: Managed<R & R0, E, A>, env: R): Managed<R0, E, A> {
   const trace = accessCallTrace()
   return gives_(
     ma,
@@ -1216,11 +1216,11 @@ export function give_<E, A, R = unknown, R0 = unknown>(ma: Managed<R & R0, E, A>
 }
 
 /**
- * @dataFirst give_
+ * @dataFirst giveSome_
  * @trace call
  */
-export function give<R>(env: R): <R0, E, A>(ma: Managed<R & R0, E, A>) => Managed<R0, E, A> {
-  return (ma) => give_(ma, env)
+export function giveSome<R>(env: R): <R0, E, A>(ma: Managed<R & R0, E, A>) => Managed<R0, E, A> {
+  return (ma) => giveSome_(ma, env)
 }
 
 /*
@@ -1512,7 +1512,7 @@ export function andThen_<R, E, A, E1, B>(ma: Managed<R, E, A>, mb: Managed<A, E1
   const trace = accessCallTrace()
   return chain_(
     ma,
-    traceFrom(trace, (a) => giveAll_(mb, a))
+    traceFrom(trace, (a) => give_(mb, a))
   )
 }
 
@@ -1531,7 +1531,11 @@ export function andThen<A, E1, B>(mb: Managed<A, E1, B>): <R, E>(ma: Managed<R, 
  */
 export function compose_<R, E, A, R1, E1>(ma: Managed<R, E, A>, mr: Managed<R1, E1, R>): Managed<R1, E | E1, A> {
   const trace = accessCallTrace()
-  return pipe(ask<R1>(), chain(traceFrom(trace, (r1) => give_(mr, r1))), chain(traceFrom(trace, (r) => give_(ma, r))))
+  return pipe(
+    ask<R1>(),
+    chain(traceFrom(trace, (r1) => giveSome_(mr, r1))),
+    chain(traceFrom(trace, (r) => giveSome_(ma, r)))
+  )
 }
 
 /**
@@ -1899,8 +1903,8 @@ export function join_<R, E, A, R1, E1, A1>(
     traceFrom(
       trace,
       E.match(
-        (r): FManaged<E | E1, A | A1> => giveAll_(ma, r),
-        (r1) => giveAll_(that, r1)
+        (r): FManaged<E | E1, A | A1> => give_(ma, r),
+        (r1) => give_(that, r1)
       )
     )
   )
@@ -1933,8 +1937,8 @@ export function joinEither_<R, E, A, R1, E1, A1>(
     traceFrom(
       trace,
       E.match(
-        (r): FManaged<E | E1, E.Either<A, A1>> => giveAll_(map_(ma, E.left), r),
-        (r1) => giveAll_(map_(that, E.right), r1)
+        (r): FManaged<E | E1, E.Either<A, A1>> => give_(map_(ma, E.left), r),
+        (r1) => give_(map_(that, E.right), r1)
       )
     )
   )
@@ -2722,7 +2726,7 @@ export function zipEnv<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, readonly [A
  * -------------------------------------------------------------------------------------------------
  */
 
-export function askService<T>(t: Tag<T>): Managed<Has<T>, never, T> {
+export function service<T>(t: Tag<T>): Managed<Has<T>, never, T> {
   return asks(t.read)
 }
 

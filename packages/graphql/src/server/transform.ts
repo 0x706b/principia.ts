@@ -3,7 +3,6 @@ import type { GraphQLResolveInfo } from 'graphql'
 import type { ConnectionContext } from 'subscriptions-transport-ws'
 
 import { asyncIterable } from '@principia/base/AsyncIterable'
-import * as E from '@principia/base/Either'
 import * as Ex from '@principia/base/Exit'
 import { identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'

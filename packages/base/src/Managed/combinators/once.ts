@@ -28,7 +28,7 @@ export function once<R, E, A>(ma: Managed<R, E, A>): UManaged<Managed<R, E, A>> 
             I.asksIO((r: R) =>
               pipe(
                 ma.io,
-                I.giveAll([r, finalizers] as const),
+                I.give([r, finalizers] as const),
                 I.map(([_, a]) => a),
                 (_) => F.fulfill_(promise, _)
               )

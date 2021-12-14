@@ -123,7 +123,7 @@ function LiveFastifyServerConfig<R, Server extends RawServerBase>(
     exitHandler:
       (request: FastifyRequest<RouteGenericInterface, Server>, reply: FastifyReply<Server>) =>
       (cause: Cause<never>): IO.UIO<void> =>
-        IO.giveAll_(exitHandler(request, reply)(cause), r)
+        IO.give_(exitHandler(request, reply)(cause), r)
   }))
 }
 

@@ -53,7 +53,7 @@ export function LiveExpressAppConfig<R>(
       _tag: ExpressAppConfigTag,
       host,
       port,
-      exitHandler: (req, res, next) => (cause) => IO.giveAll_(exitHandler(req, res, next)(cause), r)
+      exitHandler: (req, res, next) => (cause) => IO.give_(exitHandler(req, res, next)(cause), r)
     }))
   )
 }

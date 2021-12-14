@@ -16,13 +16,13 @@ export function onExitFirst_<R, E, A, R1>(
         const [r1, outerReleaseMap] = yield* _(I.ask<readonly [R & R1, RM.ReleaseMap]>())
         const innerReleaseMap       = yield* _(RM.make)
         const exitEA                = yield* _(
-          pipe(restore(ma.io), I.result, I.map(Ex.map(([, a]) => a)), I.giveAll([r1, innerReleaseMap] as const))
+          pipe(restore(ma.io), I.result, I.map(Ex.map(([, a]) => a)), I.give([r1, innerReleaseMap] as const))
         )
         const releaseMapEntry = yield* _(
           RM.add(outerReleaseMap, (e) =>
             pipe(
               cleanup(exitEA),
-              I.giveAll(r1),
+              I.give(r1),
               I.result,
               I.crossWith(pipe(innerReleaseMap, releaseAll(e, sequential), I.result), (l, r) =>
                 I.fromExit(Ex.crossSecond_(l, r))

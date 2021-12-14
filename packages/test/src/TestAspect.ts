@@ -195,13 +195,13 @@ export function repeat<R0>(
       I.asksIO((r: R0 & R1 & Has<Annotations> & Has<Clock>) =>
         pipe(
           test,
-          I.giveAll(r),
+          I.give(r),
           I.repeat(
             schedule['*>'](
               pipe(
                 Sc.identity<TestSuccess>(),
                 Sc.tapOutput((_) => Annotations.annotate(Annotation.repeated, 1)),
-                Sc.giveAll(r)
+                Sc.give(r)
               )
             )
           )

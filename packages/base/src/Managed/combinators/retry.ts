@@ -1,7 +1,7 @@
 // tracing: off
 
-import type { Has } from '../../Has'
 import type { Clock } from '../../Clock'
+import type { Has } from '../../Has'
 import type { Schedule } from '../../Schedule'
 import type { ReleaseMap } from '../ReleaseMap'
 
@@ -27,7 +27,7 @@ export function retry_<R, E, A, R1, O>(
           ma.io,
           I.gives((_: R & R1 & Has<Clock>) => tuple(_, releaseMap)),
           I.retry(policy),
-          I.giveAll(env)
+          I.give(env)
         )
       )
     )

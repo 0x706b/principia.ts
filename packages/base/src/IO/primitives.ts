@@ -223,7 +223,7 @@ export class Yield extends IO<unknown, never, void> {
 /**
  * @internal
  */
-export class Access<R0, R, E, A> extends IO<R & R0, E, A> {
+export class Asks<R0, R, E, A> extends IO<R & R0, E, A> {
   readonly [IOTypeId]: IOTypeId = IOTypeId
   readonly _tag = IOTag.Access
 
@@ -235,7 +235,7 @@ export class Access<R0, R, E, A> extends IO<R & R0, E, A> {
 /**
  * @internal
  */
-export class Provide<R, E, A> extends IO<unknown, E, A> {
+export class Give<R, E, A> extends IO<unknown, E, A> {
   readonly [IOTypeId]: IOTypeId = IOTypeId
   readonly _tag = IOTag.Provide
 
@@ -415,8 +415,8 @@ export type Instruction =
   | Fail<any>
   | GetDescriptor<any, any, any>
   | Yield
-  | Access<any, any, any, any>
-  | Provide<any, any, any>
+  | Asks<any, any, any, any>
+  | Give<any, any, any>
   | Defer<any, any, any>
   | DeferWith<any, any, any>
   | NewFiberRef<any>

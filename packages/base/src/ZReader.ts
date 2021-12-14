@@ -18,12 +18,12 @@ export const asks: <R, A>(f: (r: R) => A) => ZReader<R, A> = Z.asks
 
 export const asksZ: <R, R1, A>(f: (R: R) => ZReader<R1, A>) => ZReader<R & R1, A> = Z.asksZ
 
-export const giveAll_: <R, A>(ra: ZReader<R, A>, r: R) => ZReader<unknown, A> = Z.giveAll_
+export const give_: <R, A>(ra: ZReader<R, A>, r: R) => ZReader<unknown, A> = Z.give_
 
 /**
- * @dataFirst giveAll_
+ * @dataFirst give_
  */
-export const giveAll: <R>(r: R) => <A>(ra: ZReader<R, A>) => ZReader<unknown, A> = Z.giveAll
+export const give: <R>(r: R) => <A>(ra: ZReader<R, A>) => ZReader<unknown, A> = Z.give
 
 export const gives_: <R0, R, A>(ra: ZReader<R, A>, f: (r0: R0) => R) => ZReader<R0, A> = Z.gives_
 
@@ -161,7 +161,7 @@ export const tap: <A, R1, B>(f: (a: A) => ZReader<R1, B>) => <R>(ma: ZReader<R, 
  */
 
 export function andThen_<R, A, B>(ra: ZReader<R, A>, ab: ZReader<A, B>): ZReader<R, B> {
-  return chain_(ra, (a) => giveAll_(ab, a))
+  return chain_(ra, (a) => give_(ab, a))
 }
 
 /**
@@ -222,5 +222,5 @@ export const MonadEnv: P.MonadEnv<ZReaderF> = P.MonadEnv({
   chain_,
   flatten,
   asks,
-  giveAll_
+  give_
 })

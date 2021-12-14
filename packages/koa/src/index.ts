@@ -103,7 +103,7 @@ export abstract class KoaAppConfig {
           new (class extends KoaAppConfig {
             host = host
             port = port
-            exitHandler: ExitHandler<unknown> = (ctx, next) => flow(exitHandler(ctx, next), I.give(r))
+            exitHandler: ExitHandler<unknown> = (ctx, next) => flow(exitHandler(ctx, next), I.giveSome(r))
           })()
       )
     )
@@ -215,7 +215,7 @@ export abstract class KoaRuntime {
               <E, A>(effect: IO<R & IOEnv, E, A>) =>
                 open.get
                   .ifIO(
-                    I.defer(() => effect['|>'](I.giveLayer(liveIOEnv))['|>'](r.runFiber).await),
+                    I.defer(() => effect['|>'](I.giveSomeLayer(liveIOEnv))['|>'](r.runFiber).await),
                     I.succeed(Ex.failCause(Ca.empty))
                   )
                   .runPromiseExit()

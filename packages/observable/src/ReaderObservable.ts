@@ -41,7 +41,7 @@ export function fromObservable<E, A>(fa: O.Observable<E, A>): ReaderObservable<u
  */
 
 export function map_<R, E, A, B>(fa: ReaderObservable<R, E, A>, f: (a: A, i: number) => B): ReaderObservable<R, E, B> {
-  return asksObservable((r) => pipe(fa, giveAll(r), O.map(f)))
+  return asksObservable((r) => pipe(fa, give(r), O.map(f)))
 }
 
 export function map<A, B>(
@@ -57,7 +57,7 @@ export function map<A, B>(
  */
 
 export function mapError_<R, E, A, E1>(fa: ReaderObservable<R, E, A>, f: (e: E) => E1): ReaderObservable<R, E1, A> {
-  return asksObservable((r) => pipe(fa, giveAll(r), O.mapError(f)))
+  return asksObservable((r) => pipe(fa, give(r), O.mapError(f)))
 }
 
 export function mapError<E, E1>(f: (e: E) => E1): <R, A>(fa: ReaderObservable<R, E, A>) => ReaderObservable<R, E1, A> {
@@ -65,7 +65,7 @@ export function mapError<E, E1>(f: (e: E) => E1): <R, A>(fa: ReaderObservable<R,
 }
 
 export function swap<R, E, A>(fa: ReaderObservable<R, E, A>): ReaderObservable<R, A, E> {
-  return asksObservable((r) => pipe(fa, giveAll(r), O.swap))
+  return asksObservable((r) => pipe(fa, give(r), O.swap))
 }
 
 /*
@@ -79,7 +79,7 @@ export function mergeMap_<R, E, A, R1, E1, B>(
   f: (a: A, i: number) => ReaderObservable<R1, E1, B>,
   concurrent = Infinity
 ): ReaderObservable<R & R1, E | E1, B> {
-  return asksObservable((r) => pipe(ma, giveAll(r), O.mergeMap(flow(f, giveAll(r)), concurrent)))
+  return asksObservable((r) => pipe(ma, give(r), O.mergeMap(flow(f, give(r)), concurrent)))
 }
 
 export function mergeMap<A, R1, E1, B>(
@@ -174,7 +174,7 @@ export function concatMap_<R, E, A, R1, E1, B>(
   ma: ReaderObservable<R, E, A>,
   f: (a: A, i: number) => ReaderObservable<R1, E1, B>
 ): ReaderObservable<R & R1, E | E1, B> {
-  return asksObservable((r) => pipe(ma, giveAll(r), O.concatMap(flow(f, giveAll(r)))))
+  return asksObservable((r) => pipe(ma, give(r), O.concatMap(flow(f, give(r)))))
 }
 
 export function concatMap<A, R1, E1, B>(
@@ -187,7 +187,7 @@ export function switchMap_<R, E, A, R1, E1, B>(
   ma: ReaderObservable<R, E, A>,
   f: (a: A, i: number) => ReaderObservable<R1, E1, B>
 ): ReaderObservable<R & R1, E | E1, B> {
-  return asksObservable((r) => pipe(ma, giveAll(r), O.switchMap(flow(f, giveAll(r)))))
+  return asksObservable((r) => pipe(ma, give(r), O.switchMap(flow(f, give(r)))))
 }
 
 export function switchMap<A, R1, E1, B>(
@@ -228,28 +228,28 @@ export function asks<R, A>(f: (r: R) => A): ReaderObservable<R, never, A> {
   return asksObservable((r) => O.pure(f(r)))
 }
 
-export function giveAll_<R, E, A>(ra: ReaderObservable<R, E, A>, r: R): O.Observable<E, A> {
+export function give_<R, E, A>(ra: ReaderObservable<R, E, A>, r: R): O.Observable<E, A> {
   return ra(r)
 }
 
-export function giveAll<R>(r: R): <E, A>(ra: ReaderObservable<R, E, A>) => O.Observable<E, A> {
-  return (ra) => giveAll_(ra, r)
+export function give<R>(r: R): <E, A>(ra: ReaderObservable<R, E, A>) => O.Observable<E, A> {
+  return (ra) => give_(ra, r)
 }
 
-export function giveSome_<R, E, A, R0>(ra: ReaderObservable<R, E, A>, f: (r0: R0) => R): ReaderObservable<R0, E, A> {
-  return (r0) => pipe(ra, giveAll(f(r0)))
+export function gives_<R, E, A, R0>(ra: ReaderObservable<R, E, A>, f: (r0: R0) => R): ReaderObservable<R0, E, A> {
+  return (r0) => pipe(ra, give(f(r0)))
 }
 
-export function giveSome<R, R0>(f: (r0: R0) => R): <E, A>(ra: ReaderObservable<R, E, A>) => ReaderObservable<R0, E, A> {
-  return (ra) => giveSome_(ra, f)
+export function gives<R, R0>(f: (r0: R0) => R): <E, A>(ra: ReaderObservable<R, E, A>) => ReaderObservable<R0, E, A> {
+  return (ra) => gives_(ra, f)
 }
 
-export function give_<R0, R, E, A>(ra: ReaderObservable<R & R0, E, A>, r0: R0): ReaderObservable<R, E, A> {
-  return (r) => pipe(ra, giveAll({ ...r, ...r0 }))
+export function giveSome_<R0, R, E, A>(ra: ReaderObservable<R & R0, E, A>, r0: R0): ReaderObservable<R, E, A> {
+  return (r) => pipe(ra, give({ ...r, ...r0 }))
 }
 
-export function give<R0>(r0: R0): <R, E, A>(ra: ReaderObservable<R & R0, E, A>) => ReaderObservable<R, E, A> {
-  return (ra) => give_(ra, r0)
+export function giveSome<R0>(r0: R0): <R, E, A>(ra: ReaderObservable<R & R0, E, A>) => ReaderObservable<R, E, A> {
+  return (ra) => giveSome_(ra, r0)
 }
 
 /*
@@ -263,7 +263,7 @@ export function promap_<R, E, A, R0, B>(
   f: (r0: R0) => R,
   g: (a: A) => B
 ): ReaderObservable<R0, E, B> {
-  return pipe(fa, giveSome(f), map(g))
+  return pipe(fa, gives(f), map(g))
 }
 
 export function promap<R, A, R0, B>(

@@ -1118,7 +1118,7 @@ export function chain<Z, R, R1, E1, I, I1 extends I, L1, Z1>(f: (z: Z) => Sink<R
  * its dependency on `R`.
  */
 export function giveAll_<R, E, I, L, Z>(self: Sink<R, E, I, L, Z>, r: R): Sink<unknown, E, I, L, Z> {
-  return new Sink(Ma.map_(Ma.giveAll_(self.push, r), (push) => (i: M.Maybe<Chunk<I>>) => I.giveAll_(push(i), r)))
+  return new Sink(Ma.map_(Ma.give_(self.push, r), (push) => (i: M.Maybe<Chunk<I>>) => I.give_(push(i), r)))
 }
 
 /**
@@ -1165,7 +1165,7 @@ export function giveLayer<R2, R>(layer: L.Layer<R2, never, R>) {
 export function giveLayer_<R, E, I, L, Z, R2>(self: Sink<R, E, I, L, Z>, layer: L.Layer<R2, never, R>) {
   return new Sink<R2, E, I, L, Z>(
     Ma.chain_(L.build(layer), (r) =>
-      Ma.map_(Ma.giveAll_(self.push, r), (push) => (i: M.Maybe<Chunk<I>>) => I.giveAll_(push(i), r))
+      Ma.map_(Ma.give_(self.push, r), (push) => (i: M.Maybe<Chunk<I>>) => I.give_(push(i), r))
     )
   )
 }

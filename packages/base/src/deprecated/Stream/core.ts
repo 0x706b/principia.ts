@@ -1472,7 +1472,7 @@ export function asksStream<R0, R, E, A>(f: (_: R0) => Stream<R, E, A>): Stream<R
  * its dependency on `R`.
  */
 export function giveAll_<R, E, A>(ra: Stream<R, E, A>, r: R): FStream<E, A> {
-  return new Stream(Ma.map_(Ma.giveAll_(ra.proc, r), I.giveAll(r)))
+  return new Stream(Ma.map_(Ma.give_(ra.proc, r), I.give(r)))
 }
 
 /**
@@ -5901,7 +5901,7 @@ const adapter = (_: any, __?: any) => {
     } else if (x instanceof Stream) {
       return x
     } else if (isTag(x)) {
-      return fromIO(I.askService(x))
+      return fromIO(I.service(x))
     }
 
     return fromIO(x)

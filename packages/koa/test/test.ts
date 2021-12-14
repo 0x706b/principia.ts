@@ -11,8 +11,8 @@ import * as Koa from '../src'
 
 const home = Koa.route('get')('/', ({ connection: { res } }) =>
   I.gen(function* (_) {
-    yield* _(res.write('Hello')['|>'](I.orHalt))
-    yield* _(res.end()['|>'](I.orHalt))
+    yield* _(res.write('Hello').orHalt)
+    yield* _(res.end().orHalt)
   })
 )
 
@@ -21,8 +21,8 @@ const file = Koa.route('get')('/file/:name', ({ connection: { res }, params }) =
     const p      = path.resolve(process.cwd(), 'test', params.name)
     const exists = yield* _(
       NFS.stat(p)
-        ['|>'](I.map((stats) => stats.isFile()))
-        ['|>'](I.catchAll((_) => I.succeed(false)))
+        .map((stats) => stats.isFile())
+        .catchAll((_) => I.succeed(false))
     )
     yield* _(
       I.if_(
@@ -30,8 +30,7 @@ const file = Koa.route('get')('/file/:name', ({ connection: { res }, params }) =
         res
           .status(Status.Ok)
           ['*>'](res.set({ 'content-type': 'text/plain', 'content-encoding': 'gzip' }))
-          ['*>'](res.pipeFrom(NFS.createReadStream(p)['|>'](ZL.gzip())))
-          ['|>'](I.orHalt),
+          ['*>'](res.pipeFrom(NFS.createReadStream(p)['|>'](ZL.gzip()))).orHalt,
         I.halt({
           _tag: 'HttpRouteException',
           message: `File at ${p} is not a file or does not exist`,

@@ -1,6 +1,7 @@
-import * as HKT from '../HKT'
-import * as S from './core'
+import type * as HKT from '../HKT'
+
 import * as P from '../prelude'
+import * as S from './core'
 
 export interface StreamF extends HKT.HKT {
   readonly type: S.Stream<this['R'], this['E'], this['A']>
