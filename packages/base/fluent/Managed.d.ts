@@ -24,57 +24,53 @@ declare global {
 
 interface ManagedStaticOps {
   /**
-   * @rewriteStatic askService from "@principia/base/IO/Managed"
+   * @rewriteStatic access from "@principia/base/IO/Managed"
    */
-  askService: typeof M.askService
+  access: typeof M.access
   /**
-   * @rewriteStatic asks from "@principia/base/IO/Managed"
+   * @rewriteStatic accessIO from "@principia/base/IO/Managed"
    */
-  asks: typeof M.asks
+  accessIO: typeof M.accessIO
   /**
-   * @rewriteStatic asksIO from "@principia/base/IO/Managed"
+   * @rewriteStatic accessManaged from "@principia/base/IO/Managed"
    */
-  asksIO: typeof M.asksIO
+  accessManaged: typeof M.accessManaged
   /**
-   * @rewriteStatic asksManaged from "@principia/base/IO/Managed"
+   * @rewriteStatic accessService from "@principia/base/IO/Managed"
    */
-  asksManaged: typeof M.asksManaged
+  accessService: typeof M.accessService
   /**
-   * @rewriteStatic asksService from "@principia/base/IO/Managed"
+   * @rewriteStatic accessServiceIO from "@principia/base/IO/Managed"
    */
-  asksService: typeof M.asksService
+  accessServiceIO: typeof M.accessServiceIO
   /**
-   * @rewriteStatic asksServiceIO from "@principia/base/IO/Managed"
+   * @rewriteStatic accessServiceManaged from "@principia/base/IO/Managed"
    */
-  asksServiceIO: typeof M.asksServiceIO
+  accessServiceManaged: typeof M.accessServiceManaged
   /**
-   * @rewriteStatic asksServiceManaged from "@principia/base/IO/Managed"
+   * @rewriteStatic accessServices from "@principia/base/IO/Managed"
    */
-  asksServiceManaged: typeof M.asksServiceManaged
+  accessServices: typeof M.accessServices
   /**
-   * @rewriteStatic asksServices from "@principia/base/IO/Managed"
+   * @rewriteStatic accessServicesIO from "@principia/base/IO/Managed"
    */
-  asksServices: typeof M.asksServices
+  accessServicesIO: typeof M.accessServicesIO
   /**
-   * @rewriteStatic asksServicesIO from "@principia/base/IO/Managed"
+   * @rewriteStatic accessServicesManaged from "@principia/base/IO/Managed"
    */
-  asksServicesIO: typeof M.asksServicesIO
+  accessServicesManaged: typeof M.accessServicesManaged
   /**
-   * @rewriteStatic asksServicesManaged from "@principia/base/IO/Managed"
+   * @rewriteStatic accessServicesT from "@principia/base/IO/Managed"
    */
-  asksServicesManaged: typeof M.asksServicesManaged
+  accessServicesT: typeof M.accessServicesT
   /**
-   * @rewriteStatic asksServicesT from "@principia/base/IO/Managed"
+   * @rewriteStatic accessServicesTIO from "@principia/base/IO/Managed"
    */
-  asksServicesT: typeof M.asksServicesT
+  accessServicesTIO: typeof M.accessServicesTIO
   /**
-   * @rewriteStatic asksServicesTIO from "@principia/base/IO/Managed"
+   * @rewriteStatic accessServicesTManaged from "@principia/base/IO/Managed"
    */
-  asksServicesTIO: typeof M.asksServicesTIO
-  /**
-   * @rewriteStatic asksServicesTManaged from "@principia/base/IO/Managed"
-   */
-  asksServicesTManaged: typeof M.asksServicesTManaged
+  accessServicesTManaged: typeof M.accessServicesTManaged
   /**
    * @rewriteStatic bracket_ from "@principia/base/IO/Managed"
    */
@@ -337,6 +333,10 @@ interface ManagedStaticOps {
    * @rewriteStatic scope from "@principia/base/IO/Managed"
    */
   scope: typeof M.scope
+  /**
+   * @rewriteStatic service from "@principia/base/IO/Managed"
+   */
+  service: typeof M.service
   /**
    * @rewriteStatic succeed from "@principia/base/IO/Managed"
    */
@@ -652,30 +652,6 @@ declare module '@principia/base/IO/Managed/core' {
     get<R, A>(this: M.Managed<R, never, Maybe<A>>): M.Managed<R, Maybe<never>, A>
 
     /**
-     * @rewrite giveLayer_ from "@principia/base/IO/Managed"
-     * @trace call
-     */
-    give<R, E, A, R1, E1, A1>(this: Managed<R, E, A>, layer: Layer<R1, E1, A1>): M.Managed<Erase<R & R1, A1>, E | E1, A>
-
-    /**
-     * @rewrite give_ from "@principia/base/IO/Managed"
-     * @trace call
-     */
-    give<R, E, A, R0>(this: M.Managed<R, E, A>, env: R0): M.Managed<Erase<R, R0>, E, A>
-
-    /**
-     * @rewrite giveAll_ from "@principia/base/IO/Managed"
-     * @trace call
-     */
-    giveAll<R, E, A>(this: M.Managed<R, E, A>, env: R): M.Managed<unknown, E, A>
-
-    /**
-     * @rewrite gives_ from "@principia/base/IO/Managed"
-     * @trace 0
-     */
-    gives<R, E, A, R0>(this: M.Managed<R, E, A>, f: (r0: R0) => R): M.Managed<R0, E, A>
-
-    /**
      * @rewrite ifManaged_ from "@principia/base/IO/Managed"
      * @trace 0
      * @trace 1
@@ -754,6 +730,12 @@ declare module '@principia/base/IO/Managed/core' {
      * @trace call
      */
     justOrFailWith<R, E, A, E1>(this: M.Managed<R, E, Maybe<A>>, onNone: () => E1): M.Managed<R, E | E1, A>
+
+    /**
+     * @rewrite local_ from "@principia/base/IO/Managed"
+     * @trace 0
+     */
+    local<R, E, A, R0>(this: M.Managed<R, E, A>, f: (r0: R0) => R): M.Managed<R0, E, A>
 
     /**
      * @rewrite map_ from "@principia/base/IO/Managed"
@@ -915,19 +897,40 @@ declare module '@principia/base/IO/Managed/core' {
      * @rewrite orElseSucceed_ from "@principia/base/IO/Managed"
      * @trace 0
      */
-    orElseSucceed<R, E, A, A1>(this: M.Managed<R, E, A>, a: () => A1): M.Managed<R, E, A | A1>
+    orElseSucceed<R, E, A, A1>(this: M.Managed<R, E, A>, a: () => A1): M.Managed<R, E, A | A1>,
 
     /**
      * @rewriteGetter preallocate from "@principia/base/IO/Managed"
      * @trace getter
      */
-    preallocate: I.IO<R, E, M.Managed<unknown, never, A>>
+    preallocate: I.IO<R, E, M.Managed<unknown, never, A>>,
 
     /**
      * @rewriteGetter preallocateManaged from "@principia/base/IO/Managed"
      * @trace getter
      */
-    preallocateManaged: M.Managed<R, E, M.Managed<unknown, never, A>>
+    preallocateManaged: M.Managed<R, E, M.Managed<unknown, never, A>>,
+
+    /**
+     * @rewrite provide_ from "@principia/base/IO/Managed"
+     * @trace call
+     */
+    provide<R, E, A>(this: M.Managed<R, E, A>, env: R): M.Managed<unknown, E, A>,
+
+    /**
+     * @rewrite provideSome_ from "@principia/base/IO/Managed"
+     * @trace call
+     */
+    provideSome<R, E, A, R0>(this: M.Managed<R, E, A>, env: R0): M.Managed<Erase<R, R0>, E, A>,
+
+    /**
+     * @rewrite provideSomeLayer_ from "@principia/base/IO/Managed"
+     * @trace call
+     */
+    provideSomeLayer<R, E, A, R1, E1, A1>(
+      this: Managed<R, E, A>,
+      layer: Layer<R1, E1, A1>
+    ): M.Managed<Erase<R & R1, A1>, E | E1, A>,
 
     /**
      * @rewrite pureS_ from "@principia/base/IO/Managed"

@@ -10,34 +10,34 @@ import { Monad } from './Monad'
  * Contravariant `Reader` + `Monad`
  */
 export interface MonadEnv<F extends HKT.ContravariantR, C = HKT.None> extends Monad<F, C> {
-  readonly asks: AsksFn<F, C>
-  readonly ask: AskFn<F, C>
-  readonly asksM: AsksMFn<F, C>
-  readonly giveAll_: GiveAllFn_<F, C>
-  readonly giveAll: GiveAllFn<F, C>
-  readonly gives_: GivesFn_<F, C>
-  readonly gives: GivesFn<F, C>
+  readonly access: AccessFn<F, C>
+  readonly environment: EnvironmentFn<F, C>
+  readonly accessM: AccessMFn<F, C>
+  readonly provide_: ProvideFn_<F, C>
+  readonly provide: ProvideFn<F, C>
+  readonly local_: LocalFn_<F, C>
+  readonly local: LocalFn<F, C>
 }
 
 export type MonadEnvMin<F extends HKT.ContravariantR, C = HKT.None> = MonadMin<F, C> & {
-  readonly asks: AsksFn<F, C>
-  readonly giveAll_: GiveAllFn_<F, C>
+  readonly access: AccessFn<F, C>
+  readonly provide_: ProvideFn_<F, C>
 }
 
 export function MonadEnv<F extends HKT.ContravariantR, C = HKT.None>(M: MonadEnvMin<F, C>): MonadEnv<F, C> {
   return HKT.instance<MonadEnv<F, C>>({
     ...Monad(M),
-    giveAll_: M.giveAll_,
-    giveAll: (r) => (fa) => M.giveAll_(fa, r),
-    asks: M.asks,
-    ask: askF(M),
-    asksM: asksMF(M),
-    gives_: givesF_(M),
-    gives: givesF(M)
+    provide_: M.provide_,
+    provide: (r) => (fa) => M.provide_(fa, r),
+    access: M.access,
+    environment: environmentF(M),
+    accessM: accessMF(M),
+    local_: localF_(M),
+    local: localF(M)
   })
 }
 
-export interface AskFn<F extends HKT.ContravariantR, C = HKT.None> {
+export interface EnvironmentFn<F extends HKT.ContravariantR, C = HKT.None> {
   <
     R,
     K = HKT.Low<F, 'K'>,
@@ -50,12 +50,14 @@ export interface AskFn<F extends HKT.ContravariantR, C = HKT.None> {
   >(): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, R>
 }
 
-export function askF<F extends HKT.ContravariantR, C = HKT.None>(F: MonadEnvMin<F, C>): AskFn<F, C>
-export function askF<F extends HKT.ContravariantR>(F: MonadEnvMin<HKT.FContraR<F>>): AskFn<HKT.FContraR<F>> {
-  return () => F.asks(identity)
+export function environmentF<F extends HKT.ContravariantR, C = HKT.None>(F: MonadEnvMin<F, C>): EnvironmentFn<F, C>
+export function environmentF<F extends HKT.ContravariantR>(
+  F: MonadEnvMin<HKT.FContraR<F>>
+): EnvironmentFn<HKT.FContraR<F>> {
+  return () => F.access(identity)
 }
 
-export interface AsksFn<F extends HKT.HKT, C = HKT.None> {
+export interface AccessFn<F extends HKT.HKT, C = HKT.None> {
   <
     A,
     K = HKT.Low<F, 'K'>,
@@ -71,7 +73,7 @@ export interface AsksFn<F extends HKT.HKT, C = HKT.None> {
   ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
 }
 
-export interface AsksMFn<F extends HKT.ContravariantR, C = HKT.None> {
+export interface AccessMFn<F extends HKT.ContravariantR, C = HKT.None> {
   <R0, K, Q, W, X, I, S, R, E, A>(f: (_: HKT.OrFix<C, 'R', R0>) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>): HKT.Kind<
     F,
     C,
@@ -87,13 +89,13 @@ export interface AsksMFn<F extends HKT.ContravariantR, C = HKT.None> {
   >
 }
 
-export interface GiveAllFn<F extends HKT.ContravariantR, TC = HKT.None> {
+export interface ProvideFn<F extends HKT.ContravariantR, TC = HKT.None> {
   <R>(r: R): <K, Q, W, X, I, S, E, A>(
     fa: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>
   ) => HKT.Kind<F, TC, K, Q, W, X, I, S, unknown, E, A>
 }
 
-export interface GiveAllFn_<F extends HKT.ContravariantR, TC = HKT.None> {
+export interface ProvideFn_<F extends HKT.ContravariantR, TC = HKT.None> {
   <K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, TC, K, Q, W, X, I, S, R, E, A>, r: R): HKT.Kind<
     F,
     TC,
@@ -109,13 +111,13 @@ export interface GiveAllFn_<F extends HKT.ContravariantR, TC = HKT.None> {
   >
 }
 
-export interface GiveFn<F extends HKT.ContravariantR, TC = HKT.None> {
+export interface ProvideSomeFn<F extends HKT.ContravariantR, TC = HKT.None> {
   <R>(r: R): <K, Q, W, X, I, S, R0, E, A>(
     ma: HKT.Kind<F, TC, K, Q, W, X, I, S, R & R0, E, A>
   ) => HKT.Kind<F, TC, K, Q, W, X, I, S, R0, E, A>
 }
 
-export interface GiveFn_<F extends HKT.ContravariantR, TC = HKT.None> {
+export interface ProvideSomeFn_<F extends HKT.ContravariantR, TC = HKT.None> {
   <K, Q, W, X, I, S, R0, R, E, A>(ma: HKT.Kind<F, TC, K, Q, W, X, I, S, R & R0, E, A>, r: R): HKT.Kind<
     F,
     TC,
@@ -131,13 +133,13 @@ export interface GiveFn_<F extends HKT.ContravariantR, TC = HKT.None> {
   >
 }
 
-export interface GivesFn<F extends HKT.ContravariantR, C = HKT.None> {
+export interface LocalFn<F extends HKT.ContravariantR, C = HKT.None> {
   <R0, R>(f: (r0: R0) => R): <K, Q, W, X, I, S, E, A>(
     ma: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
   ) => HKT.Kind<F, C, K, Q, W, X, I, S, R0, E, A>
 }
 
-export interface GivesFn_<F extends HKT.ContravariantR, C = HKT.None> {
+export interface LocalFn_<F extends HKT.ContravariantR, C = HKT.None> {
   <K, Q, W, X, I, S, R0, R, E, A>(ma: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>, f: (r0: R0) => R): HKT.Kind<
     F,
     C,
@@ -153,7 +155,7 @@ export interface GivesFn_<F extends HKT.ContravariantR, C = HKT.None> {
   >
 }
 
-export interface AsksServiceFn<F extends HKT.ContravariantR, C = HKT.None> {
+export interface AccessServiceFn<F extends HKT.ContravariantR, C = HKT.None> {
   <Service>(H: Tag<Service>): <
     A,
     K = HKT.Low<F, 'K'>,
@@ -169,13 +171,13 @@ export interface AsksServiceFn<F extends HKT.ContravariantR, C = HKT.None> {
   ) => HKT.Kind<F, C, K, Q, W, X, I, S, R & Has<Service>, E, A>
 }
 
-export interface AsksServiceMFn<F extends HKT.ContravariantR, C = HKT.None> {
+export interface AccessServiceMFn<F extends HKT.ContravariantR, C = HKT.None> {
   <Service>(H: Tag<Service>): <K, Q, W, X, I, S, R, E, A>(
     f: (_: Service) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
   ) => HKT.Kind<F, C, K, Q, W, X, I, S, R & Has<Service>, E, A>
 }
 
-export interface GiveServiceFn<F extends HKT.ContravariantR, C = HKT.None> {
+export interface ProvideServiceFn<F extends HKT.ContravariantR, C = HKT.None> {
   <Service>(H: Tag<Service>): (
     S: Service
   ) => <K, Q, W, X, I, S, R, E, A>(
@@ -183,7 +185,7 @@ export interface GiveServiceFn<F extends HKT.ContravariantR, C = HKT.None> {
   ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
 }
 
-export interface GiveServiceMFn<F extends HKT.ContravariantR, C = HKT.None> {
+export interface ProvideServiceMFn<F extends HKT.ContravariantR, C = HKT.None> {
   <Service>(H: Tag<Service>): <K, Q, W, X, I, S, R, E>(
     S: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Service>
   ) => <K1, Q1, W1, X1, I1, S1, R1, E1, A>(
@@ -215,107 +217,59 @@ export interface GiveServiceMFn<F extends HKT.ContravariantR, C = HKT.None> {
   >
 }
 
-/**
- * Derives from `MonadEnv`:
- * ```haskell
- * gives :: (MonadEnv m) => (r0 -> r) -> m r a -> m r0 a
- * ```
- */
-export function givesF_<F extends HKT.ContravariantR, C = HKT.None>(F: MonadEnvMin<F, C>): GivesFn_<F, C>
-export function givesF_<F>(F: MonadEnvMin<HKT.FContraR<F>>): GivesFn_<HKT.FContraR<F>, HKT.None> {
+export function localF_<F extends HKT.ContravariantR, C = HKT.None>(F: MonadEnvMin<F, C>): LocalFn_<F, C>
+export function localF_<F>(F: MonadEnvMin<HKT.FContraR<F>>): LocalFn_<HKT.FContraR<F>, HKT.None> {
   return <K, Q, W, X, I, S, R0, R, E, A>(
     ma: HKT.FK<F, K, Q, W, X, I, S, R, E, A>,
     f: (_: R0) => R
-  ): HKT.FK<F, K, Q, W, X, I, S, R0, E, A> => asksMF(F)((r0: R0) => F.giveAll_(ma, f(r0)))
+  ): HKT.FK<F, K, Q, W, X, I, S, R0, E, A> => accessMF(F)((r0: R0) => F.provide_(ma, f(r0)))
 }
 
-/**
- * Derives from `MonadEnv`:
- * ```haskell
- * gives :: (MonadEnv m) => (r0 -> r) -> m r a -> m r0 a
- * ```
- */
-export function givesF<F extends HKT.ContravariantR, C = HKT.None>(F: MonadEnvMin<F, C>): GivesFn<F, C>
-export function givesF<F>(F: MonadEnvMin<HKT.FContraR<F>>): GivesFn<HKT.FContraR<F>> {
+export function localF<F extends HKT.ContravariantR, C = HKT.None>(F: MonadEnvMin<F, C>): LocalFn<F, C>
+export function localF<F>(F: MonadEnvMin<HKT.FContraR<F>>): LocalFn<HKT.FContraR<F>> {
   return <R0, R>(f: (_: R0) => R) =>
     <K, Q, W, X, I, S, E, A>(ma: HKT.FK<F, K, Q, W, X, I, S, R, E, A>): HKT.FK<F, K, Q, W, X, I, S, R0, E, A> =>
-      asksMF(F)((r0: R0) => F.giveAll_(ma, f(r0)))
+      accessMF(F)((r0: R0) => F.provide_(ma, f(r0)))
 }
 
-/**
- * Derives from `MonadEnv`:
- * ```haskell
- * give :: (MonadEnv m) => r -> m |r & r0| a -> m r0 a
- * ```
- */
-export function giveF<F extends HKT.ContravariantR, C = HKT.None>(F: MonadEnv<F, C>): GiveFn<F, C>
-export function giveF<F>(F: MonadEnv<HKT.FContraR<F>>): GiveFn<HKT.FContraR<F>> {
+export function provideF<F extends HKT.ContravariantR, C = HKT.None>(F: MonadEnv<F, C>): ProvideSomeFn<F, C>
+export function provideF<F>(F: MonadEnv<HKT.FContraR<F>>): ProvideSomeFn<HKT.FContraR<F>> {
   return <R>(r: R) =>
     <K, Q, W, X, I, S, R0, E, A>(
       ma: HKT.FK<F, K, Q, W, X, I, S, R & R0, E, A>
     ): HKT.FK<F, K, Q, W, X, I, S, R0, E, A> =>
-      asksMF(F)((r0: R0) => F.giveAll_(ma, { ...r, ...r0 }))
+      accessMF(F)((r0: R0) => F.provide_(ma, { ...r, ...r0 }))
 }
 
-/**
- * Derives from `MonadEnv`:
- * ```haskell
- * asksM :: (MonadEnv m) => (r0 -> m r a) -> m |r0 & r| a
- * ```
- */
-export function asksMF<F extends HKT.ContravariantR, C = HKT.None>(F: MonadEnvMin<F, C>): AsksMFn<F, C>
-export function asksMF<F>(F: MonadEnvMin<HKT.FContraR<F>>): AsksMFn<HKT.FContraR<F>> {
+export function accessMF<F extends HKT.ContravariantR, C = HKT.None>(F: MonadEnvMin<F, C>): AccessMFn<F, C>
+export function accessMF<F>(F: MonadEnvMin<HKT.FContraR<F>>): AccessMFn<HKT.FContraR<F>> {
   const chain_ = chainF_(F)
-  return (f) => chain_(F.asks(f), identity)
+  return (f) => chain_(F.access(f), identity)
 }
 
-/**
- * Derives from `MonadEnv`:
- * ```haskell
- * asksService :: (MonadEnv m) => (Tag s) => (s -> a) -> m s a
- * ```
- */
-export function asksServiceF<F extends HKT.ContravariantR, C = HKT.None>(F: MonadEnv<F, C>): AsksServiceFn<F, C> {
-  return (H) => (f) => F.asks((_) => pipe(_, H.read, f))
+export function accessServiceF<F extends HKT.ContravariantR, C = HKT.None>(F: MonadEnv<F, C>): AccessServiceFn<F, C> {
+  return (H) => (f) => F.access((_) => pipe(_, H.read, f))
 }
 
-/**
- * Derives from `MonadEnv`:
- * ```haskell
- * asksService :: (MonadEnv m) => (Tag s) => (s -> m r a) -> m |s & r| a
- * ```
- */
-export function asksServiceMF<F extends HKT.ContravariantR, C = HKT.None>(F: MonadEnv<F, C>): AsksServiceMFn<F, C>
-export function asksServiceMF<F>(F: MonadEnv<HKT.FContraR<F>>): AsksServiceMFn<HKT.FContraR<F>> {
-  return (H) => (f) => asksMF(F)(flow(H.read, f))
+export function accessServiceMF<F extends HKT.ContravariantR, C = HKT.None>(F: MonadEnv<F, C>): AccessServiceMFn<F, C>
+export function accessServiceMF<F>(F: MonadEnv<HKT.FContraR<F>>): AccessServiceMFn<HKT.FContraR<F>> {
+  return (H) => (f) => accessMF(F)(flow(H.read, f))
 }
 
-/**
- * Derives from `MonadEnv`:
- * ```haskell
- * giveService :: (MonadEnv m) => (Tag s) => s -> m |s & r| a -> m r a
- * ```
- */
-export function giveServiceF<F extends HKT.ContravariantR, C = HKT.None>(F: MonadEnv<F, C>): GiveServiceFn<F, C>
-export function giveServiceF<F>(F: MonadEnv<HKT.FContraR<F>>): GiveServiceFn<HKT.FContraR<F>> {
+export function provideServiceF<F extends HKT.ContravariantR, C = HKT.None>(F: MonadEnv<F, C>): ProvideServiceFn<F, C>
+export function provideServiceF<F>(F: MonadEnv<HKT.FContraR<F>>): ProvideServiceFn<HKT.FContraR<F>> {
   return <Service>(H: Tag<Service>) =>
     (S: Service) =>
     <K, Q, W, X, I, S, R, E, A>(ma: HKT.FK<F, K, Q, W, X, I, S, R & Has<Service>, E, A>) =>
-      asksMF(F)((r: R) => F.giveAll_(ma, { ...r, [H.key]: S } as unknown as Has<Service> & R))
+      accessMF(F)((r: R) => F.provide_(ma, { ...r, [H.key]: S } as unknown as Has<Service> & R))
 }
 
-/**
- * Derives from `MonadEnv`:
- * ```haskell
- * giveService :: (MonadEnv m) => (Tag s) => m r0 s -> m |s & r| a -> m |r & r0| a
- * ```
- */
-export function giveServiceMF<F extends HKT.ContravariantR, C = HKT.None>(F: MonadEnv<F, C>): GiveServiceMFn<F, C>
-export function giveServiceMF<F>(F: MonadEnv<HKT.FContraR<F>, HKT.None>) {
+export function provideServiceMF<F extends HKT.ContravariantR, C = HKT.None>(F: MonadEnv<F, C>): ProvideServiceMFn<F, C>
+export function provideServiceMF<F>(F: MonadEnv<HKT.FContraR<F>, HKT.None>) {
   return <Service>(H: Tag<Service>) =>
     <K, Q, W, X, I, S, R, E>(S: HKT.FK<F, K, Q, W, X, I, S, R, E, Service>) =>
     <A>(ma: HKT.FK<F, K, Q, W, X, I, S, R & Has<Service>, E, A>) =>
-      asksMF(F)((r: R) =>
-        pipe(S, (ms) => F.chain_(ms, (s) => F.giveAll_(ma, { ...r, [H.key]: s } as unknown as Has<Service> & R)))
+      accessMF(F)((r: R) =>
+        pipe(S, (ms) => F.chain_(ms, (s) => F.provide_(ma, { ...r, [H.key]: s } as unknown as Has<Service> & R)))
       )
 }

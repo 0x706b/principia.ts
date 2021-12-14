@@ -35,7 +35,7 @@ export function retry_<R, E, A, R1>(
             )
           )
         ),
-        I.giveAll(r)
+        I.provide(r)
       )
     )
 

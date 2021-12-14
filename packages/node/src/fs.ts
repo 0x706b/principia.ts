@@ -5,6 +5,7 @@ import type { IO } from '@principia/base/IO'
 import * as Ca from '@principia/base/Cause'
 import * as Ch from '@principia/base/Channel'
 import * as C from '@principia/base/Chunk'
+import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/function'
 import { Integer } from '@principia/base/Integer'
 import * as I from '@principia/base/IO'
@@ -339,9 +340,11 @@ export function readFile(
     fs.readFile(file, { ...options, signal: abortController.signal }, (err, data) =>
       err ? cb(I.fail(err)) : cb(I.succeed(data))
     )
-    return I.succeedLazy(() => {
-      abortController.abort()
-    })
+    return E.left(
+      I.succeedLazy(() => {
+        abortController.abort()
+      })
+    )
   })
 }
 
@@ -500,9 +503,11 @@ export function writeFile(
     fs.writeFile(file, data, { ...options, signal: abortController.signal }, (err) =>
       err ? cb(I.fail(err)) : I.unit()
     )
-    return I.succeedLazy(() => {
-      abortController.abort()
-    })
+    return E.left(
+      I.succeedLazy(() => {
+        abortController.abort()
+      })
+    )
   })
 }
 

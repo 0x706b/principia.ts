@@ -25,10 +25,10 @@ export function once<R, E, A>(ma: Managed<R, E, A>): UManaged<Managed<R, E, A>> 
         const promise  = yield* _(F.make<E, A>())
         const complete = yield* _(
           onceIO(
-            I.asksIO((r: R) =>
+            I.accessIO((r: R) =>
               pipe(
                 ma.io,
-                I.giveAll([r, finalizers] as const),
+                I.provide([r, finalizers] as const),
                 I.map(([_, a]) => a),
                 (_) => F.fulfill_(promise, _)
               )

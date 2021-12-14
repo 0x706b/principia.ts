@@ -74,7 +74,7 @@ export function succeed<E = never, A = never>(a: A): Managed<unknown, E, A> {
 export function fromIO<R, E, A>(effect: I.IO<R, E, A>) {
   const trace = accessCallTrace()
   return new Managed<R, E, A>(
-    I.map_(I.asksIO(traceFrom(trace, (_: readonly [R, ReleaseMap]) => I.giveAll_(effect, _[0]))), (a) => [
+    I.map_(I.accessIO(traceFrom(trace, (_: readonly [R, ReleaseMap]) => I.provide_(effect, _[0]))), (a) => [
       noopFinalizer,
       a
     ])
@@ -242,7 +242,7 @@ export function finalizerRef(initial: Finalizer) {
  * @trace call
  */
 export function id<R>(): Managed<R, never, R> {
-  return asks(identityFn)
+  return access(identityFn)
 }
 
 /**
@@ -300,16 +300,16 @@ export function bracketExit_<R, E, A, R1>(
   const trace = accessCallTrace()
   return new Managed<R & R1, E, A>(
     pipe(
-      I.ask<readonly [R & R1, ReleaseMap]>(),
+      I.environment<readonly [R & R1, ReleaseMap]>(),
       I.chain(
         traceAs(acquire, (r) =>
           pipe(
             acquire,
-            I.giveAll(r[0]),
+            I.provide(r[0]),
             I.chain(
               traceFrom(trace, (a) =>
                 pipe(
-                  add(r[1], (ex) => pipe(release(a, ex), I.giveAll(r[0]))),
+                  add(r[1], (ex) => pipe(release(a, ex), I.provide(r[0]))),
                   I.map((rm) => tuple(rm, a))
                 )
               )
@@ -338,9 +338,9 @@ export function makeReserve<R, E, R2, E2, A>(reservation: I.IO<R, E, Reservation
     I.uninterruptibleMask(
       traceFrom(trace, ({ restore }) =>
         I.gen(function* (_) {
-          const [r, releaseMap] = yield* _(I.ask<readonly [R & R2, ReleaseMap]>())
-          const reserved        = yield* _(I.giveAll_(reservation, r))
-          const releaseKey      = yield* _(addIfOpen(releaseMap, (x) => I.giveAll_(reserved.release(x), r)))
+          const [r, releaseMap] = yield* _(I.environment<readonly [R & R2, ReleaseMap]>())
+          const reserved        = yield* _(I.provide_(reservation, r))
+          const releaseKey      = yield* _(addIfOpen(releaseMap, (x) => I.provide_(reserved.release(x), r)))
           const finalizerAndA   = yield* _(
             I.defer(() => {
               switch (releaseKey._tag) {
@@ -350,7 +350,7 @@ export function makeReserve<R, E, R2, E2, A>(reservation: I.IO<R, E, Reservation
                 case 'Just': {
                   return pipe(
                     reserved.acquire,
-                    I.gives(([r]: readonly [R & R2, ReleaseMap]) => r),
+                    I.local(([r]: readonly [R & R2, ReleaseMap]) => r),
                     restore,
                     I.map((a): readonly [Finalizer, A] => tuple((e) => release(releaseMap, releaseKey.value, e), a))
                   )
@@ -432,7 +432,7 @@ export function fromEitherLazy<E, A>(ea: () => E.Either<E, A>): Managed<unknown,
  * @trace 0
  */
 export function fromFunction<R, A>(f: (r: R) => A): Managed<R, never, A> {
-  return asks(f)
+  return access(f)
 }
 
 /**
@@ -442,7 +442,7 @@ export function fromFunction<R, A>(f: (r: R) => A): Managed<R, never, A> {
  * @trace 0
  */
 export function fromFunctionIO<R0, R, E, A>(f: (r: R0) => I.IO<R, E, A>): Managed<R0 & R, E, A> {
-  return asksIO(f)
+  return accessIO(f)
 }
 
 /**
@@ -452,7 +452,7 @@ export function fromFunctionIO<R0, R, E, A>(f: (r: R0) => I.IO<R, E, A>): Manage
  * @trace 0
  */
 export function fromFunctionManaged<R0, R, E, A>(f: (r: R0) => Managed<R, E, A>): Managed<R0 & R, E, A> {
-  return asksManaged(f)
+  return accessManaged(f)
 }
 
 /*
@@ -888,7 +888,7 @@ export function mapIO_<R, E, A, R1, E1, B>(
     I.chain_(
       fa.io,
       traceAs(f, ([fin, a]) =>
-        I.gives_(
+        I.local_(
           I.map_(f(a), (b) => [fin, b]),
           ([r]: readonly [R & R1, ReleaseMap]) => r
         )
@@ -1128,9 +1128,9 @@ export function tapIO<A, R1, E1>(
  *
  * @trace call
  */
-export function ask<R>(): Managed<R, never, R> {
+export function environment<R>(): Managed<R, never, R> {
   const trace = accessCallTrace()
-  return traceCall(fromIO, trace)(I.ask<R>())
+  return traceCall(fromIO, trace)(I.environment<R>())
 }
 
 /**
@@ -1138,8 +1138,8 @@ export function ask<R>(): Managed<R, never, R> {
  *
  * @trace 0
  */
-export function asks<R, A>(f: (r: R) => A): Managed<R, never, A> {
-  return map_(ask<R>(), f)
+export function access<R, A>(f: (r: R) => A): Managed<R, never, A> {
+  return map_(environment<R>(), f)
 }
 
 /**
@@ -1147,8 +1147,8 @@ export function asks<R, A>(f: (r: R) => A): Managed<R, never, A> {
  *
  * @trace 0
  */
-export function asksIO<R0, R, E, A>(f: (r: R0) => I.IO<R, E, A>): Managed<R0 & R, E, A> {
-  return mapIO_(ask<R0>(), f)
+export function accessIO<R0, R, E, A>(f: (r: R0) => I.IO<R, E, A>): Managed<R0 & R, E, A> {
+  return mapIO_(environment<R0>(), f)
 }
 
 /**
@@ -1156,8 +1156,8 @@ export function asksIO<R0, R, E, A>(f: (r: R0) => I.IO<R, E, A>): Managed<R0 & R
  *
  * @trace 0
  */
-export function asksManaged<R0, R, E, A>(f: (r: R0) => Managed<R, E, A>): Managed<R0 & R, E, A> {
-  return chain_(ask<R0>(), f)
+export function accessManaged<R0, R, E, A>(f: (r: R0) => Managed<R, E, A>): Managed<R0 & R, E, A> {
+  return chain_(environment<R0>(), f)
 }
 
 /**
@@ -1165,18 +1165,18 @@ export function asksManaged<R0, R, E, A>(f: (r: R0) => Managed<R, E, A>): Manage
  *
  * @trace 1
  */
-export function gives_<R, E, A, R0>(ma: Managed<R, E, A>, f: (r0: R0) => R): Managed<R0, E, A> {
-  return new Managed(I.asksIO(traceAs(f, ([r0, rm]: readonly [R0, ReleaseMap]) => I.giveAll_(ma.io, [f(r0), rm]))))
+export function local_<R, E, A, R0>(ma: Managed<R, E, A>, f: (r0: R0) => R): Managed<R0, E, A> {
+  return new Managed(I.accessIO(traceAs(f, ([r0, rm]: readonly [R0, ReleaseMap]) => I.provide_(ma.io, [f(r0), rm]))))
 }
 
 /**
  * Modify the environment required to run a Managed
  *
- * @dataFirst gives_
+ * @dataFirst local_
  * @trace 0
  */
-export function gives<R0, R>(f: (r0: R0) => R): <E, A>(ma: Managed<R, E, A>) => Managed<R0, E, A> {
-  return (ma) => gives_(ma, f)
+export function local<R0, R>(f: (r0: R0) => R): <E, A>(ma: Managed<R, E, A>) => Managed<R0, E, A> {
+  return (ma) => local_(ma, f)
 }
 
 /**
@@ -1185,9 +1185,9 @@ export function gives<R0, R>(f: (r0: R0) => R): <E, A>(ma: Managed<R, E, A>) => 
  *
  * @trace call
  */
-export function giveAll_<R, E, A>(ma: Managed<R, E, A>, env: R): Managed<unknown, E, A> {
+export function provide_<R, E, A>(ma: Managed<R, E, A>, env: R): Managed<unknown, E, A> {
   const trace = accessCallTrace()
-  return gives_(
+  return local_(
     ma,
     traceFrom(trace, () => env)
   )
@@ -1197,30 +1197,30 @@ export function giveAll_<R, E, A>(ma: Managed<R, E, A>, env: R): Managed<unknown
  * Provides the `Managed` effect with its required environment, which eliminates
  * its dependency on `R`.
  *
- * @dataFirst giveAll_
+ * @dataFirst provide_
  * @trace call
  */
-export function giveAll<R>(env: R): <E, A>(ma: Managed<R, E, A>) => Managed<unknown, E, A> {
-  return (ma) => giveAll_(ma, env)
+export function provide<R>(env: R): <E, A>(ma: Managed<R, E, A>) => Managed<unknown, E, A> {
+  return (ma) => provide_(ma, env)
 }
 
 /**
  * @trace call
  */
-export function give_<E, A, R = unknown, R0 = unknown>(ma: Managed<R & R0, E, A>, env: R): Managed<R0, E, A> {
+export function provideSome_<E, A, R = unknown, R0 = unknown>(ma: Managed<R & R0, E, A>, env: R): Managed<R0, E, A> {
   const trace = accessCallTrace()
-  return gives_(
+  return local_(
     ma,
     traceFrom(trace, (r0) => ({ ...r0, ...env }))
   )
 }
 
 /**
- * @dataFirst give_
+ * @dataFirst provideSome_
  * @trace call
  */
-export function give<R>(env: R): <R0, E, A>(ma: Managed<R & R0, E, A>) => Managed<R0, E, A> {
-  return (ma) => give_(ma, env)
+export function provideSome<R>(env: R): <R0, E, A>(ma: Managed<R & R0, E, A>) => Managed<R0, E, A> {
+  return (ma) => provideSome_(ma, env)
 }
 
 /*
@@ -1512,7 +1512,7 @@ export function andThen_<R, E, A, E1, B>(ma: Managed<R, E, A>, mb: Managed<A, E1
   const trace = accessCallTrace()
   return chain_(
     ma,
-    traceFrom(trace, (a) => giveAll_(mb, a))
+    traceFrom(trace, (a) => provide_(mb, a))
   )
 }
 
@@ -1531,7 +1531,11 @@ export function andThen<A, E1, B>(mb: Managed<A, E1, B>): <R, E>(ma: Managed<R, 
  */
 export function compose_<R, E, A, R1, E1>(ma: Managed<R, E, A>, mr: Managed<R1, E1, R>): Managed<R1, E | E1, A> {
   const trace = accessCallTrace()
-  return pipe(ask<R1>(), chain(traceFrom(trace, (r1) => give_(mr, r1))), chain(traceFrom(trace, (r) => give_(ma, r))))
+  return pipe(
+    environment<R1>(),
+    chain(traceFrom(trace, (r1) => provideSome_(mr, r1))),
+    chain(traceFrom(trace, (r) => provideSome_(ma, r)))
+  )
 }
 
 /**
@@ -1817,7 +1821,7 @@ export function ignoreReleaseFailures<R, E, A>(ma: Managed<R, E, A>): Managed<R,
   const trace = accessCallTrace()
   return new Managed(
     pipe(
-      I.ask<readonly [R, ReleaseMap]>(),
+      I.environment<readonly [R, ReleaseMap]>(),
       I.tap(
         traceFrom(trace, ([, rm]) =>
           updateAll(
@@ -1895,12 +1899,12 @@ export function join_<R, E, A, R1, E1, A1>(
 ): Managed<E.Either<R, R1>, E | E1, A | A1> {
   const trace = accessCallTrace()
   return chain_(
-    ask<E.Either<R, R1>>(),
+    environment<E.Either<R, R1>>(),
     traceFrom(
       trace,
       E.match(
-        (r): FManaged<E | E1, A | A1> => giveAll_(ma, r),
-        (r1) => giveAll_(that, r1)
+        (r): FManaged<E | E1, A | A1> => provide_(ma, r),
+        (r1) => provide_(that, r1)
       )
     )
   )
@@ -1929,12 +1933,12 @@ export function joinEither_<R, E, A, R1, E1, A1>(
 ): Managed<E.Either<R, R1>, E | E1, E.Either<A, A1>> {
   const trace = accessCallTrace()
   return chain_(
-    ask<E.Either<R, R1>>(),
+    environment<E.Either<R, R1>>(),
     traceFrom(
       trace,
       E.match(
-        (r): FManaged<E | E1, E.Either<A, A1>> => giveAll_(map_(ma, E.left), r),
-        (r1) => giveAll_(map_(that, E.right), r1)
+        (r): FManaged<E | E1, E.Either<A, A1>> => provide_(map_(ma, E.left), r),
+        (r1) => provide_(map_(that, E.right), r1)
       )
     )
   )
@@ -2713,7 +2717,7 @@ export function whenManaged<R1, E1>(
  */
 export function zipEnv<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, readonly [A, R]> {
   const trace = accessCallTrace()
-  return traceCall(cross_, trace)(ma, ask<R>())
+  return traceCall(cross_, trace)(ma, environment<R>())
 }
 
 /*
@@ -2722,28 +2726,28 @@ export function zipEnv<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, readonly [A
  * -------------------------------------------------------------------------------------------------
  */
 
-export function askService<T>(t: Tag<T>): Managed<Has<T>, never, T> {
-  return asks(t.read)
+export function service<T>(t: Tag<T>): Managed<Has<T>, never, T> {
+  return access(t.read)
 }
 
-export function asksService<T>(t: Tag<T>): <A>(f: (a: T) => A) => Managed<Has<T>, never, A> {
-  return (f) => asks(flow(t.read, f))
+export function accessService<T>(t: Tag<T>): <A>(f: (a: T) => A) => Managed<Has<T>, never, A> {
+  return (f) => access(flow(t.read, f))
 }
 
-export function asksServiceIO<T>(t: Tag<T>): <R, E, A>(f: (a: T) => I.IO<R, E, A>) => Managed<Has<T> & R, E, A> {
-  return (f) => asksIO(flow(t.read, f))
+export function accessServiceIO<T>(t: Tag<T>): <R, E, A>(f: (a: T) => I.IO<R, E, A>) => Managed<Has<T> & R, E, A> {
+  return (f) => accessIO(flow(t.read, f))
 }
 
-export function asksServiceManaged<T>(
+export function accessServiceManaged<T>(
   t: Tag<T>
 ): <R, E, A>(f: (a: T) => Managed<R, E, A>) => Managed<Has<T> & R, E, A> {
-  return (f) => asksManaged(flow(t.read, f))
+  return (f) => accessManaged(flow(t.read, f))
 }
 
 /**
  * Access a record of services with the required Service Entries
  */
-export function asksServicesIO<SS extends Record<string, Tag<any>>>(
+export function accessServicesIO<SS extends Record<string, Tag<any>>>(
   s: SS
 ): <R = unknown, E = never, B = unknown>(
   f: (a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => I.IO<R, E, B>
@@ -2753,7 +2757,7 @@ export function asksServicesIO<SS extends Record<string, Tag<any>>>(
   B
 > {
   return (f) =>
-    asksIO(
+    accessIO(
       (r: P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
         f(R.map_(s, (v) => r[v.key]) as any)
     )
@@ -2762,7 +2766,7 @@ export function asksServicesIO<SS extends Record<string, Tag<any>>>(
 /**
  * Access a record of services with the required Service Entries
  */
-export function asksServicesManaged<SS extends Record<string, Tag<any>>>(
+export function accessServicesManaged<SS extends Record<string, Tag<any>>>(
   s: SS
 ): <R = unknown, E = never, B = unknown>(
   f: (a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => Managed<R, E, B>
@@ -2772,7 +2776,7 @@ export function asksServicesManaged<SS extends Record<string, Tag<any>>>(
   B
 > {
   return (f) =>
-    asksManaged(
+    accessManaged(
       (
         r: P.UnionToIntersection<
           {
@@ -2783,7 +2787,7 @@ export function asksServicesManaged<SS extends Record<string, Tag<any>>>(
     )
 }
 
-export function asksServicesTIO<SS extends Tag<any>[]>(
+export function accessServicesTIO<SS extends Tag<any>[]>(
   ...s: SS
 ): <R = unknown, E = never, B = unknown>(
   f: (...a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => I.IO<R, E, B>
@@ -2793,7 +2797,7 @@ export function asksServicesTIO<SS extends Tag<any>[]>(
   B
 > {
   return (f) =>
-    asksIO(
+    accessIO(
       (
         r: P.UnionToIntersection<
           {
@@ -2804,7 +2808,7 @@ export function asksServicesTIO<SS extends Tag<any>[]>(
     )
 }
 
-export function asksServicesTManaged<SS extends Tag<any>[]>(
+export function accessServicesTManaged<SS extends Tag<any>[]>(
   ...s: SS
 ): <R = unknown, E = never, B = unknown>(
   f: (...a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => Managed<R, E, B>
@@ -2814,7 +2818,7 @@ export function asksServicesTManaged<SS extends Tag<any>[]>(
   B
 > {
   return (f) =>
-    asksManaged(
+    accessManaged(
       (
         r: P.UnionToIntersection<
           {
@@ -2825,7 +2829,7 @@ export function asksServicesTManaged<SS extends Tag<any>[]>(
     )
 }
 
-export function asksServicesT<SS extends Tag<any>[]>(
+export function accessServicesT<SS extends Tag<any>[]>(
   ...s: SS
 ): <B = unknown>(
   f: (...a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => B
@@ -2835,7 +2839,7 @@ export function asksServicesT<SS extends Tag<any>[]>(
   B
 > {
   return (f) =>
-    asks(
+    access(
       (
         r: P.UnionToIntersection<
           {
@@ -2849,7 +2853,7 @@ export function asksServicesT<SS extends Tag<any>[]>(
 /**
  * Access a record of services with the required Service Entries
  */
-export function asksServices<SS extends Record<string, Tag<any>>>(
+export function accessServices<SS extends Record<string, Tag<any>>>(
   s: SS
 ): <B>(
   f: (a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => B
@@ -2859,8 +2863,9 @@ export function asksServices<SS extends Record<string, Tag<any>>>(
   B
 > {
   return (f) =>
-    asks((r: P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
-      f(R.map_(s, (v) => r[v.key]) as any)
+    access(
+      (r: P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
+        f(R.map_(s, (v) => r[v.key]) as any)
     )
 }
 
@@ -2987,7 +2992,7 @@ export class GenManaged<R, E, A> {
 
 export const __adapter = (_: any, __?: any) => {
   if (isTag(_)) {
-    return asksService(_)(identityFn)
+    return accessService(_)(identityFn)
   }
   if (E.isEither(_)) {
     return fromEitherLazy(() => _)

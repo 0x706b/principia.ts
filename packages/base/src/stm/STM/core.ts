@@ -173,29 +173,29 @@ export const unit = succeed<void>(undefined)
 /**
  * Retrieves the environment inside an stm.
  */
-export function ask<R>(): STM<R, never, R> {
+export function environment<R>(): STM<R, never, R> {
   return new Effect((_, __, r: R) => r)
 }
 
 /**
  * Accesses the environment of the transaction.
  */
-export function asks<R, A>(f: (r: R) => A): STM<R, never, A> {
-  return map_(ask<R>(), f)
+export function access<R, A>(f: (r: R) => A): STM<R, never, A> {
+  return map_(environment<R>(), f)
 }
 
 /**
  * Accesses the environment of the transaction to perform a transaction.
  */
-export function asksSTM<R0, R, E, A>(f: (r: R0) => STM<R, E, A>) {
-  return chain_(ask<R0>(), f)
+export function accessSTM<R0, R, E, A>(f: (r: R0) => STM<R, E, A>) {
+  return chain_(environment<R0>(), f)
 }
 
 /**
  * Provides some of the environment required to run this effect,
  * leaving the remainder `R0`.
  */
-export function gives_<R, E, A, R0>(self: STM<R, E, A>, f: (r: R0) => R): STM<R0, E, A> {
+export function local_<R, E, A, R0>(self: STM<R, E, A>, f: (r: R0) => R): STM<R0, E, A> {
   return new Gives(self, f)
 }
 
@@ -203,28 +203,28 @@ export function gives_<R, E, A, R0>(self: STM<R, E, A>, f: (r: R0) => R): STM<R0
  * Provides some of the environment required to run this effect,
  * leaving the remainder `R0`.
  *
- * @dataFirst gives_
+ * @dataFirst local_
  */
-export function gives<R, R0>(f: (r: R0) => R): <E, A>(self: STM<R, E, A>) => STM<R0, E, A> {
-  return (self) => gives_(self, f)
+export function local<R, R0>(f: (r: R0) => R): <E, A>(self: STM<R, E, A>) => STM<R0, E, A> {
+  return (self) => local_(self, f)
 }
 
 /**
  * Provides the transaction its required environment, which eliminates
  * its dependency on `R`.
  */
-export function giveAll_<R, E, A>(stm: STM<R, E, A>, r: R): STM<unknown, E, A> {
-  return gives_(stm, () => r)
+export function provide_<R, E, A>(stm: STM<R, E, A>, r: R): STM<unknown, E, A> {
+  return local_(stm, () => r)
 }
 
 /**
  * Provides the transaction its required environment, which eliminates
  * its dependency on `R`.
  *
- * @dataFirst giveAll_
+ * @dataFirst provide_
  */
-export function giveAll<R>(r: R): <E, A>(stm: STM<R, E, A>) => STM<unknown, E, A> {
-  return (stm) => giveAll_(stm, r)
+export function provide<R>(r: R): <E, A>(stm: STM<R, E, A>) => STM<unknown, E, A> {
+  return (stm) => provide_(stm, r)
 }
 
 /*
@@ -467,7 +467,7 @@ export function bimap<R, E, A, E1, B>(g: (e: E) => E1, f: (a: A) => B): (stm: ST
  * Propagates the given environment to stm.
  */
 export function andThen_<R, E, A, E1, B>(stm: STM<R, E, A>, that: STM<A, E1, B>): STM<R, E | E1, B> {
-  return chain_(stm, (a) => giveAll_(that, a))
+  return chain_(stm, (a) => provide_(that, a))
 }
 
 /**
@@ -666,7 +666,7 @@ export function compose<R, R1, E1>(that: STM<R1, E1, R>) {
  * Commits this transaction atomically.
  */
 export function commit<R, E, A>(stm: STM<R, E, A>): I.IO<R, E, A> {
-  return I.asksIO((r: R) =>
+  return I.accessIO((r: R) =>
     I.deferWith((_, fiberId) => {
       const v = tryCommit(fiberId, stm, r)
 
@@ -1095,12 +1095,12 @@ export function join_<R, E, A, R1, E1, A1>(
   stm: STM<R, E, A>,
   that: STM<R1, E1, A1>
 ): STM<E.Either<R, R1>, E | E1, A | A1> {
-  return asksSTM(
+  return accessSTM(
     (_: E.Either<R, R1>): STM<unknown, E | E1, A | A1> =>
       E.match_(
         _,
-        (r) => giveAll_(stm, r),
-        (r1) => giveAll_(that, r1)
+        (r) => provide_(stm, r),
+        (r1) => provide_(that, r1)
       )
   )
 }
@@ -1112,12 +1112,12 @@ export function joinEither_<R, E, A, R1, E1, A1>(
   stm: STM<R, E, A>,
   that: STM<R1, E1, A1>
 ): STM<E.Either<R, R1>, E | E1, E.Either<A, A1>> {
-  return asksSTM(
+  return accessSTM(
     (_: E.Either<R, R1>): STM<unknown, E | E1, E.Either<A, A1>> =>
       E.match_(
         _,
-        (r) => map_(giveAll_(stm, r), E.left),
-        (r1) => map_(giveAll_(that, r1), E.right)
+        (r) => map_(provide_(stm, r), E.left),
+        (r1) => map_(provide_(that, r1), E.right)
       )
   )
 }

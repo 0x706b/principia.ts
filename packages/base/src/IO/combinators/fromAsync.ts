@@ -17,7 +17,7 @@ import * as Ex from '../Exit'
 export function fromAsync<R, E, A>(effect: Async<R, E, A>): I.IO<R, E, A> {
   const trace = accessCallTrace()
   return I.deferWith((_, id) =>
-    I.asksIO(
+    I.accessIO(
       traceAs(trace, (env: R) =>
         I.asyncInterrupt<unknown, E, A>((k) => {
           const canceller = runAsyncEnv_(

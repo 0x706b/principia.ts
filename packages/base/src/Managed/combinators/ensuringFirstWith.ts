@@ -30,14 +30,14 @@ export function ensuringFirstWith_<R, E, A, R1>(
     I.uninterruptibleMask(
       traceFrom(trace, ({ restore }) =>
         I.gen(function* (_) {
-          const [r, outerReleaseMap] = yield* _(I.ask<readonly [R & R1, ReleaseMap]>())
+          const [r, outerReleaseMap] = yield* _(I.environment<readonly [R & R1, ReleaseMap]>())
           const innerReleaseMap      = yield* _(make)
           const exitEA               = yield* _(
             pipe(
               self.io,
               I.map(([, a]) => a),
               I.result,
-              I.giveAll(tuple(r, innerReleaseMap)),
+              I.provide(tuple(r, innerReleaseMap)),
               restore
             )
           )
@@ -45,7 +45,7 @@ export function ensuringFirstWith_<R, E, A, R1>(
             add(outerReleaseMap, (e) =>
               pipe(
                 cleanup(exitEA),
-                I.giveAll(r),
+                I.provide(r),
                 I.result,
                 I.crossWith(
                   I.result(releaseAll_(innerReleaseMap, e, sequential)),

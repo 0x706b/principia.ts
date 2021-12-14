@@ -515,7 +515,7 @@ export function cross<F>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function ask<F extends HKT.HKT, C>(
+export function environment<F extends HKT.HKT, C>(
   F: P.Applicative<F, C>
 ): <
   Input,
@@ -531,7 +531,7 @@ export function ask<F extends HKT.HKT, C>(
   return () => Kleisli((a) => F.pure(a))
 }
 
-export function gives_<F extends HKT.HKT, C>(
+export function local_<F extends HKT.HKT, C>(
   _: HKT.Typeclass<F, C>
 ): <K, Q, W, X, I, S, R, E, Input0, Input, Output>(
   ma: Kleisli<F, C, K, Q, W, X, I, S, R, E, Input, Output>,
@@ -540,14 +540,14 @@ export function gives_<F extends HKT.HKT, C>(
   return (ma, f) => Kleisli((i0) => ma(f(i0)))
 }
 
-export function gives<F extends HKT.HKT, TC>(
+export function local<F extends HKT.HKT, TC>(
   _: HKT.Typeclass<F, TC>
 ): <A0, A>(
   f: (_: A0) => A
 ) => <K, Q, W, X, I, S, R, E, B>(
   ma: Kleisli<F, TC, K, Q, W, X, I, S, R, E, A, B>
 ) => Kleisli<F, TC, K, Q, W, X, I, S, R, E, A0, B> {
-  return (f) => (ma) => gives_(_)(ma, f)
+  return (f) => (ma) => local_(_)(ma, f)
 }
 
 /*
@@ -767,7 +767,7 @@ export function Monad<F>(F: P.Monad<HKT.F<F>>): P.Monad<KleisliF<HKT.F<F>>> {
 export function Category<F extends HKT.HKT, C>(F: P.Monad<F, C>): P.Category<KleisliCategoryF<F>, C>
 export function Category<F>(F: P.Monad<HKT.F<F>>): P.Category<KleisliCategoryF<HKT.F<F>>> {
   return P.Category({
-    id: ask(F),
+    id: environment(F),
     andThen_: andThen_(F)
   })
 }

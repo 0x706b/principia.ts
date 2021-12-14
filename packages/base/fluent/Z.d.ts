@@ -65,17 +65,13 @@ export interface ZStaticOps {
    */
   StateCategory: typeof Z.StateCategory
   /**
-   * @rewriteStatic ask from "@principia/base/Z"
+   * @rewriteStatic access from "@principia/base/Z"
    */
-  ask: typeof Z.ask
+  access: typeof Z.access
   /**
-   * @rewriteStatic asks from "@principia/base/Z"
+   * @rewriteStatic accessZ from "@principia/base/Z"
    */
-  asks: typeof Z.asks
-  /**
-   * @rewriteStatic asksZ from "@principia/base/Z"
-   */
-  asksZ: typeof Z.asksZ
+  accessZ: typeof Z.accessZ
   /**
    * @rewriteStatic defer from "@principia/base/Z"
    */
@@ -88,6 +84,10 @@ export interface ZStaticOps {
    * @rewriteStatic deferTryCatch_ from "@principia/base/Z"
    */
   deferTryCatch: typeof Z.deferTryCatch_
+  /**
+   * @rewriteStatic environment from "@principia/base/Z"
+   */
+  environment: typeof Z.environment
   /**
    * @rewriteStatic fail from "@principia/base/Z"
    */
@@ -296,21 +296,9 @@ declare module '@principia/base/Z' {
      */
     erase: Z<never, S1, S2, R, E, A>
     /**
-     * @rewrite give_ from "@principia/base/Z"
-     */
-    give<W, S1, S2, R, E, A, R0>(this: Z<W, S1, S2, R, E, A>, r: R0): Z<W, S1, S2, Erase<R, R0>, E, A>
-    /**
-     * @rewrite giveAll_ from "@principia/base/Z"
-     */
-    giveAll(r: R): Z<W, S1, S2, unknown, E, A>
-    /**
      * @rewrite giveState_ from "@principia/base/Z"
      */
     giveState(s: S1): Z<W, unknown, S2, R, E, A>
-    /**
-     * @rewrite gives_ from "@principia/base/Z"
-     */
-    gives<W, S1, S2, R, E, A, R0>(this: Z<W, S1, S2, R, E, A>, f: (r0: R0) => R): Z<W, S1, S2, R0, E, A>
     /**
      * @rewriteGetter listen from "@principia/base/Z"
      */
@@ -322,6 +310,10 @@ declare module '@principia/base/Z' {
       this: Z<W, S1, S2, R, E, A>,
       f: (l: Chunk<W>) => B
     ): Z<W, S1, S2, R, E, readonly [A, B]>
+    /**
+     * @rewrite local_ from "@principia/base/Z"
+     */
+    local<W, S1, S2, R, E, A, R0>(this: Z<W, S1, S2, R, E, A>, f: (r0: R0) => R): Z<W, S1, S2, R0, E, A>
     /**
      * @rewrite mapError_ from "@principia/base/Z"
      */
@@ -383,7 +375,15 @@ declare module '@principia/base/Z' {
     orElseEither<W, S1, S2, R, E, A, S3, S4, R1, E1, A1>(
       this: Z<W, S1, S2, R, E, A>,
       that: Z<W, S3, S4, R1, E1, A1>
-    ): Z<W, S1 & S3, S4 | S2, R & R1, E1, Either<A, A1>>
+    ): Z<W, S1 & S3, S4 | S2, R & R1, E1, Either<A, A1>>,
+    /**
+     * @rewrite provide_ from "@principia/base/Z"
+     */
+    provide(r: R): Z<W, S1, S2, unknown, E, A>,
+    /**
+     * @rewrite provideSome_ from "@principia/base/Z"
+     */
+    provideSome<W, S1, S2, R, E, A, R0>(this: Z<W, S1, S2, R, E, A>, r: R0): Z<W, S1, S2, Erase<R, R0>, E, A>,
     /**
      * @rewrite repeatN_ from "@principia/base/Z"
      */

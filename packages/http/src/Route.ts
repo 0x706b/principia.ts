@@ -91,7 +91,7 @@ export function _route<R, E, R1, E1>(
     <any>(
       new Combine(
         routes,
-        new Route(method, path, (conn, n) => I.giveService(HttpConnectionTag)(conn)(<any>handler(conn, n)))
+        new Route(method, path, (conn, n) => I.provideService(HttpConnectionTag)(conn)(<any>handler(conn, n)))
       )
     )
 }
@@ -224,7 +224,7 @@ type ProcessFn = (_: HttpConnection) => IO<unknown, never, HttpResponseCompleted
 export function drain<R>(rs: Routes<R, never>) {
   const routes = toArray(rs)
   return I.gen(function* ($) {
-    const env = yield* $(I.ask<R>())
+    const env = yield* $(I.environment<R>())
     const pfn = yield* $(
       I.succeedLazy(() =>
         A.foldl_(
@@ -240,7 +240,7 @@ export function drain<R>(rs: Routes<R, never>) {
                   I.orHalt
                 )
               )
-              return yield* _(I.giveAll_(a(method, url)(ctx, b(ctx)), env))
+              return yield* _(I.provide_(a(method, url)(ctx, b(ctx)), env))
             })
         )
       )

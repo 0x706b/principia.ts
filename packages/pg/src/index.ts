@@ -59,14 +59,14 @@ export const makePG = M.gen(function* (_) {
   )
 
   function withClient<R, E, A>(effect: T.IO<R & Has<PGClient>, E, A>) {
-    return T.asksIO((r: R) => {
+    return T.accessIO((r: R) => {
       if (typeof r === 'object' && r != null && PGClient.key in r) {
         return effect as T.IO<R, E, A>
       }
       return pipe(
         T.fromPromiseHalt(() => pool.connect()),
         T.bracket(
-          (client) => T.giveService(PGClient)(new PGClientImpl(client))(effect),
+          (client) => T.provideService(PGClient)(new PGClientImpl(client))(effect),
           (client) => T.succeedLazy(() => client.release())
         )
       )
@@ -74,7 +74,7 @@ export const makePG = M.gen(function* (_) {
   }
 
   function query(queryText: string, values?: (string | number | Date)[]): T.UIO<pg.QueryResult<pg.QueryResultRow>> {
-    return T.asksServiceIO(PGClient)((cli) =>
+    return T.accessServiceIO(PGClient)((cli) =>
       T.async<unknown, never, pg.QueryResult<pg.QueryResultRow>>((cb) => {
         const handle = (error: Error | undefined, res: pg.QueryResult<pg.QueryResultRow>) => {
           if (error) {
@@ -112,9 +112,9 @@ export const LivePG = L.fromManaged(PG)(makePG)
 export const { pool, query } = T.deriveLifted(PG)(['query'], [], ['pool'])
 
 export function transaction<R, E, A>(effect: T.IO<R & Has<PGClient>, E, A>) {
-  return T.asksServiceIO(PG)((_) => _.transaction(effect))
+  return T.accessServiceIO(PG)((_) => _.transaction(effect))
 }
 
 export function withClient<R, E, A>(effect: T.IO<R & Has<PGClient>, E, A>) {
-  return T.asksServiceIO(PG)((_) => _.transaction(effect))
+  return T.accessServiceIO(PG)((_) => _.transaction(effect))
 }

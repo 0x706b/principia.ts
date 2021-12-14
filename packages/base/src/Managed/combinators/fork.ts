@@ -3,8 +3,8 @@
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
 import { sequential } from '../../ExecutionStrategy'
-import { pipe } from '../../function'
 import * as F from '../../Fiber'
+import { pipe } from '../../function'
 import { tuple } from '../../tuple'
 import { Managed } from '../core'
 import * as I from '../internal/io'
@@ -24,14 +24,14 @@ export function fork<R, E, A>(self: Managed<R, E, A>): Managed<R, never, F.Fiber
     I.uninterruptibleMask(
       traceFrom(trace, ({ restore }) =>
         I.gen(function* (_) {
-          const [r, outerReleaseMap] = yield* _(I.ask<readonly [R, RM.ReleaseMap]>())
+          const [r, outerReleaseMap] = yield* _(I.environment<readonly [R, RM.ReleaseMap]>())
           const innerReleaseMap      = yield* _(RM.make)
           const fiber                = yield* _(
             pipe(
               self.io,
               I.map(([, a]) => a),
               I.forkDaemon,
-              I.giveAll(tuple(r, innerReleaseMap)),
+              I.provide(tuple(r, innerReleaseMap)),
               restore
             )
           )

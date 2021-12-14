@@ -128,13 +128,13 @@ export function makeGraphQl<FieldPURI extends FieldAURIS, InputPURI extends Inpu
     config: C,
     context: KoaContextFn<C, RE, Ctx>
   ): GraphQlDriver<FieldPURI, InputPURI, Ctx, C, RE> => {
-    const askContext: I.URIO<Has<HttpConnection>, HttpConnection> = I.asksService(HttpConnectionTag)(identity) as any
+    const askContext: I.URIO<Has<HttpConnection>, HttpConnection> = I.accessService(HttpConnectionTag)(identity) as any
 
     const gqlKoaInstance = <R>(instanceConfig: GraphQlInstanceConfig<Koa.Context<DefaultState, Ctx>, R>) => {
       const acquire = I.gen(function* (_) {
-        const env = yield* _(I.ask<R & SubscriptionsEnv<C> & RE>())
+        const env = yield* _(I.environment<R & SubscriptionsEnv<C> & RE>())
 
-        const [app, httpServer] = yield* _(I.asksService(Koa.KoaAppTag)((koa) => [koa.app, koa.server] as const))
+        const [app, httpServer] = yield* _(I.accessService(Koa.KoaAppTag)((koa) => [koa.app, koa.server] as const))
 
         const scalars       = transformScalarResolvers(instanceConfig.schemaParts.scalars ?? {}, env)
         const resolvers     = transformResolvers<Koa.Context<DefaultState, Ctx>>(instanceConfig.schemaParts.resolvers, env)
@@ -147,9 +147,9 @@ export function makeGraphQl<FieldPURI extends FieldAURIS, InputPURI extends Inpu
           apolloConfig.subscriptions = {
             keepAlive: config.subscriptions.keepAlive,
             onConnect: (connectionParams, websocket, context) =>
-              pipe(onConnect(connectionParams, websocket, context), I.give(env), I.runPromise),
+              pipe(onConnect(connectionParams, websocket, context), I.provide(env), I.runPromise),
             onDisconnect: onDisconnect
-              ? (websocket, context) => pipe(onDisconnect(websocket, context), I.give(env), I.runPromise)
+              ? (websocket, context) => pipe(onDisconnect(websocket, context), I.provide(env), I.runPromise)
               : undefined,
             path: config.subscriptions.path
           }
@@ -176,7 +176,7 @@ export function makeGraphQl<FieldPURI extends FieldAURIS, InputPURI extends Inpu
           pipe(
             I.try(() => {
               const server = new ApolloServer({
-                context: (ctx) => pipe(context(ctx), I.give(env), I.runPromise),
+                context: (ctx) => pipe(context(ctx), I.provide(env), I.runPromise),
                 schema,
                 ...apolloConfig,
                 formatError: (error) => {

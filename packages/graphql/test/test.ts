@@ -124,7 +124,7 @@ const Mutation = gql.mutation((t) => ({
       user: t.objectArg(() => EmployeeInput)
     },
     resolve: ({ args }) =>
-      I.asksServiceM(UserService)((_) => _.putUser({ _tag: 'Employee', ...args.user }))['|>'](
+      I.accessServiceIO(UserService)((_) => _.putUser({ _tag: 'Employee', ...args.user }))['|>'](
         I.match(
           (_) => false,
           () => true
@@ -137,7 +137,7 @@ const Mutation = gql.mutation((t) => ({
       user: t.objectArg(() => StudentInput)
     },
     resolve: ({ args }) =>
-      I.asksServiceM(UserService)((_) => _.putUser({ _tag: 'Student', ...args.user }))['|>'](
+      I.accessServiceIO(UserService)((_) => _.putUser({ _tag: 'Student', ...args.user }))['|>'](
         I.match(
           (_) => false,
           () => true
@@ -172,12 +172,12 @@ const schemaParts = gql.generateSchema(
 
 const liveGraphQl = gql.live({ schemaParts })
 
-const LiveUserService = L.fromEffect(UserService)(
+const LiveUserService = L.fromIO(UserService)(
   I.gen(function* (_) {
-    const db      = yield* _(Ref.makeRef<HM.HashMap<number, Student | Employee>>(HM.makeDefault()))
+    const db      = yield* _(Ref.make<HM.HashMap<number, Student | Employee>>(HM.makeDefault()))
     const putUser = (user: Student | Employee) =>
       db.get['|>'](I.map(HM.get(user.id)))['|>'](
-        I.bind(
+        I.chain(
           O.match(
             () => Ref.update_(db, HM.set(user.id, user)),
             (_) => I.fail(new Error('User already exists'))

@@ -101,7 +101,7 @@ export abstract class Layer<R, E, A> {
   }
 
   use<R1, E1, A1>(io: I.IO<R1 & A, E1, A1>): I.IO<R & R1, E | E1, A1> {
-    return Ma.use_(build(this['+++'](identity<R1>())), (a) => I.giveAll_(io, a))
+    return Ma.use_(build(this['+++'](identity<R1>())), (a) => I.provide_(io, a))
   }
 }
 
@@ -302,10 +302,10 @@ function scope<R, E, A>(l: Layer<R, E, A>): Managed<unknown, never, (_: MemoMap)
           memo.getOrElseMemoize(l.layer),
           (e) =>
             pipe(
-              I.toManaged()(I.ask<any>()),
-              Ma.chain((r) => Ma.gives_(memo.getOrElseMemoize(l.onFailure), () => tuple(r, e)))
+              I.toManaged()(I.environment<any>()),
+              Ma.chain((r) => Ma.local_(memo.getOrElseMemoize(l.onFailure), () => tuple(r, e)))
             ),
-          (r) => Ma.giveAll_(memo.getOrElseMemoize(l.onSuccess), r)
+          (r) => Ma.provide_(memo.getOrElseMemoize(l.onSuccess), r)
         )
       )
     }
@@ -342,7 +342,7 @@ export function fail<E>(e: E): Layer<unknown, E, never> {
 }
 
 export function identity<R>(): Layer<R, never, R> {
-  return fromRawManaged(Ma.ask<R>())
+  return fromRawManaged(Ma.environment<R>())
 }
 
 export function prepare<T>(tag: H.Tag<T>) {
@@ -384,21 +384,21 @@ export function fromRawIO<R, E, A>(resource: I.IO<R, E, A>): Layer<R, E, A> {
 }
 
 export function fromRawFunction<A, B>(f: (a: A) => B): Layer<A, never, B> {
-  return fromRawIO(I.asks(f))
+  return fromRawIO(I.access(f))
 }
 
 export function fromRawFunctionIO<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): Layer<R & A, E, B> {
-  return fromRawIO(I.asksIO(f))
+  return fromRawIO(I.accessIO(f))
 }
 
 export function fromRawFunctionManaged<R0, R, E, A>(f: (r0: R0) => Managed<R, E, A>): Layer<R0 & R, E, A> {
-  return fromRawManaged(Ma.asksManaged(f))
+  return fromRawManaged(Ma.accessManaged(f))
 }
 
 export function fromFunctionManaged<T>(
   tag: H.Tag<T>
 ): <A, R, E>(f: (a: A) => Managed<R, E, T>) => Layer<R & A, E, H.Has<T>> {
-  return (f) => fromManaged(tag)(Ma.asksManaged(f))
+  return (f) => fromManaged(tag)(Ma.accessManaged(f))
 }
 
 export function fromFunctionIO<T>(tag: H.Tag<T>) {
@@ -419,7 +419,7 @@ export function fromConstructor<S>(
 > {
   return (constructor) =>
     (...tags) =>
-      fromIO(tag)(I.asksServicesT(...tags)((...services: any[]) => constructor(...(services as any))) as any) as any
+      fromIO(tag)(I.accessServicesT(...tags)((...services: any[]) => constructor(...(services as any))) as any) as any
 }
 
 export function fromConstructorIO<S>(
@@ -435,7 +435,7 @@ export function fromConstructorIO<S>(
 > {
   return (constructor) =>
     (...tags) =>
-      fromIO(tag)(I.asksServicesTIO(...tags)((...services: any[]) => constructor(...(services as any))) as any) as any
+      fromIO(tag)(I.accessServicesTIO(...tags)((...services: any[]) => constructor(...(services as any))) as any) as any
 }
 
 export function fromConstructorManaged<S>(
@@ -454,7 +454,7 @@ export function fromConstructorManaged<S>(
       fromManaged(tag)(
         Ma.chain_(
           Ma.fromIO(
-            I.asksServicesT(...tags)((...services: any[]) => constructor(...(services as any))) as I.IO<any, any, any>
+            I.accessServicesT(...tags)((...services: any[]) => constructor(...(services as any))) as I.IO<any, any, any>
           ),
           (_) => _
         )
@@ -490,7 +490,7 @@ export function bracketConstructor<S>(
   return (constructor) =>
     (...tags) =>
     (open, release) =>
-      prepare(tag)(I.asksServicesT(...tags)((...services: any[]) => constructor(...(services as any))) as any)
+      prepare(tag)(I.accessServicesT(...tags)((...services: any[]) => constructor(...(services as any))) as any)
         .open(open as any)
         .release(release as any) as any
 }
@@ -512,7 +512,7 @@ export function bracketConstructorIO<S>(
   return (constructor) =>
     (...tags) =>
     (open, release) =>
-      prepare(tag)(I.asksServicesTIO(...tags)((...services: any[]) => constructor(...(services as any))) as any)
+      prepare(tag)(I.accessServicesTIO(...tags)((...services: any[]) => constructor(...(services as any))) as any)
         .open(open as any)
         .release(release as any) as any
 }
@@ -534,7 +534,7 @@ export function restrict<Tags extends H.Tag<any>[]>(
     andThen_(
       layer,
       fromRawIO(
-        I.asksServicesT(...ts)((...services) =>
+        I.accessServicesT(...ts)((...services) =>
           services.map((s, i) => ({ [ts[i].key]: s } as any)).reduce((x, y) => ({ ...x, ...y }))
         )
       )
@@ -758,7 +758,7 @@ export function andSeq<R1, E1, A1>(
 
 function environmentFor<T>(has: H.Tag<T>, a: T): Managed<unknown, never, H.Has<T>> {
   return Ma.fromIO(
-    I.asks(
+    I.access(
       (r) =>
         ({
           [has.key]: mergeEnvironments(has, r, a)[has.key]
@@ -962,7 +962,7 @@ export function update_<R, E, A extends H.Has<T>, T>(
   tag: H.Tag<T>,
   f: (a: T) => T
 ): Layer<R, E, A> {
-  return la['>=>'](fromRawIO(pipe(I.ask<A>(), I.updateService(tag)(f))))
+  return la['>=>'](fromRawIO(pipe(I.environment<A>(), I.updateService(tag)(f))))
 }
 
 /**
@@ -1004,7 +1004,7 @@ export class MemoMap {
           if (M.isJust(inMap)) {
             const [acquire, release] = inMap.value
 
-            const cached = I.asksIO(([_, rm]: readonly [R, ReleaseMap]) =>
+            const cached = I.accessIO(([_, rm]: readonly [R, ReleaseMap]) =>
               pipe(
                 acquire as I.FIO<E, A>,
                 I.onExit(
@@ -1026,7 +1026,7 @@ export class MemoMap {
 
               const resource = I.uninterruptibleMask(({ restore }) =>
                 I.gen(function* (_) {
-                  const env                  = yield* _(I.ask<readonly [R, ReleaseMap]>())
+                  const env                  = yield* _(I.environment<readonly [R, ReleaseMap]>())
                   const [a, outerReleaseMap] = env
                   const innerReleaseMap      = yield* _(RelMap.make)
                   const tp                   = yield* _(
@@ -1034,7 +1034,7 @@ export class MemoMap {
                       scope(layer),
                       Ma.chain((_) => _(self)),
                       (_) => _.io,
-                      I.giveAll(tuple(a, innerReleaseMap)),
+                      I.provide(tuple(a, innerReleaseMap)),
                       I.result,
                       I.chain((ex) =>
                         Ex.match_(

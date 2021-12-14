@@ -17,6 +17,6 @@ import { noopFinalizer } from '../ReleaseMap'
 export function releaseMap(): Managed<unknown, never, ReleaseMap> {
   const trace = accessCallTrace()
   return new Managed(
-    pipe(I.ask<readonly [unknown, ReleaseMap]>(), I.map(traceFrom(trace, (tp) => [noopFinalizer, tp[1]])))
+    pipe(I.environment<readonly [unknown, ReleaseMap]>(), I.map(traceFrom(trace, (tp) => [noopFinalizer, tp[1]])))
   )
 }

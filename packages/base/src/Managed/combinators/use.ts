@@ -35,7 +35,7 @@ export function use_<R, E, A, R2, E2, B>(
     RM.make,
     traceAs(f, (rm) =>
       I.chain_(
-        I.gives_(self.io, (r: R) => tuple(r, rm)),
+        I.local_(self.io, (r: R) => tuple(r, rm)),
         (a) => f(a[1])
       )
     ),

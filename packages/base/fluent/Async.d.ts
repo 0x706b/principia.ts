@@ -55,17 +55,13 @@ export interface AsyncStaticOps {
    */
   SemimonoidalFunctorPar: typeof As.SemimonoidalFunctorPar
   /**
-   * @rewriteStatic ask from "@principia/base/Async"
+   * @rewriteStatic access from "@principia/base/Async"
    */
-  ask: typeof As.ask
+  access: typeof As.access
   /**
-   * @rewriteStatic asks from "@principia/base/Async"
+   * @rewriteStatic accessAsync from "@principia/base/Async"
    */
-  asks: typeof As.asks
-  /**
-   * @rewriteStatic asksAsync from "@principia/base/Async"
-   */
-  asksAsync: typeof As.asksAsync
+  accessAsync: typeof As.accessAsync
   /**
    * @rewriteStatic async from "@principia/base/Async"
    */
@@ -82,6 +78,10 @@ export interface AsyncStaticOps {
    * @rewriteStatic doneLazy from "@principia/base/Async"
    */
   doneLazy: typeof As.doneLazy
+  /**
+   * @rewriteStatic environment from "@principia/base/Async"
+   */
+  environment: typeof As.environment
   /**
    * @rewriteStatic fail from "@principia/base/Async"
    */
@@ -281,31 +281,6 @@ declare module '@principia/base/Async' {
     flatten<R, E, R1, E1, A>(this: As.Async<R, E, As.Async<R1, E1, A>>): As.Async<R & R1, E | E1, A>
 
     /**
-     * @rewrite give_ from "@principia/base/Async"
-     * @trace call
-     */
-    give<R0, E, A, R>(this: As.Async<R0, E, A>, r: R): As.Async<Erase<R0, R>, E, A>
-
-    /**
-     * @rewrite giveAll_ from "@principia/base/Async"
-     */
-    giveAll<R, E, A>(this: As.Async<R, E, A>, env: R): As.Async<unknown, E, A>
-
-    /**
-     * @rewrite giveService_ from "@principia/base/Async"
-     */
-    giveService<R, E, A, T>(this: As.Async<R, E, A>, tag: Tag<T>): (service: T) => As.Async<Erase<R, Has<T>>, E, A>
-
-    /**
-     * @rewriteConstraint giveServiceAsync_ from "@principia/base/Async"
-     * @trace call
-     */
-    giveServiceAsync<R, E, A, T>(
-      this: As.Async<R, E, A>,
-      tag: Tag<T>
-    ): <R1, E1>(service: As.Async<R1, E1, T>) => As.Async<Erase<R & R1, Has<T>>, E | E1, A>
-
-    /**
      * @rewrite map_ from "@principia/base/Async"
      */
     map<R, E, A, B>(this: As.Async<R, E, A>, f: (a: A) => B): As.Async<R, E, B>
@@ -341,6 +316,31 @@ declare module '@principia/base/Async' {
       onFailure: (cause: As.Cause<E>) => As.Async<R1, E1, A1>,
       onSuccess: (a: A) => As.Async<R2, E2, A2>
     ): As.Async<R & R1 & R2, E1 | E2, A1 | A2>
+
+    /**
+     * @rewrite provide_ from "@principia/base/Async"
+     */
+    provide<R, E, A>(this: As.Async<R, E, A>, env: R): As.Async<unknown, E, A>
+
+    /**
+     * @rewrite provideService_ from "@principia/base/Async"
+     */
+    provideService<R, E, A, T>(this: As.Async<R, E, A>, tag: Tag<T>): (service: T) => As.Async<Erase<R, Has<T>>, E, A>
+
+    /**
+     * @rewriteConstraint provideServiceAsync_ from "@principia/base/Async"
+     * @trace call
+     */
+    provideServiceAsync<R, E, A, T>(
+      this: As.Async<R, E, A>,
+      tag: Tag<T>
+    ): <R1, E1>(service: As.Async<R1, E1, T>) => As.Async<Erase<R & R1, Has<T>>, E | E1, A>
+
+    /**
+     * @rewrite provideSome_ from "@principia/base/Async"
+     * @trace call
+     */
+    provideSome<R0, E, A, R>(this: As.Async<R0, E, A>, r: R): As.Async<Erase<R0, R>, E, A>
 
     /**
      * @rewrite result from "@principia/base/Async"

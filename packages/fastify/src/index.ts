@@ -116,14 +116,14 @@ function LiveFastifyServerConfig<R, Server extends RawServerBase>(
   ) => (cause: Cause<never>) => IO.URIO<R, void>,
   options: FastifyServerOptions
 ): IO.IO<R, never, any> {
-  return IO.asks((r: R) => ({
+  return IO.access((r: R) => ({
     ...options,
     host,
     port,
     exitHandler:
       (request: FastifyRequest<RouteGenericInterface, Server>, reply: FastifyReply<Server>) =>
       (cause: Cause<never>): IO.UIO<void> =>
-        IO.giveAll_(exitHandler(request, reply)(cause), r)
+        IO.provide_(exitHandler(request, reply)(cause), r)
   }))
 }
 

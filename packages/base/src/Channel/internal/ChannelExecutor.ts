@@ -736,7 +736,9 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
             }
             case C.ChannelTag.Effect: {
               const pio =
-                this.providedEnv === null ? currentChannel.io : I.give_(currentChannel.io, this.providedEnv as Env)
+                this.providedEnv === null
+                  ? currentChannel.io
+                  : I.provideSome_(currentChannel.io, this.providedEnv as Env)
               result = new State.Effect(
                 I.matchCauseIO_(
                   pio,
@@ -804,7 +806,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
               result = this.runBracketOut(currentChannel)
               break
             }
-            case C.ChannelTag.Give: {
+            case C.ChannelTag.Provide: {
               const previousEnv   = this.providedEnv
               this.providedEnv    = currentChannel.environment
               this.currentChannel = currentChannel.inner

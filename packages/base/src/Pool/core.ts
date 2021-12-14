@@ -1,15 +1,15 @@
-import type { Has } from '../Has'
 import type { Clock } from '../Clock'
+import type { Has } from '../Has'
 
+import { ClockTag } from '../Clock'
 import * as Fi from '../Fiber'
 import { flow, identity, pipe } from '../function'
 import * as HS from '../HashSet'
 import * as IO from '../IO'
 import * as Ex from '../IO/Exit'
-import { ClockTag } from '../Clock'
+import * as Ma from '../Managed'
 import * as Q from '../Queue'
 import * as Ref from '../Ref'
-import * as Ma from '../Managed'
 import * as At from './Attempted'
 
 /**
@@ -265,13 +265,13 @@ export function makeWith<R, E, A, S, R1>(
   strategy: Strategy<S, R1, E, A>
 ): Ma.Managed<R & R1, never, Pool<E, A>> {
   return Ma.gen(function* (_) {
-    const env     = yield* _(Ma.ask<R>())
+    const env     = yield* _(Ma.environment<R>())
     const down    = yield* _(Ref.make(false))
     const state   = yield* _(Ref.make<State>({ free: 0, size: 0 }))
     const items   = yield* _(Q.makeBounded<At.Attempted<E, A>>(max))
     const inv     = yield* _(Ref.make(HS.makeDefault<A>()))
     const initial = yield* _(strategy.initial)
-    const pool    = new DefaultPool(Ma.give_(get, env), min, max, down, state, items, inv, strategy.track(initial))
+    const pool    = new DefaultPool(Ma.provideSome_(get, env), min, max, down, state, items, inv, strategy.track(initial))
     const fiber   = yield* _(IO.forkDaemon(pool.initialize()))
     const shrink  = yield* _(IO.forkDaemon(strategy.run(initial, pool.excess, pool.shrink)))
     yield* _(

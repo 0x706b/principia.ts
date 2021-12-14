@@ -29,7 +29,7 @@ export function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R,
       const makeInnerMap = pipe(
         makeManagedReleaseMap(sequential).io,
         I.map(([_, x]) => x),
-        I.gives((r0: unknown) => tuple(r0, parallelReleaseMap))
+        I.local((r0: unknown) => tuple(r0, parallelReleaseMap))
       )
 
       return ioForeachPar_(
@@ -41,7 +41,7 @@ export function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R,
               pipe(
                 f(a).io,
                 I.map(([_fin, r]) => r),
-                I.gives((r0: R) => tuple(r0, innerMap))
+                I.local((r0: R) => tuple(r0, innerMap))
               )
             )
           )
@@ -74,7 +74,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => Managed<R
       const makeInnerMap = pipe(
         makeManagedReleaseMap(sequential).io,
         I.map(([_, x]) => x),
-        I.gives((r0: unknown) => tuple(r0, parallelReleaseMap))
+        I.local((r0: unknown) => tuple(r0, parallelReleaseMap))
       )
 
       return ioForeachUnitPar_(
@@ -86,7 +86,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => Managed<R
               pipe(
                 f(a).io,
                 I.map(([_fin, r]) => r),
-                I.gives((r0: R) => tuple(r0, innerMap))
+                I.local((r0: R) => tuple(r0, innerMap))
               )
             )
           )

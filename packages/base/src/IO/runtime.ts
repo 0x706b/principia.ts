@@ -9,8 +9,8 @@ import { isTracingEnabled } from '@principia/compile/util'
 import { ClockTag, LiveClock } from '../Clock'
 import { ConsoleTag, LiveConsole } from '../Console'
 import { interruptible, newFiberId, showFiberId } from '../Fiber'
-import { constVoid, flow, identity } from '../function'
 import { FiberContext } from '../Fiber/FiberContext'
+import { constVoid, flow, identity } from '../function'
 import { Platform } from '../internal/Platform'
 import * as M from '../Maybe'
 import { defaultRandom, RandomTag } from '../Random'
@@ -334,7 +334,7 @@ export const { run_, runAsap_, runCancel_, run, runAsap, runCancel, runFiber, ru
  * is valid (i.e. keep attention to closed resources)
  */
 export function runtime<R0>() {
-  return I.asksIO((r0: R0) => I.platform((p) => I.succeedLazy(() => makeCustomRuntime<R0, unknown>(r0, p))))
+  return I.accessIO((r0: R0) => I.platform((p) => I.succeedLazy(() => makeCustomRuntime<R0, unknown>(r0, p))))
 }
 
 export function withRuntimeM<R0, R, E, A>(f: (r: CustomRuntime<R0, unknown>) => I.IO<R, E, A>) {

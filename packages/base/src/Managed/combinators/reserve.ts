@@ -12,7 +12,7 @@ export function reserve<R, E, A>(ma: Ma.Managed<R, E, A>): I.UIO<Ma.Reservation<
       Ma.makeReservation_(
         pipe(
           ma.io,
-          I.gives((r: R) => [r, releaseMap] as const),
+          I.local((r: R) => [r, releaseMap] as const),
           I.map(([, a]) => a)
         ),
         (exit) => releaseAll_(releaseMap, exit, sequential)

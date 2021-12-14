@@ -13,7 +13,7 @@ export function onExit_<R, E, A, R1>(
   return new Ma.Managed(
     I.uninterruptibleMask(({ restore }) =>
       I.gen(function* (_) {
-        const [r1, outerReleaseMap] = yield* _(I.ask<readonly [R & R1, RM.ReleaseMap]>())
+        const [r1, outerReleaseMap] = yield* _(I.environment<readonly [R & R1, RM.ReleaseMap]>())
         const innerReleaseMap       = yield* _(RM.make)
         const exitEA                = yield* _(
           pipe(
@@ -21,7 +21,7 @@ export function onExit_<R, E, A, R1>(
             I.map(([, a]) => a),
             restore,
             I.result,
-            I.giveAll([r1, innerReleaseMap] as const)
+            I.provide([r1, innerReleaseMap] as const)
           )
         )
         const releaseMapEntry = yield* _(
@@ -30,7 +30,7 @@ export function onExit_<R, E, A, R1>(
               innerReleaseMap,
               releaseAll(e, sequential),
               I.result,
-              I.crossWith(pipe(cleanup(exitEA), I.giveAll(r1), I.result), (l, r) => I.fromExit(Ex.crossSecond_(l, r))),
+              I.crossWith(pipe(cleanup(exitEA), I.provide(r1), I.result), (l, r) => I.fromExit(Ex.crossSecond_(l, r))),
               I.flatten
             )
           )

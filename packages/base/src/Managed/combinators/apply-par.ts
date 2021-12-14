@@ -34,12 +34,12 @@ export function crossWithPar_<R, E, A, R1, E1, B, C>(
   f: (a: A, b: B) => C
 ): Managed<R & R1, E | E1, C> {
   return mapIO_(makeManagedReleaseMap(parallel), (parallelReleaseMap) => {
-    const innerMap = I.gives_(makeManagedReleaseMap(sequential).io, (r: R & R1) => tuple(r, parallelReleaseMap))
+    const innerMap = I.local_(makeManagedReleaseMap(sequential).io, (r: R & R1) => tuple(r, parallelReleaseMap))
 
     return I.chain_(I.cross_(innerMap, innerMap), ([[_, l], [__, r]]) =>
       I.crossWithPar_(
-        I.gives_(fa.io, (_: R & R1) => tuple(_, l)),
-        I.gives_(fb.io, (_: R & R1) => tuple(_, r)),
+        I.local_(fa.io, (_: R & R1) => tuple(_, l)),
+        I.local_(fb.io, (_: R & R1) => tuple(_, r)),
         traceAs(f, ([_, a], [__, a2]) => f(a, a2))
       )
     )

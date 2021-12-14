@@ -141,7 +141,7 @@ export class Using<R, E, A, R1, E1, A1> extends SyncLayer<R & P.Erase<R1, A>, E 
             pipe(
               getMemoOrElseCreate(this.right)(_),
               Sy.map((r) => ({ ...l, ...r })),
-              Sy.give(l)
+              Sy.provideSome(l)
             )
           )
         ) as Sy.Sync<R & P.Erase<R1, A>, E | E1, A & A1>
@@ -161,7 +161,7 @@ export class From<R, E, A, R1, E1, A1> extends SyncLayer<R & P.Erase<R1, A>, E |
       (_) =>
         pipe(
           getMemoOrElseCreate(this.left)(_),
-          Sy.chain((l) => pipe(getMemoOrElseCreate(this.right)(_), Sy.give(l)))
+          Sy.chain((l) => pipe(getMemoOrElseCreate(this.right)(_), Sy.provideSome(l)))
         ) as Sy.Sync<R & P.Erase<R1, A>, E | E1, A1>
     )
   }
@@ -226,7 +226,7 @@ export function fromSync<T>(tag: Tag<T>): <R, E>(_: Sy.Sync<R, E, T>) => SyncLay
 }
 
 export function fromFunction<T>(tag: Tag<T>): <R>(f: (_: R) => T) => SyncLayer<R, never, Has<T>> {
-  return (f) => new FromSync(pipe(Sy.asks(f), Sy.map(tag.of)))
+  return (f) => new FromSync(pipe(Sy.access(f), Sy.map(tag.of)))
 }
 
 export function fromValue<T>(tag: Tag<T>): (_: T) => SyncLayer<unknown, never, Has<T>> {
@@ -269,7 +269,7 @@ export function giveLayer<R, E, A>(
   return (_) =>
     pipe(
       layer.build(),
-      Sy.chain((a) => pipe(_, Sy.give(a)))
+      Sy.chain((a) => pipe(_, Sy.provideSome(a)))
     )
 }
 

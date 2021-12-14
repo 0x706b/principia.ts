@@ -49,11 +49,11 @@ export function LiveExpressAppConfig<R>(
   exitHandler: (req: Request, res: Response, next: NextFunction) => (cause: Cause<never>) => IO.URIO<R, void>
 ) {
   return L.fromIO(ExpressAppConfig)(
-    IO.asks((r: R) => ({
+    IO.access((r: R) => ({
       _tag: ExpressAppConfigTag,
       host,
       port,
-      exitHandler: (req, res, next) => (cause) => IO.giveAll_(exitHandler(req, res, next)(cause), r)
+      exitHandler: (req, res, next) => (cause) => IO.provide_(exitHandler(req, res, next)(cause), r)
     }))
   )
 }
@@ -180,11 +180,11 @@ export function LiveExpress<R>(
   return LiveExpressAppConfig(host, port, exitHandler || defaultExitHandler)['>+>'](LiveExpressApp)
 }
 
-export const expressApp = IO.asksService(ExpressApp)((_) => _.app)
+export const expressApp = IO.accessService(ExpressApp)((_) => _.app)
 
-export const expressServer = IO.asksService(ExpressApp)((_) => _.server)
+export const expressServer = IO.accessService(ExpressApp)((_) => _.server)
 
-export const { app: withExpressApp, server: withExpressServer } = IO.deriveAsksIO(ExpressApp)(['app', 'server'])
+export const { app: withExpressApp, server: withExpressServer } = IO.deriveAccessIO(ExpressApp)(['app', 'server'])
 
 export const methods = [
   'all',
@@ -263,7 +263,7 @@ export function expressRuntime<Handlers extends Array<IORequestHandlerRoute>>(
   never,
   ReadonlyArray<RequestHandler>
 > {
-  return IO.asksServiceIO(ExpressApp)((_) => _.runtime(handlers))
+  return IO.accessServiceIO(ExpressApp)((_) => _.runtime(handlers))
 }
 
 export function match(method: Methods): {

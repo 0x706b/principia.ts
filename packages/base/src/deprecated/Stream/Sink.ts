@@ -1117,55 +1117,55 @@ export function chain<Z, R, R1, E1, I, I1 extends I, L1, Z1>(f: (z: Z) => Sink<R
  * Provides the sink with its required environment, which eliminates
  * its dependency on `R`.
  */
-export function giveAll_<R, E, I, L, Z>(self: Sink<R, E, I, L, Z>, r: R): Sink<unknown, E, I, L, Z> {
-  return new Sink(Ma.map_(Ma.giveAll_(self.push, r), (push) => (i: M.Maybe<Chunk<I>>) => I.giveAll_(push(i), r)))
+export function provide_<R, E, I, L, Z>(self: Sink<R, E, I, L, Z>, r: R): Sink<unknown, E, I, L, Z> {
+  return new Sink(Ma.map_(Ma.provide_(self.push, r), (push) => (i: M.Maybe<Chunk<I>>) => I.provide_(push(i), r)))
 }
 
 /**
  * Provides the sink with its required environment, which eliminates
  * its dependency on `R`.
  */
-export function giveAll<R>(r: R) {
-  return <E, I, L, Z>(self: Sink<R, E, I, L, Z>) => giveAll_(self, r)
+export function provide<R>(r: R) {
+  return <E, I, L, Z>(self: Sink<R, E, I, L, Z>) => provide_(self, r)
 }
 
 /**
  * Provides some of the environment required to run this effect,
  * leaving the remainder `R0`.
  */
-export function gives_<R0, R, E, I, L, Z>(self: Sink<R, E, I, L, Z>, f: (r0: R0) => R) {
-  return new Sink(Ma.map_(Ma.gives_(self.push, f), (push) => (i: M.Maybe<Chunk<I>>) => I.gives_(push(i), f)))
+export function local_<R0, R, E, I, L, Z>(self: Sink<R, E, I, L, Z>, f: (r0: R0) => R) {
+  return new Sink(Ma.map_(Ma.local_(self.push, f), (push) => (i: M.Maybe<Chunk<I>>) => I.local_(push(i), f)))
 }
 
 /**
  * Provides some of the environment required to run this effect,
  * leaving the remainder `R0`.
  */
-export function gives<R0, R>(f: (r0: R0) => R) {
-  return <E, I, L, Z>(self: Sink<R, E, I, L, Z>) => gives_(self, f)
+export function local<R0, R>(f: (r0: R0) => R) {
+  return <E, I, L, Z>(self: Sink<R, E, I, L, Z>) => local_(self, f)
 }
 
 /**
  * Accesses the environment of the sink in the context of a sink.
  */
-export function asksSink<R, R1, E, I, L, Z>(f: (r: R) => Sink<R1, E, I, L, Z>): Sink<R & R1, E, I, L, Z> {
-  return new Sink(Ma.chain_(Ma.ask<R>(), (env) => f(env).push))
+export function accessSink<R, R1, E, I, L, Z>(f: (r: R) => Sink<R1, E, I, L, Z>): Sink<R & R1, E, I, L, Z> {
+  return new Sink(Ma.chain_(Ma.environment<R>(), (env) => f(env).push))
 }
 
 /**
  * Provides a layer to the `Managed`, which translates it to another level.
  */
-export function giveLayer<R2, R>(layer: L.Layer<R2, never, R>) {
-  return <E, I, L, Z>(self: Sink<R, E, I, L, Z>) => giveLayer_(self, layer)
+export function provideLayer<R2, R>(layer: L.Layer<R2, never, R>) {
+  return <E, I, L, Z>(self: Sink<R, E, I, L, Z>) => provideLayer_(self, layer)
 }
 
 /**
  * Provides a layer to the `Managed`, which translates it to another level.
  */
-export function giveLayer_<R, E, I, L, Z, R2>(self: Sink<R, E, I, L, Z>, layer: L.Layer<R2, never, R>) {
+export function provideLayer_<R, E, I, L, Z, R2>(self: Sink<R, E, I, L, Z>, layer: L.Layer<R2, never, R>) {
   return new Sink<R2, E, I, L, Z>(
     Ma.chain_(L.build(layer), (r) =>
-      Ma.map_(Ma.giveAll_(self.push, r), (push) => (i: M.Maybe<Chunk<I>>) => I.giveAll_(push(i), r))
+      Ma.map_(Ma.provide_(self.push, r), (push) => (i: M.Maybe<Chunk<I>>) => I.provide_(push(i), r))
     )
   )
 }
@@ -1174,20 +1174,20 @@ export function giveLayer_<R, E, I, L, Z, R2>(self: Sink<R, E, I, L, Z>, layer: 
  * Splits the environment into two parts, providing one part using the
  * specified layer and leaving the remainder `R0`.
  */
-export function givesLayer<R2, R>(layer: L.Layer<R2, never, R>) {
+export function provideSomeLayer<R2, R>(layer: L.Layer<R2, never, R>) {
   return <R0, E, I, L, Z>(self: Sink<R & R0, E, I, L, Z>): Sink<R0 & R2, E, I, L, Z> =>
-    giveLayer(layer['+++'](L.identity<R0>()))(self)
+    provideLayer(layer['+++'](L.identity<R0>()))(self)
 }
 
 /**
  * Splits the environment into two parts, providing one part using the
  * specified layer and leaving the remainder `R0`.
  */
-export function givesLayer_<R0, E, I, L, Z, R2, R>(
+export function provideSomeLayer_<R0, E, I, L, Z, R2, R>(
   self: Sink<R & R0, E, I, L, Z>,
   layer: L.Layer<R2, never, R>
 ): Sink<R0 & R2, E, I, L, Z> {
-  return givesLayer(layer)(self)
+  return provideSomeLayer(layer)(self)
 }
 
 /*

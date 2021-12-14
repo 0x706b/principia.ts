@@ -45,9 +45,9 @@ import {
   Fail,
   failCause,
   Fold,
-  Give,
   map_,
   PipeTo,
+  Provide,
   Read,
   succeed
 } from './core'
@@ -619,44 +619,44 @@ export function bracketOutExit<R2, Z>(
  * Provides the channel with its required environment, which eliminates
  * its dependency on `Env`.
  */
-export function giveAll_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
+export function provide_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
   env: Env
 ): Channel<unknown, InErr, InElem, InDone, OutErr, OutElem, OutDone> {
-  return new Give(env, self)
+  return new Provide(env, self)
 }
 
-export function ask<Env>(): Channel<Env, unknown, unknown, unknown, never, never, Env> {
-  return fromIO(I.ask<Env>())
+export function environment<Env>(): Channel<Env, unknown, unknown, unknown, never, never, Env> {
+  return fromIO(I.environment<Env>())
 }
 
 /**
  * Provides the channel with its required environment, which eliminates
  * its dependency on `Env`.
  *
- * @dataFirst giveAll_
+ * @dataFirst provide_
  */
-export function giveAll<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
+export function provide<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   env: Env
 ): (
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
 ) => Channel<unknown, InErr, InElem, InDone, OutErr, OutElem, OutDone> {
-  return (self) => giveAll_(self, env)
+  return (self) => provide_(self, env)
 }
 
-export function gives_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, Env0>(
+export function local_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, Env0>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
   f: (env0: Env0) => Env
 ): Channel<Env0, InErr, InElem, InDone, OutErr, OutElem, OutDone> {
-  return chain_(ask<Env0>(), (env0) => giveAll_(self, f(env0)))
+  return chain_(environment<Env0>(), (env0) => provide_(self, f(env0)))
 }
 
-export function gives<Env0, Env>(
+export function local<Env0, Env>(
   f: (env0: Env0) => Env
 ): <InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
 ) => Channel<Env0, InErr, InElem, InDone, OutErr, OutElem, OutDone> {
-  return (self) => gives_(self, f)
+  return (self) => local_(self, f)
 }
 
 /**
@@ -692,7 +692,7 @@ export function managedOut<R, E, A>(
     I.chain((releaseMap) =>
       pipe(
         managed.io,
-        I.gives((_: R) => tuple(_, releaseMap)),
+        I.local((_: R) => tuple(_, releaseMap)),
         I.map(([_, out]) => tuple(out, releaseMap))
       )
     ),
@@ -1802,7 +1802,15 @@ export function mergeWith_<
         ): IO<
           Env & Env1 & Env2 & Env3,
           never,
-          Channel<Env & Env1 & Env2 & Env3, unknown, unknown, unknown, OutErr2 | OutErr3, OutElem | OutElem1, OutDone2 | OutDone3>
+          Channel<
+            Env & Env1 & Env2 & Env3,
+            unknown,
+            unknown,
+            unknown,
+            OutErr2 | OutErr3,
+            OutElem | OutElem1,
+            OutDone2 | OutDone3
+          >
         > => {
           const onDecision = (
             decision: MD.MergeDecision<Env & Env1 & Env2 & Env3, Err2, Done2, OutErr2 | OutErr3, OutDone2 | OutDone3>
@@ -1842,7 +1850,15 @@ export function mergeWith_<
 
       const go = (
         state: MergeState
-      ): Channel<Env & Env1 & Env2 & Env3, unknown, unknown, unknown, OutErr2 | OutErr3, OutElem | OutElem1, OutDone2 | OutDone3> => {
+      ): Channel<
+        Env & Env1 & Env2 & Env3,
+        unknown,
+        unknown,
+        unknown,
+        OutErr2 | OutErr3,
+        OutElem | OutElem1,
+        OutDone2 | OutDone3
+      > => {
         switch (state._tag) {
           case MS.MergeStateTag.BothRunning: {
             const lj: IO<Env2, OutErr, E.Either<OutDone, OutElem | OutElem1>>   = F.join(state.left)
@@ -2467,7 +2483,7 @@ export function managed_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1, OutE
         fromIO<Env, OutErr, A>(
           pipe(
             m.io,
-            I.gives((_: Env) => tuple(_, releaseMap)),
+            I.local((_: Env) => tuple(_, releaseMap)),
             I.map(([, a]) => a)
           )
         ),

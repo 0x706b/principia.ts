@@ -6,7 +6,7 @@ import type { IO } from '../core'
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
 import * as L from '../../Layer'
-import { giveLayer } from './giveLayer'
+import { provideLayer } from './provideLayer'
 
 /**
  * Splits the environment into two parts, providing one part using the
@@ -14,11 +14,11 @@ import { giveLayer } from './giveLayer'
  *
  * @trace call
  */
-export function giveSomeLayer<R1, E1, A1>(
-  layer: Layer<R1, E1, A1>
-): <R, E, A>(ma: IO<R & A1, E, A>) => IO<R & R1, E | E1, A> {
-  const trace = accessCallTrace()
-  return (ma) => traceFrom(trace, giveLayer)(layer['+++'](L.identity<R1>()))(ma)
+export function provideSomeLayer<R1, E1, A1>(layer: Layer<R1, E1, A1>) {
+  return <R, E, A>(ma: IO<R & A1, E, A>): IO<R & R1, E | E1, A> => {
+    const trace = accessCallTrace()
+    return traceFrom(trace, provideLayer)(layer['+++'](L.identity<R>()))(ma)
+  }
 }
 
 /**
@@ -27,10 +27,10 @@ export function giveSomeLayer<R1, E1, A1>(
  *
  * @trace call
  */
-export function giveSomeLayer_<R, E, A, R1, E1, A1>(
+export function provideSomeLayer_<R, E, A, R1, E1, A1>(
   ma: IO<R & A1, E, A>,
   layer: Layer<R1, E1, A1>
 ): IO<R & R1, E | E1, A> {
   const trace = accessCallTrace()
-  return traceFrom(trace, giveSomeLayer)(layer)(ma)
+  return traceFrom(trace, provideSomeLayer)(layer)(ma)
 }

@@ -49,7 +49,7 @@ export function foreachParN_<R, E, A, B>(
       const makeInnerMap = pipe(
         makeManagedReleaseMap(sequential).io,
         I.map(([_, x]) => x),
-        I.gives((r0: unknown) => tuple(r0, parallelReleaseMap))
+        I.local((r0: unknown) => tuple(r0, parallelReleaseMap))
       )
 
       return effectForeachParN(
@@ -62,7 +62,7 @@ export function foreachParN_<R, E, A, B>(
               pipe(
                 f(a).io,
                 I.map(([_fin, r]) => r),
-                I.gives((r0: R) => tuple(r0, innerMap))
+                I.local((r0: R) => tuple(r0, innerMap))
               )
             )
           )
@@ -104,7 +104,7 @@ export function foreachUnitParN_<R, E, A>(
       const makeInnerMap = pipe(
         makeManagedReleaseMap(sequential).io,
         I.map(([_, x]) => x),
-        I.gives((r0: unknown) => tuple(r0, parallelReleaseMap))
+        I.local((r0: unknown) => tuple(r0, parallelReleaseMap))
       )
 
       return effectForeachUnitParN(
@@ -117,7 +117,7 @@ export function foreachUnitParN_<R, E, A>(
               pipe(
                 f(a).io,
                 I.map(([_fin, r]) => r),
-                I.gives((r0: R) => tuple(r0, innerMap))
+                I.local((r0: R) => tuple(r0, innerMap))
               )
             )
           )

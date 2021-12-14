@@ -76,8 +76,8 @@ const ZTag = {
   Modify: 'Modify',
   Chain: 'Chain',
   Match: 'Match',
-  Asks: 'Asks',
-  Give: 'Give',
+  Access: 'Access',
+  Provide: 'Provide',
   Tell: 'Tell',
   Listen: 'Listen',
   Censor: 'Censor'
@@ -166,17 +166,17 @@ class Match<W, S1, S2, S5, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C> extend
   }
 }
 
-class Asks<W, R0, S1, S2, R, E, A> extends Z<W, S1, S2, R0 & R, E, A> {
+class Access<W, R0, S1, S2, R, E, A> extends Z<W, S1, S2, R0 & R, E, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag = ZTag.Asks
-  constructor(readonly asks: (r: R0) => Z<W, S1, S2, R, E, A>) {
+  readonly _tag = ZTag.Access
+  constructor(readonly access: (r: R0) => Z<W, S1, S2, R, E, A>) {
     super()
   }
 }
 
-class Give<W, S1, S2, R, E, A> extends Z<W, S1, S2, unknown, E, A> {
+class Provide<W, S1, S2, R, E, A> extends Z<W, S1, S2, unknown, E, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag = ZTag.Give
+  readonly _tag = ZTag.Provide
   constructor(readonly z: Z<W, S1, S2, R, E, A>, readonly env: R) {
     super()
   }
@@ -204,8 +204,8 @@ type Concrete =
   | Modify<any, any, any>
   | Chain<any, any, any, any, any, any, any, any, any, any, any>
   | Match<any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any>
-  | Asks<any, any, any, any, any, any, any>
-  | Give<any, any, any, any, any, any>
+  | Access<any, any, any, any, any, any, any>
+  | Provide<any, any, any, any, any, any>
   | DeferTotal<any, any, any, any, any, any>
   | EffectTotal<any>
   | EffectPartial<any, any>
@@ -784,7 +784,7 @@ export function andThen_<W, S1, S2, A, E, B, W1, S3, E1, C>(
   ab: Z<W, S1, S2, A, E, B>,
   bc: Z<W1, S2, S3, B, E1, C>
 ): Z<W | W1, S1, S3, A, E | E1, C> {
-  return chain_(ab, (b) => giveAll_(bc, b))
+  return chain_(ab, (b) => provide_(bc, b))
 }
 
 /**
@@ -1018,49 +1018,49 @@ export function flatten<W, S1, S2, R, E, A, W1, S3, R1, E1>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function ask<R>(): Z<never, unknown, never, R, never, R> {
-  return new Asks((r: R) => succeed(r))
+export function environment<R>(): Z<never, unknown, never, R, never, R> {
+  return new Access((r: R) => succeed(r))
 }
 
-export function asksZ<R0, W, S1, S2, R, E, A>(f: (r: R0) => Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R & R0, E, A> {
-  return new Asks(f)
+export function accessZ<R0, W, S1, S2, R, E, A>(f: (r: R0) => Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R & R0, E, A> {
+  return new Access(f)
 }
 
-export function asks<R0, A>(f: (r: R0) => A): Z<never, unknown, never, R0, never, A> {
-  return asksZ((r: R0) => succeed(f(r)))
+export function access<R0, A>(f: (r: R0) => A): Z<never, unknown, never, R0, never, A> {
+  return accessZ((r: R0) => succeed(f(r)))
 }
 
-export function giveAll_<W, S1, S2, R, E, A>(fa: Z<W, S1, S2, R, E, A>, r: R): Z<W, S1, S2, unknown, E, A> {
-  return new Give(fa, r)
-}
-
-/**
- * @dataFirst giveAll_
- */
-export function giveAll<R>(r: R): <W, S1, S2, E, A>(fa: Z<W, S1, S2, R, E, A>) => Z<W, S1, S2, unknown, E, A> {
-  return (fa) => giveAll_(fa, r)
-}
-
-export function gives_<R0, W, S1, S2, R, E, A>(ma: Z<W, S1, S2, R, E, A>, f: (r0: R0) => R): Z<W, S1, S2, R0, E, A> {
-  return asksZ((r: R0) => giveAll_(ma, f(r)))
+export function provide_<W, S1, S2, R, E, A>(fa: Z<W, S1, S2, R, E, A>, r: R): Z<W, S1, S2, unknown, E, A> {
+  return new Provide(fa, r)
 }
 
 /**
- * @dataFirst gives_
+ * @dataFirst provide_
  */
-export function gives<R0, R>(f: (r0: R0) => R): <W, S1, S2, E, A>(ma: Z<W, S1, S2, R, E, A>) => Z<W, S1, S2, R0, E, A> {
-  return (ma) => gives_(ma, f)
+export function provide<R>(r: R): <W, S1, S2, E, A>(fa: Z<W, S1, S2, R, E, A>) => Z<W, S1, S2, unknown, E, A> {
+  return (fa) => provide_(fa, r)
 }
 
-export function give_<W, S1, S2, R, E, A, R0>(ma: Z<W, S1, S2, R & R0, E, A>, r: R): Z<W, S1, S2, R0, E, A> {
-  return gives_(ma, (r0) => ({ ...r, ...r0 }))
+export function local_<R0, W, S1, S2, R, E, A>(ma: Z<W, S1, S2, R, E, A>, f: (r0: R0) => R): Z<W, S1, S2, R0, E, A> {
+  return accessZ((r: R0) => provide_(ma, f(r)))
 }
 
 /**
- * @dataFirst give_
+ * @dataFirst local_
  */
-export function give<R>(r: R): <W, S1, S2, R0, E, A>(ma: Z<W, S1, S2, R & R0, E, A>) => Z<W, S1, S2, R0, E, A> {
-  return (ma) => give_(ma, r)
+export function local<R0, R>(f: (r0: R0) => R): <W, S1, S2, E, A>(ma: Z<W, S1, S2, R, E, A>) => Z<W, S1, S2, R0, E, A> {
+  return (ma) => local_(ma, f)
+}
+
+export function provideSome_<W, S1, S2, R, E, A, R0>(ma: Z<W, S1, S2, R & R0, E, A>, r: R): Z<W, S1, S2, R0, E, A> {
+  return local_(ma, (r0) => ({ ...r, ...r0 }))
+}
+
+/**
+ * @dataFirst provideSome_
+ */
+export function provideSome<R>(r: R): <W, S1, S2, R0, E, A>(ma: Z<W, S1, S2, R & R0, E, A>) => Z<W, S1, S2, R0, E, A> {
+  return (ma) => provideSome_(ma, r)
 }
 
 /*
@@ -1642,11 +1642,11 @@ export function runAll_<W, S1, S2, E, A>(
         )
         break
       }
-      case ZTag.Asks: {
-        current = Z.asks(environment?.value || {})
+      case ZTag.Access: {
+        current = Z.access(environment?.value || {})
         break
       }
-      case ZTag.Give: {
+      case ZTag.Provide: {
         pushEnv(Z.env)
         current = matchZ_(
           Z.z,
@@ -1750,7 +1750,7 @@ export function runResult<W, A>(ma: Z<W, unknown, unknown, unknown, never, A>): 
  * Runs this computation with the given environment, returning the result.
  */
 export function runReader_<W, R, A>(ma: Z<W, unknown, never, R, never, A>, r: R): A {
-  return runResult(giveAll_(ma, r))
+  return runResult(provide_(ma, r))
 }
 
 /**
@@ -1819,7 +1819,7 @@ export function runExit<E, A>(ma: Z<never, unknown, unknown, unknown, E, A>): Ex
 }
 
 export function runReaderExit_<R, E, A>(ma: Z<never, unknown, unknown, R, E, A>, env: R): Exit<E, A> {
-  return runExit(giveAll_(ma, env))
+  return runExit(provide_(ma, env))
 }
 
 /**
@@ -1953,8 +1953,8 @@ export const MonadEnv = P.MonadEnv<ZF>({
   pure,
   chain_,
   flatten,
-  asks,
-  giveAll_
+  access: access,
+  provide_: provide_
 })
 
 export const MonadState = P.MonadState<ZF>({
@@ -1973,7 +1973,7 @@ export const MonadState = P.MonadState<ZF>({
 })
 
 export const ReaderCategory = P.Category<ZReaderCategoryF>({
-  id: () => asks(identity),
+  id: () => access(identity),
   andThen_,
   compose_
 })

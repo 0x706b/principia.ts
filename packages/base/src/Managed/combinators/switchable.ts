@@ -56,9 +56,9 @@ export function switchable<R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) =
                 )
               )
             )
-            const r     = yield* _(I.ask<R>())
+            const r     = yield* _(I.environment<R>())
             const inner = yield* _(RelMap.make)
-            const a     = yield* _(pipe(newResource.io, I.giveAll(tuple(r, inner)), restore))
+            const a     = yield* _(pipe(newResource.io, I.provide(tuple(r, inner)), restore))
             yield* _(RelMap.replace(rm, key, (exit) => releaseAll_(inner, exit, sequential)))
             return a[1]
           })

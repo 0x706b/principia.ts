@@ -1051,89 +1051,89 @@ export function partition<A>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function ask<R>(): Stream<R, never, R> {
-  return fromIO(I.ask<R>())
+export function environment<R>(): Stream<R, never, R> {
+  return fromIO(I.environment<R>())
 }
 
 /**
  * Accesses the environment of the stream.
  */
-export function asks<R, A>(f: (r: R) => A): Stream<R, never, A> {
-  return map_(ask<R>(), f)
+export function access<R, A>(f: (r: R) => A): Stream<R, never, A> {
+  return map_(environment<R>(), f)
 }
 
 /**
  * Accesses the environment of the stream in the context of an effect.
  */
-export function asksIO<R0, R, E, A>(f: (r0: R0) => I.IO<R, E, A>): Stream<R0 & R, E, A> {
-  return mapIO_(ask<R0>(), f)
+export function accessIO<R0, R, E, A>(f: (r0: R0) => I.IO<R, E, A>): Stream<R0 & R, E, A> {
+  return mapIO_(environment<R0>(), f)
 }
 
 /**
  * Accesses the environment of the stream in the context of a stream.
  */
-export function asksStream<R0, R, E, A>(f: (r0: R0) => Stream<R, E, A>): Stream<R0 & R, E, A> {
-  return chain_(ask<R0>(), f)
+export function accessStream<R0, R, E, A>(f: (r0: R0) => Stream<R, E, A>): Stream<R0 & R, E, A> {
+  return chain_(environment<R0>(), f)
 }
 
 /**
  * Provides the stream with its required environment, which eliminates
  * its dependency on `R`.
  */
-export function giveAll_<R, E, A>(ra: Stream<R, E, A>, r: R): Stream<unknown, E, A> {
-  return new Stream(Ch.giveAll_(ra.channel, r))
+export function provide_<R, E, A>(ra: Stream<R, E, A>, r: R): Stream<unknown, E, A> {
+  return new Stream(Ch.provide_(ra.channel, r))
 }
 
 /**
  * Provides the stream with its required environment, which eliminates
  * its dependency on `R`.
  */
-export function giveAll<R>(r: R): <E, A>(ra: Stream<R, E, A>) => Stream<unknown, E, A> {
-  return (ra) => giveAll_(ra, r)
+export function provide<R>(r: R): <E, A>(ra: Stream<R, E, A>) => Stream<unknown, E, A> {
+  return (ra) => provide_(ra, r)
 }
 
 /**
  * Provides some of the environment required to run this effect,
  * leaving the remainder `R0`.
  */
-export function gives_<R, E, A, R0>(ra: Stream<R, E, A>, f: (r0: R0) => R): Stream<R0, E, A> {
-  return chain_(ask<R0>(), (r0) => giveAll_(ra, f(r0)))
+export function local_<R, E, A, R0>(ra: Stream<R, E, A>, f: (r0: R0) => R): Stream<R0, E, A> {
+  return chain_(environment<R0>(), (r0) => provide_(ra, f(r0)))
 }
 
 /**
  * Provides some of the environment required to run this effect,
  * leaving the remainder `R0`.
  */
-export function gives<R, R0>(f: (r0: R0) => R): <E, A>(ra: Stream<R, E, A>) => Stream<R0, E, A> {
-  return (ra) => gives_(ra, f)
+export function local<R, R0>(f: (r0: R0) => R): <E, A>(ra: Stream<R, E, A>) => Stream<R0, E, A> {
+  return (ra) => local_(ra, f)
 }
 
-export function give_<R, E, A, R0>(ra: Stream<R0 & R, E, A>, r: R): Stream<R0, E, A> {
-  return gives_(ra, (r0) => ({ ...r0, ...r }))
+export function provideSome_<R, E, A, R0>(ra: Stream<R0 & R, E, A>, r: R): Stream<R0, E, A> {
+  return local_(ra, (r0) => ({ ...r0, ...r }))
 }
 
-export function give<R>(r: R): <R0, E, A>(ra: Stream<R0 & R, E, A>) => Stream<R0, E, A> {
-  return (ra) => give_(ra, r)
+export function provideSome<R>(r: R): <R0, E, A>(ra: Stream<R0 & R, E, A>) => Stream<R0, E, A> {
+  return (ra) => provideSome_(ra, r)
 }
 
 /**
  * Provides a layer to the stream, which translates it to another level.
  */
-export function giveLayer_<R, E, A, R0, E1, R1>(
+export function provideLayer_<R, E, A, R0, E1, R1>(
   ra: Stream<R & R1, E, A>,
   layer: Layer<R0, E1, R1>
 ): Stream<R0 & R, E | E1, A> {
-  return new Stream(Ch.managed_(La.build(layer), (r1) => Ch.gives_(ra.channel, (env0: R0 & R) => ({ ...env0, ...r1 }))))
+  return new Stream(Ch.managed_(La.build(layer), (r1) => Ch.local_(ra.channel, (env0: R0 & R) => ({ ...env0, ...r1 }))))
 }
 
 /**
  * Provides a layer to the stream, which translates it to another level.
  */
-export function giveLayer<R0, E1, R1>(
+export function provideLayer<R0, E1, R1>(
   layer: Layer<R0, E1, R1>
 ): <R, E, A>(ra: Stream<R & R1, E, A>) => Stream<R0 & R, E | E1, A> {
   return <R, E, A>(ra: Stream<R & R1, E, A>): Stream<R0 & R, E | E1, A> =>
-    new Stream(Ch.managed_(La.build(layer), (r1) => Ch.gives_(ra.channel, (env0: R0 & R) => ({ ...env0, ...r1 }))))
+    new Stream(Ch.managed_(La.build(layer), (r1) => Ch.local_(ra.channel, (env0: R0 & R) => ({ ...env0, ...r1 }))))
 }
 
 /*

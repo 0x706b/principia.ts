@@ -163,7 +163,7 @@ export class Chain<R_, E_, O, O2> {
             const pull       = yield* _(
               pipe(
                 self.f0(o).proc.io,
-                I.gives((_: R_) => tuple(_, releaseMap)),
+                I.local((_: R_) => tuple(_, releaseMap)),
                 I.map(([, x]) => x),
                 restore
               )
@@ -307,7 +307,7 @@ export function fromManaged<R, E, A>(ma: Ma.Managed<R, E, A>): Stream<R, E, A> {
                     pipe(
                       ma.io,
                       I.map(([, a]) => a),
-                      I.gives((r: R) => tuple(r, finalizer)),
+                      I.local((r: R) => tuple(r, finalizer)),
                       restore,
                       I.onError(() => doneRef.set(true))
                     )
@@ -1442,45 +1442,45 @@ export function tap<A, R1, E1, A1>(
 /**
  * Accesses the whole environment of the stream.
  */
-export function ask<R>(): URStream<R, R> {
-  return fromIO(I.ask<R>())
+export function environment<R>(): URStream<R, R> {
+  return fromIO(I.environment<R>())
 }
 
 /**
  * Accesses the environment of the stream.
  */
-export function asks<R, A>(f: (_: R) => A): URStream<R, A> {
-  return map_(ask(), f)
+export function access<R, A>(f: (_: R) => A): URStream<R, A> {
+  return map_(environment(), f)
 }
 
 /**
  * Accesses the environment of the stream in the context of an IO.
  */
-export function asksIO<R0, R, E, A>(f: (_: R0) => I.IO<R, E, A>): Stream<R & R0, E, A> {
-  return mapIO_(ask<R0>(), f)
+export function accessIO<R0, R, E, A>(f: (_: R0) => I.IO<R, E, A>): Stream<R & R0, E, A> {
+  return mapIO_(environment<R0>(), f)
 }
 
 /**
  * Accesses the environment of the stream in the context of a stream.
  */
-export function asksStream<R0, R, E, A>(f: (_: R0) => Stream<R, E, A>): Stream<R0 & R, E, A> {
-  return chain_(ask<R0>(), f)
+export function accessStream<R0, R, E, A>(f: (_: R0) => Stream<R, E, A>): Stream<R0 & R, E, A> {
+  return chain_(environment<R0>(), f)
 }
 
 /**
  * Provides the stream with its required environment, which eliminates
  * its dependency on `R`.
  */
-export function giveAll_<R, E, A>(ra: Stream<R, E, A>, r: R): FStream<E, A> {
-  return new Stream(Ma.map_(Ma.giveAll_(ra.proc, r), I.giveAll(r)))
+export function provide_<R, E, A>(ra: Stream<R, E, A>, r: R): FStream<E, A> {
+  return new Stream(Ma.map_(Ma.provide_(ra.proc, r), I.provide(r)))
 }
 
 /**
  * Provides the stream with its required environment, which eliminates
  * its dependency on `R`.
  */
-export function giveAll<R>(r: R): <E, A>(ra: Stream<R, E, A>) => FStream<E, A> {
-  return (ra) => giveAll_(ra, r)
+export function provide<R>(r: R): <E, A>(ra: Stream<R, E, A>) => FStream<E, A> {
+  return (ra) => provide_(ra, r)
 }
 
 /*
@@ -2346,7 +2346,7 @@ export function catchAllCause_<R, E, A, R1, E1, B>(
                   I.chain(() =>
                     pipe(
                       restore(stream.proc.io),
-                      I.gives((_: R) => [_, releaseMap] as [R, RM.ReleaseMap]),
+                      I.local((_: R) => [_, releaseMap] as [R, RM.ReleaseMap]),
                       I.map(([_, __]) => __),
                       I.tap((pull) => stateRef.set(asState(pull)))
                     )
@@ -5901,7 +5901,7 @@ const adapter = (_: any, __?: any) => {
     } else if (x instanceof Stream) {
       return x
     } else if (isTag(x)) {
-      return fromIO(I.askService(x))
+      return fromIO(I.service(x))
     }
 
     return fromIO(x)

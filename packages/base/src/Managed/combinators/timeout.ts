@@ -1,7 +1,7 @@
 // tracing: off
 
-import type { Has } from '../../Has'
 import type { Clock } from '../../Clock'
+import type { Has } from '../../Has'
 
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
@@ -25,7 +25,7 @@ export function timeout<R, E, A>(ma: Managed<R, E, A>, d: number): Managed<R & H
     I.uninterruptibleMask(
       traceFrom(trace, ({ restore }) =>
         I.gen(function* (_) {
-          const [r, outerReleaseMap] = yield* _(I.ask<readonly [R & Has<Clock>, RM.ReleaseMap]>())
+          const [r, outerReleaseMap] = yield* _(I.environment<readonly [R & Has<Clock>, RM.ReleaseMap]>())
           const innerReleaseMap      = yield* _(RM.make)
           const earlyRelease         = yield* _(RM.add(outerReleaseMap, (ex) => releaseAll_(innerReleaseMap, ex, sequential)))
 
@@ -33,14 +33,14 @@ export function timeout<R, E, A>(ma: Managed<R, E, A>, d: number): Managed<R & H
           const raceResult = yield* _(
             pipe(
               ma.io,
-              I.giveAll(tuple(r, innerReleaseMap)),
+              I.provide(tuple(r, innerReleaseMap)),
               I.raceWith(
                 pipe(I.sleep(d), I.as(M.nothing())),
                 (result, sleeper) =>
                   pipe(sleeper.interruptAs(id), I.crossSecond(I.fromExit(Ex.map_(result, ([, a]) => E.right(a))))),
                 (_, resultFiber) => I.succeed(E.left(resultFiber))
               ),
-              I.giveAll(r),
+              I.provide(r),
               restore
             )
           )

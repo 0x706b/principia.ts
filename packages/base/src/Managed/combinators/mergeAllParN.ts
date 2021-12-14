@@ -33,7 +33,7 @@ export function mergeAllParN_<R, E, A, B>(
         mas,
         Iter.map((m) => I.map_(m.io, ([_, a]) => a)),
         I.mergeAllParN(n, b, f),
-        I.gives((_: R) => [_, rm] as const)
+        I.local((_: R) => [_, rm] as const)
       )
     )
   )

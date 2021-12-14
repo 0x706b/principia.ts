@@ -12,25 +12,25 @@ export interface ZReader<R, A> extends Z.Z<never, unknown, never, R, never, A> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const ask: <R>() => ZReader<R, R> = Z.ask
+export const environment: <R>() => ZReader<R, R> = Z.environment
 
-export const asks: <R, A>(f: (r: R) => A) => ZReader<R, A> = Z.asks
+export const access: <R, A>(f: (r: R) => A) => ZReader<R, A> = Z.access
 
-export const asksZ: <R, R1, A>(f: (R: R) => ZReader<R1, A>) => ZReader<R & R1, A> = Z.asksZ
+export const accessZ: <R, R1, A>(f: (R: R) => ZReader<R1, A>) => ZReader<R & R1, A> = Z.accessZ
 
-export const giveAll_: <R, A>(ra: ZReader<R, A>, r: R) => ZReader<unknown, A> = Z.giveAll_
-
-/**
- * @dataFirst giveAll_
- */
-export const giveAll: <R>(r: R) => <A>(ra: ZReader<R, A>) => ZReader<unknown, A> = Z.giveAll
-
-export const gives_: <R0, R, A>(ra: ZReader<R, A>, f: (r0: R0) => R) => ZReader<R0, A> = Z.gives_
+export const provide_: <R, A>(ra: ZReader<R, A>, r: R) => ZReader<unknown, A> = Z.provide_
 
 /**
- * @dataFirst gives_
+ * @dataFirst provide_
  */
-export const gives: <R0, R>(f: (r0: R0) => R) => <A>(ra: ZReader<R, A>) => ZReader<R0, A> = Z.gives
+export const provide: <R>(r: R) => <A>(ra: ZReader<R, A>) => ZReader<unknown, A> = Z.provide
+
+export const local_: <R0, R, A>(ra: ZReader<R, A>, f: (r0: R0) => R) => ZReader<R0, A> = Z.local_
+
+/**
+ * @dataFirst local_
+ */
+export const local: <R0, R>(f: (r0: R0) => R) => <A>(ra: ZReader<R, A>) => ZReader<R0, A> = Z.local
 
 export function runReader_<A>(ra: ZReader<unknown, A>): A
 export function runReader_<R, A>(ra: ZReader<R, A>, r: R): A
@@ -161,7 +161,7 @@ export const tap: <A, R1, B>(f: (a: A) => ZReader<R1, B>) => <R>(ma: ZReader<R, 
  */
 
 export function andThen_<R, A, B>(ra: ZReader<R, A>, ab: ZReader<A, B>): ZReader<R, B> {
-  return chain_(ra, (a) => giveAll_(ab, a))
+  return chain_(ra, (a) => provide_(ab, a))
 }
 
 /**
@@ -178,7 +178,7 @@ export function andThen<A, B>(ab: ZReader<A, B>): <R>(ra: ZReader<R, A>) => ZRea
  */
 
 export function dimap_<R, A, Q, B>(pa: ZReader<R, A>, f: (q: Q) => R, g: (a: A) => B): ZReader<Q, B> {
-  return pipe(pa, gives(f), map(g))
+  return pipe(pa, local(f), map(g))
 }
 
 /**
@@ -221,6 +221,6 @@ export const MonadEnv: P.MonadEnv<ZReaderF> = P.MonadEnv({
   pure,
   chain_,
   flatten,
-  asks,
-  giveAll_
+  access,
+  provide_
 })

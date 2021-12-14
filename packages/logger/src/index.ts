@@ -56,7 +56,7 @@ export function loggerConfig(config: LoggerOptions) {
     level: config.level ?? 'error',
     theme:
       config.theme ??
-      I.asksService(ChalkTag)(({ chalk }) => ({
+      I.accessService(ChalkTag)(({ chalk }) => ({
         debug: chalk.gray,
         info: chalk.blue,
         warning: chalk.yellow,
@@ -89,7 +89,7 @@ const showFileLogEntry = (entry: LogEntry) =>
 const logToConsole = (entry: LogEntry) => showConsoleLogEntry(entry).chain(Console.putStrLn)
 
 const logToFile = (entry: LogEntry) =>
-  showFileLogEntry(entry).chain((s) => I.asksServiceIO(LoggerConfigTag)((config) => fs.appendFile(config.path, s)))
+  showFileLogEntry(entry).chain((s) => I.accessServiceIO(LoggerConfigTag)((config) => fs.appendFile(config.path, s)))
 
 function _log(message: ChalkFn, level: LogLevel) {
   return I.gen(function* (_) {
@@ -112,7 +112,7 @@ function _log(message: ChalkFn, level: LogLevel) {
 }
 
 export const LiveLogger = L.fromIO(Logger)(
-  I.asksServices({ config: LoggerConfigTag, console: ConsoleTag, chalk: ChalkTag })(
+  I.accessServices({ config: LoggerConfigTag, console: ConsoleTag, chalk: ChalkTag })(
     ({ config, console, chalk }): Logger => ({
       debug: (m) => _log(m, 'debug').giveServicesT(ConsoleTag, LoggerConfigTag, ChalkTag)(console, config, chalk),
       info: (m) => _log(m, 'info').giveServicesT(ConsoleTag, LoggerConfigTag, ChalkTag)(console, config, chalk),

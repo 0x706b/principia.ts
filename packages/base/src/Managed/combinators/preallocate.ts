@@ -28,7 +28,7 @@ export function preallocate<R, E, A>(ma: Managed<R, E, A>): I.IO<R, E, Managed<u
         const tp = yield* _(
           pipe(
             ma.io,
-            I.gives((r: R) => tuple(r, rm)),
+            I.local((r: R) => tuple(r, rm)),
             restore,
             I.result
           )
@@ -41,7 +41,7 @@ export function preallocate<R, E, A>(ma: Managed<R, E, A>): I.IO<R, E, Managed<u
             ([release, a]) =>
               I.succeed(
                 new Managed(
-                  I.asksIO(([_, relMap]: readonly [unknown, RM.ReleaseMap]) =>
+                  I.accessIO(([_, relMap]: readonly [unknown, RM.ReleaseMap]) =>
                     pipe(
                       RM.add(relMap, release),
                       I.map((fin) => tuple(fin, a))
@@ -71,7 +71,7 @@ export function preallocateManaged<R, E, A>(ma: Managed<R, E, A>): Managed<R, E,
       traceFrom(trace, ([release, a]) => [
         release,
         new Managed(
-          I.asksIO(([_, releaseMap]: readonly [unknown, RM.ReleaseMap]) =>
+          I.accessIO(([_, releaseMap]: readonly [unknown, RM.ReleaseMap]) =>
             pipe(
               RM.add(releaseMap, release),
               I.map((_) => tuple(_, a))

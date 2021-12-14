@@ -59,9 +59,9 @@ export const AsyncTag = {
   Promise: 'Promise',
   Chain: 'Chain',
   Match: 'Match',
-  Asks: 'Asks',
+  Access: 'Access',
   Done: 'Done',
-  Give: 'Give',
+  Provide: 'Provide',
   Ensuring: 'Ensuring',
   All: 'All',
   Fail: 'Fail',
@@ -78,9 +78,9 @@ export type Concrete =
   | LiftPromise<any, any>
   | Chain<any, any, any, any, any, any>
   | Match<any, any, any, any, any, any, any, any, any>
-  | Asks<any, any, any, any>
+  | Access<any, any, any, any>
   | Done<any, any>
-  | Give<any, any, any>
+  | Provide<any, any, any>
   | Ensuring<any, any, any, any, any>
   | All<any, any, any>
   | Fail<any>
@@ -139,16 +139,16 @@ export class Interrupt extends Async<unknown, never, never> {
   readonly _asyncTag = AsyncTag.Interrupt
 }
 
-export class Asks<R0, R, E, A> extends Async<R & R0, E, A> {
-  readonly _asyncTag = AsyncTag.Asks
+export class Access<R0, R, E, A> extends Async<R & R0, E, A> {
+  readonly _asyncTag = AsyncTag.Access
 
   constructor(readonly f: (_: R0) => Async<R, E, A>) {
     super()
   }
 }
 
-export class Give<R, E, A> extends Async<unknown, E, A> {
-  readonly _asyncTag = AsyncTag.Give
+export class Provide<R, E, A> extends Async<unknown, E, A> {
+  readonly _asyncTag = AsyncTag.Provide
 
   constructor(readonly async: Async<R, E, A>, readonly env: R) {
     super()
@@ -693,49 +693,49 @@ export function tapError<E, R1, E1, B>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function asksAsync<R0, R, E, A>(f: (_: R0) => Async<R, E, A>): Async<R & R0, E, A> {
-  return new Asks(f)
+export function accessAsync<R0, R, E, A>(f: (_: R0) => Async<R, E, A>): Async<R & R0, E, A> {
+  return new Access(f)
 }
 
-export function asks<R, A>(f: (_: R) => A): Async<R, never, A> {
-  return asksAsync((_: R) => succeed(f(_)))
+export function access<R, A>(f: (_: R) => A): Async<R, never, A> {
+  return accessAsync((_: R) => succeed(f(_)))
 }
 
-export function ask<R>(): Async<R, never, R> {
-  return asks(identity)
+export function environment<R>(): Async<R, never, R> {
+  return access(identity)
 }
 
-export function giveAll_<R, E, A>(ra: Async<R, E, A>, env: R): Async<unknown, E, A> {
-  return new Give(ra, env)
-}
-
-/**
- * @dataFirst giveAll_
- */
-export function giveAll<R>(env: R): <E, A>(ra: Async<R, E, A>) => Async<unknown, E, A> {
-  return (ra) => new Give(ra, env)
-}
-
-export function gives_<R0, R, E, A>(ra: Async<R, E, A>, f: (_: R0) => R): Async<R0, E, A> {
-  return asksAsync((_: R0) => giveAll_(ra, f(_)))
+export function provide_<R, E, A>(ra: Async<R, E, A>, env: R): Async<unknown, E, A> {
+  return new Provide(ra, env)
 }
 
 /**
- * @dataFirst gives_
+ * @dataFirst provide_
  */
-export function gives<R0, R>(f: (_: R0) => R): <E, A>(ra: Async<R, E, A>) => Async<R0, E, A> {
-  return (ra) => gives_(ra, f)
+export function provide<R>(env: R): <E, A>(ra: Async<R, E, A>) => Async<unknown, E, A> {
+  return (ra) => new Provide(ra, env)
 }
 
-export function give_<R0, R, E, A>(ra: Async<R & R0, E, A>, env: R): Async<R0, E, A> {
-  return gives_(ra, (r0) => ({ ...env, ...r0 }))
+export function local_<R0, R, E, A>(ra: Async<R, E, A>, f: (_: R0) => R): Async<R0, E, A> {
+  return accessAsync((_: R0) => provide_(ra, f(_)))
 }
 
 /**
- * @dataFirst give_
+ * @dataFirst local_
  */
-export function give<R>(env: R): <R0, E, A>(ra: Async<R & R0, E, A>) => Async<R0, E, A> {
-  return (ra) => give_(ra, env)
+export function local<R0, R>(f: (_: R0) => R): <E, A>(ra: Async<R, E, A>) => Async<R0, E, A> {
+  return (ra) => local_(ra, f)
+}
+
+export function provideSome_<R0, R, E, A>(ra: Async<R & R0, E, A>, env: R): Async<R0, E, A> {
+  return local_(ra, (r0) => ({ ...env, ...r0 }))
+}
+
+/**
+ * @dataFirst provideSome_
+ */
+export function provideSome<R>(env: R): <R0, E, A>(ra: Async<R & R0, E, A>) => Async<R0, E, A> {
+  return (ra) => provideSome_(ra, env)
 }
 
 /*
@@ -747,7 +747,7 @@ export function give<R>(env: R): <R0, E, A>(ra: Async<R & R0, E, A>) => Async<R0
 /**
  * Access a record of services with the required Service Entries
  */
-export function asksServicesAsync<SS extends Record<string, Tag<any>>>(
+export function accessServicesAsync<SS extends Record<string, Tag<any>>>(
   s: SS
 ): <R = unknown, E = never, B = unknown>(
   f: (a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => Async<R, E, B>
@@ -757,13 +757,13 @@ export function asksServicesAsync<SS extends Record<string, Tag<any>>>(
   B
 > {
   return (f) =>
-    asksAsync(
+    accessAsync(
       (r: P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
         f(R.map_(s, (v) => r[v.key]) as any)
     )
 }
 
-export function asksServicesTAsync<SS extends Tag<any>[]>(
+export function accessServicesTAsync<SS extends Tag<any>[]>(
   ...s: SS
 ): <R = unknown, E = never, B = unknown>(
   f: (...a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => Async<R, E, B>
@@ -773,7 +773,7 @@ export function asksServicesTAsync<SS extends Tag<any>[]>(
   B
 > {
   return (f) =>
-    asksAsync(
+    accessAsync(
       (
         r: P.UnionToIntersection<
           {
@@ -784,7 +784,7 @@ export function asksServicesTAsync<SS extends Tag<any>[]>(
     )
 }
 
-export function asksServicesT<SS extends Tag<any>[]>(
+export function accessServicesT<SS extends Tag<any>[]>(
   ...s: SS
 ): <B = unknown>(
   f: (...a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => B
@@ -793,7 +793,7 @@ export function asksServicesT<SS extends Tag<any>[]>(
   B
 > {
   return (f) =>
-    asks(
+    access(
       (
         r: P.UnionToIntersection<
           {
@@ -807,7 +807,7 @@ export function asksServicesT<SS extends Tag<any>[]>(
 /**
  * Access a record of services with the required Service Entries
  */
-export function asksServices<SS extends Record<string, Tag<any>>>(
+export function accessServices<SS extends Record<string, Tag<any>>>(
   s: SS
 ): <B>(
   f: (a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => B
@@ -816,22 +816,23 @@ export function asksServices<SS extends Record<string, Tag<any>>>(
   B
 > {
   return (f) =>
-    asks((r: P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
-      f(R.map_(s, (v) => r[v.key]) as any)
+    access(
+      (r: P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
+        f(R.map_(s, (v) => r[v.key]) as any)
     )
 }
 
 /**
  * Access a service with the required Service Entry
  */
-export function asksServiceAsync<T>(s: Tag<T>): <R, E, B>(f: (a: T) => Async<R, E, B>) => Async<R & Has<T>, E, B> {
-  return (f) => asksAsync((r: Has<T>) => f(r[s.key as any]))
+export function accessServiceAsync<T>(s: Tag<T>): <R, E, B>(f: (a: T) => Async<R, E, B>) => Async<R & Has<T>, E, B> {
+  return (f) => accessAsync((r: Has<T>) => f(r[s.key as any]))
 }
 
 /**
  * Access a service with the required Service Entry
  */
-export function asksServiceF<T>(
+export function accessServiceF<T>(
   s: Tag<T>
 ): <K extends keyof T & { [k in keyof T]: T[k] extends (...args: any[]) => Async<any, any, any> ? k : never }[keyof T]>(
   k: K
@@ -840,83 +841,85 @@ export function asksServiceF<T>(
 ) => T[K] extends (...args: any[]) => Async<infer R, infer E, infer A> ? Async<R & Has<T>, E, A> : unknown[] {
   return (k) =>
     (...args) =>
-      asksServiceAsync(s)((t) => (t[k] as any)(...args)) as any
+      accessServiceAsync(s)((t) => (t[k] as any)(...args)) as any
 }
 
 /**
  * Access a service with the required Service Entry
  */
-export function asksService<T>(s: Tag<T>): <B>(f: (a: T) => B) => Async<Has<T>, never, B> {
-  return (f) => asksServiceAsync(s)((a) => pure(f(a)))
+export function accessService<T>(s: Tag<T>): <B>(f: (a: T) => B) => Async<Has<T>, never, B> {
+  return (f) => accessServiceAsync(s)((a) => pure(f(a)))
 }
 
 /**
  * Access a service with the required Service Entry
  */
-export function askService<T>(s: Tag<T>): Async<Has<T>, never, T> {
-  return asksServiceAsync(s)((a) => pure(a))
+export function service<T>(s: Tag<T>): Async<Has<T>, never, T> {
+  return accessServiceAsync(s)((a) => pure(a))
 }
 
 /**
  * Provides the service with the required Service Entry, depends on global HasRegistry
  */
-export function giveServiceAsync<T>(_: Tag<T>) {
+export function provideServiceAsync<T>(_: Tag<T>) {
   return <R, E>(f: Async<R, E, T>) =>
     <R1, E1, A1>(ma: Async<R1 & Has<T>, E1, A1>): Async<R & R1, E | E1, A1> =>
-      asksAsync((r: R & R1) => chain_(f, (t) => giveAll_(ma, mergeEnvironments(_, r, t))))
+      accessAsync((r: R & R1) => chain_(f, (t) => provide_(ma, mergeEnvironments(_, r, t))))
 }
 
 /**
  * Provides the service with the required Service Entry, depends on global HasRegistry
  */
-export function giveService<T>(_: Tag<T>): (f: T) => <R1, E1, A1>(ma: Async<R1 & Has<T>, E1, A1>) => Async<R1, E1, A1> {
-  return (f) => (ma) => giveServiceAsync(_)(pure(f))(ma)
+export function provideService<T>(
+  _: Tag<T>
+): (f: T) => <R1, E1, A1>(ma: Async<R1 & Has<T>, E1, A1>) => Async<R1, E1, A1> {
+  return (f) => (ma) => provideServiceAsync(_)(pure(f))(ma)
 }
 
 /**
  * Replaces the service with the required Service Entry, depends on global HasRegistry
  *
- * @dataFrist replaceServiceAsync_
+ * @dataFrist updateServiceAsync_
  */
-export function replaceServiceAsync<R, E, T>(
+export function updateServiceAsync<R, E, T>(
   _: Tag<T>,
   f: (_: T) => Async<R, E, T>
 ): <R1, E1, A1>(ma: Async<R1 & Has<T>, E1, A1>) => Async<R & R1 & Has<T>, E1 | E, A1> {
-  return (ma) => asksServiceAsync(_)((t) => giveServiceAsync(_)(f(t))(ma))
+  return (ma) => accessServiceAsync(_)((t) => provideServiceAsync(_)(f(t))(ma))
 }
 
 /**
  * Replaces the service with the required Service Entry, depends on global HasRegistry
  */
-export function replaceServiceAsync_<R, E, T, R1, E1, A1>(
+export function updateServiceAsync_<R, E, T, R1, E1, A1>(
   ma: Async<R1 & Has<T>, E1, A1>,
   _: Tag<T>,
   f: (_: T) => Async<R, E, T>
 ): Async<R & R1 & Has<T>, E | E1, A1> {
-  return asksServiceAsync(_)((t) => giveServiceAsync(_)(f(t))(ma))
+  return accessServiceAsync(_)((t) => provideServiceAsync(_)(f(t))(ma))
 }
 
 /**
  * Replaces the service with the required Service Entry, depends on global HasRegistry
  *
- * @dataFrist replaceService_
+ * @dataFrist updateService_
  */
-export function replaceService<T>(
+export function updateService<T>(
   _: Tag<T>,
   f: (_: T) => T
 ): <R1, E1, A1>(ma: Async<R1 & Has<T>, E1, A1>) => Async<R1 & Has<T>, E1, A1> {
-  return (ma) => asksServiceAsync(_)((t) => giveServiceAsync(_)(pure(f(t)))(ma))
+  return (ma) => accessServiceAsync(_)((t) => provideServiceAsync(_)(pure(f(t)))(ma))
 }
 
 /**
  * Replaces the service with the required Service Entry, depends on global HasRegistry
  */
-export function replaceService_<R1, E1, A1, T>(
+export function updateService_<R1, E1, A1, T>(
   ma: Async<R1 & Has<T>, E1, A1>,
   _: Tag<T>,
   f: (_: T) => T
 ): Async<R1 & Has<T>, E1, A1> {
-  return asksServiceAsync(_)((t) => giveServiceAsync(_)(pure(f(t)))(ma))
+  return accessServiceAsync(_)((t) => provideServiceAsync(_)(pure(f(t)))(ma))
 }
 
 /**
@@ -1206,11 +1209,11 @@ export function runPromiseExitEnv_<R, E, A>(
             current = undefined
             break
           }
-          case AsyncTag.Asks: {
+          case AsyncTag.Access: {
             current = I.f(env.value || {})
             break
           }
-          case AsyncTag.Give: {
+          case AsyncTag.Provide: {
             current = pipe(
               succeedLazy(() => {
                 pushEnv(I.env)
@@ -1462,7 +1465,7 @@ const adapter: {
   <R, E, A>(_: Async<R, E, A>): GenHKT<Async<R, E, A>, A>
 } = (_: any, __?: any) => {
   if (isTag(_)) {
-    return new GenHKT(asksService(_)(identity))
+    return new GenHKT(accessService(_)(identity))
   }
   if (E.isEither(_)) {
     return new GenHKT(_._tag === 'Left' ? fail(_.left) : succeed(_.right))

@@ -1224,104 +1224,6 @@ export interface IOOps<R, E, A> {
   get<R, E, A>(this: IO<R, E, Maybe<A>>): IO<R, Maybe<E>, A>
 
   /**
-   * @rewrite giveLayer_ from "@principia/base/IO"
-   * @trace call
-   */
-  give<R, E, A, R1, E1, A1>(this: I.IO<R, E, A>, layer: L.Layer<R1, E1, A1>): I.IO<Erase<R, A1> & R1, E | E1, A>
-
-  /**
-   * @rewrite give_ from "@principia/base/IO"
-   * @trace call
-   */
-  give<R0, E, A, R>(this: I.IO<R0, E, A>, r: R): I.IO<Erase<R0, R>, E, A>
-
-  /**
-   * @rewrite giveAll_ from "@principia/base/IO"
-   * @trace call
-   */
-  giveAll<R, E, A>(this: I.IO<R, E, A>, r: R): I.IO<unknown, E, A>
-
-  /**
-   * @rewriteConstraint giveService_ from "@principia/base/IO"
-   * @trace call
-   */
-  giveService<R, E, A, T>(this: I.IO<R, E, A>, tag: Tag<T>): (service: T) => I.IO<Erase<R, Has<T>>, E, A>
-
-  /**
-   * @rewriteConstraint giveServiceIO_ from "@principia/base/IO"
-   * @trace call
-   */
-  giveServiceIO<R, E, A, T>(
-    this: I.IO<R, E, A>,
-    tag: Tag<T>
-  ): <R1, E1>(service: I.IO<R1, E1, T>) => I.IO<Erase<R & R1, Has<T>>, E | E1, A>
-
-  /**
-   * @rewriteConstraint giveServicesS_ from "@principia/base/IO"
-   */
-  giveServicesS<R, E, A, SS extends Record<string, Tag<any>>>(
-    this: I.IO<R, E, A>,
-    tags: SS
-  ): (
-    services: ServicesStruct<SS>
-  ) => I.IO<
-    Erase<R, UnionToIntersection<{ [K in keyof SS]: [SS[K]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>>,
-    E,
-    A
-  >
-
-  /**
-   * @rewriteConstraint giveServicesSIO_ from "@principia/base/IO"
-   */
-  giveServicesSIO<R, E, A, SS extends Record<string, Tag<any>>>(
-    this: I.IO<R, E, A>,
-    tags: SS
-  ): <R1, E1>(
-    services: I.IO<R1, E1, ServicesStruct<SS>>
-  ) => I.IO<
-    Erase<
-      R & R1,
-      UnionToIntersection<{ [K in keyof SS]: [SS[K]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>
-    >,
-    E | E1,
-    A
-  >
-
-  /**
-   * @rewriteConstraint giveServicesT_ from "@principia/base/IO"
-   */
-  giveServicesT<R, E, A, SS extends ReadonlyArray<Tag<any>>>(
-    this: I.IO<R, E, A>,
-    ...tags: SS
-  ): (
-    ...services: ServicesTuple<SS>
-  ) => I.IO<
-    Erase<R, UnionToIntersection<{ [K in keyof SS]: [SS[K]] extends [Tag<infer T>] ? Has<T> : unknown }[number]>>,
-    E,
-    A
-  >
-
-  /**
-   * @rewriteConstraint giveServicesTIO_ from "@principia/base/IO"
-   */
-  giveServicesTIO<R, E, A, SS extends ReadonlyArray<Tag<any>>>(
-    this: I.IO<R, E, A>,
-    ...tags: SS
-  ): <R1, E1>(
-    services: I.IO<R1, E1, ServicesTuple<SS>>
-  ) => I.IO<
-    Erase<R, UnionToIntersection<{ [K in keyof SS]: [SS[K]] extends [Tag<infer T>] ? Has<T> : unknown }[number]>> & R1,
-    E | E1,
-    A
-  >
-
-  /**
-   * @rewrite gives_ from "@principia/base/IO"
-   * @trace 0
-   */
-  gives<R, E, A, R0>(this: I.IO<R, E, A>, f: (r0: R0) => R): I.IO<R0, E, A>
-
-  /**
    * @rewrite ifIO_ from "@principia/base/IO"
    * @trace call
    */
@@ -1348,6 +1250,12 @@ export interface IOOps<R, E, A> {
    * @trace getter
    */
   interruptible: I.IO<R, E, A>
+
+  /**
+   * @rewrite local_ from "@principia/base/IO"
+   * @trace 0
+   */
+  local<R, E, A, R0>(this: I.IO<R, E, A>, f: (r0: R0) => R): I.IO<R0, E, A>
 
   /**
    * @rewrite map_ from "@principia/base/IO"
@@ -1545,6 +1453,98 @@ export interface IOOps<R, E, A> {
    * @trace getter
    */
   parallelErrors: I.IO<R, ReadonlyArray<E>, A>
+
+  /**
+   * @rewrite provide_ from "@principia/base/IO"
+   * @trace call
+   */
+  provide<R, E, A>(this: I.IO<R, E, A>, r: R): I.IO<unknown, E, A>
+
+  /**
+   * @rewriteConstraint provideService_ from "@principia/base/IO"
+   * @trace call
+   */
+  provideService<R, E, A, T>(this: I.IO<R, E, A>, tag: Tag<T>): (service: T) => I.IO<Erase<R, Has<T>>, E, A>
+
+  /**
+   * @rewriteConstraint provideServiceIO_ from "@principia/base/IO"
+   * @trace call
+   */
+  provideServiceIO<R, E, A, T>(
+    this: I.IO<R, E, A>,
+    tag: Tag<T>
+  ): <R1, E1>(service: I.IO<R1, E1, T>) => I.IO<Erase<R & R1, Has<T>>, E | E1, A>
+
+  /**
+   * @rewriteConstraint provideServicesIO_ from "@principia/base/IO"
+   */
+  provideServicesIO<R, E, A, SS extends Record<string, Tag<any>>>(
+    this: I.IO<R, E, A>,
+    tags: SS
+  ): <R1, E1>(
+    services: I.IO<R1, E1, ServicesStruct<SS>>
+  ) => I.IO<
+    Erase<
+      R & R1,
+      UnionToIntersection<{ [K in keyof SS]: [SS[K]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>
+    >,
+    E | E1,
+    A
+  >
+
+  /**
+   * @rewriteConstraint provideServicesS_ from "@principia/base/IO"
+   */
+  provideServicesS<R, E, A, SS extends Record<string, Tag<any>>>(
+    this: I.IO<R, E, A>,
+    tags: SS
+  ): (
+    services: ServicesStruct<SS>
+  ) => I.IO<
+    Erase<R, UnionToIntersection<{ [K in keyof SS]: [SS[K]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>>,
+    E,
+    A
+  >
+
+  /**
+   * @rewriteConstraint provideServicesT_ from "@principia/base/IO"
+   */
+  provideServicesT<R, E, A, SS extends ReadonlyArray<Tag<any>>>(
+    this: I.IO<R, E, A>,
+    ...tags: SS
+  ): (
+    ...services: ServicesTuple<SS>
+  ) => I.IO<
+    Erase<R, UnionToIntersection<{ [K in keyof SS]: [SS[K]] extends [Tag<infer T>] ? Has<T> : unknown }[number]>>,
+    E,
+    A
+  >
+
+  /**
+   * @rewriteConstraint provideServicesTIO_ from "@principia/base/IO"
+   */
+  provideServicesTIO<R, E, A, SS extends ReadonlyArray<Tag<any>>>(
+    this: I.IO<R, E, A>,
+    ...tags: SS
+  ): <R1, E1>(
+    services: I.IO<R1, E1, ServicesTuple<SS>>
+  ) => I.IO<
+    Erase<R, UnionToIntersection<{ [K in keyof SS]: [SS[K]] extends [Tag<infer T>] ? Has<T> : unknown }[number]>> & R1,
+    E | E1,
+    A
+  >
+
+  /**
+   * @rewrite provideSomeLayer_ from "@principia/base/IO"
+   * @trace call
+   */
+  provideSome<R, E, A, R1, E1, A1>(this: I.IO<R, E, A>, layer: L.Layer<R1, E1, A1>): I.IO<Erase<R, A1> & R1, E | E1, A>,
+
+  /**
+   * @rewrite provideSome_ from "@principia/base/IO"
+   * @trace call
+   */
+  provideSome<R0, E, A, R>(this: I.IO<R0, E, A>, r: R): I.IO<Erase<R0, R>, E, A>,
 
   /**
    * @rewrite pureS_ from "@principia/base/IO"

@@ -1,7 +1,7 @@
 // tracing: off
 
-import type { Has } from '../../Has'
 import type { Clock } from '../../Clock'
+import type { Has } from '../../Has'
 import type { Schedule } from '../../Schedule'
 import type { ReleaseMap } from '../ReleaseMap'
 
@@ -21,13 +21,13 @@ export function retry_<R, E, A, R1, O>(
 ): Managed<R & R1 & Has<Clock>, E, A> {
   const trace = accessCallTrace()
   return new Managed(
-    I.asksIO(
+    I.accessIO(
       traceFrom(trace, ([env, releaseMap]: readonly [R & R1 & Has<Clock>, ReleaseMap]) =>
         pipe(
           ma.io,
-          I.gives((_: R & R1 & Has<Clock>) => tuple(_, releaseMap)),
+          I.local((_: R & R1 & Has<Clock>) => tuple(_, releaseMap)),
           I.retry(policy),
-          I.giveAll(env)
+          I.provide(env)
         )
       )
     )

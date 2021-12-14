@@ -32,21 +32,17 @@ declare global {
 
 interface StreamStaticOps {
   /**
-   * @rewriteStatic ask from "@principia/base/Stream"
+   * @rewriteStatic access from "@principia/base/Stream"
    */
-  ask: typeof S.ask
+  access: typeof S.access
   /**
-   * @rewriteStatic asks from "@principia/base/Stream"
+   * @rewriteStatic accessIO from "@principia/base/Stream"
    */
-  asks: typeof S.asks
+  accessIO: typeof S.accessIO
   /**
-   * @rewriteStatic asksIO from "@principia/base/Stream"
+   * @rewriteStatic accessStream from "@principia/base/Stream"
    */
-  asksIO: typeof S.asksIO
-  /**
-   * @rewriteStatic asksStream from "@principia/base/Stream"
-   */
-  asksStream: typeof S.asksStream
+  accessStream: typeof S.accessStream
   /**
    * @rewriteStatic async from "@principia/base/Stream"
    */
@@ -63,6 +59,10 @@ interface StreamStaticOps {
    * @rewriteStatic asyncMaybe from "@principia/base/Stream"
    */
   asyncMaybe: typeof S.asyncMaybe
+  /**
+   * @rewriteStatic environment from "@principia/base/Stream"
+   */
+  environtment: typeof S.environment
   /**
    * @rewriteStatic fail from "@principia/base/Stream"
    */
@@ -512,18 +512,6 @@ declare module '@principia/base/Stream/core' {
      */
     forever: Stream<R, E, A>
     /**
-     * @rewrite giveLayer_ from "@principia/base/Stream"
-     */
-    give<R, E, A, R0, E1, A1>(this: Stream<R, E, A>, layer: Layer<R0, E1, A1>): Stream<Erase<R, A1>, E | E1, A>
-    /**
-     * @rewrite give_ from "@principia/base/Stream"
-     */
-    give<R, E, A, R0>(this: Stream<R, E, A>, r: R0): Stream<Erase<R, R0>, E, A>
-    /**
-     * @rewrite giveAll_ from "@principia/base/Stream"
-     */
-    giveAll(r: R): Stream<unknown, E, A>
-    /**
      * @rewrite groupBy_ from "@principia/base/Stream"
      */
     groupBy<R, E, A, R1, E1, K, V>(
@@ -757,6 +745,18 @@ declare module '@principia/base/Stream/core' {
       this: Stream<R, E, A>,
       sink: Sink<R1, E, A, E1, A1, Z>
     ): M.Managed<R & R1, E1, readonly [Z, Stream<unknown, E | E1, A1>]>
+    /**
+     * @rewrite provide_ from "@principia/base/Stream"
+     */
+    provide(r: R): Stream<unknown, E, A>
+    /**
+     * @rewrite provideSomeLayer_ from "@principia/base/Stream"
+     */
+    provideSome<R, E, A, R0, E1, A1>(this: Stream<R, E, A>, layer: Layer<R0, E1, A1>): Stream<Erase<R, A1>, E | E1, A>
+    /**
+     * @rewrite provideSome_ from "@principia/base/Stream"
+     */
+    provideSome<R, E, A, R0>(this: Stream<R, E, A>, r: R0): Stream<Erase<R, R0>, E, A>
     /**
      * @rewrite refineOrHalt_ from "@principia/base/Stream"
      */

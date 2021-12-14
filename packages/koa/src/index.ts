@@ -8,7 +8,7 @@ import type { Cause } from '@principia/base/IO/Cause'
 import type { Exit } from '@principia/base/IO/Exit'
 import type { IOEnv } from '@principia/base/IOEnv'
 import type { Supervisor } from '@principia/base/Supervisor'
-import type { _R, Erase, UnionToIntersection } from '@principia/base/util/types'
+import type { _R, UnionToIntersection } from '@principia/base/util/types'
 import type * as http from 'http'
 import type { DefaultContext, DefaultState, Middleware, Next, ParameterizedContext } from 'koa'
 
@@ -98,12 +98,12 @@ export abstract class KoaAppConfig {
 
   static live<R>(host: string, port: number, exitHandler: ExitHandler<R>): L.Layer<R, never, Has<KoaAppConfig>> {
     return L.fromIO(KoaAppConfigTag)(
-      I.asks(
+      I.access(
         (r: R) =>
           new (class extends KoaAppConfig {
             host = host
             port = port
-            exitHandler: ExitHandler<unknown> = (ctx, next) => flow(exitHandler(ctx, next), I.give(r))
+            exitHandler: ExitHandler<unknown> = (ctx, next) => flow(exitHandler(ctx, next), I.provideSome(r))
           })()
       )
     )
@@ -199,7 +199,7 @@ export abstract class KoaRuntime {
   static supervisor = I.deriveLifted(KoaRuntimeTag)([], [], ['supervisor'])
 
   static runtime<R>() {
-    return I.asksServiceIO(KoaRuntimeTag)((r) => r.runtime<R>())
+    return I.accessServiceIO(KoaRuntimeTag)((r) => r.runtime<R>())
   }
 
   static live: L.Layer<unknown, never, Has<KoaRuntime>> = L.fromManaged(KoaRuntimeTag)(
@@ -215,7 +215,7 @@ export abstract class KoaRuntime {
               <E, A>(effect: IO<R & IOEnv, E, A>) =>
                 open.get
                   .ifIO(
-                    I.defer(() => effect['|>'](I.giveLayer(liveIOEnv))['|>'](r.runFiber).await),
+                    I.defer(() => effect['|>'](I.provideSomeLayer(liveIOEnv))['|>'](r.runFiber).await),
                     I.succeed(Ex.failCause(Ca.empty))
                   )
                   .runPromiseExit()

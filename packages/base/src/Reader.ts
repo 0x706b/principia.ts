@@ -36,38 +36,38 @@ export interface ReaderCategoryF extends HKT.HKT {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function ask<R>(): Reader<R, R> {
+export function environment<R>(): Reader<R, R> {
   return identity
 }
 
-export function asks<R, A>(f: (r: R) => A): Reader<R, A> {
+export function access<R, A>(f: (r: R) => A): Reader<R, A> {
   return f
 }
 
-export function asksReader<R, R1, A>(f: (r: R) => Reader<R1, A>): Reader<R & R1, A> {
+export function accessReader<R, R1, A>(f: (r: R) => Reader<R1, A>): Reader<R & R1, A> {
   return (r) => f(r)(r)
 }
 
-export function gives_<Q, R, A>(ra: Reader<R, A>, f: (q: Q) => R): Reader<Q, A> {
+export function local_<Q, R, A>(ra: Reader<R, A>, f: (q: Q) => R): Reader<Q, A> {
   return (q) => ra(f(q))
 }
 
 /**
- * @dataFirst gives_
+ * @dataFirst local_
  */
-export function gives<Q, R>(f: (q: Q) => R): <A>(ra: Reader<R, A>) => Reader<Q, A> {
-  return (ra) => gives_(ra, f)
+export function local<Q, R>(f: (q: Q) => R): <A>(ra: Reader<R, A>) => Reader<Q, A> {
+  return (ra) => local_(ra, f)
 }
 
-export function giveAll_<R, A>(ra: Reader<R, A>, r: R): Reader<unknown, A> {
+export function provide_<R, A>(ra: Reader<R, A>, r: R): Reader<unknown, A> {
   return () => ra(r)
 }
 
 /**
- * @dataFirst giveAll_
+ * @dataFirst provide_
  */
-export function giveAll<R>(r: R): <A>(ra: Reader<R, A>) => Reader<unknown, A> {
-  return (ra) => giveAll_(ra, r)
+export function provide<R>(r: R): <A>(ra: Reader<R, A>) => Reader<unknown, A> {
+  return (ra) => provide_(ra, r)
 }
 
 export function runReader_<A>(ra: Reader<unknown, A>): A
@@ -331,14 +331,14 @@ export const MonadEnv = P.MonadEnv<ReaderF>({
   unit,
   chain_,
   flatten,
-  asks,
-  giveAll_
+  access: access,
+  provide_: provide_
 })
 
 export const Profunctor = P.Profunctor<ReaderF>({
   map_,
   dimap_,
-  lmap_: gives_
+  lmap_: local_
 })
 
 export const Category = P.Category<ReaderCategoryF>({

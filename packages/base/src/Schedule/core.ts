@@ -261,7 +261,7 @@ export function as<O1>(o: O1) {
 const giveAllLoop =
   <R, I, O>(self: StepFunction<R, I, O>, r: R): StepFunction<unknown, I, O> =>
   (now, i) =>
-    I.giveAll(r)(
+    I.provide(r)(
       I.map_(self(now, i), (d) => {
         switch (d._tag) {
           case 'Done': {
@@ -293,7 +293,7 @@ export function giveAll<R>(r: R): <I, O>(sc: Schedule<R, I, O>) => Schedule<unkn
 const givesLoop =
   <R, R1, I, O>(self: StepFunction<R, I, O>, r: (_: R1) => R): StepFunction<R1, I, O> =>
   (now, i) =>
-    I.gives_(
+    I.local_(
       I.map_(self(now, i), (d) => {
         switch (d._tag) {
           case 'Done': {

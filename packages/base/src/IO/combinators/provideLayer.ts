@@ -7,18 +7,18 @@ import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
 import { build } from '../../Layer'
 import * as M from '../../Managed'
-import { gives_ } from '../core'
+import { local_ } from '../core'
 
 /**
  * Provides a layer to the given effect
  *
  * @trace call
  */
-export function giveLayer_<R, E, A, R1, E1, A1>(fa: IO<R & A1, E, A>, layer: Layer<R1, E1, A1>): IO<R & R1, E | E1, A> {
+export function provideLayer_<R, E, A, R1, E1>(fa: IO<R, E, A>, layer: Layer<R1, E1, R>): IO<R1, E | E1, A> {
   const trace = accessCallTrace()
   return M.use_(
     build(layer),
-    traceFrom(trace, (p) => gives_(fa, (r: R & R1) => ({ ...r, ...p })))
+    traceFrom(trace, (p) => local_(fa, (r: R1) => ({ ...r, ...p })))
   )
 }
 
@@ -27,11 +27,11 @@ export function giveLayer_<R, E, A, R1, E1, A1>(fa: IO<R & A1, E, A>, layer: Lay
  *
  * @trace call
  */
-export function giveLayer<R1, E1, A1>(layer: Layer<R1, E1, A1>) {
+export function provideLayer<R, R1, E1>(layer: Layer<R1, E1, R>) {
   const trace = accessCallTrace()
-  return <R, E, A>(fa: IO<R & A1, E, A>): IO<R & R1, E | E1, A> =>
+  return <E, A>(fa: IO<R, E, A>): IO<R1, E | E1, A> =>
     M.use_(
       build(layer),
-      traceFrom(trace, (p) => gives_(fa, (r: R & R1) => ({ ...r, ...p })))
+      traceFrom(trace, (p) => local_(fa, (r: R1) => ({ ...r, ...p })))
     )
 }

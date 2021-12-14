@@ -182,14 +182,6 @@ declare module '@principia/base/IO/Schedule/core' {
      */
     fst<A>(): Schedule<R, readonly [I, A], readonly [O, A]>
     /**
-     * @rewrite giveAll_ from "@principia/base/IO/Schedule"
-     */
-    giveAll<R, I, O>(this: Schedule<R, I, O>, r: R): Schedule<unknown, I, O>
-    /**
-     * @rewrite gives_ from "@principia/base/IO/Schedule"
-     */
-    gives<R, I, O, R1>(this: Schedule<R, I, O>, r: (_: R1) => R): Schedule<R1, I, O>
-    /**
      * @rewrite intersect_ from "@principia/base/IO/Schedule"
      */
     intersect<R, I, O, R1, I1, O1>(
@@ -231,6 +223,10 @@ declare module '@principia/base/IO/Schedule/core' {
      */
     left<A>(): Schedule<R, Either<I, A>, Either<O, A>>
     /**
+     * @rewrite local_ from "@principia/base/IO/Schedule"
+     */
+    local<R, I, O, R1>(this: Schedule<R, I, O>, r: (_: R1) => R): Schedule<R1, I, O>
+    /**
      * @rewrite map_ from "@principia/base/IO/Schedule"
      */
     map<R, I, O, B>(this: Schedule<R, I, O>, f: (a: O) => B): Schedule<R, I, B>
@@ -255,7 +251,11 @@ declare module '@principia/base/IO/Schedule/core' {
     onDecision<R, I, O, R1>(
       this: Schedule<R, I, O>,
       f: (d: Decision<R, I, O>) => I.IO<R1, never, any>
-    ): Schedule<R & R1, I, O>
+    ): Schedule<R & R1, I, O>,
+    /**
+     * @rewrite provide_ from "@principia/base/IO/Schedule"
+     */
+    provide<R, I, O>(this: Schedule<R, I, O>, r: R): Schedule<unknown, I, O>,
     /**
      * @rewrite reconsider_ from "@principia/base/IO/Schedule"
      */

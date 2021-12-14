@@ -195,7 +195,7 @@ function useManaged_<R, E, A, R2, E2, B>(
     RM.make,
     (rm) =>
       I.chain_(
-        I.gives_(self.io, (r: R) => tuple(r, rm)),
+        I.local_(self.io, (r: R) => tuple(r, rm)),
         (a) => f(a[1])
       ),
     releaseAllSeq_
@@ -206,14 +206,14 @@ function forkManaged<R, E, A>(self: Managed<R, E, A>): Managed<R, never, FiberCo
   return new Managed(
     uninterruptibleMask(({ restore }) =>
       I.gen(function* (_) {
-        const [r, outerReleaseMap] = yield* _(I.ask<readonly [R, RM.ReleaseMap]>())
+        const [r, outerReleaseMap] = yield* _(I.environment<readonly [R, RM.ReleaseMap]>())
         const innerReleaseMap      = yield* _(RM.make)
         const fiber                = yield* _(
           pipe(
             self.io,
             I.map(([, a]) => a),
             forkDaemon,
-            I.giveAll(tuple(r, innerReleaseMap)),
+            I.provide(tuple(r, innerReleaseMap)),
             restore
           )
         )

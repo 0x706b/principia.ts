@@ -451,32 +451,32 @@ export function getFailableMonoid<E, A>(MA: P.Monoid<A>, ME: P.Monoid<E>): P.Mon
  * -------------------------------------------------------------------------------------------------
  */
 
-export const ask: <R>() => Sync<R, never, R> = Z.ask
+export const environment: <R>() => Sync<R, never, R> = Z.environment
 
-export const asksSync: <R0, R, E, A>(f: (r0: R0) => Sync<R, E, A>) => Sync<R0 & R, E, A> = Z.asksZ
+export const accessSync: <R0, R, E, A>(f: (r0: R0) => Sync<R, E, A>) => Sync<R0 & R, E, A> = Z.accessZ
 
-export const asks: <R0, A>(f: (r0: R0) => A) => Sync<R0, never, A> = Z.asks
+export const access: <R0, A>(f: (r0: R0) => A) => Sync<R0, never, A> = Z.access
 
-export const gives_: <R0, R, E, A>(ra: Sync<R, E, A>, f: (r0: R0) => R) => Sync<R0, E, A> = Z.gives_
-
-/**
- * @dataFirst gives_
- */
-export const gives: <R0, R>(f: (r0: R0) => R) => <E, A>(ra: Sync<R, E, A>) => Sync<R0, E, A> = Z.gives
-
-export const giveAll_: <R, E, A>(ra: Sync<R, E, A>, env: R) => Sync<unknown, E, A> = Z.giveAll_
+export const local_: <R0, R, E, A>(ra: Sync<R, E, A>, f: (r0: R0) => R) => Sync<R0, E, A> = Z.local_
 
 /**
- * @dataFirst giveAll_
+ * @dataFirst local_
  */
-export const giveAll: <R>(env: R) => <E, A>(ra: Sync<R, E, A>) => Sync<unknown, E, A> = Z.giveAll
+export const local: <R0, R>(f: (r0: R0) => R) => <E, A>(ra: Sync<R, E, A>) => Sync<R0, E, A> = Z.local
 
-export const give_: <R0, R, E, A>(ra: Sync<R & R0, E, A>, env: R) => Sync<R0, E, A> = Z.give_
+export const provide_: <R, E, A>(ra: Sync<R, E, A>, env: R) => Sync<unknown, E, A> = Z.provide_
 
 /**
- * @dataFirst give_
+ * @dataFirst provide_
  */
-export const give: <R>(env: R) => <R0, E, A>(ra: Sync<R & R0, E, A>) => Sync<R0, E, A> = Z.give
+export const provide: <R>(env: R) => <E, A>(ra: Sync<R, E, A>) => Sync<unknown, E, A> = Z.provide
+
+export const provideSome_: <R0, R, E, A>(ra: Sync<R & R0, E, A>, env: R) => Sync<R0, E, A> = Z.provideSome_
+
+/**
+ * @dataFirst provideSome_
+ */
+export const provideSome: <R>(env: R) => <R0, E, A>(ra: Sync<R & R0, E, A>) => Sync<R0, E, A> = Z.provideSome
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -531,7 +531,7 @@ export const unit: () => Sync<unknown, never, void> = Z.unit
 /**
  * Access a record of services with the required Service Entries
  */
-export function asksServicesSync<SS extends Record<string, Tag<any>>>(
+export function accessServicesSync<SS extends Record<string, Tag<any>>>(
   s: SS
 ): <R = unknown, E = never, B = unknown>(
   f: (a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => Sync<R, E, B>
@@ -541,7 +541,7 @@ export function asksServicesSync<SS extends Record<string, Tag<any>>>(
   B
 > {
   return (f) =>
-    Z.asksZ(
+    Z.accessZ(
       (
         r: P.UnionToIntersection<
           {
@@ -552,7 +552,7 @@ export function asksServicesSync<SS extends Record<string, Tag<any>>>(
     )
 }
 
-export function asksServicesTSync<SS extends Tag<any>[]>(
+export function accessServicesTSync<SS extends Tag<any>[]>(
   ...s: SS
 ): <R = unknown, E = never, B = unknown>(
   f: (...a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => Sync<R, E, B>
@@ -562,7 +562,7 @@ export function asksServicesTSync<SS extends Tag<any>[]>(
   B
 > {
   return (f) =>
-    Z.asksZ(
+    Z.accessZ(
       (
         r: P.UnionToIntersection<
           {
@@ -573,7 +573,7 @@ export function asksServicesTSync<SS extends Tag<any>[]>(
     )
 }
 
-export function asksServicesT<SS extends Tag<any>[]>(
+export function accessServicesT<SS extends Tag<any>[]>(
   ...s: SS
 ): <B = unknown>(
   f: (...a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => B
@@ -583,7 +583,7 @@ export function asksServicesT<SS extends Tag<any>[]>(
   B
 > {
   return (f) =>
-    Z.asks(
+    Z.access(
       (
         r: P.UnionToIntersection<
           {
@@ -597,7 +597,7 @@ export function asksServicesT<SS extends Tag<any>[]>(
 /**
  * Access a record of services with the required Service Entries
  */
-export function asksServices<SS extends Record<string, Tag<any>>>(
+export function accessServices<SS extends Record<string, Tag<any>>>(
   s: SS
 ): <B>(
   f: (a: { [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? T : unknown }) => B
@@ -607,7 +607,7 @@ export function asksServices<SS extends Record<string, Tag<any>>>(
   B
 > {
   return (f) =>
-    Z.asks(
+    Z.access(
       (r: P.UnionToIntersection<{ [k in keyof SS]: [SS[k]] extends [Tag<infer T>] ? Has<T> : unknown }[keyof SS]>) =>
         f(R.map_(s, (v) => r[v.key]) as any)
     )
@@ -616,40 +616,42 @@ export function asksServices<SS extends Record<string, Tag<any>>>(
 /**
  * Access a service with the required Service Entry
  */
-export function asksServiceSync<T>(s: Tag<T>): <R, E, B>(f: (a: T) => Sync<R, E, B>) => Sync<R & Has<T>, E, B> {
-  return (f) => Z.asksZ((r: Has<T>) => f(r[s.key as any]))
+export function accessServiceSync<T>(s: Tag<T>): <R, E, B>(f: (a: T) => Sync<R, E, B>) => Sync<R & Has<T>, E, B> {
+  return (f) => Z.accessZ((r: Has<T>) => f(r[s.key as any]))
 }
 
 /**
  * Access a service with the required Service Entry
  */
-export function asksService<T>(s: Tag<T>): <B>(f: (a: T) => B) => Sync<Has<T>, never, B> {
-  return (f) => asksServiceSync(s)((a) => Z.pure(f(a)))
+export function accessService<T>(s: Tag<T>): <B>(f: (a: T) => B) => Sync<Has<T>, never, B> {
+  return (f) => accessServiceSync(s)((a) => Z.pure(f(a)))
 }
 
 /**
  * Access a service with the required Service Entry
  */
-export function askService<T>(s: Tag<T>): Sync<Has<T>, never, T> {
-  return asksServiceSync(s)((a) => Z.pure(a))
+export function service<T>(s: Tag<T>): Sync<Has<T>, never, T> {
+  return accessServiceSync(s)((a) => Z.pure(a))
 }
 
 /**
  * Provides the service with the required Service Entry
  */
-export function giveServiceSync<T>(
+export function provideServiceSync<T>(
   _: Tag<T>
 ): <R, E>(f: Sync<R, E, T>) => <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R & R1, E | E1, A1> {
   return <R, E>(f: Sync<R, E, T>) =>
     <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>): Sync<R & R1, E | E1, A1> =>
-      Z.asksZ((r: R & R1) => Z.chain_(f, (t) => Z.giveAll_(ma, mergeEnvironments(_, r, t))))
+      Z.accessZ((r: R & R1) => Z.chain_(f, (t) => Z.provide_(ma, mergeEnvironments(_, r, t))))
 }
 
 /**
  * Provides the service with the required Service Entry
  */
-export function giveService<T>(_: Tag<T>): (f: T) => <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R1, E1, A1> {
-  return (f) => (ma) => giveServiceSync(_)(Z.pure(f))(ma)
+export function provideService<T>(
+  _: Tag<T>
+): (f: T) => <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R1, E1, A1> {
+  return (f) => (ma) => provideServiceSync(_)(Z.pure(f))(ma)
 }
 
 /**
@@ -661,7 +663,7 @@ export function updateServiceSync<R, E, T>(
   _: Tag<T>,
   f: (_: T) => Sync<R, E, T>
 ): <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R & R1 & Has<T>, E | E1, A1> {
-  return (ma) => asksServiceSync(_)((t) => giveServiceSync(_)(f(t))(ma))
+  return (ma) => accessServiceSync(_)((t) => provideServiceSync(_)(f(t))(ma))
 }
 
 /**
@@ -672,7 +674,7 @@ export function updateServiceSync_<R, E, T, R1, E1, A1>(
   _: Tag<T>,
   f: (_: T) => Sync<R, E, T>
 ): Sync<R & R1 & Has<T>, E | E1, A1> {
-  return asksServiceSync(_)((t) => giveServiceSync(_)(f(t))(ma))
+  return accessServiceSync(_)((t) => provideServiceSync(_)(f(t))(ma))
 }
 
 /**
@@ -684,7 +686,7 @@ export function updateService<T>(
   _: Tag<T>,
   f: (_: T) => T
 ): <R1, E1, A1>(ma: Sync<R1 & Has<T>, E1, A1>) => Sync<R1 & Has<T>, E1, A1> {
-  return (ma) => asksServiceSync(_)((t) => giveServiceSync(_)(Z.pure(f(t)))(ma))
+  return (ma) => accessServiceSync(_)((t) => provideServiceSync(_)(Z.pure(f(t)))(ma))
 }
 
 /**
@@ -695,7 +697,7 @@ export function updateService_<R1, E1, A1, T>(
   _: Tag<T>,
   f: (_: T) => T
 ): Sync<R1 & Has<T>, E1, A1> {
-  return asksServiceSync(_)((t) => giveServiceSync(_)(Z.pure(f(t)))(ma))
+  return accessServiceSync(_)((t) => provideServiceSync(_)(Z.pure(f(t)))(ma))
 }
 
 /**
@@ -967,7 +969,7 @@ const adapter = (_: any, __?: any) => {
     return new GenSync(fromMaybe(_, () => (__ ? __() : new NoSuchElementError('Sync.gen'))))
   }
   if (isTag(_)) {
-    return new GenSync(asksService(_)(identity))
+    return new GenSync(accessService(_)(identity))
   }
   return new GenSync(_)
 }
