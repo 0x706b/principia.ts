@@ -136,7 +136,7 @@ export class EventSourcedStateful<R, S, F1 extends AM.AnyMessage, EV> extends A.
     }
 
     const retrieveJournal = pipe(
-      T.askService(JournalFactory),
+      T.service(JournalFactory),
       T.chain((jf) => jf.getJournal<S, EV>(context.actorSystem.actorSystemName))
     )
 
