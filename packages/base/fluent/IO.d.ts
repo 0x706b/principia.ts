@@ -1304,16 +1304,16 @@ export interface IOOps<R, E, A> {
   >
 
   /**
-   * @rewrite giveSome_ from "@principia/base/IO"
-   * @trace call
-   */
-  giveSome<R0, E, A, R>(this: I.IO<R0, E, A>, r: R): I.IO<Erase<R0, R>, E, A>
-
-  /**
    * @rewrite giveSomeLayer_ from "@principia/base/IO"
    * @trace call
    */
   giveSome<R, E, A, R1, E1, A1>(this: I.IO<R, E, A>, layer: L.Layer<R1, E1, A1>): I.IO<Erase<R, A1> & R1, E | E1, A>
+
+  /**
+   * @rewrite giveSome_ from "@principia/base/IO"
+   * @trace call
+   */
+  giveSome<R0, E, A, R>(this: I.IO<R0, E, A>, r: R): I.IO<Erase<R0, R>, E, A>
 
   /**
    * @rewrite gives_ from "@principia/base/IO"
@@ -1851,25 +1851,25 @@ export interface IOOps<R, E, A> {
   timeoutTo<R, E, A, B, B1>(this: I.IO<R, E, A>, ms: number, b: B, f: (a: A) => B1): I.IO<R & Has<Clock>, E, B | B1>
 
   /**
-   * @rewrite fromIO_ from "@principia/base/IO/Layer"
+   * @rewrite fromIO_ from "@principia/base/Layer"
    * @trace call
    */
   toLayer<R, E, A>(this: I.IO<R, E, A>, tag: Tag<A>): L.Layer<R, E, Has<A>>
 
   /**
-   * @rewrite fromRawIO from "@principia/base/IO/Layer"
+   * @rewrite fromRawIO from "@principia/base/Layer"
    * @trace call
    */
   toLayerRaw<R, E, A>(this: I.IO<R, E, A>): L.Layer<R, E, A>
 
   /**
-   * @rewrite fromIO from "@principia/base/IO/Managed"
+   * @rewrite fromIO from "@principia/base/Managed"
    * @trace call
    */
   toManaged<R, E, A>(this: I.IO<R, E, A>): Managed<R, E, A>
 
   /**
-   * @rewrite bracket_ from "@principia/base/IO/Managed"
+   * @rewrite bracket_ from "@principia/base/Managed"
    * @trace call
    */
   toManaged<R, E, A, R1>(this: I.IO<R, E, A>, release: (a: A) => I.IO<R1, never, any>): Managed<R & R1, E, A>
