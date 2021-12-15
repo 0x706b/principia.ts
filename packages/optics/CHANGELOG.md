@@ -3,6 +3,32 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.20.0](https://github.com/0x706b/principia.ts/compare/@principia/optics@0.19.4...@principia/optics@0.20.0) (2021-12-15)
+
+
+### Bug Fixes
+
+* **channel:** re-port `ChannelExecutor` (via ZIO) ([03440a9](https://github.com/0x706b/principia.ts/commit/03440a9b0fd0f7984738893ea18710593cf30239))
+* **lens:** make `path` safer ([d42c489](https://github.com/0x706b/principia.ts/commit/d42c489b0db46f5c42cad6f5390bd53f867fb24f))
+
+
+### Features
+
+* **hkt:** add more performant HKT encoding ([920b12c](https://github.com/0x706b/principia.ts/commit/920b12cd7f52d4b9b3417d544e2818f707b62214))
+* **layer:** add `bracket` ([0ab79f0](https://github.com/0x706b/principia.ts/commit/0ab79f0dabc349fcaf51e4060d08b59dcb1aee37))
+* **lens:** add well-typed `path` combinator ([a40de44](https://github.com/0x706b/principia.ts/commit/a40de4411e474e435c3245fa5e3d3915e049d553))
+* **observable:** add `ReaderObservable` ([6507f16](https://github.com/0x706b/principia.ts/commit/6507f165e61530d79589e5e1f2f8712126ac0f60))
+* **typelevel:** add `typelevel` package ([ebf39fc](https://github.com/0x706b/principia.ts/commit/ebf39fc0fe9decdd06dbbf33add0e532cdeccb2d))
+
+
+### Performance Improvements
+
+* **channel:** decrease `crossSecond` closures; remove bound functions from `Chunk` ([aa4c2c9](https://github.com/0x706b/principia.ts/commit/aa4c2c98a74b84854cb159804a16bd58dacb5fdb))
+
+
+
+
+
 ## [0.19.4](https://github.com/0x706b/principia.ts/compare/@principia/optics@0.19.3...@principia/optics@0.19.4) (2021-11-06)
 
 **Note:** Version bump only for package @principia/optics

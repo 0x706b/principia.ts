@@ -3,6 +3,53 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.28.0](https://github.com/0x706b/principia.ts/compare/@principia/base@0.27.0...@principia/base@0.28.0) (2021-12-15)
+
+
+### Bug Fixes
+
+* **channel:** finalizer ordering (via ZIO) ([f123df6](https://github.com/0x706b/principia.ts/commit/f123df6ccf44b3e1352851f0902aa083f4f3db8e))
+* **channel:** prevent fibers from being interrupted prematurely in `mergeWith` (via ZIO) ([bd9ae2e](https://github.com/0x706b/principia.ts/commit/bd9ae2eb2a501863326aa97be87f89e4aed9bfd0))
+* **channel:** re-port `ChannelExecutor` (via ZIO) ([03440a9](https://github.com/0x706b/principia.ts/commit/03440a9b0fd0f7984738893ea18710593cf30239))
+* **channel:** undefined `this` in `ChannelExecutor` ([6a9ba4e](https://github.com/0x706b/principia.ts/commit/6a9ba4ef3ffe6270a8847aa23c468aeff47d5d91))
+* **channel:** use correct `optimize` tag for `concreteContinuation` ([1872fb0](https://github.com/0x706b/principia.ts/commit/1872fb086decd949fd33c5a58221e718469796df))
+* **fiber:** ensure no duplicate causes ([4fc061f](https://github.com/0x706b/principia.ts/commit/4fc061fca939f20ffbdcf01bd075725e21569967))
+* **fiber:** stop unwinding stack after encountering finalizer ([a452e78](https://github.com/0x706b/principia.ts/commit/a452e78667c0eaeb9ec43a9736b5aca176985d0c))
+* **fluent:** fix fluent definitions ([32aaec8](https://github.com/0x706b/principia.ts/commit/32aaec81e093153cc7108ca98ad7b63baa0ec6b1))
+* **io:** revert `never` change ([15c9f7b](https://github.com/0x706b/principia.ts/commit/15c9f7b5b71780aac109991475654b441ed96575))
+* **stream:** eagerly emit elements in `Stream#schedule` (via ZIO) ([4a8cadf](https://github.com/0x706b/principia.ts/commit/4a8cadffba712b3bf3cced0357637beab499a4e8))
+
+
+### Features
+
+* **base:** add `Datum` and `DatumEither` ([3174e92](https://github.com/0x706b/principia.ts/commit/3174e927ba508bf5cd67f7ca4ca0bf6b1747319e))
+* **base:** add `DatumThese` ([d4ea272](https://github.com/0x706b/principia.ts/commit/d4ea272835e5ca91faa648faea276bc0ff9c558e))
+* **base:** add `Function0` ([1851e15](https://github.com/0x706b/principia.ts/commit/1851e15ec05dbfb4c0e4cd6329800be7d2f0757c))
+* **compile:** add `gen` optimization for simple cases ([bf7d405](https://github.com/0x706b/principia.ts/commit/bf7d405dc97c1f8bfb7d3ec76cac113d598fea5a))
+* **hkt:** add more performant HKT encoding ([920b12c](https://github.com/0x706b/principia.ts/commit/920b12cd7f52d4b9b3417d544e2818f707b62214))
+* **layer:** add `bracket` ([0ab79f0](https://github.com/0x706b/principia.ts/commit/0ab79f0dabc349fcaf51e4060d08b59dcb1aee37))
+* **observable:** add `ReaderObservable` ([6507f16](https://github.com/0x706b/principia.ts/commit/6507f165e61530d79589e5e1f2f8712126ac0f60))
+* **sink:** add `crossWithPar` (via ZIO) ([c5fb356](https://github.com/0x706b/principia.ts/commit/c5fb35667dfb634a94fee70f595443b8cb187b88))
+* **stream:** add `scanReduce` ([2ac8b9e](https://github.com/0x706b/principia.ts/commit/2ac8b9e24c69e7de7f12dee096dcf647cd08c328))
+* **stream:** add `tapSink` (via ZIO) ([f073734](https://github.com/0x706b/principia.ts/commit/f073734cf594efd0b600833892ddb8830e88dc4d))
+* **stream:** add `zipWithLatest` ([8f30e37](https://github.com/0x706b/principia.ts/commit/8f30e379ae58cc6f93feb141cac38fbbec854328))
+* **stream:** add some more combinators ([1f47f43](https://github.com/0x706b/principia.ts/commit/1f47f438f97bc4c1fd4e9c4a3437c59bdc401162))
+* **these:** add separated instance functions ([56e2cef](https://github.com/0x706b/principia.ts/commit/56e2cefe44ea311470197eeb2a05e8cdf6f4b14e))
+* **typelevel:** add `typelevel` package ([ebf39fc](https://github.com/0x706b/principia.ts/commit/ebf39fc0fe9decdd06dbbf33add0e532cdeccb2d))
+* **z:** add `halt` and `haltLazy` ([87f96d6](https://github.com/0x706b/principia.ts/commit/87f96d64af78e7983e6030232d2f53cb9cf1f9d4))
+* **z:** use `Cause` for `Z` failure data structure ([525b68d](https://github.com/0x706b/principia.ts/commit/525b68df9bac094576579096053a377a1f0a6387))
+
+
+### Performance Improvements
+
+* **channel:** decrease `crossSecond` closures; remove bound functions from `Chunk` ([aa4c2c9](https://github.com/0x706b/principia.ts/commit/aa4c2c98a74b84854cb159804a16bd58dacb5fdb))
+* **channel:** get rid of `flipCauseEither` (via ZIO) ([0b27792](https://github.com/0x706b/principia.ts/commit/0b27792e9a7ca40d9034aecf1f1e805396ff3dae))
+* **stream:** improve `fromIterable` perf ([6930316](https://github.com/0x706b/principia.ts/commit/6930316311b949ac365a0aed53d639dba39c2d71))
+
+
+
+
+
 # [0.27.0](https://github.com/0x706b/principia.ts/compare/@principia/base@0.26.0...@principia/base@0.27.0) (2021-11-06)
 
 
