@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.28.3](https://github.com/0x706b/principia.ts/compare/@principia/base@0.28.1...@principia/base@0.28.3) (2021-12-15)
+
+
+### Bug Fixes
+
+* **fluent:** fix `IO#toLayer` fluent definition ([fc92790](https://github.com/0x706b/principia.ts/commit/fc927905960ff5c0205624a8a16fc6fd356c7e55))
+
+
+
+
+
 ## [0.28.2](https://github.com/0x706b/principia.ts/compare/@principia/base@0.28.1...@principia/base@0.28.2) (2021-12-15)
 
 
