@@ -1,6 +1,6 @@
 {
   "name": "@principia/actors",
-  "version": "0.22.3",
+  "version": "0.22.4",
   "description": "Actors",
   "repository": {
     "type": "git",
@@ -49,8 +49,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@principia/base": "^0.28.3",
-    "@principia/schema": "^0.22.3",
+    "@principia/base": "^0.28.4",
+    "@principia/schema": "^0.22.4",
     "isomorphic-fetch": "^3.0.0"
   },
   "devDependencies": {

@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.21.4](https://github.com/0x706b/principia.ts/compare/@principia/http@0.21.3...@principia/http@0.21.4) (2021-12-15)
+
+**Note:** Version bump only for package @principia/http
+
+
+
+
+
 ## [0.21.3](https://github.com/0x706b/principia.ts/compare/@principia/http@0.21.1...@principia/http@0.21.3) (2021-12-15)
 
 **Note:** Version bump only for package @principia/http
