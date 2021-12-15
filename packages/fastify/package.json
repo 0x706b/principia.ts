@@ -1,6 +1,6 @@
 {
   "name": "@principia/fastify",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Description",
   "repository": {
     "type": "git",
@@ -49,8 +49,8 @@
   },
   "config": {},
   "dependencies": {
-    "@principia/base": "^0.28.1",
-    "@principia/http": "^0.21.1",
+    "@principia/base": "^0.28.2",
+    "@principia/http": "^0.21.2",
     "fastify": "^3.22.0"
   },
   "publishConfig": {
