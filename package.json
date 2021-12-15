@@ -13,7 +13,6 @@
     "postinstall": "ts-patch install --persist",
     "test": "node ./node_modules/@principia/ptest/dist/bin/ptest.js",
     "preversion": "yarn build",
-    "prepublishOnly": "yarn build",
     "version:alpha": "lerna version prerelease --conventional-commits --preid=alpha",
     "version:preminor": "lerna version preminor --conventional-commits",
     "version:minor": "lerna version minor --conventional-commits",
