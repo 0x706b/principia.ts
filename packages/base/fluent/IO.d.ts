@@ -1851,7 +1851,7 @@ export interface IOOps<R, E, A> {
   timeoutTo<R, E, A, B, B1>(this: I.IO<R, E, A>, ms: number, b: B, f: (a: A) => B1): I.IO<R & Has<Clock>, E, B | B1>
 
   /**
-   * @rewriteConstraint fromIO from "@principia/base/Layer"
+   * @rewrite fromIO_ from "@principia/base/Layer"
    * @trace call
    */
   toLayer<R, E, A>(this: I.IO<R, E, A>, tag: Tag<A>): L.Layer<R, E, Has<A>>

@@ -364,8 +364,17 @@ export function prepare<T>(tag: H.Tag<T>) {
 /**
  * Constructs a layer from the specified effect.
  */
+export function fromIO_<R, E, T>(resource: I.IO<R, E, T>, tag: H.Tag<T>): Layer<R, E, H.Has<T>> {
+  return fromManaged(tag)(Ma.fromIO(resource))
+}
+
+/**
+ * Constructs a layer from the specified effect.
+ *
+ * @dataFirst fromIO_
+ */
 export function fromIO<T>(tag: H.Tag<T>): <R, E>(resource: I.IO<R, E, T>) => Layer<R, E, H.Has<T>> {
-  return (resource) => fromManaged(tag)(Ma.fromIO(resource))
+  return (resource) => fromIO_(resource, tag)
 }
 
 /**
