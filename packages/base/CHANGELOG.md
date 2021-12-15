@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.28.1](https://github.com/0x706b/principia.ts/compare/@principia/base@0.28.0...@principia/base@0.28.1) (2021-12-15)
+
+
+### Bug Fixes
+
+* **fluent:** fix fluent rewrite locations ([d14ed5a](https://github.com/0x706b/principia.ts/commit/d14ed5ab499f2ecb45714adb343440f1ada44d5d))
+
+
+
+
+
 # [0.28.0](https://github.com/0x706b/principia.ts/compare/@principia/base@0.27.0...@principia/base@0.28.0) (2021-12-15)
 
 
