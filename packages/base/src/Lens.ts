@@ -12,6 +12,7 @@ import type { AutoPath, Path } from '@principia/typelevel/Object'
 
 import * as A from './Array/core'
 import * as At from './At'
+import * as E from './Either'
 import { flow, identity, pipe } from './function'
 import * as HKT from './HKT'
 import * as L from './internal/Lens'
@@ -421,29 +422,29 @@ export function atKey(key: string) {
     pipe(sa, andThen(At.atRecord<A>().at(key)))
 }
 
-// /**
-//  * Return a `Optional` from a `Lens` focused on the `Just` of a `Maybe` type
-//  *
-//  * @category Combinators
-//  * @since 1.0.0
-//  */
-// export const just: <S, A>(soa: Lens<S, O.Maybe<A>>) => Optional<S, A> = andThenPrism(_.prismJust())
+/**
+ * Return a `Optional` from a `Lens` focused on the `Just` of a `Maybe` type
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export const just: <S, A>(soa: Lens<S, O.Maybe<A>>) => Optional<S, A> = andThenPrism(Pr.prismJust())
 
-// /**
-//  * Return a `Optional` from a `Lens` focused on the `Right` of a `Either` type
-//  *
-//  * @category Combinators
-//  * @since 1.0.0
-//  */
-// export const right: <S, E, A>(sea: Lens<S, E.Either<E, A>>) => Optional<S, A> = andThenPrism(_.prismRight())
+/**
+ * Return a `Optional` from a `Lens` focused on the `Right` of a `Either` type
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export const right: <S, E, A>(sea: Lens<S, E.Either<E, A>>) => Optional<S, A> = andThenPrism(Pr.prismRight())
 
-// /**
-//  * Return a `Optional` from a `Lens` focused on the `Left` of a `Either` type
-//  *
-//  * @category Combinators
-//  * @since 1.0.0
-//  */
-// export const left: <S, E, A>(sea: Lens<S, E.Either<E, A>>) => Optional<S, E> = andThenPrism(_.prismLeft())
+/**
+ * Return a `Optional` from a `Lens` focused on the `Left` of a `Either` type
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export const left: <S, E, A>(sea: Lens<S, E.Either<E, A>>) => Optional<S, E> = andThenPrism(Pr.prismLeft())
 
 /**
  * Return a `Traversal` from a `Lens` focused on a `Traversable`
