@@ -52,11 +52,11 @@
     "@principia/base": "^0.28.4",
     "@principia/http": "^0.21.4",
     "@types/koa": "^2.13.4",
-    "@types/koa-bodyparser": "^4.3.3",
+    "@types/koa-bodyparser": "^4.3.4",
     "@types/koa-compose": "^3.2.5",
     "@types/koa-router": "^7.4.4",
-    "@types/koa__router": "^8.0.8",
-    "koa": "^2.13.3",
+    "@types/koa__router": "^8.0.11",
+    "koa": "^2.13.4",
     "koa-bodyparser": "4.3.0",
     "koa-compose": "4.1.0",
     "koa-router": "^10.1.1"
@@ -68,6 +68,6 @@
   "gitHead": "450312aae828b332a7d7a48a99796db0ff98d35d",
   "devDependencies": {
     "ts-patch": "^2.0.1",
-    "typescript": "^4.5.2"
+    "typescript": "^4.5.4"
   }
 }

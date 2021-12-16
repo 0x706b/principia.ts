@@ -59,7 +59,7 @@
     "@principia/base": "^0.28.4",
     "@principia/optics": "^0.20.4",
     "@principia/test": "^0.23.4",
-    "fast-check": "^2.18.0"
+    "fast-check": "^2.20.0"
   },
   "publishConfig": {
     "access": "public",
@@ -69,6 +69,6 @@
   "devDependencies": {
     "concurrently": "^6.4.0",
     "ts-patch": "^2.0.1",
-    "typescript": "^4.5.2"
+    "typescript": "^4.5.4"
   }
 }

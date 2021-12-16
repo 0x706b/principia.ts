@@ -55,7 +55,7 @@
   "devDependencies": {
     "@types/node-zookeeper-client": "^0.2.8",
     "ts-patch": "^2.0.1",
-    "typescript": "^4.5.2"
+    "typescript": "^4.5.4"
   },
   "publishConfig": {
     "access": "public",
