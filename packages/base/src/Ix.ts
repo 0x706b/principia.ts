@@ -2,14 +2,13 @@ import type { At } from './At'
 import type { Iso } from './Iso'
 import type { Optional } from './Optional'
 
-import * as A from '@principia/base/Array'
-import * as E from '@principia/base/Either'
-import { pipe } from '@principia/base/function'
-import * as M from '@principia/base/Maybe'
-import * as R from '@principia/base/Record'
-
-import * as _ from './internal'
-import { POptional } from './Optional'
+import * as A from './Array/core'
+import * as E from './Either'
+import { pipe } from './function'
+import * as Pr from './internal/Prism'
+import * as M from './Maybe'
+import * as Op from './Optional'
+import * as R from './Record'
 
 /*
  * -------------------------------------------
@@ -42,7 +41,7 @@ export interface IndexFn<S, I, A> {
  * @since 1.0.0
  */
 export function fromAt<T, J, B>(at: At<T, J, M.Maybe<B>>): Ix<T, J, B> {
-  return Ix((i) => _.optionalAndThenOptional(at.at(i), _.prismJust<B>()))
+  return Ix((i) => Op.andThen_(at.at(i), Pr.prismJust<B>()))
 }
 
 /**
@@ -50,7 +49,7 @@ export function fromAt<T, J, B>(at: At<T, J, M.Maybe<B>>): Ix<T, J, B> {
  * @since 1.0.0
  */
 export function fromIso<T, S>(iso: Iso<T, S>): <I, A>(sia: Ix<S, I, A>) => Ix<T, I, A> {
-  return (sia) => Ix((i) => _.optionalAndThenOptional(iso, sia.index(i)))
+  return (sia) => Ix((i) => Op.andThen_(iso, sia.index(i)))
 }
 
 /**
@@ -59,7 +58,7 @@ export function fromIso<T, S>(iso: Iso<T, S>): <I, A>(sia: Ix<S, I, A>) => Ix<T,
  */
 export function array<A>(): Ix<ReadonlyArray<A>, number, A> {
   return Ix((i) =>
-    POptional({
+    Op.POptional({
       getOrModify: (as) =>
         pipe(
           as,
@@ -81,7 +80,7 @@ export function array<A>(): Ix<ReadonlyArray<A>, number, A> {
  */
 export function record<A>(): Ix<Record<string, A>, string, A> {
   return Ix((k) =>
-    POptional({
+    Op.POptional({
       getOrModify: (r) =>
         pipe(
           r,

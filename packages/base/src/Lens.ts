@@ -1,24 +1,25 @@
 import type { GetFn, Getter } from './Getter'
+import type * as O from './Maybe'
+import type { NonEmptyArray } from './NonEmptyArray/core'
 import type { Optional, POptional } from './Optional'
+import type { Predicate } from './Predicate'
 import type { PPrism } from './Prism'
+import type { Refinement } from './Refinement'
 import type { ReplaceFn_ } from './Setter'
 import type { PTraversal, Traversal } from './Traversal'
-import type * as O from '@principia/base/Maybe'
-import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
-import type { Predicate } from '@principia/base/Predicate'
-import type { Refinement } from '@principia/base/Refinement'
 import type { List } from '@principia/typelevel/List'
 import type { AutoPath, Path } from '@principia/typelevel/Object'
 
-import * as A from '@principia/base/Array'
-import * as E from '@principia/base/Either'
-import { flow, identity, pipe } from '@principia/base/function'
-import * as HKT from '@principia/base/HKT'
-import * as P from '@principia/base/prelude'
-
+import * as A from './Array/core'
 import * as At from './At'
-import * as _ from './internal'
+import { flow, identity, pipe } from './function'
+import * as HKT from './HKT'
+import * as L from './internal/Lens'
+import * as Op from './internal/Optional'
+import * as Pr from './internal/Prism'
+import * as Tr from './internal/Traversal'
 import * as Ix from './Ix'
+import * as P from './prelude'
 
 /*
  * -------------------------------------------
@@ -33,11 +34,11 @@ export interface PLensMin<S, T, A, B> {
   readonly replace_: ReplaceFn_<S, T, B>
 }
 
-export const PLens: <S, T, A, B>(_: PLensMin<S, T, A, B>) => PLens<S, T, A, B> = _.makePLens
+export const PLens: <S, T, A, B>(_: PLensMin<S, T, A, B>) => PLens<S, T, A, B> = L.makePLens
 
 export interface Lens<S, A> extends PLens<S, S, A, A> {}
 
-export const Lens: <S, A>(_: PLensMin<S, S, A, A>) => Lens<S, A> = _.makePLens
+export const Lens: <S, A>(_: PLensMin<S, S, A, A>) => Lens<S, A> = L.makePLens
 
 export interface LensF extends HKT.HKT {
   readonly type: Lens<this['I'], this['A']>
@@ -60,7 +61,7 @@ export interface LensF extends HKT.HKT {
  * @since 1.0.0
  */
 export function andThenPrism_<S, T, A, B, C, D>(sa: PLens<S, T, A, B>, ab: PPrism<A, B, C, D>): POptional<S, T, C, D> {
-  return _.optionalAndThenOptional(sa, ab)
+  return Op.andThen_(sa, ab)
 }
 
 /**
@@ -85,7 +86,7 @@ export function andThenOptional_<S, T, A, B, C, D>(
   sa: PLens<S, T, A, B>,
   ab: POptional<A, B, C, D>
 ): POptional<S, T, C, D> {
-  return _.optionalAndThenOptional(sa, ab)
+  return Op.andThen_(sa, ab)
 }
 
 /**
@@ -104,7 +105,7 @@ export function andThenTraversal_<S, T, A, B, C, D>(
   sa: PLens<S, T, A, B>,
   ab: PTraversal<A, B, C, D>
 ): PTraversal<S, T, C, D> {
-  return _.traversalAndThenTraversal(sa, ab)
+  return Tr.andThen_(sa, ab)
 }
 
 export function andThenTraversal<A, B, C, D>(
@@ -205,7 +206,7 @@ export const Invariant: P.Invariant<LensF> = HKT.instance({
  * @since 1.0.0
  */
 export function fromNullable<S, A>(sa: Lens<S, A>): Optional<S, NonNullable<A>> {
-  return andThenPrism_(sa, _.prismFromNullable<A>())
+  return andThenPrism_(sa, Pr.fromNullable<A>())
 }
 
 /**
@@ -215,7 +216,7 @@ export function fromNullable<S, A>(sa: Lens<S, A>): Optional<S, NonNullable<A>> 
 export function filter<A, B extends A>(refinement: Refinement<A, B>): <S>(sa: Lens<S, A>) => Optional<S, B>
 export function filter<A>(predicate: Predicate<A>): <S>(sa: Lens<S, A>) => Optional<S, A>
 export function filter<A>(predicate: Predicate<A>): <S>(sa: Lens<S, A>) => Optional<S, A> {
-  return andThenPrism(_.prismFromPredicate(predicate))
+  return andThenPrism(Pr.fromPredicate(predicate))
 }
 
 export function prop_<S, A, P extends keyof A>(lens: Lens<S, A>, prop: P): Lens<S, A[P]> {
@@ -420,29 +421,29 @@ export function atKey(key: string) {
     pipe(sa, andThen(At.atRecord<A>().at(key)))
 }
 
-/**
- * Return a `Optional` from a `Lens` focused on the `Just` of a `Maybe` type
- *
- * @category Combinators
- * @since 1.0.0
- */
-export const just: <S, A>(soa: Lens<S, O.Maybe<A>>) => Optional<S, A> = andThenPrism(_.prismJust())
+// /**
+//  * Return a `Optional` from a `Lens` focused on the `Just` of a `Maybe` type
+//  *
+//  * @category Combinators
+//  * @since 1.0.0
+//  */
+// export const just: <S, A>(soa: Lens<S, O.Maybe<A>>) => Optional<S, A> = andThenPrism(_.prismJust())
 
-/**
- * Return a `Optional` from a `Lens` focused on the `Right` of a `Either` type
- *
- * @category Combinators
- * @since 1.0.0
- */
-export const right: <S, E, A>(sea: Lens<S, E.Either<E, A>>) => Optional<S, A> = andThenPrism(_.prismRight())
+// /**
+//  * Return a `Optional` from a `Lens` focused on the `Right` of a `Either` type
+//  *
+//  * @category Combinators
+//  * @since 1.0.0
+//  */
+// export const right: <S, E, A>(sea: Lens<S, E.Either<E, A>>) => Optional<S, A> = andThenPrism(_.prismRight())
 
-/**
- * Return a `Optional` from a `Lens` focused on the `Left` of a `Either` type
- *
- * @category Combinators
- * @since 1.0.0
- */
-export const left: <S, E, A>(sea: Lens<S, E.Either<E, A>>) => Optional<S, E> = andThenPrism(_.prismLeft())
+// /**
+//  * Return a `Optional` from a `Lens` focused on the `Left` of a `Either` type
+//  *
+//  * @category Combinators
+//  * @since 1.0.0
+//  */
+// export const left: <S, E, A>(sea: Lens<S, E.Either<E, A>>) => Optional<S, E> = andThenPrism(_.prismLeft())
 
 /**
  * Return a `Traversal` from a `Lens` focused on a `Traversable`
@@ -453,7 +454,7 @@ export const left: <S, E, A>(sea: Lens<S, E.Either<E, A>>) => Optional<S, E> = a
 export function traverse<T extends HKT.HKT, C = HKT.None>(
   T: P.Traversable<T, C>
 ): <S, K, Q, W, X, I, S_, R, E, A>(sta: Lens<S, HKT.Kind<T, C, K, Q, W, X, I, S_, R, E, A>>) => Traversal<S, A> {
-  return flow(andThenTraversal(_.fromTraversable(T)()))
+  return flow(andThenTraversal(Tr.fromTraversable(T)()))
 }
 
 /**
@@ -461,6 +462,6 @@ export function traverse<T extends HKT.HKT, C = HKT.None>(
  * @since 1.0.0
  */
 export const findl: <A>(predicate: Predicate<A>) => <S>(sa: Lens<S, ReadonlyArray<A>>) => Optional<S, A> = flow(
-  _.findFirst,
+  Op.findFirst,
   andThenOptional
 )

@@ -1,12 +1,11 @@
+import type * as HKT from './HKT'
+import type * as M from './Maybe'
 import type { ReplaceFn_ } from './Setter'
 import type { PTraversal } from './Traversal'
-import type * as HKT from '@principia/base/HKT'
-import type * as M from '@principia/base/Maybe'
 
-import * as E from '@principia/base/Either'
-import { flow, identity, pipe } from '@principia/base/function'
-
-import * as _ from './internal'
+import * as E from './Either'
+import { flow, identity, pipe } from './function'
+import * as Op from './internal/Optional'
 
 /*
  * -------------------------------------------
@@ -26,11 +25,11 @@ export interface POptionalMin<S, T, A, B> {
   readonly replace_: ReplaceFn_<S, T, B>
 }
 
-export const POptional: <S, T, A, B>(_: POptionalMin<S, T, A, B>) => POptional<S, T, A, B> = _.makePOptional
+export const POptional: <S, T, A, B>(_: POptionalMin<S, T, A, B>) => POptional<S, T, A, B> = Op.makePOptional
 
 export interface Optional<S, A> extends POptional<S, S, A, A> {}
 
-export const Optional: <S, A>(_: POptionalMin<S, S, A, A>) => Optional<S, A> = _.makePOptional
+export const Optional: <S, A>(_: POptionalMin<S, S, A, A>) => Optional<S, A> = Op.makePOptional
 
 export interface GetMaybeFn<S, A> {
   (s: S): M.Maybe<A>

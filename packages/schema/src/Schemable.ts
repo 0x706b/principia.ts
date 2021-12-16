@@ -16,14 +16,14 @@ import type {
 import type { TaggedUnionS } from './Schema/taggedUnion'
 import type { CastToNumber } from './util'
 import type { Chunk } from '@principia/base/Chunk'
+import type { Iso } from '@principia/base/Iso'
 import type { Maybe } from '@principia/base/Maybe'
 import type { Newtype } from '@principia/base/Newtype'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type { Eq, Predicate } from '@principia/base/prelude'
+import type { Prism } from '@principia/base/Prism'
 import type { Refinement } from '@principia/base/Refinement'
 import type { Primitive, UnionToIntersection } from '@principia/base/util/types'
-import type { Iso } from '@principia/optics/Iso'
-import type { Prism } from '@principia/optics/Prism'
 
 export interface URItoSchemable<I, CI, E, CE, A, O> {}
 

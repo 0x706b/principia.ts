@@ -1,21 +1,21 @@
 import type { PLens } from './Lens'
-import type { PrismURI } from './Modules'
+import type { Maybe } from './Maybe'
+import type { Newtype } from './Newtype'
 import type { GetOrModifyFn, Optional, POptional } from './Optional'
+import type { Predicate } from './Predicate'
+import type { Refinement } from './Refinement'
 import type { PTraversal, Traversal } from './Traversal'
-import type { Maybe } from '@principia/base/Maybe'
-import type { Newtype } from '@principia/base/Newtype'
-import type { Predicate } from '@principia/base/Predicate'
-import type { Refinement } from '@principia/base/Refinement'
-
-import * as E from '@principia/base/Either'
-import { flow, identity, pipe } from '@principia/base/function'
-import * as HKT from '@principia/base/HKT'
-import * as P from '@principia/base/prelude'
 
 import * as At from './At'
-import * as _ from './internal'
+import * as E from './Either'
+import { flow, identity, pipe } from './function'
+import * as HKT from './HKT'
+import * as Op from './internal/Optional'
+import * as Pr from './internal/Prism'
+import * as Tr from './internal/Traversal'
 import * as Ix from './Ix'
 import * as L from './Lens'
+import * as P from './prelude'
 
 export interface PPrism<S, T, A, B> extends POptional<S, T, A, B> {
   readonly reverseGet: ReverseGetFn<T, B>
@@ -26,7 +26,7 @@ export interface PPrismMin<S, T, A, B> {
   readonly reverseGet: ReverseGetFn<T, B>
 }
 
-export const PPrism: <S, T, A, B>(_: PPrismMin<S, T, A, B>) => PPrism<S, T, A, B> = _.makePPrism
+export const PPrism: <S, T, A, B>(_: PPrismMin<S, T, A, B>) => PPrism<S, T, A, B> = Pr.makePPrism
 
 export interface ReverseGetFn<T, B> {
   (b: B): T
@@ -34,7 +34,7 @@ export interface ReverseGetFn<T, B> {
 
 export interface Prism<S, A> extends PPrism<S, S, A, A> {}
 
-export const Prism: <S, A>(_: PPrismMin<S, S, A, A>) => Prism<S, A> = _.makePPrism
+export const Prism: <S, A>(_: PPrismMin<S, S, A, A>) => Prism<S, A> = Pr.makePPrism
 
 export type _S<X> = X extends Prism<infer S, any> ? S : never
 export type _A<X> = X extends Prism<any, infer A> ? A : never
@@ -60,7 +60,7 @@ export interface PrismF extends HKT.HKT {
 export function fromPredicate<S, A extends S>(refinement: Refinement<S, A>): Prism<S, A>
 export function fromPredicate<A>(predicate: Predicate<A>): Prism<A, A>
 export function fromPredicate<A>(predicate: Predicate<A>): Prism<A, A> {
-  return _.prismFromPredicate(predicate)
+  return Pr.fromPredicate(predicate)
 }
 
 /*
@@ -76,7 +76,7 @@ export function fromPredicate<A>(predicate: Predicate<A>): Prism<A, A> {
  * @since 1.0.0
  */
 export function andThenLens_<S, T, A, B, C, D>(sa: PPrism<S, T, A, B>, ab: PLens<A, B, C, D>): POptional<S, T, C, D> {
-  return _.optionalAndThenOptional(sa, ab)
+  return Op.andThen_(sa, ab)
 }
 
 /**
@@ -101,7 +101,7 @@ export function andThenOptional_<S, T, A, B, C, D>(
   sa: PPrism<S, T, A, B>,
   ab: POptional<A, B, C, D>
 ): POptional<S, T, C, D> {
-  return _.optionalAndThenOptional(sa, ab)
+  return Op.andThen_(sa, ab)
 }
 
 /**
@@ -120,7 +120,7 @@ export function andThenTraversal_<S, T, A, B, C, D>(
   sa: PPrism<S, T, A, B>,
   ab: PTraversal<A, B, C, D>
 ): PTraversal<S, T, C, D> {
-  return _.traversalAndThenTraversal(sa, ab)
+  return Tr.andThen_(sa, ab)
 }
 
 export function andThenTraversal<A, B, C, D>(
@@ -383,7 +383,7 @@ export function atKey(key: string): <S, A>(sa: Prism<S, Readonly<Record<string, 
  * @category Combinators
  * @since 1.0.0
  */
-export const just: <S, A>(soa: Prism<S, Maybe<A>>) => Prism<S, A> = andThen(_.prismJust())
+export const just: <S, A>(soa: Prism<S, Maybe<A>>) => Prism<S, A> = andThen(Pr.prismJust())
 
 /**
  * Return a `Prism` from a `Prism` focused on the `Right` of a `Either` type
@@ -391,7 +391,7 @@ export const just: <S, A>(soa: Prism<S, Maybe<A>>) => Prism<S, A> = andThen(_.pr
  * @category Combinators
  * @since 1.0.0
  */
-export const right: <S, E, A>(sea: Prism<S, E.Either<E, A>>) => Prism<S, A> = andThen(_.prismRight())
+export const right: <S, E, A>(sea: Prism<S, E.Either<E, A>>) => Prism<S, A> = andThen(Pr.prismRight())
 
 /**
  * Return a `Prism` from a `Prism` focused on the `Left` of a `Either` type
@@ -399,7 +399,7 @@ export const right: <S, E, A>(sea: Prism<S, E.Either<E, A>>) => Prism<S, A> = an
  * @category Combinators
  * @since 1.0.0
  */
-export const left: <S, E, A>(sea: Prism<S, E.Either<E, A>>) => Prism<S, E> = andThen(_.prismLeft())
+export const left: <S, E, A>(sea: Prism<S, E.Either<E, A>>) => Prism<S, E> = andThen(Pr.prismLeft())
 
 /**
  * Return a `Traversal` from a `Prism` focused on a `Traversable`
@@ -410,7 +410,7 @@ export const left: <S, E, A>(sea: Prism<S, E.Either<E, A>>) => Prism<S, E> = and
 export function traverse<T extends HKT.HKT, C = HKT.None>(
   T: P.Traversable<T, C>
 ): <S, K, Q, W, X, I, S_, R, E, A>(sta: Prism<S, HKT.Kind<T, C, K, Q, W, X, I, S_, R, E, A>>) => Traversal<S, A> {
-  return andThenTraversal(_.fromTraversable(T)())
+  return andThenTraversal(Tr.fromTraversable(T)())
 }
 
 /**
@@ -418,7 +418,7 @@ export function traverse<T extends HKT.HKT, C = HKT.None>(
  * @since 1.0.0
  */
 export const findFirst: <A>(predicate: Predicate<A>) => <S>(sa: Prism<S, ReadonlyArray<A>>) => Optional<S, A> = flow(
-  _.findFirst,
+  Op.findFirst,
   andThenOptional
 )
 

@@ -1,21 +1,20 @@
-import type { TraversalURI } from './Modules'
-import type * as HKT from '@principia/base/HKT'
-import type * as M from '@principia/base/Maybe'
-import type { Predicate } from '@principia/base/Predicate'
-import type { Refinement } from '@principia/base/Refinement'
+import type * as HKT from './HKT'
+import type * as M from './Maybe'
+import type { Predicate } from './Predicate'
+import type { Refinement } from './Refinement'
 
-import * as A from '@principia/base/Array'
-import * as C from '@principia/base/Const'
-import * as E from '@principia/base/Either'
-import { identity, pipe } from '@principia/base/function'
-import * as I from '@principia/base/Identity'
-import * as P from '@principia/base/prelude'
-
+import * as A from './Array'
 import * as At from './At'
+import * as C from './Const'
+import * as E from './Either'
 import { Fold } from './Fold'
-import * as _ from './internal'
+import { identity, pipe } from './function'
+import * as I from './Identity'
+import * as Pr from './internal/Prism'
+import * as Tr from './internal/Traversal'
 import * as Ix from './Ix'
 import * as L from './Lens'
+import * as P from './prelude'
 import { PSetter } from './Setter'
 
 /*
@@ -85,7 +84,7 @@ export interface TraversalF extends HKT.HKT {
  * @category Constructors
  * @since 1.0.0
  */
-export const fromTraversable = _.fromTraversable
+export const fromTraversable = Tr.fromTraversable
 
 /*
  * -------------------------------------------
@@ -113,7 +112,7 @@ export function andThen_<S, T, A, B, C, D>(
   sa: PTraversal<S, T, A, B>,
   ab: PTraversal<A, B, C, D>
 ): PTraversal<S, T, C, D> {
-  return _.traversalAndThenTraversal(sa, ab)
+  return Tr.andThen_(sa, ab)
 }
 
 /**
@@ -162,7 +161,7 @@ export function replace<A>(a: A): <S>(sa: Traversal<S, A>) => (s: S) => S {
 export function filter<A, B extends A>(refinement: Refinement<A, B>): <S>(sa: Traversal<S, A>) => Traversal<S, B>
 export function filter<A>(predicate: Predicate<A>): <S>(sa: Traversal<S, A>) => Traversal<S, A>
 export function filter<A>(predicate: Predicate<A>): <S>(sa: Traversal<S, A>) => Traversal<S, A> {
-  return andThen(_.prismFromPredicate(predicate))
+  return andThen(Pr.fromPredicate(predicate))
 }
 
 /**
@@ -172,7 +171,7 @@ export function filter<A>(predicate: Predicate<A>): <S>(sa: Traversal<S, A>) => 
  * @since 1.0.0
  */
 export function prop<A, P extends keyof A>(prop: P): <S>(sa: Traversal<S, A>) => Traversal<S, A[P]> {
-  return andThen(pipe(_.lensId<A, A>(), L.prop(prop)))
+  return andThen(pipe(L.id<A, A>(), L.prop(prop)))
 }
 
 /**
@@ -189,7 +188,7 @@ export function props<A, P extends keyof A>(
     [K in P]: A[K]
   }
 > {
-  return andThen(pipe(_.lensId<A, A>(), L.props(...props)))
+  return andThen(pipe(L.id<A, A>(), L.props(...props)))
 }
 
 /**
@@ -201,7 +200,7 @@ export function props<A, P extends keyof A>(
 export function component<A extends ReadonlyArray<unknown>, P extends keyof A>(
   prop: P
 ): <S>(sa: Traversal<S, A>) => Traversal<S, A[P]> {
-  return andThen(pipe(_.lensId<A, A>(), L.component(prop)))
+  return andThen(pipe(L.id<A, A>(), L.component(prop)))
 }
 
 /**
@@ -240,7 +239,7 @@ export function atKey<S, A>(sa: Traversal<S, Readonly<Record<string, A>>>, key: 
  * @category Combinators
  * @since 1.0.0
  */
-export const just: <S, A>(soa: Traversal<S, M.Maybe<A>>) => Traversal<S, A> = andThen(_.prismJust())
+export const just: <S, A>(soa: Traversal<S, M.Maybe<A>>) => Traversal<S, A> = andThen(Pr.prismJust())
 
 /**
  * Return a `Traversal` from a `Traversal` focused on the `Right` of a `Either` type
@@ -248,7 +247,7 @@ export const just: <S, A>(soa: Traversal<S, M.Maybe<A>>) => Traversal<S, A> = an
  * @category Combinators
  * @since 1.0.0
  */
-export const right: <S, E, A>(sea: Traversal<S, E.Either<E, A>>) => Traversal<S, A> = andThen(_.prismRight())
+export const right: <S, E, A>(sea: Traversal<S, E.Either<E, A>>) => Traversal<S, A> = andThen(Pr.prismRight())
 
 /**
  * Return a `Traversal` from a `Traversal` focused on the `Left` of a `Either` type
@@ -256,7 +255,7 @@ export const right: <S, E, A>(sea: Traversal<S, E.Either<E, A>>) => Traversal<S,
  * @category Combinators
  * @since 1.0.0
  */
-export const left: <S, E, A>(sea: Traversal<S, E.Either<E, A>>) => Traversal<S, E> = andThen(_.prismLeft())
+export const left: <S, E, A>(sea: Traversal<S, E.Either<E, A>>) => Traversal<S, E> = andThen(Pr.prismLeft())
 
 /**
  * Return a `Traversal` from a `Traversal` focused on a `Traversable`

@@ -1,10 +1,9 @@
 import type { Lens } from './Lens'
 
-import * as M from '@principia/base/Maybe'
-import * as R from '@principia/base/Record'
-
-import * as _ from './internal'
+import { makePLens } from './internal/Lens'
 import * as Iso from './Iso'
+import * as M from './Maybe'
+import * as R from './Record'
 
 type Iso<S, A> = Iso.Iso<S, A>
 
@@ -27,7 +26,7 @@ export function At<S, I, A>(at: AtMin<S, I, A>): At<S, I, A> {
     return at
   } else {
     return {
-      at: (i) => _.makePLens({ get: at.get(i), replace_: at.set(i) })
+      at: (i) => makePLens({ get: at.get(i), replace_: at.set(i) })
     }
   }
 }
@@ -55,7 +54,7 @@ export function fromIso<T, S>(iso: Iso<T, S>): <I, A>(sia: At<S, I, A>) => At<T,
 export function atRecord<A = never>(): At<Readonly<Record<string, A>>, string, M.Maybe<A>> {
   return At({
     at: (key) =>
-      _.makePLens({
+      makePLens({
         get: (r) => R.lookup_(r, key),
         replace_: (s, b) =>
           M.match_(

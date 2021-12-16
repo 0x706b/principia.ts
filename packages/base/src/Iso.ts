@@ -1,15 +1,13 @@
 import type { GetFn } from './Getter'
 import type { PLens } from './Lens'
-import type { IsoURI } from './Modules'
+import type { Newtype } from './Newtype'
 import type { PPrism, ReverseGetFn } from './Prism'
-import type { Newtype } from '@principia/base/Newtype'
 
-import * as E from '@principia/base/Either'
-import { flow, identity } from '@principia/base/function'
-import * as HKT from '@principia/base/HKT'
-import * as P from '@principia/base/prelude'
-
-import * as _ from './internal'
+import { flow, identity } from './function'
+import * as HKT from './HKT'
+import * as Is from './internal/Iso'
+import * as L from './internal/Lens'
+import * as P from './prelude'
 
 /*
  * -------------------------------------------
@@ -26,11 +24,11 @@ export interface PIsoMin<S, T, A, B> {
   readonly reverseGet: ReverseGetFn<T, B>
 }
 
-export const PIso: <S, T, A, B>(_: PIsoMin<S, T, A, B>) => PIso<S, T, A, B> = _.makePIso
+export const PIso: <S, T, A, B>(_: PIsoMin<S, T, A, B>) => PIso<S, T, A, B> = Is.makePIso
 
 export interface Iso<S, A> extends PIso<S, S, A, A> {}
 
-export const Iso: <S, A>(_: PIsoMin<S, S, A, A>) => Iso<S, A> = _.makePIso
+export const Iso: <S, A>(_: PIsoMin<S, S, A, A>) => Iso<S, A> = Is.makePIso
 
 export interface IsoF extends HKT.HKT {
   readonly type: Iso<this['I'], this['A']>
@@ -41,7 +39,7 @@ export interface IsoF extends HKT.HKT {
 }
 
 export function andThenLens_<S, T, A, B, C, D>(sa: PIso<S, T, A, B>, ab: PLens<A, B, C, D>): PLens<S, T, C, D> {
-  return _.lensAndThenLens(sa, ab)
+  return L.andThen_(sa, ab)
 }
 
 export function andThenLens<A, B, C, D>(ab: PLens<A, B, C, D>): <S, T>(sa: PIso<S, T, A, B>) => PLens<S, T, C, D> {

@@ -1,6 +1,6 @@
+import type { Prism } from '@principia/base/Prism'
 import type { RoseTree } from '@principia/base/RoseTree'
 import type { Mutable } from '@principia/base/util/types'
-import type { Prism } from '@principia/optics/Prism'
 
 import * as A from '@principia/base/Array'
 import * as P from '@principia/base/prelude'

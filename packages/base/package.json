@@ -350,7 +350,8 @@
     ]
   },
   "dependencies": {
-    "@principia/compile": "^0.20.0"
+    "@principia/compile": "^0.20.0",
+    "@principia/typelevel": "^0.1.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.15.7",
