@@ -8,7 +8,7 @@ import { makePPrism } from './Prism'
 export function makePIso<S, T, A, B>(I: PIsoMin<S, T, A, B>): PIso<S, T, A, B> {
   return {
     ...makePPrism({ getOrModify: flow(I.get, E.right), reverseGet: I.reverseGet }),
-    ...makePLens({ get: I.get, replace_: (_s, b) => I.reverseGet(b) }),
+    ...makePLens({ get: I.get, set_: (_s, b) => I.reverseGet(b) }),
     reverse: () =>
       makePIso({
         get: I.reverseGet,

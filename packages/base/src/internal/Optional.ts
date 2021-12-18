@@ -46,15 +46,15 @@ export function andThen_<S, T, A, B, C, D>(
         E.chain(
           flow(
             ab.getOrModify,
-            E.bimap((b) => sa.replace_(s, b), identity)
+            E.bimap((b) => sa.set_(s, b), identity)
           )
         )
       ),
-    replace_: (s, d) => sa.modify_(s, ab.replace(d))
+    replace_: (s, d) => sa.modify_(s, ab.set(d))
   })
 }
 
-export function findFirst<A>(predicate: Predicate<A>): Optional<ReadonlyArray<A>, A> {
+export function fromFind<A>(predicate: Predicate<A>): Optional<ReadonlyArray<A>, A> {
   return makePOptional({
     getOrModify: (s) =>
       pipe(

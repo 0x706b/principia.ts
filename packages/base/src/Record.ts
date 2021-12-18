@@ -4,12 +4,16 @@ import type { PredicateWithIndex } from './Predicate'
 import type { RefinementWithIndex } from './Refinement'
 import type { Show } from './Show'
 
+import * as At from './At'
 import * as E from './Either'
 import { identity, pipe } from './function'
 import * as G from './Guard'
+import * as Ix from './Ix'
+import * as L from './Lens/core'
 import * as M from './Maybe'
+import * as Op from './Optional'
 import * as P from './prelude'
-import { tuple } from './tuple'
+import { tuple } from './tuple/core'
 
 const _hasOwnProperty = Object.prototype.hasOwnProperty
 
@@ -681,6 +685,52 @@ export const wilt_: P.WiltWithIndexFn_<RecordF> = (A) => (wa, f) => pipe(travers
  * @dataFirst wilt_
  */
 export const wilt: P.WiltWithIndexFn<RecordF> = (G) => (f) => (wa) => wilt_(G)(wa, f)
+
+/**
+ * @category Constructors
+ * @since 1.0.0
+ */
+export function getIx<A>(): Ix.Ix<Record<string, A>, string, A> {
+  return Ix.Ix((k) =>
+    Op.POptional({
+      getOrModify: (r) =>
+        pipe(
+          r,
+          lookup(k),
+          M.match(() => E.left(r), E.right)
+        ),
+      replace_: (r, a) => {
+        if (r[k] === a || M.isNothing(lookup_(r, k))) {
+          return r
+        }
+        return upsertAt_(r, k, a)
+      }
+    })
+  )
+}
+
+export function ix<A>(key: string): Op.Optional<ReadonlyRecord<string, A>, A> {
+  return getIx<A>().ix(key)
+}
+
+/**
+ * @category Constructors
+ * @since 1.0.0
+ */
+export function getAt<A = never>(): At.At<Readonly<Record<string, A>>, string, M.Maybe<A>> {
+  return At.At({
+    at: (key) =>
+      L.Lens({
+        get: (r) => lookup_(r, key),
+        set_: (s, b) =>
+          M.match_(
+            b,
+            () => deleteAt_(s, key),
+            (a) => upsertAt_(s, key, a)
+          )
+      })
+  })
+}
 
 /*
  * -------------------------------------------------------------------------------------------------

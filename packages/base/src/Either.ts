@@ -21,7 +21,7 @@ import * as M from './Maybe'
 import * as P from './prelude'
 import { tailRec_ } from './TailRec'
 import * as T from './These'
-import { tuple } from './tuple'
+import { tuple } from './tuple/core'
 
 /*
  * -------------------------------------------------------------------------------------------------

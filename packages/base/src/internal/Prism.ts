@@ -28,7 +28,7 @@ export function andThen_<S, T, A, B, C, D>(sa: PPrism<S, T, A, B>, ab: PPrism<A,
         E.chain(
           flow(
             ab.getOrModify,
-            E.bimap((b) => sa.replace_(s, b), identity)
+            E.bimap((b) => sa.set_(s, b), identity)
           )
         )
       ),

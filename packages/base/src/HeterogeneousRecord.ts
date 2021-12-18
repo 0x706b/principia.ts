@@ -5,12 +5,15 @@ import type * as HKT from './HKT'
 import type { NonEmptyArray } from './NonEmptyArray'
 import type { EnforceNonEmptyRecord, UnionToIntersection } from './prelude'
 import type { ReadonlyRecord } from './Record'
+import type { List } from '@principia/typelevel/List'
+import type { AutoPath, Path } from '@principia/typelevel/Object'
 
 import * as A from './Array/core'
 import * as Eq from './Eq'
 import * as Ev from './Eval'
 import { pipe, unsafeCoerce } from './function'
 import * as G from './Guard'
+import * as L from './Lens/core'
 import * as P from './prelude'
 import * as R from './Record'
 import * as S from './Show'
@@ -370,6 +373,152 @@ function _intersect<A extends ReadonlyArray<Record<string, any>>>(
 
 export function intersect<A extends ReadonlyArray<Record<string, any>>>(...members: A): UnionToIntersection<A[number]> {
   return _intersect(...members).value
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Lens
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function getPropL<A extends Record<string, any>>() {
+  return <P extends keyof A>(prop: P): L.Lens<A, A[P]> =>
+    L.PLens({
+      get: (s) => s[prop],
+      set_: (s, ap) => {
+        if (ap === s[prop]) {
+          return s
+        }
+        return Object.assign({}, s, { [prop]: ap })
+      }
+    })
+}
+
+export function propL_<S, A, P extends keyof A>(sa: L.Lens<S, A>, prop: P): L.Lens<S, A[P]> {
+  return L.andThen_(sa, getPropL<A>()(prop))
+}
+
+/**
+ * @dataFirst propL_
+ */
+export function propL<A, P extends keyof A>(prop: P): <S>(sa: L.Lens<S, A>) => L.Lens<S, A[P]> {
+  return (sa) => propL_(sa, prop)
+}
+
+export function getPropsL<A extends Record<string, any>>() {
+  return <P extends keyof A>(...props: [P, P, ...Array<P>]): L.Lens<A, { [K in P]: A[K] }> =>
+    L.PLens({
+      get: (a) => {
+        const r: { [K in P]?: A[K] } = {}
+        for (const k of props) {
+          r[k] = a[k]
+        }
+        return r as any
+      },
+      set_: (s, a) => {
+        for (const k of props) {
+          if (a[k] !== s[k]) {
+            return Object.assign({}, s, a)
+          }
+        }
+        return s
+      }
+    })
+}
+
+export function propsL_<S, A, P extends keyof A>(
+  sa: L.Lens<S, A>,
+  ...props: [P, P, ...Array<P>]
+): L.Lens<S, { [K in P]: A[K] }> {
+  return L.andThen_(sa, getPropsL<A>()(...props))
+}
+
+/**
+ * @dataFirst propsL_
+ */
+export function propsL<A, P extends keyof A>(
+  ...props: [P, P, ...Array<P>]
+): <S>(sa: L.Lens<S, A>) => L.Lens<S, { [K in P]: A[K] }> {
+  return (sa) => propsL_(sa, ...props)
+}
+
+function nestPath<A>(p: NonEmptyArray<string>, a: A): {} {
+  const out = {}
+  let view  = out
+  let last  = ''
+
+  for (let i = 0; i < p.length; i++) {
+    view[p[i]] = {}
+    if (!(i === p.length - 1)) {
+      view = view[p[i]]
+    }
+    last = p[i]
+  }
+
+  view[last] = a
+  return out
+}
+
+/**
+ * Return a `Lens` from a `Lens` and a path
+ *
+ * @category Combinators
+ * @since 1.0.0
+ */
+export function pathL_<S, A, P extends List<string>>(
+  sa: L.Lens<S, A>,
+  path: [...AutoPath<A, P>]
+): L.Lens<S, Path<A, P>> {
+  return L.PLens({
+    get: (s) =>
+      pipe(
+        path,
+        A.foldl(sa.get(s), (b, p) => b[p as string])
+      ) as Path<A, P>,
+    set_: (s, a) => {
+      const os = sa.get(s)
+      const oa = pipe(
+        path,
+        A.foldl(os, (b, p) => b[p as string])
+      )
+      if (a === oa) {
+        return s
+      }
+      return sa.set_(s, Object.assign({}, os, A.isNonEmpty(path) ? nestPath(path, a) : a))
+    }
+  })
+}
+
+/**
+ * Return a `Lens` from a `Lens` and a path
+ *
+ * @category Combinators
+ * @since 1.0.0
+ *
+ * @dataFirst pathL_
+ */
+export function pathL<A, P extends List<string>>(
+  path: [...AutoPath<A, P>]
+): <S>(lens: L.Lens<S, A>) => L.Lens<S, Path<A, P>> {
+  return (sa) =>
+    L.PLens({
+      get: (s) =>
+        pipe(
+          path,
+          A.foldl(sa.get(s), (b, p) => b[p as string])
+        ) as Path<A, P>,
+      set_: (s, a) => {
+        const os = sa.get(s)
+        const oa = pipe(
+          path,
+          A.foldl(os, (b, p) => b[p as string])
+        )
+        if (a === oa) {
+          return s
+        }
+        return sa.set_(s, Object.assign({}, os, A.isNonEmpty(path) ? nestPath(path, a) : a))
+      }
+    })
 }
 
 /*

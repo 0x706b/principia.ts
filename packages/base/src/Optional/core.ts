@@ -1,14 +1,14 @@
-import type * as M from './Maybe'
-import type { SetFn_ } from './Setter'
-import type { PTraversal, Traversal } from './Traversal'
+import type * as M from '../Maybe'
+import type * as P from '../prelude'
+import type { SetFn_ } from '../Setter'
+import type { PTraversal, Traversal } from '../Traversal'
 
-import * as E from './Either'
-import { flow, identity, pipe } from './function'
-import * as HKT from './HKT'
-import * as Op from './internal/Optional'
-import * as Pr from './internal/Prism'
-import * as P from './prelude'
-import * as Tr from './Traversal'
+import * as E from '../Either'
+import { flow, identity, pipe } from '../function'
+import * as HKT from '../HKT'
+import * as Op from '../internal/Optional'
+import * as Pr from '../internal/Prism'
+import * as Tr from '../Traversal'
 
 /*
  * -------------------------------------------
@@ -150,11 +150,6 @@ export function andThenTraversal<A, B, C, D>(
 ): <S, T>(sa: POptional<S, T, A, B>) => PTraversal<S, T, C, D> {
   return (sa) => andThenTraversal_(sa, ab)
 }
-
-export const Category: P.Category<OptionalF> = P.Category({
-  id,
-  andThen_
-})
 
 /*
  * -------------------------------------------------------------------------------------------------

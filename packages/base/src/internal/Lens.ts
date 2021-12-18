@@ -7,21 +7,21 @@ import { makePOptional } from './Optional'
 
 export function makePLens<S, T, A, B>(L: PLensMin<S, T, A, B>): PLens<S, T, A, B> {
   return {
-    ...makePOptional({ replace_: L.replace_, getOrModify: flow(L.get, E.right) }),
+    ...makePOptional({ replace_: L.set_, getOrModify: flow(L.get, E.right) }),
     ...makeGetter({ get: L.get })
   }
 }
 
-export function id<S, T>(): PLens<S, T, S, T> {
+export function id<S, T = S>(): PLens<S, T, S, T> {
   return makePLens({
     get: identity,
-    replace_: (_, t) => t
+    set_: (_, t) => t
   })
 }
 
 export function andThen_<S, T, A, B, C, D>(sa: PLens<S, T, A, B>, ab: PLens<A, B, C, D>): PLens<S, T, C, D> {
   return makePLens({
     get: flow(sa.get, ab.get),
-    replace_: (s, d) => sa.modify_(s, ab.replace(d))
+    set_: (s, d) => sa.modify_(s, ab.set(d))
   })
 }

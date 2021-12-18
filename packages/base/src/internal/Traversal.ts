@@ -13,7 +13,7 @@ export function makePTraversal<S, T, A, B>(Tr: PTraversalMin<S, T, A, B>): PTrav
     modifyA: (F) => (f) => (s) => Tr.modifyA_(F)(s, f),
     ...PSetter({
       modify_: (s, f) => Tr.modifyA_(I.Applicative)(s, f),
-      replace_: (s, b) => Tr.modifyA_(I.Applicative)(s, () => b)
+      set_: (s, b) => Tr.modifyA_(I.Applicative)(s, () => b)
     }),
     ...makeFold({
       foldMap_:

@@ -1437,12 +1437,12 @@ export function findIndex<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) 
  * @category combinators
  * @since 1.0.0
  */
-export function find_<A, B extends A>(as: ReadonlyArray<A>, refinement: P.Refinement<A, B>): Maybe<B>
-export function find_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Maybe<A>
-export function find_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Maybe<A> {
+export function find_<A, B extends A>(as: ReadonlyArray<A>, refinement: P.RefinementWithIndex<number, A, B>): Maybe<B>
+export function find_<A>(as: ReadonlyArray<A>, predicate: P.PredicateWithIndex<number, A>): Maybe<A>
+export function find_<A>(as: ReadonlyArray<A>, predicate: P.PredicateWithIndex<number, A>): Maybe<A> {
   const len = as.length
   for (let i = 0; i < len; i++) {
-    if (predicate(as[i])) {
+    if (predicate(as[i], i)) {
       return M.just(as[i])
     }
   }
@@ -1454,9 +1454,9 @@ export function find_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Maybe
  * @since 1.0.0
  * @dataFirst find_
  */
-export function find<A, B extends A>(refinement: P.Refinement<A, B>): (as: ReadonlyArray<A>) => Maybe<B>
-export function find<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Maybe<A>
-export function find<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) => Maybe<A> {
+export function find<A, B extends A>(refinement: P.RefinementWithIndex<number, A, B>): (as: ReadonlyArray<A>) => Maybe<B>
+export function find<A>(predicate: P.PredicateWithIndex<number, A>): (as: ReadonlyArray<A>) => Maybe<A>
+export function find<A>(predicate: P.PredicateWithIndex<number, A>): (as: ReadonlyArray<A>) => Maybe<A> {
   return (as) => find_(as, predicate)
 }
 

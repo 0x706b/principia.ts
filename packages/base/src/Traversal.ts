@@ -1,19 +1,14 @@
 import type * as HKT from './HKT'
-import type * as M from './Maybe'
 import type { Predicate } from './Predicate'
 import type { Refinement } from './Refinement'
 
-import * as A from './Array'
-import * as At from './At'
+import * as A from './Array/core'
 import * as C from './Const'
-import * as E from './Either'
 import { Fold } from './Fold'
-import { identity, pipe } from './function'
+import { identity } from './function'
 import * as I from './Identity'
 import * as Pr from './internal/Prism'
 import * as Tr from './internal/Traversal'
-import * as Ix from './Ix'
-import * as L from './Lens'
 import * as P from './prelude'
 import { PSetter } from './Setter'
 
@@ -51,7 +46,7 @@ export function PTraversal<S, T, A, B>(F: PTraversalMin<S, T, A, B>): PTraversal
     modifyA: (A) => (f) => (s) => F.modifyA_(A)(s, f),
     ...PSetter({
       modify_: (s, f) => F.modifyA_(I.Applicative)(s, f),
-      replace_: (s, b) => F.modifyA_(I.Applicative)(s, () => b)
+      set_: (s, b) => F.modifyA_(I.Applicative)(s, () => b)
     }),
     ...Fold({
       foldMap_:
@@ -165,99 +160,6 @@ export function filter<A>(predicate: Predicate<A>): <S>(sa: Traversal<S, A>) => 
 }
 
 /**
- * Return a `Traversal` from a `Traversal` and a prop
- *
- * @category Combinators
- * @since 1.0.0
- */
-export function prop<A, P extends keyof A>(prop: P): <S>(sa: Traversal<S, A>) => Traversal<S, A[P]> {
-  return andThen(pipe(L.id<A, A>(), L.prop(prop)))
-}
-
-/**
- * Return a `Traversal` from a `Traversal` and a list of props
- *
- * @category Combinators
- * @since 1.0.0
- */
-export function props<A, P extends keyof A>(
-  ...props: [P, P, ...Array<P>]
-): <S>(sa: Traversal<S, A>) => Traversal<
-  S,
-  {
-    [K in P]: A[K]
-  }
-> {
-  return andThen(pipe(L.id<A, A>(), L.props(...props)))
-}
-
-/**
- * Return a `Traversal` from a `Traversal` and a component
- *
- * @category Combinators
- * @since 1.0.0
- */
-export function component<A extends ReadonlyArray<unknown>, P extends keyof A>(
-  prop: P
-): <S>(sa: Traversal<S, A>) => Traversal<S, A[P]> {
-  return andThen(pipe(L.id<A, A>(), L.component(prop)))
-}
-
-/**
- * Return a `Traversal` from a `Traversal` focused on a `ReadonlyArray`
- *
- * @category Combinators
- * @since 1.0.0
- */
-export function index(i: number) {
-  return <S, A>(sa: Traversal<S, ReadonlyArray<A>>): Traversal<S, A> => pipe(sa, andThen(Ix.array<A>().index(i)))
-}
-
-/**
- * Return a `Traversal` from a `Traversal` focused on a `ReadonlyRecord` and a key
- *
- * @category Combinators
- * @since 1.0.0
- */
-export function key<S, A>(sa: Traversal<S, Readonly<Record<string, A>>>, key: string): Traversal<S, A> {
-  return pipe(sa, andThen(Ix.record<A>().index(key)))
-}
-
-/**
- * Return a `Traversal` from a `Traversal` focused on a `ReadonlyRecord` and a required key
- *
- * @category Combinators
- * @since 1.0.0
- */
-export function atKey<S, A>(sa: Traversal<S, Readonly<Record<string, A>>>, key: string): Traversal<S, M.Maybe<A>> {
-  return pipe(sa, andThen(At.atRecord<A>().at(key)))
-}
-
-/**
- * Return a `Traversal` from a `Traversal` focused on the `Just` of a `Maybe` type
- *
- * @category Combinators
- * @since 1.0.0
- */
-export const just: <S, A>(soa: Traversal<S, M.Maybe<A>>) => Traversal<S, A> = andThen(Pr.prismJust())
-
-/**
- * Return a `Traversal` from a `Traversal` focused on the `Right` of a `Either` type
- *
- * @category Combinators
- * @since 1.0.0
- */
-export const right: <S, E, A>(sea: Traversal<S, E.Either<E, A>>) => Traversal<S, A> = andThen(Pr.prismRight())
-
-/**
- * Return a `Traversal` from a `Traversal` focused on the `Left` of a `Either` type
- *
- * @category Combinators
- * @since 1.0.0
- */
-export const left: <S, E, A>(sea: Traversal<S, E.Either<E, A>>) => Traversal<S, E> = andThen(Pr.prismLeft())
-
-/**
  * Return a `Traversal` from a `Traversal` focused on a `Traversable`
  *
  * @category Combinators
@@ -289,12 +191,16 @@ export function fold<A>(M: P.Monoid<A>): <S>(sa: Traversal<S, A>) => (s: S) => A
   return foldMap(M)(identity)
 }
 
+export function getAll_<S, A>(sa: Traversal<S, A>, s: S): ReadonlyArray<A> {
+  return sa.foldMap_(A.getMonoid<A>())(s, A.pure)
+}
+
 /**
  * Get all the targets of a `Traversal`.
  *
  * @category Combinators
  * @since 1.0.0
  */
-export function getAll<S>(s: S) {
-  return <A>(sa: Traversal<S, A>): ReadonlyArray<A> => foldMap(A.getMonoid<A>())((a: A) => [a])(sa)(s)
+export function getAll<S>(s: S): <A>(sa: Traversal<S, A>) => ReadonlyArray<A> {
+  return (sa) => getAll_(sa, s)
 }
