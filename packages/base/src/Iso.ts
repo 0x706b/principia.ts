@@ -1,6 +1,6 @@
 import type { GetFn } from './Getter'
 import type { PLens } from './Lens'
-import type { Newtype } from './Newtype'
+import type * as NT from './Newtype'
 import type { PPrism, ReverseGetFn } from './Prism'
 
 import { flow, identity } from './function'
@@ -135,7 +135,7 @@ export const Invariant: P.Invariant<IsoF> = HKT.instance({
  * -------------------------------------------
  */
 
-export function newtype<T extends Newtype<any, any>>(): Iso<T['_A'], T> {
+export function newtype<T extends NT.Newtype<any, any>>(): Iso<NT.TypeOf<T>, T> {
   return PIso({
     get: (_) => _ as any,
     reverseGet: (_) => _ as any
