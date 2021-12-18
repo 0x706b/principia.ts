@@ -1,29 +1,24 @@
-import { identity, unsafeCoerce } from './function'
+import { unsafeCoerce } from './function'
+import * as Iso from './Iso'
 
-export interface Newtype<URI, A> {
-  readonly _URI: URI
-  readonly _A: A
+export declare const NewtypeId: unique symbol
+
+export interface Newtype<URI extends string, A> {
+  _URI: URI
+  _A: A
 }
 
 export type AnyNewtype = Newtype<any, any>
 
-export interface Constructor<T, URI> {
-  URI: URI
-  wrap: {
-    /**
-     * @optimize identity
-     */
-    (_: T): Newtype<URI, T>
-  }
-  unwrap: {
-    /**
-     * @optimize identity
-     */
-    (_: Newtype<URI, T>): T
-  }
-}
+export type GenericNewtypeOf<T, K extends GenericConstructor<any>> = [K] extends [GenericConstructor<infer URI>]
+  ? Newtype<URI, T>
+  : never
 
-export interface GenericConstructor<URI> {
+export type TypeOf<N extends Newtype<any, any>> = N['_A']
+
+export type URIOf<N extends Newtype<any, any>> = N['_URI']
+
+export interface GenericConstructor<URI extends string> {
   URI: URI
   wrap: {
     /**
@@ -37,49 +32,33 @@ export interface GenericConstructor<URI> {
      */
     <T>(_: Newtype<URI, T>): T
   }
-  of: <T>() => Constructor<T, URI>
+  of: <T>() => NewtypeIso<Newtype<URI, T>>
 }
 
-export interface ConstructorK<T, URI, K extends Newtype<URI, T>> {
-  wrap: {
+export interface NewtypeIso<K extends Newtype<any, any>> extends Iso.Iso<TypeOf<K>, K> {
+  get: {
     /**
      * @optimize identity
      */
-    (_: T): K
+    (_: TypeOf<K>): K
   }
-  unwrap: {
+  reverseGet: {
     /**
      * @optimize identity
      */
-    (_: K): T
+    (_: K): TypeOf<K>
   }
 }
 
-export const typeDef = <T>() => <URI extends string>(URI: URI): Constructor<T, URI> => ({
-  URI,
-  wrap: unsafeCoerce,
-  unwrap: unsafeCoerce
-})
+export const newtype = <K extends Newtype<any, any>>(): NewtypeIso<K> =>
+  Iso.PIso({
+    get: unsafeCoerce,
+    reverseGet: unsafeCoerce
+  }) as any
 
 export const genericDef = <URI extends string>(URI: URI): GenericConstructor<URI> => ({
   URI,
   wrap: unsafeCoerce,
   unwrap: unsafeCoerce,
-  of: () => ({
-    URI,
-    wrap: unsafeCoerce,
-    unwrap: unsafeCoerce
-  })
+  of: <T>() => newtype<Newtype<URI, T>>()
 })
-
-export const newtype = <K extends Newtype<any, any>>() => (
-  _: Constructor<K['_A'], K['_URI']>
-): ConstructorK<K['_A'], K['_URI'], K> => _ as any
-
-export type TypeOf<T extends Constructor<any, any>> = [T] extends [Constructor<infer K, infer URI>]
-  ? Newtype<URI, K>
-  : never
-
-export type Generic<T, K extends GenericConstructor<any>> = [K] extends [GenericConstructor<infer URI>]
-  ? Newtype<URI, T>
-  : never

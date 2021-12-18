@@ -20,9 +20,8 @@ import * as fs from 'fs'
 
 type ErrnoException = NodeJS.ErrnoException
 
-const _FileDescriptor = N.typeDef<number>()('FileDescriptor')
-export interface FileDescriptor extends N.TypeOf<typeof _FileDescriptor> {}
-export const FileDescriptor = N.newtype<FileDescriptor>()(_FileDescriptor)
+export interface FileDescriptor extends N.Newtype<'FileDescriptor', number> {}
+export const FileDescriptor = N.newtype<FileDescriptor>()
 
 function unitErrorCallback(cb: (_: IO<unknown, ErrnoException, void>) => void): (err: ErrnoException | null) => void {
   return (err) => (err ? cb(I.fail(err)) : cb(I.unit()))
@@ -52,7 +51,7 @@ export function chmod(path: fs.PathLike, mode: fs.Mode): I.FIO<ErrnoException, v
 
 export function close(fd: FileDescriptor): I.FIO<ErrnoException, void> {
   return I.async<unknown, ErrnoException, void>((cb) => {
-    fs.close(FileDescriptor.unwrap(fd), (err) => (err ? cb(I.fail(err)) : cb(I.unit())))
+    fs.close(FileDescriptor.reverseGet(fd), (err) => (err ? cb(I.fail(err)) : cb(I.unit())))
   })
 }
 
@@ -85,8 +84,8 @@ export function createReadStream(
     open(path, options?.flags ?? fs.constants.O_RDONLY, options?.mode),
     I.crossPar(
       I.defer(() => {
-        const start = options?.start ? Integer.unwrap(options?.start) : 0
-        const end   = options?.end ? Integer.unwrap(options?.end) : Infinity
+        const start = options?.start ? Integer.reverseGet(options?.start) : 0
+        const end   = options?.end ? Integer.reverseGet(options?.end) : Infinity
         if (end < start) {
           return I.fail(new RangeError(`start (${start}) must be <= end (${end})`))
         } else {
@@ -136,7 +135,7 @@ export function createWriteSink<InErr>(
             Ma.bracket_(
               I.crossPar_(
                 open(path, options?.flags ?? fs.constants.O_CREAT | fs.constants.O_WRONLY, options?.mode),
-                Ref.make(options?.start ? Integer.unwrap(options.start) : undefined)
+                Ref.make(options?.start ? Integer.reverseGet(options.start) : undefined)
               ),
               ([fd, _]) => I.orHalt(close(fd))
             ),
@@ -183,37 +182,37 @@ export function createWriteSink<InErr>(
 
 export function fchmod(fd: FileDescriptor, mode: fs.Mode): I.FIO<ErrnoException, void> {
   return I.async<unknown, ErrnoException, void>((cb) => {
-    fs.fchmod(FileDescriptor.unwrap(fd), mode, unitErrorCallback(cb))
+    fs.fchmod(FileDescriptor.reverseGet(fd), mode, unitErrorCallback(cb))
   })
 }
 
 export function fchown(fd: FileDescriptor, uid: number, gid: number): I.FIO<ErrnoException, void> {
   return I.async<unknown, ErrnoException, void>((cb) => {
-    fs.fchown(FileDescriptor.unwrap(fd), uid, gid, unitErrorCallback(cb))
+    fs.fchown(FileDescriptor.reverseGet(fd), uid, gid, unitErrorCallback(cb))
   })
 }
 
 export function fdatasync(fd: FileDescriptor): I.FIO<ErrnoException, void> {
   return I.async<unknown, ErrnoException, void>((cb) => {
-    fs.fdatasync(FileDescriptor.unwrap(fd), unitErrorCallback(cb))
+    fs.fdatasync(FileDescriptor.reverseGet(fd), unitErrorCallback(cb))
   })
 }
 
 export function fstat(fd: FileDescriptor): I.FIO<ErrnoException, fs.Stats> {
   return I.async<unknown, ErrnoException, fs.Stats>((cb) => {
-    fs.fstat(FileDescriptor.unwrap(fd), (err, stats) => (err ? cb(I.fail(err)) : cb(I.succeed(stats))))
+    fs.fstat(FileDescriptor.reverseGet(fd), (err, stats) => (err ? cb(I.fail(err)) : cb(I.succeed(stats))))
   })
 }
 
 export function fsync(fd: FileDescriptor): I.FIO<ErrnoException, void> {
   return I.async<unknown, ErrnoException, void>((cb) => {
-    fs.fsync(FileDescriptor.unwrap(fd), unitErrorCallback(cb))
+    fs.fsync(FileDescriptor.reverseGet(fd), unitErrorCallback(cb))
   })
 }
 
 export function ftruncate(fd: FileDescriptor, len: number): I.FIO<ErrnoException, void> {
   return I.async<unknown, ErrnoException, void>((cb) => {
-    fs.ftruncate(FileDescriptor.unwrap(fd), len, unitErrorCallback(cb))
+    fs.ftruncate(FileDescriptor.reverseGet(fd), len, unitErrorCallback(cb))
   })
 }
 
@@ -223,7 +222,7 @@ export function futimes(
   mtime: string | number | Date
 ): I.FIO<ErrnoException, void> {
   return I.async<unknown, ErrnoException, void>((cb) => {
-    fs.futimes(FileDescriptor.unwrap(fd), atime, mtime, unitErrorCallback(cb))
+    fs.futimes(FileDescriptor.reverseGet(fd), atime, mtime, unitErrorCallback(cb))
   })
 }
 
@@ -282,7 +281,7 @@ export function open(
   mode?: string | number
 ): I.FIO<NodeJS.ErrnoException, FileDescriptor> {
   return I.async<unknown, ErrnoException, FileDescriptor>((cb) => {
-    fs.open(path, flags, mode ?? null, (err, fd) => (err ? cb(I.fail(err)) : cb(I.succeed(FileDescriptor.wrap(fd)))))
+    fs.open(path, flags, mode ?? null, (err, fd) => (err ? cb(I.fail(err)) : cb(I.succeed(FileDescriptor.get(fd)))))
   })
 }
 
@@ -320,7 +319,7 @@ export function read(
 ): I.FIO<ErrnoException, readonly [number, Buffer]> {
   return I.async<unknown, ErrnoException, readonly [number, Buffer]>((cb) => {
     const buf = Buffer.alloc(length)
-    fs.read(FileDescriptor.unwrap(fd), buf, 0, length, position ?? null, (err, bytesRead, buffer) =>
+    fs.read(FileDescriptor.reverseGet(fd), buf, 0, length, position ?? null, (err, bytesRead, buffer) =>
       err ? cb(I.fail(err)) : cb(I.succeed([bytesRead, buffer]))
     )
   })
@@ -481,7 +480,7 @@ export function utimes(
 export function write(fd: FileDescriptor, buffer: Chunk<Byte>, position?: number): I.FIO<ErrnoException, number> {
   return I.async<unknown, ErrnoException, number>((cb) => {
     const b = C.toBuffer(buffer)
-    fs.write(FileDescriptor.unwrap(fd), b, position ?? null, b.byteLength, (err, bytesWritten) =>
+    fs.write(FileDescriptor.reverseGet(fd), b, position ?? null, b.byteLength, (err, bytesWritten) =>
       err ? cb(I.fail(err)) : cb(I.succeed(bytesWritten))
     )
   })
@@ -518,11 +517,11 @@ export function writev(
 ): I.FIO<ErrnoException, number> {
   return I.async<unknown, ErrnoException, number>((cb) => {
     if (position) {
-      fs.writev(FileDescriptor.unwrap(fd), buffers, position, (err, bytesWritten) =>
+      fs.writev(FileDescriptor.reverseGet(fd), buffers, position, (err, bytesWritten) =>
         err ? cb(I.fail(err)) : cb(I.succeed(bytesWritten))
       )
     } else {
-      fs.writev(FileDescriptor.unwrap(fd), buffers, (err, bytesWritten) =>
+      fs.writev(FileDescriptor.reverseGet(fd), buffers, (err, bytesWritten) =>
         err ? cb(I.fail(err)) : cb(I.succeed(bytesWritten))
       )
     }
