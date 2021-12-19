@@ -7,7 +7,7 @@ import * as Ma from '../Managed'
 import * as M from '../Maybe'
 import * as Q from '../Queue'
 import * as Ref from '../Ref'
-import { tuple } from '../tuple'
+import { tuple } from '../tuple/core'
 import * as S from './core'
 
 export class GroupBy<R, E, K, V, A> {

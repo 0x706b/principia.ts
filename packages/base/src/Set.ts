@@ -5,7 +5,7 @@ import * as A from './Array/core'
 import { identity } from './function'
 import { not } from './Predicate'
 import * as P from './prelude'
-import { tuple } from './tuple'
+import { tuple } from './tuple/core'
 
 /*
  * -------------------------------------------------------------------------------------------------

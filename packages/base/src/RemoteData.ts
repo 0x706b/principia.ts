@@ -8,7 +8,7 @@ import { flow, identity, pipe } from './function'
 import * as M from './Maybe'
 import * as N from './number'
 import * as P from './prelude'
-import { tuple } from './tuple'
+import { tuple } from './tuple/core'
 import { isObject } from './util/predicates'
 
 export interface RemoteDataF extends HKT.HKT {

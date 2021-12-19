@@ -8,7 +8,7 @@ import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compi
 import { sequential } from '../../ExecutionStrategy'
 import { flow, pipe } from '../../function'
 import * as Ex from '../../IO/Exit'
-import { tuple } from '../../tuple'
+import { tuple } from '../../tuple/core'
 import { Managed } from '../core'
 import * as I from '../internal/io'
 import { add, make } from '../ReleaseMap'

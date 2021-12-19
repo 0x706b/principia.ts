@@ -12,7 +12,7 @@ import * as I from '../IO'
 import * as Ex from '../IO/Exit'
 import * as Ma from '../Managed'
 import * as M from '../Maybe'
-import { tuple } from '../tuple'
+import { tuple } from '../tuple/core'
 import { AtomicReference } from '../util/support/AtomicReference'
 
 /**
@@ -276,9 +276,7 @@ export function matchSink<
 >(
   onFailure: (err: E) => Sink<R1, E1, In1, L1, Z1>,
   onSuccess: (z: Z) => Sink<R2, E2, In2, L2, Z2>
-): <R, L extends L0>(
-  sink: Sink<R, E, In, L0 | L, Z>
-) => Sink<R & R1 & R2, E1 | E2, In1 & In2, L1 | L2, Z1 | Z2> {
+): <R, L extends L0>(sink: Sink<R, E, In, L0 | L, Z>) => Sink<R & R1 & R2, E1 | E2, In1 & In2, L1 | L2, Z1 | Z2> {
   return (sink) => matchSink_(sink, onFailure, onSuccess)
 }
 

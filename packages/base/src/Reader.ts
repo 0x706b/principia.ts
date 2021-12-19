@@ -2,7 +2,7 @@ import type * as HKT from './HKT'
 
 import { flow, identity } from './function'
 import * as P from './prelude'
-import { tuple } from './tuple'
+import { tuple } from './tuple/core'
 
 /*
  * -------------------------------------------------------------------------------------------------

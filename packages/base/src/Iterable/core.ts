@@ -8,7 +8,7 @@ import { identity } from '../function'
 import * as It from '../internal/Iterable'
 import * as M from '../Maybe'
 import * as P from '../prelude'
-import { tuple } from '../tuple'
+import { tuple } from '../tuple/core'
 
 /*
  * -------------------------------------------------------------------------------------------------

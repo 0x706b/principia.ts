@@ -11,7 +11,7 @@ import * as M from '../Maybe'
 import { tailRec_ } from '../prelude'
 import * as Eq from '../Structural/Equatable'
 import * as Ha from '../Structural/Hashable'
-import { tuple } from '../tuple'
+import { tuple } from '../tuple/core'
 import { isObject } from '../util/predicates'
 
 /*

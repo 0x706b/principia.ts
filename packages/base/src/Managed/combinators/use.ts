@@ -5,7 +5,7 @@ import type { Managed } from '../core'
 import { accessCallTrace, traceAs, traceFrom } from '@principia/compile/util'
 
 import { sequential } from '../../ExecutionStrategy'
-import { tuple } from '../../tuple'
+import { tuple } from '../../tuple/core'
 import * as I from '../internal/io'
 import * as RM from '../ReleaseMap'
 import { releaseAll_ } from './releaseAll'

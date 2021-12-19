@@ -1,6 +1,6 @@
 import * as C from '../Chunk'
 import * as E from '../Either'
-import { tuple } from '../tuple'
+import { tuple } from '../tuple/core'
 
 export function zipChunks_<A, B, C>(
   fa: C.Chunk<A>,

@@ -8,7 +8,7 @@ import * as IO from '../../IO'
 import * as Ca from '../../IO/Cause'
 import * as Ex from '../../IO/Exit'
 import * as M from '../../Maybe'
-import { tuple } from '../../tuple'
+import { tuple } from '../../tuple/core'
 import { combineChunks_ } from '../core'
 import { zipChunks_ } from '../utils'
 

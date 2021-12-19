@@ -13,7 +13,7 @@ import * as M from './Maybe'
 import * as P from './prelude'
 import * as Equ from './Structural/Equatable'
 import * as Ha from './Structural/Hashable'
-import { tuple } from './tuple'
+import { tuple } from './tuple/core'
 
 type Eq<A> = Eq.Eq<A>
 

@@ -17,7 +17,7 @@ import * as I from './Iterable/core'
 import * as L from './List/core'
 import * as M from './Maybe'
 import * as P from './prelude'
-import { tuple } from './tuple'
+import { tuple } from './tuple/core'
 import { isObject } from './util/predicates'
 import { makeStack } from './util/support/Stack'
 

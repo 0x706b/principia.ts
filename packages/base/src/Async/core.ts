@@ -16,7 +16,7 @@ import * as M from '../Maybe'
 import { isMaybe } from '../Maybe'
 import * as P from '../prelude'
 import * as R from '../Record'
-import { tuple } from '../tuple'
+import { tuple } from '../tuple/core'
 import { makeStack } from '../util/support/Stack'
 
 /*

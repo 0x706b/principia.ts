@@ -8,7 +8,7 @@ import type { ReleaseMap } from '../ReleaseMap'
 import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
 import { pipe } from '../../function'
-import { tuple } from '../../tuple'
+import { tuple } from '../../tuple/core'
 import { Managed } from '../core'
 import * as I from '../internal/_io'
 

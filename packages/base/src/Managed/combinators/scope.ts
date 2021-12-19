@@ -6,7 +6,7 @@ import type { Finalizer } from '../ReleaseMap'
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
 import { pipe } from '../../function'
-import { tuple } from '../../tuple'
+import { tuple } from '../../tuple/core'
 import { map } from '../core'
 import * as I from '../internal/io'
 import { releaseMap } from './releaseMap'

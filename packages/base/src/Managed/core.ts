@@ -24,9 +24,9 @@ import * as Iter from '../Iterable'
 import * as M from '../Maybe'
 import * as R from '../Record'
 import * as Ref from '../Ref/core'
-import { tuple } from '../tuple'
+import { tuple } from '../tuple/core'
 import * as I from './internal/io'
-import { add, addIfOpen, make, noopFinalizer, release, updateAll } from './ReleaseMap'
+import { add, addIfOpen, noopFinalizer, release, updateAll } from './ReleaseMap'
 
 /*
  * -------------------------------------------------------------------------------------------------

@@ -7,7 +7,7 @@ import * as F from '../Future'
 import * as I from '../IO'
 import * as M from '../Maybe'
 import * as Ref from '../Ref'
-import { tuple } from '../tuple'
+import { tuple } from '../tuple/core'
 
 export class Handoff<A> {
   constructor(readonly ref: Ref.URef<State<A>>) {}

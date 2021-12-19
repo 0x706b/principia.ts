@@ -6,7 +6,7 @@ import * as M from './Maybe'
 import * as P from './prelude'
 import { $equals, equals } from './Structural/Equatable'
 import { $hash, combineHash, hash, hashString } from './Structural/Hashable'
-import { tuple } from './tuple'
+import { tuple } from './tuple/core'
 import { isObject } from './util/predicates'
 
 /*

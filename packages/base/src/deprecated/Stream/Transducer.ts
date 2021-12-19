@@ -20,7 +20,7 @@ import { not } from '../../Predicate'
 import * as Ref from '../../Ref'
 import * as RefM from '../../RefM'
 import * as Set from '../../Set'
-import { tuple } from '../../tuple'
+import { tuple } from '../../tuple/core'
 import { Sink } from './internal/Sink'
 import { Transducer } from './internal/Transducer'
 

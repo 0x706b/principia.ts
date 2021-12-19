@@ -9,7 +9,7 @@ import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compi
 import { parallel, sequential } from '../../ExecutionStrategy'
 import { identity } from '../../function'
 import * as R from '../../Record'
-import { tuple } from '../../tuple'
+import { tuple } from '../../tuple/core'
 import { map_, mapIO_ } from '../core'
 import * as I from '../internal/io'
 import { foreachPar_ } from './foreachPar'

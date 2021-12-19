@@ -3,7 +3,7 @@ import { pipe } from '../function'
 import * as I from '../IO'
 import * as M from '../Maybe'
 import * as Ref from '../Ref'
-import { tuple } from '../tuple'
+import { tuple } from '../tuple/core'
 import * as Pull from './Pull'
 
 export class BufferedPull<R, E, A> {

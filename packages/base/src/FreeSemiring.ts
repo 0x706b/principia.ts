@@ -14,7 +14,7 @@ import * as L from './List/core'
 import * as P from './prelude'
 import * as Eq from './Structural/Equatable'
 import * as Ha from './Structural/Hashable'
-import { tuple } from './tuple'
+import { tuple } from './tuple/core'
 import { isObject } from './util/predicates'
 import { LinkedList, LinkedListNode } from './util/support/LinkedList'
 

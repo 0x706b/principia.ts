@@ -3,7 +3,7 @@ import type * as HKT from './HKT'
 import type { ProfunctorCategory } from './ProfunctorCategory'
 
 import { identity, pipe } from './function'
-import { tuple } from './tuple'
+import { tuple } from './tuple/core'
 
 export interface Strong<F extends HKT.HKT, C = HKT.None> extends ProfunctorCategory<F, C> {
   readonly first: FirstFn<F, C>

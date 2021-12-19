@@ -8,7 +8,7 @@ import { not } from './Predicate'
 import * as P from './prelude'
 import * as Eq from './Structural/Equatable'
 import * as Ha from './Structural/Hashable'
-import { tuple } from './tuple'
+import { tuple } from './tuple/core'
 
 export class HashSet<V> implements Iterable<V>, Hashable, Equatable {
   constructor(readonly keyMap: HM.HashMap<V, any>) {}

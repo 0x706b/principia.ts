@@ -12,7 +12,7 @@ import * as Ca from '../../IO/Cause'
 import * as Ex from '../../IO/Exit'
 import * as M from '../../Maybe'
 import * as Ref from '../../Ref'
-import { tuple } from '../../tuple'
+import { tuple } from '../../tuple/core'
 import { ImmutableQueue } from '../../util/support/ImmutableQueue'
 
 export const StateDoneTag = Symbol()

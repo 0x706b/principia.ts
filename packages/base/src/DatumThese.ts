@@ -4,7 +4,7 @@ import * as Dt from './Datum'
 import { pipe } from './function'
 import * as P from './prelude'
 import * as T from './These'
-import { tuple } from './tuple'
+import { tuple } from './tuple/core'
 
 export type DatumThese<E, A> = Dt.Datum<T.These<E, A>>
 

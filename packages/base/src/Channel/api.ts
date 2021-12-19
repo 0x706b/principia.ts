@@ -26,7 +26,7 @@ import { isObject } from '../prelude'
 import * as Q from '../Queue'
 import * as Ref from '../Ref'
 import * as Sem from '../Semaphore'
-import { tuple } from '../tuple'
+import { tuple } from '../tuple/core'
 import {
   BracketOut,
   Bridge,

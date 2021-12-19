@@ -12,7 +12,7 @@ import * as I from '../IO/core'
 import * as M from '../Maybe'
 import { Random } from '../Random'
 import * as Ref from '../Ref/core'
-import { tuple } from '../tuple'
+import { tuple } from '../tuple/core'
 import { done, makeContinue, makeDone, toDone } from './Decision'
 
 /*

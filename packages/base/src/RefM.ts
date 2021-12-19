@@ -12,7 +12,7 @@ import * as P from './prelude'
 import * as Q from './Queue'
 import * as R from './Ref'
 import * as S from './Semaphore'
-import { tuple } from './tuple'
+import { tuple } from './tuple/core'
 
 /**
  * An `RefM<RA, RB, EA, EB, A, B>` is a polymorphic, purely functional

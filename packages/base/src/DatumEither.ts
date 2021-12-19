@@ -5,7 +5,7 @@ import * as E from './Either'
 import { constFalse, flow, identity } from './function'
 import * as M from './Maybe'
 import * as P from './prelude'
-import { tuple } from './tuple'
+import { tuple } from './tuple/core'
 
 export type DatumEither<E, A> = Dt.Datum<E.Either<E, A>>
 

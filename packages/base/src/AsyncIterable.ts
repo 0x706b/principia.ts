@@ -4,7 +4,7 @@ import type { Maybe } from './Maybe'
 
 import { identity } from './function'
 import * as P from './prelude'
-import { tuple } from './tuple'
+import { tuple } from './tuple/core'
 
 export interface AsyncIterableF extends HKT.HKT {
   readonly type: AsyncIterable<this['A']>

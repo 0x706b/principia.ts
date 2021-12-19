@@ -17,7 +17,7 @@ import * as P from '../prelude'
 import * as Equ from '../Structural/Equatable'
 import * as Ha from '../Structural/Hashable'
 import * as Th from '../These'
-import { tuple } from '../tuple'
+import { tuple } from '../tuple/core'
 import { isByte } from '../util/predicates'
 import { AtomicNumber } from '../util/support/AtomicNumber'
 

@@ -4,7 +4,7 @@ import type { Exit } from '../IO/Exit'
 import type { AsyncInputProducer } from './internal/producer'
 
 import * as Ex from '../Exit'
-import { tuple } from '../tuple'
+import { tuple } from '../tuple/core'
 
 export const ChannelTag = {
   PipeTo: 'PipeTo',

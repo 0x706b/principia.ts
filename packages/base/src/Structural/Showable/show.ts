@@ -28,7 +28,7 @@ import {
   isWeakSet
 } from '../../prelude'
 import * as str from '../../string'
-import { tuple } from '../../tuple'
+import { tuple } from '../../tuple/core'
 import * as Z from '../../Z'
 import { $show, isShowable } from './core'
 import { stylizeNoColor, stylizeWithColor } from './styles'
