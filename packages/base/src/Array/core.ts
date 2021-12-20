@@ -11,7 +11,7 @@ import { identity, pipe, unsafeCoerce } from '../function'
 import { GenLazyHKT, genWithHistoryF } from '../Gen'
 import * as G from '../Guard'
 import * as HKT from '../HKT'
-import * as _ from '../internal/Array'
+import * as A from '../internal/Array'
 import * as E from '../internal/Either'
 import * as Th from '../internal/These'
 import { tuple } from '../internal/tuple'
@@ -75,7 +75,7 @@ export function fromBuffer(as: Uint8Array): ReadonlyArray<Byte> {
  * @since 1.0.0
  */
 export function makeBy<A>(n: number, f: (i: number) => A): ReadonlyArray<A> {
-  return n <= 0 ? empty() : _.makeBy(n, f)
+  return n <= 0 ? empty() : A.makeBy(n, f)
 }
 
 /**
@@ -106,9 +106,9 @@ export function isEmpty<A>(as: ReadonlyArray<A>): boolean {
   return as.length === 0
 }
 
-export const isNonEmpty = _.isNonEmpty
+export const isNonEmpty = A.isNonEmpty
 
-export const isOutOfBound_: <A>(as: ReadonlyArray<A>, i: number) => boolean = _.isOutOfBound_
+export const isOutOfBound_: <A>(as: ReadonlyArray<A>, i: number) => boolean = A.isOutOfBound_
 
 export function isOutOfBound(i: number): <A>(as: ReadonlyArray<A>) => boolean {
   return (as) => isOutOfBound_(as, i)
@@ -161,16 +161,6 @@ export const pure: <A>(a: A) => NonEmptyArray<A> = NEA.pure
  * Apply
  * -------------------------------------------------------------------------------------------------
  */
-
-/**
- * Apply a function to an argument under a type constructor
- *
- * @category Apply
- * @since 1.0.0
- */
-export function _ap<A, B>(fa: ReadonlyArray<A>, fab: ReadonlyArray<(a: A) => B>): ReadonlyArray<B> {
-  return chain_(fab, (f) => map_(fa, f))
-}
 
 /**
  * Apply a function to an argument under a type constructor
@@ -541,7 +531,7 @@ export function partitionMap<A, B, C>(
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export const foldl_: <A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, a: A, i: number) => B) => B = _.foldl_
+export const foldl_: <A, B>(fa: ReadonlyArray<A>, b: B, f: (b: B, a: A, i: number) => B) => B = A.foldl_
 
 /**
  * @category FoldableWithIndex
@@ -557,7 +547,7 @@ export function foldl<A, B>(b: B, f: (b: B, a: A, i: number) => B): (fa: Readonl
  * @category FoldableWithIndex
  * @since 1.0.0
  */
-export const foldr_: <A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, b: B, i: number) => B) => B = _.foldr_
+export const foldr_: <A, B>(fa: ReadonlyArray<A>, b: B, f: (a: A, b: B, i: number) => B) => B = A.foldr_
 
 /**
  * @category FoldableWithIndex
@@ -1454,7 +1444,9 @@ export function find_<A>(as: ReadonlyArray<A>, predicate: P.PredicateWithIndex<n
  * @since 1.0.0
  * @dataFirst find_
  */
-export function find<A, B extends A>(refinement: P.RefinementWithIndex<number, A, B>): (as: ReadonlyArray<A>) => Maybe<B>
+export function find<A, B extends A>(
+  refinement: P.RefinementWithIndex<number, A, B>
+): (as: ReadonlyArray<A>) => Maybe<B>
 export function find<A>(predicate: P.PredicateWithIndex<number, A>): (as: ReadonlyArray<A>) => Maybe<A>
 export function find<A>(predicate: P.PredicateWithIndex<number, A>): (as: ReadonlyArray<A>) => Maybe<A> {
   return (as) => find_(as, predicate)

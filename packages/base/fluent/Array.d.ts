@@ -177,14 +177,14 @@ export interface ArrayOps {
   alignWith<T, B, C>(this: ReadonlyArray<T>, fb: ReadonlyArray<B>, f: (_: These<T, B>) => C): ReadonlyArray<C>
 
   /**
-   * @rewrite _ap from "@principia/base/NonEmptyArray"
+   * @rewrite ap_ from "@principia/base/NonEmptyArray"
    */
-  ap<A, B>(this: NonEmptyArray<A>, fab: NonEmptyArray<(a: A) => B>): NonEmptyArray<B>
+  ap<A, B>(this: NonEmptyArray<(a: A) => B>, fa: NonEmptyArray<A>): NonEmptyArray<B>
 
   /**
-   * @rewrite _ap from "@principia/base/Array"
+   * @rewrite ap_ from "@principia/base/Array"
    */
-  ap<T, B>(this: ReadonlyArray<T>, fab: ReadonlyArray<(a: T) => B>): ReadonlyArray<B>
+  ap<A, B>(this: ReadonlyArray<(a: A) => B>, fa: ReadonlyArray<A>): ReadonlyArray<B>
 
   /**
    * @rewrite append_ from "@principia/base/NonEmptyArray"
