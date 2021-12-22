@@ -276,7 +276,6 @@ function foreachConcurrentBounded_<R, E, A, B>(
  * @trace 1
  */
 export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E, any>): I.IO<R, E, void> {
-  console.log(as)
   return concurrencyWith(
     M.match(
       () => foreachConcurrentUnboundedUnit_(as, f),
@@ -313,7 +312,6 @@ export function foreachUnitPar<R, E, A>(f: (a: A) => I.IO<R, E, any>): (as: Iter
  * @trace 1
  */
 export function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Ch.Chunk<B>> {
-  console.log(as)
   return concurrencyWith(
     M.match(
       () => foreachConcurrentUnbounded_(as, f),

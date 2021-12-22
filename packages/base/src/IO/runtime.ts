@@ -9,8 +9,8 @@ import { isTracingEnabled } from '@principia/compile/util'
 import { ClockTag, LiveClock } from '../Clock'
 import { ConsoleTag, LiveConsole } from '../Console'
 import { interruptible, newFiberId, showFiberId } from '../Fiber'
-import { constVoid, flow, identity } from '../function'
 import { FiberContext } from '../Fiber/FiberContext'
+import { constVoid, flow, identity, pipe } from '../function'
 import { Platform } from '../internal/Platform'
 import * as M from '../Maybe'
 import { defaultRandom, RandomTag } from '../Random'
@@ -68,9 +68,10 @@ export class CustomRuntime<R, A> {
     const scope      = Scope.unsafeMakeScope<Exit<E, A>>()
     const supervisor = this.platform.supervisor
 
+    const ioWithEnvironment = pipe(effect, I.give(this.env))
+
     const context = new FiberContext<E, A>(
       fiberId,
-      this.env,
       initialIS,
       new Map(),
       supervisor,
@@ -83,11 +84,11 @@ export class CustomRuntime<R, A> {
 
     // @ts-expect-error
     if (supervisor !== Super.none) {
-      supervisor.unsafeOnStart(this.env, effect, M.nothing(), context)
-      context.onDone((exit) => supervisor.unsafeOnEnd(Ex.flatten(exit), context))
+      supervisor.unsafeOnStart(this.env, ioWithEnvironment, M.nothing(), context)
+      context.awaitAsync((exit) => supervisor.unsafeOnEnd(exit, context))
     }
 
-    context.evaluateLater(I.concrete(effect))
+    context.unsafeRunLater(I.concrete(ioWithEnvironment))
 
     return context
   }
