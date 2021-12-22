@@ -466,7 +466,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
         )
         this.state.set(newState)
         const interrupt = failCause(interruptedCause)
-        this.evaluateLater(concrete(interrupt))
+        this.evaluateLater(concrete(chain_(oldState.asyncCanceller.asyncCanceller, () => interrupt)))
       } else if (oldState._tag === 'Executing') {
         const newCause = C.then(oldState.suppressed, interruptedCause)
         this.state.set(

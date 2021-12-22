@@ -91,11 +91,6 @@
     "@principia/base": "^0.28.4",
     "@principia/compile": "^0.20.0"
   },
-  "publishConfig": {
-    "access": "public",
-    "directory": "dist"
-  },
-  "gitHead": "450312aae828b332a7d7a48a99796db0ff98d35d",
   "devDependencies": {
     "@babel/cli": "^7.16.0",
     "concurrently": "^6.4.0",
@@ -105,5 +100,10 @@
     "ts-node": "^10.4.0",
     "ts-patch": "^2.0.1",
     "typescript": "^4.5.4"
-  }
+  },
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
+  },
+  "gitHead": "450312aae828b332a7d7a48a99796db0ff98d35d"
 }

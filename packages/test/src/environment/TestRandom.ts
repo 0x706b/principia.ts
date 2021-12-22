@@ -115,7 +115,7 @@ export class TestRandom implements Random {
       if (i === length) {
         return I.map_(acc, Li.reverse)
       } else if (n > 0) {
-        return I.chain_(rnd, (rnd) => loop(i + 1, I.succeed(rnd >> 8), n - 1, I.map_(acc, Li.prepend(Byte.wrap(rnd)))))
+        return I.chain_(rnd, (rnd) => loop(i + 1, I.succeed(rnd >> 8), n - 1, I.map_(acc, Li.prepend(Byte.get(rnd)))))
       } else {
         return loop(i, this.nextInt, Math.min(length - i, 4), acc)
       }

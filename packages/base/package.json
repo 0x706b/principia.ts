@@ -154,6 +154,14 @@
       "import": "./dist/dist/esm/Layer/index.js",
       "require": "./dist/dist/cjs/Layer/index.js"
     },
+    "./Lens": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/Lens/index.js",
+        "require": "./dist/dist-traced/cjs/Lens/index.js"
+      },
+      "import": "./dist/dist/esm/Lens/index.js",
+      "require": "./dist/dist/cjs/Lens/index.js"
+    },
     "./List": {
       "traced": {
         "import": "./dist/dist-traced/esm/List/index.js",
@@ -186,6 +194,14 @@
       "import": "./dist/dist/esm/NonEmptyArray/index.js",
       "require": "./dist/dist/cjs/NonEmptyArray/index.js"
     },
+    "./Optional": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/Optional/index.js",
+        "require": "./dist/dist-traced/cjs/Optional/index.js"
+      },
+      "import": "./dist/dist/esm/Optional/index.js",
+      "require": "./dist/dist/cjs/Optional/index.js"
+    },
     "./Pool": {
       "traced": {
         "import": "./dist/dist-traced/esm/Pool/index.js",
@@ -201,6 +217,14 @@
       },
       "import": "./dist/dist/esm/prelude/index.js",
       "require": "./dist/dist/cjs/prelude/index.js"
+    },
+    "./Prism": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/Prism/index.js",
+        "require": "./dist/dist-traced/cjs/Prism/index.js"
+      },
+      "import": "./dist/dist/esm/Prism/index.js",
+      "require": "./dist/dist/cjs/Prism/index.js"
     },
     "./Queue": {
       "traced": {
@@ -298,6 +322,14 @@
       "import": "./dist/dist/esm/SyncRef/index.js",
       "require": "./dist/dist/cjs/SyncRef/index.js"
     },
+    "./tuple": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/tuple/index.js",
+        "require": "./dist/dist-traced/cjs/tuple/index.js"
+      },
+      "import": "./dist/dist/esm/tuple/index.js",
+      "require": "./dist/dist/cjs/tuple/index.js"
+    },
     "./util/pattern": {
       "traced": {
         "import": "./dist/dist-traced/esm/util/pattern/index.js",
@@ -329,11 +361,11 @@
   "scripts": {
     "autofix": "yarn lint --fix",
     "build": "concurrently \"yarn build:types\" \"yarn build:esm\" \"yarn build:cjs\"",
+    "build:bench": "tsc --build ./config/tsconfig.bench.json --verbose",
     "build:cjs": "tsc --build ./config/tsconfig.cjs.json",
     "build:esm": "tsc --build ./config/tsconfig.esm.json && babel dist/dist/esm/ -d dist/dist/esm/ -s --plugins annotate-pure-calls",
     "build:postprocess": "yarn ts-node ../../scripts/rewrite-source-maps.ts && yarn ts-node ../../scripts/package.ts && yarn sort-package-json ./dist/package.json && yarn prettier --write ./dist/package.json && cpx \"./fluent/**/*.d.ts\" \"./dist/fluent\"",
     "build:test": "tsc --build ./config/tsconfig.test.json --verbose",
-    "build:bench": "tsc --build ./config/tsconfig.bench.json --verbose",
     "build:traced": "concurrently \"yarn build:traced:esm\" \"yarn build:traced:cjs\"",
     "build:traced:cjs": "tsc --build ./config/tsconfig.traced.cjs.json",
     "build:traced:esm": "tsc --build ./config/tsconfig.traced.esm.json && babel dist/dist-traced/esm/ -d dist/dist-traced/esm/ -s --plugins annotate-pure-calls",

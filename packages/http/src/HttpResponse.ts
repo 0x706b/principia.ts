@@ -50,8 +50,8 @@ interface UnpipeEvent {
 
 export type ResponseEvent = CloseEvent | DrainEvent | ErrorEvent | FinishEvent | PipeEvent | UnpipeEvent
 
-export const HttpResponseCompleted = NT.typeDef<void>()('HttpResponseCompleted')
-export interface HttpResponseCompleted extends NT.TypeOf<typeof HttpResponseCompleted> {}
+export interface HttpResponseCompleted extends NT.Newtype<'HttpResponseCompleted', void> {}
+export const HttpResponseCompleted = NT.newtype<HttpResponseCompleted>()
 
 export class HttpResponse {
   eventStream: Ma.Managed<unknown, never, S.Stream<unknown, never, ResponseEvent>>

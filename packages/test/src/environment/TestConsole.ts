@@ -82,7 +82,11 @@ export class TestConsole implements Console {
       I.crossSecond(I.whenIO_(this.live.provide(Console.putStrLnDebug(line)), FR.get(this.debugState)))
     )
   }
-  constructor(readonly consoleState: URef<ConsoleData>, readonly live: Live, readonly debugState: FiberRef<boolean>) {}
+  constructor(
+    readonly consoleState: URef<ConsoleData>,
+    readonly live: Live,
+    readonly debugState: FiberRef<never, never, boolean, boolean>
+  ) {}
   clearInput: UIO<void> = Ref.update_(this.consoleState, (data) => data.copy({ input: Li.empty() }))
   clearOutput: UIO<void> = Ref.update_(this.consoleState, (data) => data.copy({ output: Li.empty() }))
   debug<R, E, A>(io: IO<R, E, A>): IO<R, E, A> {

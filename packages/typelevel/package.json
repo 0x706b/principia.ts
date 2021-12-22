@@ -48,12 +48,12 @@
     "lint": "eslint ."
   },
   "config": {},
-  "publishConfig": {
-    "access": "public",
-    "directory": "dist"
-  },
   "devDependencies": {
     "ts-patch": "^2.0.1",
     "typescript": "^4.5.4"
+  },
+  "publishConfig": {
+    "access": "public",
+    "directory": "dist"
   }
 }

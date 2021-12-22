@@ -217,7 +217,7 @@ function toArray<R, E>(routes: Routes<R, E>): ReadonlyArray<RouteMatch<R, E>> {
   return go(routes).value
 }
 
-export const isRouterDraining = new FR.FiberRef(false, identity, (a, b) => a && b)
+export const isRouterDraining = FR.unsafeMake(false, identity, (a, b) => a && b)
 
 type ProcessFn = (_: HttpConnection) => IO<unknown, never, HttpResponseCompleted>
 
