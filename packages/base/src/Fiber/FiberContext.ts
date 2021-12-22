@@ -207,11 +207,11 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   get isInterruptible() {
-    return this.interruptStatus ? this.interruptStatus.value : false
+    return this.interruptStatus ? this.interruptStatus.value : true
   }
 
   get isInterrupted() {
-    return this.state.get.interruptors.size !== 0
+    return this.state.get.interruptors.size > 0
   }
 
   get isInterrupting() {
@@ -577,8 +577,13 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     const oldState = this.state.get
 
     if (oldState._tag === 'Executing' && oldState.asyncCanceller._tag === 'Empty') {
-      const newStatus = new Status.Suspended(oldState.status, this.isInterruptible, epoch, blockingOn)
-      const newState  = new State.Executing(
+      const newStatus = new Status.Suspended(
+        oldState.status,
+        this.isInterruptible && !this.isInterrupting,
+        epoch,
+        blockingOn
+      )
+      const newState = new State.Executing(
         newStatus,
         oldState.observers,
         oldState.suppressed,
@@ -970,7 +975,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     const suppressed     = this.clearSuppressedCause()
                     const fullCause      = C.contains_(strippedCause, suppressed)
                       ? strippedCause
-                      : C.then(discardedFolds ? C.stripFailures(tracedCause) : tracedCause, this.clearSuppressedCause())
+                      : C.then(strippedCause, suppressed)
                     if (this.isStackEmpty) {
                       this.setInterrupting(true)
                       current = this.done(Ex.failCause(fullCause))
