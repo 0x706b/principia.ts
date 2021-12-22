@@ -5,8 +5,12 @@ import type { Managed } from '../core'
 
 import { accessCallTrace, traceCall } from '@principia/compile/util'
 
-import { bracketExit_ } from '../core'
+import { parallel, parallelN } from '../../ExecutionStrategy'
+import { pipe } from '../../function'
+import * as M from '../../Maybe'
+import { bracketExit_, chain } from '../core'
 import * as RM from '../ReleaseMap'
+import { concurrency } from './concurrency'
 import { releaseAll_ } from './releaseAll'
 
 /**
@@ -20,3 +24,13 @@ export function makeManagedReleaseMap(es: ExecutionStrategy): Managed<unknown, n
   const trace = accessCallTrace()
   return traceCall(bracketExit_, trace)(RM.make, (rm, e) => releaseAll_(rm, e, es))
 }
+
+export const makeManagedReleaseMapPar: Managed<unknown, never, RM.ReleaseMap> = pipe(
+  concurrency,
+  chain(
+    M.match(
+      () => makeManagedReleaseMap(parallel),
+      (n) => makeManagedReleaseMap(parallelN(n))
+    )
+  )
+)

@@ -1,4 +1,3 @@
-// codegen:start {preset: barrel, include: ./*.ts}
 export * from './apply'
 export * from './awaitAll'
 export * from './collectAll'
@@ -11,4 +10,3 @@ export * from './joinAll'
 export * from './mapFiber'
 export * from './never'
 export * from './toManaged'
-// codegen:end

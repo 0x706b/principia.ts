@@ -36,7 +36,7 @@ import { tuple } from '@principia/base/tuple'
 import { matchTag } from '@principia/base/util/match'
 
 import { AnnotationsTag, fibers } from '../Annotation'
-import { HashEqFiber, HashEqFiberId } from '../util'
+import { HashEqFiber, HashEqFiberId } from '../util/util'
 import { LiveTag } from './Live'
 
 export class Data {

@@ -74,10 +74,13 @@ export function succeed<E = never, A = never>(a: A): Managed<unknown, E, A> {
 export function fromIO<R, E, A>(effect: I.IO<R, E, A>) {
   const trace = accessCallTrace()
   return new Managed<R, E, A>(
-    I.map_(I.asksIO(traceFrom(trace, (_: readonly [R, ReleaseMap]) => I.give_(effect, _[0]))), (a) => [
-      noopFinalizer,
-      a
-    ])
+    I.uninterruptibleMask(({ restore }) =>
+      pipe(
+        restore(effect),
+        I.gives(([r, _]: readonly [R, ReleaseMap]) => r),
+        I.map((a) => tuple(noopFinalizer, a))
+      )
+    )
   )
 }
 

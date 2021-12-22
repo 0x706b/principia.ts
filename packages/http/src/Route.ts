@@ -223,9 +223,9 @@ type ProcessFn = (_: HttpConnection) => IO<unknown, never, HttpResponseCompleted
 
 export function drain<R>(rs: Routes<R, never>) {
   const routes = toArray(rs)
-  return I.gen(function* ($) {
-    const env = yield* $(I.ask<R>())
-    const pfn = yield* $(
+  return I.gen(function* (_) {
+    const env = yield* _(I.ask<R>())
+    const pfn = yield* _(
       I.succeedLazy(() =>
         A.foldl_(
           routes,
@@ -246,8 +246,8 @@ export function drain<R>(rs: Routes<R, never>) {
       )
     )
 
-    const { queue } = yield* $(HttpServerTag)
-    return yield* $(
+    const { queue } = yield* _(HttpServerTag)
+    return yield* _(
       pipe(isRouterDraining, FR.set(true), I.crossSecond(pipe(Q.take(queue), I.chain(flow(pfn, I.fork)), I.forever)))
     )
   })

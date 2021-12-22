@@ -14,7 +14,7 @@ import * as HS from '@principia/base/HashSet'
 import * as I from '@principia/base/IO'
 import * as L from '@principia/base/Layer'
 
-import { HashEqFiber } from '../util'
+import { HashEqFiber } from '../util/util'
 import { fibers } from './TestAnnotation'
 import { TestAnnotationMap } from './TestAnnotationMap'
 

@@ -7,7 +7,7 @@ import { traceAs } from '@principia/compile/util'
 import { flow, identity } from '../../function'
 import * as I from '../../Iterable'
 import { either, map_ } from '../core'
-import { foreachPar_ } from './foreachPar'
+import { foreachPar_ } from './foreach-concurrent'
 
 /**
  * Feeds elements of type `A` to a function `f` that returns an IO.

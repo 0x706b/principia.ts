@@ -1,8 +1,10 @@
 import type { FIO, IO, UIO } from '../IO/core'
+import type { Managed } from '../Managed'
 
 import * as E from '../Either'
 import { flow, identity, pipe } from '../function'
-import { FiberRefDelete, FiberRefLocally, FiberRefModify } from '../IO/core'
+import { FiberRefDelete, FiberRefLocally, FiberRefModify, FiberRefWith } from '../IO/core'
+import * as Ma from '../Managed/core'
 import * as M from '../Maybe'
 import { matchTag_ } from '../prelude'
 import { tuple } from '../tuple'
@@ -60,7 +62,13 @@ export interface FiberRef<EA, EB, A, B> {
    * Guarantees that fiber data is properly restored via `acquireRelease`.
    */
   readonly locally: <R, EC, C>(use: IO<R, EC, C>, value: A) => IO<R, EA | EC, C>
+
+  readonly locallyManaged: (value: A) => Managed<unknown, EA, void>
+
+  readonly getWith: <R, E, C>(f: (b: B) => I.IO<R, E, C>) => I.IO<R, EB | E, C>
 }
+
+export type UFiberRef<A> = FiberRef<never, never, A, A>
 
 export class Runtime<A> implements FiberRef<never, never, A, A> {
   readonly _tag = 'Runtime'
@@ -105,8 +113,21 @@ export class Runtime<A> implements FiberRef<never, never, A, A> {
     return new FiberRefLocally(value, this, use)
   }
 
+  locallyManaged(a: A): Managed<unknown, never, void> {
+    return pipe(
+      this.get,
+      I.chain((old) => pipe(this.set(a), I.as(old))),
+      Ma.bracket((a) => this.set(a)),
+      Ma.asUnit
+    )
+  }
+
   set(value: A): UIO<void> {
     return this.modify(() => [undefined, value])
+  }
+
+  getWith<R, E, C>(f: (b: A) => IO<R, E, C>): IO<R, E, C> {
+    return new FiberRefWith(this, f)
   }
 }
 
@@ -206,6 +227,27 @@ export class Derived<EA, EB, A, B> implements FiberRef<EA, EB, A, B> {
     )
   }
 
+  locallyManaged(a: A): Managed<unknown, EA, void> {
+    return pipe(
+      this.use((value, _, setEither) =>
+        pipe(
+          value.get,
+          I.chain((old) =>
+            pipe(
+              setEither(a),
+              E.match(
+                (e) => I.fail(e),
+                (s) => pipe(value.set(s), I.as(old))
+              )
+            )
+          ),
+          Ma.bracket((s) => value.set(s))
+        )
+      ),
+      Ma.asUnit
+    )
+  }
+
   set(a: A): FIO<EA, void> {
     return this.use((value, _, setEither) =>
       pipe(
@@ -213,6 +255,10 @@ export class Derived<EA, EB, A, B> implements FiberRef<EA, EB, A, B> {
         E.match(I.fail, (s) => value.set(s))
       )
     )
+  }
+
+  getWith<R, E, C>(f: (b: B) => IO<R, E, C>): IO<R, EB | E, C> {
+    return pipe(this.get, I.chain(f))
   }
 }
 
@@ -232,6 +278,26 @@ export class DerivedAll<EA, EB, A, B> implements FiberRef<EA, EB, A, B> {
     this.match    = this.match.bind(this)
     this.matchAll = this.matchAll.bind(this)
     this.set      = this.set.bind(this)
+  }
+  locallyManaged(a: A): Managed<unknown, EA, void> {
+    return pipe(
+      this.use((value, _, setEither) =>
+        pipe(
+          value.get,
+          I.chain((old) =>
+            pipe(
+              setEither(a)(old),
+              E.match(
+                (e) => I.fail(e),
+                (s) => pipe(value.set(s), I.as(old))
+              )
+            )
+          ),
+          Ma.bracket((s) => value.set(s))
+        )
+      ),
+      Ma.asUnit
+    )
   }
 
   match<EC, ED, C, D>(
@@ -327,6 +393,10 @@ export class DerivedAll<EA, EB, A, B> implements FiberRef<EA, EB, A, B> {
         )
       )
     )
+  }
+
+  getWith<R, E, C>(f: (b: B) => IO<R, E, C>): IO<R, EB | E, C> {
+    return pipe(this.get, I.chain(f))
   }
 }
 
@@ -499,4 +569,27 @@ export function locally<A, R1, E1, C>(
   use: IO<R1, E1, C>
 ): <EA, EB, B>(fiberRef: FiberRef<EA, EB, A, B>) => IO<R1, EA | E1, C> {
   return (fiberRef) => locally_(fiberRef, value, use)
+}
+
+export function getWith_<EA, EB, A, B, R, E, C>(
+  fiberRef: FiberRef<EA, EB, A, B>,
+  f: (b: B) => I.IO<R, E, C>
+): I.IO<R, EB | E, C> {
+  return fiberRef.getWith(f)
+}
+
+export function getWith<B, R, E, C>(
+  f: (b: B) => I.IO<R, E, C>
+): <EA, EB, A>(fiberRef: FiberRef<EA, EB, A, B>) => I.IO<R, EB | E, C> {
+  return (fiberRef) => fiberRef.getWith(f)
+}
+
+export function locallyManaged_<EA, EB, A, B>(fiberRef: FiberRef<EA, EB, A, B>, value: A): Managed<unknown, EA, void> {
+  return fiberRef.locallyManaged(value)
+}
+
+export function locallyManaged<A>(
+  value: A
+): <EA, EB, B>(fiberRef: FiberRef<EA, EB, A, B>) => Managed<unknown, EA, void> {
+  return (fiberRef) => locallyManaged_(fiberRef, value)
 }

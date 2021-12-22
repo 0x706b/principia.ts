@@ -19,7 +19,7 @@ export const concurrency: I.UIO<M.Maybe<number>> = FR.get(Concurrency)
  * uses it to run the specified effect.
  */
 export function concurrencyWith<R, E, A>(f: (concurrency: M.Maybe<number>) => I.IO<R, E, A>): I.IO<R, E, A> {
-  return pipe(concurrency, I.chain(f))
+  return pipe(Concurrency, FR.getWith(f))
 }
 
 /**

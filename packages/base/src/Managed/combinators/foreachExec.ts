@@ -4,9 +4,10 @@ import type { Chunk } from '../../Chunk/core'
 import type { ExecutionStrategy } from '../../ExecutionStrategy'
 import type { Managed } from '../core'
 
+import { pipe } from '../../function'
 import { foreach_ } from '../core'
-import { foreachPar_ } from './foreachPar'
-import { foreachParN_ } from './foreachParN'
+import { withConcurrency, withConcurrencyUnbounded } from './concurrency'
+import { foreachPar } from './foreachPar'
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` in parallel,
@@ -26,10 +27,10 @@ export function foreachExec_<R, E, A, B>(
       return foreach_(as, f)
     }
     case 'Parallel': {
-      return foreachPar_(as, f)
+      return pipe(as, foreachPar(f), withConcurrencyUnbounded)
     }
     case 'ParallelN': {
-      return foreachParN_(as, es.n, f)
+      return pipe(as, foreachPar(f), withConcurrency(es.n))
     }
   }
 }

@@ -263,7 +263,10 @@ function warn<R, E>(
   return I.raceWith_(
     test,
     withLive_(showWarning(suiteLabels, testLabel, duration), I.delay(duration)),
-    (result, fiber) => I.crossSecond_(Fi.interrupt(fiber), I.fromExit(result)),
+    (result, fiber) => {
+      debugger
+      return I.crossSecond_(Fi.interrupt(fiber), I.fromExit(result))
+    },
     (_, fiber) => Fi.join(fiber)
   )
 }

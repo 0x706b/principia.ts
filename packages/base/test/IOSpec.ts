@@ -452,7 +452,7 @@ class IOSpec extends DefaultRunnableSpec {
       'collectAllParN',
       testIO('returns results in the same order', () => {
         const list = [1, 2, 3].map(I.succeed)
-        const res  = I.collectAllParN(2)(list)
+        const res  = pipe(I.collectAllPar(list), I.withConcurrency(2))
         return assertIO_(res, equalTo(Ch.make(1, 2, 3)))
       })
     ),
@@ -460,7 +460,7 @@ class IOSpec extends DefaultRunnableSpec {
       'collectAllUnitParN',
       testIO('preserves failures', () => {
         const tasks = A.replicate(10, I.fail(new RuntimeException('')))
-        return assertIO_(pipe(I.collectAllUnitParN(5)(tasks), I.swap), anything)
+        return assertIO_(pipe(I.collectAllUnitPar(tasks), I.withConcurrency(5), I.swap), anything)
       })
     ),
     suite(
@@ -815,19 +815,22 @@ class IOSpec extends DefaultRunnableSpec {
       'foreachParN',
       testIO('returns the list of results in the appropriate order', () => {
         const list = [1, 2, 3]
-        const res  = I.foreachParN_(list, 2, (x) => I.succeedLazy(() => x.toString()))
+        const res  = pipe(
+          I.foreachPar_(list, (x) => I.succeedLazy(() => x.toString())),
+          I.withConcurrency(2)
+        )
         return assertIO_(res, equalTo(Ch.make('1', '2', '3')))
       }),
       testIO('works on large lists', () => {
         const n   = 10
         const seq = Ch.range(0, 100000)
-        const res = I.foreachParN_(seq, n, I.succeed)
+        const res = pipe(I.foreachPar_(seq, I.succeed), I.withConcurrency(n))
         return assertIO_(res, equalTo(seq))
       }),
       testIO('runs effects in parallel', () => {
         const io = I.gen(function* (_) {
           const p = yield* _(Fu.make<never, void>())
-          yield* _(pipe([I.never, Fu.succeed_(p, undefined)], I.foreachParN(2, identity), I.fork))
+          yield* _(pipe([I.never, Fu.succeed_(p, undefined)], I.foreachPar(identity), I.withConcurrency(2), I.fork))
           yield* _(Fu.await(p))
           return true
         })
@@ -835,12 +838,15 @@ class IOSpec extends DefaultRunnableSpec {
       }),
       testIO('propagates error', () => {
         const ints = [1, 2, 3, 4, 5, 6]
-        const odds = I.foreachParN_(ints, 4, (n) => (n % 2 !== 0 ? I.succeed(n) : I.fail('not odd')))
+        const odds = pipe(
+          I.foreachPar_(ints, (n) => (n % 2 !== 0 ? I.succeed(n) : I.fail('not odd'))),
+          I.withConcurrency(4)
+        )
         return assertIO_(I.either(odds), isLeft(equalTo('not odd')))
       }),
       testIO('interrupts effects on first failure', () => {
         const actions = [I.never, I.succeed(1), I.fail('C')]
-        const io      = I.foreachParN_(actions, 4, identity)
+        const io      = pipe(I.foreachPar_(actions, identity), I.withConcurrency(4))
         return assertIO_(I.either(io), isLeft(equalTo('C')))
       })
     ),

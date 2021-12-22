@@ -6,8 +6,7 @@ import type { IO } from '../core'
 
 import { identity } from '../../function'
 import { foreach_ } from '../core'
-import { foreachPar_ } from './foreachPar'
-import { foreachParN_ } from './foreachParN'
+import { foreachPar_ } from './foreach-concurrent'
 
 export type TupleA<T extends NonEmptyArray<IO<any, any, any>>> = {
   [K in keyof T]: [T[K]] extends [IO<any, any, infer A>] ? A : never
@@ -23,9 +22,4 @@ export function sequenceTPar<A extends NonEmptyArray<IO<any, any, any>>>(
   ...t: A
 ): IO<_R<A[number]>, _E<A[number]>, TupleA<A>> {
   return foreachPar_(t, identity) as any
-}
-
-export function sequenceTParN(n: number) {
-  return <A extends NonEmptyArray<IO<any, any, any>>>(...t: A): IO<_R<A[number]>, _E<A[number]>, TupleA<A>> =>
-    foreachParN_(t, n, identity) as any
 }

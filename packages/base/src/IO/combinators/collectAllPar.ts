@@ -6,8 +6,7 @@ import type { IO } from '../core'
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
 import { flow, identity } from '../../function'
-import { foreachPar_ } from './foreachPar'
-import { foreachUnitPar_ } from './foreachUnitPar'
+import { foreachPar_, foreachUnitPar_ } from './foreach-concurrent'
 
 /**
  * @trace call

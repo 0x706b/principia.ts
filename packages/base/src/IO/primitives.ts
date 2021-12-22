@@ -49,6 +49,7 @@ export const IOTag = {
   FiberRefModify: 'FiberRefModify',
   FiberRefLocally: 'FiberRefLocally',
   FiberRefDelete: 'FiberRefDelete',
+  FiberRefWith: 'FiberRefWith',
   GetForkScope: 'GetForkScope',
   OverrideForkScope: 'OverrideForkScope',
   FFI: 'FFI',
@@ -377,6 +378,14 @@ export class FiberRefDelete extends IO<unknown, never, void> {
   }
 }
 
+export class FiberRefWith<R, E, A, B> extends IO<R, E, B> {
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag = IOTag.FiberRefWith
+  constructor(readonly fiberRef: FR.Runtime<A>, readonly f: (a: A) => IO<R, E, B>) {
+    super()
+  }
+}
+
 /**
  * @internal
  */
@@ -441,6 +450,7 @@ export type Instruction =
   | FiberRefModify<any, any>
   | FiberRefLocally<any, any, any, any>
   | FiberRefDelete
+  | FiberRefWith<any, any, any, any>
   | Race<any, any, any, any, any, any, any, any, any, any, any, any>
   | Supervise<any, any, any>
   | GetForkScope<any, any, any>

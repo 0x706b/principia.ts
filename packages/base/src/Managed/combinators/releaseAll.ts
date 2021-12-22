@@ -5,10 +5,11 @@ import type { Exit } from '../../IO/Exit'
 
 import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
+import * as Ch from '../../Chunk/core'
 import { pipe } from '../../function'
-import * as M from '../../Maybe'
 import { foreachExec as foreachExecIO } from '../../IO/combinators/foreachExec'
 import * as Ex from '../../IO/Exit'
+import * as M from '../../Maybe'
 import * as Ref from '../../Ref'
 import * as I from '../internal/io'
 import * as RM from '../ReleaseMap'

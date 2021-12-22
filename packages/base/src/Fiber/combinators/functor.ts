@@ -1,4 +1,4 @@
-import type { Fiber, SyntheticFiber } from '../core'
+import type { Fiber } from '../core'
 
 import * as Ex from '../../IO/Exit'
 import * as M from '../../Maybe'

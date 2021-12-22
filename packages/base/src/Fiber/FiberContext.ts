@@ -446,7 +446,6 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
   interruptAs(fiberId: FiberId): UIO<Exit<E, A>> {
     const interruptedCause = C.interrupt(fiberId)
-
     return defer(() => {
       const oldState = this.state.get
       if (
@@ -626,8 +625,10 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   evaluateLater(i0: Instruction) {
-    this.nextIO = i0
-    defaultScheduler(() => this.runUntil(this.platform.maxYieldOp))
+    defaultScheduler(() => {
+      this.nextIO = i0
+      this.runUntil(this.platform.maxYieldOp)
+    })
   }
 
   get scope(): Scope.Scope<Exit<E, A>> {
@@ -1098,7 +1099,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                   }
 
                   case IOTag.FiberRefGetAll: {
-                    current = concrete(current.make(this.fiberRefLocals))
+                    current = this.next(current.make(this.fiberRefLocals))
                     break
                   }
 
@@ -1114,20 +1115,23 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     const oldValue = this.getFiberRefValue(current.fiberRef)
                     const fiberRef = current.fiberRef
                     this.setFiberRefValue(fiberRef, current.localValue)
-                    current = concrete(
-                      ensuring_(
-                        current.io,
-                        succeedLazy(() => {
-                          this.setFiberRefValue(fiberRef, oldValue)
-                        })
-                      )
+                    this.ensure(
+                      succeedLazy(() => {
+                        this.setFiberRefValue(fiberRef, oldValue)
+                      })
                     )
+                    current = concrete(current.io)
                     break
                   }
 
                   case IOTag.FiberRefDelete: {
                     this.removeFiberRef(current.fiberRef)
                     current = this.next(undefined)
+                    break
+                  }
+
+                  case IOTag.FiberRefWith: {
+                    current = concrete(current.f(this.getFiberRefValue(current.fiberRef)))
                     break
                   }
 

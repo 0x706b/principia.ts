@@ -1,5 +1,5 @@
 import type { Live } from './Live'
-import type { FiberRef } from '@principia/base/FiberRef'
+import type { UFiberRef } from '@principia/base/FiberRef'
 import type { Has } from '@principia/base/Has'
 import type { IO, UIO } from '@principia/base/IO'
 import type { URef } from '@principia/base/Ref'
@@ -82,11 +82,7 @@ export class TestConsole implements Console {
       I.crossSecond(I.whenIO_(this.live.provide(Console.putStrLnDebug(line)), FR.get(this.debugState)))
     )
   }
-  constructor(
-    readonly consoleState: URef<ConsoleData>,
-    readonly live: Live,
-    readonly debugState: FiberRef<never, never, boolean, boolean>
-  ) {}
+  constructor(readonly consoleState: URef<ConsoleData>, readonly live: Live, readonly debugState: UFiberRef<boolean>) {}
   clearInput: UIO<void> = Ref.update_(this.consoleState, (data) => data.copy({ input: Li.empty() }))
   clearOutput: UIO<void> = Ref.update_(this.consoleState, (data) => data.copy({ output: Li.empty() }))
   debug<R, E, A>(io: IO<R, E, A>): IO<R, E, A> {

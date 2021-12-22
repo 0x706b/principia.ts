@@ -2,7 +2,7 @@ import type { Chunk } from '../../Chunk/core'
 import type { Exit } from '../../IO/Exit'
 import type { Fiber } from '../core'
 
-import { foreachPar_ } from '../../IO/combinators/foreachPar'
+import { foreachPar_ } from '../../IO/combinators/foreach-concurrent'
 import * as I from '../internal/io'
 
 /**

@@ -1,5 +1,5 @@
 import type { Render, RenderParam } from '../Render'
-import type { WidenLiteral } from '../util'
+import type { WidenLiteral } from '../util/util'
 import type { Eq } from '@principia/base/Eq'
 import type { Exit } from '@principia/base/IO/Exit'
 import type { Show } from '@principia/base/Show'

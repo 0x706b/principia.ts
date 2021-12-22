@@ -9,7 +9,7 @@ import * as C from '../../Chunk/core'
 import { pipe } from '../../function'
 import * as M from '../../Maybe'
 import * as I from '../core'
-import { foreachPar } from './foreachPar'
+import { foreachPar } from './foreach-concurrent'
 
 /**
  * Filters the collection in parallel using the specified effectual predicate.

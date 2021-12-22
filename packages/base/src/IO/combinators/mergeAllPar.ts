@@ -2,9 +2,10 @@
 
 import type { IO } from '../core'
 
-import * as I from '../../Iterable'
-import { pure } from '../core'
-import { crossWithPar_ } from './apply-par'
+import { pipe } from '../../function'
+import * as Ref from '../../Ref'
+import { chain, crossSecond } from '../core'
+import { foreachUnitPar } from './foreach-concurrent'
 
 /**
  * Merges an `Iterable<IO>` to a single IO, working in parallel.
@@ -19,7 +20,10 @@ import { crossWithPar_ } from './apply-par'
  * @trace 2
  */
 export function mergeAllPar_<R, E, A, B>(fas: Iterable<IO<R, E, A>>, b: B, f: (b: B, a: A) => B): IO<R, E, B> {
-  return I.foldl_(fas, pure(b) as IO<R, E, B>, (b, a) => crossWithPar_(b, a, f))
+  return pipe(
+    Ref.make(b),
+    chain((acc) => pipe(fas, foreachUnitPar(chain((a) => Ref.update_(acc, (b) => f(b, a)))), crossSecond(Ref.get(acc))))
+  )
 }
 
 /**

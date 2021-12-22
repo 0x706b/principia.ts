@@ -1044,6 +1044,7 @@ export class MemoMap {
                       Ma.chain((_) => _(self)),
                       (_) => _.io,
                       I.give(tuple(a, innerReleaseMap)),
+                      restore,
                       I.result,
                       I.chain((ex) =>
                         Ex.match_(
@@ -1072,8 +1073,7 @@ export class MemoMap {
                               return tuple(outerFinalizer, a)
                             })
                         )
-                      ),
-                      restore
+                      )
                     )
                   )
                   return tp

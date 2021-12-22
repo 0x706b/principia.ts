@@ -5,6 +5,7 @@ import type { Equatable, Hashable } from '../Structural'
 
 import * as A from '../Array/core'
 import * as C from '../Cause'
+import * as Ch from '../Chunk/core'
 import * as E from '../Either'
 import { flow, identity, pipe } from '../function'
 import * as M from '../Maybe'

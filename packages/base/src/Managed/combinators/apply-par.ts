@@ -13,7 +13,6 @@ import { tuple } from '../../tuple/core'
 import { map_, mapIO_ } from '../core'
 import * as I from '../internal/io'
 import { foreachPar_ } from './foreachPar'
-import { foreachParN_ } from './foreachParN'
 import { makeManagedReleaseMap } from './makeManagedReleaseMap'
 
 /*
@@ -186,29 +185,6 @@ export function sequenceSPar<MR extends ReadonlyRecord<string, Managed<any, any,
   ) as any
 }
 
-export function sequenceSParN(n: number) {
-  return <MR extends ReadonlyRecord<string, Managed<any, any, any>>>(
-    mr: EnforceNonEmptyRecord<MR> & ReadonlyRecord<string, Managed<any, any, any>>
-  ): Managed<
-    _R<MR[keyof MR]>,
-    _E<MR[keyof MR]>,
-    {
-      [K in keyof MR]: [MR[K]] extends [Managed<any, any, infer A>] ? A : never
-    }
-  > =>
-    map_(
-      foreachParN_(R.toArray(mr), n, ([k, v]) => map_(v, (a) => [k, a] as const)),
-      (kvs) => {
-        const r = {}
-        for (let i = 0; i < kvs.length; i++) {
-          const [k, v] = kvs[i]
-          r[k]         = v
-        }
-        return r
-      }
-    ) as any
-}
-
 export function sequenceTPar<T extends ReadonlyArray<Managed<any, any, any>>>(
   ...t: T & {
     0: Managed<any, any, any>
@@ -221,18 +197,4 @@ export function sequenceTPar<T extends ReadonlyArray<Managed<any, any, any>>>(
   }
 > {
   return foreachPar_(t, identity) as any
-}
-
-export function sequenceTParN(n: number) {
-  return <T extends ReadonlyArray<Managed<any, any, any>>>(
-    ...t: T & {
-      0: Managed<any, any, any>
-    }
-  ): Managed<
-    _R<T[number]>,
-    _E<T[number]>,
-    {
-      [K in keyof T]: [T[K]] extends [Managed<any, any, infer A>] ? A : never
-    }
-  > => foreachParN_(t, n, identity) as any
 }
