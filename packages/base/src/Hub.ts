@@ -143,7 +143,7 @@ export function unsafeMakeBounded<A>(requestedCapacity: number): UHub<A> {
     _makeBounded<A>(requestedCapacity),
     subscribersHashSet<A>(),
     releaseMap,
-    F.unsafeMake<never, void>(Fi.emptyFiberId),
+    F.unsafeMake<never, void>(Fi.none),
     new AtomicBoolean(false),
     new BackPressure()
   )
@@ -177,7 +177,7 @@ export function unsafeMakeDropping<A>(requestedCapacity: number): UHub<A> {
     _makeBounded<A>(requestedCapacity),
     subscribersHashSet<A>(),
     releaseMap,
-    F.unsafeMake<never, void>(Fi.emptyFiberId),
+    F.unsafeMake<never, void>(Fi.none),
     new AtomicBoolean(false),
     new Dropping()
   )
@@ -211,7 +211,7 @@ export function unsafeMakeSliding<A>(requestedCapacity: number): UHub<A> {
     _makeBounded<A>(requestedCapacity),
     subscribersHashSet<A>(),
     releaseMap,
-    F.unsafeMake<never, void>(Fi.emptyFiberId),
+    F.unsafeMake<never, void>(Fi.none),
     new AtomicBoolean(false),
     new Sliding()
   )
@@ -239,7 +239,7 @@ export function unsafeMakeUnbounded<A>(): UHub<A> {
     _makeUnbounded<A>(),
     subscribersHashSet<A>(),
     releaseMap,
-    F.unsafeMake<never, void>(Fi.emptyFiberId),
+    F.unsafeMake<never, void>(Fi.none),
     new AtomicBoolean(false),
     new Dropping()
   )

@@ -5,8 +5,8 @@ import * as E from '@principia/base/Either'
 import { IllegalArgumentError, isIllegalArgumentError, isIllegalStateError } from '@principia/base/Error'
 import { RuntimeException } from '@principia/base/Exception'
 import * as Ex from '@principia/base/Exit'
-import { fiberId } from '@principia/base/Fiber'
 import * as Fi from '@principia/base/Fiber'
+import * as FiberId from '@principia/base/Fiber/FiberId'
 import { decrement, flow, identity, increment, pipe } from '@principia/base/function'
 import * as Fu from '@principia/base/Future'
 import * as I from '@principia/base/IO'
@@ -41,7 +41,8 @@ import {
   not,
   suite,
   test,
-  testIO } from '@principia/test'
+  testIO
+} from '@principia/test'
 import { TestClock } from '@principia/test/environment/TestClock'
 import * as Gen from '@principia/test/Gen'
 
@@ -518,7 +519,7 @@ class IOSpec extends DefaultRunnableSpec {
     suite(
       'fromExit',
       testIO('lifts exit into IO', () => {
-        const id    = fiberId(0, 123)
+        const id    = new FiberId.Runtime(0, 123)
         const error = ExampleError
         return I.gen(function* (_) {
           const completed   = yield* _(I.fromExit(Ex.succeed(1)))

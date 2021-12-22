@@ -28,6 +28,11 @@ export function add_<V>(set: HashSet<V>, v: V) {
   return set.keyMap.editable ? (HM.set_(set.keyMap, v, true), set) : new HashSet(HM.set_(set.keyMap, v, true))
 }
 
+export const Default: HM.Config<any> = {
+  ...Eq.DefaultEq,
+  ...Ha.DefaultHash
+}
+
 /**
  * @dataFirst add_
  */
@@ -85,6 +90,14 @@ export function make<V>(K: P.Hash<V> & P.Eq<V>) {
 
 export function makeDefault<V>() {
   return new HashSet<V>(HM.makeDefault())
+}
+
+export function fromDefault<V>(...values: ReadonlyArray<V>): HashSet<V> {
+  return mutate_(makeDefault<V>(), (set) => {
+    values.forEach((v) => {
+      add_(set, v)
+    })
+  })
 }
 
 /**

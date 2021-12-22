@@ -40,7 +40,7 @@ import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
 import * as Ev from '../Eval'
 import { RuntimeException } from '../Exception'
-import { emptyFiberId, showFiberId } from '../Fiber/FiberId'
+import { none, showFiberId } from '../Fiber/FiberId'
 import { constant, flow, identity, pipe } from '../function'
 import { isTag, mergeEnvironments } from '../Has'
 import * as I from '../Iterable'
@@ -126,7 +126,7 @@ export const yieldNow: UIO<void> = new Primitives.Yield()
  */
 export function asyncInterrupt<R, E, A>(
   register: (cb: (resolve: IO<R, E, A>) => void) => E.Either<Primitives.Canceler<R>, IO<R, E, A>>,
-  blockingOn: ReadonlyArray<FiberId> = []
+  blockingOn: FiberId = none
 ): IO<R, E, A> {
   return new Primitives.Async(register, blockingOn)
 }
@@ -141,7 +141,7 @@ export function asyncInterrupt<R, E, A>(
  */
 export function async<R, E, A>(
   register: (resolve: (_: IO<R, E, A>) => void) => void,
-  blockingOn: ReadonlyArray<FiberId> = []
+  blockingOn: FiberId = none
 ): IO<R, E, A> {
   return asyncMaybe(
     traceAs(register, (cb) => {
@@ -164,7 +164,7 @@ export function async<R, E, A>(
  */
 export function asyncMaybe<R, E, A>(
   register: (resolve: (_: IO<R, E, A>) => void) => M.Maybe<IO<R, E, A>>,
-  blockingOn: ReadonlyArray<FiberId> = []
+  blockingOn: FiberId = none
 ): IO<R, E, A> {
   return asyncInterrupt(
     (cb) =>

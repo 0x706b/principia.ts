@@ -45,6 +45,7 @@ import { makeStack } from '../util/support/Stack'
 import * as CS from './CancellerState'
 import { FiberDescriptor, interruptStatus } from './core'
 import { newFiberId } from './FiberId'
+import * as FId from './FiberId'
 import { fiberName } from './fiberName'
 import * as State from './FiberState'
 import * as Status from './FiberStatus'
@@ -414,18 +415,15 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   get await(): UIO<Exit<E, A>> {
-    return asyncInterrupt(
-      (k): E.Either<UIO<void>, UIO<Exit<E, A>>> => {
-        const cb: State.Callback<never, Exit<E, A>> = (x) => k(fromExit(x))
-        const result = this.registerObserver(cb)
-        if (result === null) {
-          return E.left(succeedLazy(() => this.interruptObserver(cb)))
-        } else {
-          return E.right(succeed(result))
-        }
-      },
-      [this.fiberId]
-    )
+    return asyncInterrupt((k): E.Either<UIO<void>, UIO<Exit<E, A>>> => {
+      const cb: State.Callback<never, Exit<E, A>> = (x) => k(fromExit(x))
+      const result = this.registerObserver(cb)
+      if (result == null) {
+        return E.left(succeedLazy(() => this.interruptObserver(cb)))
+      } else {
+        return E.right(succeed(result))
+      }
+    }, this.fiberId)
   }
 
   private interruptObserver(k: State.Callback<never, Exit<E, A>>) {
@@ -541,7 +539,15 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
           new CS.Registered(asyncCanceller)
         )
         this.state.set(newState)
+      } else if (
+        oldState.status._tag === 'Suspended' &&
+        oldState.asyncCanceller._tag === 'Registered' &&
+        oldState.status.epoch === epoch
+      ) {
+        throw new Error('inconsistent state in setAsyncCanceller')
       }
+    } else {
+      return
     }
   }
 
@@ -573,7 +579,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     }
   }
 
-  private enterAsync(epoch: number, blockingOn: ReadonlyArray<FiberId>): void {
+  private enterAsync(epoch: number, blockingOn: FiberId): void {
     const oldState = this.state.get
 
     if (oldState._tag === 'Executing' && oldState.asyncCanceller._tag === 'Empty') {
@@ -847,7 +853,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
           }
         }
       }),
-      [left.fiberId, right.fiberId]
+      FId.combine_(left.fiberId, right.fiberId)
     )
   }
 

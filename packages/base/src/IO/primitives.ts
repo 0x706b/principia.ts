@@ -157,7 +157,7 @@ export class Async<R, E, A, R1> extends IO<R & R1, E, A> {
   readonly _tag = IOTag.Async
   constructor(
     readonly register: (f: (_: IO<R, E, A>) => void) => Either<Canceler<R1>, IO<R, E, A>>,
-    readonly blockingOn: ReadonlyArray<FiberId>
+    readonly blockingOn: FiberId
   ) {
     super()
   }

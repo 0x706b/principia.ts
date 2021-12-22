@@ -22,7 +22,7 @@ export class Suspended {
     readonly previous: FiberStatus,
     readonly interruptible: boolean,
     readonly epoch: number,
-    readonly blockingOn: ReadonlyArray<FiberId>
+    readonly blockingOn: FiberId
   ) {}
 }
 

@@ -9,6 +9,7 @@ import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compi
 import { left } from '../../Either'
 import { join } from '../../Fiber/combinators/join'
 import * as F from '../../Fiber/core'
+import { none } from '../../Fiber/FiberId'
 import { pipe } from '../../function'
 import * as C from '../Cause'
 import {
@@ -235,7 +236,7 @@ export class InterruptStatusRestore {
  */
 export function asyncInterruptPromise<R, E, A>(
   register: (cb: (_: IO<R, E, A>) => void) => Promise<Canceler<R>>,
-  blockingOn: ReadonlyArray<FiberId>
+  blockingOn: FiberId = none
 ): IO<R, E, A> {
   return asyncInterrupt<R, E, A>(
     traceAs(register, (cb) => left(pipe(register(cb), (p) => fromPromiseHalt(() => p), flatten))),

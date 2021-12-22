@@ -12,7 +12,7 @@ import * as M from './Maybe'
 import { AtomicReference } from './util/support/AtomicReference'
 
 export class Future<E, A> {
-  constructor(readonly state: AtomicReference<State<E, A>>, readonly blockingOn: ReadonlyArray<FiberId>) {}
+  constructor(readonly state: AtomicReference<State<E, A>>, readonly blockingOn: FiberId) {}
 }
 
 export type State<E, A> = Done<E, A> | Pending<E, A>
@@ -279,7 +279,7 @@ export function unsafeDone<E, A>(io: FIO<E, A>) {
 }
 
 export function unsafeMake<E, A>(fiberId: FiberId) {
-  return new Future<E, A>(new AtomicReference(new Pending([])), [fiberId])
+  return new Future<E, A>(new AtomicReference(new Pending([])), fiberId)
 }
 
 /**

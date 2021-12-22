@@ -7,7 +7,6 @@ import type { Scope } from '../Scope'
 import type { FiberId } from './FiberId'
 import type { FiberStatus } from './FiberStatus'
 
-import { identity } from '../function'
 import * as I from '../IO/core'
 import * as Ex from '../IO/Exit/core'
 import * as M from '../Maybe'
