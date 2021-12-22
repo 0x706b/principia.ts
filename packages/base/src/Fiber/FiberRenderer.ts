@@ -11,8 +11,8 @@ import * as IT from '../Iterable'
 import * as M from '../Maybe'
 import { tuple } from '../tuple/core'
 import { parseMs } from '../util/parse-ms'
-import { fiberName } from './core'
 import { fiberDump } from './FiberDump'
+import { fiberName } from './fiberName'
 
 export function dump<E, A>(fiber: RuntimeFiber<E, A>): I.UIO<FiberDump> {
   return I.map_(crossPar_(fiber.getRef(fiberName), fiber.status), ([name, status]) => fiberDump(fiber.id, name, status))

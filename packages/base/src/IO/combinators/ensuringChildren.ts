@@ -5,8 +5,7 @@ import type { IO } from '../core'
 
 import { pipe } from '../../function'
 import * as Supervisor from '../../Supervisor'
-import { chain, supervised } from '../core'
-import { ensuring } from './ensuring'
+import { chain, ensuring, supervised } from '../core'
 
 /**
  * Acts on the children of this fiber, guaranteeing the specified callback

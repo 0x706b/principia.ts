@@ -1,3 +1,4 @@
+import type * as FR from '../FiberRef/core'
 import type * as C from '../IO/Cause'
 import type { UIO } from '../IO/core'
 import type { Exit } from '../IO/Exit/core'
@@ -6,7 +7,6 @@ import type { Scope } from '../Scope'
 import type { FiberId } from './FiberId'
 import type { FiberStatus } from './FiberStatus'
 
-import { FiberRef } from '../FiberRef/core'
 import { identity } from '../function'
 import * as I from '../IO/core'
 import * as Ex from '../IO/Exit/core'
@@ -69,7 +69,7 @@ export interface CommonFiber<E, A> {
    * Gets the value of the fiber ref for this fiber, or the initial value of
    * the fiber ref, if the fiber is not storing the ref.
    */
-  readonly getRef: <K>(fiberRef: FiberRef<K>) => UIO<K>
+  readonly getRef: <A>(fiberRef: FR.Runtime<A>) => UIO<A>
   /**
    * Inherits values from all {@link FiberRef} instances into current fiber.
    * This will resume immediately.
@@ -188,5 +188,3 @@ export function match<E, A, B>(
 export function unit(): Fiber<never, void> {
   return succeed(undefined)
 }
-
-export const fiberName = new FiberRef<M.Maybe<string>>(M.nothing(), identity, identity)

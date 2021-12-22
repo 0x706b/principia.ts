@@ -22,7 +22,6 @@ import * as I from '../core'
 import * as Ex from '../Exit'
 import { bracketExit_ } from './bracketExit'
 import { forkDaemon, transplant } from './core-scope'
-import { ensuring } from './ensuring'
 import { interruptible, uninterruptible, uninterruptibleMask } from './interrupt'
 
 /**
@@ -80,7 +79,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
             I.crossSecond(startFailure)
           )
         ),
-        ensuring(
+        I.ensuring(
           pipe(
             F.succeed_(result, undefined),
             I.whenIO(

@@ -4,7 +4,7 @@ import type { Either } from '../Either'
 import type { Fiber, FiberContext, FiberDescriptor, InterruptStatus, Platform } from '../Fiber'
 import type { FiberId } from '../Fiber/FiberId'
 import type { Trace } from '../Fiber/Trace'
-import type { FiberRef } from '../FiberRef'
+import type * as FR from '../FiberRef'
 import type { Maybe } from '../Maybe'
 import type { Scope } from '../Scope'
 import type { Supervisor } from '../Supervisor'
@@ -45,8 +45,10 @@ export const IOTag = {
   GetInterrupt: 'GetInterrupt',
   GetDescriptor: 'GetDescriptor',
   Supervise: 'Supervise',
-  NewFiberRef: 'NewFiberRef',
-  ModifyFiberRef: 'ModifyFiberRef',
+  FiberRefGetAll: 'FiberRefGetAll',
+  FiberRefModify: 'FiberRefModify',
+  FiberRefLocally: 'FiberRefLocally',
+  FiberRefDelete: 'FiberRefDelete',
   GetForkScope: 'GetForkScope',
   OverrideForkScope: 'OverrideForkScope',
   FFI: 'FFI',
@@ -338,11 +340,11 @@ export class Supervise<R, E, A> extends IO<R, E, A> {
 /**
  * @internal
  */
-export class NewFiberRef<A> extends IO<unknown, never, FiberRef<A>> {
+export class FiberRefGetAll<R, E, A> extends IO<R, E, A> {
   readonly [IOTypeId]: IOTypeId = IOTypeId
-  readonly _tag = IOTag.NewFiberRef
+  readonly _tag = IOTag.FiberRefGetAll
 
-  constructor(readonly initial: A, readonly onFork: (a: A) => A, readonly onJoin: (a: A, a2: A) => A) {
+  constructor(readonly make: (refs: Map<FR.Runtime<unknown>, any>) => IO<R, E, A>) {
     super()
   }
 }
@@ -350,11 +352,27 @@ export class NewFiberRef<A> extends IO<unknown, never, FiberRef<A>> {
 /**
  * @internal
  */
-export class ModifyFiberRef<A, B> extends IO<unknown, never, B> {
+export class FiberRefModify<A, B> extends IO<unknown, never, B> {
   readonly [IOTypeId]: IOTypeId = IOTypeId
-  readonly _tag = IOTag.ModifyFiberRef
+  readonly _tag = IOTag.FiberRefModify
 
-  constructor(readonly fiberRef: FiberRef<A>, readonly f: (a: A) => [B, A]) {
+  constructor(readonly fiberRef: FR.Runtime<A>, readonly f: (a: A) => readonly [B, A]) {
+    super()
+  }
+}
+
+export class FiberRefLocally<V, R, E, A> extends IO<R, E, A> {
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag = IOTag.FiberRefLocally
+  constructor(readonly localValue: V, readonly fiberRef: FR.Runtime<V>, readonly io: IO<R, E, A>) {
+    super()
+  }
+}
+
+export class FiberRefDelete extends IO<unknown, never, void> {
+  readonly [IOTypeId]: IOTypeId = IOTypeId
+  readonly _tag = IOTag.FiberRefDelete
+  constructor(readonly fiberRef: FR.Runtime<any>) {
     super()
   }
 }
@@ -419,8 +437,10 @@ export type Instruction =
   | Give<any, any, any>
   | Defer<any, any, any>
   | DeferWith<any, any, any>
-  | NewFiberRef<any>
-  | ModifyFiberRef<any, any>
+  | FiberRefGetAll<any, any, any>
+  | FiberRefModify<any, any>
+  | FiberRefLocally<any, any, any, any>
+  | FiberRefDelete
   | Race<any, any, any, any, any, any, any, any, any, any, any, any>
   | Supervise<any, any, any>
   | GetForkScope<any, any, any>

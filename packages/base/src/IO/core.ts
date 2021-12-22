@@ -2056,6 +2056,40 @@ export function duplicate<R, E, A>(wa: IO<R, E, A>): IO<R, E, IO<R, E, A>> {
 }
 
 /**
+ * Returns an IO that, if this IO _starts_ execution, then the
+ * specified `finalizer` is guaranteed to begin execution, whether this IO
+ * succeeds, fails, or is interrupted.
+ *
+ * For use cases that need access to the IO's result, see onExit.
+ *
+ * Finalizers offer very powerful guarantees, but they are low-level, and
+ * should generally not be used for releasing resources. For higher-level
+ * logic built on `ensuring`, see `bracket`.
+ *
+ * @trace call
+ */
+export function ensuring_<R, E, A, R1>(ma: IO<R, E, A>, finalizer: IO<R1, never, any>): IO<R & R1, E, A> {
+  return new Primitives.Ensuring(ma, finalizer)
+}
+
+/**
+ * Returns an IO that, if this IO _starts_ execution, then the
+ * specified `finalizer` is guaranteed to begin execution, whether this IO
+ * succeeds, fails, or is interrupted.
+ *
+ * For use cases that need access to the IO's result, see onExit.
+ *
+ * Finalizers offer very powerful guarantees, but they are low-level, and
+ * should generally not be used for releasing resources. For higher-level
+ * logic built on `ensuring`, see `bracket`.
+ * @trace call
+ */
+export function ensuring<R1>(finalizer: IO<R1, never, any>): <R, E, A>(ma: IO<R, E, A>) => IO<R & R1, E, A> {
+  const trace = accessCallTrace()
+  return (ma) => traceCall(ensuring_, trace)(ma, finalizer)
+}
+
+/**
  * @trace call
  */
 export function errorAsCause<R, E, A>(ma: IO<R, Cause<E>, A>): IO<R, E, A> {

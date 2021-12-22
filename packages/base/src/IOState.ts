@@ -18,7 +18,7 @@ export interface IOState<S> {
 
 export class IOStateFiberRef<S> implements IOState<S> {
   readonly [IOStateTypeId]: IOStateTypeId = IOStateTypeId
-  constructor(readonly fiberRef: FR.FiberRef<S>) {}
+  constructor(readonly fiberRef: FR.Runtime<S>) {}
   readonly get = FR.get(this.fiberRef)
   readonly set = (s: S) => FR.set_(this.fiberRef, s)
   readonly update = (f: (s: S) => S) => FR.update_(this.fiberRef, f)

@@ -1,4 +1,3 @@
-import type { FiberRef } from '../FiberRef'
 import type { Platform } from '../internal/Platform'
 import type { Exit } from '../IO/Exit/core'
 import type { Instruction, IO, Match, Race, UIO } from '../IO/primitives'
@@ -22,6 +21,7 @@ import {
   asyncInterrupt,
   chain_,
   defer,
+  ensuring_,
   failCause,
   foreachUnit_,
   fromExit,
@@ -45,11 +45,12 @@ import { makeStack } from '../util/support/Stack'
 import * as CS from './CancellerState'
 import { FiberDescriptor, interruptStatus } from './core'
 import { newFiberId } from './FiberId'
+import { fiberName } from './fiberName'
 import * as State from './FiberState'
 import * as Status from './FiberStatus'
 import { SourceLocation, Trace, traceLocation, truncatedParentTrace } from './Trace'
 
-export type FiberRefLocals = Map<FiberRef<any>, any>
+export type FiberRefLocals = Map<FR.Runtime<any>, unknown>
 
 type Erased = IO<any, any, any>
 type Cont = (a: any) => Erased
@@ -154,8 +155,20 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     return new Succeed(v)
   })
 
-  getRef<K>(fiberRef: FR.FiberRef<K>): UIO<K> {
-    return succeedLazy(() => this.fiberRefLocals.get(fiberRef) || fiberRef.initial)
+  getRef<A>(ref: FR.Runtime<A>): UIO<A> {
+    return succeedLazy(() => (this.fiberRefLocals.get(ref) as A) || ref.initial)
+  }
+
+  getFiberRefValue<A>(ref: FR.Runtime<A>): A {
+    return (this.fiberRefLocals.get(ref) as A) || ref.initial
+  }
+
+  setFiberRefValue<A>(ref: FR.Runtime<A>, value: A): void {
+    this.fiberRefLocals.set(ref, value)
+  }
+
+  removeFiberRef<A>(ref: FR.Runtime<A>): void {
+    this.fiberRefLocals.delete(ref)
   }
 
   private _poll() {
@@ -793,7 +806,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       if (locals.size === 0) {
         return unit()
       } else {
-        return foreachUnit_(locals, ([fiberRef, value]) => FR.update((old) => fiberRef.join(old, value))(fiberRef))
+        return foreachUnit_(locals, ([fiberRef, value]) => FR.update_(fiberRef, (old) => fiberRef.join(old, value)))
       }
     })
   }
@@ -872,6 +885,10 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       return kTrace
     }
     return undefined
+  }
+
+  get name(): Maybe<string> {
+    return (this.fiberRefLocals.get(fiberName) as Maybe<string>) || M.nothing()
   }
 
   /**
@@ -1069,19 +1086,37 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
 
-                  case IOTag.NewFiberRef: {
-                    const fiberRef = new FR.FiberRef(current.initial, current.onFork, current.onJoin)
-                    this.fiberRefLocals.set(fiberRef, current.initial)
-                    current = this.next(fiberRef)
+                  case IOTag.FiberRefGetAll: {
+                    current = concrete(current.make(this.fiberRefLocals))
                     break
                   }
 
-                  case IOTag.ModifyFiberRef: {
+                  case IOTag.FiberRefModify: {
                     const c                  = current
-                    const oldValue           = M.fromNullable(this.fiberRefLocals.get(c.fiberRef))
-                    const [result, newValue] = current.f(M.getOrElse_(oldValue, () => c.fiberRef.initial))
-                    this.fiberRefLocals.set(c.fiberRef, newValue)
+                    const [result, newValue] = current.f(this.getFiberRefValue(current.fiberRef))
+                    this.setFiberRefValue(c.fiberRef, newValue)
                     current = this.next(result)
+                    break
+                  }
+
+                  case IOTag.FiberRefLocally: {
+                    const oldValue = this.getFiberRefValue(current.fiberRef)
+                    const fiberRef = current.fiberRef
+                    this.setFiberRefValue(fiberRef, current.localValue)
+                    current = concrete(
+                      ensuring_(
+                        current.io,
+                        succeedLazy(() => {
+                          this.setFiberRefValue(fiberRef, oldValue)
+                        })
+                      )
+                    )
+                    break
+                  }
+
+                  case IOTag.FiberRefDelete: {
+                    this.removeFiberRef(current.fiberRef)
+                    current = this.next(undefined)
                     break
                   }
 
