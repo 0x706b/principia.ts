@@ -14,7 +14,6 @@ import { constVoid, flow, identity, pipe } from '../function'
 import { Platform } from '../internal/Platform'
 import * as M from '../Maybe'
 import { defaultRandom, RandomTag } from '../Random'
-import * as Scope from '../Scope'
 import * as Super from '../Supervisor'
 import * as C from './Cause'
 import * as I from './core'
@@ -65,7 +64,6 @@ export class CustomRuntime<R, A> {
   private fiberContext<E, A>(effect: I.IO<R, E, A>) {
     const initialIS  = interruptible
     const fiberId    = newFiberId()
-    const scope      = Scope.unsafeMakeScope<Exit<E, A>>()
     const supervisor = this.platform.supervisor
 
     const ioWithEnvironment = pipe(effect, I.give(this.env))
@@ -75,7 +73,7 @@ export class CustomRuntime<R, A> {
       initialIS,
       new Map(),
       supervisor,
-      scope,
+      new Set(),
       this.platform.maxYieldOp,
       this.platform.reportFailure,
       this.platform,

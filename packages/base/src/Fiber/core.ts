@@ -10,6 +10,7 @@ import type { FiberStatus } from './FiberStatus'
 import * as I from '../IO/core'
 import * as Ex from '../IO/Exit/core'
 import * as M from '../Maybe'
+import { matchTag_ } from '../prelude'
 
 /**
  * InterruptStatus tracks interruptability of the current stack region
@@ -43,7 +44,7 @@ export class FiberDescriptor {
     readonly status: FiberStatus,
     readonly interruptors: ReadonlySet<FiberId>,
     readonly interruptStatus: InterruptStatus,
-    readonly scope: Scope<Exit<any, any>>
+    readonly scope: Scope
   ) {}
 }
 
@@ -89,11 +90,17 @@ export interface CommonFiber<E, A> {
 export interface RuntimeFiber<E, A> extends CommonFiber<E, A> {
   _tag: 'RuntimeFiber'
   /**
+   * Evaluates the specified effect on the fiber. If this is not possible,
+   * because the fiber has already ended life, then the specified alternate
+   * effect will be executed instead.
+   */
+  readonly evalOn: (effect: UIO<any>, orElse: UIO<any>) => UIO<void>
+  /**
    * The identity of the fiber.
    */
   readonly id: FiberId
 
-  readonly scope: Scope<Exit<E, A>>
+  readonly scope: Scope
   /**
    * The status of the fiber.
    */
@@ -186,4 +193,27 @@ export function match<E, A, B>(
 
 export function unit(): Fiber<never, void> {
   return succeed(undefined)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * combinators
+ * -------------------------------------------------------------------------------------------------
+ */
+
+function wait<E, A>(fiber: Fiber<E, A>): UIO<Exit<E, A>> {
+  return fiber.await
+}
+
+export { wait as await }
+
+export function evalOn_<E, A>(fiber: Fiber<E, A>, effect: UIO<any>, orElse: UIO<any>): UIO<void> {
+  return matchTag_(fiber, {
+    RuntimeFiber: (_) => _.evalOn(effect, orElse),
+    SyntheticFiber: () => I.unit()
+  })
+}
+
+export function evalOn(effect: UIO<any>, orElse: UIO<any>): <E, A>(fiber: Fiber<E, A>) => UIO<void> {
+  return (fiber) => evalOn_(fiber, effect, orElse)
 }

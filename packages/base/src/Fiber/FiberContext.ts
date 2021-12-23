@@ -17,6 +17,7 @@ import { constVoid, flow, identity, pipe } from '../function'
 import * as C from '../IO/Cause'
 import { interruptAs } from '../IO/combinators/interrupt'
 import {
+  asUnit,
   async,
   asyncInterrupt,
   chain_,
@@ -52,7 +53,7 @@ import { SourceLocation, Trace, traceLocation, truncatedParentTrace } from './Tr
 
 export type FiberRefLocals = Map<FR.Runtime<any>, unknown>
 
-const forkScopeOverride = FR.unsafeMake<M.Maybe<Scope.Scope<Ex.Exit<any, any>>>>(M.nothing())
+const forkScopeOverride = FR.unsafeMake<M.Maybe<Scope.Scope>>(M.nothing())
 
 const currentEnvironment = FR.unsafeMake<any>(undefined, identity, (a, _) => a)
 
@@ -107,7 +108,6 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   private readonly state = new AtomicReference(State.initial<E, A>())
 
   private asyncEpoch = 0 | 0
-  private scopeKey = undefined as Scope.Key | undefined
   private stack = undefined as Stack<Frame> | undefined
   private interruptStatus = makeStack(this.initialInterruptStatus.toBoolean) as Stack<boolean> | undefined
   private currentSupervisor = this.initialSupervisor
@@ -126,7 +126,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     private readonly initialInterruptStatus: InterruptStatus,
     private readonly fiberRefLocals: FiberRefLocals,
     private readonly initialSupervisor: Supervisor<any>,
-    private readonly openScope: Scope.Open<Exit<E, A>>,
+    private readonly children: Set<FiberContext<unknown, unknown>>,
     private readonly maxOperations: number,
     private readonly reportFailure: (e: C.Cause<E>) => void,
     private readonly platform: Platform<unknown>,
@@ -182,8 +182,8 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     this.runUntil(this.platform.maxYieldOp)
   }
 
-  get scope(): Scope.Scope<Exit<E, A>> {
-    return this.openScope.scope
+  get scope(): Scope.Scope {
+    return Scope.unsafeMake(this)
   }
 
   get status(): UIO<Status.FiberStatus> {
@@ -196,6 +196,10 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
   interruptAs(fiberId: FiberId): UIO<Exit<E, A>> {
     return this.unsafeInterruptAs(fiberId)
+  }
+
+  evalOn(effect: UIO<any>, orElse: UIO<any>): UIO<void> {
+    return defer(() => this.unsafeEvalOn(effect, orElse))
   }
 
   /**
@@ -215,7 +219,11 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
           let opCount = 0
           while (current !== null) {
             if (!this.unsafeShouldInterrupt) {
-              if (opCount === maxOpCount) {
+              const message = this.unsafeDrainMailbox()
+              if (message !== null) {
+                const oldIO = current
+                current     = concrete(chain_(message, () => oldIO))
+              } else if (opCount === maxOpCount) {
                 this.unsafeRunLater(current)
                 current = null
               } else {
@@ -666,7 +674,8 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
           oldState.observers,
           C.then(oldState.suppressed, cause),
           oldState.interruptors,
-          oldState.asyncCanceller
+          oldState.asyncCanceller,
+          oldState.mailbox
         )
         this.state.set(newState)
       }
@@ -756,7 +765,8 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
             observers,
             oldState.suppressed,
             oldState.interruptors,
-            oldState.asyncCanceller
+            oldState.asyncCanceller,
+            oldState.mailbox
           )
         )
 
@@ -802,7 +812,8 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
           observers,
           oldState.suppressed,
           oldState.interruptors,
-          oldState.asyncCanceller
+          oldState.asyncCanceller,
+          oldState.mailbox
         )
       )
     }
@@ -823,7 +834,8 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
           oldState.observers,
           oldState.suppressed,
           new Set(oldState.interruptors).add(fiberId),
-          new CS.Empty()
+          new CS.Empty(),
+          oldState.mailbox
         )
         this.state.set(newState)
         const interrupt = failCause(interruptedCause)
@@ -836,7 +848,8 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
             oldState.observers,
             newCause,
             new Set(oldState.interruptors).add(fiberId),
-            oldState.asyncCanceller
+            oldState.asyncCanceller,
+            oldState.mailbox
           )
         )
       }
@@ -844,7 +857,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     })
   }
 
-  private unsafeTryDone(v: Exit<E, A>): Instruction | null {
+  private unsafeTryDone(exit: Exit<E, A>): Instruction | null {
     const oldState = this.state.get
 
     switch (oldState._tag) {
@@ -853,33 +866,53 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
         return null
       }
       case 'Executing': {
-        if (this.openScope.scope.unsafeClosed) {
+        if (oldState.mailbox !== null) {
+          // Not done because the mailbox isn't empty
+          const newState = new State.Executing(
+            oldState.status,
+            oldState.observers,
+            oldState.suppressed,
+            oldState.interruptors,
+            oldState.asyncCanceller,
+            null
+          )
+          this.state.set(newState)
+          this.unsafeSetInterrupting(true)
+          return concrete(chain_(oldState.mailbox, () => fromExit(exit)))
+        } else if (this.children.size === 0) {
+          // We are truly "done" because all the children of this fiber have terminated,
+          // and there are no more pending effects that we have to execute on the fiber.
           const interruptorsCause = State.interruptorsCause(oldState)
-          const newExit           = C.isEmpty(interruptorsCause)
-            ? v
-            : Ex.mapErrorCause_(v, (cause) => {
+
+          const newExit = C.isEmpty(interruptorsCause)
+            ? exit
+            : Ex.mapErrorCause_(exit, (cause) => {
                 if (C.contains_(cause, interruptorsCause)) {
                   return cause
                 } else {
                   return C.then(cause, interruptorsCause)
                 }
               })
-          /*
-           * We are truly "done" because all the children of this fiber have terminated,
-           * and there are no more pending effects that we have to execute on the fiber.
-           */
+
           this.state.set(new State.Done(newExit))
+
           this.unsafeReportUnhandled(newExit)
+
           this.unsafeNotifyObservers(newExit, oldState.observers)
 
           return null
         } else {
-          /*
-           * We are not done yet, because we have to close the fiber's scope
-           */
+          // not done because there are children left to close
           this.unsafeSetInterrupting(true)
 
-          return concrete(chain_(this.openScope.close(v), () => fromExit(v)))
+          let interruptChildren = unit()
+
+          this.children.forEach((child) => {
+            interruptChildren = chain_(interruptChildren, () => child.interruptAs(this.fiberId))
+          })
+          this.children.clear()
+
+          return concrete(chain_(interruptChildren, () => fromExit(exit)))
         }
       }
     }
@@ -899,7 +932,8 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
           oldState.observers,
           oldState.suppressed,
           oldState.interruptors,
-          new CS.Registered(asyncCanceller)
+          new CS.Registered(asyncCanceller),
+          oldState.mailbox
         )
         this.state.set(newState)
       } else if (
@@ -931,7 +965,8 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
             oldState.observers,
             oldState.suppressed,
             oldState.interruptors,
-            oldState.asyncCanceller
+            oldState.asyncCanceller,
+            oldState.mailbox
           )
         )
         return
@@ -957,7 +992,8 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
         oldState.observers,
         oldState.suppressed,
         oldState.interruptors,
-        new CS.Pending()
+        new CS.Pending(),
+        oldState.mailbox
       )
       this.state.set(newState)
     }
@@ -972,7 +1008,8 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
           oldState.observers,
           oldState.suppressed,
           oldState.interruptors,
-          new CS.Empty()
+          new CS.Empty(),
+          oldState.mailbox
         )
       )
       return true
@@ -990,7 +1027,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
   private unsafeFork(
     io: Instruction,
-    forkScope: Maybe<Scope.Scope<Exit<any, any>>>,
+    forkScope: Maybe<Scope.Scope>,
     reportFailure: M.Maybe<(e: C.Cause<E>) => void>
   ): FiberContext<any, any> {
     const childFiberRefLocals: FiberRefLocals = new Map()
@@ -999,7 +1036,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       childFiberRefLocals.set(k, k.fork(v))
     })
 
-    const parentScope: Scope.Scope<Exit<any, any>> = pipe(
+    const parentScope: Scope.Scope = pipe(
       forkScope,
       M.orElse(() => this.unsafeGetRef(forkScopeOverride)),
       M.getOrElse(() => this.scope)
@@ -1007,17 +1044,17 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
     const currentSupervisor = this.currentSupervisor
     const childId           = newFiberId()
-    const childScope        = Scope.unsafeMakeScope<Exit<E, A>>()
+    const grandChildren     = new Set<FiberContext<any, any>>()
     const ancestry          = this.unsafeIsInTracingRegion && (this.platform.traceExecution || this.platform.traceStack)
         ? M.just(this.unsafeCutAncestryTrace(this.unsafeCaptureTrace(undefined)))
         : M.nothing()
 
-    const childContext = new FiberContext(
+    const childContext = new FiberContext<any, any>(
       childId,
       interruptStatus(this.unsafeIsInterruptible),
       childFiberRefLocals,
       currentSupervisor,
-      childScope,
+      grandChildren,
       this.maxOperations,
       M.getOrElse_(reportFailure, () => this.reportFailure),
       this.platform,
@@ -1031,63 +1068,12 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       })
     }
 
-    const childIO = this.forkParentScopeOp(parentScope, childContext, io)
+    const childIO = !parentScope.unsafeAdd(childContext) ? interruptAs(parentScope.fiberId) : io
 
-    childContext.nextIO = childIO
+    childContext.nextIO = concrete(childIO)
     defaultScheduler(() => childContext.runUntil(this.platform.maxYieldOp))
 
     return childContext
-  }
-
-  private forkParentScopeOp(
-    parentScope: Scope.Scope<Exit<any, any>>,
-    childContext: FiberContext<E, A>,
-    io: Instruction
-  ): Instruction {
-    if (parentScope !== Scope.globalScope) {
-      const exitOrKey = parentScope.unsafeEnsure((exit) =>
-        defer((): UIO<any> => {
-          const _interruptors = exit._tag === Ex.ExitTag.Failure ? C.interruptors(exit.cause) : new Set<FiberId>()
-
-          const head = _interruptors.values().next()
-
-          if (head.done) {
-            return childContext.interruptAs(this.fiberId)
-          } else {
-            return childContext.interruptAs(head.value)
-          }
-        })
-      )
-
-      return E.match_(
-        exitOrKey,
-        (exit) =>
-          concrete(
-            Ex.match_(
-              exit,
-              flow(
-                C.interruptors,
-                A.from,
-                A.head,
-                M.getOrElse(() => this.fiberId),
-                interruptAs
-              ),
-              () => interruptAs(this.fiberId)
-            )
-          ),
-        (key) => {
-          childContext.scopeKey = key
-          // Remove the finalizer key from the parent scope when the child fiber terminates:
-          childContext.unsafeOnDone(() => {
-            parentScope.unsafeDeny(key)
-          })
-
-          return io
-        }
-      )
-    } else {
-      return io
-    }
   }
 
   private unsafeOnDone(k: State.Callback<never, Exit<E, A>>): void {
@@ -1108,7 +1094,8 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
           oldState.observers,
           C.empty,
           oldState.interruptors,
-          oldState.asyncCanceller
+          oldState.asyncCanceller,
+          oldState.mailbox
         )
         this.state.set(newState)
         return oldState.suppressed
@@ -1200,6 +1187,52 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       L.take_(trace.executionTrace, maxExecLength),
       L.take_(trace.stackTrace, maxStackLength),
       truncated
+    )
+  }
+
+  private unsafeEvalOn(effect: UIO<any>, orElse: UIO<any>): UIO<void> {
+    const oldState = this.state.get
+    if (oldState._tag === 'Executing') {
+      const newMailbox = oldState.mailbox == null ? effect : chain_(oldState.mailbox, () => effect)
+      const newState   = new State.Executing(
+        oldState.status,
+        oldState.observers,
+        oldState.suppressed,
+        oldState.interruptors,
+        oldState.asyncCanceller,
+        newMailbox
+      )
+      this.state.set(newState)
+      return unit()
+    } else {
+      return asUnit(orElse)
+    }
+  }
+
+  private unsafeDrainMailbox(): UIO<any> | null {
+    const oldState = this.state.get
+    if (oldState._tag === 'Executing') {
+      const newState = new State.Executing(
+        oldState.status,
+        oldState.observers,
+        oldState.suppressed,
+        oldState.interruptors,
+        oldState.asyncCanceller,
+        null
+      )
+      this.state.set(newState)
+      return oldState.mailbox
+    } else {
+      return null
+    }
+  }
+
+  unsafeAddChild(child: FiberContext<unknown, unknown>): void {
+    this.unsafeEvalOn(
+      succeedLazy(() => {
+        this.children.add(child)
+      }),
+      unit()
     )
   }
 }

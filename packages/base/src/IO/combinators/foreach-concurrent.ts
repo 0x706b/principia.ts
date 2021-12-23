@@ -1,8 +1,7 @@
 // tracing: off
 
 import type { Chunk } from '../../Chunk/core'
-import type { Fiber } from '../../Fiber/core'
-import type { FiberContext } from '../../Fiber/FiberContext'
+import type { Fiber, RuntimeFiber } from '../../Fiber/core'
 import type { Exit } from '../Exit/core'
 
 import { accessCallTrace, traceAs, traceFrom } from '@principia/compile/util'
@@ -13,7 +12,7 @@ import * as FiberId from '../../Fiber/FiberId'
 import { flow, identity, pipe } from '../../function'
 import * as F from '../../Future'
 import * as It from '../../Iterable'
-import { fromIO, Managed } from '../../Managed/core'
+import { Managed } from '../../Managed/core'
 import * as RM from '../../Managed/ReleaseMap'
 import * as M from '../../Maybe'
 import * as Q from '../../Queue'
@@ -26,7 +25,7 @@ import * as Ex from '../Exit'
 import { bracketExit_ } from './bracketExit'
 import { concurrencyWith } from './concurrency'
 import { forkDaemon, transplant } from './core-scope'
-import { interruptible, uninterruptible, uninterruptibleMask } from './interrupt'
+import { uninterruptibleMask } from './interrupt'
 
 function foreachConcurrentUnboundedUnit_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E, any>): I.IO<R, E, void> {
   return I.defer(() => {
@@ -391,7 +390,7 @@ export function use_<R, E, A, R2, E2, B>(ma: Managed<R, E, A>, f: (a: A) => I.IO
  *
  * @trace call
  */
-export function fork<R, E, A>(self: Managed<R, E, A>): Managed<R, never, FiberContext<E, A>> {
+export function fork<R, E, A>(self: Managed<R, E, A>): Managed<R, never, RuntimeFiber<E, A>> {
   const trace = accessCallTrace()
   return new Managed(
     uninterruptibleMask(

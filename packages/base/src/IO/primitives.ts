@@ -191,7 +191,7 @@ export class Fork<R, E, A> extends IO<R, never, FiberContext<E, A>> {
 
   constructor(
     readonly io: IO<R, E, A>,
-    readonly scope: Maybe<Scope<Exit<any, any>>>,
+    readonly scope: Maybe<Scope>,
     readonly reportFailure: Maybe<FailureReporter>,
     readonly trace?: string
   ) {
@@ -283,7 +283,7 @@ export class Race<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3> extends IO<R & R1
     readonly right: IO<R1, E1, A1>,
     readonly leftWins: (exit: Exit<E, A>, fiber: Fiber<E1, A1>) => IO<R2, E2, A2>,
     readonly rightWins: (exit: Exit<E1, A1>, fiber: Fiber<E, A>) => IO<R3, E3, A3>,
-    readonly scope: Maybe<Scope<Exit<any, any>>>,
+    readonly scope: Maybe<Scope>,
     readonly trace?: string
   ) {
     super()
@@ -393,7 +393,7 @@ export class GetForkScope<R, E, A> extends IO<R, E, A> {
   readonly [IOTypeId]: IOTypeId = IOTypeId
   readonly _tag = IOTag.GetForkScope
 
-  constructor(readonly f: (_: Scope<Exit<any, any>>) => IO<R, E, A>) {
+  constructor(readonly f: (_: Scope) => IO<R, E, A>) {
     super()
   }
 }
@@ -405,7 +405,7 @@ export class OverrideForkScope<R, E, A> extends IO<R, E, A> {
   readonly [IOTypeId]: IOTypeId = IOTypeId
   readonly _tag = IOTag.OverrideForkScope
 
-  constructor(readonly io: IO<R, E, A>, readonly forkScope: Maybe<Scope<Exit<any, any>>>, readonly trace?: string) {
+  constructor(readonly io: IO<R, E, A>, readonly forkScope: Maybe<Scope>, readonly trace?: string) {
     super()
   }
 }

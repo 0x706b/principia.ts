@@ -1,6 +1,6 @@
 // tracing: off
 
-import type { FiberContext } from '../../Fiber'
+import type { RuntimeFiber } from '../../Fiber'
 import type { Managed } from '../../Managed'
 import type { IO } from '../core'
 
@@ -12,7 +12,7 @@ import { toManaged } from './toManaged'
 /**
  * @trace call
  */
-export function forkManaged<R, E, A>(ma: IO<R, E, A>): Managed<R, never, FiberContext<E, A>> {
+export function forkManaged<R, E, A>(ma: IO<R, E, A>): Managed<R, never, RuntimeFiber<E, A>> {
   const trace = accessCallTrace()
   return traceCall(fork, trace)(toManaged()(ma))
 }

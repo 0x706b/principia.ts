@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2020",
-    "lib": ["es2020"],
+    "lib": ["es2020", "ESNext.WeakRef"],
     "strict": true,
     "declaration": true,
     "noErrorTruncation": true,

@@ -33,7 +33,7 @@ import * as Q from '../../Queue'
 import * as Ref from '../../Ref'
 import * as RefM from '../../RefM'
 import * as Sc from '../../Schedule'
-import { globalScope } from '../../Scope'
+import { global } from '../../Scope'
 import * as Semaphore from '../../Semaphore'
 import { tuple } from '../../tuple/core'
 import { matchTag } from '../../util/match'
@@ -5106,7 +5106,7 @@ export function debounce_<R, E, A>(ma: Stream<R, E, A>, d: number): Stream<R & H
                       (chunk): I.IO<R & Has<Clock>, Maybe<E>, Chunk<A>> =>
                         C.isEmpty(chunk) ? Pull.empty<A>() : I.crossSecond_(Fi.interrupt(previous), store(chunk))
                     ),
-                  M.just(globalScope)
+                  M.just(global)
                 )
               ),
             Current: ({ fiber }) => I.chain_(Fi.join(fiber), store),

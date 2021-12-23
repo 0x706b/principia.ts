@@ -12,27 +12,22 @@ import * as Fu from '@principia/base/Future'
 import * as I from '@principia/base/IO'
 import * as M from '@principia/base/Maybe'
 import * as N from '@principia/base/number'
-import * as Q from '@principia/base/Queue'
 import * as Ref from '@principia/base/Ref'
-import * as Scope from '@principia/base/Scope'
 import * as S from '@principia/base/Set'
 import {
   all,
-  allIO,
   anything,
   assert,
   assert_,
   assertCompletes,
   assertIO,
   assertIO_,
-  check,
   checkM,
   deepStrictEqualTo,
   DefaultRunnableSpec,
   equalTo,
   fails,
   halts,
-  isFalse,
   isInterrupted,
   isJust,
   isLeft,
@@ -40,7 +35,6 @@ import {
   isTrue,
   not,
   suite,
-  test,
   testIO
 } from '@principia/test'
 import { TestClock } from '@principia/test/environment/TestClock'
@@ -905,20 +899,6 @@ class IOSpec extends DefaultRunnableSpec {
           )
         })
       })
-    ),
-    suite(
-      'forkIn',
-      testIO('fiber forked in a closed scope does not run', () =>
-        I.gen(function* (_) {
-          const ref  = yield* _(Ref.make(false))
-          const open = yield* _(Scope.makeScope<Ex.PExit<Fi.FiberId, any, any>>())
-          yield* _(open.close(Ex.unit()))
-          const fiber = yield* _(pipe(ref, Ref.set(true), I.forkIn(open.scope)))
-          const exit  = yield* _(fiber.await)
-          const value = yield* _(Ref.get(ref))
-          return all(pipe(exit, assert(isInterrupted)), pipe(value, assert(isFalse)))
-        })
-      )
     ),
     suite(
       'forkWithErrorHandler',

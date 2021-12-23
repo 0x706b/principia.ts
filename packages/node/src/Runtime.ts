@@ -125,7 +125,7 @@ export class NodeRuntime<R, A> {
 
     const context = this.custom.runFiber(effect)
 
-    context.evaluateLater(effect[I._I])
+    context.unsafeRunLater(I.concrete(effect))
     context.awaitAsync((exit) => {
       switch (exit._tag) {
         case 'Failure': {

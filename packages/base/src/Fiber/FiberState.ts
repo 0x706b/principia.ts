@@ -1,3 +1,4 @@
+import type { UIO } from '../IO'
 import type { Exit } from '../IO/Exit'
 import type { FiberId } from './FiberId'
 
@@ -17,7 +18,8 @@ export class Executing<E, A> {
     readonly observers: Array<Callback<never, Exit<E, A>>>,
     readonly suppressed: C.Cause<never>,
     readonly interruptors: Set<FiberId>,
-    readonly asyncCanceller: CS.CancellerState
+    readonly asyncCanceller: CS.CancellerState,
+    readonly mailbox: UIO<any> | null
   ) {}
 }
 
@@ -32,7 +34,7 @@ export class Done<E, A> {
 }
 
 export function initial<E, A>(): FiberState<E, A> {
-  return new Executing(new FS.Running(false), [], C.empty, new Set(), new CS.Empty())
+  return new Executing(new FS.Running(false), [], C.empty, new Set(), new CS.Empty(), null)
 }
 
 export function interruptorsCause<E, A>(state: FiberState<E, A>): C.Cause<never> {

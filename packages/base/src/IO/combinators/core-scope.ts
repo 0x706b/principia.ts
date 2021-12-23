@@ -9,26 +9,27 @@ import type { Exit } from '../Exit'
 
 import { accessCallTrace, traceAs, traceCall } from '@principia/compile/util'
 
+import { pipe } from '../../function'
 import * as M from '../../Maybe'
-import { globalScope } from '../../Scope'
+import { global } from '../../Scope'
 import { Fork, GetForkScope, OverrideForkScope, pure, Race } from '../core'
 
 /**
  * Retrieves the scope that will be used to supervise forked effects.
  */
-export const forkScope: UIO<Scope<Exit<any, any>>> = new GetForkScope(pure)
+export const forkScope: UIO<Scope> = new GetForkScope(pure)
 
 /**
  * Retrieves the scope that will be used to supervise forked effects.
  *
  * @trace 0
  */
-export function forkScopeWith<R, E, A>(f: (_: Scope<Exit<any, any>>) => IO<R, E, A>) {
+export function forkScopeWith<R, E, A>(f: (_: Scope) => IO<R, E, A>) {
   return new GetForkScope(f)
 }
 
 export class ForkScopeRestore {
-  constructor(private scope: Scope<Exit<any, any>>) {}
+  constructor(private scope: Scope) {}
 
   readonly restore = <R, E, A>(ma: IO<R, E, A>): IO<R, E, A> => new OverrideForkScope(ma, M.just(this.scope))
 }
@@ -40,10 +41,7 @@ export class ForkScopeRestore {
  *
  * @trace 1
  */
-export function forkScopeMask_<R, E, A>(
-  newScope: Scope<Exit<any, any>>,
-  f: (restore: ForkScopeRestore) => IO<R, E, A>
-): IO<R, E, A> {
+export function forkScopeMask_<R, E, A>(newScope: Scope, f: (restore: ForkScopeRestore) => IO<R, E, A>): IO<R, E, A> {
   return forkScopeWith(traceAs(f, (scope) => new OverrideForkScope(f(new ForkScopeRestore(scope)), M.just(newScope))))
 }
 
@@ -57,7 +55,7 @@ export function forkScopeMask_<R, E, A>(
  */
 export function forkScopeMask<R, E, A>(
   f: (restore: ForkScopeRestore) => IO<R, E, A>
-): (newScope: Scope<Exit<any, any>>) => IO<R, E, A> {
+): (newScope: Scope) => IO<R, E, A> {
   return (newScope) => forkScopeMask_(newScope, f)
 }
 
@@ -74,7 +72,7 @@ export function forkScopeMask<R, E, A>(
  *
  * @trace call
  */
-export function forkIn_<R, E, A>(io: IO<R, E, A>, scope: Scope<Exit<any, any>>): URIO<R, RuntimeFiber<E, A>> {
+export function forkIn_<R, E, A>(io: IO<R, E, A>, scope: Scope): URIO<R, RuntimeFiber<E, A>> {
   const trace = accessCallTrace()
   return new Fork(io, M.just(scope), M.nothing(), trace)
 }
@@ -93,7 +91,7 @@ export function forkIn_<R, E, A>(io: IO<R, E, A>, scope: Scope<Exit<any, any>>):
  * @trace call
  * @dataFirst forkIn_
  */
-export function forkIn(scope: Scope<Exit<any, any>>): <R, E, A>(io: IO<R, E, A>) => URIO<R, RuntimeFiber<E, A>> {
+export function forkIn(scope: Scope): <R, E, A>(io: IO<R, E, A>) => URIO<R, RuntimeFiber<E, A>> {
   const trace = accessCallTrace()
   return (io) => traceCall(forkIn_, trace)(io, scope)
 }
@@ -109,7 +107,7 @@ export function raceWith_<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
   right: IO<R1, E1, A1>,
   leftWins: (exit: Exit<E, A>, fiber: Fiber<E1, A1>) => IO<R2, E2, A2>,
   rightWins: (exit: Exit<E1, A1>, fiber: Fiber<E, A>) => IO<R3, E3, A3>,
-  scope: Maybe<Scope<Exit<any, any>>> = M.nothing()
+  scope: Maybe<Scope> = M.nothing()
 ): IO<R & R1 & R2 & R3, E2 | E3, A2 | A3> {
   const trace = accessCallTrace()
   return new Race(left, right, leftWins, rightWins, scope, trace)
@@ -126,7 +124,7 @@ export function raceWith<E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>(
   right: IO<R1, E1, A1>,
   leftWins: (exit: Exit<E, A>, fiber: Fiber<E1, A1>) => IO<R2, E2, A2>,
   rightWins: (exit: Exit<E1, A1>, fiber: Fiber<E, A>) => IO<R3, E3, A3>,
-  scope: Maybe<Scope<Exit<any, any>>> = M.nothing()
+  scope: Maybe<Scope> = M.nothing()
 ): <R>(left: IO<R, E, A>) => IO<R & R1 & R2 & R3, E2 | E3, A2 | A3> {
   const trace = accessCallTrace()
   return (left) => new Race(left, right, leftWins, rightWins, scope, trace)
@@ -155,9 +153,9 @@ export function transplant<R, E, A>(f: (_: Grafter) => IO<R, E, A>): IO<R, E, A>
  *
  * @trace call
  */
-export function forkDaemon<R, E, A>(ma: IO<R, E, A>): URIO<R, FiberContext<E, A>> {
+export function forkDaemon<R, E, A>(ma: IO<R, E, A>): URIO<R, RuntimeFiber<E, A>> {
   const trace = accessCallTrace()
-  return new Fork(ma, M.just(globalScope), M.nothing(), trace)
+  return pipe(ma, forkIn(global))
 }
 
 /**
@@ -172,7 +170,7 @@ export function forkDaemonReport_<R, E, A>(
   reportFailure: FailureReporter
 ): URIO<R, FiberContext<E, A>> {
   const trace = accessCallTrace()
-  return new Fork(ma, M.just(globalScope), M.just(reportFailure), trace)
+  return new Fork(ma, M.just(global), M.just(reportFailure), trace)
 }
 
 /**
@@ -205,7 +203,7 @@ export function forkDaemonReport(
  */
 export function forkInReport_<R, E, A>(
   ma: IO<R, E, A>,
-  scope: Scope<Exit<any, any>>,
+  scope: Scope,
   reportFailure: FailureReporter
 ): URIO<R, RuntimeFiber<E, A>> {
   const trace = accessCallTrace()
@@ -226,7 +224,7 @@ export function forkInReport_<R, E, A>(
  * @trace call
  */
 export function forkInReport(
-  scope: Scope<Exit<any, any>>,
+  scope: Scope,
   reportFailure: FailureReporter
 ): <R, E, A>(ma: IO<R, E, A>) => URIO<R, RuntimeFiber<E, A>> {
   const trace = accessCallTrace()
@@ -239,7 +237,7 @@ export function forkInReport(
  *
  * @trace call
  */
-export function overrideForkScope_<R, E, A>(ma: IO<R, E, A>, scope: Scope<Exit<any, any>>): IO<R, E, A> {
+export function overrideForkScope_<R, E, A>(ma: IO<R, E, A>, scope: Scope): IO<R, E, A> {
   const trace = accessCallTrace()
   return new OverrideForkScope(ma, M.just(scope), trace)
 }
@@ -251,7 +249,7 @@ export function overrideForkScope_<R, E, A>(ma: IO<R, E, A>, scope: Scope<Exit<a
  * @dataFirst overrideForkScope_
  * @trace call
  */
-export function overrideForkScope(scope: Scope<Exit<any, any>>): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, A> {
+export function overrideForkScope(scope: Scope): <R, E, A>(ma: IO<R, E, A>) => IO<R, E, A> {
   const trace = accessCallTrace()
   return (ma) => traceCall(overrideForkScope_, trace)(ma, scope)
 }

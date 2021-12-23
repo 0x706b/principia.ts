@@ -1,6 +1,7 @@
 export * from './apply'
 export * from './awaitAll'
 export * from './collectAll'
+export * from './evalOnIO'
 export * from './fromIO'
 export * from './functor'
 export * from './interrupt'
