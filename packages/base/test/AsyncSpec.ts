@@ -29,11 +29,11 @@ class AsyncSpec extends DefaultRunnableSpec {
         pipe(As.succeed(0), As.matchCauseAsync(As.fail, As.succeed), assertAsync(equalTo(0)))
       )
     ),
-    testAsync('crossWithPar', () =>
+    testAsync('crossWithC', () =>
       allAsync(
         pipe(
           As.succeed(1),
-          As.crossWithPar(As.succeed(2), (x, y) => x + y),
+          As.crossWithC(As.succeed(2), (x, y) => x + y),
           assertAsync(equalTo(3))
         )
       )

@@ -96,9 +96,9 @@ class StreamSpec extends DefaultRunnableSpec {
                 pipe(subscribe, S.ensuring(F.succeed_(onEnd, undefined)), S.runDrain, I.fork, (_) =>
                   pipe(
                     _,
-                    I.crossSecond(F.await(onEnd)),
-                    I.crossSecond(S.runDrain(subscribe)),
-                    I.crossSecond(I.succeed(assertCompletes))
+                    I.apSecond(F.await(onEnd)),
+                    I.apSecond(S.runDrain(subscribe)),
+                    I.apSecond(I.succeed(assertCompletes))
                   )
                 )
               )
@@ -122,9 +122,9 @@ class StreamSpec extends DefaultRunnableSpec {
             I.gen(function* (_) {
               const fiber = yield* _(pipe(stream, S.runCollect, I.fork))
               yield* _(I.fork(c.offer))
-              yield* _(pipe(Clock.sleep(500), I.crossSecond(c.offer), I.fork))
-              yield* _(pipe(Clock.sleep(2000), I.crossSecond(c.offer), I.fork))
-              yield* _(pipe(Clock.sleep(2500), I.crossSecond(c.offer), I.fork))
+              yield* _(pipe(Clock.sleep(500), I.apSecond(c.offer), I.fork))
+              yield* _(pipe(Clock.sleep(2000), I.apSecond(c.offer), I.fork))
+              yield* _(pipe(Clock.sleep(2500), I.apSecond(c.offer), I.fork))
               yield* _(TestClock.adjust(3500))
               return yield* _(Fi.join(fiber))
             }),

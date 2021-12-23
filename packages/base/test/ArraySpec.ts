@@ -24,7 +24,7 @@ class ArraySpec extends DefaultRunnableSpec {
       test('binary (value, index)', () =>
         pipe(
           [1, 2, 3],
-          A.map((n, i) => n + i),
+          A.imap((i, n) => n + i),
           assert(deepStrictEqualTo([1, 3, 5]))
         ))
     ),
@@ -39,7 +39,7 @@ class ArraySpec extends DefaultRunnableSpec {
       test('binary (value, index)', () =>
         pipe(
           [1, 2, 3],
-          A.chain((n, i) => [n + i, n + i * 2]),
+          A.ichain((i, n) => [n + i, n + i * 2]),
           assert(deepStrictEqualTo([1, 1, 3, 4, 5, 7]))
         ))
     ),
@@ -81,7 +81,7 @@ class ArraySpec extends DefaultRunnableSpec {
       test('binary', () =>
         pipe(
           [1, 2, 3, 4],
-          A.filter((n, i) => isOdd(n) && i !== 2),
+          A.ifilter((i, n) => isOdd(n) && i !== 2),
           assert(deepStrictEqualTo([1]))
         ))
     ),
@@ -91,7 +91,7 @@ class ArraySpec extends DefaultRunnableSpec {
       test('binary', () =>
         pipe(
           [1, 2, 3, 4],
-          A.filterMap((n, i) => (i !== 2 ? doubleIfOdd(n) : M.nothing())),
+          A.ifilterMap((i, n) => (i !== 2 ? doubleIfOdd(n) : M.nothing())),
           assert(deepStrictEqualTo([2]))
         ))
     ),
@@ -111,7 +111,7 @@ class ArraySpec extends DefaultRunnableSpec {
       test('binary', () =>
         pipe(
           [1, 2, 3, 4],
-          A.partition((n, i) => isOdd(n) && i !== 2),
+          A.ipartition((i, n) => isOdd(n) && i !== 2),
           assert(deepStrictEqualTo([[2, 3, 4], [1]]))
         ))
     ),
@@ -131,7 +131,7 @@ class ArraySpec extends DefaultRunnableSpec {
       test('binary', () =>
         pipe(
           [1, 2, 3, 4],
-          A.partitionMap((n, i) => (i !== 2 ? doubleIfOddStringifyIfEven(n) : E.left('no'))),
+          A.ipartitionMap((i, n) => (i !== 2 ? doubleIfOddStringifyIfEven(n) : E.left('no'))),
           assert(deepStrictEqualTo([['2', 'no', '4'], [2]]))
         ))
     ),
@@ -146,7 +146,7 @@ class ArraySpec extends DefaultRunnableSpec {
       test('with index', () =>
         pipe(
           ['a', 'b', 'c'],
-          A.foldl('', (b, a, i) => b + i + a),
+          A.ifoldl('', (i, b, a) => b + i + a),
           assert(equalTo('0a1b2c'))
         ))
     ),
@@ -161,7 +161,7 @@ class ArraySpec extends DefaultRunnableSpec {
       test('with index', () =>
         pipe(
           ['a', 'b', 'c'],
-          A.foldr('', (a, b, i) => b + i + a),
+          A.ifoldr('', (i, a, b) => b + i + a),
           assert(equalTo('2c1b0a'))
         ))
     ),
@@ -225,10 +225,10 @@ class ArraySpec extends DefaultRunnableSpec {
       )
     }),
     test('mapAccumM', () => {
-      const f = (s: string, a: number) => (isOdd(a) ? M.just([a, s + a] as const) : M.nothing())
+      const f = (_: number, s: string, a: number) => (isOdd(a) ? M.just([a, s + a] as const) : M.nothing())
       return all(
-        pipe([1, 2, 3], A.mapAccumM(M.Monad)('', f), assert(deepStrictEqualTo(M.nothing()))),
-        pipe([1, 3, 5], A.mapAccumM(M.Monad)('', f), assert(deepStrictEqualTo(M.just([[1, 3, 5], '135']))))
+        pipe([1, 2, 3], A.imapAccumM(M.Monad)('', f), assert(deepStrictEqualTo(M.nothing()))),
+        pipe([1, 3, 5], A.imapAccumM(M.Monad)('', f), assert(deepStrictEqualTo(M.just([[1, 3, 5], '135']))))
       )
     }),
     test('unfold', () =>
