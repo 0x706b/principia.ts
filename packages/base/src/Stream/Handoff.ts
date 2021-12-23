@@ -47,9 +47,9 @@ export function offer<A>(handoff: Handoff<A>, a: A): I.UIO<void> {
       handoff.ref,
       Ref.modify((s) => {
         if (s._typeId === FullTypeId) {
-          return tuple(I.crossSecond_(F.await(s.notifyConsumer), offer(handoff, a)), s)
+          return tuple(I.apSecond_(F.await(s.notifyConsumer), offer(handoff, a)), s)
         } else {
-          return tuple(I.crossSecond_(F.succeed_(s.notifyConsumer, undefined), F.await(p)), new Full(a, p))
+          return tuple(I.apSecond_(F.succeed_(s.notifyConsumer, undefined), F.await(p)), new Full(a, p))
         }
       }),
       I.flatten
@@ -65,7 +65,7 @@ export function take<A>(handoff: Handoff<A>): I.UIO<A> {
         if (s._typeId === FullTypeId) {
           return tuple(I.as_(F.succeed_(s.notifyConsumer, undefined), s.a), new Empty(p))
         } else {
-          return tuple(I.crossSecond_(F.await(s.notifyConsumer), take(handoff)), s)
+          return tuple(I.apSecond_(F.await(s.notifyConsumer), take(handoff)), s)
         }
       }),
       I.flatten

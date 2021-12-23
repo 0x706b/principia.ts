@@ -124,7 +124,7 @@ export function foreachChunk<R, E, I>(f: (chunk: Chunk<I>) => I.IO<R, E, any>): 
     M.match(
       () => Push.emit(undefined, C.empty()),
       (is) =>
-        I.crossSecond_(
+        I.apSecond_(
           I.mapError_(f(is), (e) => [E.left(e), C.empty()]),
           Push.more
         )
@@ -198,7 +198,7 @@ export function last<I>(): Sink<unknown, never, I, never, M.Maybe<I>> {
                 C.last,
                 M.match(
                   () => Push.more,
-                  (l) => I.crossSecond_(state.set(M.just(l)), Push.more)
+                  (l) => I.apSecond_(state.set(M.just(l)), Push.more)
                 )
               )
             )
@@ -226,9 +226,9 @@ export function take<I>(n: number): Sink<unknown, never, I, I, Chunk<I>> {
                 const remaining = n - take.length
                 if (remaining <= ch.length) {
                   const [chunk, leftover] = C.splitAt_(ch, remaining)
-                  return I.crossSecond_(state.set(C.empty()), Push.emit(C.concat_(take, chunk), leftover))
+                  return I.apSecond_(state.set(C.empty()), Push.emit(C.concat_(take, chunk), leftover))
                 } else {
-                  return I.crossSecond_(state.set(C.concat_(take, ch)), Push.more)
+                  return I.apSecond_(state.set(C.concat_(take, ch)), Push.more)
                 }
               }
             )
@@ -261,7 +261,7 @@ export function foldChunksWhileM<R, E, I, Z>(
                 I.mapError((e) => tuple(E.left(e), C.empty<I>())),
                 I.chain((s) => {
                   if (cont(s)) {
-                    return pipe(state.set(s), I.crossSecond(Push.more))
+                    return pipe(state.set(s), I.apSecond(Push.more))
                   } else {
                     return Push.emit(s, C.empty<I>())
                   }
@@ -362,7 +362,7 @@ export function foldWhileIO<R, E, I, Z>(
                       ([st, l]) =>
                         M.match_(
                           l,
-                          () => pipe(state.set(st), I.crossSecond(Push.more)),
+                          () => pipe(state.set(st), I.apSecond(Push.more)),
                           (leftover) => Push.emit(st, leftover)
                         )
                     )
@@ -417,7 +417,7 @@ export function foldWhile<I, Z>(z: Z, cont: (z: Z) => boolean, f: (z: Z, i: I) =
                   pipe(foldChunk(s, is, 0, is.length), ([st, l]) =>
                     M.match_(
                       l,
-                      () => pipe(state.set(st), I.crossSecond(Push.more)),
+                      () => pipe(state.set(st), I.apSecond(Push.more)),
                       (leftover) => Push.emit(st, leftover)
                     )
                   )
@@ -602,7 +602,7 @@ type State<Z, Z1> = BothRunning | LeftDone<Z> | RightDone<Z1>
  * Runs both sinks in parallel on the input and combines the results
  * using the provided function.
  */
-export function crossWithPar_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
+export function crossWithC_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
   self: Sink<R, E, I, L, Z>,
   that: Sink<R1, E1, I1, L1, Z1>,
   f: (z: Z, z1: Z1) => Z2
@@ -679,7 +679,7 @@ export function crossWithPar_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
                 )
 
                 return I.chain_(
-                  I.crossPar_(l, r),
+                  I.crossC_(l, r),
                   ([lr, rr]): I.IO<R & R1, readonly [E.Either<E1, Z2>, Chunk<L | L1>], State<Z, Z1>> => {
                     if (M.isJust(lr)) {
                       const [z, l] = lr.value
@@ -742,53 +742,53 @@ export function crossWithPar_<R, R1, E, E1, I, I1, L, L1, Z, Z1, Z2>(
  * Runs both sinks in parallel on the input and combines the results
  * using the provided function.
  */
-export function crossWithPar<R1, E1, I1, L1, Z, Z1, Z2>(that: Sink<R1, E1, I1, L1, Z1>, f: (z: Z, z1: Z1) => Z2) {
-  return <R, E, I, L>(self: Sink<R, E, I, L, Z>) => crossWithPar_(self, that, f)
+export function crossWithC<R1, E1, I1, L1, Z, Z1, Z2>(that: Sink<R1, E1, I1, L1, Z1>, f: (z: Z, z1: Z1) => Z2) {
+  return <R, E, I, L>(self: Sink<R, E, I, L, Z>) => crossWithC_(self, that, f)
 }
 
 /**
  * Runs both sinks in parallel on the input and combines the results in a tuple.
  */
-export function crossPar_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
+export function crossC_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
   fa: Sink<R, E, I, L, Z>,
   fb: Sink<R1, E1, I1, L1, Z1>
 ): Sink<R & R1, E | E1, I & I1, L | L1, readonly [Z, Z1]> {
-  return crossWithPar_(fa, fb, tuple)
+  return crossWithC_(fa, fb, tuple)
 }
 
 /**
  * Runs both sinks in parallel on the input and combines the results in a tuple.
  */
-export function crossPar<I, R1, E1, I1 extends I, L1, Z1>(
+export function crossC<I, R1, E1, I1 extends I, L1, Z1>(
   fb: Sink<R1, E1, I1, L1, Z1>
 ): <R, E, L extends I1, Z>(fa: Sink<R, E, I, L, Z>) => Sink<R & R1, E | E1, I & I1, L | L1, readonly [Z, Z1]> {
-  return (fa) => crossPar_(fa, fb)
+  return (fa) => crossC_(fa, fb)
 }
 
-export function crossFirstPar_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
+export function apFirstC_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
   fa: Sink<R, E, I, L, Z>,
   fb: Sink<R1, E1, I1, L1, Z1>
 ): Sink<R & R1, E | E1, I & I1, L | L1, Z> {
-  return crossWithPar_(fa, fb, (z, _) => z)
+  return crossWithC_(fa, fb, (z, _) => z)
 }
 
-export function crossFirstPar<I, R1, E1, I1 extends I, L1, Z1>(
+export function apFirstC<I, R1, E1, I1 extends I, L1, Z1>(
   fb: Sink<R1, E1, I1, L1, Z1>
 ): <R, E, L extends I1, Z>(fa: Sink<R, E, I, L, Z>) => Sink<R & R1, E | E1, I & I1, L | L1, Z> {
-  return (fa) => crossFirstPar_(fa, fb)
+  return (fa) => apFirstC_(fa, fb)
 }
 
-export function crossSecondPar_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
+export function apSecondC_<R, E, I, L extends I1, Z, R1, E1, I1 extends I, L1, Z1>(
   fa: Sink<R, E, I, L, Z>,
   fb: Sink<R1, E1, I1, L1, Z1>
 ): Sink<R & R1, E | E1, I & I1, L | L1, Z1> {
-  return crossWithPar_(fa, fb, (_, z1) => z1)
+  return crossWithC_(fa, fb, (_, z1) => z1)
 }
 
-export function crossSecondPar<I, R1, E1, I1 extends I, L1, Z1>(
+export function apSecondC<I, R1, E1, I1 extends I, L1, Z1>(
   fb: Sink<R1, E1, I1, L1, Z1>
 ): <R, E, L extends I1, Z>(fa: Sink<R, E, I, L, Z>) => Sink<R & R1, E | E1, I & I1, L | L1, Z1> {
-  return (fa) => crossSecondPar_(fa, fb)
+  return (fa) => apSecondC_(fa, fb)
 }
 
 /*
@@ -989,14 +989,14 @@ export function matchSink_<R, E, I, L, Z, R1, E1, I1, L1, Z1, R2, E2, I2, L2, Z2
                 I.chain((p) =>
                   pipe(
                     switchedRef.set(true),
-                    I.crossSecond(
+                    I.apSecond(
                       M.match_(
                         in_,
                         () =>
                           pipe(
                             p(M.just(leftover) as M.Maybe<Chunk<I & I1 & I2>>),
                             I.when(() => leftover.length > 0),
-                            I.crossSecond(p(M.nothing()))
+                            I.apSecond(p(M.nothing()))
                           ),
                         () =>
                           pipe(
@@ -1247,7 +1247,7 @@ export function collectAllWhileWith_<R, E, I, L, Z, S>(
                             return I.as_(restart, s1)
                           }
                         } else {
-                          return I.crossSecond_(restart, go(s1, M.just(leftover as unknown as Chunk<I>), end))
+                          return I.apSecond_(restart, go(s1, M.just(leftover as unknown as Chunk<I>), end))
                         }
                       } else {
                         return Push.emit(s, leftover)
@@ -1306,7 +1306,7 @@ export function raceBoth_<R, E, I, L, Z, R1, E1, I1, L1, Z1>(
                   (f) =>
                     pipe(
                       F.interrupt(fib2),
-                      I.crossSecond(
+                      I.apSecond(
                         pipe(
                           f,
                           Ca.map(([r, leftover]) => tuple(E.map_(r, E.left), leftover)),
@@ -1328,7 +1328,7 @@ export function raceBoth_<R, E, I, L, Z, R1, E1, I1, L1, Z1>(
                   (f) =>
                     pipe(
                       F.interrupt(fib1),
-                      I.crossSecond(
+                      I.apSecond(
                         pipe(
                           f,
                           Ca.map(([r, leftover]) => tuple(E.map_(r, E.right), leftover)),
@@ -1411,7 +1411,7 @@ export function toTransducer<R, E, I, L extends I, Z>(self: Sink<R, E, I, L, Z>)
               e,
               (e) => I.fail(e),
               (z) =>
-                I.crossSecond_(
+                I.apSecond_(
                   restart,
                   C.isEmpty(leftover) || M.isNothing(input)
                     ? I.succeed(C.single(z))
@@ -1451,7 +1451,7 @@ export function untilOutputIO_<R, R1, E, E1, I, L extends I, Z>(
                   if (satisfied) {
                     return Push.emit(M.just(z), leftover)
                   } else if (C.isEmpty(leftover)) {
-                    return end ? Push.emit(M.nothing(), C.empty()) : I.crossSecond_(restart, Push.more)
+                    return end ? Push.emit(M.nothing(), C.empty()) : I.apSecond_(restart, Push.more)
                   } else {
                     return go(M.just(leftover) as M.Maybe<Chunk<I>>, end)
                   }

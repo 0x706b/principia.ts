@@ -10,7 +10,7 @@ import type { IO, UIO } from '@principia/base/IO'
 import type { Layer } from '@principia/base/Layer'
 import type { List } from '@principia/base/List'
 import type { URef } from '@principia/base/Ref'
-import type { URefM } from '@principia/base/RefM'
+import type { USRef } from '@principia/base/SRef'
 
 import * as C from '@principia/base/Chunk'
 import { ClockTag, ProxyClock } from '@principia/base/Clock'
@@ -30,7 +30,7 @@ import * as Ma from '@principia/base/Managed'
 import * as M from '@principia/base/Maybe'
 import * as N from '@principia/base/number'
 import * as Ref from '@principia/base/Ref'
-import * as RefM from '@principia/base/RefM'
+import * as RefM from '@principia/base/SRef'
 import * as St from '@principia/base/Structural'
 import { tuple } from '@principia/base/tuple'
 import { matchTag } from '@principia/base/util/match'
@@ -80,7 +80,7 @@ export class TestClock implements Clock {
     readonly clockState: URef<Data>,
     readonly live: Live,
     readonly annotations: Annotations,
-    readonly warningState: URefM<WarningData>
+    readonly warningState: USRef<WarningData>
   ) {}
   sleep = (ms: number) => {
     const self = this
@@ -99,9 +99,9 @@ export class TestClock implements Clock {
       yield* _(
         I.defer(() => {
           if (wait) {
-            return I.crossSecond_(self.warningStart, F.await(promise))
+            return I.apSecond_(self.warningStart, F.await(promise))
           } else {
-            return I.crossSecond_(F.succeed_(promise, undefined), I.unit())
+            return I.apSecond_(F.succeed_(promise, undefined), I.unit())
           }
         })
       )
@@ -111,7 +111,7 @@ export class TestClock implements Clock {
   currentTime = I.map_(this.clockState.get, (data) => data.duration)
 
   adjust(duration: number): UIO<void> {
-    return pipe(this.warningDone, I.crossSecond(this.run((d) => d + duration)))
+    return pipe(this.warningDone, I.apSecond(this.run((d) => d + duration)))
   }
 
   setDate(date: Date): UIO<void> {
@@ -119,7 +119,7 @@ export class TestClock implements Clock {
   }
 
   setTime(time: number): UIO<void> {
-    return pipe(this.warningDone, I.crossSecond(this.run((_) => time)))
+    return pipe(this.warningDone, I.apSecond(this.run((_) => time)))
   }
 
   sleeps = I.map_(this.clockState.get, (data) => Li.map_(data.sleeps, ([_]) => _))
@@ -168,7 +168,7 @@ export class TestClock implements Clock {
   private get awaitSuspended(): UIO<void> {
     return pipe(
       this.suspended,
-      I.crossWith(pipe(this.live.provide(I.sleep(10)), I.crossSecond(this.suspended)), St.equals),
+      I.crossWith(pipe(this.live.provide(I.sleep(10)), I.apSecond(this.suspended)), St.equals),
       I.filterOrFail(
         (_: boolean) => _,
         (): void => undefined
@@ -181,7 +181,7 @@ export class TestClock implements Clock {
   private run(f: (duration: number) => number): UIO<void> {
     return pipe(
       this.awaitSuspended,
-      I.crossSecond(
+      I.apSecond(
         Ref.modify_(this.clockState, (data) => {
           const end    = f(data.duration)
           const sorted = Li.sortWith_(data.sleeps, ([x], [y]) => N.Ord.compare_(x, y))
@@ -201,7 +201,7 @@ export class TestClock implements Clock {
         M.match(
           () => I.unit(),
           ([end, promise]) =>
-            pipe(F.succeed_(promise, undefined), I.crossSecond(I.yieldNow), I.crossSecond(this.run((_) => end)))
+            pipe(F.succeed_(promise, undefined), I.apSecond(I.yieldNow), I.apSecond(this.run((_) => end)))
         )
       )
     )
@@ -210,7 +210,7 @@ export class TestClock implements Clock {
   private get suspended(): IO<unknown, void, HashMap<FiberId, FiberStatus>> {
     return pipe(
       this.freeze,
-      I.cross(I.crossSecond_(this.delay, this.freeze)),
+      I.cross(I.apSecond_(this.delay, this.freeze)),
       I.chain(([first, last]) => {
         if (St.equals(first, last)) {
           return I.succeed(first)

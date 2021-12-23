@@ -341,7 +341,7 @@ export function getLt<K>(key: K): <V>(m: OrderedMap<K, V>) => Maybe<V> {
   return (m) => getLt_(m, key)
 }
 
-export function visitFull<K, V, A>(m: OrderedMap<K, V>, visit: (value: V, key: K) => Maybe<A>): Maybe<A> {
+export function visitFull<K, V, A>(m: OrderedMap<K, V>, visit: (key: K, value: V) => Maybe<A>): Maybe<A> {
   let current: RBNode<K, V>                = m.root
   let stack: Stack<Node<K, V>> | undefined = undefined
   let done = false
@@ -351,7 +351,7 @@ export function visitFull<K, V, A>(m: OrderedMap<K, V>, visit: (value: V, key: K
       stack   = makeStack(current, stack)
       current = current.left
     } else if (stack) {
-      const v = visit(stack.value.value, stack.value.key)
+      const v = visit(stack.value.key, stack.value.value)
       if (v._tag === 'Just') {
         return v
       }
@@ -367,10 +367,10 @@ export function visitFull<K, V, A>(m: OrderedMap<K, V>, visit: (value: V, key: K
 /**
  * Iterates through the elements of the map inorder, performing the given function for each element
  */
-export function forEach_<K, V>(m: OrderedMap<K, V>, visit: (value: V, key: K) => void) {
+export function forEach_<K, V>(m: OrderedMap<K, V>, visit: (key: K, value: V) => void) {
   if (m.root) {
-    visitFull(m, (v, k) => {
-      visit(v, k)
+    visitFull(m, (k, v) => {
+      visit(k, v)
       return M.nothing()
     })
   }
@@ -381,7 +381,7 @@ export function forEach_<K, V>(m: OrderedMap<K, V>, visit: (value: V, key: K) =>
  *
  * @dataFirst forEach_
  */
-export function forEach<K, V>(visit: (value: V, key: K) => void): (m: OrderedMap<K, V>) => void {
+export function forEach<K, V>(visit: (key: K, value: V) => void): (m: OrderedMap<K, V>) => void {
   return (m) => forEach_(m, visit)
 }
 
@@ -637,16 +637,16 @@ export function map<A, B>(f: (a: A) => B): <K>(fa: OrderedMap<K, A>) => OrderedM
  * -------------------------------------------------------------------------------------------------
  */
 
-export function filter_<K, A, B extends A>(
+export function ifilter_<K, A, B extends A>(
   m: OrderedMap<K, A>,
   refinement: P.RefinementWithIndex<K, A, B>
 ): OrderedMap<K, B>
-export function filter_<K, A>(m: OrderedMap<K, A>, predicate: P.PredicateWithIndex<K, A>): OrderedMap<K, A>
-export function filter_<K, A>(m: OrderedMap<K, A>, predicate: P.PredicateWithIndex<K, A>): OrderedMap<K, A> {
+export function ifilter_<K, A>(m: OrderedMap<K, A>, predicate: P.PredicateWithIndex<K, A>): OrderedMap<K, A>
+export function ifilter_<K, A>(m: OrderedMap<K, A>, predicate: P.PredicateWithIndex<K, A>): OrderedMap<K, A> {
   let r         = make<K, A>(m.ord)
   const entries = forward(m)
   for (const [k, v] of entries) {
-    if (predicate(v, k)) {
+    if (predicate(k, v)) {
       r = insert_(m, k, v)
     }
   }
@@ -656,11 +656,26 @@ export function filter_<K, A>(m: OrderedMap<K, A>, predicate: P.PredicateWithInd
 /**
  * @dataFirst filter_
  */
-export function filter<K, A, B extends A>(
+export function ifilter<K, A, B extends A>(
   refinement: P.RefinementWithIndex<K, A, B>
 ): (m: OrderedMap<K, A>) => OrderedMap<K, B>
-export function filter<K, A>(predicate: P.PredicateWithIndex<K, A>): (m: OrderedMap<K, A>) => OrderedMap<K, A>
-export function filter<K, A>(predicate: P.PredicateWithIndex<K, A>): (m: OrderedMap<K, A>) => OrderedMap<K, A> {
+export function ifilter<K, A>(predicate: P.PredicateWithIndex<K, A>): (m: OrderedMap<K, A>) => OrderedMap<K, A>
+export function ifilter<K, A>(predicate: P.PredicateWithIndex<K, A>): (m: OrderedMap<K, A>) => OrderedMap<K, A> {
+  return (m) => ifilter_(m, predicate)
+}
+
+export function filter_<K, A, B extends A>(m: OrderedMap<K, A>, refinement: P.Refinement<A, B>): OrderedMap<K, B>
+export function filter_<K, A>(m: OrderedMap<K, A>, predicate: P.Predicate<A>): OrderedMap<K, A>
+export function filter_<K, A>(m: OrderedMap<K, A>, predicate: P.Predicate<A>): OrderedMap<K, A> {
+  return ifilter_(m, (_, a) => predicate(a))
+}
+
+/**
+ * @dataFirst filter_
+ */
+export function filter<A, B extends A>(refinement: P.Refinement<A, B>): <K>(m: OrderedMap<K, A>) => OrderedMap<K, B>
+export function filter<A>(predicate: P.Predicate<A>): <K>(m: OrderedMap<K, A>) => OrderedMap<K, A>
+export function filter<A>(predicate: P.Predicate<A>): <K>(m: OrderedMap<K, A>) => OrderedMap<K, A> {
   return (m) => filter_(m, predicate)
 }
 
@@ -670,18 +685,29 @@ export function filter<K, A>(predicate: P.PredicateWithIndex<K, A>): (m: Ordered
  * -------------------------------------------------------------------------------------------------
  */
 
-export function foldl_<K, V, Z>(fa: OrderedMap<K, V>, z: Z, f: (z: Z, v: V, k: K) => Z): Z {
+export function ifoldl_<K, V, Z>(fa: OrderedMap<K, V>, z: Z, f: (k: K, z: Z, v: V) => Z): Z {
   let r = z
-  forEach_(fa, (v, k) => {
-    r = f(r, v, k)
+  forEach_(fa, (k, v) => {
+    r = f(k, r, v)
   })
   return r
 }
 
 /**
+ * @dataFirst ifoldl_
+ */
+export function ifoldl<K, V, Z>(z: Z, f: (k: K, z: Z, v: V) => Z): (fa: OrderedMap<K, V>) => Z {
+  return (fa) => ifoldl_(fa, z, f)
+}
+
+export function foldl_<K, V, Z>(fa: OrderedMap<K, V>, z: Z, f: (z: Z, v: V) => Z): Z {
+  return ifoldl_(fa, z, (_, b, a) => f(b, a))
+}
+
+/**
  * @dataFirst foldl_
  */
-export function foldl<K, V, Z>(z: Z, f: (z: Z, v: V, k: K) => Z): (fa: OrderedMap<K, V>) => Z {
+export function foldl<K, V, Z>(z: Z, f: (z: Z, v: V) => Z): (fa: OrderedMap<K, V>) => Z {
   return (fa) => foldl_(fa, z, f)
 }
 
@@ -714,7 +740,7 @@ export function size<K, V>(m: OrderedMap<K, V>): number {
  */
 export function toArray<K, V>(m: OrderedMap<K, V>): ReadonlyArray<readonly [K, V]> {
   const as: Array<readonly [K, V]> = []
-  forEach_(m, (v, k) => {
+  forEach_(m, (k, v) => {
     as.push([k, v])
   })
   return as

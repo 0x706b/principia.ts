@@ -1,14 +1,14 @@
 import type * as C from '@principia/base/Chunk'
 import type { Clock } from '@principia/base/Clock'
-import type * as Si from '@principia/base/experimental/Sink'
 import type { Has } from '@principia/base/Has'
 import type * as I from '@principia/base/IO'
+import type * as Si from '@principia/base/Sink'
 
 /* eslint typescript-sort-keys/interface: "error" */
 
 declare global {
   export const Sink: SinkStaticOps
-  export interface Sink<R, InErr, In, OutErr, L, Z> extends Si.Sink<R, InErr, In, OutErr, L, Z> {}
+  export interface Sink<R, E, In, L, Z> extends Si.Sink<R, E, In, L, Z> {}
 }
 
 interface SinkStaticOps {
@@ -135,117 +135,108 @@ interface SinkStaticOps {
 }
 
 declare module '@principia/base/Sink/core' {
-  export interface Sink<R, InErr, In, OutErr, L, Z> {
+  export interface Sink<R, E, In, L, Z> {
+    /**
+     * @rewrite apSecond_ from "@principia/base/Sink"
+     */
+    apSecond<R, E, In, L extends In1 & L1, Z, R1, E1, In1 extends In, L1, Z1>(
+      this: Sink<R, E, In, L, Z>,
+      fb: Sink<R1, E1, In1, L1, Z1>
+    ): Sink<R & R1, E | E1, In1, L1, Z1>
     /**
      * @rewrite chain_ from "@principia/base/Sink"
      */
-    chain<R, InErr, In, OutErr, L extends In1 & L1, Z, R1, InErr1, In1 extends In, OutErr1, L1, Z1>(
-      this: Sink<R, InErr, In, OutErr, L, Z>,
-      f: (z: Z) => Sink<R1, InErr1, In1, OutErr1, L1, Z1>
-    ): Sink<R & R1, InErr & InErr1, In1, OutErr | OutErr1, L1, Z1>
+    chain<R, E, In, L extends In1 & L1, Z, R1, E1, In1 extends In, L1, Z1>(
+      this: Sink<R, E, In, L, Z>,
+      f: (z: Z) => Sink<R1, E1, In1, L1, Z1>
+    ): Sink<R & R1, E | E1, In1, L1, Z1>
     /**
      * @rewrite contramap_ from "@principia/base/Sink"
      */
-    contramap<R, InErr, In, OutErr, L, Z, In1>(
-      this: Sink<R, InErr, In, OutErr, L, Z>,
-      f: (_: In1) => In
-    ): Sink<R, InErr, In1, OutErr, L, Z>
+    contramap<R, E, In, L, Z, In1>(this: Sink<R, E, In, L, Z>, f: (_: In1) => In): Sink<R, E, In1, L, Z>
     /**
      * @rewrite contramapChunks_ from "@principia/base/Sink"
      */
-    contramapChunks<R, InErr, In, OutErr, L, Z, In1>(
-      this: Sink<R, InErr, In, OutErr, L, Z>,
+    contramapChunks<R, E, In, L, Z, In1>(
+      this: Sink<R, E, In, L, Z>,
       f: (chunk: C.Chunk<In1>) => C.Chunk<In>
-    ): Sink<R, InErr, In1, OutErr, L, Z>
+    ): Sink<R, E, In1, L, Z>
     /**
      * @rewrite contramapChunksIO_ from "@principia/base/Sink"
      */
-    contramapChunksIO<R, InErr, In, OutErr, L, Z, R1, InErr1, In1>(
-      this: Sink<R, InErr, In, OutErr, L, Z>,
-      f: (chunk: C.Chunk<In1>) => I.IO<R1, InErr1, C.Chunk<In>>
-    ): Sink<R & R1, InErr & InErr1, In1, OutErr, L, Z>
+    contramapChunksIO<R, E, In, L, Z, R1, E1, In1>(
+      this: Sink<R, E, In, L, Z>,
+      f: (chunk: C.Chunk<In1>) => I.IO<R1, E1, C.Chunk<In>>
+    ): Sink<R & R1, E | E1, In1, L, Z>
     /**
      * @rewrite contramapIO_ from "@principia/base/Sink"
      */
-    contramapIO<R, InErr, In, OutErr, L, Z, R1, InErr1, In1>(
-      this: Sink<R, InErr, In, OutErr, L, Z>,
-      f: (_: In1) => I.IO<R1, InErr1, In>
-    ): Sink<R & R1, InErr & InErr1, In1, OutErr, L, Z>
-    /**
-     * @rewrite crossSecond_ from "@principia/base/Sink"
-     */
-    crossSecond<R, InErr, In, OutErr, L extends In1 & L1, Z, R1, InErr1, In1 extends In, OutErr1, L1, Z1>(
-      this: Sink<R, InErr, In, OutErr, L, Z>,
-      fb: Sink<R1, InErr1, In1, OutErr1, L1, Z1>
-    ): Sink<R & R1, InErr & InErr1, In1, OutErr | OutErr1, L1, Z1>
+    contramapIO<R, E, In, L, Z, R1, E1, In1>(
+      this: Sink<R, E, In, L, Z>,
+      f: (_: In1) => I.IO<R1, E1, In>
+    ): Sink<R & R1, E | E1, In1, L, Z>
     /**
      * @rewrite crossWith_ from "@principia/base/Sink"
      */
-    crossWith_<R, InErr, In, OutErr, L extends In1 & L1, Z, R1, InErr1, In1 extends In, OutErr1, L1, Z1, Z2>(
-      this: Sink<R, InErr, In, OutErr, L, Z>,
-      fb: Sink<R1, InErr1, In1, OutErr1, L1, Z1>,
+    crossWith<R, E, In, L extends In1 & L1, Z, R1, E1, In1 extends In, L1, Z1, Z2>(
+      this: Sink<R, E, In, L, Z>,
+      fb: Sink<R1, E1, In1, L1, Z1>,
       f: (a: Z, b: Z1) => Z2
-    ): Sink<R & R1, InErr & InErr1, In & In1, OutErr | OutErr1, L1, Z2>
+    ): Sink<R & R1, E | E1, In & In1, L1, Z2>
     /**
      * @rewriteGetter dropLeftover from "@principia/base/Sink"
      */
-    dropLeftover: Sink<R, InErr, In, OutErr, never, Z>
+    dropLeftover: Sink<R, E, In, never, Z>
     /**
      * @rewriteGetter exposeLeftover from "@principia/base/Sink"
      */
-    exposeLeftover: Sink<R, InErr, In, OutErr, never, readonly [Z, C.Chunk<L>]>
+    exposeLeftover: Sink<R, E, In, never, readonly [Z, C.Chunk<L>]>
     /**
      * @rewrite map_ from "@principia/base/Sink"
      */
-    map<R, InErr, In, OutErr, L, Z, Z2>(
-      this: Sink<R, InErr, In, OutErr, L, Z>,
-      f: (z: Z) => Z2
-    ): Sink<R, InErr, In, OutErr, L, Z2>
+    map<R, E, In, L, Z, Z2>(this: Sink<R, E, In, L, Z>, f: (z: Z) => Z2): Sink<R, E, In, L, Z2>
     /**
      * @rewrite mapIO_ from "@principia/base/Sink"
      */
-    mapIO<R, InErr, In, OutErr, L, Z, R1, OutErr1, Z1>(
-      this: Sink<R, InErr, In, OutErr, L, Z>,
-      f: (z: Z) => I.IO<R1, OutErr1, Z1>
-    ): Sink<R & R1, InErr, In, OutErr | OutErr1, L, Z1>
+    mapIO<R, E, In, L, Z, R1, E1, Z1>(
+      this: Sink<R, E, In, L, Z>,
+      f: (z: Z) => I.IO<R1, E1, Z1>
+    ): Sink<R & R1, E | E1, In, L, Z1>
     /**
      * @rewrite matchSink_ from "@principia/base/Sink"
      */
     matchSink<
       R,
-      InErr,
+      E,
       In,
-      OutErr,
       L extends In1 & In2 & (L1 | L2),
       Z,
       R1,
-      InErr1,
+      E1,
       In1 extends In,
-      OutErr1,
       L1,
       Z1,
       R2,
-      InErr2,
+      E2,
       In2 extends In,
-      OutErr2,
       L2,
       Z2
     >(
-      this: Sink<R, InErr, In, OutErr, L, Z>,
-      onFailure: (err: OutErr) => Sink<R1, InErr1, In1, OutErr1, L1, Z1>,
-      onSuccess: (z: Z) => Sink<R2, InErr2, In2, OutErr2, L2, Z2>
-    ): Sink<R & R1 & R2, InErr & InErr1 & InErr2, In1 & In2, OutErr1 | OutErr2, L1 | L2, Z1 | Z2>
+      this: Sink<R, E, In, L, Z>,
+      onFailure: (err: E) => Sink<R1, E1, In1, L1, Z1>,
+      onSuccess: (z: Z) => Sink<R2, E2, In2, L2, Z2>
+    ): Sink<R & R1 & R2, E1 | E2, In1 & In2, L1 | L2, Z1 | Z2>
     /**
      * @rewrite summarized_ from "@principia/base/Sink"
      */
-    summarized<R, InErr, In, OutErr, L, Z, R1, E1, B, C>(
-      this: Sink<R, InErr, In, OutErr, L, Z>,
+    summarized<R, E, In, L, Z, R1, E1, B, C>(
+      this: Sink<R, E, In, L, Z>,
       summary: I.IO<R1, E1, B>,
       f: (b1: B, b2: B) => C
-    ): Sink<R & R1, InErr, In, OutErr | E1, L, readonly [Z, C]>
+    ): Sink<R & R1, E | E1, In, L, readonly [Z, C]>
     /**
      * @rewriteGetter timed from "@principia/base/Sink"
      */
-    timed: Sink<R & Has<Clock>, InErr, In, OutErr, L, readonly [Z, number]>
+    timed: Sink<R & Has<Clock>, E, In, L, readonly [Z, number]>
   }
 }

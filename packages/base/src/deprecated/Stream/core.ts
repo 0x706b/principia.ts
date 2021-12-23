@@ -31,10 +31,10 @@ import * as M from '../../Maybe'
 import { not } from '../../Predicate'
 import * as Q from '../../Queue'
 import * as Ref from '../../Ref'
-import * as RefM from '../../RefM'
 import * as Sc from '../../Schedule'
 import { global } from '../../Scope'
 import * as Semaphore from '../../Semaphore'
+import * as RefM from '../../SRef'
 import { tuple } from '../../tuple/core'
 import { matchTag } from '../../util/match'
 import * as BPull from './BufferedPull'
@@ -420,13 +420,13 @@ export function asyncMaybe<R, E, A>(
                     return pipe(
                       Q.take(output),
                       I.chain(Take.done),
-                      I.onError(() => pipe(doneRef.set(true), I.crossSecond(Q.shutdown(output))))
+                      I.onError(() => pipe(doneRef.set(true), I.apSecond(Q.shutdown(output))))
                     )
                   }
                 })
               )
             ),
-          (s) => pipe(Q.shutdown(output), I.toManaged(), Ma.crossSecond(s.proc))
+          (s) => pipe(Q.shutdown(output), I.toManaged(), Ma.apSecond(s.proc))
         )
       )
       return pull
@@ -501,7 +501,7 @@ export function asyncInterruptEither<R, E, A>(
                       return pipe(
                         Q.take(output),
                         I.chain(Take.done),
-                        I.onError(() => pipe(doneRef.set(true), I.crossSecond(Q.shutdown(output))))
+                        I.onError(() => pipe(doneRef.set(true), I.apSecond(Q.shutdown(output))))
                       )
                     }
                   })
@@ -509,7 +509,7 @@ export function asyncInterruptEither<R, E, A>(
               ),
               Ma.ensuring(canceler)
             ),
-          (s) => pipe(Q.shutdown(output), I.toManaged(), Ma.crossSecond(s.proc))
+          (s) => pipe(Q.shutdown(output), I.toManaged(), Ma.apSecond(s.proc))
         )
       )
       return pull
@@ -866,7 +866,7 @@ export function asyncIO<R, E, A, R1 = R, E1 = E>(
           return pipe(
             Q.take(output),
             I.chain(Take.done),
-            I.onError(() => pipe(doneRef.set(true), I.crossSecond(Q.shutdown(output))))
+            I.onError(() => pipe(doneRef.set(true), I.apSecond(Q.shutdown(output))))
           )
         }
       })
@@ -1515,13 +1515,13 @@ export function flattenExitMaybe<R, E, E1, A>(ma: Stream<R, E, Ex.Exit<M.Maybe<E
               BPull.pullElement(upstream),
               I.matchIO(
                 M.match(
-                  () => pipe(doneRef.set(true), I.crossSecond(Pull.end)),
+                  () => pipe(doneRef.set(true), I.apSecond(Pull.end)),
                   (e) => Pull.fail(e as E | E1)
                 ),
                 flow(
                   I.fromExit,
                   I.matchIO(
-                    M.match(() => pipe(doneRef.set(true), I.crossSecond(Pull.end)), Pull.fail),
+                    M.match(() => pipe(doneRef.set(true), I.apSecond(Pull.end)), Pull.fail),
                     Pull.emit
                   )
                 )
@@ -1636,7 +1636,7 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
           race: boolean
         ): I.IO<R & R1 & Has<Clock>, M.Maybe<E | E1>, Chunk<Take.Take<E1, E.Either<Q, P>>>> => {
           if (!race) {
-            return pipe(waitForProducer, I.chain(handleTake), I.crossFirst(raceNextTime.set(true)))
+            return pipe(waitForProducer, I.chain(handleTake), I.apFirst(raceNextTime.set(true)))
           } else {
             return I.raceWith_(
               updateSchedule,
@@ -1649,11 +1649,7 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
                       () =>
                         I.gen(function* (_) {
                           const lastQ = yield* _(
-                            pipe(
-                              lastChunk.set(C.empty()),
-                              I.crossSecond(I.orHalt(sdriver.last)),
-                              I.crossFirst(sdriver.reset)
-                            )
+                            pipe(lastChunk.set(C.empty()), I.apSecond(I.orHalt(sdriver.last)), I.apFirst(sdriver.reset))
                           )
 
                           const scheduleResult: Take.Take<E1, E.Either<Q, P>> = Ex.succeed(C.single(E.left(lastQ)))
@@ -1678,7 +1674,7 @@ export function aggregateAsyncWithinEither_<R, E, A, R1, E1, P, Q>(
                   )
                 ),
               (producerDone, scheduleWaiting) =>
-                I.crossSecond_(Fi.interrupt(scheduleWaiting), handleTake(Ex.flatten(producerDone)))
+                I.apSecond_(Fi.interrupt(scheduleWaiting), handleTake(Ex.flatten(producerDone)))
             )
           }
         }
@@ -1783,7 +1779,7 @@ export function aggregate_<R, E, A, R1, E1, P>(
               I.matchIO(
                 M.match(
                   (): I.IO<R1, M.Maybe<E | E1>, Chunk<P>> =>
-                    pipe(doneRef.set(true), I.crossSecond(I.asJustError(push(M.nothing())))),
+                    pipe(doneRef.set(true), I.apSecond(I.asJustError(push(M.nothing())))),
                   (e) => Pull.fail(e)
                 ),
                 (as) => I.asJustError(push(M.just(as)))
@@ -1971,7 +1967,7 @@ export function distributedWith_<R, E, A>(
         ),
         Ma.chain((next) =>
           pipe(
-            I.collectAll(
+            I.sequenceIterable(
               pipe(
                 C.range(0, n - 1),
                 C.map((id) => I.map_(next, ([key, queue]) => [[key, id], queue] as const))
@@ -2150,7 +2146,7 @@ export function buffer_<R, E, A>(ma: Stream<R, E, A>, capacity: number): Stream<
               Q.take(queue),
               I.chain(I.fromExit),
               I.catchJust(
-                M.match(() => pipe(doneRef.set(true), I.crossSecond(Pull.end), M.just), flow(M.just, I.fail, M.just))
+                M.match(() => pipe(doneRef.set(true), I.apSecond(Pull.end), M.just), flow(M.just, I.fail, M.just))
               )
             )
           }
@@ -2187,7 +2183,7 @@ export function bufferUnbounded<R, E, A>(ma: Stream<R, E, A>): Stream<R, E, A> {
           } else {
             return pipe(
               Q.take(queue),
-              I.chain(Take.matchM(() => pipe(doneRef.set(true), I.crossSecond(Pull.end)), Pull.halt, Pull.emitChunk))
+              I.chain(Take.matchM(() => pipe(doneRef.set(true), I.apSecond(Pull.end)), Pull.halt, Pull.emitChunk))
             )
           }
         })
@@ -2243,8 +2239,8 @@ function bufferSignal_<R, E, A>(
             I.chain(([take, p]) =>
               pipe(
                 F.succeed_(p, undefined),
-                I.crossSecond(I.when(() => take === Take.end)(doneRef.set(true))),
-                I.crossSecond(Take.done(take))
+                I.apSecond(I.when(() => take === Take.end)(doneRef.set(true))),
+                I.apSecond(Take.done(take))
               )
             )
           )
@@ -2485,7 +2481,7 @@ export function catchJustCause<E, R1, E1, A1>(
  * concurrently. Up to `outputBuffer` elements of the produced streams may be
  * buffered in memory by this operator.
  */
-export function chainPar_<R, E, A, R1, E1, A1>(
+export function chainC_<R, E, A, R1, E1, A1>(
   ma: Stream<R, E, A>,
   f: (o: A) => Stream<R1, E1, A1>,
   n: number,
@@ -2530,7 +2526,7 @@ export function chainPar_<R, E, A, R1, E1, A1>(
                         cause,
                         Pull.halt,
                         (_) => Q.offer_(outQueue, _),
-                        I.crossSecond(F.fail_(innerFailure, cause)),
+                        I.apSecond(F.fail_(innerFailure, cause)),
                         I.asUnit
                       ),
                     () => I.unit()
@@ -2545,7 +2541,7 @@ export function chainPar_<R, E, A, R1, E1, A1>(
                 pipe(
                   getChildren,
                   I.chain(Fi.interruptAll),
-                  I.crossSecond(I.asUnit(Q.offer_(outQueue, Pull.halt(cause)))),
+                  I.apSecond(I.asUnit(Q.offer_(outQueue, Pull.halt(cause)))),
                   I.toManaged()
                 ),
               () =>
@@ -2558,10 +2554,10 @@ export function chainPar_<R, E, A, R1, E1, A1>(
                       pipe(
                         getChildren,
                         I.chain(Fi.interruptAll),
-                        I.crossSecond(I.asUnit(Fi.interrupt(permitsAcquisition)))
+                        I.apSecond(I.asUnit(Fi.interrupt(permitsAcquisition)))
                       ),
                     (_, failureAwait) =>
-                      pipe(Q.offer_(outQueue, Pull.end), I.crossSecond(I.asUnit(Fi.interrupt(failureAwait))))
+                      pipe(Q.offer_(outQueue, Pull.end), I.apSecond(I.asUnit(Fi.interrupt(failureAwait))))
                   ),
                   I.toManaged()
                 )
@@ -2581,12 +2577,12 @@ export function chainPar_<R, E, A, R1, E1, A1>(
  * concurrently. Up to `outputBuffer` elements of the produced streams may be
  * buffered in memory by this operator.
  */
-export function chainPar<A, R1, E1, A1>(
+export function chainC<A, R1, E1, A1>(
   f: (o: A) => Stream<R1, E1, A1>,
   n: number,
   outputBuffer = 16
 ): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, A1> {
-  return (stream) => chainPar_(stream, f, n, outputBuffer)
+  return (stream) => chainC_(stream, f, n, outputBuffer)
 }
 
 /**
@@ -2638,7 +2634,7 @@ export function chainParSwitch_(n: number, bufferSize = 16) {
                           cause,
                           Pull.halt,
                           (_) => Q.offer_(outQueue, _),
-                          I.crossSecond(F.fail_(innerFailure, cause)),
+                          I.apSecond(F.fail_(innerFailure, cause)),
                           I.asUnit
                         ),
                       () => I.unit()
@@ -2653,7 +2649,7 @@ export function chainParSwitch_(n: number, bufferSize = 16) {
                   pipe(
                     getChildren,
                     I.chain(Fi.interruptAll),
-                    I.crossSecond(Q.offer_(outQueue, Pull.halt(cause))),
+                    I.apSecond(Q.offer_(outQueue, Pull.halt(cause))),
                     I.toManaged()
                   ),
                 () =>
@@ -2665,10 +2661,10 @@ export function chainParSwitch_(n: number, bufferSize = 16) {
                         pipe(
                           getChildren,
                           I.chain(Fi.interruptAll),
-                          I.crossSecond(I.asUnit(Fi.interrupt(permitsAcquisition)))
+                          I.apSecond(I.asUnit(Fi.interrupt(permitsAcquisition)))
                         ),
                       (_, failureAwait) =>
-                        pipe(Q.offer_(outQueue, Pull.end), I.crossSecond(I.asUnit(Fi.interrupt(failureAwait))))
+                        pipe(Q.offer_(outQueue, Pull.end), I.apSecond(I.asUnit(Fi.interrupt(failureAwait))))
                     ),
                     I.toManaged()
                   )
@@ -2716,7 +2712,7 @@ export function chunkN_<R, E, A>(ma: Stream<R, E, A>, n: number): Stream<R, E, A
         if (C.isEmpty(buffer)) {
           return Pull.end
         } else {
-          return I.crossSecond_(
+          return I.apSecond_(
             ref.set({
               buffer: C.empty(),
               done: true
@@ -2733,7 +2729,7 @@ export function chunkN_<R, E, A>(ma: Stream<R, E, A>, n: number): Stream<R, E, A
       }
     } else {
       const [chunk, leftover] = C.splitAt_(buffer, n)
-      return I.crossSecond_(ref.set({ buffer: leftover, done }), Pull.emitChunk(chunk))
+      return I.apSecond_(ref.set({ buffer: leftover, done }), Pull.emitChunk(chunk))
     }
   }
 
@@ -2875,7 +2871,7 @@ export function collectWhileIO_<R, E, A, R1, E1, B>(
               I.chain(
                 flow(
                   f,
-                  M.match(() => pipe(doneRef.set(true), I.crossSecond(Pull.end)), I.bimap(M.just, C.single))
+                  M.match(() => pipe(doneRef.set(true), I.apSecond(Pull.end)), I.bimap(M.just, C.single))
                 )
               )
             ) as I.IO<R & R1, M.Maybe<E | E1>, Chunk<B>>
@@ -3027,9 +3023,7 @@ export function concat_<R, E, A, R1, E1, B>(ma: Stream<R, E, A>, mb: Stream<R1, 
                 pipe(
                   switched,
                   Ref.getAndSet(true),
-                  I.chain((b) =>
-                    b ? Pull.end : pipe(switchStream(mb.proc), I.chain(currStream.set), I.crossSecond(go))
-                  )
+                  I.chain((b) => (b ? Pull.end : pipe(switchStream(mb.proc), I.chain(currStream.set), I.apSecond(go))))
                 ),
               Pull.halt
             )
@@ -3078,11 +3072,7 @@ export function concatAll<R, E, A>(streams: Chunk<Stream<R, E, A>>): Stream<R, E
                     if (i >= chunkSize) {
                       return Pull.end
                     } else {
-                      return pipe(
-                        switchStream(C.unsafeGet_(streams, i).proc),
-                        I.chain(currStream.set),
-                        I.crossSecond(go)
-                      )
+                      return pipe(switchStream(C.unsafeGet_(streams, i).proc), I.chain(currStream.set), I.apSecond(go))
                     }
                   })
                 ),
@@ -3263,7 +3253,7 @@ export function drop_<R, E, A>(self: Stream<R, E, A>, n: number): Stream<R, E, A
         if (count >= n) {
           return yield* _(I.succeed(chunk))
         } else if (chunk.length <= n - count) {
-          return yield* _(pipe(counterRef.set(count + chunk.length), I.crossSecond(pull)))
+          return yield* _(pipe(counterRef.set(count + chunk.length), I.apSecond(pull)))
         } else {
           return yield* _(pipe(counterRef.set(count + (n - count)), I.as(C.drop_(chunk, n - count))))
         }
@@ -3405,7 +3395,7 @@ export function forever<R, E, A>(ma: Stream<R, E, A>): Stream<R, E, A> {
           flow(
             Ca.sequenceCauseOption,
             M.match(
-              () => pipe(ma.proc, switchStream, I.chain(currStream.set), I.crossSecond(I.yieldNow), I.crossSecond(go)),
+              () => pipe(ma.proc, switchStream, I.chain(currStream.set), I.apSecond(I.yieldNow), I.apSecond(go)),
               Pull.halt
             )
           )
@@ -3462,7 +3452,7 @@ export function groupBy_<R, E, A, R1, E1, K, V>(
                     pipe(
                       ref,
                       Ref.update(Map.insert(k, idx)),
-                      I.crossSecond(
+                      I.apSecond(
                         pipe(
                           Q.offer_(
                             out,
@@ -3633,7 +3623,7 @@ export function endOn_<R, E, A, E1>(ma: Stream<R, E, A>, p: F.Future<E1, any>): 
               I.chain(
                 M.match(
                   (): I.IO<R, M.Maybe<E | E1>, Chunk<A>> => as,
-                  (v) => pipe(doneRef.set(true), I.crossSecond(I.mapError_(v, M.just)), I.crossSecond(Pull.end))
+                  (v) => pipe(doneRef.set(true), I.apSecond(I.mapError_(v, M.just)), I.apSecond(Pull.end))
                 )
               )
             )
@@ -3851,7 +3841,7 @@ export function interruptWhen_<R, E, A, R1, E1>(ma: Stream<R, E, A>, io: I.IO<R1
     Ma.gen(function* (_) {
       const as    = yield* _(ma.proc)
       const runIO = yield* _(
-        pipe(io, I.asJustError, I.crossSecond(Pull.end as I.IO<unknown, M.Maybe<E | E1>, any>), I.forkManaged)
+        pipe(io, I.asJustError, I.apSecond(Pull.end as I.IO<unknown, M.Maybe<E | E1>, any>), I.forkManaged)
       )
       return pipe(runIO, Fi.join, I.disconnect, I.raceFirst(as))
     })
@@ -3886,8 +3876,8 @@ export function interruptOn_<R, E, A, E1, A1>(ma: Stream<R, E, A>, p: F.Future<E
       const asPull  = pipe(
         F.await(p),
         I.asJustError,
-        I.crossSecond(doneRef.set(true)),
-        I.crossSecond(Pull.end as I.IO<unknown, M.Maybe<E | E1>, any>)
+        I.apSecond(doneRef.set(true)),
+        I.apSecond(Pull.end as I.IO<unknown, M.Maybe<E | E1>, any>)
       )
       const pull = pipe(
         doneRef.get,
@@ -3956,10 +3946,10 @@ export function intoManaged_<R, E, A, R1, E1>(
           Ca.sequenceCauseOption,
           M.match(
             () => pipe(Take.end, (_) => Q.offer_(queue, _), I.asUnit),
-            (cause) => pipe(cause, Take.halt, (_) => Q.offer_(queue, _), I.crossSecond(pull))
+            (cause) => pipe(cause, Take.halt, (_) => Q.offer_(queue, _), I.apSecond(pull))
           )
         ),
-        (c) => pipe(c, Take.chunk, (_) => Q.offer_(queue, _), I.crossSecond(pull))
+        (c) => pipe(c, Take.chunk, (_) => Q.offer_(queue, _), I.apSecond(pull))
       )
     )
     return yield* _(pull)
@@ -4118,7 +4108,7 @@ export function mapConcatIO<A, R1, E1, B>(
  * executing up to `n` invocations of `f` concurrently. Transformed elements
  * will be emitted in the original order.
  */
-export function mapIOPar_(n: number) {
+export function mapIOC_(n: number) {
   return <R, E, A, R1, E1, B>(stream: Stream<R, E, A>, f: (a: A) => I.IO<R1, E1, B>): Stream<R & R1, E | E1, B> =>
     new Stream(
       Ma.gen(function* (_) {
@@ -4137,7 +4127,7 @@ export function mapIOPar_(n: number) {
                   pipe(
                     latch,
                     F.succeed<void>(undefined),
-                    I.crossSecond(
+                    I.apSecond(
                       pipe(
                         F.await(errorSignal),
                         I.raceFirst(f(o)),
@@ -4174,10 +4164,10 @@ export function mapIOPar_(n: number) {
  * executing up to `n` invocations of `f` concurrently. Transformed elements
  * will be emitted in the original order.
  */
-export function mapIOPar(
+export function mapIOC(
   n: number
 ): <A, R1, E1, B>(f: (a: A) => I.IO<R1, E1, B>) => <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E1 | E, B> {
-  return (f) => (stream) => mapIOPar_(n)(stream, f)
+  return (f) => (stream) => mapIOC_(n)(stream, f)
 }
 
 export type TerminationStrategy = 'Left' | 'Right' | 'Both' | 'Either'
@@ -4676,7 +4666,7 @@ export function scheduleWith<R1, A, B>(schedule: Sc.Schedule<R1, A, B>) {
                     driver.last,
                     I.orHalt,
                     I.map((b) => C.make<C | D>(f(o), g(b))),
-                    I.crossFirst(driver.reset)
+                    I.apFirst(driver.reset)
                   )
                 )
               )
@@ -5089,7 +5079,7 @@ export function debounce_<R, E, A>(ma: Stream<R, E, A>, d: number): Stream<R & H
                     Ex.match_(
                       ex,
                       (cause): I.IO<R & Has<Clock>, Maybe<E>, Chunk<A>> =>
-                        I.crossSecond_(Fi.interrupt(current), Pull.halt(cause)),
+                        I.apSecond_(Fi.interrupt(current), Pull.halt(cause)),
                       (value) => I.asLazy_(ref.set({ _tag: 'Current', fiber: current }), () => C.single(value))
                     ),
                   (ex, previous) =>
@@ -5099,12 +5089,12 @@ export function debounce_<R, E, A>(ma: Stream<R, E, A>, d: number): Stream<R & H
                         Ca.sequenceCauseOption,
                         M.match(
                           (): I.IO<R & Has<Clock>, Maybe<E>, Chunk<A>> =>
-                            pipe(Fi.join(previous), I.map(C.single), I.crossFirst(ref.set({ _tag: 'Done' }))),
-                          (e) => I.crossSecond_(Fi.interrupt(previous), Pull.halt(e))
+                            pipe(Fi.join(previous), I.map(C.single), I.apFirst(ref.set({ _tag: 'Done' }))),
+                          (e) => I.apSecond_(Fi.interrupt(previous), Pull.halt(e))
                         )
                       ),
                       (chunk): I.IO<R & Has<Clock>, Maybe<E>, Chunk<A>> =>
-                        C.isEmpty(chunk) ? Pull.empty<A>() : I.crossSecond_(Fi.interrupt(previous), store(chunk))
+                        C.isEmpty(chunk) ? Pull.empty<A>() : I.apSecond_(Fi.interrupt(previous), store(chunk))
                     ),
                   M.just(global)
                 )
@@ -5287,7 +5277,7 @@ export function unfoldChunkIO<S, R, E, A>(
               I.matchIO(
                 Pull.fail,
                 M.match(
-                  () => pipe(doneRef.set(true), I.crossSecond(Pull.end)),
+                  () => pipe(doneRef.set(true), I.apSecond(Pull.end)),
                   ([as, z]) =>
                     pipe(
                       ref.set(z),
@@ -5507,7 +5497,7 @@ export function zipAllWithExec_<R, E, A, R1, E1, B, C>(
               return pipe(
                 pullL,
                 I.optional,
-                I.crossWithPar(I.optional(pullR), (l, r) => handleSuccess(l, r, excess)),
+                I.crossWithC(I.optional(pullR), (l, r) => handleSuccess(l, r, excess)),
                 I.catchAllCause(flow(Ca.map(M.just), Ex.failCause, I.succeed))
               )
             }
@@ -5715,7 +5705,7 @@ export function zipWithExec_<R, E, A, R1, E1, B, C>(
             I.optional,
             exec._tag === 'Sequential'
               ? I.crossWith(I.optional(p2), (l, r) => handleSuccess(l, r, st.excess))
-              : I.crossWithPar(I.optional(p2), (l, r) => handleSuccess(l, r, st.excess)),
+              : I.crossWithC(I.optional(p2), (l, r) => handleSuccess(l, r, st.excess)),
             I.catchAllCause((e) => I.pure(Ex.failCause(pipe(e, Ca.map(M.just)))))
           )
         }
@@ -5748,7 +5738,7 @@ export function zipWithExec<A, R1, E1, B, C>(
   return (ma) => zipWithExec_(ma, mb, f, exec)
 }
 
-export function zipWithPar_<R, E, A, R1, E1, B, C>(
+export function zipWithC_<R, E, A, R1, E1, B, C>(
   ma: Stream<R, E, A>,
   mb: Stream<R1, E1, B>,
   f: (a: A, b: B) => C
@@ -5764,11 +5754,11 @@ export function zipWithPar_<R, E, A, R1, E1, B, C>(
  * By default pull is executed in parallel to preserve async semantics, see `zipWithSeq` for
  * a sequential alternative
  */
-export function zipWithPar<A, R1, E1, B, C>(
+export function zipWithC<A, R1, E1, B, C>(
   mb: Stream<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(ma: Stream<R, E, A>) => Stream<R & R1, E1 | E, C> {
-  return (ma) => zipWithPar_(ma, mb, f)
+  return (ma) => zipWithC_(ma, mb, f)
 }
 
 /**
@@ -6022,7 +6012,7 @@ export class GroupBy<R, E, K, V> {
   }
 
   merge<R1, E1, A>(f: (k: K, s: Stream<unknown, E, V>) => Stream<R1, E1, A>): Stream<R & R1, E | E1, A> {
-    return chainPar_(
+    return chainC_(
       this.grouped,
       ([k, q]) => f(k, flattenExitMaybe(fromQueueWithShutdown(q))),
       Number.MAX_SAFE_INTEGER,

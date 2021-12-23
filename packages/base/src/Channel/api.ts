@@ -1494,7 +1494,7 @@ export function mergeAllWith_<
                 pipe(
                   getChildren,
                   I.chain(F.interruptAll),
-                  I.crossSecond(pipe(queue, Q.offer(I.failCause(cause)), I.as(false)))
+                  I.apSecond(pipe(queue, Q.offer(I.failCause(cause)), I.as(false)))
                 ),
               E.match(
                 (outDone) =>
@@ -1505,12 +1505,12 @@ export function mergeAllWith_<
                       pipe(
                         getChildren,
                         I.chain(F.interruptAll),
-                        I.crossSecond(pipe(F.interrupt(permitAcquisition), I.as(false)))
+                        I.apSecond(pipe(F.interrupt(permitAcquisition), I.as(false)))
                       ),
                     (_, failureAwait) =>
                       pipe(
                         F.interrupt(failureAwait),
-                        I.crossSecond(
+                        I.apSecond(
                           pipe(
                             Ref.get(lastDone),
                             I.chain(
@@ -1530,9 +1530,7 @@ export function mergeAllWith_<
                       return I.gen(function* (_) {
                         const latch   = yield* _(PR.make<never, void>())
                         const raceIOs = pipe(toPull(channel), Ma.use(flow(evaluatePull, I.race(PR.await(errorSignal)))))
-                        yield* _(
-                          I.fork(Sem.withPermit(permits)(I.crossSecond_(PR.succeed_(latch, undefined), raceIOs)))
-                        )
+                        yield* _(I.fork(Sem.withPermit(permits)(I.apSecond_(PR.succeed_(latch, undefined), raceIOs))))
                         yield* _(PR.await(latch))
                         return !(yield* _(PR.isDone(errorSignal)))
                       })
@@ -1547,9 +1545,7 @@ export function mergeAllWith_<
                           toPull(channel),
                           Ma.use(flow(evaluatePull, I.race(PR.await(errorSignal)), I.race(PR.await(canceler))))
                         )
-                        yield* _(
-                          I.fork(Sem.withPermit(permits)(I.crossSecond_(PR.succeed_(latch, undefined), raceIOs)))
-                        )
+                        yield* _(I.fork(Sem.withPermit(permits)(I.apSecond_(PR.succeed_(latch, undefined), raceIOs))))
                         yield* _(PR.await(latch))
                         return !(yield* _(PR.isDone(errorSignal)))
                       })
@@ -1818,7 +1814,7 @@ export function mergeWith_<
             MD.concrete(decision)
             switch (decision._tag) {
               case MD.MergeDecisionTag.Done: {
-                return I.succeed(fromIO(I.crossSecond_(F.interrupt(fiber), decision.io)))
+                return I.succeed(fromIO(I.apSecond_(F.interrupt(fiber), decision.io)))
               }
               case MD.MergeDecisionTag.Await: {
                 return pipe(
@@ -2028,7 +2024,7 @@ export function mapOutIO<Env1, OutErr1, OutElem, OutElem1>(f: (o: OutElem) => IO
   ) => mapOutIO_(self, f)
 }
 
-export function mapOutIOPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, Env1, OutErr1, OutElem1>(
+export function mapOutIOC_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, Env1, OutErr1, OutElem1>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>,
   n: number,
   f: (_: OutElem) => I.IO<Env1, OutErr1, OutElem1>
@@ -2053,7 +2049,7 @@ export function mapOutIOPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
                   pipe(
                     Sem.withPermits(permits, n)(I.unit()),
                     I.interruptible,
-                    I.crossSecond(Q.offer_(queue, I.succeed(E.left(outDone)))),
+                    I.apSecond(Q.offer_(queue, I.succeed(E.left(outDone)))),
                     I.asUnit
                   ),
                 (outElem) =>
@@ -2066,7 +2062,7 @@ export function mapOutIOPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
                         pipe(
                           latch,
                           PR.succeed<void>(undefined),
-                          I.crossSecond(
+                          I.apSecond(
                             pipe(
                               PR.await(errorSignal),
                               I.raceFirst(f(outElem)),
@@ -2105,13 +2101,13 @@ export function mapOutIOPar_<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
   )
 }
 
-export function mapOutIOPar<OutElem, Env1, OutErr1, OutElem1>(
+export function mapOutIOC<OutElem, Env1, OutErr1, OutElem1>(
   n: number,
   f: (_: OutElem) => I.IO<Env1, OutErr1, OutElem1>
 ): <Env, InErr, InElem, InDone, OutErr, OutDone>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
 ) => Channel<Env & Env1, InErr, InElem, InDone, OutErr | OutErr1, OutElem1, OutDone> {
-  return (self) => mapOutIOPar_(self, n, f)
+  return (self) => mapOutIOC_(self, n, f)
 }
 
 export const never: Channel<unknown, unknown, unknown, unknown, never, never, never> = fromIO(I.never)
@@ -2217,7 +2213,7 @@ export function toPull<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   )
 }
 
-export function zipPar_<
+export function zipC_<
   Env,
   Env1,
   InErr,
@@ -2253,14 +2249,14 @@ export function zipPar_<
 }
 
 /**
- * @dataFirst zipPar_
+ * @dataFirst zipC_
  */
-export function zipPar<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>(
+export function zipC<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>(
   that: Channel<Env1, InErr1, InElem1, InDone1, OutErr1, OutElem1, OutDone1>
 ) {
   return <Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
     self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
-  ) => zipPar_(self, that)
+  ) => zipC_(self, that)
 }
 
 export function zipParLeft_<
@@ -2290,7 +2286,7 @@ export function zipParLeft_<
   OutElem | OutElem1,
   OutDone
 > {
-  return map_(zipPar_(self, that), ([d]) => d)
+  return map_(zipC_(self, that), ([d]) => d)
 }
 
 /**
@@ -2331,7 +2327,7 @@ export function zipParRight_<
   OutElem | OutElem1,
   OutDone1
 > {
-  return map_(zipPar_(self, that), ([, d1]) => d1)
+  return map_(zipC_(self, that), ([, d1]) => d1)
 }
 
 /**

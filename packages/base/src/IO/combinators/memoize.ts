@@ -9,7 +9,7 @@ import { pipe } from '../../function'
 import * as F from '../../Future'
 import * as HM from '../../HashMap'
 import * as M from '../../Maybe'
-import * as RefM from '../../RefM'
+import * as RefM from '../../SRef'
 import { tuple } from '../../tuple/core'
 import * as I from '../core'
 

@@ -527,7 +527,7 @@ export function cross<B>(fb: List<B>): <A>(fa: List<A>) => List<readonly [A, B]>
 export function zipWith_<A, B, C>(as: List<A>, bs: List<B>, f: (a: A, b: B) => C): List<C> {
   const swapped  = bs.length < as.length
   const iterator = (swapped ? as : bs)[Symbol.iterator]()
-  return map_((swapped ? bs : as) as any, (a: any) => {
+  return imap_((swapped ? bs : as) as any, (a: any) => {
     const b: any = iterator.next().value
     return swapped ? f(b, a) : f(a, b)
   })
@@ -613,10 +613,35 @@ export function getEq<A>(E: P.Eq<A>): P.Eq<List<A>> {
  *
  * @complexity O(n)
  */
-export function filter_<A, B extends A>(fa: List<A>, refinement: P.RefinementWithIndex<number, A, B>): List<B>
-export function filter_<A>(fa: List<A>, predicate: P.PredicateWithIndex<number, A>): List<A>
-export function filter_<A>(fa: List<A>, predicate: P.PredicateWithIndex<number, A>): List<A> {
-  return foldl_(fa, emptyPushable(), (acc, a, i) => (predicate(a, i) ? push(a, acc) : acc))
+export function ifilter_<A, B extends A>(fa: List<A>, refinement: P.RefinementWithIndex<number, A, B>): List<B>
+export function ifilter_<A>(fa: List<A>, predicate: P.PredicateWithIndex<number, A>): List<A>
+export function ifilter_<A>(fa: List<A>, predicate: P.PredicateWithIndex<number, A>): List<A> {
+  return ifoldl_(fa, emptyPushable(), (i, acc, a) => (predicate(i, a) ? push(a, acc) : acc))
+}
+
+/**
+ * Returns a new list that only contains the elements of the original
+ * list for which the predicate returns `true`.
+ *
+ * @complexity O(n)
+ * @dataFirst ifilter_
+ */
+export function ifilter<A, B extends A>(refinement: P.RefinementWithIndex<number, A, B>): (fa: List<A>) => List<B>
+export function ifilter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: List<A>) => List<A>
+export function ifilter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: List<A>) => List<A> {
+  return (fa) => ifilter_(fa, predicate)
+}
+
+/**
+ * Returns a new list that only contains the elements of the original
+ * list for which the predicate returns `true`.
+ *
+ * @complexity O(n)
+ */
+export function filter_<A, B extends A>(fa: List<A>, refinement: Refinement<A, B>): List<B>
+export function filter_<A>(fa: List<A>, predicate: Predicate<A>): List<A>
+export function filter_<A>(fa: List<A>, predicate: Predicate<A>): List<A> {
+  return ifilter_(fa, (_, a) => predicate(a))
 }
 
 /**
@@ -626,9 +651,9 @@ export function filter_<A>(fa: List<A>, predicate: P.PredicateWithIndex<number, 
  * @complexity O(n)
  * @dataFirst filter_
  */
-export function filter<A, B extends A>(refinement: P.RefinementWithIndex<number, A, B>): (fa: List<A>) => List<B>
-export function filter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: List<A>) => List<A>
-export function filter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: List<A>) => List<A> {
+export function filter<A, B extends A>(refinement: Refinement<A, B>): (fa: List<A>) => List<B>
+export function filter<A>(predicate: Predicate<A>): (fa: List<A>) => List<A>
+export function filter<A>(predicate: Predicate<A>): (fa: List<A>) => List<A> {
   return (fa) => filter_(fa, predicate)
 }
 
@@ -638,9 +663,9 @@ export function filter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: List
  *
  * @complexity O(n)
  */
-export function filterMap_<A, B>(fa: List<A>, f: (a: A, i: number) => M.Maybe<B>): List<B> {
-  return foldl_(fa, emptyPushable(), (b, a, i) => {
-    const result = f(a, i)
+export function ifilterMap_<A, B>(fa: List<A>, f: (i: number, a: A) => M.Maybe<B>): List<B> {
+  return ifoldl_(fa, emptyPushable(), (i, b, a) => {
+    const result = f(i, a)
     if (result._tag === 'Just') {
       push(result.value, b)
     }
@@ -653,10 +678,69 @@ export function filterMap_<A, B>(fa: List<A>, f: (a: A, i: number) => M.Maybe<B>
  * list for which the f returns `Just`.
  *
  * @complexity O(n)
+ * @dataFirst ifilterMap_
+ */
+export function ifilterMap<A, B>(f: (i: number, a: A) => M.Maybe<B>): (fa: List<A>) => List<B> {
+  return (fa) => ifilterMap_(fa, f)
+}
+
+/**
+ * Returns a new list that only contains the elements of the original
+ * list for which the f returns `Some`.
+ *
+ * @complexity O(n)
+ */
+export function filterMap_<A, B>(fa: List<A>, f: (a: A) => M.Maybe<B>): List<B> {
+  return ifilterMap_(fa, (_, a) => f(a))
+}
+
+/**
+ * Returns a new list that only contains the elements of the original
+ * list for which the f returns `Some`.
+ *
+ * @complexity O(n)
  * @dataFirst filterMap_
  */
-export function filterMap<A, B>(f: (a: A, i: number) => M.Maybe<B>): (fa: List<A>) => List<B> {
+export function filterMap<A, B>(f: (a: A) => M.Maybe<B>): (fa: List<A>) => List<B> {
   return (fa) => filterMap_(fa, f)
+}
+
+/**
+ * Splits the list into two lists. One list that contains all the
+ * values for which the predicate returns `true` and one containing
+ * the values for which it returns `false`.
+ *
+ * @complexity O(n)
+ */
+export function ipartition_<A, B extends A>(
+  fa: List<A>,
+  refinement: P.RefinementWithIndex<number, A, B>
+): readonly [List<Exclude<A, B>>, List<B>]
+export function ipartition_<A>(fa: List<A>, predicate: P.PredicateWithIndex<number, A>): readonly [List<A>, List<A>]
+export function ipartition_<A>(fa: List<A>, predicate: P.PredicateWithIndex<number, A>): readonly [List<A>, List<A>] {
+  return ifoldl_(
+    fa,
+    [emptyPushable<A>(), emptyPushable<A>()],
+    (i, b, a) => (predicate(i, a) ? push(a, b[1]) : push(a, b[0]), b)
+  )
+}
+
+/**
+ * Splits the list into two lists. One list that contains all the
+ * values for which the predicate returns `true` and one containing
+ * the values for which it returns `false`.
+ *
+ * @complexity O(n)
+ * @dataFirst ipartition_
+ */
+export function ipartition<A, B extends A>(
+  refinement: P.RefinementWithIndex<number, A, B>
+): (fa: List<A>) => readonly [List<Exclude<A, B>>, List<B>]
+export function ipartition<A>(predicate: P.PredicateWithIndex<number, A>): (fa: List<A>) => readonly [List<A>, List<A>]
+export function ipartition<A>(
+  predicate: P.PredicateWithIndex<number, A>
+): (fa: List<A>) => readonly [List<A>, List<A>] {
+  return (fa) => ipartition_(fa, predicate)
 }
 
 /**
@@ -668,15 +752,11 @@ export function filterMap<A, B>(f: (a: A, i: number) => M.Maybe<B>): (fa: List<A
  */
 export function partition_<A, B extends A>(
   fa: List<A>,
-  refinement: P.RefinementWithIndex<number, A, B>
+  refinement: Refinement<A, B>
 ): readonly [List<Exclude<A, B>>, List<B>]
-export function partition_<A>(fa: List<A>, predicate: P.PredicateWithIndex<number, A>): readonly [List<A>, List<A>]
-export function partition_<A>(fa: List<A>, predicate: P.PredicateWithIndex<number, A>): readonly [List<A>, List<A>] {
-  return foldl_(
-    fa,
-    [emptyPushable<A>(), emptyPushable<A>()],
-    (b, a, i) => (predicate(a, i) ? push(a, b[1]) : push(a, b[0]), b)
-  )
+export function partition_<A>(fa: List<A>, predicate: Predicate<A>): readonly [List<A>, List<A>]
+export function partition_<A>(fa: List<A>, predicate: Predicate<A>): readonly [List<A>, List<A>] {
+  return ipartition_(fa, (_, a) => predicate(a))
 }
 
 /**
@@ -688,11 +768,11 @@ export function partition_<A>(fa: List<A>, predicate: P.PredicateWithIndex<numbe
  * @dataFirst partition_
  */
 export function partition<A, B extends A>(
-  refinement: P.RefinementWithIndex<number, A, B>
-): (fa: List<A>) => readonly [List<Exclude<A, B>>, List<B>]
-export function partition<A>(predicate: P.PredicateWithIndex<number, A>): (fa: List<A>) => readonly [List<A>, List<A>]
-export function partition<A>(predicate: P.PredicateWithIndex<number, A>): (fa: List<A>) => readonly [List<A>, List<A>] {
-  return (fa) => partition_(fa, predicate)
+  refinement: Refinement<A, B>
+): (l: List<A>) => readonly [List<B>, List<Exclude<A, B>>]
+export function partition<A>(predicate: Predicate<A>): (l: List<A>) => readonly [List<A>, List<A>]
+export function partition<A>(predicate: Predicate<A>): (l: List<A>) => readonly [List<A>, List<A>] {
+  return (l) => partition_(l, predicate)
 }
 
 /**
@@ -701,9 +781,12 @@ export function partition<A>(predicate: P.PredicateWithIndex<number, A>): (fa: L
  *
  * @complexity O(n)
  */
-export function partitionMap_<A, B, C>(fa: List<A>, f: (a: A, i: number) => Either<B, C>): readonly [List<B>, List<C>] {
-  return foldl_(fa, [emptyPushable<B>(), emptyPushable<C>()], (b, a, i) => {
-    const result = f(a, i)
+export function ipartitionMap_<A, B, C>(
+  fa: List<A>,
+  f: (i: number, a: A) => Either<B, C>
+): readonly [List<B>, List<C>] {
+  return ifoldl_(fa, [emptyPushable<B>(), emptyPushable<C>()], (i, b, a) => {
+    const result = f(i, a)
     if (result._tag === 'Left') {
       push(result.left, b[0])
     } else {
@@ -718,11 +801,32 @@ export function partitionMap_<A, B, C>(fa: List<A>, f: (a: A, i: number) => Eith
  * and one contains the rights
  *
  * @complexity O(n)
+ * @dataFirst ipartitionMap_
+ */
+export function ipartitionMap<A, B, C>(
+  f: (i: number, a: A) => Either<B, C>
+): (fa: List<A>) => readonly [List<B>, List<C>] {
+  return (fa) => ipartitionMap_(fa, f)
+}
+
+/**
+ * Splits the list into two lists. One list that contains the lefts
+ * and one contains the rights
+ *
+ * @complexity O(n)
+ */
+export function partitionMap_<A, B, C>(fa: List<A>, f: (a: A) => Either<B, C>): readonly [List<B>, List<C>] {
+  return ipartitionMap_(fa, (_, a) => f(a))
+}
+
+/**
+ * Splits the list into two lists. One list that contains the lefts
+ * and one contains the rights
+ *
+ * @complexity O(n)
  * @dataFirst partitionMap_
  */
-export function partitionMap<A, B, C>(
-  f: (a: A, i: number) => Either<B, C>
-): (fa: List<A>) => readonly [List<B>, List<C>] {
+export function partitionMap<A, B, C>(f: (_: A) => Either<B, C>): (fa: List<A>) => readonly [List<B>, List<C>] {
   return (fa) => partitionMap_(fa, f)
 }
 
@@ -732,7 +836,7 @@ export function partitionMap<A, B, C>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function foldl_<A, B>(fa: List<A>, b: B, f: (b: B, a: A, i: number) => B): B {
+export function ifoldl_<A, B>(fa: List<A>, b: B, f: (i: number, b: B, a: A) => B): B {
   const suffixSize = getSuffixSize(fa)
   const prefixSize = getPrefixSize(fa)
   let [acc, index] = foldlPrefix(f, b, fa.prefix, prefixSize)
@@ -743,10 +847,24 @@ export function foldl_<A, B>(fa: List<A>, b: B, f: (b: B, a: A, i: number) => B)
 }
 
 /**
- * @dataFirst foldl_
+ * @dataFirst ifoldl_
  */
-export function foldl<A, B>(b: B, f: (b: B, a: A, i: number) => B): (fa: List<A>) => B {
-  return (fa) => foldl_(fa, b, f)
+export function ifoldl<A, B>(b: B, f: (i: number, b: B, a: A) => B): (fa: List<A>) => B {
+  return (fa) => ifoldl_(fa, b, f)
+}
+
+/**
+ * Folds a function over a list. Left-associative.
+ */
+export function foldl_<A, B>(fa: List<A>, initial: B, f: (acc: B, a: A) => B): B {
+  return ifoldl_(fa, initial, (_, b, a) => f(b, a))
+}
+
+/**
+ * Folds a function over a list. Left-associative.
+ */
+export function foldl<A, B>(initial: B, f: (acc: B, value: A) => B): (fa: List<A>) => B {
+  return (l) => foldl_(l, initial, f)
 }
 
 /**
@@ -754,7 +872,7 @@ export function foldl<A, B>(b: B, f: (b: B, a: A, i: number) => B): (fa: List<A>
  *
  * @complexity O(n)
  */
-export function foldr_<A, B>(fa: List<A>, b: B, f: (a: A, b: B, i: number) => B): B {
+export function ifoldr_<A, B>(fa: List<A>, b: B, f: (i: number, a: A, b: B) => B): B {
   const suffixSize = getSuffixSize(fa)
   const prefixSize = getPrefixSize(fa)
   let [acc, j]     = foldrSuffix(f, b, fa.suffix, suffixSize, fa.length - 1)
@@ -765,21 +883,48 @@ export function foldr_<A, B>(fa: List<A>, b: B, f: (a: A, b: B, i: number) => B)
 }
 
 /**
- * @dataFirst foldr_
+ * @dataFirst ifoldr_
  */
-export function foldr<A, B>(b: B, f: (a: A, b: B, i: number) => B): (fa: List<A>) => B {
-  return (fa) => foldr_(fa, b, f)
-}
-
-export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: List<A>, f: (a: A, i: number) => M) => M {
-  return (fa, f) => foldl_(fa, M.nat, (b, i, a) => M.combine_(b, f(i, a)))
+export function ifoldr<A, B>(b: B, f: (i: number, a: A, b: B) => B): (fa: List<A>) => B {
+  return (fa) => ifoldr_(fa, b, f)
 }
 
 /**
- * @dataFirst foldMap_
+ * Folds a function over a list. Right-associative.
+ *
+ * @complexity O(n)
  */
-export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A, i: number) => M) => (fa: List<A>) => M {
-  return (f) => (fa) => foldMap_(M)(fa, f)
+export function foldr_<A, B>(fa: List<A>, initial: B, f: (value: A, acc: B) => B): B {
+  return ifoldr_(fa, initial, (_, a, b) => f(a, b))
+}
+
+/**
+ * Folds a function over a list. Right-associative.
+ *
+ * @complexity O(n)
+ */
+export function foldr<A, B>(initial: B, f: (value: A, acc: B) => B): (l: List<A>) => B {
+  return (l) => foldr_(l, initial, f)
+}
+
+export function ifoldMap_<M>(M: P.Monoid<M>): <A>(fa: List<A>, f: (i: number, a: A) => M) => M {
+  return (fa, f) => ifoldl_(fa, M.nat, (i, b, a) => M.combine_(b, f(i, a)))
+}
+
+/**
+ * @dataFirst ifoldMap_
+ */
+export function ifoldMap<M>(M: P.Monoid<M>): <A>(f: (i: number, a: A) => M) => (fa: List<A>) => M {
+  return (f) => (fa) => ifoldMap_(M)(fa, f)
+}
+
+export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: List<A>, f: (a: A) => M) => M {
+  return (fa, f) => foldl_(fa, M.nat, (b, a) => M.combine_(b, f(a)))
+}
+
+export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: List<A>) => M {
+  const foldMapM_ = foldMap_(M)
+  return (f) => (fa) => foldMapM_(fa, f)
 }
 
 /*
@@ -794,7 +939,7 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A, i: number) => M) => (f
  *
  * @complexity O(n)
  */
-export function map_<A, B>(fa: List<A>, f: (a: A, i: number) => B): List<B> {
+export function imap_<A, B>(fa: List<A>, f: (i: number, a: A) => B): List<B> {
   return new List(
     fa.bits,
     fa.offset,
@@ -810,9 +955,30 @@ export function map_<A, B>(fa: List<A>, f: (a: A, i: number) => B): List<B> {
  * new list of the values that the function return.
  *
  * @complexity O(n)
+ * @dataFirst imap_
+ */
+export function imap<A, B>(f: (i: number, a: A) => B): (fa: List<A>) => List<B> {
+  return (fa) => imap_(fa, f)
+}
+
+/**
+ * Applies a function to each element in the given list and returns a
+ * new list of the values that the function return.
+ *
+ * @complexity O(n)
+ */
+export function map_<A, B>(fa: List<A>, f: (a: A) => B): List<B> {
+  return imap_(fa, (_, a) => f(a))
+}
+
+/**
+ * Applies a function to each element in the given list and returns a
+ * new list of the values that the function return.
+ *
+ * @complexity O(n)
  * @dataFirst map_
  */
-export function map<A, B>(f: (a: A, i: number) => B): (fa: List<A>) => List<B> {
+export function map<A, B>(f: (a: A) => B): (fa: List<A>) => List<B> {
   return (fa) => map_(fa, f)
 }
 
@@ -916,16 +1082,27 @@ export function chainRecBreadthFirst<A, B>(f: (a: A) => List<Either<A, B>>): (a:
  * -------------------------------------------------------------------------------------------------
  */
 
-export const traverse_: P.TraverseIndexFn_<ListF> = P.implementTraverseWithIndex_<ListF>()(
-  () => (A) => (ta, f) => foldr_(ta, A.pure(empty()), (a, fb, i) => A.crossWith_(f(a, i), fb, (b, l) => prepend_(l, b)))
+export const itraverse_: P.TraverseIndexFn_<ListF> = P.implementTraverseWithIndex_<ListF>()(
+  () => (A) => (ta, f) =>
+    ifoldr_(ta, A.pure(empty()), (i, a, fb) => A.crossWith_(f(i, a), fb, (b, l) => prepend_(l, b)))
 )
 
 /**
- * @dataFirst traverse_
+ * @dataFirst itraverse_
  */
-export const traverse: P.MapWithIndexAFn<ListF> = (A) => {
-  const imapAG_ = traverse_(A)
-  return (f) => (ta) => imapAG_(ta, f)
+export const itraverse: P.MapWithIndexAFn<ListF> = (A) => {
+  const itraverseA_ = itraverse_(A)
+  return (f) => (ta) => itraverseA_(ta, f)
+}
+
+export const traverse_: P.TraverseFn_<ListF> = (A) => {
+  const itraverseA_ = itraverse_(A)
+  return (ta, f) => itraverseA_(ta, (_, a) => f(a))
+}
+
+export const traverse: P.TraverseFn<ListF> = (A) => {
+  const itraverseA_ = itraverse_(A)
+  return (f) => (ta) => itraverseA_(ta, (_, a) => f(a))
 }
 
 export const sequence: P.SequenceFn<ListF> = (A) => (ta) => traverse_(A)(ta, identity)
@@ -959,30 +1136,56 @@ export function unfold<A, B>(b: B, f: (b: B) => M.Maybe<readonly [A, B]>): List<
  * -------------------------------------------------------------------------------------------------
  */
 
-export const wither_: P.WitherWithIndexFn_<ListF> = (A) => {
-  const itraverseA_ = traverse_(A)
+export const iwither_: P.WitherWithIndexFn_<ListF> = (A) => {
+  const itraverseA_ = itraverse_(A)
   return (wa, f) => A.map_(itraverseA_(wa, f), compact)
+}
+
+/**
+ * @dataFirst iwither_
+ */
+export const iwither: P.WitherWithIndexFn<ListF> = (A) => {
+  const itraverseA_ = itraverse_(A)
+  return (f) => (wa) => A.map_(itraverseA_(wa, f), compact)
+}
+
+export const wither_: P.WitherFn_<ListF> = (A) => {
+  const iwitherA_ = iwither_(A)
+  return (wa, f) => iwitherA_(wa, (_, a) => f(a))
 }
 
 /**
  * @dataFirst wither_
  */
-export const wither: P.WitherWithIndexFn<ListF> = (A) => {
-  const itraverseA_ = traverse_(A)
-  return (f) => (wa) => A.map_(itraverseA_(wa, f), compact)
+export const wither: P.WitherFn<ListF> = (A) => {
+  const iwitherA_ = iwither_(A)
+  return (f) => (wa) => iwitherA_(wa, (_, a) => f(a))
 }
 
-export const wilt_: P.WiltWithIndexFn_<ListF> = (A) => {
-  const itraverseA_ = traverse_(A)
+export const iwilt_: P.WiltWithIndexFn_<ListF> = (A) => {
+  const itraverseA_ = itraverse_(A)
   return (wa, f) => A.map_(itraverseA_(wa, f), separate)
+}
+
+/**
+ * @dataFirst iwilt_
+ */
+export const iwilt: P.WiltWithIndexFn<ListF> = (A) => {
+  const itraverseA_ = itraverse_(A)
+  return (f) => (wa) => A.map_(itraverseA_(wa, f), separate)
+}
+
+export const wilt_: P.WiltFn_<ListF> = (A) => {
+  const iwiltA_ = iwilt_(A)
+  return (wa, f) => iwiltA_(wa, (_, a) => f(a))
 }
 
 /**
  * @dataFirst wilt_
  */
-export const wilt: P.WiltWithIndexFn<ListF> = (A) => {
-  const itraverseA_ = traverse_(A)
-  return (f) => (wa) => A.map_(itraverseA_(wa, f), separate)
+export const wilt: P.WiltFn<ListF> = (A) => {
+  const iwiltA_ = iwilt_(A)
+  return (f) => (wa) => iwiltA_(wa, (_, a) => f(a))
 }
 
 /*
@@ -3672,17 +3875,17 @@ function foldrCb<A, B>(cb: FoldCb<A, B>, state: B, l: List<A>): B {
   return state
 }
 
-function foldlPrefix<A, B>(f: (b: B, a: A, i: number) => B, b: B, array: A[], length: number): [B, number] {
+function foldlPrefix<A, B>(f: (i: number, b: B, a: A) => B, b: B, array: A[], length: number): [B, number] {
   let acc = b
   let j   = 0
   for (let i = length - 1; 0 <= i; --i, j++) {
-    acc = f(acc, array[i], j)
+    acc = f(j, acc, array[i])
   }
   return [acc, j]
 }
 
 function foldlNode<A, B>(
-  f: (b: B, a: A, i: number) => B,
+  f: (i: number, b: B, a: A) => B,
   b: B,
   node: Node,
   depth: number,
@@ -3701,7 +3904,7 @@ function foldlNode<A, B>(
 }
 
 function foldlSuffix<A, B>(
-  f: (b: B, a: A, i: number) => B,
+  f: (i: number, b: B, a: A) => B,
   b: B,
   array: A[],
   length: number,
@@ -3710,13 +3913,13 @@ function foldlSuffix<A, B>(
   let acc = b
   let j   = offset
   for (let i = 0; i < length; ++i, j++) {
-    acc = f(acc, array[i], j)
+    acc = f(j, acc, array[i])
   }
   return [acc, j]
 }
 
 function foldrPrefix<A, B>(
-  f: (a: A, b: B, i: number) => B,
+  f: (i: number, a: A, b: B) => B,
   b: B,
   array: A[],
   length: number,
@@ -3725,13 +3928,13 @@ function foldrPrefix<A, B>(
   let acc = b
   let j   = offset
   for (let i = 0; i < length; ++i, j--) {
-    acc = f(array[i], acc, j)
+    acc = f(j, array[i], acc)
   }
   return [acc, j]
 }
 
 function foldrNode<A, B>(
-  f: (a: A, b: B, i: number) => B,
+  f: (i: number, a: A, b: B) => B,
   b: B,
   node: Node,
   depth: number,
@@ -3750,7 +3953,7 @@ function foldrNode<A, B>(
 }
 
 function foldrSuffix<A, B>(
-  f: (a: A, b: B, i: number) => B,
+  f: (i: number, a: A, b: B) => B,
   b: B,
   array: A[],
   length: number,
@@ -3759,21 +3962,21 @@ function foldrSuffix<A, B>(
   let acc = b
   let j   = offset
   for (let i = length - 1; 0 <= i; --i, j--) {
-    acc = f(array[i], acc, j)
+    acc = f(j, array[i], acc)
   }
   return [acc, j]
 }
 
-function mapArray<A, B>(f: (a: A, i: number) => B, array: A[], offset: number): [B[], number] {
+function mapArray<A, B>(f: (i: number, a: A) => B, array: A[], offset: number): [B[], number] {
   const result = new Array(array.length)
   for (let i = 0; i < array.length; ++i) {
-    result[i] = f(array[i], offset + i)
+    result[i] = f(offset + i, array[i])
   }
   return [result, offset + array.length]
 }
 
 function mapNode<A, B>(
-  f: (a: A, i: number) => B,
+  f: (i: number, a: A) => B,
   node: Node,
   depth: number,
   offset: number,
@@ -3795,19 +3998,19 @@ function mapNode<A, B>(
   }
 }
 
-function mapPrefix<A, B>(f: (a: A, i: number) => B, prefix: A[], length: number): B[] {
+function mapPrefix<A, B>(f: (i: number, a: A) => B, prefix: A[], length: number): B[] {
   const newPrefix = new Array(length)
   for (let i = length - 1; 0 <= i; --i) {
-    newPrefix[i] = f(prefix[i], length - 1 - i)
+    newPrefix[i] = f(length - 1 - i, prefix[i])
   }
   return newPrefix
 }
 
-function mapAffix<A, B>(f: (a: A, i: number) => B, suffix: A[], length: number, totalLength: number): B[] {
+function mapAffix<A, B>(f: (i: number, a: A) => B, suffix: A[], length: number, totalLength: number): B[] {
   const priorLength = totalLength - length
   const newSuffix   = new Array(length)
   for (let i = 0; i < length; ++i) {
-    newSuffix[i] = f(suffix[i], priorLength + i)
+    newSuffix[i] = f(priorLength + i, suffix[i])
   }
   return newSuffix
 }

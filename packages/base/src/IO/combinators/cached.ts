@@ -12,7 +12,7 @@ import { RuntimeException } from '../../Exception'
 import { pipe } from '../../function'
 import * as F from '../../Future'
 import * as M from '../../Maybe'
-import * as RefM from '../../RefM'
+import * as RefM from '../../SRef'
 import { tuple } from '../../tuple/core'
 import * as I from '../core'
 import { fulfill } from './fulfill'
@@ -95,7 +95,7 @@ function _compute<R, E, A>(fa: IO<R, E, A>, ttl: number, start: number) {
 /**
  * @trace call
  */
-function _get<R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Maybe<readonly [number, Future<E, A>]>>) {
+function _get<R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.USRef<Maybe<readonly [number, Future<E, A>]>>) {
   return uninterruptibleMask(({ restore }) =>
     pipe(
       Clock.currentTime,
@@ -121,6 +121,6 @@ function _get<R, E, A>(fa: IO<R, E, A>, ttl: number, cache: RefM.URefM<Maybe<rea
   )
 }
 
-function _invalidate<E, A>(cache: RefM.URefM<Maybe<readonly [number, Future<E, A>]>>): UIO<void> {
+function _invalidate<E, A>(cache: RefM.USRef<Maybe<readonly [number, Future<E, A>]>>): UIO<void> {
   return cache.set(M.nothing())
 }

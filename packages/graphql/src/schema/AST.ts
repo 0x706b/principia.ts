@@ -308,7 +308,7 @@ export function createValueNode(value: any): ValueNode {
         const valueNodes = value.map((v) => createValueNode(v))
         return createListValueNode(valueNodes)
       } else {
-        const fieldNodes = R.foldl_(value, [] as ObjectFieldNode[], (acc, v, k) => [
+        const fieldNodes = R.ifoldl_(value, [] as ObjectFieldNode[], (k, acc, v) => [
           ...acc,
           createObjectFieldNode(k, createValueNode(v))
         ])

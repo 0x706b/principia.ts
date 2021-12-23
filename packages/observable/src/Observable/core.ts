@@ -8,7 +8,7 @@ import type { Finalizer, Unsubscribable } from '../Subscription'
 import type { Either } from '@principia/base/Either'
 import type { FiberContext } from '@principia/base/Fiber'
 import type { IOEnv } from '@principia/base/IOEnv'
-import type { Eq, PredicateWithIndex, RefinementWithIndex } from '@principia/base/prelude'
+import type { Eq, Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from '@principia/base/prelude'
 
 import * as A from '@principia/base/Array'
 import * as Ca from '@principia/base/Cause'
@@ -642,20 +642,28 @@ export function ap<E1, A>(fa: Observable<E1, A>): <E, B>(fab: Observable<E, (a: 
  * -------------------------------------------------------------------------------------------------
  */
 
-export function map_<E, A, B>(fa: Observable<E, A>, f: (a: A, i: number) => B): Observable<E, B> {
+export function imap_<E, A, B>(fa: Observable<E, A>, f: (i: number, a: A) => B): Observable<E, B> {
   return operate_(fa, (source, subscriber) => {
     let i = 0
     source.subscribe(
       new OperatorSubscriber(subscriber, {
         next: (value) => {
-          subscriber.next(f(value, i++))
+          subscriber.next(f(i++, value))
         }
       })
     )
   })
 }
 
-export function map<A, B>(f: (a: A, i: number) => B): <E>(fa: Observable<E, A>) => Observable<E, B> {
+export function imap<A, B>(f: (i: number, a: A) => B): <E>(fa: Observable<E, A>) => Observable<E, B> {
+  return (fa) => imap_(fa, f)
+}
+
+export function map_<E, A, B>(fa: Observable<E, A>, f: (a: A) => B): Observable<E, B> {
+  return imap_(fa, (_, a) => f(a))
+}
+
+export function map<A, B>(f: (a: A) => B): <E>(fa: Observable<E, A>) => Observable<E, B> {
   return (fa) => map_(fa, f)
 }
 
@@ -710,71 +718,118 @@ export function swap<E, A>(fa: Observable<E, A>): Observable<A, E> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function filter_<E, A, B extends A>(
+export function ifilter_<E, A, B extends A>(
   fa: Observable<E, A>,
   refinement: RefinementWithIndex<number, A, B>
 ): Observable<E, B>
-export function filter_<E, A>(fa: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, A>
-export function filter_<E, A>(fa: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, A> {
+export function ifilter_<E, A>(fa: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, A>
+export function ifilter_<E, A>(fa: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, A> {
   return operate_(fa, (source, subscriber) => {
     let index = 0
     source.subscribe(
-      operatorSubscriber(subscriber, { next: (value) => predicate(value, index++) && subscriber.next(value) })
+      operatorSubscriber(subscriber, { next: (value) => predicate(index++, value) && subscriber.next(value) })
     )
   })
 }
 
-export function filter<A, B extends A>(
+export function ifilter<A, B extends A>(
   refinement: RefinementWithIndex<number, A, B>
 ): <E>(fa: Observable<E, A>) => Observable<E, B>
-export function filter<A>(predicate: PredicateWithIndex<number, A>): <E>(fa: Observable<E, A>) => Observable<E, A>
-export function filter<A>(predicate: PredicateWithIndex<number, A>): <E>(fa: Observable<E, A>) => Observable<E, A> {
+export function ifilter<A>(predicate: PredicateWithIndex<number, A>): <E>(fa: Observable<E, A>) => Observable<E, A>
+export function ifilter<A>(predicate: PredicateWithIndex<number, A>): <E>(fa: Observable<E, A>) => Observable<E, A> {
+  return (fa) => ifilter_(fa, predicate)
+}
+
+export function filter_<E, A, B extends A>(fa: Observable<E, A>, refinement: Refinement<A, B>): Observable<E, B>
+export function filter_<E, A>(fa: Observable<E, A>, predicate: Predicate<A>): Observable<E, A>
+export function filter_<E, A>(fa: Observable<E, A>, predicate: Predicate<A>): Observable<E, A> {
+  return ifilter_(fa, (_, a) => predicate(a))
+}
+
+export function filter<A, B extends A>(refinement: Refinement<A, B>): <E>(fa: Observable<E, A>) => Observable<E, B>
+export function filter<A>(predicate: Predicate<A>): <E>(fa: Observable<E, A>) => Observable<E, A>
+export function filter<A>(predicate: Predicate<A>): <E>(fa: Observable<E, A>) => Observable<E, A> {
   return (fa) => filter_(fa, predicate)
 }
 
-export function filterMap_<E, A, B>(fa: Observable<E, A>, f: (a: A, i: number) => M.Maybe<B>): Observable<E, B> {
+export function ifilterMap_<E, A, B>(fa: Observable<E, A>, f: (i: number, a: A) => M.Maybe<B>): Observable<E, B> {
   return operate_(fa, (source, subscriber) => {
     let index = 0
     source.subscribe(
-      operatorSubscriber(subscriber, { next: (value) => M.match_(f(value, index++), noop, (b) => subscriber.next(b)) })
+      operatorSubscriber(subscriber, { next: (value) => M.match_(f(index++, value), noop, (b) => subscriber.next(b)) })
     )
   })
 }
 
-export function filterMap<A, B>(f: (a: A, i: number) => M.Maybe<B>): <E>(fa: Observable<E, A>) => Observable<E, B> {
+export function ifilterMap<A, B>(f: (i: number, a: A) => M.Maybe<B>): <E>(fa: Observable<E, A>) => Observable<E, B> {
+  return (fa) => ifilterMap_(fa, f)
+}
+
+export function filterMap_<E, A, B>(fa: Observable<E, A>, f: (a: A) => M.Maybe<B>): Observable<E, B> {
+  return ifilterMap_(fa, (_, a) => f(a))
+}
+
+export function filterMap<A, B>(f: (a: A) => M.Maybe<B>): <E>(fa: Observable<E, A>) => Observable<E, B> {
   return (fa) => filterMap_(fa, f)
+}
+
+export function ipartition_<E, A, B extends A>(
+  fa: Observable<E, A>,
+  refinement: RefinementWithIndex<number, A, B>
+): readonly [Observable<E, Exclude<A, B>>, Observable<E, B>]
+export function ipartition_<E, A>(
+  fa: Observable<E, A>,
+  predicate: PredicateWithIndex<number, A>
+): readonly [Observable<E, A>, Observable<E, A>]
+export function ipartition_<E, A>(
+  fa: Observable<E, A>,
+  predicate: PredicateWithIndex<number, A>
+): readonly [Observable<E, A>, Observable<E, A>] {
+  return [ifilter_(fa, (i, a) => !predicate(i, a)), ifilter_(fa, predicate)]
+}
+
+export function ipartition<A, B extends A>(
+  refinement: RefinementWithIndex<number, A, B>
+): <E>(fa: Observable<E, A>) => readonly [Observable<E, Exclude<A, B>>, Observable<E, B>]
+export function ipartition<A>(
+  predicate: PredicateWithIndex<number, A>
+): <E>(fa: Observable<E, A>) => readonly [Observable<E, A>, Observable<E, A>]
+export function ipartition<A>(
+  predicate: PredicateWithIndex<number, A>
+): <E>(fa: Observable<E, A>) => readonly [Observable<E, A>, Observable<E, A>] {
+  return (fa) => ipartition_(fa, predicate)
 }
 
 export function partition_<E, A, B extends A>(
   fa: Observable<E, A>,
-  refinement: RefinementWithIndex<number, A, B>
+  refinement: Refinement<A, B>
 ): readonly [Observable<E, Exclude<A, B>>, Observable<E, B>]
 export function partition_<E, A>(
   fa: Observable<E, A>,
-  predicate: PredicateWithIndex<number, A>
+  predicate: Predicate<A>
 ): readonly [Observable<E, A>, Observable<E, A>]
 export function partition_<E, A>(
   fa: Observable<E, A>,
-  predicate: PredicateWithIndex<number, A>
+  predicate: Predicate<A>
 ): readonly [Observable<E, A>, Observable<E, A>] {
-  return [filter_(fa, (a, i) => !predicate(a, i)), filter_(fa, predicate)]
+  return ipartition_(fa, (_, a) => predicate(a))
 }
 
 export function partition<A, B extends A>(
-  refinement: RefinementWithIndex<number, A, B>
+  refinement: Refinement<A, B>
 ): <E>(fa: Observable<E, A>) => readonly [Observable<E, Exclude<A, B>>, Observable<E, B>]
 export function partition<A>(
-  predicate: PredicateWithIndex<number, A>
+  predicate: Predicate<A>
 ): <E>(fa: Observable<E, A>) => readonly [Observable<E, A>, Observable<E, A>]
 export function partition<A>(
-  predicate: PredicateWithIndex<number, A>
+  predicate: Predicate<A>
 ): <E>(fa: Observable<E, A>) => readonly [Observable<E, A>, Observable<E, A>] {
   return (fa) => partition_(fa, predicate)
 }
 
-export function partitionMap_<E, A, B, C>(
+export function ipartitionMap_<E, A, B, C>(
   fa: Observable<E, A>,
-  f: (a: A, i: number) => E.Either<B, C>
+  f: (i: number, a: A) => E.Either<B, C>
 ): readonly [Observable<E, B>, Observable<E, C>] {
   return [
     operate_(fa, (source, subscriber) => {
@@ -782,7 +837,7 @@ export function partitionMap_<E, A, B, C>(
       source.subscribe(
         operatorSubscriber(subscriber, {
           next: (value) => {
-            E.match_(f(value, index++), (b) => subscriber.next(b), noop)
+            E.match_(f(index++, value), (b) => subscriber.next(b), noop)
           }
         })
       )
@@ -792,7 +847,7 @@ export function partitionMap_<E, A, B, C>(
       source.subscribe(
         operatorSubscriber(subscriber, {
           next: (value) => {
-            E.match_(f(value, index++), noop, (c) => subscriber.next(c))
+            E.match_(f(index++, value), noop, (c) => subscriber.next(c))
           }
         })
       )
@@ -800,8 +855,21 @@ export function partitionMap_<E, A, B, C>(
   ]
 }
 
+export function ipartitionMap<A, B, C>(
+  f: (i: number, a: A) => E.Either<B, C>
+): <E>(fa: Observable<E, A>) => readonly [Observable<E, B>, Observable<E, C>] {
+  return (fa) => ipartitionMap_(fa, f)
+}
+
+export function partitionMap_<E, A, B, C>(
+  fa: Observable<E, A>,
+  f: (a: A) => E.Either<B, C>
+): readonly [Observable<E, B>, Observable<E, C>] {
+  return ipartitionMap_(fa, (_, a) => f(a))
+}
+
 export function partitionMap<A, B, C>(
-  f: (a: A, i: number) => E.Either<B, C>
+  f: (a: A) => E.Either<B, C>
 ): <E>(fa: Observable<E, A>) => readonly [Observable<E, B>, Observable<E, C>] {
   return (fa) => partitionMap_(fa, f)
 }
@@ -812,30 +880,58 @@ export function partitionMap<A, B, C>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function mergeMap_<E, A, E1, B>(
+export function imergeMap_<E, A, E1, B>(
   ma: Observable<E, A>,
-  f: (a: A, i: number) => ObservableInput<E1, B>,
+  f: (i: number, a: A) => ObservableInput<E1, B>,
   concurrent = Infinity
 ): Observable<E | E1, B> {
   return operate_(ma, (source, sub) => mergeInternal(source, sub, f, concurrent))
 }
 
+export function imergeMap<A, E1, B>(
+  f: (i: number, a: A) => ObservableInput<E1, B>,
+  concurrent = Infinity
+): <E>(ma: Observable<E, A>) => Observable<E | E1, B> {
+  return (ma) => imergeMap_(ma, f, concurrent)
+}
+
+export function mergeMap_<E, A, E1, B>(
+  ma: Observable<E, A>,
+  f: (a: A) => ObservableInput<E1, B>,
+  concurrent = Infinity
+): Observable<E | E1, B> {
+  return imergeMap_(ma, (_, a) => f(a), concurrent)
+}
+
 export function mergeMap<A, E1, B>(
-  f: (a: A, i: number) => ObservableInput<E1, B>,
+  f: (a: A) => ObservableInput<E1, B>,
   concurrent = Infinity
 ): <E>(ma: Observable<E, A>) => Observable<E | E1, B> {
   return (ma) => mergeMap_(ma, f, concurrent)
 }
 
+export function iconcatMap_<E, A, E1, B>(
+  ma: Observable<E, A>,
+  f: (i: number, a: A) => ObservableInput<E1, B>
+): Observable<E | E1, B> {
+  return imergeMap_(ma, f, 1)
+}
+
+export function iconcatMap<A, E1, B>(
+  f: (i: number, a: A) => ObservableInput<E1, B>
+): <E>(ma: Observable<E, A>) => Observable<E | E1, B> {
+  return (ma) => iconcatMap_(ma, f)
+}
+
 export function concatMap_<E, A, E1, B>(
   ma: Observable<E, A>,
-  f: (a: A, i: number) => ObservableInput<E1, B>
+  f: (a: A) => ObservableInput<E1, B>
 ): Observable<E | E1, B> {
-  return mergeMap_(ma, f, 1)
+  return imergeMap_(ma, (_, a) => f(a), 1)
 }
 
 export function concatMap<A, E1, B>(
-  f: (a: A, i: number) => ObservableInput<E1, B>
+  f: (a: A) => ObservableInput<E1, B>
 ): <E>(ma: Observable<E, A>) => Observable<E | E1, B> {
   return (ma) => concatMap_(ma, f)
 }
@@ -854,18 +950,26 @@ export function switchFlatten<E, E1, A>(mma: Observable<E, Observable<E1, A>>): 
  * -------------------------------------------------------------------------------------------------
  */
 
-export function foldl_<E, A, B>(
+export function ifoldl_<E, A, B>(
   fa: Observable<E, A>,
   initial: B,
-  f: (acc: B, value: A, index: number) => B
+  f: (index: number, acc: B, value: A) => B
 ): Observable<E, B> {
   return operate_(fa, scanInternal(f, initial, true, false, true))
 }
 
-export function foldl<A, B>(
+export function ifoldl<A, B>(
   initial: B,
-  f: (acc: B, value: A, index: number) => B
+  f: (index: number, acc: B, value: A) => B
 ): <E>(fa: Observable<E, A>) => Observable<E, B> {
+  return (fa) => ifoldl_(fa, initial, f)
+}
+
+export function foldl_<E, A, B>(fa: Observable<E, A>, initial: B, f: (acc: B, value: A) => B): Observable<E, B> {
+  return ifoldl_(fa, initial, (_, b, a) => f(b, a))
+}
+
+export function foldl<A, B>(initial: B, f: (acc: B, value: A) => B): <E>(fa: Observable<E, A>) => Observable<E, B> {
   return (fa) => foldl_(fa, initial, f)
 }
 
@@ -878,7 +982,7 @@ export function foldl<A, B>(
 export function at_<E, A>(fa: Observable<E, A>, index: number): Observable<E, M.Maybe<A>> {
   return pipe(
     fa,
-    filter((_, i) => i === index),
+    ifilter((i, _) => i === index),
     take(1),
     map(M.just),
     onEmpty(() => M.nothing())
@@ -1259,16 +1363,24 @@ export function count<E, A>(fa: Observable<E, A>): Observable<E, number> {
   return foldl_(fa, 0, (total, _) => total + 1)
 }
 
-export function countWith_<E, A>(
+export function icountWith_<E, A>(
   fa: Observable<E, A>,
   predicate: PredicateWithIndex<number, A>
 ): Observable<E, number> {
-  return foldl_(fa, 0, (total, v, i) => (predicate(v, i) ? total + 1 : total))
+  return ifoldl_(fa, 0, (i, total, v) => (predicate(i, v) ? total + 1 : total))
 }
 
-export function countWith<A>(
+export function icountWith<A>(
   predicate: PredicateWithIndex<number, A>
 ): <E>(fa: Observable<E, A>) => Observable<E, number> {
+  return (fa) => icountWith_(fa, predicate)
+}
+
+export function countWith_<E, A>(fa: Observable<E, A>, predicate: Predicate<A>): Observable<E, number> {
+  return icountWith_(fa, (_, a) => predicate(a))
+}
+
+export function countWith<A>(predicate: Predicate<A>): <E>(fa: Observable<E, A>) => Observable<E, number> {
   return (fa) => countWith_(fa, predicate)
 }
 
@@ -1417,15 +1529,28 @@ export function either<E, A>(fa: Observable<E, A>): Observable<never, Either<E, 
   })
 }
 
+export function idelayWith_<E, A, E1>(
+  fa: Observable<E, A>,
+  f: (index: number, value: A) => Observable<E1, any>
+): Observable<E | E1, A> {
+  return imergeMap_(fa, (i, a) => pipe(f(i, a), take(1), as(a)))
+}
+
+export function idelayWith<A, E1>(
+  f: (index: number, value: A) => Observable<E1, any>
+): <E>(fa: Observable<E, A>) => Observable<E | E1, A> {
+  return (fa) => idelayWith_(fa, f)
+}
+
 export function delayWith_<E, A, E1>(
   fa: Observable<E, A>,
-  f: (value: A, index: number) => Observable<E1, any>
+  f: (value: A) => Observable<E1, any>
 ): Observable<E | E1, A> {
-  return mergeMap_(fa, (a, i) => pipe(f(a, i), take(1), as(a)))
+  return idelayWith_(fa, (_, a) => f(a))
 }
 
 export function delayWith<A, E1>(
-  f: (value: A, index: number) => Observable<E1, any>
+  f: (value: A) => Observable<E1, any>
 ): <E>(fa: Observable<E, A>) => Observable<E | E1, A> {
   return (fa) => delayWith_(fa, f)
 }
@@ -1490,9 +1615,9 @@ export function exhaustAll<E, E1, A>(ffa: Observable<E, ObservableInput<E1, A>>)
   })
 }
 
-export function exhaustMap_<E, A, E1, B>(
+export function iexhaustMap_<E, A, E1, B>(
   ffa: Observable<E, A>,
-  f: (a: A, i: number) => ObservableInput<E1, B>
+  f: (i: number, a: A) => ObservableInput<E1, B>
 ): Observable<E | E1, B> {
   return operate_(ffa, (source, subscriber) => {
     let index = 0
@@ -1508,7 +1633,7 @@ export function exhaustMap_<E, A, E1, B>(
                 isComplete && subscriber.complete()
               }
             })
-            from(f(outerValue, index++)).subscribe(innerSub)
+            from(f(index++, outerValue)).subscribe(innerSub)
           }
         },
         complete: () => {
@@ -1520,15 +1645,28 @@ export function exhaustMap_<E, A, E1, B>(
   })
 }
 
+export function iexhaustMap<A, E1, B>(
+  f: (i: number, a: A) => ObservableInput<E1, B>
+): <E>(ffa: Observable<E, A>) => Observable<E | E1, B> {
+  return (ffa) => iexhaustMap_(ffa, f)
+}
+
+export function exhaustMap_<E, A, E1, B>(
+  ffa: Observable<E, A>,
+  f: (a: A) => ObservableInput<E1, B>
+): Observable<E | E1, B> {
+  return iexhaustMap_(ffa, (_, a) => f(a))
+}
+
 export function exhaustMap<A, E1, B>(
-  f: (a: A, i: number) => ObservableInput<E1, B>
+  f: (a: A) => ObservableInput<E1, B>
 ): <E>(ffa: Observable<E, A>) => Observable<E | E1, B> {
   return (ffa) => exhaustMap_(ffa, f)
 }
 
-export function expand_<E, A, E1, B>(
+export function iexpand_<E, A, E1, B>(
   fa: Observable<E, A>,
-  f: (a: A, i: number) => ObservableInput<E1, B>,
+  f: (i: number, a: A) => ObservableInput<E1, B>,
   concurrent = Infinity
 ): Observable<E | E1, B> {
   // eslint-disable-next-line no-param-reassign
@@ -1536,55 +1674,101 @@ export function expand_<E, A, E1, B>(
   return operate_(fa, (source, subscriber) => mergeInternal(source, subscriber, f, concurrent, undefined, true))
 }
 
+export function iexpand<A, E1, B>(
+  f: (i: number, a: A) => ObservableInput<E1, B>,
+  concurrent = Infinity
+): <E>(fa: Observable<E, A>) => Observable<E | E1, B> {
+  return (fa) => iexpand_(fa, f, concurrent)
+}
+
+export function expand_<E, A, E1, B>(
+  fa: Observable<E, A>,
+  f: (a: A) => ObservableInput<E1, B>,
+  concurrent = Infinity
+): Observable<E | E1, B> {
+  return iexpand_(fa, (_, a) => f(a), concurrent)
+}
+
 export function expand<A, E1, B>(
-  f: (a: A, i: number) => ObservableInput<E1, B>,
+  f: (a: A) => ObservableInput<E1, B>,
   concurrent = Infinity
 ): <E>(fa: Observable<E, A>) => Observable<E | E1, B> {
   return (fa) => expand_(fa, f, concurrent)
 }
 
-export function find_<E, A, B extends A>(
+export function ifind_<E, A, B extends A>(
   fa: Observable<E, A>,
   refinement: RefinementWithIndex<number, A, B>
 ): Observable<E, M.Maybe<B>>
-export function find_<E, A>(fa: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, M.Maybe<A>>
-export function find_<E, A>(fa: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, M.Maybe<A>> {
+export function ifind_<E, A>(fa: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, M.Maybe<A>>
+export function ifind_<E, A>(
+  fa: Observable<E, A>,
+  predicate: PredicateWithIndex<number, A>
+): Observable<E, M.Maybe<A>> {
   return operate_(fa, findInternal(predicate, 'value'))
 }
 
-export function find<A, B extends A>(
+export function ifind<A, B extends A>(
   refinement: RefinementWithIndex<number, A, B>
 ): <E>(fa: Observable<E, A>) => Observable<E, M.Maybe<B>>
-export function find<A>(
+export function ifind<A>(
   predicate: PredicateWithIndex<number, A>
 ): <E>(fa: Observable<E, A>) => Observable<E, M.Maybe<A>>
-export function find<A>(
+export function ifind<A>(
   predicate: PredicateWithIndex<number, A>
 ): <E>(fa: Observable<E, A>) => Observable<E, M.Maybe<A>> {
+  return (fa) => ifind_(fa, predicate)
+}
+
+export function find_<E, A, B extends A>(fa: Observable<E, A>, refinement: Refinement<A, B>): Observable<E, M.Maybe<B>>
+export function find_<E, A>(fa: Observable<E, A>, predicate: Predicate<A>): Observable<E, M.Maybe<A>>
+export function find_<E, A>(fa: Observable<E, A>, predicate: Predicate<A>): Observable<E, M.Maybe<A>> {
+  return ifind_(fa, (_, a) => predicate(a))
+}
+
+export function find<A, B extends A>(
+  refinement: Refinement<A, B>
+): <E>(fa: Observable<E, A>) => Observable<E, M.Maybe<B>>
+export function find<A>(predicate: Predicate<A>): <E>(fa: Observable<E, A>) => Observable<E, M.Maybe<A>>
+export function find<A>(predicate: Predicate<A>): <E>(fa: Observable<E, A>) => Observable<E, M.Maybe<A>> {
   return (fa) => find_(fa, predicate)
 }
 
-export function findIndex_<E, A, B extends A>(
+export function ifindIndex_<E, A, B extends A>(
   fa: Observable<E, A>,
   refinement: RefinementWithIndex<number, A, B>
 ): Observable<E, number>
-export function findIndex_<E, A>(fa: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, number>
-export function findIndex_<E, A>(
+export function ifindIndex_<E, A>(fa: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, number>
+export function ifindIndex_<E, A>(
   fa: Observable<E, A>,
   predicate: PredicateWithIndex<number, A>
 ): Observable<E, number> {
   return operate_(fa, findInternal(predicate, 'index'))
 }
 
-export function findIndex<A, B extends A>(
+export function ifindIndex<A, B extends A>(
   refinement: RefinementWithIndex<number, A, B>
 ): <E>(fa: Observable<E, A>) => Observable<E, number>
-export function findIndex<A>(
+export function ifindIndex<A>(
   predicate: PredicateWithIndex<number, A>
 ): <E>(fa: Observable<E, A>) => Observable<E, number>
-export function findIndex<A>(
+export function ifindIndex<A>(
   predicate: PredicateWithIndex<number, A>
 ): <E>(fa: Observable<E, A>) => Observable<E, number> {
+  return (fa) => ifindIndex_(fa, predicate)
+}
+
+export function findIndex_<E, A, B extends A>(fa: Observable<E, A>, refinement: Refinement<A, B>): Observable<E, number>
+export function findIndex_<E, A>(fa: Observable<E, A>, predicate: Predicate<A>): Observable<E, number>
+export function findIndex_<E, A>(fa: Observable<E, A>, predicate: Predicate<A>): Observable<E, number> {
+  return ifindIndex_(fa, (_, a) => predicate(a))
+}
+
+export function findIndex<A, B extends A>(
+  refinement: Refinement<A, B>
+): <E>(fa: Observable<E, A>) => Observable<E, number>
+export function findIndex<A>(predicate: Predicate<A>): <E>(fa: Observable<E, A>) => Observable<E, number>
+export function findIndex<A>(predicate: Predicate<A>): <E>(fa: Observable<E, A>) => Observable<E, number> {
   return (fa) => findIndex_(fa, predicate)
 }
 
@@ -1621,7 +1805,7 @@ export function forkJoin(...args: any[]): Observable<any, any> {
               if (!remainingEmissions) {
                 s.next(
                   keys
-                    ? A.foldl_(keys, {}, (b, k, i) => {
+                    ? A.ifoldl_(keys, {}, (i, b, k) => {
                         b[k] = values[i]
                         return b
                       })
@@ -1698,10 +1882,10 @@ export function mergeAll(
   return (ffa) => mergeAll_(ffa, concurrent)
 }
 
-export function mergeScan_<E, A, E1, B>(
+export function imergeScan_<E, A, E1, B>(
   fa: Observable<E, A>,
   initial: B,
-  f: (acc: B, value: A, index: number) => ObservableInput<E1, B>,
+  f: (index: number, acc: B, value: A) => ObservableInput<E1, B>,
   concurrent = Infinity
 ): Observable<E | E1, B> {
   return operate_(fa, (source, subscriber) => {
@@ -1709,7 +1893,7 @@ export function mergeScan_<E, A, E1, B>(
     return mergeInternal(
       source,
       subscriber,
-      (value, index) => f(state, value, index),
+      (index, value) => f(index, state, value),
       concurrent,
       (value) => {
         state = value
@@ -1721,9 +1905,26 @@ export function mergeScan_<E, A, E1, B>(
   })
 }
 
+export function imergeScan<A, E1, B>(
+  initial: B,
+  f: (index: number, acc: B, value: A) => ObservableInput<E1, B>,
+  concurrent = Infinity
+): <E>(fa: Observable<E, A>) => Observable<E | E1, B> {
+  return (fa) => imergeScan_(fa, initial, f, concurrent)
+}
+
+export function mergeScan_<E, A, E1, B>(
+  fa: Observable<E, A>,
+  initial: B,
+  f: (acc: B, value: A) => ObservableInput<E1, B>,
+  concurrent = Infinity
+): Observable<E | E1, B> {
+  return imergeScan_(fa, initial, (_, b, a) => f(b, a), concurrent)
+}
+
 export function mergeScan<A, E1, B>(
   initial: B,
-  f: (acc: B, value: A, index: number) => ObservableInput<E1, B>,
+  f: (acc: B, value: A) => ObservableInput<E1, B>,
   concurrent = Infinity
 ): <E>(fa: Observable<E, A>) => Observable<E | E1, B> {
   return (fa) => mergeScan_(fa, initial, f, concurrent)
@@ -1940,23 +2141,31 @@ export function sampleTime(
   return (fa) => sampleTime_(fa, period, scheduler)
 }
 
-export function scanl_<E, A, B>(
+export function iscanl_<E, A, B>(
   fa: Observable<E, A>,
   initial: B,
-  f: (acc: B, value: A, index: number) => B
+  f: (index: number, acc: B, value: A) => B
 ): Observable<E, B> {
   return operate_(fa, scanInternal(f, initial, true, true))
 }
 
-export function scanl<A, B>(
+export function iscanl<A, B>(
   initial: B,
-  f: (acc: B, value: A, index: number) => B
+  f: (index: number, acc: B, value: A) => B
 ): <E>(fa: Observable<E, A>) => Observable<E, B> {
+  return (fa) => iscanl_(fa, initial, f)
+}
+
+export function scanl_<E, A, B>(fa: Observable<E, A>, initial: B, f: (acc: B, value: A) => B): Observable<E, B> {
+  return iscanl_(fa, initial, (_, b, a) => f(b, a))
+}
+
+export function scanl<A, B>(initial: B, f: (acc: B, value: A) => B): <E>(fa: Observable<E, A>) => Observable<E, B> {
   return (fa) => scanl_(fa, initial, f)
 }
 
 export function skip_<E, A>(fa: Observable<E, A>, count: number): Observable<E, A> {
-  return filter_(fa, (_, index) => count <= index)
+  return ifilter_(fa, (index, _) => count <= index)
 }
 
 export function skip(count: number): <E, A>(fa: Observable<E, A>) => Observable<E, A> {
@@ -2026,7 +2235,7 @@ export function skipWhile_<E, A>(fa: Observable<E, A>, predicate: PredicateWithI
     let index  = 0
     source.subscribe(
       operatorSubscriber(subscriber, {
-        next: (value) => (taking || (taking = !predicate(value, index++))) && subscriber.next(value)
+        next: (value) => (taking || (taking = !predicate(index++, value))) && subscriber.next(value)
       })
     )
   })
@@ -2066,9 +2275,9 @@ export function switchAll<E, E1, A>(ffa: Observable<E, ObservableInput<E1, A>>):
   return switchMap_(ffa, identity)
 }
 
-export function switchMap_<E, A, E1, B>(
+export function iswitchMap_<E, A, E1, B>(
   fa: Observable<E, A>,
-  f: (value: A, index: number) => ObservableInput<E1, B>
+  f: (index: number, value: A) => ObservableInput<E1, B>
 ): Observable<E | E1, B> {
   return operate_(fa, (source, subscriber) => {
     let innerSubscriber: Subscriber<E | E1, B> | null = null
@@ -2084,7 +2293,7 @@ export function switchMap_<E, A, E1, B>(
           next: (value) => {
             innerSubscriber?.unsubscribe()
             const outerIndex = index++
-            from(f(value, outerIndex)).subscribe(
+            from(f(outerIndex, value)).subscribe(
               (innerSubscriber = operatorSubscriber(subscriber, {
                 next: (innerValue) => subscriber.next(innerValue),
                 complete: () => {
@@ -2104,22 +2313,35 @@ export function switchMap_<E, A, E1, B>(
   })
 }
 
+export function iswitchMap<A, E1, B>(
+  f: (index: number, value: A) => ObservableInput<E1, B>
+): <E>(fa: Observable<E, A>) => Observable<E | E1, B> {
+  return (fa) => iswitchMap_(fa, f)
+}
+
+export function switchMap_<E, A, E1, B>(
+  fa: Observable<E, A>,
+  f: (value: A) => ObservableInput<E1, B>
+): Observable<E | E1, B> {
+  return iswitchMap_(fa, (_, a) => f(a))
+}
+
 export function switchMap<A, E1, B>(
-  f: (value: A, index: number) => ObservableInput<E1, B>
+  f: (value: A) => ObservableInput<E1, B>
 ): <E>(fa: Observable<E, A>) => Observable<E | E1, B> {
   return (fa) => switchMap_(fa, f)
 }
 
-export function switchScan_<E, A, E1, B>(
+export function iswitchScan_<E, A, E1, B>(
   fa: Observable<E, A>,
   initial: B,
-  f: (acc: B, value: A, index: number) => ObservableInput<E1, B>
+  f: (index: number, acc: B, value: A) => ObservableInput<E1, B>
 ): Observable<E | E1, B> {
   return operate_(fa, (source, subscriber) => {
     let state = initial
-    switchMap_(source, (value, index) =>
+    iswitchMap_(source, (index, value) =>
       pipe(
-        f(state, value, index),
+        f(index, state, value),
         from,
         map((b) => ((state = b), b))
       )
@@ -2130,9 +2352,24 @@ export function switchScan_<E, A, E1, B>(
   })
 }
 
+export function iswitchScan<A, E1, B>(
+  initial: B,
+  f: (index: number, acc: B, value: A) => ObservableInput<E1, B>
+): <E>(fa: Observable<E, A>) => Observable<E | E1, B> {
+  return (fa) => iswitchScan_(fa, initial, f)
+}
+
+export function switchScan_<E, A, E1, B>(
+  fa: Observable<E, A>,
+  initial: B,
+  f: (acc: B, value: A) => ObservableInput<E1, B>
+): Observable<E | E1, B> {
+  return iswitchScan_(fa, initial, (_, b, a) => f(b, a))
+}
+
 export function switchScan<A, E1, B>(
   initial: B,
-  f: (acc: B, value: A, index: number) => ObservableInput<E1, B>
+  f: (acc: B, value: A) => ObservableInput<E1, B>
 ): <E>(fa: Observable<E, A>) => Observable<E | E1, B> {
   return (fa) => switchScan_(fa, initial, f)
 }
@@ -2206,17 +2443,17 @@ export function takeUntil<E1>(
   return (fa) => takeUntil_(fa, notifier)
 }
 
-export function takeWhile_<E, A, B extends A>(
+export function itakeWhile_<E, A, B extends A>(
   fa: Observable<E, A>,
   refinement: RefinementWithIndex<number, A, B>,
   inclusive?: boolean
 ): Observable<E, B>
-export function takeWhile_<E, A>(
+export function itakeWhile_<E, A>(
   fa: Observable<E, A>,
   predicate: PredicateWithIndex<number, A>,
   inclusive?: boolean
 ): Observable<E, A>
-export function takeWhile_<E, A>(
+export function itakeWhile_<E, A>(
   fa: Observable<E, A>,
   predicate: PredicateWithIndex<number, A>,
   inclusive?: boolean
@@ -2226,7 +2463,7 @@ export function takeWhile_<E, A>(
     source.subscribe(
       operatorSubscriber(subscriber, {
         next: (value) => {
-          const result = predicate(value, index++)
+          const result = predicate(index++, value)
           ;(result || inclusive) && subscriber.next(value)
           !result && subscriber.complete()
         }
@@ -2235,16 +2472,41 @@ export function takeWhile_<E, A>(
   })
 }
 
-export function takeWhile<A, B extends A>(
+export function itakeWhile<A, B extends A>(
   refinement: RefinementWithIndex<number, A, B>,
   inclusive?: boolean
 ): <E>(fa: Observable<E, A>) => Observable<E, B>
-export function takeWhile<A>(
+export function itakeWhile<A>(
   predicate: PredicateWithIndex<number, A>,
   inclusive?: boolean
 ): <E>(fa: Observable<E, A>) => Observable<E, A>
-export function takeWhile<A>(
+export function itakeWhile<A>(
   predicate: PredicateWithIndex<number, A>,
+  inclusive?: boolean
+): <E>(fa: Observable<E, A>) => Observable<E, A> {
+  return (fa) => itakeWhile_(fa, predicate, inclusive)
+}
+
+export function takeWhile_<E, A, B extends A>(
+  fa: Observable<E, A>,
+  refinement: Refinement<A, B>,
+  inclusive?: boolean
+): Observable<E, B>
+export function takeWhile_<E, A>(fa: Observable<E, A>, predicate: Predicate<A>, inclusive?: boolean): Observable<E, A>
+export function takeWhile_<E, A>(fa: Observable<E, A>, predicate: Predicate<A>, inclusive?: boolean): Observable<E, A> {
+  return itakeWhile_(fa, (_, a) => predicate(a), inclusive)
+}
+
+export function takeWhile<A, B extends A>(
+  refinement: Refinement<A, B>,
+  inclusive?: boolean
+): <E>(fa: Observable<E, A>) => Observable<E, B>
+export function takeWhile<A>(
+  predicate: Predicate<A>,
+  inclusive?: boolean
+): <E>(fa: Observable<E, A>) => Observable<E, A>
+export function takeWhile<A>(
+  predicate: Predicate<A>,
   inclusive?: boolean
 ): <E>(fa: Observable<E, A>) => Observable<E, A> {
   return (fa) => takeWhile_(fa, predicate, inclusive)
@@ -2657,7 +2919,7 @@ function findInternal<A>(
       operatorSubscriber(subscriber, {
         next: (value) => {
           const i = index++
-          if (predicate(value, index++)) {
+          if (predicate(index++, value)) {
             subscriber.next(findIndex ? i : M.just(value))
             subscriber.complete()
           }
@@ -2689,7 +2951,7 @@ function maybeSchedule(subscription: Subscription, scheduler: SchedulerLike | un
 function mergeInternal<E, A, E1, B>(
   source: Observable<E, A>,
   subscriber: Subscriber<E | E1, B>,
-  f: (a: A, i: number) => ObservableInput<E1, B>,
+  f: (i: number, a: A) => ObservableInput<E1, B>,
   concurrent: number,
   onBeforeNext?: (innerValue: B) => void,
   expand?: boolean,
@@ -2713,7 +2975,7 @@ function mergeInternal<E, A, E1, B>(
     expand && subscriber.next(a as any)
     active++
     let innerComplete = false
-    from(f(a, index++)).subscribe(
+    from(f(index++, a)).subscribe(
       new OperatorSubscriber(
         subscriber,
         {
@@ -2766,21 +3028,21 @@ function mergeInternal<E, A, E1, B>(
 }
 
 export function scanInternal<E, A, B>(
-  f: (acc: A, value: A, index: number) => B,
+  f: (index: number, acc: A, value: A) => B,
   initial: B,
   hasInitial: false,
   emitOnNext: boolean,
   emitBeforeComplete?: undefined | true
 ): (source: Observable<E, A>, subscriber: Subscriber<any, any>) => void
 export function scanInternal<E, A, B>(
-  f: (acc: B, value: A, index: number) => B,
+  f: (index: number, acc: B, value: A) => B,
   initial: B,
   hasInitial: true,
   emitOnNext: boolean,
   emitBeforeComplete?: undefined | true
 ): (source: Observable<E, A>, subscriber: Subscriber<any, any>) => void
 export function scanInternal<E, A, B>(
-  f: (acc: A | B, value: A, index: number) => B,
+  f: (index: number, acc: A | B, value: A) => B,
   initial: B,
   hasInitial: boolean,
   emitOnNext: boolean,
@@ -2794,7 +3056,7 @@ export function scanInternal<E, A, B>(
       operatorSubscriber(subscriber, {
         next: (value) => {
           const i = index++
-          state   = hasState ? f(state, value, i) : ((hasState = true), value)
+          state   = hasState ? f(i, state, value) : ((hasState = true), value)
           emitOnNext && subscriber.next(state)
         },
         complete:

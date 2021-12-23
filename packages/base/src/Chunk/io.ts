@@ -30,7 +30,7 @@ export function mapIO<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: Chunk<A>) =>
   return (as) => mapIO_(as, f)
 }
 
-export function mapIOPar_<A, R, E, B>(as: Chunk<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Chunk<B>> {
+export function mapIOC_<A, R, E, B>(as: Chunk<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Chunk<B>> {
   return I.chain_(I.succeed<B[]>(Array(as.length)), (bs) => {
     function fn([a, n]: readonly [A, number]) {
       return I.chain_(
@@ -41,15 +41,15 @@ export function mapIOPar_<A, R, E, B>(as: Chunk<A>, f: (a: A) => I.IO<R, E, B>):
           })
       )
     }
-    return I.chain_(I.foreachUnitPar_(C.zipWithIndex(as), fn), () => I.succeedLazy(() => C.from(bs)))
+    return I.chain_(I.foreachUnitC_(C.zipWithIndex(as), fn), () => I.succeedLazy(() => C.from(bs)))
   })
 }
 
-export function mapIOPar<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, Chunk<B>> {
-  return (as) => mapIOPar_(as, f)
+export function mapIOC<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, Chunk<B>> {
+  return (as) => mapIOC_(as, f)
 }
 
-export function collectAllIO<R, E, A>(as: Chunk<I.IO<R, E, A>>): I.IO<R, E, Chunk<A>> {
+export function sequenceIO<R, E, A>(as: Chunk<I.IO<R, E, A>>): I.IO<R, E, Chunk<A>> {
   return mapIO_(as, identity)
 }
 

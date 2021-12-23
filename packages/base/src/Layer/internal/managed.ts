@@ -1,5 +1,5 @@
 export * from '../../Managed/combinators/apply-par'
-export * from '../../Managed/combinators/foreachPar'
+export * from '../../Managed/combinators/foreachC'
 export * from '../../Managed/combinators/once'
 export * from '../../Managed/combinators/releaseAll'
 export * from '../../Managed/combinators/use'

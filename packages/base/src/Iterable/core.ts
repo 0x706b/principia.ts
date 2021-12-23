@@ -124,8 +124,8 @@ export function zipWith<A, B, C>(fb: Iterable<B>, f: (a: A, b: B) => C): (fa: It
   return (fa) => zipWith_(fa, fb, f)
 }
 
-export function zipWithIndex<A>(fa: Iterable<A>): Iterable<readonly [A, number]> {
-  return iterable<readonly [A, number]>(() => {
+export function zipWithIndex<A>(fa: Iterable<A>): Iterable<readonly [number, A]> {
+  return iterable<readonly [number, A]>(() => {
     let n        = 0
     let done     = false
     let iterator = fa[Symbol.iterator]()
@@ -135,7 +135,7 @@ export function zipWithIndex<A>(fa: Iterable<A>): Iterable<readonly [A, number]>
           this.return!()
         }
         const v = iterator.next()
-        return v.done ? this.return!() : { done: false, value: [v.value, n++] }
+        return v.done ? this.return!() : { done: false, value: [n++, v.value] }
       },
       return(value?: unknown) {
         if (!done) {
@@ -190,13 +190,13 @@ export function pure<A>(a: A): Iterable<A> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function filter_<A, B extends A>(fa: Iterable<A>, refinement: P.RefinementWithIndex<number, A, B>): Iterable<B>
-export function filter_<A>(fa: Iterable<A>, predicate: P.PredicateWithIndex<number, A>): Iterable<A>
-export function filter_<A>(fa: Iterable<A>, predicate: P.PredicateWithIndex<number, A>): Iterable<A> {
+export function ifilter_<A, B extends A>(fa: Iterable<A>, refinement: P.RefinementWithIndex<number, A, B>): Iterable<B>
+export function ifilter_<A>(fa: Iterable<A>, predicate: P.PredicateWithIndex<number, A>): Iterable<A>
+export function ifilter_<A>(fa: Iterable<A>, predicate: P.PredicateWithIndex<number, A>): Iterable<A> {
   return iterable(function* () {
     let i = 0
     for (const value of fa) {
-      if (predicate(value, i)) {
+      if (predicate(i, value)) {
         yield value
       }
       i++
@@ -205,24 +205,42 @@ export function filter_<A>(fa: Iterable<A>, predicate: P.PredicateWithIndex<numb
 }
 
 /**
- * @dataFirst filter_
+ * @dataFirst ifilter_
  */
-export function filter<A, B extends A>(
+export function ifilter<A, B extends A>(
   refinement: P.RefinementWithIndex<number, A, B>
 ): (fa: Iterable<A>) => Iterable<B>
 /**
+ * @dataFirst ifilter_
+ */
+export function ifilter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: Iterable<A>) => Iterable<A>
+export function ifilter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: Iterable<A>) => Iterable<A> {
+  return (fa) => ifilter_(fa, predicate)
+}
+
+export function filter_<A, B extends A>(fa: Iterable<A>, refinement: P.Refinement<A, B>): Iterable<B>
+export function filter_<A>(fa: Iterable<A>, predicate: P.Predicate<A>): Iterable<A>
+export function filter_<A>(fa: Iterable<A>, predicate: P.Predicate<A>): Iterable<A> {
+  return ifilter_(fa, (_, a) => predicate(a))
+}
+
+/**
  * @dataFirst filter_
  */
-export function filter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: Iterable<A>) => Iterable<A>
-export function filter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: Iterable<A>) => Iterable<A> {
+export function filter<A, B extends A>(refinement: P.Refinement<A, B>): (fa: Iterable<A>) => Iterable<B>
+/**
+ * @dataFirst filter_
+ */
+export function filter<A>(predicate: P.Predicate<A>): (fa: Iterable<A>) => Iterable<A>
+export function filter<A>(predicate: P.Predicate<A>): (fa: Iterable<A>) => Iterable<A> {
   return (fa) => filter_(fa, predicate)
 }
 
-export function filterMap_<A, B>(fa: Iterable<A>, f: (a: A, i: number) => Maybe<B>): Iterable<B> {
+export function ifilterMap_<A, B>(fa: Iterable<A>, f: (i: number, a: A) => Maybe<B>): Iterable<B> {
   return iterable(function* () {
     let i = 0
     for (const value of fa) {
-      const ob = f(value, i)
+      const ob = f(i, value)
       if (ob._tag === 'Just') {
         yield ob.value
       }
@@ -232,21 +250,32 @@ export function filterMap_<A, B>(fa: Iterable<A>, f: (a: A, i: number) => Maybe<
 }
 
 /**
+ * @dataFirst ifilterMap_
+ */
+export function ifilterMap<A, B>(f: (i: number, a: A) => Maybe<B>): (fa: Iterable<A>) => Iterable<B> {
+  return (fa) => ifilterMap_(fa, f)
+}
+
+export function filterMap_<A, B>(fa: Iterable<A>, f: (a: A) => Maybe<B>): Iterable<B> {
+  return ifilterMap_(fa, (_, a) => f(a))
+}
+
+/**
  * @dataFirst filterMap_
  */
-export function filterMap<A, B>(f: (a: A, i: number) => Maybe<B>): (fa: Iterable<A>) => Iterable<B> {
+export function filterMap<A, B>(f: (a: A) => Maybe<B>): (fa: Iterable<A>) => Iterable<B> {
   return (fa) => filterMap_(fa, f)
 }
 
-export function partition_<A, B extends A>(
+export function ipartition_<A, B extends A>(
   fa: Iterable<A>,
   refinement: P.RefinementWithIndex<number, A, B>
 ): readonly [Iterable<A>, Iterable<B>]
-export function partition_<A>(
+export function ipartition_<A>(
   fa: Iterable<A>,
   predicate: P.PredicateWithIndex<number, A>
 ): readonly [Iterable<A>, Iterable<A>]
-export function partition_<A>(
+export function ipartition_<A>(
   fa: Iterable<A>,
   predicate: P.PredicateWithIndex<number, A>
 ): readonly [Iterable<A>, Iterable<A>] {
@@ -254,7 +283,7 @@ export function partition_<A>(
     iterable(function* () {
       let i = 0
       for (const value of fa) {
-        if (!predicate(value, i)) {
+        if (!predicate(i, value)) {
           yield value
         }
         i++
@@ -263,7 +292,7 @@ export function partition_<A>(
     iterable(function* () {
       let i = 0
       for (const value of fa) {
-        if (predicate(value, i)) {
+        if (predicate(i, value)) {
           yield value
         }
         i++
@@ -273,30 +302,53 @@ export function partition_<A>(
 }
 
 /**
+ * @dataFirst ipartition_
+ */
+export function ipartition<A, B extends A>(
+  refinement: P.RefinementWithIndex<number, A, B>
+): (fa: Iterable<A>) => readonly [Iterable<A>, Iterable<B>]
+/**
+ * @dataFirst ipartition_
+ */
+export function ipartition<A>(
+  predicate: P.PredicateWithIndex<number, A>
+): (fa: Iterable<A>) => readonly [Iterable<A>, Iterable<A>]
+export function ipartition<A>(
+  predicate: P.PredicateWithIndex<number, A>
+): (fa: Iterable<A>) => readonly [Iterable<A>, Iterable<A>] {
+  return (fa) => ipartition_(fa, predicate)
+}
+
+export function partition_<A, B extends A>(
+  fa: Iterable<A>,
+  refinement: P.Refinement<A, B>
+): readonly [Iterable<A>, Iterable<B>]
+export function partition_<A>(fa: Iterable<A>, predicate: P.Predicate<A>): readonly [Iterable<A>, Iterable<A>]
+export function partition_<A>(fa: Iterable<A>, predicate: P.Predicate<A>): readonly [Iterable<A>, Iterable<A>] {
+  return ipartition_(fa, (_, a) => predicate(a))
+}
+
+/**
  * @dataFirst partition_
  */
 export function partition<A, B extends A>(
-  refinement: P.RefinementWithIndex<number, A, B>
+  refinement: P.Refinement<A, B>
 ): (fa: Iterable<A>) => readonly [Iterable<A>, Iterable<B>]
 /**
  * @dataFirst partition_
  */
-export function partition<A>(
-  predicate: P.PredicateWithIndex<number, A>
-): (fa: Iterable<A>) => readonly [Iterable<A>, Iterable<A>]
-export function partition<A>(
-  predicate: P.PredicateWithIndex<number, A>
-): (fa: Iterable<A>) => readonly [Iterable<A>, Iterable<A>] {
+export function partition<A>(predicate: P.Predicate<A>): (fa: Iterable<A>) => readonly [Iterable<A>, Iterable<A>]
+export function partition<A>(predicate: P.Predicate<A>): (fa: Iterable<A>) => readonly [Iterable<A>, Iterable<A>] {
   return (fa) => partition_(fa, predicate)
 }
 
-export function partitionMap_<A, B, C>(
+export function ipartitionMap_<A, B, C>(
   fa: Iterable<A>,
-  f: (a: A, i: number) => Either<B, C>
+  f: (i: number, a: A) => Either<B, C>
 ): readonly [Iterable<B>, Iterable<C>] {
   return tuple(
     iterable(function* () {
-      const mapped   = map_(fa, f)
+      const mapped   = imap_(fa, f)
       const iterator = mapped[Symbol.iterator]()
       let result
       while (!(result = iterator.next()).done) {
@@ -306,7 +358,7 @@ export function partitionMap_<A, B, C>(
       }
     }),
     iterable(function* () {
-      const mapped   = map_(fa, f)
+      const mapped   = imap_(fa, f)
       const iterator = mapped[Symbol.iterator]()
       let result
       while (!(result = iterator.next()).done) {
@@ -319,10 +371,26 @@ export function partitionMap_<A, B, C>(
 }
 
 /**
+ * @dataFirst ipartitionMap_
+ */
+export function ipartitionMap<A, B, C>(
+  f: (i: number, a: A) => Either<B, C>
+): (fa: Iterable<A>) => readonly [Iterable<B>, Iterable<C>] {
+  return (fa) => ipartitionMap_(fa, f)
+}
+
+export function partitionMap_<A, B, C>(
+  fa: Iterable<A>,
+  f: (a: A) => Either<B, C>
+): readonly [Iterable<B>, Iterable<C>] {
+  return ipartitionMap_(fa, (_, a) => f(a))
+}
+
+/**
  * @dataFirst partitionMap_
  */
 export function partitionMap<A, B, C>(
-  f: (a: A, i: number) => Either<B, C>
+  f: (a: A) => Either<B, C>
 ): (fa: Iterable<A>) => readonly [Iterable<B>, Iterable<C>] {
   return (fa) => partitionMap_(fa, f)
 }
@@ -337,46 +405,68 @@ export function separate<A, B>(fa: Iterable<E.Either<A, B>>): readonly [Iterable
  * -------------------------------------------------------------------------------------------------
  */
 
-export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: Iterable<A>, f: (a: A, i: number) => M) => M {
+export function ifoldMap_<M>(M: P.Monoid<M>): <A>(fa: Iterable<A>, f: (i: number, a: A) => M) => M {
   return (fa, f) => {
     let res = M.nat
     let n   = -1
     for (const value of fa) {
       n  += 1
-      res = M.combine_(res, f(value, n))
+      res = M.combine_(res, f(n, value))
     }
     return res
   }
 }
 
 /**
+ * @dataFirst ifoldMap_
+ */
+export function ifoldMap<M>(M: P.Monoid<M>): <A>(f: (i: number, a: A) => M) => (fa: Iterable<A>) => M {
+  return (f) => (fa) => ifoldMap_(M)(fa, f)
+}
+
+export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: Iterable<A>, f: (a: A) => M) => M {
+  return (fa, f) => ifoldMap_(M)(fa, (_, a) => f(a))
+}
+
+/**
  * @dataFirst foldMap_
  */
-export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A, i: number) => M) => (fa: Iterable<A>) => M {
+export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: Iterable<A>) => M {
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
 
-export function foldl_<A, B>(fa: Iterable<A>, b: B, f: (b: B, a: A, i: number) => B): B {
+export function ifoldl_<A, B>(fa: Iterable<A>, b: B, f: (i: number, b: B, a: A) => B): B {
   let res = b
   let i   = -1
   for (const value of fa) {
     i  += 1
-    res = f(res, value, i)
+    res = f(i, res, value)
   }
   return res
 }
 
 /**
+ * @dataFirst ifoldl_
+ */
+export function ifoldl<A, B>(b: B, f: (i: number, b: B, a: A) => B): (fa: Iterable<A>) => B {
+  return (fa) => ifoldl_(fa, b, f)
+}
+
+export function foldl_<A, B>(fa: Iterable<A>, b: B, f: (b: B, a: A) => B): B {
+  return ifoldl_(fa, b, (_, b, a) => f(b, a))
+}
+
+/**
  * @dataFirst foldl_
  */
-export function foldl<A, B>(b: B, f: (b: B, a: A, i: number) => B): (fa: Iterable<A>) => B {
+export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: Iterable<A>) => B {
   return (fa) => foldl_(fa, b, f)
 }
 
-export function foldr_<A, B>(
+export function ifoldr_<A, B>(
   fa: Iterable<A>,
   b: Ev.Eval<B>,
-  f: (a: A, b: Ev.Eval<B>, i: number) => Ev.Eval<B>
+  f: (i: number, a: A, b: Ev.Eval<B>) => Ev.Eval<B>
 ): Ev.Eval<B> {
   let i                = 0
   const iterator       = fa[Symbol.iterator]()
@@ -385,19 +475,30 @@ export function foldr_<A, B>(
     if (done) {
       return b
     } else {
-      return f(current, go, i++)
+      return f(i++, current, go)
     }
   })
   return go
 }
 
 /**
+ * @dataFirst ifoldr_
+ */
+export function ifoldr<A, B>(
+  b: Ev.Eval<B>,
+  f: (i: number, a: A, b: Ev.Eval<B>) => Ev.Eval<B>
+): (fa: Iterable<A>) => Ev.Eval<B> {
+  return (fa) => ifoldr_(fa, b, f)
+}
+
+export function foldr_<A, B>(fa: Iterable<A>, b: Ev.Eval<B>, f: (a: A, b: Ev.Eval<B>) => Ev.Eval<B>): Ev.Eval<B> {
+  return ifoldr_(fa, b, (_, a, b) => f(a, b))
+}
+
+/**
  * @dataFirst foldr_
  */
-export function foldr<A, B>(
-  b: Ev.Eval<B>,
-  f: (a: A, b: Ev.Eval<B>, i: number) => Ev.Eval<B>
-): (fa: Iterable<A>) => Ev.Eval<B> {
+export function foldr<A, B>(b: Ev.Eval<B>, f: (a: A, b: Ev.Eval<B>) => Ev.Eval<B>): (fa: Iterable<A>) => Ev.Eval<B> {
   return (fa) => foldr_(fa, b, f)
 }
 
@@ -407,20 +508,28 @@ export function foldr<A, B>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function map_<A, B>(fa: Iterable<A>, f: (a: A, i: number) => B): Iterable<B> {
+export function imap_<A, B>(fa: Iterable<A>, f: (i: number, a: A) => B): Iterable<B> {
   return iterable(function* () {
     let i = -1
     for (const value of fa) {
       i += 1
-      yield f(value, i)
+      yield f(i, value)
     }
   })
 }
 
 /**
- * @dataFirst map_
+ * @dataFirst imap_
  */
-export function map<A, B>(f: (a: A, i: number) => B): (fa: Iterable<A>) => Iterable<B> {
+export function imap<A, B>(f: (i: number, a: A) => B): (fa: Iterable<A>) => Iterable<B> {
+  return (fa) => imap_(fa, f)
+}
+
+export function map_<A, B>(fa: Iterable<A>, f: (a: A) => B): Iterable<B> {
+  return imap_(fa, (_, a) => f(a))
+}
+
+export function map<A, B>(f: (a: A) => B): (fa: Iterable<A>) => Iterable<B> {
   return (fa) => map_(fa, f)
 }
 
@@ -519,16 +628,26 @@ export function chainRecBreadthFirst<A, B>(f: (a: A) => Iterable<Either<A, B>>):
  * -------------------------------------------------------------------------------------------------
  */
 
-export const traverse_: P.TraverseIndexFn_<IterableF> = P.implementTraverseWithIndex_<IterableF>()(
-  () => (AG) => (ta, f) => foldl_(ta, AG.pure(never as Iterable<any>), (b, a, i) => AG.crossWith_(b, f(a, i), append_))
+export const itraverse_: P.TraverseIndexFn_<IterableF> = P.implementTraverseWithIndex_<IterableF>()(
+  () => (AG) => (ta, f) => ifoldl_(ta, AG.pure(never as Iterable<any>), (i, b, a) => AG.crossWith_(b, f(i, a), append_))
 )
 
 /**
- * @dataFirst traverse_
+ * @dataFirst itraverse_
  */
-export const traverse: P.MapWithIndexAFn<IterableF> = (AG) => {
-  const _ = traverse_(AG)
+export const itraverse: P.MapWithIndexAFn<IterableF> = (AG) => {
+  const _ = itraverse_(AG)
   return (f) => (ta) => _(ta, f)
+}
+
+export const traverse_: P.TraverseFn_<IterableF> = (A) => {
+  const itraverseA_ = itraverse_(A)
+  return (ta, f) => itraverseA_(ta, (_, a) => f(a))
+}
+
+export const traverse: P.TraverseFn<IterableF> = (A) => {
+  const itraverseA_ = itraverse_(A)
+  return (f) => (ta) => itraverseA_(ta, (_, a) => f(a))
 }
 
 /*
@@ -653,30 +772,45 @@ export function corresponds<A, B>(left: Iterable<A>, right: Iterable<B>, f: (a: 
   }
 }
 
-export function every_<A, B extends A>(
+export function ievery_<A, B extends A>(
   as: Iterable<A>,
   refinement: P.RefinementWithIndex<number, A, B>
 ): as is Iterable<B>
-export function every_<A>(as: Iterable<A>, predicate: P.PredicateWithIndex<number, A>): boolean
-export function every_<A>(as: Iterable<A>, predicate: P.PredicateWithIndex<number, A>): boolean {
+export function ievery_<A>(as: Iterable<A>, predicate: P.PredicateWithIndex<number, A>): boolean
+export function ievery_<A>(as: Iterable<A>, predicate: P.PredicateWithIndex<number, A>): boolean {
   const iterator = as[Symbol.iterator]()
   let result     = true
   let i          = 0
   let next: IteratorResult<A>
   while (result && !(next = iterator.next()).done) {
-    result = predicate(next.value, i)
+    result = predicate(i, next.value)
     i++
   }
   return result
 }
 
 /**
- * @dataFirst every_
+ * @dataFirst ievery_
  */
-export function every<A, B extends A>(
+export function ievery<A, B extends A>(
   refinement: P.RefinementWithIndex<number, A, B>
 ): (as: Iterable<A>) => as is Iterable<B>
-export function every<A>(predicate: P.PredicateWithIndex<number, A>): (as: Iterable<A>) => boolean
-export function every<A>(predicate: P.PredicateWithIndex<number, A>): (as: Iterable<A>) => boolean {
+export function ievery<A>(predicate: P.PredicateWithIndex<number, A>): (as: Iterable<A>) => boolean
+export function ievery<A>(predicate: P.PredicateWithIndex<number, A>): (as: Iterable<A>) => boolean {
+  return (as) => ievery_(as, predicate)
+}
+
+export function every_<A, B extends A>(as: Iterable<A>, refinement: P.Refinement<A, B>): as is Iterable<B>
+export function every_<A>(as: Iterable<A>, predicate: P.Predicate<A>): boolean
+export function every_<A>(as: Iterable<A>, predicate: P.Predicate<A>): boolean {
+  return ievery_(as, (_, a) => predicate(a))
+}
+
+/**
+ * @dataFirst every_
+ */
+export function every<A, B extends A>(refinement: P.Refinement<A, B>): (as: Iterable<A>) => as is Iterable<B>
+export function every<A>(predicate: P.Predicate<A>): (as: Iterable<A>) => boolean
+export function every<A>(predicate: P.Predicate<A>): (as: Iterable<A>) => boolean {
   return (as) => every_(as, predicate)
 }

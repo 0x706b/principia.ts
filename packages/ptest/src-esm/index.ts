@@ -51,7 +51,7 @@ const program = pipe(
   ),
   I.chain(I.foreach((path) => I.try(() => _require(path).default))),
   I.chain(
-    I.foreachPar((test) => {
+    I.foreachC((test) => {
       if (isRunnableSpec(test)) {
         const filteredSpec = S.filterByArgs_(test.spec, testArgs)
         return I.giveLayer_(test.run(filteredSpec), test.runner.bootstrap)

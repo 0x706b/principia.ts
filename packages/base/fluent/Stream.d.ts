@@ -178,26 +178,34 @@ declare module '@principia/base/Stream/core' {
     /**
      * @rewrite aggregateAsync_ from "@principia/base/Stream"
      */
-    aggregateAsync<R, E extends E1, A extends A1, R1, E1, E2, A1, B>(
+    aggregateAsync<R, E, A extends A1, R1, E1, A1, B>(
       this: Stream<R, E, A>,
-      sink: Sink<R1, E1, A1, E2, A1, B>
-    ): Stream<R & R1 & Has<Clock>, E2, B>
+      sink: Sink<R1, E1, A1, A1, B>
+    ): Stream<R & R1 & Has<Clock>, E | E1, B>
     /**
      * @rewrite aggregateAsyncWithin_ from "@principia/base/Stream"
      */
-    aggregateAsyncWithin<R, E extends E1, A extends A1, R1, R2, E1, E2, A1, B, C>(
+    aggregateAsyncWithin<R, E, A extends A1, R1, E1, A1, B, R2, C>(
       this: Stream<R, E, A>,
-      sink: Sink<R1, E1, A1, E2, A1, B>,
-      schedule: Schedule<R2, O.Maybe<B>, C>
-    ): Stream<R & R1 & R2 & Has<Clock>, E2, B>
+      sink: Sink<R1, E1, A1, A1, B>,
+      schedule: Schedule<R2, Maybe<B>, C>
+    ): Stream<R & R1 & R2 & Has<Clock>, E | E1, B>
     /**
      * @rewrite aggregateAsyncWithinEither_ from "@principia/base/Stream"
      */
-    aggregateAsyncWithinEither<R, E extends E1, A extends A1, R1, R2, E1, E2, A1, B, C>(
+    aggregateAsyncWithinEither<R, E, A extends A1, R1, E1, A1, B, R2, C>(
       this: Stream<R, E, A>,
-      sink: Sink<R1, E1, A1, E2, A1, B>,
-      schedule: Schedule<R2, O.Maybe<B>, C>
-    ): Stream<R & R1 & R2 & Has<Clock>, E2, E.Either<C, B>>
+      sink: Sink<R1, E1, A1, A1, B>,
+      schedule: Schedule<R2, Maybe<B>, C>
+    ): Stream<R & R1 & R2 & Has<Clock>, E | E1, E.Either<C, B>>
+    /**
+     * @rewrite apFirst_ from "@principia/base/Stream"
+     */
+    apFirst<R, E, A, R1, E1, A1>(this: Stream<R, E, A>, that: Stream<R1, E1, A1>): Stream<R & R1, E1 | E, A>
+    /**
+     * @rewrite apSecond_ from "@principia/base/Stream"
+     */
+    apSecond<R, E, A, R1, E1, A1>(this: Stream<R, E, A>, that: Stream<R1, E1, A1>): Stream<R & R1, E1 | E, A1>
     /**
      * @rewrite as_ from "@principia/base/Stream"
      */
@@ -290,15 +298,6 @@ declare module '@principia/base/Stream/core' {
      * @rewrite chain_ from "@principia/base/Stream"
      */
     chain<R, E, A, R1, E1, B>(this: Stream<R, E, A>, f: (a: A) => Stream<R1, E1, B>): Stream<R & R1, E | E1, B>
-    /**
-     * @rewrite chainPar_ from "@principia/base/Stream"
-     */
-    chainPar<R, E, A, R1, E1, B>(
-      this: Stream<R, E, A>,
-      f: (a: A) => Stream<R1, E1, B>,
-      n: number,
-      bufferSize?: number
-    ): Stream<R & R1, E | E1, B>
     /**
      * @rewrite changesWith_ from "@principia/base/Stream"
      */
@@ -402,14 +401,6 @@ declare module '@principia/base/Stream/core' {
       this: Stream<R, E, A>,
       that: Stream<R1, E1, A1>
     ): Stream<R & R1, E1 | E, readonly [A, A1]>
-    /**
-     * @rewrite crossFirst_ from "@principia/base/Stream"
-     */
-    crossFirst<R, E, A, R1, E1, A1>(this: Stream<R, E, A>, that: Stream<R1, E1, A1>): Stream<R & R1, E1 | E, A>
-    /**
-     * @rewrite crossSecond_ from "@principia/base/Stream"
-     */
-    crossSecond<R, E, A, R1, E1, A1>(this: Stream<R, E, A>, that: Stream<R1, E1, A1>): Stream<R & R1, E1 | E, A1>
     /**
      * @rewrite crossWith_ from "@principia/base/Stream"
      */
@@ -638,21 +629,12 @@ declare module '@principia/base/Stream/core' {
      */
     mapIO<R, E, A, R1, E1, B>(this: Stream<R, E, A>, f: (a: A) => I.IO<R1, E1, B>): Stream<R & R1, E | E1, B>
     /**
-     * @rewrite mapIOPar_ from "@principia/base/Stream"
+     * @rewrite mapIOC_ from "@principia/base/Stream"
      */
-    mapIOPar<R, E, A, R1, E1, B>(
+    mapIOC<R, E, A, R1, E1, B>(
       this: Stream<R, E, A>,
       n: number,
       f: (a: A) => I.IO<R1, E1, B>
-    ): Stream<R & R1, E | E1, B>
-    /**
-     * @rewrite mapIOParUnordered_ from "@principia/base/Stream"
-     */
-    mapIOParUnordered<R, E, A, R1, E1, B>(
-      this: Stream<R, E, A>,
-      f: (a: A) => I.IO<R1, E1, B>,
-      n: number,
-      bufferSize?: number
     ): Stream<R & R1, E | E1, B>
     /**
      * @rewrite mapIOPartitioned_ from "@principia/base/Stream"
@@ -671,6 +653,24 @@ declare module '@principia/base/Stream/core' {
       sb: Stream<R1, E1, A1>,
       strategy?: TerminationStrategy
     ): Stream<R & R1, E | E1, A | A1>
+    /**
+     * @rewrite mergeMap_ from "@principia/base/Stream"
+     */
+    mergeMap<R, E, A, R1, E1, B>(
+      this: Stream<R, E, A>,
+      f: (a: A) => Stream<R1, E1, B>,
+      n: number,
+      bufferSize?: number
+    ): Stream<R & R1, E | E1, B>
+    /**
+     * @rewrite mergeMapIO_ from "@principia/base/Stream"
+     */
+    mergeMapIO<R, E, A, R1, E1, B>(
+      this: Stream<R, E, A>,
+      f: (a: A) => I.IO<R1, E1, B>,
+      n: number,
+      bufferSize?: number
+    ): Stream<R & R1, E | E1, B>
     /**
      * @rewrite mergeWith_ from "@principia/base/Stream"
      */
@@ -755,8 +755,8 @@ declare module '@principia/base/Stream/core' {
      */
     peel<R, E, A extends A1, R1, E1, A1, Z>(
       this: Stream<R, E, A>,
-      sink: Sink<R1, E, A, E1, A1, Z>
-    ): M.Managed<R & R1, E1, readonly [Z, Stream<unknown, E | E1, A1>]>
+      sink: Sink<R1, E1, A1, A1, Z>
+    ): Managed<R & R1, E1, readonly [Z, Stream<unknown, E | E1, A1>]>
     /**
      * @rewrite refineOrHalt_ from "@principia/base/Stream"
      */
@@ -823,7 +823,7 @@ declare module '@principia/base/Stream/core' {
     /**
      * @rewrite run_ from "@principia/base/Stream"
      */
-    run<R, E, A, R2, E2, Z>(this: Stream<R, E, A>, sink: Sink<R2, E, A, E2, unknown, Z>): I.IO<R & R2, E2, Z>
+    run<R, E, A, R2, E2, Z>(this: Stream<R, E, A>, sink: Sink<R2, E2, A, unknown, Z>): I.IO<R & R2, E | E2, Z>
     /**
      * @rewriteGetter runCollect from "@principia/base/Stream"
      */
@@ -880,12 +880,9 @@ declare module '@principia/base/Stream/core' {
     ): M.Managed<R & R1, E1 | E, void>
 
     /**
-     * @rewrite runManaged_ from "@principia/base/Stream"
+     * @rewrite runManaged from "@principia/base/Stream"
      */
-    runManaged<R, E, A, R2, E2, Z>(
-      this: Stream<R, E, A>,
-      sink: Sink<R2, E, A, E2, unknown, Z>
-    ): M.Managed<R & R2, E | E2, Z>
+    runManaged<R, E, A, R2, E2, Z>(this: Stream<R, E, A>, sink: Sink<R2, E2, A, unknown, Z>): Managed<R & R2, E | E2, Z>
     /**
      * @rewrite schedule_ from "@principia/base/Stream"
      */

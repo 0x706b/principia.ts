@@ -84,7 +84,7 @@ export class DefaultPool<R, E, A, S> implements Pool<E, A> {
         )
       ),
       IO.replicate(this.min),
-      IO.collectAllUnit
+      IO.sequenceIterableUnit
     )
   }
 
@@ -100,8 +100,8 @@ export class DefaultPool<R, E, A, S> implements Pool<E, A> {
                   pipe(
                     this.invalidated,
                     Ref.update(HS.remove(a)),
-                    IO.crossSecond(attempted.finalizer),
-                    IO.crossSecond(
+                    IO.apSecond(attempted.finalizer),
+                    IO.apSecond(
                       pipe(
                         this.state,
                         Ref.update((state) => ({ free: state.free, size: state.size - 1 }))
@@ -159,8 +159,8 @@ export class DefaultPool<R, E, A, S> implements Pool<E, A> {
                                 return pipe(
                                   this.state,
                                   Ref.update((state) => ({ size: state.size, free: state.free + 1 })),
-                                  IO.crossSecond(this.allocate()),
-                                  IO.crossSecond(acquire)
+                                  IO.apSecond(this.allocate()),
+                                  IO.apSecond(acquire)
                                 )
                               } else {
                                 return IO.succeed(acquired)
@@ -173,7 +173,7 @@ export class DefaultPool<R, E, A, S> implements Pool<E, A> {
                   { size, free: free - 1 }
                 ]
               } else {
-                return [pipe(this.allocate(), IO.crossSecond(acquire)), { size: size + 1, free: free + 1 }]
+                return [pipe(this.allocate(), IO.apSecond(acquire)), { size: size + 1, free: free + 1 }]
               }
             })
           )
@@ -196,9 +196,9 @@ export class DefaultPool<R, E, A, S> implements Pool<E, A> {
         return pipe(
           this.state,
           Ref.update((state) => ({ size: state.size, free: state.free + 1 })),
-          IO.crossSecond(Q.offer_(this.items, attempted)),
-          IO.crossSecond(this.track(attempted.result)),
-          IO.crossSecond(IO.whenIO(Ref.get(this.isShuttingDown))(this.getAndShutdown))
+          IO.apSecond(Q.offer_(this.items, attempted)),
+          IO.apSecond(this.track(attempted.result)),
+          IO.apSecond(IO.whenIO(Ref.get(this.isShuttingDown))(this.getAndShutdown))
         )
       }
     }
@@ -218,14 +218,14 @@ export class DefaultPool<R, E, A, S> implements Pool<E, A> {
                   pipe(
                     this.invalidated,
                     Ref.update(HS.remove(a)),
-                    IO.crossSecond(attempted.finalizer),
-                    IO.crossSecond(
+                    IO.apSecond(attempted.finalizer),
+                    IO.apSecond(
                       pipe(
                         this.state,
                         Ref.update((state) => ({ free: state.free, size: state.size - 1 }))
                       )
                     ),
-                    IO.crossSecond(this.getAndShutdown)
+                    IO.apSecond(this.getAndShutdown)
                   )
                 )
             )
@@ -251,7 +251,7 @@ export class DefaultPool<R, E, A, S> implements Pool<E, A> {
         if (down) {
           return [IO.unit(), true]
         } else {
-          return [pipe(this.getAndShutdown, IO.crossSecond(Q.awaitShutdown(this.items))), true]
+          return [pipe(this.getAndShutdown, IO.apSecond(Q.awaitShutdown(this.items))), true]
         }
       })
     )
@@ -274,9 +274,7 @@ export function makeWith<R, E, A, S, R1>(
     const pool    = new DefaultPool(Ma.giveSome_(get, env), min, max, down, state, items, inv, strategy.track(initial))
     const fiber   = yield* _(IO.forkDaemon(pool.initialize()))
     const shrink  = yield* _(IO.forkDaemon(strategy.run(initial, pool.excess, pool.shrink)))
-    yield* _(
-      Ma.finalizer(pipe(Fi.interrupt(fiber), IO.crossSecond(Fi.interrupt(shrink)), IO.crossSecond(pool.shutdown)))
-    )
+    yield* _(Ma.finalizer(pipe(Fi.interrupt(fiber), IO.apSecond(Fi.interrupt(shrink)), IO.apSecond(pool.shutdown))))
     return pool
   })
 }
@@ -340,16 +338,16 @@ class TimeToLive extends Strategy<[Clock, Ref.URef<number>], Has<Clock>, unknown
       getExcess,
       IO.chain((excess) => {
         if (excess <= 0) {
-          return pipe(clock.sleep(this.timeToLive), IO.crossSecond(this.run(state, getExcess, shrink)))
+          return pipe(clock.sleep(this.timeToLive), IO.apSecond(this.run(state, getExcess, shrink)))
         } else {
           return pipe(
             Ref.get(ref),
             IO.crossWith(clock.currentTime, (start, end) => {
               const duration = end - start
               if (duration >= this.timeToLive) {
-                return pipe(shrink, IO.crossSecond(this.run(state, getExcess, shrink)))
+                return pipe(shrink, IO.apSecond(this.run(state, getExcess, shrink)))
               } else {
-                return pipe(clock.sleep(this.timeToLive), IO.crossSecond(this.run(state, getExcess, shrink)))
+                return pipe(clock.sleep(this.timeToLive), IO.apSecond(this.run(state, getExcess, shrink)))
               }
             })
           )

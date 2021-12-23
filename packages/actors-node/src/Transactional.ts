@@ -324,7 +324,7 @@ export class Transactional<R, S, Ev, F1 extends AM.AnyMessage> extends AbstractS
                           )
                         )
                       ),
-                      T.crossSecond(F.succeed_(_.promise, a)),
+                      T.apSecond(F.succeed_(_.promise, a)),
                       T.as(T.unit)
                     )
                 ),

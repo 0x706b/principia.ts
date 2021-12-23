@@ -47,7 +47,7 @@ function foreachConcurrentUnboundedUnit_<R, E, A>(as: Iterable<A>, f: (a: A) => 
                 pipe(
                   restore(I.defer(() => f(a))),
                   I.matchCauseIO(
-                    (cause) => I.crossSecond_(F.fail_(future, undefined), I.failCause(cause)),
+                    (cause) => I.apSecond_(F.fail_(future, undefined), I.failCause(cause)),
                     () => {
                       if (ref.incrementAndGet() === size) {
                         F.unsafeDone_(future, I.unit())
@@ -72,7 +72,7 @@ function foreachConcurrentUnboundedUnit_<R, E, A>(as: Iterable<A>, f: (a: A) => 
                   foreachConcurrentUnbounded_(fibers, interruptFiber),
                   I.chain((exits) =>
                     pipe(
-                      Ex.collectAllPar(...exits),
+                      Ex.collectAllC(...exits),
                       M.match(
                         () => I.failCause(C.stripFailures(cause)),
                         (exit) =>
@@ -90,89 +90,6 @@ function foreachConcurrentUnboundedUnit_<R, E, A>(as: Iterable<A>, f: (a: A) => 
       )
     })
   })
-
-  // return I.gen(function* (_) {
-  //   const parentId    = yield* _(I.fiberId())
-  //   const causes      = yield* _(Ref.make<C.Cause<E>>(C.empty))
-  //   const result      = yield* _(F.make<void, void>())
-  //   const status      = yield* _(Ref.make<[number, number, boolean]>([0, 0, false]))
-  //   const startEffect = pipe(
-  //     status,
-  //     Ref.modify(([started, done, failing]): [boolean, [number, number, boolean]] => {
-  //       if (failing) {
-  //         return [false, [started, done, failing]]
-  //       } else {
-  //         return [true, [started + 1, done, failing]]
-  //       }
-  //     })
-  //   )
-
-  //   const startFailure = pipe(
-  //     status,
-  //     Ref.update(([started, done, _]): [number, number, boolean] => [started, done, true]),
-  //     I.crossFirst(F.fail_(result, undefined))
-  //   )
-
-  //   const effect = (a: A) =>
-  //     pipe(
-  //       I.defer(traceAs(f, () => f(a))),
-  //       interruptible,
-  //       I.tapCause((cause) =>
-  //         pipe(
-  //           causes,
-  //           Ref.update((l) => C.both(l, cause)),
-  //           I.crossSecond(startFailure)
-  //         )
-  //       ),
-  //       I.ensuring(
-  //         pipe(
-  //           F.succeed_(result, undefined),
-  //           I.whenIO(
-  //             Ref.modify_(status, ([started, done, failing]) => [
-  //               (failing ? started : size) === done + 1,
-  //               [started, done + 1, failing] as [number, number, boolean]
-  //             ])
-  //           )
-  //         )
-  //       ),
-  //       I.whenIO(startEffect),
-  //       uninterruptible
-  //     )
-
-  //   const fibers = yield* _(transplant((graft) => I.foreach_(arr, flow(effect, graft, I.fork))))
-
-  //   const interruptor = pipe(
-  //     F.await(result),
-  //     I.catchAll(() =>
-  //       pipe(
-  //         fibers,
-  //         I.foreach((f) => I.fork(f.interruptAs(parentId))),
-  //         I.chain(joinAll)
-  //       )
-  //     ),
-  //     fromIO,
-  //     fork
-  //   )
-
-  //   yield* _(
-  //     use_(interruptor, () =>
-  //       pipe(
-  //         F.fail_(result, undefined),
-  //         I.crossSecond(I.chain_(causes.get, I.failCause)),
-  //         I.whenIO(
-  //           pipe(
-  //             fibers,
-  //             I.foreach((f) => f.await),
-  //             I.map(flow(Ch.find(Ex.isFailure), M.isJust))
-  //           )
-  //         ),
-  //         I.refailWithTrace
-  //       )
-  //     )
-  //   )
-
-  //   yield* _(I.foreach_(fibers, (f) => f.inheritRefs))
-  // })
 }
 
 function foreachConcurrentBoundedUnit_<R, E, A>(
@@ -206,14 +123,12 @@ function foreachConcurrentUnbounded_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I
     I.succeedLazy<B[]>(() => []),
     I.chain((array) =>
       I.chain_(
-        foreachConcurrentUnboundedUnit_(
-          It.map_(as, (a, n) => [a, n] as [A, number]),
-          ([a, n]) =>
-            I.chain_(I.defer(traceAs(f, () => f(a))), (b) =>
-              I.succeedLazy(() => {
-                array[n] = b
-              })
-            )
+        foreachConcurrentUnboundedUnit_(It.zipWithIndex(as), ([n, a]) =>
+          I.chain_(I.defer(traceAs(f, () => f(a))), (b) =>
+            I.succeedLazy(() => {
+              array[n] = b
+            })
+          )
         ),
         () => I.succeedLazy(() => array)
       )
@@ -228,7 +143,7 @@ function foreachConcurrentBounded_<R, E, A, B>(
   f: (a: A) => I.IO<R, E, B>
 ): I.IO<R, E, Chunk<B>> {
   const size   = 'length' in as && typeof as['length'] === 'number' ? as['length'] : It.size(as)
-  const worker = (queue: Q.UQueue<readonly [A, number]>, array: Array<any>): I.IO<R, E, void> =>
+  const worker = (queue: Q.UQueue<readonly [number, A]>, array: Array<any>): I.IO<R, E, void> =>
     pipe(
       Q.poll(queue),
       I.chain(
@@ -236,7 +151,7 @@ function foreachConcurrentBounded_<R, E, A, B>(
           f,
           M.match(
             () => I.unit(),
-            ([a, n]) =>
+            ([n, a]) =>
               pipe(
                 f(a),
                 I.tap((b) =>
@@ -253,7 +168,7 @@ function foreachConcurrentBounded_<R, E, A, B>(
 
   return I.gen(function* (_) {
     const array = yield* _(I.succeedLazy(() => new Array(size)))
-    const queue = yield* _(Q.makeBounded<readonly [A, number]>(size))
+    const queue = yield* _(Q.makeBounded<readonly [number, A]>(size))
     yield* _(pipe(Q.offerAll_(queue, pipe(as, It.zipWithIndex))))
     yield* _(foreachConcurrentUnboundedUnit_(I.replicate_(worker(queue, array), n), identity))
     return Ch.from(array)
@@ -274,7 +189,7 @@ function foreachConcurrentBounded_<R, E, A, B>(
  *
  * @trace 1
  */
-export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E, any>): I.IO<R, E, void> {
+export function foreachUnitC_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E, any>): I.IO<R, E, void> {
   return concurrencyWith(
     M.match(
       () => foreachConcurrentUnboundedUnit_(as, f),
@@ -296,10 +211,10 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => I.IO<R, E
  * Additionally, interrupts all effects on any failure.
  *
  * @trace 0
- * @dataFirst foreachUnitPar_
+ * @dataFirst foreachUnitC
  */
-export function foreachUnitPar<R, E, A>(f: (a: A) => I.IO<R, E, any>): (as: Iterable<A>) => I.IO<R, E, void> {
-  return (as) => foreachUnitPar_(as, f)
+export function foreachUnitC<R, E, A>(f: (a: A) => I.IO<R, E, any>): (as: Iterable<A>) => I.IO<R, E, void> {
+  return (as) => foreachUnitC_(as, f)
 }
 
 /**
@@ -310,7 +225,7 @@ export function foreachUnitPar<R, E, A>(f: (a: A) => I.IO<R, E, any>): (as: Iter
  *
  * @trace 1
  */
-export function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Ch.Chunk<B>> {
+export function foreachC_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Ch.Chunk<B>> {
   return concurrencyWith(
     M.match(
       () => foreachConcurrentUnbounded_(as, f),
@@ -326,10 +241,10 @@ export function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E,
  * For a sequential version of this method, see `foreach`.
  *
  * @trace 0
- * @dataFirst foreachPar_
+ * @dataFirst foreachC_
  */
-export function foreachPar<R, E, A, B>(f: (a: A) => I.IO<R, E, B>): (as: Iterable<A>) => I.IO<R, E, Ch.Chunk<B>> {
-  return (as) => foreachPar_(as, f)
+export function foreachC<R, E, A, B>(f: (a: A) => I.IO<R, E, B>): (as: Iterable<A>) => I.IO<R, E, Ch.Chunk<B>> {
+  return (as) => foreachC_(as, f)
 }
 
 /*
@@ -351,7 +266,7 @@ export function joinAll<E, A>(as: Iterable<Fiber<E, A>>): I.IO<unknown, E, Chunk
  * Awaits on all fibers to be completed, successfully or not.
  */
 export function awaitAll<E, A>(as: Iterable<Fiber<E, A>>): I.IO<unknown, never, Exit<E, Chunk<A>>> {
-  return I.result(foreachPar_(as, (f) => I.chain_(f.await, I.fromExit)))
+  return I.result(foreachC_(as, (f) => I.chain_(f.await, I.fromExit)))
 }
 
 /*
@@ -409,7 +324,7 @@ export function fork<R, E, A>(self: Managed<R, E, A>): Managed<R, never, Runtime
           )
           const releaseMapEntry = yield* _(
             RM.add(outerReleaseMap, (e) =>
-              pipe(fiber, interruptFiber, I.crossSecond(releaseAllSequential_(innerReleaseMap, e)))
+              pipe(fiber, interruptFiber, I.apSecond(releaseAllSequential_(innerReleaseMap, e)))
             )
           )
 

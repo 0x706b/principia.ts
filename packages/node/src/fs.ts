@@ -82,7 +82,7 @@ export function createReadStream(
   const chunkSize = options?.chunkSize ?? 1024 * 64
   return pipe(
     open(path, options?.flags ?? fs.constants.O_RDONLY, options?.mode),
-    I.crossPar(
+    I.crossC(
       I.defer(() => {
         const start = options?.start ? Integer.reverseGet(options?.start) : 0
         const end   = options?.end ? Integer.reverseGet(options?.end) : Infinity
@@ -95,7 +95,7 @@ export function createReadStream(
     ),
     S.bracket(([fd, _]) => I.orHalt(close(fd))),
     S.chain(([fd, state]) =>
-      S.repeatIOChunkOption(
+      S.repeatIOChunkMaybe(
         I.gen(function* (_) {
           const [pos, end]     = yield* _(state.get)
           const n              = Math.min(end - pos + 1, chunkSize)
@@ -133,7 +133,7 @@ export function createWriteSink<InErr>(
         const st       = yield* _(
           Ma.catchAll_(
             Ma.bracket_(
-              I.crossPar_(
+              I.crossC_(
                 open(path, options?.flags ?? fs.constants.O_CREAT | fs.constants.O_WRONLY, options?.mode),
                 Ref.make(options?.start ? Integer.reverseGet(options.start) : undefined)
               ),
@@ -555,7 +555,7 @@ export function watch(
     ),
     S.fromIO,
     S.chain((watcher) =>
-      S.repeatIOOption(
+      S.repeatIOMaybe(
         I.async<unknown, M.Maybe<Error>, { eventType: 'rename' | 'change', filename: string | Buffer }>((cb) => {
           watcher.once('change', (eventType, filename) => {
             watcher.removeAllListeners()
@@ -606,7 +606,7 @@ export function watchFile(
     }),
     S.bracket(Queue.shutdown),
     S.chain((q) =>
-      S.repeatIOOption<unknown, never, [fs.BigIntStats | fs.Stats, fs.BigIntStats | fs.Stats]>(Queue.take(q))
+      S.repeatIOMaybe<unknown, never, [fs.BigIntStats | fs.Stats, fs.BigIntStats | fs.Stats]>(Queue.take(q))
     )
   )
 }

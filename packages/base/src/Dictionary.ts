@@ -2,7 +2,7 @@ import type { Either } from './Either'
 import type { HashMap } from './HashMap'
 import type * as HKT from './HKT'
 import type { Maybe } from './Maybe'
-import type { PredicateWithIndex, RefinementWithIndex } from './prelude'
+import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './prelude'
 import type { ReadonlyRecord } from './Record'
 
 import { identity } from './function'
@@ -93,7 +93,7 @@ export function every_<A, B extends A>(
 ): dict is Dictionary<B>
 export function every_<A>(dict: Dictionary<A>, predicate: PredicateWithIndex<string, A>): boolean
 export function every_<A>(dict: Dictionary<A>, predicate: PredicateWithIndex<string, A>): boolean {
-  return R.every_(dict[DictionaryStore], predicate)
+  return R.ievery_(dict[DictionaryStore], predicate)
 }
 
 export function every<A, B extends A>(
@@ -125,7 +125,7 @@ export function isSubdictionary<A>(E: P.Eq<A>): (that: Dictionary<A>) => (me: Di
 }
 
 export function some_<A>(dict: Dictionary<A>, predicate: PredicateWithIndex<string, A>): boolean {
-  return R.some_(dict[DictionaryStore], predicate)
+  return R.isome_(dict[DictionaryStore], predicate)
 }
 
 export function some<A>(predicate: PredicateWithIndex<string, A>): (dict: Dictionary<A>) => boolean {
@@ -149,71 +149,140 @@ export function getEq<A>(E: P.Eq<A>): P.Eq<Dictionary<A>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function filter_<A, B extends A>(fa: Dictionary<A>, refinement: RefinementWithIndex<string, A, B>): Dictionary<B>
-export function filter_<A>(fa: Dictionary<A>, predicate: PredicateWithIndex<string, A>): Dictionary<A>
-export function filter_<A>(fa: Dictionary<A>, predicate: PredicateWithIndex<string, A>): Dictionary<A> {
+export function ifilter_<A, B extends A>(
+  fa: Dictionary<A>,
+  refinement: RefinementWithIndex<string, A, B>
+): Dictionary<B>
+export function ifilter_<A>(fa: Dictionary<A>, predicate: PredicateWithIndex<string, A>): Dictionary<A>
+export function ifilter_<A>(fa: Dictionary<A>, predicate: PredicateWithIndex<string, A>): Dictionary<A> {
+  return fa[DictionaryOperate](R.ifilter(predicate))
+}
+
+/**
+ */
+export function ifilter<A, B extends A>(
+  refinement: RefinementWithIndex<string, A, B>
+): (fa: Dictionary<A>) => Dictionary<B>
+export function ifilter<A>(predicate: PredicateWithIndex<string, A>): (fa: Dictionary<A>) => Dictionary<A>
+export function ifilter<A>(predicate: PredicateWithIndex<string, A>): (fa: Dictionary<A>) => Dictionary<A> {
+  return (fa) => ifilter_(fa, predicate)
+}
+
+export function filter_<A, B extends A>(fa: Dictionary<A>, refinement: Refinement<A, B>): Dictionary<B>
+export function filter_<A>(fa: Dictionary<A>, predicate: Predicate<A>): Dictionary<A>
+export function filter_<A>(fa: Dictionary<A>, predicate: Predicate<A>): Dictionary<A> {
   return fa[DictionaryOperate](R.filter(predicate))
 }
 
 /**
  */
-export function filter<A, B extends A>(
-  refinement: RefinementWithIndex<string, A, B>
-): (fa: Dictionary<A>) => Dictionary<B>
-export function filter<A>(predicate: PredicateWithIndex<string, A>): (fa: Dictionary<A>) => Dictionary<A>
-export function filter<A>(predicate: PredicateWithIndex<string, A>): (fa: Dictionary<A>) => Dictionary<A> {
+export function filter<A, B extends A>(refinement: Refinement<A, B>): (fa: Dictionary<A>) => Dictionary<B>
+export function filter<A>(predicate: Predicate<A>): (fa: Dictionary<A>) => Dictionary<A>
+export function filter<A>(predicate: Predicate<A>): (fa: Dictionary<A>) => Dictionary<A> {
   return (fa) => filter_(fa, predicate)
 }
 
 /**
  */
-export function filterMap_<A, B>(fa: Dictionary<A>, f: (a: A, k: string) => Maybe<B>): Dictionary<B> {
+export function ifilterMap_<A, B>(fa: Dictionary<A>, f: (k: string, a: A) => Maybe<B>): Dictionary<B> {
+  return fa[DictionaryOperate](R.ifilterMap(f))
+}
+
+/**
+ */
+export function ifilterMap<A, B>(f: (k: string, a: A) => Maybe<B>): (fa: Dictionary<A>) => Dictionary<B> {
+  return (fa) => ifilterMap_(fa, f)
+}
+
+/**
+ */
+export function filterMap_<A, B>(fa: Dictionary<A>, f: (a: A) => Maybe<B>): Dictionary<B> {
   return fa[DictionaryOperate](R.filterMap(f))
 }
 
 /**
  */
-export function filterMap<A, B>(f: (a: A, k: string) => Maybe<B>): (fa: Dictionary<A>) => Dictionary<B> {
+export function filterMap<A, B>(f: (a: A) => Maybe<B>): (fa: Dictionary<A>) => Dictionary<B> {
   return (fa) => filterMap_(fa, f)
+}
+
+/**
+ */
+export function ipartition_<A, B extends A>(
+  fa: Dictionary<A>,
+  refinement: RefinementWithIndex<string, A, B>
+): readonly [Dictionary<A>, Dictionary<B>]
+export function ipartition_<A>(
+  fa: Dictionary<A>,
+  predicate: PredicateWithIndex<string, A>
+): readonly [Dictionary<A>, Dictionary<A>]
+export function ipartition_<A>(
+  fa: Dictionary<A>,
+  predicate: PredicateWithIndex<string, A>
+): readonly [Dictionary<A>, Dictionary<A>] {
+  const [left, right] = R.ipartition_(fa[DictionaryStore], predicate)
+  return [fromRecord(left), fromRecord(right)]
+}
+
+/**
+ */
+export function ipartition<N extends string, A, B extends A>(
+  refinement: RefinementWithIndex<N, A, B>
+): (fa: Dictionary<A>) => readonly [Dictionary<A>, Dictionary<B>]
+export function ipartition<N extends string, A>(
+  predicate: PredicateWithIndex<N, A>
+): (fa: Dictionary<A>) => readonly [Dictionary<A>, Dictionary<A>]
+export function ipartition<A>(
+  predicate: PredicateWithIndex<string, A>
+): (fa: Dictionary<A>) => readonly [Dictionary<A>, Dictionary<A>] {
+  return (fa) => ipartition_(fa, predicate)
 }
 
 /**
  */
 export function partition_<A, B extends A>(
   fa: Dictionary<A>,
-  refinement: RefinementWithIndex<string, A, B>
+  refinement: Refinement<A, B>
 ): readonly [Dictionary<A>, Dictionary<B>]
-export function partition_<A>(
-  fa: Dictionary<A>,
-  predicate: PredicateWithIndex<string, A>
-): readonly [Dictionary<A>, Dictionary<A>]
-export function partition_<A>(
-  fa: Dictionary<A>,
-  predicate: PredicateWithIndex<string, A>
-): readonly [Dictionary<A>, Dictionary<A>] {
+export function partition_<A>(fa: Dictionary<A>, predicate: Predicate<A>): readonly [Dictionary<A>, Dictionary<A>]
+export function partition_<A>(fa: Dictionary<A>, predicate: Predicate<A>): readonly [Dictionary<A>, Dictionary<A>] {
   const [left, right] = R.partition_(fa[DictionaryStore], predicate)
   return [fromRecord(left), fromRecord(right)]
 }
 
 /**
  */
-export function partition<N extends string, A, B extends A>(
-  refinement: RefinementWithIndex<N, A, B>
+export function partition<A, B extends A>(
+  refinement: Refinement<A, B>
 ): (fa: Dictionary<A>) => readonly [Dictionary<A>, Dictionary<B>]
-export function partition<N extends string, A>(
-  predicate: PredicateWithIndex<N, A>
-): (fa: Dictionary<A>) => readonly [Dictionary<A>, Dictionary<A>]
-export function partition<A>(
-  predicate: PredicateWithIndex<string, A>
-): (fa: Dictionary<A>) => readonly [Dictionary<A>, Dictionary<A>] {
+export function partition<A>(predicate: Predicate<A>): (fa: Dictionary<A>) => readonly [Dictionary<A>, Dictionary<A>]
+export function partition<A>(predicate: Predicate<A>): (fa: Dictionary<A>) => readonly [Dictionary<A>, Dictionary<A>] {
   return (fa) => partition_(fa, predicate)
+}
+
+/**
+ */
+export function ipartitionMap_<A, B, C>(
+  fa: Dictionary<A>,
+  f: (k: string, a: A) => Either<B, C>
+): readonly [Dictionary<B>, Dictionary<C>] {
+  const [left, right] = R.ipartitionMap_(fa[DictionaryStore], f)
+  return [fromRecord(left), fromRecord(right)]
+}
+
+/**
+ */
+export function ipartitionMap<A, B, C>(
+  f: (k: string, a: A) => Either<B, C>
+): (fa: Dictionary<A>) => readonly [Dictionary<B>, Dictionary<C>] {
+  return (fa) => ipartitionMap_(fa, f)
 }
 
 /**
  */
 export function partitionMap_<A, B, C>(
   fa: Dictionary<A>,
-  f: (a: A, k: string) => Either<B, C>
+  f: (a: A) => Either<B, C>
 ): readonly [Dictionary<B>, Dictionary<C>] {
   const [left, right] = R.partitionMap_(fa[DictionaryStore], f)
   return [fromRecord(left), fromRecord(right)]
@@ -222,7 +291,7 @@ export function partitionMap_<A, B, C>(
 /**
  */
 export function partitionMap<A, B, C>(
-  f: (a: A, k: string) => Either<B, C>
+  f: (a: A) => Either<B, C>
 ): (fa: Dictionary<A>) => readonly [Dictionary<B>, Dictionary<C>] {
   return (fa) => partitionMap_(fa, f)
 }
@@ -233,27 +302,51 @@ export function partitionMap<A, B, C>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function foldl_<A, B>(fa: Dictionary<A>, b: B, f: (b: B, a: A, k: string) => B): B {
+export function ifoldl_<A, B>(fa: Dictionary<A>, b: B, f: (k: string, b: B, a: A) => B): B {
+  return R.ifoldl_(fa[DictionaryStore], b, f)
+}
+
+export function ifoldl<A, B>(b: B, f: (k: string, b: B, a: A) => B): (fa: Dictionary<A>) => B {
+  return (fa) => ifoldl_(fa, b, f)
+}
+
+export function foldl_<A, B>(fa: Dictionary<A>, b: B, f: (b: B, a: A) => B): B {
   return R.foldl_(fa[DictionaryStore], b, f)
 }
 
-export function foldl<A, B>(b: B, f: (b: B, a: A, k: string) => B): (fa: Dictionary<A>) => B {
+export function foldl<A, B>(b: B, f: (b: B, a: A) => B): (fa: Dictionary<A>) => B {
   return (fa) => foldl_(fa, b, f)
 }
 
-export function foldr_<A, B>(fa: Dictionary<A>, b: B, f: (a: A, b: B, k: string) => B): B {
+export function ifoldr_<A, B>(fa: Dictionary<A>, b: B, f: (k: string, a: A, b: B) => B): B {
+  return R.ifoldr_(fa[DictionaryStore], b, f)
+}
+
+export function ifoldr<A, B>(b: B, f: (k: string, a: A, b: B) => B): (fa: Dictionary<A>) => B {
+  return (fa) => ifoldr_(fa, b, f)
+}
+
+export function foldr_<A, B>(fa: Dictionary<A>, b: B, f: (a: A, b: B) => B): B {
   return R.foldr_(fa[DictionaryStore], b, f)
 }
 
-export function foldr<A, B>(b: B, f: (a: A, b: B, k: string) => B): (fa: Dictionary<A>) => B {
+export function foldr<A, B>(b: B, f: (a: A, b: B) => B): (fa: Dictionary<A>) => B {
   return (fa) => foldr_(fa, b, f)
 }
 
-export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: Dictionary<A>, f: (a: A, k: string) => M) => M {
+export function ifoldMap_<M>(M: P.Monoid<M>): <A>(fa: Dictionary<A>, f: (k: string, a: A) => M) => M {
+  return (fa, f) => R.ifoldMap_(M)(fa[DictionaryStore], f)
+}
+
+export function ifoldMap<M>(M: P.Monoid<M>): <A>(f: (k: string, a: A) => M) => (fa: Dictionary<A>) => M {
+  return (f) => (fa) => ifoldMap_(M)(fa, f)
+}
+
+export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: Dictionary<A>, f: (a: A) => M) => M {
   return (fa, f) => R.foldMap_(M)(fa[DictionaryStore], f)
 }
 
-export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A, k: string) => M) => (fa: Dictionary<A>) => M {
+export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: Dictionary<A>) => M {
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
 
@@ -277,11 +370,19 @@ export function fromFoldable<A, F extends HKT.HKT, C = HKT.None>(S: P.Semigroup<
  * -------------------------------------------------------------------------------------------------
  */
 
-export function map_<A, B>(fa: Dictionary<A>, f: (a: A, k: string) => B): Dictionary<B> {
+export function imap_<A, B>(fa: Dictionary<A>, f: (k: string, a: A) => B): Dictionary<B> {
+  return fa[DictionaryOperate](R.imap(f))
+}
+
+export function imap<A, B>(f: (k: string, a: A) => B): (fa: Dictionary<A>) => Dictionary<B> {
+  return (fa) => imap_(fa, f)
+}
+
+export function map_<A, B>(fa: Dictionary<A>, f: (a: A) => B): Dictionary<B> {
   return fa[DictionaryOperate](R.map(f))
 }
 
-export function map<A, B>(f: (a: A, k: string) => B): (fa: Dictionary<A>) => Dictionary<B> {
+export function map<A, B>(f: (a: A) => B): (fa: Dictionary<A>) => Dictionary<B> {
   return (fa) => map_(fa, f)
 }
 
@@ -321,7 +422,7 @@ export function getMonoid<A>(S: P.Semigroup<A>): P.Monoid<Dictionary<A>> {
 export function getShow<A>(S: P.Show<A>): P.Show<Dictionary<A>> {
   return {
     show: (a) => {
-      const elements = collect_(a, (a, k) => `${JSON.stringify(k)}: ${S.show(a)}`).join(', ')
+      const elements = icollect_(a, (k, a) => `${JSON.stringify(k)}: ${S.show(a)}`).join(', ')
       return elements === '' ? '{}' : `{ ${elements} }`
     }
   }
@@ -333,10 +434,15 @@ export function getShow<A>(S: P.Show<A>): P.Show<Dictionary<A>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export const traverse_: P.TraverseIndexFn_<DictionaryF> = (A) => (ta, f) =>
+export const itraverse_: P.TraverseIndexFn_<DictionaryF> = (A) => (ta, f) =>
+  A.map_(R.itraverse_(A)(ta[DictionaryStore], f), fromRecord)
+
+export const itraverse: P.MapWithIndexAFn<DictionaryF> = (A) => (f) => (ta) => itraverse_(A)(ta, f)
+
+export const traverse_: P.TraverseFn_<DictionaryF> = (A) => (ta, f) =>
   A.map_(R.traverse_(A)(ta[DictionaryStore], f), fromRecord)
 
-export const traverse: P.MapWithIndexAFn<DictionaryF> = (A) => (f) => (ta) => traverse_(A)(ta, f)
+export const traverse: P.TraverseFn<DictionaryF> = (A) => (f) => (ta) => traverse_(A)(ta, f)
 
 export const sequence: P.SequenceFn<DictionaryF> = (A) => (ta) => traverse_(A)(ta, (_) => _)
 
@@ -346,12 +452,22 @@ export const sequence: P.SequenceFn<DictionaryF> = (A) => (ta) => traverse_(A)(t
  * -------------------------------------------------------------------------------------------------
  */
 
-export const wither_: P.WitherWithIndexFn_<DictionaryF> = (A) => (wa, f) =>
+export const iwither_: P.WitherWithIndexFn_<DictionaryF> = (A) => (wa, f) =>
+  A.map_(R.iwither_(A)(wa[DictionaryStore], f), fromRecord)
+
+export const iwither: P.WitherWithIndexFn<DictionaryF> = (A) => (f) => (wa) => iwither_(A)(wa, f)
+
+export const iwilt_: P.WiltWithIndexFn_<DictionaryF> = (A) => (wa, f) =>
+  A.map_(R.iwilt_(A)(wa[DictionaryStore], f), ([left, right]) => [fromRecord(left), fromRecord(right)])
+
+export const iwilt: P.WiltWithIndexFn<DictionaryF> = (A) => (f) => (wa) => iwilt_(A)(wa, f)
+
+export const wither_: P.WitherFn_<DictionaryF> = (A) => (wa, f) =>
   A.map_(R.wither_(A)(wa[DictionaryStore], f), fromRecord)
 
-export const wither: P.WitherWithIndexFn<DictionaryF> = (A) => (f) => (wa) => wither_(A)(wa, f)
+export const wither: P.WitherFn<DictionaryF> = (A) => (f) => (wa) => wither_(A)(wa, f)
 
-export const wilt_: P.WiltWithIndexFn_<DictionaryF> = (A) => (wa, f) =>
+export const wilt_: P.WiltFn_<DictionaryF> = (A) => (wa, f) =>
   A.map_(R.wilt_(A)(wa[DictionaryStore], f), ([left, right]) => [fromRecord(left), fromRecord(right)])
 
 export const wilt: P.WiltFn<DictionaryF> = (A) => (f) => (wa) => wilt_(A)(wa, f)
@@ -376,11 +492,19 @@ export function size(dict: Dictionary<unknown>): number {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function collect_<A, B>(dict: Dictionary<A>, f: (a: A, k: string) => B): ReadonlyArray<B> {
+export function icollect_<A, B>(dict: Dictionary<A>, f: (k: string, a: A) => B): ReadonlyArray<B> {
+  return R.icollect_(dict[DictionaryStore], f)
+}
+
+export function icollect<A, B>(f: (k: string, a: A) => B): (dict: Dictionary<A>) => ReadonlyArray<B> {
+  return (dict) => icollect_(dict, f)
+}
+
+export function collect_<A, B>(dict: Dictionary<A>, f: (a: A) => B): ReadonlyArray<B> {
   return R.collect_(dict[DictionaryStore], f)
 }
 
-export function collect<A, B>(f: (a: A, k: string) => B): (dict: Dictionary<A>) => ReadonlyArray<B> {
+export function collect<A, B>(f: (a: A) => B): (dict: Dictionary<A>) => ReadonlyArray<B> {
   return (dict) => collect_(dict, f)
 }
 

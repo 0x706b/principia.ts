@@ -13,7 +13,7 @@ export interface Predicate<A> {
 }
 
 export interface PredicateWithIndex<I, A> {
-  (a: A, i: I): boolean
+  (i: I, a: A): boolean
 }
 
 /*

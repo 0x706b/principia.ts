@@ -53,9 +53,9 @@ export class Semaphore {
           (): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [acc, E.right(n)],
           ([[p, m], q]): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => {
             if (n > m) {
-              return this.loop(n - m, E.left(q), I.crossFirst_(acc, F.succeed_(p, undefined)))
+              return this.loop(n - m, E.left(q), I.apFirst_(acc, F.succeed_(p, undefined)))
             } else if (n === m) {
-              return [I.crossFirst_(acc, F.succeed_(p, undefined)), E.left(q)]
+              return [I.apFirst_(acc, F.succeed_(p, undefined)), E.left(q)]
             } else {
               return [acc, E.left(q.prepend([p, m - n]))]
             }
@@ -128,7 +128,7 @@ export class Semaphore {
 export function _withPermits<R, E, A>(s: Semaphore, n: number, io: I.IO<R, E, A>): I.IO<R, E, A> {
   return bracket_(
     s.prepare(n),
-    (a) => I.crossSecond_(a.waitAcquire, io),
+    (a) => I.apSecond_(a.waitAcquire, io),
     (a) => a.release
   )
 }

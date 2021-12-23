@@ -22,9 +22,9 @@ import { raceWith_, transplant } from './core-scope'
  *
  * @trace call
  */
-export function apPar_<R, E, A, R1, E1, B>(fab: I.IO<R, E, (a: A) => B>, fa: I.IO<R1, E1, A>): I.IO<R & R1, E | E1, B> {
+export function apC_<R, E, A, R1, E1, B>(fab: I.IO<R, E, (a: A) => B>, fa: I.IO<R1, E1, A>): I.IO<R & R1, E | E1, B> {
   const trace = accessCallTrace()
-  return crossWithPar_(
+  return crossWithC_(
     fab,
     fa,
     traceFrom(trace, (f, a) => f(a))
@@ -32,20 +32,20 @@ export function apPar_<R, E, A, R1, E1, B>(fab: I.IO<R, E, (a: A) => B>, fa: I.I
 }
 
 /**
- * @dataFirst apPar_
+ * @dataFirst apC_
  * @trace call
  */
-export function apPar<R, E, A>(fa: I.IO<R, E, A>): <Q, D, B>(fab: I.IO<Q, D, (a: A) => B>) => I.IO<Q & R, E | D, B> {
+export function apC<R, E, A>(fa: I.IO<R, E, A>): <Q, D, B>(fab: I.IO<Q, D, (a: A) => B>) => I.IO<Q & R, E | D, B> {
   const trace = accessCallTrace()
-  return (fab) => traceCall(apPar_, trace)(fab, fa)
+  return (fab) => traceCall(apC_, trace)(fab, fa)
 }
 
 /**
  * @trace call
  */
-export function crossFirstPar_<R, E, A, R1, E1, B>(fa: I.IO<R, E, A>, fb: I.IO<R1, E1, B>): I.IO<R & R1, E | E1, A> {
+export function apFirstC_<R, E, A, R1, E1, B>(fa: I.IO<R, E, A>, fb: I.IO<R1, E1, B>): I.IO<R & R1, E | E1, A> {
   const trace = accessCallTrace()
-  return crossWithPar_(
+  return crossWithC_(
     fa,
     fb,
     traceFrom(trace, (a, _) => a)
@@ -53,20 +53,20 @@ export function crossFirstPar_<R, E, A, R1, E1, B>(fa: I.IO<R, E, A>, fb: I.IO<R
 }
 
 /**
- * @dataFirst crossFirstPar_
+ * @dataFirst apFirstC_
  * @trace call
  */
-export function crossFirstPar<R1, E1, B>(fb: I.IO<R1, E1, B>): <R, E, A>(fa: I.IO<R, E, A>) => I.IO<R & R1, E1 | E, A> {
+export function apFirstC<R1, E1, B>(fb: I.IO<R1, E1, B>): <R, E, A>(fa: I.IO<R, E, A>) => I.IO<R & R1, E1 | E, A> {
   const trace = accessCallTrace()
-  return (fa) => traceCall(crossFirstPar_, trace)(fa, fb)
+  return (fa) => traceCall(apFirstC_, trace)(fa, fb)
 }
 
 /**
  * @trace call
  */
-export function crossSecondPar_<R, E, A, R1, E1, B>(fa: I.IO<R, E, A>, fb: I.IO<R1, E1, B>): I.IO<R & R1, E | E1, B> {
+export function apSecondC_<R, E, A, R1, E1, B>(fa: I.IO<R, E, A>, fb: I.IO<R1, E1, B>): I.IO<R & R1, E | E1, B> {
   const trace = accessCallTrace()
-  return crossWithPar_(
+  return crossWithC_(
     fa,
     fb,
     traceFrom(trace, (_, b) => b)
@@ -74,14 +74,12 @@ export function crossSecondPar_<R, E, A, R1, E1, B>(fa: I.IO<R, E, A>, fb: I.IO<
 }
 
 /**
- * @dataFirst crossSecondPar_
+ * @dataFirst apSecondC_
  * @trace call
  */
-export function crossSecondPar<R1, E1, B>(
-  fb: I.IO<R1, E1, B>
-): <R, E, A>(fa: I.IO<R, E, A>) => I.IO<R & R1, E1 | E, B> {
+export function apSecondC<R1, E1, B>(fb: I.IO<R1, E1, B>): <R, E, A>(fa: I.IO<R, E, A>) => I.IO<R & R1, E1 | E, B> {
   const trace = accessCallTrace()
-  return (fa) => traceCall(crossSecondPar_, trace)(fa, fb)
+  return (fa) => traceCall(apSecondC_, trace)(fa, fb)
 }
 
 /**
@@ -89,24 +87,24 @@ export function crossSecondPar<R1, E1, B>(
  *
  * @trace call
  */
-export function crossPar_<R, E, A, R1, E1, A1>(
+export function crossC_<R, E, A, R1, E1, A1>(
   ma: I.IO<R, E, A>,
   mb: I.IO<R1, E1, A1>
 ): I.IO<R & R1, E | E1, readonly [A, A1]> {
   const trace = accessCallTrace()
-  return traceCall(crossWithPar_, trace)(ma, mb, (a, b) => [a, b] as const)
+  return traceCall(crossWithC_, trace)(ma, mb, (a, b) => [a, b] as const)
 }
 
 /**
  * Parallely zips two `IOs`
  *
- * @dataFirst crossPar_
+ * @dataFirst crossC_
  * @trace call
  */
-export function crossPar<R1, E1, A1>(
+export function crossC<R1, E1, A1>(
   mb: I.IO<R1, E1, A1>
 ): <R, E, A>(ma: I.IO<R, E, A>) => I.IO<R & R1, E1 | E, readonly [A, A1]> {
-  return (ma) => crossPar_(ma, mb)
+  return (ma) => crossC_(ma, mb)
 }
 
 /**
@@ -115,7 +113,7 @@ export function crossPar<R1, E1, A1>(
  *
  * @trace 2
  */
-export function crossWithPar_<R, E, A, R2, E2, A2, B>(
+export function crossWithC_<R, E, A, R2, E2, A2, B>(
   fa: I.IO<R, E, A>,
   fb: I.IO<R2, E2, A2>,
   f: (a: A, b: A2) => B
@@ -127,8 +125,8 @@ export function crossWithPar_<R, E, A, R2, E2, A2, B>(
       raceWith_(
         graft(fa),
         graft(fb),
-        (ex, fi) => coordinateCrossWithPar<E, E2>()(d.id, f, true, ex, fi),
-        (ex, fi) => coordinateCrossWithPar<E, E2>()(d.id, g, false, ex, fi)
+        (ex, fi) => coordinateCrossWithC<E, E2>()(d.id, f, true, ex, fi),
+        (ex, fi) => coordinateCrossWithC<E, E2>()(d.id, g, false, ex, fi)
       )
     )
   )
@@ -138,17 +136,17 @@ export function crossWithPar_<R, E, A, R2, E2, A2, B>(
  * Parallelly zips this effect with the specified effect using the
  * specified combiner function.
  *
- * @dataFirst crossWithPar_
+ * @dataFirst crossWithC_
  * @trace 1
  */
-export function crossWithPar<A, R1, E1, B, C>(
+export function crossWithC<A, R1, E1, B, C>(
   fb: I.IO<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: I.IO<R, E, A>) => I.IO<R & R1, E1 | E, C> {
-  return (fa) => crossWithPar_(fa, fb, f)
+  return (fa) => crossWithC_(fa, fb, f)
 }
 
-function coordinateCrossWithPar<E, E2>() {
+function coordinateCrossWithC<E, E2>() {
   return <B, X, Y>(
     fiberId: FiberId,
     f: (a: X, b: Y) => B,

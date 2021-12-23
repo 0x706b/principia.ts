@@ -10,7 +10,7 @@ import { traceAs } from '@principia/compile/util'
 import * as Ch from '../../Chunk/core'
 import * as E from '../../Either'
 import { either, foreach_, map_, subsumeEither } from '../core'
-import { foreachPar_ } from './foreach-concurrent'
+import { foreachC_ } from './foreachC'
 import { foreachExec_ } from './foreachExec'
 
 const mergeExits =
@@ -69,10 +69,10 @@ export function validate<A, R, E, B>(f: (a: A) => IO<R, E, B>): (as: Iterable<A>
  *
  * @trace 1
  */
-export function validatePar_<A, R, E, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>) {
+export function validateC_<A, R, E, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>) {
   return subsumeEither(
     map_(
-      foreachPar_(
+      foreachC_(
         as,
         traceAs(f, (a) => either(f(a)))
       ),
@@ -84,8 +84,8 @@ export function validatePar_<A, R, E, B>(as: Iterable<A>, f: (a: A) => IO<R, E, 
 /**
  * @trace 0
  */
-export function validatePar<A, R, E, B>(f: (a: A) => IO<R, E, B>): (as: Iterable<A>) => IO<R, Chunk<E>, Chunk<B>> {
-  return (as) => validatePar_(as, f)
+export function validateC<A, R, E, B>(f: (a: A) => IO<R, E, B>): (as: Iterable<A>) => IO<R, Chunk<E>, Chunk<B>> {
+  return (as) => validateC_(as, f)
 }
 
 /**

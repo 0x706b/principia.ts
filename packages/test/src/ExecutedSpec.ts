@@ -51,7 +51,7 @@ export function foldSafe<E, Z>(es: ExecutedSpec<E>, f: (_: USync<SpecCase<E, Z>>
     Suite: ({ label, specs }) => {
       const inner = specs.map((s) => foldSafe(s, f))
       return pipe(
-        Sy.collectAllArray(inner),
+        Sy.sequenceArray(inner),
         Sy.map((zs) => new SuiteCase(label, zs)),
         f
       )
@@ -76,7 +76,7 @@ export function transformSafe<E, E1>(
     Suite: ({ label, specs }) => {
       const inner = A.map_(specs, (s) => Sy.defer(() => transformSafe(s, f)))
       return pipe(
-        Sy.collectAllArray(inner),
+        Sy.sequenceArray(inner),
         Sy.map((specs) => new SuiteCase(label, specs)),
         f
       )

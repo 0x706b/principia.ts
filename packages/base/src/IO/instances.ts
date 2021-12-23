@@ -6,7 +6,7 @@ import type { IO } from './core'
 import * as E from '../Either'
 import { mapNF, sequenceSF } from '../prelude'
 import * as P from '../prelude'
-import { apPar_, crossPar_, crossWithPar_ } from './combinators'
+import { apC_, crossC_, crossWithC_ } from './combinators'
 import {
   andThen_,
   ap_,
@@ -61,8 +61,8 @@ export const SemimonoidalFunctor = P.SemimonoidalFunctor<IOF>({
 
 export const SemimonoidalFunctorPar = P.SemimonoidalFunctor<IOF>({
   map_,
-  crossWith_: crossWithPar_,
-  cross_: crossPar_
+  crossWith_: crossWithC_,
+  cross_: crossC_
 })
 
 export const mapN    = mapNF(SemimonoidalFunctor)
@@ -80,9 +80,9 @@ export const Apply = P.Apply<IOF>({
 
 export const ApplyPar = P.Apply<IOF>({
   map_,
-  crossWith_: crossWithPar_,
-  cross_: crossPar_,
-  ap_: apPar_
+  crossWith_: crossWithC_,
+  cross_: crossC_,
+  ap_: apC_
 })
 
 export const MonoidalFunctor = P.MonoidalFunctor<IOF>({
@@ -94,8 +94,8 @@ export const MonoidalFunctor = P.MonoidalFunctor<IOF>({
 
 export const MonoidalFunctorPar = P.MonoidalFunctor<IOF>({
   map_,
-  crossWith_: crossWithPar_,
-  cross_: crossPar_,
+  crossWith_: crossWithC_,
+  cross_: crossC_,
   unit
 })
 
@@ -110,9 +110,9 @@ export const Applicative = P.Applicative<IOF>({
 
 export const ApplicativePar = P.Applicative<IOF>({
   map_,
-  cross_: crossPar_,
-  crossWith_: crossWithPar_,
-  ap_: apPar_,
+  cross_: crossC_,
+  crossWith_: crossWithC_,
+  ap_: apC_,
   unit,
   pure
 })

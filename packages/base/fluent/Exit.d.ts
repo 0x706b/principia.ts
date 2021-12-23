@@ -15,32 +15,29 @@ export interface ExitOps<Id, E, A> {
   cross<Id, E, A, Id1, E1, B>(this: PExit<Id, E, A>, that: PExit<Id1, E1, B>): PExit<Id | Id1, E | E1, readonly [A, B]>
 
   /**
-   * @rewrite crossFirst_ from "@principia/base/Exit"
+   * @rewrite apFirst_ from "@principia/base/Exit"
    */
-  crossFirst<Id, E, A, Id1, E1, B>(this: PExit<Id, E, A>, that: PExit<Id1, E1, B>): PExit<Id | Id1, E | E1, A>
+  apFirst<Id, E, A, Id1, E1, B>(this: PExit<Id, E, A>, that: PExit<Id1, E1, B>): PExit<Id | Id1, E | E1, A>
 
   /**
-   * @rewrite crossFirstPar_ from "@principia/base/Exit"
+   * @rewrite apFirstC_ from "@principia/base/Exit"
    */
-  crossFirstPar<Id, E, A, Id1, E1, B>(this: PExit<Id, E, A>, that: PExit<Id1, E1, B>): PExit<Id | Id1, E | E1, A>
+  apFirstC<Id, E, A, Id1, E1, B>(this: PExit<Id, E, A>, that: PExit<Id1, E1, B>): PExit<Id | Id1, E | E1, A>
 
   /**
-   * @rewrite crossPar_ from "@principia/base/Exit"
+   * @rewrite crossC_ from "@principia/base/Exit"
    */
-  crossPar<Id, E, A, Id1, E1, B>(
-    this: PExit<Id, E, A>,
-    that: PExit<Id1, E1, B>
-  ): PExit<Id | Id1, E | E1, readonly [A, B]>
+  crossC<Id, E, A, Id1, E1, B>(this: PExit<Id, E, A>, that: PExit<Id1, E1, B>): PExit<Id | Id1, E | E1, readonly [A, B]>
 
   /**
-   * @rewrite crossSecond_ from "@principia/base/Exit"
+   * @rewrite apSecond_ from "@principia/base/Exit"
    */
-  crossSecond<Id, E, A, Id1, E1, B>(this: PExit<Id, E, A>, that: PExit<Id1, E1, B>): PExit<Id | Id1, E | E1, B>
+  apSecond<Id, E, A, Id1, E1, B>(this: PExit<Id, E, A>, that: PExit<Id1, E1, B>): PExit<Id | Id1, E | E1, B>
 
   /**
-   * @rewrite crossSecondPar_ from "@principia/base/Exit"
+   * @rewrite apSecondC_ from "@principia/base/Exit"
    */
-  crossSecondPar<Id, E, A, Id1, E1, B>(this: PExit<Id, E, A>, that: PExit<Id1, E1, B>): PExit<Id | Id1, E | E1, B>
+  apSecondC<Id, E, A, Id1, E1, B>(this: PExit<Id, E, A>, that: PExit<Id1, E1, B>): PExit<Id | Id1, E | E1, B>
 
   /**
    * @rewrite crossWith_ from "@principia/base/Exit"

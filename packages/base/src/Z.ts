@@ -661,20 +661,20 @@ export function cross<W, S, R1, E1, B>(
   return (fa) => cross_(fa, fb)
 }
 
-export function crossPar_<W, S, R, E, A, R1, E1, B>(
+export function crossC_<W, S, R, E, A, R1, E1, B>(
   fa: Z<W, S, S, R, E, A>,
   fb: Z<W, S, S, R1, E1, B>
 ): Z<W, S, S, R & R1, E | E1, readonly [A, B]> {
-  return crossWithPar_(fa, fb, tuple)
+  return crossWithC_(fa, fb, tuple)
 }
 
 /**
- * @dataFirst crossPar_
+ * @dataFirst crossC_
  */
-export function crossPar<W, S, R1, E1, B>(
+export function crossC<W, S, R1, E1, B>(
   fb: Z<W, S, S, R1, E1, B>
 ): <R, E, A>(fa: Z<W, S, S, R, E, A>) => Z<W, S, S, R & R1, E | E1, readonly [A, B]> {
-  return (fa) => crossPar_(fa, fb)
+  return (fa) => crossC_(fa, fb)
 }
 
 export function crossWith_<W, S, R, E, A, R1, E1, B, C>(
@@ -695,7 +695,7 @@ export function crossWith<W, S, A, R1, E1, B, C>(
   return (fa) => zipWith_(fa, fb, f)
 }
 
-export function crossWithPar_<W, S, R, E, A, R1, E1, B, C>(
+export function crossWithC_<W, S, R, E, A, R1, E1, B, C>(
   fa: Z<W, S, S, R, E, A>,
   fb: Z<W, S, S, R1, E1, B>,
   f: (a: A, b: B) => C
@@ -717,13 +717,13 @@ export function crossWithPar_<W, S, R, E, A, R1, E1, B, C>(
 }
 
 /**
- * @dataFirst crossWithPar_
+ * @dataFirst crossWithC_
  */
-export function crossWithPar<W, S, A, R1, E1, B, C>(
+export function crossWithC<W, S, A, R1, E1, B, C>(
   fb: Z<W, S, S, R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(ma: Z<W, S, S, R, E, A>) => Z<W, S, S, R & R1, E | E1, C> {
-  return (ma) => crossWithPar_(ma, fb, f)
+  return (ma) => crossWithC_(ma, fb, f)
 }
 
 export function ap_<W, S, R, E, A, R1, E1, B>(
@@ -742,7 +742,7 @@ export function ap<W, S, R1, E1, A>(
   return (fab) => ap_(fab, fa)
 }
 
-export function crossFirst_<W, S, R, E, A, R1, E1, B>(
+export function apFirst_<W, S, R, E, A, R1, E1, B>(
   fa: Z<W, S, S, R, E, A>,
   fb: Z<W, S, S, R1, E1, B>
 ): Z<W, S, S, R & R1, E | E1, A> {
@@ -750,15 +750,15 @@ export function crossFirst_<W, S, R, E, A, R1, E1, B>(
 }
 
 /**
- * @dataFirst crossFirst_
+ * @dataFirst apFirst_
  */
-export function crossFirst<W, S, R1, E1, B>(
+export function apFirst<W, S, R1, E1, B>(
   fb: Z<W, S, S, R1, E1, B>
 ): <R, E, A>(fa: Z<W, S, S, R, E, A>) => Z<W, S, S, R & R1, E | E1, A> {
-  return (fa) => crossFirst_(fa, fb)
+  return (fa) => apFirst_(fa, fb)
 }
 
-export function crossSecond_<W, S, R, E, A, R1, E1, B>(
+export function apSecond_<W, S, R, E, A, R1, E1, B>(
   fa: Z<W, S, S, R, E, A>,
   fb: Z<W, S, S, R1, E1, B>
 ): Z<W, S, S, R & R1, E | E1, B> {
@@ -766,12 +766,12 @@ export function crossSecond_<W, S, R, E, A, R1, E1, B>(
 }
 
 /**
- * @dataFirst crossSecond_
+ * @dataFirst apSecond_
  */
-export function crossSecond<W, S, R1, E1, B>(
+export function apSecond<W, S, R1, E1, B>(
   fb: Z<W, S, S, R1, E1, B>
 ): <R, E, A>(fa: Z<W, S, S, R, E, A>) => Z<W, S, S, R & R1, E | E1, B> {
-  return (fa) => crossSecond_(fa, fb)
+  return (fa) => apSecond_(fa, fb)
 }
 
 /*
@@ -1383,68 +1383,116 @@ function _MonoidBindUnit<W, S, R, E>(): P.Monoid<Z<W, S, S, R, E, void>> {
   return P.Monoid<Z<W, S, S, R, E, void>>((x, y) => chain_(x, () => y), unit())
 }
 
+export function iforeachUnit_<A, W, S, R, E>(
+  as: Iterable<A>,
+  f: (i: number, a: A) => Z<W, S, S, R, E, void>
+): Z<W, S, S, R, E, void> {
+  return I.ifoldMap_(_MonoidBindUnit<W, S, R, E>())(as, f)
+}
+
+/**
+ * @dataFirst iforeachUnit_
+ */
+export function iforeachUnit<A, W, S, R, E>(
+  f: (i: number, a: A) => Z<W, S, S, R, E, void>
+): (as: Iterable<A>) => Z<W, S, S, R, E, void> {
+  return (as) => iforeachUnit_(as, f)
+}
+
 export function foreachUnit_<A, W, S, R, E>(
   as: Iterable<A>,
-  f: (a: A, i: number) => Z<W, S, S, R, E, void>
+  f: (a: A) => Z<W, S, S, R, E, void>
 ): Z<W, S, S, R, E, void> {
-  return I.foldMap_(_MonoidBindUnit<W, S, R, E>())(as, f)
+  return iforeachUnit_(as, (_, a) => f(a))
 }
 
 /**
  * @dataFirst foreachUnit_
  */
 export function foreachUnit<A, W, S, R, E>(
-  f: (a: A, i: number) => Z<W, S, S, R, E, void>
+  f: (a: A) => Z<W, S, S, R, E, void>
 ): (as: Iterable<A>) => Z<W, S, S, R, E, void> {
   return (as) => foreachUnit_(as, f)
 }
 
-export function foreach_<W, S, R, E, A, B>(
+export function iforeach_<W, S, R, E, A, B>(
   as: Iterable<A>,
-  f: (a: A, i: number) => Z<W, S, S, R, E, B>
+  f: (i: number, a: A) => Z<W, S, S, R, E, B>
 ): Z<W, S, S, R, E, C.Chunk<B>> {
-  return I.foldl_(as, succeed(C.empty()) as Z<W, S, S, R, E, C.Chunk<B>>, (b, a, i) =>
+  return I.ifoldl_(as, succeed(C.empty()) as Z<W, S, S, R, E, C.Chunk<B>>, (i, b, a) =>
     crossWith_(
       b,
-      defer(() => f(a, i)),
+      defer(() => f(i, a)),
       C.append_
     )
   )
 }
 
 /**
+ * @dataFirst iforeach_
+ */
+export function iforeach<A, W, S, R, E, B>(
+  f: (i: number, a: A) => Z<W, S, S, R, E, B>
+): (as: Iterable<A>) => Z<W, S, S, R, E, C.Chunk<B>> {
+  return (as) => iforeach_(as, f)
+}
+
+export function foreach_<W, S, R, E, A, B>(
+  as: Iterable<A>,
+  f: (a: A) => Z<W, S, S, R, E, B>
+): Z<W, S, S, R, E, C.Chunk<B>> {
+  return iforeach_(as, (_, a) => f(a))
+}
+
+/**
  * @dataFirst foreach_
  */
 export function foreach<A, W, S, R, E, B>(
-  f: (a: A, i: number) => Z<W, S, S, R, E, B>
+  f: (a: A) => Z<W, S, S, R, E, B>
 ): (as: Iterable<A>) => Z<W, S, S, R, E, C.Chunk<B>> {
   return (as) => foreach_(as, f)
 }
 
+export function iforeachArrayUnit_<A, W, S, R, E>(
+  as: ReadonlyArray<A>,
+  f: (i: number, a: A) => Z<W, S, S, R, E, void>
+): Z<W, S, S, R, E, void> {
+  return A.ifoldMap_(_MonoidBindUnit<W, S, R, E>())(as, f)
+}
+
+/**
+ * @dataFirst iforeachArrayUnit_
+ */
+export function iforeachArrayUnit<A, W, S, R, E>(
+  f: (i: number, a: A) => Z<W, S, S, R, E, void>
+): (as: ReadonlyArray<A>) => Z<W, S, S, R, E, void> {
+  return (as) => iforeachArrayUnit_(as, f)
+}
+
 export function foreachArrayUnit_<A, W, S, R, E>(
   as: ReadonlyArray<A>,
-  f: (a: A, i: number) => Z<W, S, S, R, E, void>
+  f: (a: A) => Z<W, S, S, R, E, void>
 ): Z<W, S, S, R, E, void> {
-  return A.foldMap_(_MonoidBindUnit<W, S, R, E>())(as, f)
+  return iforeachArrayUnit_(as, (_, a) => f(a))
 }
 
 /**
  * @dataFirst foreachArrayUnit_
  */
 export function foreachArrayUnit<A, W, S, R, E>(
-  f: (a: A, i: number) => Z<W, S, S, R, E, void>
+  f: (a: A) => Z<W, S, S, R, E, void>
 ): (as: ReadonlyArray<A>) => Z<W, S, S, R, E, void> {
   return (as) => foreachArrayUnit_(as, f)
 }
 
-export function foreachArray_<A, W, S, R, E, B>(
+export function iforeachArray_<A, W, S, R, E, B>(
   as: ReadonlyArray<A>,
-  f: (a: A, i: number) => Z<W, S, S, R, E, B>
+  f: (i: number, a: A) => Z<W, S, S, R, E, B>
 ): Z<W, S, S, R, E, ReadonlyArray<B>> {
-  return A.foldl_(as, succeed([]) as Z<W, S, S, R, E, Array<B>>, (b, a, i) =>
+  return A.ifoldl_(as, succeed([]) as Z<W, S, S, R, E, Array<B>>, (i, b, a) =>
     crossWith_(
       b,
-      defer(() => f(a, i)),
+      defer(() => f(i, a)),
       (acc, a) => {
         acc.push(a)
         return acc
@@ -1454,22 +1502,38 @@ export function foreachArray_<A, W, S, R, E, B>(
 }
 
 /**
+ * @dataFirst iforeachArray_
+ */
+export function iforeachArray<A, W, S, R, E, B>(
+  f: (i: number, a: A) => Z<W, S, S, R, E, B>
+): (as: ReadonlyArray<A>) => Z<W, S, S, R, E, ReadonlyArray<B>> {
+  return (as) => iforeachArray_(as, f)
+}
+
+export function foreachArray_<A, W, S, R, E, B>(
+  as: ReadonlyArray<A>,
+  f: (a: A) => Z<W, S, S, R, E, B>
+): Z<W, S, S, R, E, ReadonlyArray<B>> {
+  return iforeachArray_(as, (_, a) => f(a))
+}
+
+/**
  * @dataFirst foreachArray_
  */
 export function foreachArray<A, W, S, R, E, B>(
-  f: (a: A, i: number) => Z<W, S, S, R, E, B>
+  f: (a: A) => Z<W, S, S, R, E, B>
 ): (as: ReadonlyArray<A>) => Z<W, S, S, R, E, ReadonlyArray<B>> {
   return (as) => foreachArray_(as, f)
 }
 
-export function foreachList_<A, W, S, R, E, B>(
+export function iforeachList_<A, W, S, R, E, B>(
   as: Iterable<A>,
-  f: (a: A, i: number) => Z<W, S, S, R, E, B>
+  f: (i: number, a: A) => Z<W, S, S, R, E, B>
 ): Z<W, S, S, R, E, L.List<B>> {
-  return I.foldl_(as, succeed(L.emptyPushable()) as Z<W, S, S, R, E, L.MutableList<B>>, (b, a, i) =>
+  return I.ifoldl_(as, succeed(L.emptyPushable()) as Z<W, S, S, R, E, L.MutableList<B>>, (i, b, a) =>
     crossWith_(
       b,
-      defer(() => f(a, i)),
+      defer(() => f(i, a)),
       (acc, a) => {
         L.push(a, acc)
         return acc
@@ -1479,10 +1543,26 @@ export function foreachList_<A, W, S, R, E, B>(
 }
 
 /**
+ * @dataFirst iforeachList_
+ */
+export function iforeachList<A, W, S, R, E, B>(
+  f: (i: number, a: A) => Z<W, S, S, R, E, B>
+): (as: Iterable<A>) => Z<W, S, S, R, E, L.List<B>> {
+  return (as) => iforeachList_(as, f)
+}
+
+export function foreachList_<A, W, S, R, E, B>(
+  as: Iterable<A>,
+  f: (a: A) => Z<W, S, S, R, E, B>
+): Z<W, S, S, R, E, L.List<B>> {
+  return iforeachList_(as, (_, a) => f(a))
+}
+
+/**
  * @dataFirst foreachList_
  */
 export function foreachList<A, W, S, R, E, B>(
-  f: (a: A, i: number) => Z<W, S, S, R, E, B>
+  f: (a: A) => Z<W, S, S, R, E, B>
 ): (as: Iterable<A>) => Z<W, S, S, R, E, L.List<B>> {
   return (as) => foreachList_(as, f)
 }
@@ -1629,7 +1709,7 @@ export function runAll_<W, S1, S2, E, A>(
         pushContinuation(
           new MatchFrame(
             (cause: Cause<any>) => {
-              const m = crossSecond_(put(state), Z.onFailure(log, cause))
+              const m = apSecond_(put(state), Z.onFailure(log, cause))
               log     = C.empty()
               return m
             },
@@ -1650,8 +1730,8 @@ export function runAll_<W, S1, S2, E, A>(
         pushEnv(Z.env)
         current = matchZ_(
           Z.z,
-          (e) => crossSecond_(succeed(popEnv()), fail(e)),
-          (a) => crossSecond_(succeed(popEnv()), succeed(a))
+          (e) => apSecond_(succeed(popEnv()), fail(e)),
+          (a) => apSecond_(succeed(popEnv()), succeed(a))
         )
         break
       }

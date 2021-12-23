@@ -24,7 +24,7 @@ import * as Iter from '../Iterable'
 import * as M from '../Maybe'
 import * as R from '../Record'
 import * as Ref from '../Ref/core'
-import { tuple } from '../tuple/core'
+import { tuple as mkTuple } from '../tuple/core'
 import * as I from './internal/io'
 import { add, addIfOpen, noopFinalizer, release, updateAll } from './ReleaseMap'
 
@@ -78,7 +78,7 @@ export function fromIO<R, E, A>(effect: I.IO<R, E, A>) {
       pipe(
         restore(effect),
         I.gives(([r, _]: readonly [R, ReleaseMap]) => r),
-        I.map((a) => tuple(noopFinalizer, a))
+        I.map((a) => mkTuple(noopFinalizer, a))
       )
     )
   )
@@ -313,7 +313,7 @@ export function bracketExit_<R, E, A, R1>(
               traceFrom(trace, (a) =>
                 pipe(
                   add(r[1], (ex) => pipe(release(a, ex), I.give(r[0]))),
-                  I.map((rm) => tuple(rm, a))
+                  I.map((rm) => mkTuple(rm, a))
                 )
               )
             )
@@ -355,7 +355,7 @@ export function makeReserve<R, E, R2, E2, A>(reservation: I.IO<R, E, Reservation
                     reserved.acquire,
                     I.gives(([r]: readonly [R & R2, ReleaseMap]) => r),
                     restore,
-                    I.map((a): readonly [Finalizer, A] => tuple((e) => release(releaseMap, releaseKey.value, e), a))
+                    I.map((a): readonly [Finalizer, A] => mkTuple((e) => release(releaseMap, releaseKey.value, e), a))
                   )
                 }
               }
@@ -547,27 +547,24 @@ export function ap<R, E, A>(
 /**
  * @trace call
  */
-export function crossFirst_<R, E, A, R1, E1, B>(
-  fa: Managed<R, E, A>,
-  fb: Managed<R1, E1, B>
-): Managed<R & R1, E | E1, A> {
+export function apFirst_<R, E, A, R1, E1, B>(fa: Managed<R, E, A>, fb: Managed<R1, E1, B>): Managed<R & R1, E | E1, A> {
   return crossWith_(fa, fb, (a, _) => a)
 }
 
 /**
- * @dataFirst crossFirst_
+ * @dataFirst apFirst_
  * @trace call
  */
-export function crossFirst<R1, E1, B>(
+export function apFirst<R1, E1, B>(
   fb: Managed<R1, E1, B>
 ): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, A> {
-  return (fa) => crossFirst_(fa, fb)
+  return (fa) => apFirst_(fa, fb)
 }
 
 /**
  * @trace call
  */
-export function crossSecond_<R, E, A, R1, E1, B>(
+export function apSecond_<R, E, A, R1, E1, B>(
   fa: Managed<R, E, A>,
   fb: Managed<R1, E1, B>
 ): Managed<R & R1, E | E1, B> {
@@ -575,16 +572,16 @@ export function crossSecond_<R, E, A, R1, E1, B>(
 }
 
 /**
- * @dataFrist crossSecond_
+ * @dataFrist apSecond_
  * @trace call
  */
-export function crossSecond<R1, E1, B>(
+export function apSecond<R1, E1, B>(
   fb: Managed<R1, E1, B>
 ): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, B> {
-  return (fa) => crossSecond_(fa, fb)
+  return (fa) => apSecond_(fa, fb)
 }
 
-export const sequenceS = <MR extends ReadonlyRecord<string, Managed<any, any, any>>>(
+export const struct = <MR extends ReadonlyRecord<string, Managed<any, any, any>>>(
   mr: P.EnforceNonEmptyRecord<MR> & Record<string, Managed<any, any, any>>
 ): Managed<
   P._R<MR[keyof MR]>,
@@ -605,7 +602,7 @@ export const sequenceS = <MR extends ReadonlyRecord<string, Managed<any, any, an
     }
   ) as any
 
-export const sequenceT = <T extends ReadonlyArray<Managed<any, any, any>>>(
+export const tuple = <T extends ReadonlyArray<Managed<any, any, any>>>(
   ...mt: T & {
     0: Managed<any, any, any>
   }
@@ -1488,22 +1485,22 @@ export function collect<A, E1, B>(
 
 /**
  * Evaluate each effect in the structure from left to right, and collect the
- * results. For a parallel version, see `collectAllPar`.
+ * results. For a parallel version, see `sequenceIterableC`.
  *
  * @trace call
  */
-export function collectAll<R, E, A>(mas: Iterable<Managed<R, E, A>>): Managed<R, E, Chunk<A>> {
+export function sequenceIterable<R, E, A>(mas: Iterable<Managed<R, E, A>>): Managed<R, E, Chunk<A>> {
   const trace = accessCallTrace()
   return traceCall(foreach_, trace)(mas, identityFn)
 }
 
 /**
  * Evaluate each effect in the structure from left to right, and discard the
- * results. For a parallel version, see `collectAllPar_`.
+ * results. For a parallel version, see `sequenceIterableUnitC`.
  *
  * @trace call
  */
-export function collectAllUnit<R, E, A>(mas: Iterable<Managed<R, E, A>>): Managed<R, E, void> {
+export function sequenceIterableUnit<R, E, A>(mas: Iterable<Managed<R, E, A>>): Managed<R, E, void> {
   const trace = accessCallTrace()
   return traceCall(foreachUnit_, trace)(mas, identityFn)
 }
@@ -1655,8 +1652,8 @@ export function foldMap<M>(M: P.Monoid<M>) {
  * Applies the function `f` to each element of the `Iterable<A>` and
  * returns the results in a new `B[]`.
  *
- * For a parallel version of this method, see `foreachPar_`.
- * If you do not need the results, see `foreachUnit_` for a more efficient implementation.
+ * For a parallel version of this method, see `foreachC_`.
+ * If you do not need the results, see `foreachUnitC_` for a more efficient implementation.
  *
  * @trace 1
  */
@@ -1837,7 +1834,7 @@ export function ignoreReleaseFailures<R, E, A>(ma: Managed<R, E, A>): Managed<R,
           )
         )
       ),
-      I.crossSecond(ma.io)
+      I.apSecond(ma.io)
     )
   )
 }

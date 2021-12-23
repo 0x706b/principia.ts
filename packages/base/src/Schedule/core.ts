@@ -102,7 +102,7 @@ export function driver<R, I, O>(schedule: Schedule<R, I, O>): I.UIO<Driver<Has<C
           const dec  = yield* _(step(now, input))
           switch (dec._tag) {
             case 'Done': {
-              return yield* _(pipe(ref.set(tuple(M.just(dec.out), done(dec.out))), I.crossSecond(I.fail(M.nothing()))))
+              return yield* _(pipe(ref.set(tuple(M.just(dec.out), done(dec.out))), I.apSecond(I.fail(M.nothing()))))
             }
             case 'Continue': {
               return yield* _(

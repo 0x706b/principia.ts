@@ -313,7 +313,7 @@ export function crossWith_<R, E, In, L extends In1 & L1, Z, R1, E1, In1 extends 
   return chain_(fa, (z) => map_(fb, (z1) => f(z, z1)))
 }
 
-export function apr_<R, E, In, L extends In1 & L1, Z, R1, E1, In1 extends In, L1, Z1>(
+export function apSecond_<R, E, In, L extends In1 & L1, Z, R1, E1, In1 extends In, L1, Z1>(
   fa: Sink<R, E, In, L, Z>,
   fb: Sink<R1, E1, In1, L1, Z1>
 ): Sink<R & R1, E | E1, In1, L1, Z1> {
@@ -965,7 +965,7 @@ export function raceWith_<R, E, In, L extends In1 & L1, Z, R1, E1, In1 extends I
  * Runs both sinks in parallel on the input and combines the results
  * using the provided function.
  */
-export function crossWithPar_<R, E, In, L extends In1 & L1, Z, R1, E1, In1 extends In, L1, Z1, Z2>(
+export function crossWithC_<R, E, In, L extends In1 & L1, Z, R1, E1, In1 extends In, L1, Z1, Z2>(
   fa: Sink<R, E, In, L, Z>,
   fb: Sink<R1, E1, In1, L1, Z1>,
   f: (a: Z, b: Z1) => Z2,
@@ -1001,9 +1001,9 @@ export function crossWithPar_<R, E, In, L extends In1 & L1, Z, R1, E1, In1 exten
  * Runs both sinks in parallel on the input and combines the results
  * using the provided function.
  */
-export function crossWithPar<In, L extends In1 & L1, Z, R1, E1, In1 extends In, L1, Z1, Z2>(
+export function crossWithC<In, L extends In1 & L1, Z, R1, E1, In1 extends In, L1, Z1, Z2>(
   fb: Sink<R1, E1, In1, L1, Z1>,
   f: (a: Z, b: Z1) => Z2
 ): <R, E>(fa: Sink<R, E, In, L, Z>) => Sink<R & R1, E | E1, In & In1, L1, Z2> {
-  return (fa) => crossWithPar_(fa, fb, f)
+  return (fa) => crossWithC_(fa, fb, f)
 }

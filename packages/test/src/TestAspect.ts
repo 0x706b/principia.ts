@@ -136,7 +136,7 @@ export function aroundAll<R, E, A, R1>(
     const aroundAll = (
       specs: Ma.Managed<R0, TestFailure<E0>, ReadonlyArray<S.Spec<R0, TestFailure<E0>, TestSuccess>>>
     ): Ma.Managed<R0 & R1 & R, TestFailure<E | E0>, ReadonlyArray<S.Spec<R0, TestFailure<E0>, TestSuccess>>> =>
-      pipe(before, Ma.bracket(after), Ma.mapError(TF.fail), Ma.crossSecond(specs))
+      pipe(before, Ma.bracket(after), Ma.mapError(TF.fail), Ma.apSecond(specs))
 
     const around = (
       test: I.IO<R0, TestFailure<E0>, TestSuccess>
@@ -161,7 +161,7 @@ export function aspect<R0, E0>(
 }
 
 export function before<R0>(effect: I.IO<R0, never, any>): TestAspect<R0, never> {
-  return new PerTest((test) => I.crossSecond_(effect, test))
+  return new PerTest((test) => I.apSecond_(effect, test))
 }
 
 export function beforeAll<R0, E0>(effect: I.IO<R0, E0, any>): TestAspect<R0, E0> {
@@ -214,7 +214,7 @@ export const nonFlaky: TestAspectAtLeastR<Has<Annotations> & Has<TestConfig>> = 
   pipe(
     TestConfig.repeats,
     I.chain((n) =>
-      I.crossSecond_(
+      I.apSecond_(
         test,
         pipe(
           test,
@@ -263,10 +263,7 @@ function warn<R, E>(
   return I.raceWith_(
     test,
     withLive_(showWarning(suiteLabels, testLabel, duration), I.delay(duration)),
-    (result, fiber) => {
-      debugger
-      return I.crossSecond_(Fi.interrupt(fiber), I.fromExit(result))
-    },
+    (result, fiber) => I.apSecond_(Fi.interrupt(fiber), I.fromExit(result)),
     (_, fiber) => Fi.join(fiber)
   )
 }

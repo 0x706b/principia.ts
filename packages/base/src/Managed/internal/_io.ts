@@ -1,6 +1,6 @@
 export * from '../../IO/combinators/bracket'
 export * from '../../IO/combinators/core-scope'
-export { foreachPar, foreachPar_, foreachUnitPar, foreachUnitPar_ } from '../../IO/combinators/foreach-concurrent'
+export { foreachC, foreachC_, foreachUnitC, foreachUnitC_ } from '../../IO/combinators/foreachC'
 export * from '../../IO/combinators/fulfill'
 export * from '../../IO/combinators/once'
 export * from '../../IO/combinators/race'

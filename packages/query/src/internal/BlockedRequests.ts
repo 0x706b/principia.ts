@@ -111,7 +111,7 @@ export function run_<R>(br: BlockedRequests<R>, cache: Cache): I.IO<R, never, vo
     pipe(
       flatten(br),
       I.foreachUnit((requestsByDataSource) =>
-        I.foreachUnitPar_(requestsByDataSource.toIterable, ([dataSource, sequential]) =>
+        I.foreachUnitC_(requestsByDataSource.toIterable, ([dataSource, sequential]) =>
           I.gen(function* (_) {
             const completedRequests = yield* _(
               dataSource.runAll(

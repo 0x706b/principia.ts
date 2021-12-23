@@ -38,7 +38,7 @@ export function memoize<R, E, A, B>(
                     traceCall(scope.apply, f['$trace'])(f(a)),
                     I.map(([_, b]) => b),
                     fulfill(promise),
-                    I.crossSecond(F.await(promise))
+                    I.apSecond(F.await(promise))
                   ),
                   HM.set_(map, a, promise)
                 ]

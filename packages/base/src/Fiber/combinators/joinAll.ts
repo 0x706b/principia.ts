@@ -1,1 +1,1 @@
-export { joinAll } from '../../IO/combinators/foreach-concurrent'
+export { joinAll } from '../../IO/combinators/foreachC'

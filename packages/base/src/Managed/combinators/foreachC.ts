@@ -5,12 +5,9 @@ import type { Managed } from '../core'
 
 import { traceAs } from '@principia/compile/util'
 
-import { parallel, sequential } from '../../ExecutionStrategy'
+import { sequential } from '../../ExecutionStrategy'
 import { pipe } from '../../function'
-import {
-  foreachPar_ as ioForeachPar_,
-  foreachUnitPar_ as ioForeachUnitPar_
-} from '../../IO/combinators/foreach-concurrent'
+import { foreachC_ as ioForeachC_, foreachUnitC_ as ioForeachUnitC_ } from '../../IO/combinators/foreachC'
 import { tuple } from '../../tuple/core'
 import { mapIO } from '../core'
 import * as I from '../internal/io'
@@ -24,7 +21,7 @@ import { makeManagedReleaseMap, makeManagedReleaseMapPar } from './makeManagedRe
  *
  * @trace 1
  */
-export function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E, B>): Managed<R, E, Chunk<B>> {
+export function foreachC_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E, B>): Managed<R, E, Chunk<B>> {
   return pipe(
     makeManagedReleaseMapPar,
     mapIO((parallelReleaseMap) => {
@@ -34,7 +31,7 @@ export function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R,
         I.gives((r0: unknown) => tuple(r0, parallelReleaseMap))
       )
 
-      return ioForeachPar_(
+      return ioForeachC_(
         as,
         traceAs(f, (a) =>
           pipe(
@@ -59,17 +56,17 @@ export function foreachPar_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R,
  *
  * For a sequential version of this method, see `foreach`.
  *
- * @dataFirst foreachPar_
+ * @dataFirst foreachC_
  * @trace 0
  */
-export function foreachPar<R, E, A, B>(f: (a: A) => Managed<R, E, B>): (as: Iterable<A>) => Managed<R, E, Chunk<B>> {
-  return (as) => foreachPar_(as, f)
+export function foreachC<R, E, A, B>(f: (a: A) => Managed<R, E, B>): (as: Iterable<A>) => Managed<R, E, Chunk<B>> {
+  return (as) => foreachC_(as, f)
 }
 
 /**
  * @trace 1
  */
-export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => Managed<R, E, unknown>): Managed<R, E, void> {
+export function foreachUnitC_<R, E, A>(as: Iterable<A>, f: (a: A) => Managed<R, E, unknown>): Managed<R, E, void> {
   return pipe(
     makeManagedReleaseMapPar,
     mapIO((parallelReleaseMap) => {
@@ -79,7 +76,7 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => Managed<R
         I.gives((r0: unknown) => tuple(r0, parallelReleaseMap))
       )
 
-      return ioForeachUnitPar_(
+      return ioForeachUnitC_(
         as,
         traceAs(f, (a) =>
           pipe(
@@ -99,9 +96,9 @@ export function foreachUnitPar_<R, E, A>(as: Iterable<A>, f: (a: A) => Managed<R
 }
 
 /**
- * @dataFirst foreachUnitPar_
+ * @dataFirst foreachUnitC_
  * @trace 0
  */
-export function foreachUnitPar<R, E, A>(f: (a: A) => Managed<R, E, unknown>): (as: Iterable<A>) => Managed<R, E, void> {
-  return (as) => foreachUnitPar_(as, f)
+export function foreachUnitC<R, E, A>(f: (a: A) => Managed<R, E, unknown>): (as: Iterable<A>) => Managed<R, E, void> {
+  return (as) => foreachUnitC_(as, f)
 }

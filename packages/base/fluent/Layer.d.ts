@@ -130,9 +130,9 @@ declare module '@principia/base/Layer/core' {
      */
     cross<R, E, A, R1, E1, B>(this: Layer<R, E, A>, right: Layer<R1, E1, B>): Layer<R & R1, E | E1, readonly [A, B]>
     /**
-     * @rewrite crossPar_ from "@principia/base/Layer"
+     * @rewrite crossC_ from "@principia/base/Layer"
      */
-    crossPar<R, E, A, R1, E1, B>(this: Layer<R, E, A>, right: Layer<R1, E1, B>): Layer<R & R1, E | E1, readonly [A, B]>
+    crossC<R, E, A, R1, E1, B>(this: Layer<R, E, A>, right: Layer<R1, E1, B>): Layer<R & R1, E | E1, readonly [A, B]>
     /**
      * @rewrite crossWith_ from "@principia/base/Layer"
      */
@@ -142,9 +142,9 @@ declare module '@principia/base/Layer/core' {
       f: (a: A, b: B) => C
     ): Layer<R & R1, E | E1, C>
     /**
-     * @rewrite crossWithPar_ from "@principia/base/Layer"
+     * @rewrite crossWithC_ from "@principia/base/Layer"
      */
-    crossWithPar<R, E, A, R1, E1, B, C>(
+    crossWithC<R, E, A, R1, E1, B, C>(
       this: Layer<R, E, A>,
       fb: Layer<R1, E1, B>,
       f: (a: A, b: B) => C

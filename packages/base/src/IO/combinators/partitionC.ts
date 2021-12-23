@@ -7,7 +7,7 @@ import { traceAs } from '@principia/compile/util'
 import { flow, identity } from '../../function'
 import * as I from '../../Iterable'
 import { either, map_ } from '../core'
-import { foreachPar_ } from './foreach-concurrent'
+import { foreachC_ } from './foreachC'
 
 /**
  * Feeds elements of type `A` to a function `f` that returns an IO.
@@ -16,11 +16,11 @@ import { foreachPar_ } from './foreach-concurrent'
  *
  * @trace 1
  */
-export function partitionPar_<R, E, A, B>(
+export function partitionC_<R, E, A, B>(
   as: Iterable<A>,
   f: (a: A) => IO<R, E, B>
 ): IO<R, never, readonly [Iterable<E>, Iterable<B>]> {
-  return map_(foreachPar_(as, traceAs(f, flow(f, either))), I.partitionMap(identity))
+  return map_(foreachC_(as, traceAs(f, flow(f, either))), I.partitionMap(identity))
 }
 
 /**
@@ -30,8 +30,8 @@ export function partitionPar_<R, E, A, B>(
  *
  * @trace 0
  */
-export function partitionPar<R, E, A, B>(
+export function partitionC<R, E, A, B>(
   f: (a: A) => IO<R, E, B>
 ): (as: Iterable<A>) => IO<R, never, readonly [Iterable<E>, Iterable<B>]> {
-  return (as) => partitionPar_(as, f)
+  return (as) => partitionC_(as, f)
 }

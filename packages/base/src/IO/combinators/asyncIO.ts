@@ -33,7 +33,7 @@ export function asyncIO<R, E, R1, E1, A>(
             I.catchAllCause((c) => F.failCause_(p, c)),
             restore,
             I.fork,
-            I.crossSecond(restore(F.await(p)))
+            I.apSecond(restore(F.await(p)))
           )
         )
       )

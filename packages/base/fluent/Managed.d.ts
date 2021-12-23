@@ -101,30 +101,6 @@ interface ManagedStaticOps {
     release: (a: A, exit: Exit<any, any>) => I.IO<R1, never, unknown>
   ): <R, E>(acquire: I.IO<R, E, A>) => M.Managed<R & R1, E, A>
   /**
-   * @rewriteStatic collectAll from "@principia/base/Managed"
-   */
-  collectAll: typeof M.collectAll
-  /**
-   * @rewriteStatic collectAllPar from "@principia/base/Managed"
-   */
-  collectAllPar: typeof M.collectAllPar
-  /**
-   * @rewriteStatic collectAllParN_ from "@principia/base/Managed"
-   */
-  collectAllParN: typeof M.collectAllParN_
-  /**
-   * @rewriteStatic collectAllUnit from "@principia/base/Managed"
-   */
-  collectAllUnit: typeof M.collectAllUnit
-  /**
-   * @rewriteStatic collectAllUnitPar from "@principia/base/Managed"
-   */
-  collectAllUnitPar: typeof M.collectAllUnitPar
-  /**
-   * @rewriteStatic collectAllUnitParN_ from "@principia/base/Managed"
-   */
-  collectAllUnitParN: typeof M.collectAllUnitParN_
-  /**
    * @rewriteStatic defer from "@principia/base/Managed"
    */
   defer: typeof M.defer
@@ -179,10 +155,10 @@ interface ManagedStaticOps {
     <R, E, A>(as: Iterable<M.Managed<R, E, A>>, f: (a: A) => M): M.Managed<R, E, M>
   }
   /**
-   * @rewriteStatic foldMapPar_ from "@principia/base/Managed"
-   * @dataFirst foldMapPar_
+   * @rewriteStatic foldMapC_ from "@principia/base/Managed"
+   * @dataFirst foldMapC_
    */
-  foldMapPar<M>(M: Monoid<M>): {
+  foldMapC<M>(M: Monoid<M>): {
     /**
      * @trace 0
      */
@@ -191,20 +167,6 @@ interface ManagedStaticOps {
      * @trace 1
      */
     <R, E, A>(as: Iterable<M.Managed<R, E, A>>, f: (a: A) => M): M.Managed<R, E, M>
-  }
-  /**
-   * @rewriteStatic foldMapParN_ from "@principia/base/Managed"
-   * @dataFirst foldMapParN_
-   */
-  foldMapParN<M>(M: Monoid<M>): {
-    /**
-     * @trace 0
-     */
-    <A>(n: number, f: (a: A) => M): <R, E>(as: Iterable<I.IO<R, E, A>>) => I.IO<R, E, M>
-    /**
-     * @trace 1
-     */
-    <R, E, A>(as: Iterable<I.IO<R, E, A>>, n: number, f: (a: A) => M): I.IO<R, E, M>
   }
   /**
    * @rewriteStatic foldl_ from "@principia/base/Managed"
@@ -229,27 +191,16 @@ interface ManagedStaticOps {
    */
   foreach<R, E, A, A1>(as: Iterable<A>, f: (a: A) => M.Managed<R, E, A1>): M.Managed<R, E, Chunk<A1>>
   /**
-   * @rewriteStatic foreachPar from "@principia/base/Managed"
-   * @dataFirst foreachPar_
+   * @rewriteStatic foreachC from "@principia/base/Managed"
+   * @dataFirst foreachC_
    * @trace 0
    */
-  foreachPar<R, E, A, A1>(f: (a: A) => M.Managed<R, E, A1>): (as: Iterable<A>) => M.Managed<R, E, Chunk<A1>>
+  foreachC<R, E, A, A1>(f: (a: A) => M.Managed<R, E, A1>): (as: Iterable<A>) => M.Managed<R, E, Chunk<A1>>
   /**
-   * @rewriteStatic foreachPar_ from "@principia/base/Managed"
+   * @rewriteStatic foreachC_ from "@principia/base/Managed"
    * @trace 1
    */
-  foreachPar<R, E, A, A1>(as: Iterable<A>, f: (a: A) => M.Managed<R, E, A1>): M.Managed<R, E, Chunk<A1>>
-  /**
-   * @rewriteStatic foreachParN from "@principia/base/Managed"
-   * @dataFirst foreachParN_
-   * @trace 1
-   */
-  foreachParN<R, E, A, A1>(n: number, f: (a: A) => M.Managed<R, E, A1>): (as: Iterable<A>) => M.Managed<R, E, Chunk<A1>>
-  /**
-   * @rewriteStatic foreachParN_ from "@principia/base/Managed"
-   * @trace 2
-   */
-  foreachParN<R, E, A, A1>(as: Iterable<A>, n: number, f: (a: A) => M.Managed<R, E, A1>): M.Managed<R, E, Chunk<A1>>
+  foreachC<R, E, A, A1>(as: Iterable<A>, f: (a: A) => M.Managed<R, E, A1>): M.Managed<R, E, Chunk<A1>>
   /**
    * @rewriteStatic foreachUnit_ from "@principia/base/Managed"
    * @trace 1
@@ -262,27 +213,16 @@ interface ManagedStaticOps {
    */
   foreachUnit<R, E, A, A1>(f: (a: A) => M.Managed<R, E, A1>): (as: Iterable<A>) => M.Managed<R, E, void>
   /**
-   * @rewriteStatic foreachUnitPar from "@principia/base/Managed"
-   * @dataFirst foreachUnitPar_
+   * @rewriteStatic foreachUnitC from "@principia/base/Managed"
+   * @dataFirst foreachUnitC_
    * @trace 0
    */
-  foreachUnitPar<R, E, A, A1>(f: (a: A) => M.Managed<R, E, A1>): (as: Iterable<A>) => M.Managed<R, E, void>
+  foreachUnitC<R, E, A, A1>(f: (a: A) => M.Managed<R, E, A1>): (as: Iterable<A>) => M.Managed<R, E, void>
   /**
-   * @rewriteStatic foreachUnitPar_ from "@principia/base/Managed"
+   * @rewriteStatic foreachUnitC_ from "@principia/base/Managed"
    * @trace 1
    */
-  foreachUnitPar<R, E, A, A1>(as: Iterable<A>, f: (a: A) => M.Managed<R, E, A1>): M.Managed<R, E, void>
-  /**
-   * @rewriteStatic foreachUnitParN_ from "@principia/base/Managed"
-   * @trace 2
-   */
-  foreachUnitParN<R, E, A, A1>(as: Iterable<A>, n: number, f: (a: A) => M.Managed<R, E, A1>): M.Managed<R, E, void>
-  /**
-   * @rewriteStatic foreachUnitParN from "@principia/base/Managed"
-   * @dataFirst foreachUnitParN_
-   * @trace 1
-   */
-  foreachUnitParN<R, E, A, A1>(n: number, f: (a: A) => M.Managed<R, E, A1>): (as: Iterable<A>) => M.Managed<R, E, void>
+  foreachUnitC<R, E, A, A1>(as: Iterable<A>, f: (a: A) => M.Managed<R, E, A1>): M.Managed<R, E, void>
   /**
    * @rewriteStatic fromEitherLazy from "@principia/base/Managed"
    */
@@ -338,6 +278,22 @@ interface ManagedStaticOps {
    */
   scope: typeof M.scope
   /**
+   * @rewriteStatic sequenceIterable from "@principia/base/Managed"
+   */
+  sequenceIterable: typeof M.sequenceIterable
+  /**
+   * @rewriteStatic sequenceIterableC from "@principia/base/Managed"
+   */
+  sequenceIterableC: typeof M.sequenceIterableC
+  /**
+   * @rewriteStatic sequenceIterableUnit from "@principia/base/Managed"
+   */
+  sequenceIterableUnit: typeof M.sequenceIterableUnit
+  /**
+   * @rewriteStatic sequenceIterableUnitC from "@principia/base/Managed"
+   */
+  sequenceIterableUnitC: typeof M.sequenceIterableUnitC
+  /**
    * @rewriteStatic succeed from "@principia/base/Managed"
    */
   succeed: typeof M.succeed
@@ -368,13 +324,13 @@ declare module '@principia/base/Managed/core' {
     ['$>']<R, E, A, B>(this: M.Managed<R, E, A>, b: B): M.Managed<R, E, B>
 
     /**
-     * @rewrite crossSecondPar_ from "@principia/base/Managed"
+     * @rewrite apSecondC_ from "@principia/base/Managed"
      * @trace call
      */
     ['&>']<R, E, A, R1, E1, B>(this: M.Managed<R, E, A>, that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, B>
 
     /**
-     * @rewrite crossSecond_ from "@principia/base/Managed"
+     * @rewrite apSecond_ from "@principia/base/Managed"
      * @trace call
      */
     ['*>']<R, E, A, R1, E1, B>(this: M.Managed<R, E, A>, that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, B>
@@ -386,22 +342,22 @@ declare module '@principia/base/Managed/core' {
     ['<$>']<R, E, A, B>(this: M.Managed<R, E, A>, f: (a: A) => B): M.Managed<R, E, B>
 
     /**
-     * @rewrite crossFirstPar_ from "@principia/base/Managed"
+     * @rewrite apFirstC_ from "@principia/base/Managed"
      * @trace call
      */
     ['<&']<R, E, A, R1, E1, B>(this: M.Managed<R, E, A>, that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, B>
 
     /**
-     * @rewrite crossPar_ from "@principia/base/Managed"
+     * @rewrite crossC_ from "@principia/base/Managed"
      * @trace call
      */
-    ['<&>']<R, E, A, R1, E1, B>(
+    ['<&&>']<R, E, A, R1, E1, B>(
       this: M.Managed<R, E, A>,
       that: M.Managed<R1, E1, B>
     ): M.Managed<R & R1, E | E1, readonly [A, B]>
 
     /**
-     * @rewrite crossFirst_ from "@principia/base/Managed"
+     * @rewrite apFirst_ from "@principia/base/Managed"
      * @trace call
      */
     ['<*']<R, E, A, R1, E1, B>(this: M.Managed<R, E, A>, that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, B>
@@ -410,7 +366,7 @@ declare module '@principia/base/Managed/core' {
      * @rewrite cross_ from "@principia/base/Managed"
      * @trace call
      */
-    ['<*>']<R, E, A, R1, E1, B>(
+    ['<**>']<R, E, A, R1, E1, B>(
       this: M.Managed<R, E, A>,
       that: M.Managed<R1, E1, B>
     ): M.Managed<R & R1, E | E1, readonly [A, B]>
@@ -429,6 +385,30 @@ declare module '@principia/base/Managed/core' {
      * @trace call
      */
     andThen<R, E, A, E1, B>(this: M.Managed<R, E, A>, that: M.Managed<A, E1, B>): M.Managed<R, E | E1, B>
+
+    /**
+     * @rewrite apFirst_ from "@principia/base/Managed"
+     * @trace call
+     */
+    apFirst<R, E, A, R1, E1, B>(this: M.Managed<R, E, A>, that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, A>
+
+    /**
+     * @rewrite apFirstC_ from "@principia/base/Managed"
+     * @trace call
+     */
+    apFirstC<R, E, A, R1, E1, B>(this: M.Managed<R, E, A>, that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, A>
+
+    /**
+     * @rewrite apSecond_ from "@principia/base/Managed"
+     * @trace call
+     */
+    apSecond<R, E, A, R1, E1, B>(this: M.Managed<R, E, A>, that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, B>
+
+    /**
+     * @rewrite apSecondC_ from "@principia/base/Managed"
+     * @trace call
+     */
+    apSecondC<R, E, A, R1, E1, B>(this: M.Managed<R, E, A>, that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, B>
 
     /**
      * @rewrite as_ from "@principia/base/Managed"
@@ -557,44 +537,14 @@ declare module '@principia/base/Managed/core' {
     ): M.Managed<R & R1, E | E1, readonly [A, B]>
 
     /**
-     * @rewrite crossFirst_ from "@principia/base/Managed"
-     * @trace call
-     */
-    crossFirst<R, E, A, R1, E1, B>(this: M.Managed<R, E, A>, that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, A>
-
-    /**
-     * @rewrite crossFirstPar_ from "@principia/base/Managed"
-     * @trace call
-     */
-    crossFirstPar<R, E, A, R1, E1, B>(
-      this: M.Managed<R, E, A>,
-      that: M.Managed<R1, E1, B>
-    ): M.Managed<R & R1, E | E1, A>
-
-    /**
      *
-     * @rewrite crossPar_ from "@principia/base/Managed"
+     * @rewrite crossC_ from "@principia/base/Managed"
      * @trace call
      */
-    crossPar<R, E, A, R1, E1, B>(
+    crossC<R, E, A, R1, E1, B>(
       this: M.Managed<R, E, A>,
       that: M.Managed<R1, E1, B>
     ): M.Managed<R & R1, E | E1, readonly [A, B]>
-
-    /**
-     * @rewrite crossSecond_ from "@principia/base/Managed"
-     * @trace call
-     */
-    crossSecond<R, E, A, R1, E1, B>(this: M.Managed<R, E, A>, that: M.Managed<R1, E1, B>): M.Managed<R & R1, E | E1, B>
-
-    /**
-     * @rewrite crossSecondPar_ from "@principia/base/Managed"
-     * @trace call
-     */
-    crossSecondPar<R, E, A, R1, E1, B>(
-      this: M.Managed<R, E, A>,
-      that: M.Managed<R1, E1, B>
-    ): M.Managed<R & R1, E | E1, B>
 
     /**
      * @rewrite crossWith_ from "@principia/base/Managed"
@@ -607,10 +557,10 @@ declare module '@principia/base/Managed/core' {
     ): M.Managed<R & R1, E | E1, C>
 
     /**
-     * @rewrite crossWithPar_ from "@principia/base/Managed"
+     * @rewrite crossWithC_ from "@principia/base/Managed"
      * @trace 1
      */
-    crossWithPar<R, E, A, R1, E1, B, C>(
+    crossWithC<R, E, A, R1, E1, B, C>(
       this: M.Managed<R, E, A>,
       that: M.Managed<R1, E1, B>,
       f: (a: A, b: B) => C

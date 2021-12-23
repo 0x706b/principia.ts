@@ -1,4 +1,4 @@
-export * from '../../IO/combinators/apply-par'
+export * from '../../IO/combinators/apply-concurrent'
 export * from '../../IO/combinators/bracket'
 export * from '../../IO/combinators/bracketExit'
 export * from '../../IO/combinators/core-scope'

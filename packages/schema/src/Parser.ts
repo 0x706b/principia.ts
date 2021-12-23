@@ -668,7 +668,7 @@ export interface FromStructP<P>
 export function fromStruct<P extends Record<string, AnyParser>>(properties: P): FromStructP<P> {
   const label = `{ ${pipe(
     properties,
-    R.foldl([] as string[], (b, a, k) => {
+    R.ifoldl([] as string[], (k, b, a) => {
       b.push(`${k}: ${a.label}`)
       return b
     }),
@@ -758,7 +758,7 @@ export function requireKeys<P extends Record<PropertyKey, unknown>>(properties: 
     _tag: 'RequireKeys',
     label: pipe(
       properties,
-      R.foldl([] as string[], (b, _, k) => {
+      R.ifoldl([] as string[], (k, b, _) => {
         b.push(`${k}: unknown`)
         return b
       }),
@@ -810,7 +810,7 @@ export interface StructP<P>
 export function struct<P extends Record<string, AnyUParser>>(properties: P): StructP<P> {
   const label = `{ ${pipe(
     properties,
-    R.foldl([] as string[], (b, a, k) => {
+    R.ifoldl([] as string[], (k, b, a) => {
       b.push(`${k}: ${a.label}`)
       return b
     }),
@@ -887,7 +887,7 @@ export interface FromPartialP<P>
 export function fromPartial<P extends Record<string, AnyParser>>(properties: P): FromPartialP<P> {
   const label = `{ ${pipe(
     properties,
-    R.foldl([] as string[], (b, a, k) => {
+    R.ifoldl([] as string[], (k, b, a) => {
       b.push(`${k}?: ${a.label}`)
       return b
     }),
@@ -944,7 +944,7 @@ export interface PartialP<P>
 export function partial<P extends Record<PropertyKey, AnyUParser>>(properties: P): PartialP<P> {
   const label = `{ ${pipe(
     properties,
-    R.foldl([] as string[], (b, a, k) => {
+    R.ifoldl([] as string[], (k, b, a) => {
       b.push(`${k}: ${a.label}`)
       return b
     }),
@@ -1757,7 +1757,7 @@ function keyOfEval<P extends AnyParser>(parser: P): Ev.Eval<ReadonlyArray<RoseTr
         d.properties,
         R.traverse(Ev.Applicative)((d: AnyParser) => Ev.defer(() => keyOfEval(d))),
         Ev.map(
-          R.foldl([] as Array<RoseTree<string | number>>, (b, a, k) => {
+          R.ifoldl([] as Array<RoseTree<string | number>>, (k, b, a) => {
             b.push(RT.roseTree(k, a))
             return b
           })
@@ -1770,7 +1770,7 @@ function keyOfEval<P extends AnyParser>(parser: P): Ev.Eval<ReadonlyArray<RoseTr
         d.components,
         A.traverse(Ev.Applicative)((d: AnyParser) => Ev.defer(() => keyOfEval(d))),
         Ev.map(
-          A.foldl([] as Array<RoseTree<string | number>>, (b, a, i) => {
+          A.ifoldl([] as Array<RoseTree<string | number>>, (i, b, a) => {
             b.push(RT.roseTree(i, a))
             return b
           })

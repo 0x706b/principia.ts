@@ -6,7 +6,7 @@ import type { ExecutionStrategy } from '../../ExecutionStrategy'
 import { pipe } from '../../function'
 import * as I from '../core'
 import { withConcurrency, withConcurrencyUnbounded } from './concurrency'
-import { foreachPar } from './foreach-concurrent'
+import { foreachC } from './foreachC'
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` in parallel,
@@ -26,10 +26,10 @@ export function foreachExec_<R, E, A, B>(
       return I.foreach_(as, f)
     }
     case 'Parallel': {
-      return pipe(as, foreachPar(f), withConcurrencyUnbounded)
+      return pipe(as, foreachC(f), withConcurrencyUnbounded)
     }
     case 'ParallelN': {
-      return pipe(as, foreachPar(f), withConcurrency(es.n))
+      return pipe(as, foreachC(f), withConcurrency(es.n))
     }
   }
 }

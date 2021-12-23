@@ -199,11 +199,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
       return null
     } else {
       return pipe(
-        I.sequenceT(
-          this.ifNotNull(closeSubexecutors),
-          this.ifNotNull(runInProgressFinalizers),
-          this.ifNotNull(closeSelf)
-        ),
+        I.tuple(this.ifNotNull(closeSubexecutors), this.ifNotNull(runInProgressFinalizers), this.ifNotNull(closeSelf)),
         I.map(([a, b, c]) => pipe(a, Ex.crossSecond(b), Ex.crossSecond(c))),
         I.uninterruptible
       )
@@ -410,7 +406,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
         return new State.Effect(
           pipe(
             this.executeCloseLastSubstream(closeLast),
-            I.crossSecond(
+            I.apSecond(
               pipe(
                 state.effect,
                 I.catchAllCause((cause) => {
@@ -641,7 +637,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
                 this.input          = null
                 const drainer: URIO<Env, unknown> = pipe(
                   currentChannel.input.awaitRead,
-                  I.crossSecond(
+                  I.apSecond(
                     I.defer(() => {
                       const state = inputExecutor.run()
 

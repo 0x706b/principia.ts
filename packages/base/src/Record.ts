@@ -1,7 +1,7 @@
 import type { Eq } from './Eq'
 import type * as HKT from './HKT'
-import type { PredicateWithIndex } from './Predicate'
-import type { RefinementWithIndex } from './Refinement'
+import type { Predicate, PredicateWithIndex } from './Predicate'
+import type { Refinement, RefinementWithIndex } from './Refinement'
 import type { Show } from './Show'
 
 import * as At from './At'
@@ -74,14 +74,14 @@ export function elem<A>(E: Eq<A>): (a: A) => <N extends string>(r: Readonly<Reco
  * @category Guards
  * @since 1.0.0
  */
-export function every_<N extends string, A, B extends A>(
+export function ievery_<N extends string, A, B extends A>(
   r: ReadonlyRecord<N, A>,
   predicate: RefinementWithIndex<N, A, B>
 ): r is ReadonlyRecord<N, B>
-export function every_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: PredicateWithIndex<N, A>): boolean
-export function every_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: PredicateWithIndex<N, A>): boolean {
+export function ievery_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: PredicateWithIndex<N, A>): boolean
+export function ievery_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: PredicateWithIndex<N, A>): boolean {
   for (const k in r) {
-    if (!predicate(r[k], k)) {
+    if (!predicate(k, r[k])) {
       return false
     }
   }
@@ -92,14 +92,14 @@ export function every_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: 
  * @category Guards
  * @since 1.0.0
  *
- * @dataFirst every_
+ * @dataFirst ievery_
  */
-export function every<N extends string, A, B extends A>(
+export function ievery<N extends string, A, B extends A>(
   predicate: RefinementWithIndex<N, A, B>
 ): (r: ReadonlyRecord<N, A>) => r is ReadonlyRecord<N, B>
-export function every<N extends string, A>(predicate: PredicateWithIndex<N, A>): (r: ReadonlyRecord<N, A>) => boolean
-export function every<N extends string, A>(predicate: PredicateWithIndex<N, A>): (r: ReadonlyRecord<N, A>) => boolean {
-  return (r) => every_(r, predicate)
+export function ievery<N extends string, A>(predicate: PredicateWithIndex<N, A>): (r: ReadonlyRecord<N, A>) => boolean
+export function ievery<N extends string, A>(predicate: PredicateWithIndex<N, A>): (r: ReadonlyRecord<N, A>) => boolean {
+  return (r) => ievery_(r, predicate)
 }
 
 /**
@@ -159,9 +159,9 @@ export function isSubrecord<A>(
  * @category Guards
  * @since 1.0.0
  */
-export function some_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: PredicateWithIndex<N, A>): boolean {
+export function isome_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: PredicateWithIndex<N, A>): boolean {
   for (const k in r) {
-    if (predicate(r[k], k)) {
+    if (predicate(k, r[k])) {
       return true
     }
   }
@@ -172,10 +172,12 @@ export function some_<N extends string, A>(r: ReadonlyRecord<N, A>, predicate: P
  * @category Guards
  * @since 1.0.0
  *
- * @dataFirst some_
+ * @dataFirst isome_
  */
-export function some<N extends string, A>(predicate: PredicateWithIndex<N, A>): (r: Readonly<Record<N, A>>) => boolean {
-  return (r) => some_(r, predicate)
+export function isome<N extends string, A>(
+  predicate: PredicateWithIndex<N, A>
+): (r: Readonly<Record<N, A>>) => boolean {
+  return (r) => isome_(r, predicate)
 }
 
 /*
@@ -209,7 +211,7 @@ export function toRecord<N extends string, A>(r: ReadonlyRecord<N, A>): Record<N
  * @since 1.0.0
  */
 export function toArray<N extends string, A>(r: ReadonlyRecord<N, A>): ReadonlyArray<readonly [N, A]> {
-  return collect_(r, (a, k) => [k, a])
+  return icollect_(r, tuple)
 }
 
 /**
@@ -303,15 +305,15 @@ export function getEq<A>(E: Eq<A>): Eq<ReadonlyRecord<string, A>> {
 
 /**
  */
-export function filter_<N extends string, A, B extends A>(
+export function ifilter_<N extends string, A, B extends A>(
   fa: ReadonlyRecord<N, A>,
   refinement: RefinementWithIndex<N, A, B>
 ): ReadonlyRecord<string, B>
-export function filter_<N extends string, A>(
+export function ifilter_<N extends string, A>(
   fa: ReadonlyRecord<N, A>,
   predicate: PredicateWithIndex<N, A>
 ): ReadonlyRecord<string, A>
-export function filter_<A>(
+export function ifilter_<A>(
   fa: ReadonlyRecord<string, A>,
   predicate: PredicateWithIndex<string, A>
 ): ReadonlyRecord<string, A> {
@@ -320,7 +322,7 @@ export function filter_<A>(
   for (const key in fa) {
     if (_hasOwnProperty.call(fa, key)) {
       const a = fa[key]
-      if (predicate(a, key)) {
+      if (predicate(key, a)) {
         out[key] = a
       } else {
         changed = true
@@ -331,31 +333,57 @@ export function filter_<A>(
 }
 
 /**
- * @dataFirst filter_
+ * @dataFirst ifilter_
  */
-export function filter<N extends string, A, B extends A>(
+export function ifilter<N extends string, A, B extends A>(
   refinement: RefinementWithIndex<N, A, B>
 ): (fa: ReadonlyRecord<N, A>) => ReadonlyRecord<string, B>
-export function filter<N extends string, A>(
+export function ifilter<N extends string, A>(
   predicate: PredicateWithIndex<N, A>
 ): (fa: ReadonlyRecord<N, A>) => ReadonlyRecord<string, A>
-export function filter<A>(
+export function ifilter<A>(
   predicate: PredicateWithIndex<string, A>
 ): (fa: ReadonlyRecord<string, A>) => ReadonlyRecord<string, A> {
+  return (fa) => ifilter_(fa, predicate)
+}
+
+/**
+ */
+export function filter_<N extends string, A, B extends A>(
+  fa: ReadonlyRecord<N, A>,
+  refinement: Refinement<A, B>
+): ReadonlyRecord<string, B>
+export function filter_<N extends string, A>(
+  fa: ReadonlyRecord<N, A>,
+  predicate: Predicate<A>
+): ReadonlyRecord<string, A>
+export function filter_<A>(fa: ReadonlyRecord<string, A>, predicate: Predicate<A>): ReadonlyRecord<string, A> {
+  return ifilter_(fa, (_, a) => predicate(a))
+}
+
+/**
+ */
+export function filter<A, B extends A>(
+  refinement: Refinement<A, B>
+): <N extends string>(fa: ReadonlyRecord<N, A>) => ReadonlyRecord<string, B>
+export function filter<A>(
+  predicate: Predicate<A>
+): <N extends string>(fa: ReadonlyRecord<N, A>) => ReadonlyRecord<string, A>
+export function filter<A>(predicate: Predicate<A>): (fa: ReadonlyRecord<string, A>) => ReadonlyRecord<string, A> {
   return (fa) => filter_(fa, predicate)
 }
 
 /**
  */
-export function filterMap_<N extends string, A, B>(
+export function ifilterMap_<N extends string, A, B>(
   fa: ReadonlyRecord<N, A>,
-  f: (a: A, k: N) => M.Maybe<B>
+  f: (k: N, a: A) => M.Maybe<B>
 ): ReadonlyRecord<string, B> {
   const r  = {} as Record<string, B>
   const ks = keys(fa)
   for (let i = 0; i < ks.length; i++) {
     const key     = ks[i]
-    const optionB = f(fa[key], key)
+    const optionB = f(key, fa[key])
     if (M.isJust(optionB)) {
       r[key] = optionB.value
     }
@@ -364,32 +392,49 @@ export function filterMap_<N extends string, A, B>(
 }
 
 /**
- * @dataFirst filterMap_
+ * @dataFirst ifilterMap_
  */
-export function filterMap<N extends string, A, B>(
-  f: (a: A, k: N) => M.Maybe<B>
+export function ifilterMap<N extends string, A, B>(
+  f: (k: N, a: A) => M.Maybe<B>
 ): (fa: ReadonlyRecord<N, A>) => ReadonlyRecord<string, B> {
+  return (fa) => ifilterMap_(fa, f)
+}
+
+/**
+ */
+export function filterMap_<N extends string, A, B>(
+  fa: ReadonlyRecord<N, A>,
+  f: (a: A) => M.Maybe<B>
+): ReadonlyRecord<string, B> {
+  return ifilterMap_(fa, (_, a) => f(a))
+}
+
+/**
+ */
+export function filterMap<A, B>(
+  f: (a: A) => M.Maybe<B>
+): <N extends string>(fa: Readonly<Record<N, A>>) => ReadonlyRecord<string, B> {
   return (fa) => filterMap_(fa, f)
 }
 
 /**
  */
-export function partition_<N extends string, A, B extends A>(
+export function ipartition_<N extends string, A, B extends A>(
   fa: ReadonlyRecord<N, A>,
   refinement: RefinementWithIndex<N, A, B>
 ): readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, B>]
-export function partition_<N extends string, A>(
+export function ipartition_<N extends string, A>(
   fa: ReadonlyRecord<N, A>,
   predicate: PredicateWithIndex<N, A>
 ): readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, A>]
-export function partition_<A>(fa: ReadonlyRecord<string, A>, predicate: PredicateWithIndex<string, A>) {
+export function ipartition_<A>(fa: ReadonlyRecord<string, A>, predicate: PredicateWithIndex<string, A>) {
   const left  = {} as Record<string, A>
   const right = {} as Record<string, A>
   const ks    = keys(fa)
   for (let i = 0; i < ks.length; i++) {
     const key = ks[i]
     const a   = fa[key]
-    if (predicate(a, key)) {
+    if (predicate(key, a)) {
       right[key] = a
     } else {
       left[key] = a
@@ -399,32 +444,60 @@ export function partition_<A>(fa: ReadonlyRecord<string, A>, predicate: Predicat
 }
 
 /**
- * @dataFirst partition_
+ * @dataFirst ipartition_
  */
-export function partition<N extends string, A, B extends A>(
+export function ipartition<N extends string, A, B extends A>(
   refinement: RefinementWithIndex<N, A, B>
 ): (fa: ReadonlyRecord<N, A>) => readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, B>]
-export function partition<N extends string, A>(
+export function ipartition<N extends string, A>(
   predicate: PredicateWithIndex<N, A>
 ): (fa: ReadonlyRecord<N, A>) => readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, A>]
-export function partition<A>(
+export function ipartition<A>(
   predicate: PredicateWithIndex<string, A>
+): (fa: ReadonlyRecord<string, A>) => readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, A>] {
+  return (fa) => ipartition_(fa, predicate)
+}
+
+/**
+ */
+export function partition_<N extends string, A, B extends A>(
+  fa: ReadonlyRecord<N, A>,
+  refinement: Refinement<A, B>
+): readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, B>]
+export function partition_<N extends string, A>(
+  fa: ReadonlyRecord<N, A>,
+  predicate: Predicate<A>
+): readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, A>]
+export function partition_<A>(fa: ReadonlyRecord<string, A>, predicate: Predicate<A>) {
+  return ipartition_(fa, (_, a) => predicate(a))
+}
+
+/**
+ */
+export function partition<A, B extends A>(
+  refinement: Refinement<A, B>
+): <N extends string>(fa: ReadonlyRecord<N, A>) => readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, B>]
+export function partition<A>(
+  predicate: Predicate<A>
+): <N extends string>(fa: ReadonlyRecord<N, A>) => readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, A>]
+export function partition<A>(
+  predicate: Predicate<A>
 ): (fa: ReadonlyRecord<string, A>) => readonly [ReadonlyRecord<string, A>, ReadonlyRecord<string, A>] {
   return (fa) => partition_(fa, predicate)
 }
 
 /**
  */
-export function partitionMap_<N extends string, A, B, C>(
+export function ipartitionMap_<N extends string, A, B, C>(
   fa: ReadonlyRecord<N, A>,
-  f: (a: A, k: N) => E.Either<B, C>
+  f: (k: N, a: A) => E.Either<B, C>
 ): readonly [ReadonlyRecord<string, B>, ReadonlyRecord<string, C>] {
   const left  = {} as Record<string, B>
   const right = {} as Record<string, C>
   const ks    = keys(fa)
   for (let i = 0; i < ks.length; i++) {
     const key = ks[i]
-    const e   = f(fa[key], key)
+    const e   = f(key, fa[key])
     E.match_(
       e,
       (b) => {
@@ -439,11 +512,28 @@ export function partitionMap_<N extends string, A, B, C>(
 }
 
 /**
- * @dataFirst partitionMap_
+ * @dataFirst ipartitionMap_
  */
-export function partitionMap<N extends string, A, B, C>(
-  f: (a: A, k: N) => E.Either<B, C>
+export function ipartitionMap<N extends string, A, B, C>(
+  f: (k: N, a: A) => E.Either<B, C>
 ): (fa: ReadonlyRecord<N, A>) => readonly [ReadonlyRecord<string, B>, ReadonlyRecord<string, C>] {
+  return (fa) => ipartitionMap_(fa, f)
+}
+
+/**
+ */
+export function partitionMap_<N extends string, A, B, C>(
+  fa: ReadonlyRecord<N, A>,
+  f: (a: A) => E.Either<B, C>
+): readonly [ReadonlyRecord<string, B>, ReadonlyRecord<string, C>] {
+  return ipartitionMap_(fa, (_, a) => f(a))
+}
+
+/**
+ */
+export function partitionMap<A, B, C>(
+  f: (a: A) => E.Either<B, C>
+): <N extends string>(fa: Readonly<Record<N, A>>) => readonly [ReadonlyRecord<string, B>, ReadonlyRecord<string, C>] {
   return (fa) => partitionMap_(fa, f)
 }
 
@@ -455,65 +545,97 @@ export function partitionMap<N extends string, A, B, C>(
 
 /**
  */
-export function foldl_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, b: B, f: (b: B, a: A, k: N) => B): B {
+export function ifoldl_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, b: B, f: (k: N, b: B, a: A) => B): B {
   let out   = b
   const ks  = keys(fa)
   const len = ks.length
   for (let i = 0; i < len; i++) {
     const k = ks[i]
-    out     = f(out, fa[k], k)
+    out     = f(k, out, fa[k])
   }
   return out
 }
 
 /**
- * @dataFirst foldl_
+ * @dataFirst ifoldl_
  */
-export function foldl<N extends string, A, B>(b: B, f: (b: B, a: A, k: N) => B): (fa: ReadonlyRecord<N, A>) => B {
+export function ifoldl<N extends string, A, B>(b: B, f: (k: N, b: B, a: A) => B): (fa: ReadonlyRecord<N, A>) => B {
+  return (fa) => ifoldl_(fa, b, f)
+}
+
+/**
+ */
+export function foldl_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, b: B, f: (b: B, a: A) => B): B {
+  return ifoldl_(fa, b, (_, b, a) => f(b, a))
+}
+
+/**
+ */
+export function foldl<A, B>(b: B, f: (b: B, a: A) => B): <N extends string>(fa: Readonly<Record<N, A>>) => B {
   return (fa) => foldl_(fa, b, f)
 }
 
 /**
  */
-export function foldr_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, b: B, f: (a: A, b: B, k: N) => B): B {
+export function ifoldr_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, b: B, f: (k: N, a: A, b: B) => B): B {
   let out   = b
   const ks  = keys(fa)
   const len = ks.length
   for (let i = len - 1; i >= 0; i--) {
     const k = ks[i]
-    out     = f(fa[k], out, k)
+    out     = f(k, fa[k], out)
   }
   return out
 }
 
 /**
- * @dataFirst foldr_
+ * @dataFirst ifoldr_
  */
-export function foldr<N extends string, A, B>(b: B, f: (a: A, b: B, k: N) => B): (fa: ReadonlyRecord<N, A>) => B {
+export function ifoldr<N extends string, A, B>(b: B, f: (k: N, a: A, b: B) => B): (fa: ReadonlyRecord<N, A>) => B {
+  return (fa) => ifoldr_(fa, b, f)
+}
+
+/**
+ */
+export function foldr_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, b: B, f: (a: A, b: B) => B): B {
+  return ifoldr_(fa, b, (_, a, b) => f(a, b))
+}
+
+/**
+ */
+export function foldr<A, B>(b: B, f: (a: A, b: B) => B): <N extends string>(fa: Readonly<Record<N, A>>) => B {
   return (fa) => foldr_(fa, b, f)
 }
 
-export function foldMap_<M>(
+export function ifoldMap_<M>(
   M: P.Monoid<M>
-): <N extends string, A>(fa: Readonly<Record<N, A>>, f: (a: A, k: N) => M) => M {
+): <N extends string, A>(fa: Readonly<Record<N, A>>, f: (k: N, a: A) => M) => M {
   return (fa, f) => {
     let out   = M.nat
     const ks  = keys(fa)
     const len = ks.length
     for (let i = 0; i < len; i++) {
       const k = ks[i]
-      out     = M.combine_(out, f(fa[k], k))
+      out     = M.combine_(out, f(k, fa[k]))
     }
     return out
   }
 }
 
 /**
- * @dataFirst foldMap_
+ * @dataFirst ifoldMap_
  */
-export function foldMap<M>(
+export function ifoldMap<M>(
   M: P.Monoid<M>
-): <N extends string, A>(f: (a: A, k: N) => M) => (fa: Readonly<Record<N, A>>) => M {
+): <N extends string, A>(f: (k: N, a: A) => M) => (fa: Readonly<Record<N, A>>) => M {
+  return (f) => (fa) => ifoldMap_(M)(fa, f)
+}
+
+export function foldMap_<M>(M: P.Monoid<M>): <N extends string, A>(fa: Readonly<Record<N, A>>, f: (a: A) => M) => M {
+  return (fa, f) => ifoldMap_(M)(fa, (_, a) => f(a))
+}
+
+export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => <N extends string>(fa: Readonly<Record<N, A>>) => M {
   return (f) => (fa) => foldMap_(M)(fa, f)
 }
 
@@ -551,12 +673,12 @@ export function fromFoldable<A, F extends HKT.HKT, C = HKT.None>(S: P.Semigroup<
  * @category FunctorWithIndex
  * @since 1.0.0
  */
-export function map_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, f: (a: A, k: N) => B): ReadonlyRecord<N, B> {
+export function imap_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, f: (k: N, a: A) => B): ReadonlyRecord<N, B> {
   const out  = {} as Record<N, B>
   const keys = Object.keys(fa)
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i] as keyof typeof fa
-    out[k]  = f(fa[k], k)
+    out[k]  = f(k, fa[k])
   }
   return out
 }
@@ -567,9 +689,29 @@ export function map_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, f: (a: A,
  * @category FunctorWithIndex
  * @since 1.0.0
  *
- * @dataFirst map_
+ * @dataFirst imap_
  */
-export function map<N extends string, A, B>(f: (a: A, k: N) => B): (fa: ReadonlyRecord<N, A>) => ReadonlyRecord<N, B> {
+export function imap<N extends string, A, B>(f: (k: N, a: A) => B): (fa: ReadonlyRecord<N, A>) => ReadonlyRecord<N, B> {
+  return (fa) => imap_(fa, f)
+}
+
+/**
+ * Map a record passing the values to the iterating function
+ *
+ * @category Functor
+ * @since 1.0.0
+ */
+export function map_<N extends string, A, B>(fa: ReadonlyRecord<N, A>, f: (a: A) => B): ReadonlyRecord<N, B> {
+  return imap_(fa, (_, a) => f(a))
+}
+
+/**
+ * Map a record passing the values to the iterating function
+ *
+ * @category Functor
+ * @since 1.0.0
+ */
+export function map<A, B>(f: (a: A) => B): <N extends string>(fa: Readonly<Record<N, A>>) => Readonly<Record<N, B>> {
   return (fa) => map_(fa, f)
 }
 
@@ -612,7 +754,7 @@ export function getMonoid<A>(S: P.Semigroup<A>): P.Monoid<ReadonlyRecord<string,
 export function getShow<A>(S: Show<A>): Show<ReadonlyRecord<string, A>> {
   return {
     show: (a) => {
-      const elements = collect_(a, (a, k) => `${JSON.stringify(k)}: ${S.show(a)}`).join(', ')
+      const elements = icollect_(a, (k, a) => `${JSON.stringify(k)}: ${S.show(a)}`).join(', ')
       return elements === '' ? '{}' : `{ ${elements} }`
     }
   }
@@ -626,7 +768,7 @@ export function getShow<A>(S: Show<A>): Show<ReadonlyRecord<string, A>> {
 
 /**
  */
-export const traverse_: P.TraverseIndexFn_<RecordF> = P.implementTraverseWithIndex_<RecordF>()(
+export const itraverse_: P.TraverseIndexFn_<RecordF> = P.implementTraverseWithIndex_<RecordF>()(
   (_) => (G) => (ta, f) => {
     type _ = typeof _
 
@@ -648,7 +790,7 @@ export const traverse_: P.TraverseIndexFn_<RecordF> = P.implementTraverseWithInd
     > = G.pure({}) as any
     for (let i = 0; i < ks.length; i++) {
       const key = ks[i]
-      gr        = G.crossWith_(gr, f(ta[key], key), (r, b) => {
+      gr        = G.crossWith_(gr, f(key, ta[key]), (r, b) => {
         r[key] = b
         return r
       })
@@ -658,9 +800,18 @@ export const traverse_: P.TraverseIndexFn_<RecordF> = P.implementTraverseWithInd
 )
 
 /**
+ * @dataFirst itraverse_
+ */
+export const itraverse: P.MapWithIndexAFn<RecordF> = (G) => (f) => (ta) => itraverse_(G)(ta, f)
+
+/**
+ */
+export const traverse_: P.TraverseFn_<RecordF> = (G) => (ta, f) => itraverse_(G)(ta, (_, a) => f(a))
+
+/**
  * @dataFirst traverse_
  */
-export const traverse: P.MapWithIndexAFn<RecordF> = (G) => (f) => (ta) => traverse_(G)(ta, f)
+export const traverse: P.TraverseFn<RecordF> = (G) => (f) => (ta) => traverse_(G)(ta, f)
 
 /**
  */
@@ -672,19 +823,33 @@ export const sequence: P.SequenceFn<RecordF> = (G) => (ta) => traverse_(G)(ta, (
  * -------------------------------------------------------------------------------------------------
  */
 
-export const wither_: P.WitherWithIndexFn_<RecordF> = (A) => (wa, f) => pipe(traverse_(A)(wa, f), A.map(compact))
+export const iwither_: P.WitherWithIndexFn_<RecordF> = (A) => (wa, f) => pipe(itraverse_(A)(wa, f), A.map(compact))
+
+/**
+ * @dataFirst iwither_
+ */
+export const iwither: P.WitherWithIndexFn<RecordF> = (A) => (f) => (wa) => iwither_(A)(wa, f)
+
+export const wither_: P.WitherFn_<RecordF> = (A) => (wa, f) => iwither_(A)(wa, (_, a) => f(a))
 
 /**
  * @dataFirst wither_
  */
-export const wither: P.WitherWithIndexFn<RecordF> = (A) => (f) => (wa) => wither_(A)(wa, f)
+export const wither: P.WitherFn<RecordF> = (A) => (f) => (wa) => iwither_(A)(wa, (_, a) => f(a))
 
-export const wilt_: P.WiltWithIndexFn_<RecordF> = (A) => (wa, f) => pipe(traverse_(A)(wa, f), A.map(separate))
+export const iwilt_: P.WiltWithIndexFn_<RecordF> = (A) => (wa, f) => pipe(itraverse_(A)(wa, f), A.map(separate))
+
+/**
+ * @dataFirst iwilt_
+ */
+export const iwilt: P.WiltWithIndexFn<RecordF> = (G) => (f) => (wa) => iwilt_(G)(wa, f)
+
+export const wilt_: P.WiltFn_<RecordF> = (A) => (wa, f) => iwilt_(A)(wa, (_, a) => f(a))
 
 /**
  * @dataFirst wilt_
  */
-export const wilt: P.WiltWithIndexFn<RecordF> = (G) => (f) => (wa) => wilt_(G)(wa, f)
+export const wilt: P.WiltFn<RecordF> = (A) => (f) => (wa) => iwilt_(A)(wa, (_, a) => f(a))
 
 /**
  * @category Constructors
@@ -752,20 +917,31 @@ export function size(r: ReadonlyRecord<string, unknown>): number {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function collect_<N extends string, A, B>(r: ReadonlyRecord<N, A>, f: (a: A, k: N) => B): ReadonlyArray<B> {
+export function icollect_<N extends string, A, B>(r: ReadonlyRecord<N, A>, f: (k: N, a: A) => B): ReadonlyArray<B> {
   const out: Array<B> = []
   const ks            = keys(r)
   for (let i = 0; i < ks.length; i++) {
     const key = ks[i]
-    out.push(f(r[key], key))
+    out.push(f(key, r[key]))
   }
   return out
 }
 
 /**
+ * @dataFirst icollect_
+ */
+export function icollect<N extends string, A, B>(f: (k: N, a: A) => B): (r: ReadonlyRecord<N, A>) => ReadonlyArray<B> {
+  return (r) => icollect_(r, f)
+}
+
+export function collect_<N extends string, A, B>(r: ReadonlyRecord<N, A>, f: (a: A) => B): ReadonlyArray<B> {
+  return icollect_(r, (_, a) => f(a))
+}
+
+/**
  * @dataFirst collect_
  */
-export function collect<N extends string, A, B>(f: (a: A, k: N) => B): (r: ReadonlyRecord<N, A>) => ReadonlyArray<B> {
+export function collect<N extends string, A, B>(f: (a: A) => B): (r: ReadonlyRecord<N, A>) => ReadonlyArray<B> {
   return (r) => collect_(r, f)
 }
 
@@ -918,7 +1094,7 @@ export const Functor = P.Functor<RecordF>({
 })
 
 export const FunctorWithIndex = P.FunctorWithIndex<RecordF>({
-  imap_: map_
+  imap_
 })
 
 export const Foldable = P.Foldable<RecordF>({
@@ -928,9 +1104,9 @@ export const Foldable = P.Foldable<RecordF>({
 })
 
 export const FoldableWithIndex = P.FoldableWithIndex<RecordF>({
-  ifoldl_: foldl_,
-  ifoldr_: foldr_,
-  ifoldMap_: foldMap_
+  ifoldl_,
+  ifoldr_,
+  ifoldMap_
 })
 
 export const Filterable = P.Filterable<RecordF>({
@@ -942,11 +1118,11 @@ export const Filterable = P.Filterable<RecordF>({
 })
 
 export const FilterableWithIndex = P.FilterableWithIndex<RecordF>({
-  imap_: map_,
-  ifilter_: filter_,
-  ifilterMap_: filterMap_,
-  ipartition_: partition_,
-  ipartitionMap_: partitionMap_
+  imap_,
+  ifilter_,
+  ifilterMap_,
+  ipartition_,
+  ipartitionMap_
 })
 
 export const Traversable = P.Traversable<RecordF>({
@@ -958,11 +1134,11 @@ export const Traversable = P.Traversable<RecordF>({
 })
 
 export const TraversableWithIndex = P.TraversableWithIndex<RecordF>({
-  imap_: map_,
-  ifoldl_: foldl_,
-  ifoldr_: foldr_,
-  ifoldMap_: foldMap_,
-  itraverse_: traverse_
+  imap_,
+  ifoldl_,
+  ifoldr_,
+  ifoldMap_,
+  itraverse_
 })
 
 export const Witherable = P.Witherable<RecordF>({
@@ -980,15 +1156,15 @@ export const Witherable = P.Witherable<RecordF>({
 })
 
 export const WitherableWithIndex = P.WitherableWithIndex<RecordF>({
-  imap_: map_,
-  ifoldl_: foldl_,
-  ifoldr_: foldr_,
-  ifoldMap_: foldMap_,
-  ifilter_: filter_,
-  ifilterMap_: filterMap_,
-  ipartition_: partition_,
-  ipartitionMap_: partitionMap_,
-  itraverse_: traverse_,
-  iwither_: wither_,
-  iwilt_: wilt_
+  imap_,
+  ifoldl_,
+  ifoldr_,
+  ifoldMap_,
+  ifilter_,
+  ifilterMap_,
+  ipartition_,
+  ipartitionMap_,
+  itraverse_,
+  iwither_,
+  iwilt_
 })

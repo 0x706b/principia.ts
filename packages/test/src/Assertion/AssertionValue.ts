@@ -22,7 +22,7 @@ export class AssertionValue<A> {
       ? pipe(
           this.showA.show(this.value),
           str.lines,
-          A.map((line, i) => (i === 0 ? line : ' '.repeat(offset) + line)),
+          A.imap((i, line) => (i === 0 ? line : ' '.repeat(offset) + line)),
           A.join('\n')
         )
       : Sh.showWithOptions(this.value, { indentationLevel: offset })

@@ -59,7 +59,7 @@ export function endMutation<K>(set: HashSet<K>) {
  * Appy f to each element
  */
 export function forEach_<V>(map: HashSet<V>, f: (v: V, m: HashSet<V>) => void): void {
-  HM.forEach_(map.keyMap, (k, _, m) => {
+  HM.iforEach_(map.keyMap, (k, _, m) => {
     f(k, new HashSet(m))
   })
 }

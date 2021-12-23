@@ -728,68 +728,118 @@ export const run: <A>(sync: Sync<unknown, never, A>) => A = Z.runResult
  * -------------------------------------------------------------------------------------------------
  */
 
-export const foreachUnit_: <A, R, E>(as: Iterable<A>, f: (a: A, i: number) => Sync<R, E, void>) => Sync<R, E, void> =
+export const iforeachUnit_: <A, R, E>(as: Iterable<A>, f: (i: number, a: A) => Sync<R, E, void>) => Sync<R, E, void> =
+  Z.iforeachUnit_
+
+/**
+ * @dataFirst iforeachUnit_
+ */
+export const iforeachUnit: <A, R, E>(
+  f: (i: number, a: A) => Sync<R, E, void>
+) => (as: Iterable<A>) => Sync<R, E, void> = Z.iforeachUnit
+
+export const foreachUnit_: <A, R, E>(as: Iterable<A>, f: (a: A) => Sync<R, E, void>) => Sync<R, E, void> =
   Z.foreachUnit_
 
 /**
  * @dataFirst foreachUnit_
  */
-export const foreachUnit: <A, R, E>(f: (a: A, i: number) => Sync<R, E, void>) => (as: Iterable<A>) => Sync<R, E, void> =
+export const foreachUnit: <A, R, E>(f: (a: A) => Sync<R, E, void>) => (as: Iterable<A>) => Sync<R, E, void> =
   Z.foreachUnit
 
-export const foreach_: <A, R, E, B>(as: Iterable<A>, f: (a: A, i: number) => Sync<R, E, B>) => Sync<R, E, Chunk<B>> =
-  Z.foreach_
+export const iforeach_: <A, R, E, B>(as: Iterable<A>, f: (i: number, a: A) => Sync<R, E, B>) => Sync<R, E, Chunk<B>> =
+  Z.iforeach_
+
+/**
+ * @dataFirst iforeach_
+ */
+export const iforeach: <A, R, E, B>(
+  f: (i: number, a: A) => Sync<R, E, B>
+) => (as: Iterable<A>) => Sync<R, E, Chunk<B>> = Z.iforeach
+
+export const foreach_: <A, R, E, B>(as: Iterable<A>, f: (a: A) => Sync<R, E, B>) => Sync<R, E, Chunk<B>> = Z.foreach_
 
 /**
  * @dataFirst foreach_
  */
-export const foreach: <A, R, E, B>(f: (a: A, i: number) => Sync<R, E, B>) => (as: Iterable<A>) => Sync<R, E, Chunk<B>> =
-  Z.foreach
+export const foreach: <A, R, E, B>(f: (a: A) => Sync<R, E, B>) => (as: Iterable<A>) => Sync<R, E, Chunk<B>> = Z.foreach
 
-export const foreachArrayUnit_: <A, R, E>(
+export const iforeachArrayUnit_: <A, R, E>(
   as: ReadonlyArray<A>,
-  f: (a: A, i: number) => Sync<R, E, void>
-) => Sync<R, E, void> = Z.foreachArrayUnit_
+  f: (i: number, a: A) => Sync<R, E, void>
+) => Sync<R, E, void> = Z.iforeachArrayUnit_
+
+/**
+ * @dataFirst iforeachArrayUnit_
+ */
+export const iforeachArrayUnit: <A, R, E>(
+  f: (i: number, a: A) => Sync<R, E, void>
+) => (as: ReadonlyArray<A>) => Sync<R, E, void> = Z.iforeachArrayUnit
+
+export const foreachArrayUnit_: <A, R, E>(as: ReadonlyArray<A>, f: (a: A) => Sync<R, E, void>) => Sync<R, E, void> =
+  Z.foreachArrayUnit_
 
 /**
  * @dataFirst foreachArrayUnit_
  */
-export const foreachArrayUnit: <A, R, E>(
-  f: (a: A, i: number) => Sync<R, E, void>
-) => (as: ReadonlyArray<A>) => Sync<R, E, void> = Z.foreachArrayUnit
+export const foreachArrayUnit: <A, R, E>(f: (a: A) => Sync<R, E, void>) => (as: ReadonlyArray<A>) => Sync<R, E, void> =
+  Z.foreachArrayUnit
+
+export const iforeachArray_: <A, R, E, B>(
+  as: ReadonlyArray<A>,
+  f: (i: number, a: A) => Sync<R, E, B>
+) => Sync<R, E, ReadonlyArray<B>> = Z.iforeachArray_
+
+/**
+ * @dataFirst iforeachArray_
+ */
+export const iforeachArray: <A, R, E, B>(
+  f: (i: number, a: A) => Sync<R, E, B>
+) => (as: ReadonlyArray<A>) => Sync<R, E, ReadonlyArray<B>> = Z.iforeachArray
 
 export const foreachArray_: <A, R, E, B>(
   as: ReadonlyArray<A>,
-  f: (a: A, i: number) => Sync<R, E, B>
+  f: (a: A) => Sync<R, E, B>
 ) => Sync<R, E, ReadonlyArray<B>> = Z.foreachArray_
 
 /**
  * @dataFirst foreachArray_
  */
 export const foreachArray: <A, R, E, B>(
-  f: (a: A, i: number) => Sync<R, E, B>
+  f: (a: A) => Sync<R, E, B>
 ) => (as: ReadonlyArray<A>) => Sync<R, E, ReadonlyArray<B>> = Z.foreachArray
 
-export const foreachList_: <A, R, E, B>(as: Iterable<A>, f: (a: A, i: number) => Sync<R, E, B>) => Sync<R, E, List<B>> =
+export const iforeachList_: <A, R, E, B>(
+  as: Iterable<A>,
+  f: (i: number, a: A) => Sync<R, E, B>
+) => Sync<R, E, List<B>> = Z.iforeachList_
+
+/**
+ * @dataFirst iforeachList_
+ */
+export const iforeachList: <A, R, E, B>(
+  f: (i: number, a: A) => Sync<R, E, B>
+) => (as: Iterable<A>) => Sync<R, E, List<B>> = Z.iforeachList
+
+export const foreachList_: <A, R, E, B>(as: Iterable<A>, f: (a: A) => Sync<R, E, B>) => Sync<R, E, List<B>> =
   Z.foreachList_
 
 /**
  * @dataFirst foreachList_
  */
-export const foreachList: <A, R, E, B>(
-  f: (a: A, i: number) => Sync<R, E, B>
-) => (as: Iterable<A>) => Sync<R, E, List<B>> = Z.foreachList
+export const foreachList: <A, R, E, B>(f: (a: A) => Sync<R, E, B>) => (as: Iterable<A>) => Sync<R, E, List<B>> =
+  Z.foreachList
 
-export function collectAll<R, E, A>(as: Iterable<Sync<R, E, A>>): Sync<R, E, Chunk<A>> {
-  return foreach_(as, identity)
+export function sequenceIterable<R, E, A>(as: Iterable<Sync<R, E, A>>): Sync<R, E, Chunk<A>> {
+  return iforeach_(as, (_, a) => a)
 }
 
-export function collectAllArray<R, E, A>(as: ReadonlyArray<Sync<R, E, A>>): Sync<R, E, ReadonlyArray<A>> {
-  return foreachArray_(as, identity)
+export function sequenceArray<R, E, A>(as: ReadonlyArray<Sync<R, E, A>>): Sync<R, E, ReadonlyArray<A>> {
+  return iforeachArray_(as, (_, a) => a)
 }
 
-export function collectAllList<R, E, A>(as: Iterable<Sync<R, E, A>>): Sync<R, E, List<A>> {
-  return foreachList_(as, identity)
+export function sequenceList<R, E, A>(as: Iterable<Sync<R, E, A>>): Sync<R, E, List<A>> {
+  return iforeachList_(as, (_, a) => a)
 }
 
 /*

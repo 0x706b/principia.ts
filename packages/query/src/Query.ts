@@ -78,7 +78,7 @@ export function runContext_<R, E, A>(ma: Query<R, E, A>, queryContext: QueryCont
     I.chain(
       matchTag({
         Blocked: ({ blockedRequests, cont }) =>
-          I.crossSecond_(BRS.run_(blockedRequests, queryContext.cache), Cont.runContext_(cont, queryContext)),
+          I.apSecond_(BRS.run_(blockedRequests, queryContext.cache), Cont.runContext_(cont, queryContext)),
         Done: ({ value }) => I.succeed(value),
         Fail: ({ cause }) => I.failCause(cause)
       })
@@ -374,52 +374,45 @@ export function cross<R1, E1, B>(
  * -------------------------------------------
  */
 
-export function apPar_<R, E, A, R1, E1, B>(
+export function apC_<R, E, A, R1, E1, B>(
   fab: Query<R, E, (a: A) => B>,
   fa: Query<R1, E1, A>
 ): Query<R & R1, E | E1, B> {
-  return crossWithPar_(fab, fa, (f, a) => f(a))
+  return crossWithC_(fab, fa, (f, a) => f(a))
 }
 
-export function apPar<R, E, A>(
+export function apC<R, E, A>(
   fa: Query<R, E, A>
 ): <R1, E1, B>(fab: Query<R1, E1, (a: A) => B>) => Query<R & R1, E | E1, B> {
-  return (fab) => apPar_(fab, fa)
+  return (fab) => apC_(fab, fa)
 }
 
-export function crossFirstPar_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, A> {
-  return crossWithPar_(fa, fb, (a, _) => a)
+export function apFirstC_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, A> {
+  return crossWithC_(fa, fb, (a, _) => a)
 }
 
-export function crossFirstPar<R1, E1, B>(
-  fb: Query<R1, E1, B>
-): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, A> {
-  return (fa) => crossFirstPar_(fa, fb)
+export function apFirstC<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, A> {
+  return (fa) => apFirstC_(fa, fb)
 }
 
-export function crossSecondPar_<R, E, A, R1, E1, B>(
-  fa: Query<R, E, A>,
-  fb: Query<R1, E1, B>
-): Query<R & R1, E | E1, B> {
-  return crossWithPar_(fa, fb, (_, b) => b)
+export function apSecondC_<R, E, A, R1, E1, B>(fa: Query<R, E, A>, fb: Query<R1, E1, B>): Query<R & R1, E | E1, B> {
+  return crossWithC_(fa, fb, (_, b) => b)
 }
 
-export function crossSecondPar<R1, E1, B>(
-  fb: Query<R1, E1, B>
-): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, B> {
-  return (fa) => crossSecondPar_(fa, fb)
+export function apSecondC<R1, E1, B>(fb: Query<R1, E1, B>): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, B> {
+  return (fa) => apSecondC_(fa, fb)
 }
 
-export function crossWithPar_<R, E, A, R1, E1, B, C>(
+export function crossWithC_<R, E, A, R1, E1, B, C>(
   fa: Query<R, E, A>,
   fb: Query<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Query<R & R1, E | E1, C> {
   return new Query<R & R1, E | E1, C>(
-    I.crossWithPar_(fa.step, fb.step, (ra, rb) => {
+    I.crossWithC_(fa.step, fb.step, (ra, rb) => {
       return ra._tag === 'Blocked'
         ? rb._tag === 'Blocked'
-          ? Res.blocked(BRS.then(ra.blockedRequests, rb.blockedRequests), Cont.crossWithPar_(ra.cont, rb.cont, f))
+          ? Res.blocked(BRS.then(ra.blockedRequests, rb.blockedRequests), Cont.crossWithC_(ra.cont, rb.cont, f))
           : rb._tag === 'Done'
           ? Res.blocked(
               ra.blockedRequests,
@@ -442,24 +435,24 @@ export function crossWithPar_<R, E, A, R1, E1, B, C>(
   )
 }
 
-export function crossWithPar<A, R1, E1, B, C>(
+export function crossWithC<A, R1, E1, B, C>(
   fb: Query<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: Query<R, E, A>) => Query<R & R1, E | E1, C> {
-  return (fa) => crossWithPar_(fa, fb, f)
+  return (fa) => crossWithC_(fa, fb, f)
 }
 
-export function crossPar_<R, E, A, R1, E1, B>(
+export function crossC_<R, E, A, R1, E1, B>(
   fa: Query<R, E, A>,
   fb: Query<R1, E1, B>
 ): Query<R & R1, E | E1, readonly [A, B]> {
-  return crossWithPar_(fa, fb, tuple)
+  return crossWithC_(fa, fb, tuple)
 }
 
-export function crossPar<R1, E1, B>(
+export function crossC<R1, E1, B>(
   fb: Query<R1, E1, B>
 ): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, readonly [A, B]> {
-  return (fa) => crossPar_(fa, fb)
+  return (fa) => crossC_(fa, fb)
 }
 
 /*
@@ -481,30 +474,30 @@ export function apBatched<R, E, A>(
   return (fab) => apBatched_(fab, fa)
 }
 
-export function crossFirstBatched_<R, E, A, R1, E1, B>(
+export function apFirstBatched_<R, E, A, R1, E1, B>(
   fa: Query<R, E, A>,
   fb: Query<R1, E1, B>
 ): Query<R & R1, E | E1, A> {
   return crossWithBatched_(fa, fb, (a, _) => a)
 }
 
-export function crossFirstBatched<R1, E1, B>(
+export function apFirstBatched<R1, E1, B>(
   fb: Query<R1, E1, B>
 ): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, A> {
-  return (fa) => crossFirstBatched_(fa, fb)
+  return (fa) => apFirstBatched_(fa, fb)
 }
 
-export function crossSecondBatched_<R, E, A, R1, E1, B>(
+export function apSecondBatched_<R, E, A, R1, E1, B>(
   fa: Query<R, E, A>,
   fb: Query<R1, E1, B>
 ): Query<R & R1, E | E1, B> {
   return crossWithBatched_(fa, fb, (_, b) => b)
 }
 
-export function crossSecondBatched<R1, E1, B>(
+export function apSecondBatched<R1, E1, B>(
   fb: Query<R1, E1, B>
 ): <R, E, A>(fa: Query<R, E, A>) => Query<R & R1, E | E1, B> {
-  return (fa) => crossSecondBatched_(fa, fb)
+  return (fa) => apSecondBatched_(fa, fb)
 }
 
 export function crossWithBatched_<R, E, A, R1, E1, B, C>(
@@ -924,7 +917,7 @@ export function partitonParQuery_<A, R, E, B>(
   as: Iterable<A>,
   f: (a: A) => Query<R, E, B>
 ): Query<R, never, readonly [ReadonlyArray<E>, ReadonlyArray<B>]> {
-  return pipe(as, foreachPar(flow(f, either)), map(A.partitionMap(identity)))
+  return pipe(as, foreachC(flow(f, either)), map(A.partitionMap(identity)))
 }
 
 export function partitionParQuery<A, R, E, B>(
@@ -980,17 +973,15 @@ export function foreach<A, R, E, B>(f: (a: A) => Query<R, E, B>): (as: Iterable<
   return (as) => foreach_(as, f)
 }
 
-export function foreachPar_<A, R, E, B>(as: Iterable<A>, f: (a: A) => Query<R, E, B>): Query<R, E, ReadonlyArray<B>> {
+export function foreachC_<A, R, E, B>(as: Iterable<A>, f: (a: A) => Query<R, E, B>): Query<R, E, ReadonlyArray<B>> {
   return pipe(
     as,
-    It.foldl(succeed([]) as Query<R, E, ReadonlyArray<B>>, (b, a) => crossWithPar_(b, f(a), (bs, b) => A.append(b)(bs)))
+    It.foldl(succeed([]) as Query<R, E, ReadonlyArray<B>>, (b, a) => crossWithC_(b, f(a), (bs, b) => A.append(b)(bs)))
   )
 }
 
-export function foreachPar<A, R, E, B>(
-  f: (a: A) => Query<R, E, B>
-): (as: Iterable<A>) => Query<R, E, ReadonlyArray<B>> {
-  return (as) => foreachPar_(as, f)
+export function foreachC<A, R, E, B>(f: (a: A) => Query<R, E, B>): (as: Iterable<A>) => Query<R, E, ReadonlyArray<B>> {
+  return (as) => foreachC_(as, f)
 }
 
 export function foreachBatched_<A, R, E, B>(

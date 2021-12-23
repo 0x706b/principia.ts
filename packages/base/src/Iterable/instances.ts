@@ -12,6 +12,14 @@ import {
   foldl_,
   foldMap_,
   foldr_,
+  ifilter_,
+  ifilterMap_,
+  ifoldl_,
+  ifoldMap_,
+  ifoldr_,
+  imap_,
+  ipartition_,
+  ipartitionMap_,
   map_,
   partition_,
   partitionMap_,
@@ -39,7 +47,7 @@ export const Functor = P.Functor<IterableF>({
 })
 
 export const FunctorWithIndex = P.FunctorWithIndex<IterableF>({
-  imap_: map_
+  imap_
 })
 
 export const SemimonoidalFunctor = P.SemimonoidalFunctor<IterableF>({
@@ -91,11 +99,11 @@ export const Filterable = P.Filterable<IterableF>({
 })
 
 export const FilterableWithIndex = P.FilterableWithIndex<IterableF>({
-  imap_: map_,
-  ifilter_: filter_,
-  ifilterMap_: filterMap_,
-  ipartition_: partition_,
-  ipartitionMap_: partitionMap_
+  imap_,
+  ifilter_,
+  ifilterMap_,
+  ipartition_,
+  ipartitionMap_
 })
 
 export const Foldable = P.Foldable<IterableF>({
@@ -105,9 +113,9 @@ export const Foldable = P.Foldable<IterableF>({
 })
 
 export const FoldableWithIndex = P.FoldableWithIndex<IterableF>({
-  ifoldl_: foldl_,
-  ifoldr_: foldr_,
-  ifoldMap_: foldMap_
+  ifoldl_,
+  ifoldr_,
+  ifoldMap_
 })
 
 export const Traversable = P.Traversable<IterableF>({

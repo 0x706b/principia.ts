@@ -270,36 +270,30 @@ export function crossSecond<Id1, G, B>(
   return (fa) => crossSecond_(fa, fb)
 }
 
-export function crossFirstPar_<Id, E, Id1, G, A, B>(
-  fa: PExit<Id, E, A>,
-  fb: PExit<Id1, G, B>
-): PExit<Id | Id1, E | G, A> {
+export function apFirstC_<Id, E, Id1, G, A, B>(fa: PExit<Id, E, A>, fb: PExit<Id1, G, B>): PExit<Id | Id1, E | G, A> {
   return crossWithCause_(fa, fb, (a, _) => a, C.both)
 }
 
 /**
- * @dataFirst crossFirstPar_
+ * @dataFirst apFirstC_
  */
-export function crossFirstPar<Id1, G, B>(
+export function apFirstC<Id1, G, B>(
   fb: PExit<Id1, G, B>
 ): <Id, E, A>(fa: PExit<Id, E, A>) => PExit<Id | Id1, G | E, A> {
-  return (fa) => crossFirstPar_(fa, fb)
+  return (fa) => apFirstC_(fa, fb)
 }
 
-export function crossSecondPar_<Id, E, A, Id1, G, B>(
-  fa: PExit<Id, E, A>,
-  fb: PExit<Id1, G, B>
-): PExit<Id | Id1, E | G, B> {
+export function apSecondC_<Id, E, A, Id1, G, B>(fa: PExit<Id, E, A>, fb: PExit<Id1, G, B>): PExit<Id | Id1, E | G, B> {
   return crossWithCause_(fa, fb, (_, b) => b, C.both)
 }
 
 /**
- * @dataFirst crossSecondPar_
+ * @dataFirst apSecondC_
  */
-export function crossSecondPar<Id1, G, B>(
+export function apSecondC<Id1, G, B>(
   fb: PExit<Id1, G, B>
 ): <Id, E, A>(fa: PExit<Id, E, A>) => PExit<Id | Id1, G | E, B> {
-  return (fa) => crossSecondPar_(fa, fb)
+  return (fa) => apSecondC_(fa, fb)
 }
 
 export function cross_<Id, E, Id1, G, A, B>(
@@ -318,7 +312,7 @@ export function cross<Id1, G, B>(
   return (fa) => cross_(fa, fb)
 }
 
-export function crossPar_<Id, E, Id1, G, A, B>(
+export function crossC_<Id, E, Id1, G, A, B>(
   fa: PExit<Id, E, A>,
   fb: PExit<Id1, G, B>
 ): PExit<Id | Id1, E | G, readonly [A, B]> {
@@ -326,12 +320,12 @@ export function crossPar_<Id, E, Id1, G, A, B>(
 }
 
 /**
- * @dataFirst crossPar_
+ * @dataFirst crossC_
  */
-export function crossPar<Id1, G, B>(
+export function crossC<Id1, G, B>(
   fb: PExit<Id1, G, B>
 ): <Id, E, A>(fa: PExit<Id, E, A>) => PExit<Id | Id1, G | E, readonly [A, B]> {
-  return (fa) => crossPar_(fa, fb)
+  return (fa) => crossC_(fa, fb)
 }
 
 export function crossWithCause_<Id, E, A, Id1, G, B, C>(
@@ -576,7 +570,7 @@ export function collectAll<Id, E, A>(
   )
 }
 
-export function collectAllPar<Id, E, A>(...exits: ReadonlyArray<PExit<Id, E, A>>): M.Maybe<PExit<Id, E, readonly A[]>> {
+export function collectAllC<Id, E, A>(...exits: ReadonlyArray<PExit<Id, E, A>>): M.Maybe<PExit<Id, E, readonly A[]>> {
   return pipe(
     A.head(exits),
     M.map((head) =>

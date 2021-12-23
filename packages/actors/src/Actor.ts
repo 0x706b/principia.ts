@@ -61,7 +61,7 @@ export class Actor<F1 extends AM.AnyMessage> {
     return pipe(
       F.make<AM.ErrorOf<F1> | ActorSystemException, any>(),
       I.chain((promise) => Q.offer_(this.queue, tuple(fa, promise))),
-      I.crossSecond(I.unit())
+      I.apSecond(I.unit())
     )
   }
 
@@ -153,7 +153,7 @@ export class Stateful<R, S, F1 extends AM.AnyMessage> extends AbstractStateful<R
           payload: fa as any
         })
         const completer = (a: AM.ResponseOf<F1>) =>
-          pipe(Ref.get(s), I.chain(state.set), I.crossSecond(F.succeed_(promise, a)), I.asUnit)
+          pipe(Ref.get(s), I.chain(state.set), I.apSecond(F.succeed_(promise, a)), I.asUnit)
         return yield* _(
           I.matchIO_(
             reciever,

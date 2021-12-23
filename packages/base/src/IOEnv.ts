@@ -5,12 +5,12 @@ import type { Random } from './Random'
 
 import { ClockTag, LiveClock } from './Clock'
 import { ConsoleTag, LiveConsole } from './Console'
-import { defaultRandom, RandomTag } from './Random'
 import * as L from './Layer'
+import { defaultRandom, RandomTag } from './Random'
 
 export type IOEnv = Has<Clock> & Has<Random> & Has<Console>
 
-export const live = L.allPar(
+export const live = L.allC(
   L.succeed(ClockTag)(new LiveClock()),
   L.succeed(RandomTag)(defaultRandom),
   L.succeed(ConsoleTag)(new LiveConsole())

@@ -275,7 +275,7 @@ export class UnsafeHub<A> extends HubInternal<unknown, unknown, never, never, A,
         this.shutdownFlag.set(true)
         return pipe(
           M.releaseAll_(this.releaseMap, Ex.interrupt(fiberId), parallel),
-          I.crossSecond(this.strategy.shutdown),
+          I.apSecond(this.strategy.shutdown),
           I.whenIO(F.succeed_(this.shutdownHook, undefined))
         )
       })
@@ -425,8 +425,8 @@ class UnsafeSubscription<A> extends Q.QueueInternal<never, unknown, unknown, nev
       I.defer(() => {
         this.shutdownFlag.set(true)
         return pipe(
-          I.foreachPar_(_unsafePollAllQueue(this.pollers), F.interruptAs(fiberId)),
-          I.crossSecond(I.succeedLazy(() => this.subscription.unsubscribe())),
+          I.foreachC_(_unsafePollAllQueue(this.pollers), F.interruptAs(fiberId)),
+          I.apSecond(I.succeedLazy(() => this.subscription.unsubscribe())),
           I.whenIO(F.succeed_(this.shutdownHook, undefined))
         )
       })
@@ -1027,9 +1027,7 @@ export class BackPressure<A> extends Strategy<A> {
       I.chainS('fiberId', () => I.fiberId()),
       I.chainS('publishers', () => I.succeedLazy(() => _unsafePollAllQueue(this.publishers))),
       I.tap(({ fiberId, publishers }) =>
-        I.foreachPar_(publishers, ([_, promise, last]) =>
-          last ? I.asUnit(F.interruptAs_(promise, fiberId)) : I.unit()
-        )
+        I.foreachC_(publishers, ([_, promise, last]) => (last ? I.asUnit(F.interruptAs_(promise, fiberId)) : I.unit()))
       ),
       I.asUnit
     )

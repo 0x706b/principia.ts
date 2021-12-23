@@ -55,7 +55,7 @@ export function runner<R, E, R2, E2, F1 extends Msg.AnyMessage>(
         Ma.bracket((ref) =>
           pipe(
             Ref.get(ref),
-            I.chain((hm) => I.foreachUnitPar_(hm, ([_, r]) => pipe(r.stop, I.orHalt)))
+            I.chain((hm) => I.foreachUnitC_(hm, ([_, r]) => pipe(r.stop, I.orHalt)))
           )
         )
       )
@@ -106,7 +106,7 @@ export function runner<R, E, R2, E2, F1 extends Msg.AnyMessage>(
     }
 
     function passivate(now: number, _: C.Chunk<string>, passivateAfter: number) {
-      return I.foreachUnitPar_(_, (path) =>
+      return I.foreachUnitC_(_, (path) =>
         pipe(
           I.gen(function* (_) {
             const map  = yield* _(Ref.get(gatesRef))
@@ -163,7 +163,7 @@ export function runner<R, E, R2, E2, F1 extends Msg.AnyMessage>(
                     listeners: _.listeners
                   }))
                 ),
-                I.crossSecond(postPassivation(path, gatesRef))
+                I.apSecond(postPassivation(path, gatesRef))
               )
           )
         )
@@ -345,7 +345,7 @@ export const distributed = <R, S, F1 extends Msg.AnyMessage>(
             }
 
             yield* _(
-              Ma.foreachUnitPar_(Object.keys(slots), (id) =>
+              Ma.foreachUnitC_(Object.keys(slots), (id) =>
                 Ma.foreachUnit_(slots[id], ([a, p]) => {
                   return Ma.gen(function* (_) {
                     const leaders  = yield* _(Ref.get(leadersRef))

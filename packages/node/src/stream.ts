@@ -178,7 +178,7 @@ export function transform(
       S.fromManaged(managedSink),
       S.chain(([transform, sink]) =>
         S.asyncIO<unknown, TransformError, Byte, R, E | TransformError>((cb) =>
-          I.crossSecond_(
+          I.apSecond_(
             I.succeedLazy(() => {
               transform.on('data', (chunk) => {
                 cb(I.succeed(C.fromBuffer(chunk)))

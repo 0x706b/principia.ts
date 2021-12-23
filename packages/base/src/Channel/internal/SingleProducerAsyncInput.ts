@@ -169,7 +169,7 @@ export class SingleProducerAsyncInput<Err, Elem, Done>
                 pipe(
                   state.notifyProducer,
                   F.succeed<void>(undefined),
-                  T.crossSecond(pipe(F.await(p), T.matchCause(onError, E.match(onDone, onElement))))
+                  T.apSecond(pipe(F.await(p), T.matchCause(onError, E.match(onDone, onElement))))
                 ),
                 new StateEmit(ImmutableQueue.single(p))
               )

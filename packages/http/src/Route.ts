@@ -229,7 +229,7 @@ export function drain<R>(rs: Routes<R, never>) {
       I.succeedLazy(() =>
         A.foldl_(
           routes,
-          <ProcessFn>(({ res: response }) => I.crossSecond_(response.status(Status.NotFound), response.end())),
+          <ProcessFn>(({ res: response }) => I.apSecond_(response.status(Status.NotFound), response.end())),
           (b, a) => (ctx) =>
             I.gen(function* (_) {
               const method = yield* _(ctx.req.method)
@@ -248,7 +248,7 @@ export function drain<R>(rs: Routes<R, never>) {
 
     const { queue } = yield* _(HttpServerTag)
     return yield* _(
-      pipe(isRouterDraining, FR.set(true), I.crossSecond(pipe(Q.take(queue), I.chain(flow(pfn, I.fork)), I.forever)))
+      pipe(isRouterDraining, FR.set(true), I.apSecond(pipe(Q.take(queue), I.chain(flow(pfn, I.fork)), I.forever)))
     )
   })
 }

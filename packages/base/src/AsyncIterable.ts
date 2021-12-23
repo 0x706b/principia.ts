@@ -226,12 +226,12 @@ export function pure<A>(a: A): AsyncIterable<A> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function filter_<A, B extends A>(
+export function ifilter_<A, B extends A>(
   fa: AsyncIterable<A>,
   refinement: P.RefinementWithIndex<number, A, B>
 ): AsyncIterable<B>
-export function filter_<A>(fa: AsyncIterable<A>, predicate: P.PredicateWithIndex<number, A>): AsyncIterable<A>
-export function filter_<A>(fa: AsyncIterable<A>, predicate: P.PredicateWithIndex<number, A>): AsyncIterable<A> {
+export function ifilter_<A>(fa: AsyncIterable<A>, predicate: P.PredicateWithIndex<number, A>): AsyncIterable<A>
+export function ifilter_<A>(fa: AsyncIterable<A>, predicate: P.PredicateWithIndex<number, A>): AsyncIterable<A> {
   return asyncIterable(async function* () {
     let i    = -1
     const it = fa[Symbol.asyncIterator]()
@@ -241,7 +241,7 @@ export function filter_<A>(fa: AsyncIterable<A>, predicate: P.PredicateWithIndex
         break
       }
       i += 1
-      if (predicate(result.value, i)) {
+      if (predicate(i, result.value)) {
         yield result.value
       }
     }
@@ -249,22 +249,37 @@ export function filter_<A>(fa: AsyncIterable<A>, predicate: P.PredicateWithIndex
 }
 
 /**
- * @dataFirst filter_
+ * @dataFirst ifilter_
  */
-export function filter<A, B extends A>(
+export function ifilter<A, B extends A>(
   refinement: P.RefinementWithIndex<number, A, B>
 ): (fa: AsyncIterable<A>) => AsyncIterable<B>
-export function filter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: AsyncIterable<A>) => AsyncIterable<A>
-export function filter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: AsyncIterable<A>) => AsyncIterable<A> {
+export function ifilter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: AsyncIterable<A>) => AsyncIterable<A>
+export function ifilter<A>(predicate: P.PredicateWithIndex<number, A>): (fa: AsyncIterable<A>) => AsyncIterable<A> {
+  return (fa) => ifilter_(fa, predicate)
+}
+
+export function filter_<A, B extends A>(fa: AsyncIterable<A>, refinement: P.Refinement<A, B>): AsyncIterable<B>
+export function filter_<A>(fa: AsyncIterable<A>, predicate: P.Predicate<A>): AsyncIterable<A>
+export function filter_<A>(fa: AsyncIterable<A>, predicate: P.Predicate<A>): AsyncIterable<A> {
+  return ifilter_(fa, (_, a) => predicate(a))
+}
+
+/**
+ * @dataFirst filter_
+ */
+export function filter<A, B extends A>(refinement: P.Refinement<A, B>): (fa: AsyncIterable<A>) => AsyncIterable<B>
+export function filter<A>(predicate: P.Predicate<A>): (fa: AsyncIterable<A>) => AsyncIterable<A>
+export function filter<A>(predicate: P.Predicate<A>): (fa: AsyncIterable<A>) => AsyncIterable<A> {
   return (fa) => filter_(fa, predicate)
 }
 
-export function filterMap_<A, B>(fa: AsyncIterable<A>, f: (a: A, i: number) => Maybe<B>): AsyncIterable<B> {
+export function ifilterMap_<A, B>(fa: AsyncIterable<A>, f: (i: number, a: A) => Maybe<B>): AsyncIterable<B> {
   return asyncIterable(async function* () {
     let i = -1
     for await (const a of fa) {
       i       += 1
-      const ob = f(a, i)
+      const ob = f(i, a)
       if (ob._tag === 'Just') {
         yield ob.value
       }
@@ -273,21 +288,32 @@ export function filterMap_<A, B>(fa: AsyncIterable<A>, f: (a: A, i: number) => M
 }
 
 /**
+ * @dataFirst ifilterMap_
+ */
+export function ifilterMap<A, B>(f: (i: number, a: A) => Maybe<B>): (fa: AsyncIterable<A>) => AsyncIterable<B> {
+  return (fa) => ifilterMap_(fa, f)
+}
+
+export function filterMap_<A, B>(fa: AsyncIterable<A>, f: (a: A) => Maybe<B>): AsyncIterable<B> {
+  return ifilterMap_(fa, (_, a) => f(a))
+}
+
+/**
  * @dataFirst filterMap_
  */
-export function filterMap<A, B>(f: (a: A, i: number) => Maybe<B>): (fa: AsyncIterable<A>) => AsyncIterable<B> {
+export function filterMap<A, B>(f: (a: A) => Maybe<B>): (fa: AsyncIterable<A>) => AsyncIterable<B> {
   return (fa) => filterMap_(fa, f)
 }
 
-export function partition_<A, B extends A>(
+export function ipartition_<A, B extends A>(
   fa: AsyncIterable<A>,
   refinement: P.RefinementWithIndex<number, A, B>
 ): readonly [AsyncIterable<A>, AsyncIterable<B>]
-export function partition_<A>(
+export function ipartition_<A>(
   fa: AsyncIterable<A>,
   predicate: P.PredicateWithIndex<number, A>
 ): readonly [AsyncIterable<A>, AsyncIterable<A>]
-export function partition_<A>(
+export function ipartition_<A>(
   fa: AsyncIterable<A>,
   predicate: P.PredicateWithIndex<number, A>
 ): readonly [AsyncIterable<A>, AsyncIterable<A>] {
@@ -296,7 +322,7 @@ export function partition_<A>(
       let n = -1
       for await (const a of fa) {
         n += 1
-        if (!predicate(a, n)) {
+        if (!predicate(n, a)) {
           yield a
         }
       }
@@ -305,7 +331,7 @@ export function partition_<A>(
       let n = -1
       for await (const a of fa) {
         n += 1
-        if (predicate(a, n)) {
+        if (predicate(n, a)) {
           yield a
         }
       }
@@ -314,27 +340,57 @@ export function partition_<A>(
 }
 
 /**
+ * @dataFirst ipartition_
+ */
+export function ipartition<A, B extends A>(
+  refinement: P.RefinementWithIndex<number, A, B>
+): (fa: AsyncIterable<A>) => readonly [AsyncIterable<A>, AsyncIterable<B>]
+export function ipartition<A>(
+  predicate: P.PredicateWithIndex<number, A>
+): (fa: AsyncIterable<A>) => readonly [AsyncIterable<A>, AsyncIterable<A>]
+export function ipartition<A>(
+  predicate: P.PredicateWithIndex<number, A>
+): (fa: AsyncIterable<A>) => readonly [AsyncIterable<A>, AsyncIterable<A>] {
+  return (fa) => ipartition_(fa, predicate)
+}
+
+export function partition_<A, B extends A>(
+  fa: AsyncIterable<A>,
+  refinement: P.Refinement<A, B>
+): readonly [AsyncIterable<A>, AsyncIterable<B>]
+export function partition_<A>(
+  fa: AsyncIterable<A>,
+  predicate: P.Predicate<A>
+): readonly [AsyncIterable<A>, AsyncIterable<A>]
+export function partition_<A>(
+  fa: AsyncIterable<A>,
+  predicate: P.Predicate<A>
+): readonly [AsyncIterable<A>, AsyncIterable<A>] {
+  return ipartition_(fa, (_, a) => predicate(a))
+}
+
+/**
  * @dataFirst partition_
  */
 export function partition<A, B extends A>(
-  refinement: P.RefinementWithIndex<number, A, B>
+  refinement: P.Refinement<A, B>
 ): (fa: AsyncIterable<A>) => readonly [AsyncIterable<A>, AsyncIterable<B>]
 export function partition<A>(
-  predicate: P.PredicateWithIndex<number, A>
+  predicate: P.Predicate<A>
 ): (fa: AsyncIterable<A>) => readonly [AsyncIterable<A>, AsyncIterable<A>]
 export function partition<A>(
-  predicate: P.PredicateWithIndex<number, A>
+  predicate: P.Predicate<A>
 ): (fa: AsyncIterable<A>) => readonly [AsyncIterable<A>, AsyncIterable<A>] {
   return (fa) => partition_(fa, predicate)
 }
 
-export function partitionMap_<A, B, C>(
+export function ipartitionMap_<A, B, C>(
   fa: AsyncIterable<A>,
-  f: (a: A, i: number) => Either<B, C>
+  f: (i: number, a: A) => Either<B, C>
 ): readonly [AsyncIterable<B>, AsyncIterable<C>] {
   return tuple(
     asyncIterable(async function* () {
-      const mapped = map_(fa, f)
+      const mapped = imap_(fa, f)
       for await (const ea of mapped) {
         if (ea._tag === 'Left') {
           yield ea.left
@@ -342,7 +398,7 @@ export function partitionMap_<A, B, C>(
       }
     }),
     asyncIterable(async function* () {
-      const mapped = map_(fa, f)
+      const mapped = imap_(fa, f)
       for await (const ea of mapped) {
         if (ea._tag === 'Right') {
           yield ea.right
@@ -353,10 +409,26 @@ export function partitionMap_<A, B, C>(
 }
 
 /**
+ * @dataFirst ipartitionMap_
+ */
+export function ipartitionMap<A, B, C>(
+  f: (i: number, a: A) => Either<B, C>
+): (fa: AsyncIterable<A>) => readonly [AsyncIterable<B>, AsyncIterable<C>] {
+  return (fa) => ipartitionMap_(fa, f)
+}
+
+export function partitionMap_<A, B, C>(
+  fa: AsyncIterable<A>,
+  f: (a: A) => Either<B, C>
+): readonly [AsyncIterable<B>, AsyncIterable<C>] {
+  return ipartitionMap_(fa, (_, a) => f(a))
+}
+
+/**
  * @dataFirst partitionMap_
  */
 export function partitionMap<A, B, C>(
-  f: (a: A, i: number) => Either<B, C>
+  f: (a: A) => Either<B, C>
 ): (fa: AsyncIterable<A>) => readonly [AsyncIterable<B>, AsyncIterable<C>] {
   return (fa) => partitionMap_(fa, f)
 }
@@ -367,12 +439,12 @@ export function partitionMap<A, B, C>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: AsyncIterable<A>, f: (a: A, i: number) => M) => Promise<M> {
+export function ifoldMap_<M>(M: P.Monoid<M>): <A>(fa: AsyncIterable<A>, f: (i: number, a: A) => M) => Promise<M> {
   return async (fa, f) => {
     let res = M.nat
     let n   = 0
     for await (const a of fa) {
-      res = M.combine_(res, f(a, n))
+      res = M.combine_(res, f(n, a))
       n++
     }
     return res
@@ -380,27 +452,27 @@ export function foldMap_<M>(M: P.Monoid<M>): <A>(fa: AsyncIterable<A>, f: (a: A,
 }
 
 /**
- * @dataFirst foldMap_
+ * @dataFirst ifoldMap_
  */
-export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A, i: number) => M) => (fa: AsyncIterable<A>) => Promise<M> {
-  return (f) => (fa) => foldMap_(M)(fa, f)
+export function ifoldMap<M>(M: P.Monoid<M>): <A>(f: (i: number, a: A) => M) => (fa: AsyncIterable<A>) => Promise<M> {
+  return (f) => (fa) => ifoldMap_(M)(fa, f)
 }
 
-export async function foldl_<A, B>(fa: AsyncIterable<A>, b: B, f: (b: B, a: A, i: number) => B): Promise<B> {
+export async function ifoldl_<A, B>(fa: AsyncIterable<A>, b: B, f: (i: number, b: B, a: A) => B): Promise<B> {
   let res = b
   let n   = 0
   for await (const a of fa) {
-    res = f(res, a, n)
+    res = f(n, res, a)
     n++
   }
   return res
 }
 
 /**
- * @dataFirst foldl_
+ * @dataFirst ifoldl_
  */
-export function foldl<A, B>(b: B, f: (b: B, a: A, i: number) => B): (fa: AsyncIterable<A>) => Promise<B> {
-  return (fa) => foldl_(fa, b, f)
+export function ifoldl<A, B>(b: B, f: (i: number, b: B, a: A) => B): (fa: AsyncIterable<A>) => Promise<B> {
+  return (fa) => ifoldl_(fa, b, f)
 }
 
 /*
@@ -409,37 +481,59 @@ export function foldl<A, B>(b: B, f: (b: B, a: A, i: number) => B): (fa: AsyncIt
  * -------------------------------------------------------------------------------------------------
  */
 
-export function map_<A, B>(fa: AsyncIterable<A>, f: (a: A, i: number) => B): AsyncIterable<B> {
+export function imap_<A, B>(fa: AsyncIterable<A>, f: (i: number, a: A) => B): AsyncIterable<B> {
   return asyncIterable(async function* () {
     let n = 0
     for await (const a of fa) {
-      yield f(a, n)
+      yield f(n, a)
       n++
     }
   })
+}
+
+/**
+ * @dataFirst imap_
+ */
+export function imap<A, B>(f: (i: number, a: A) => B): (fa: AsyncIterable<A>) => AsyncIterable<B> {
+  return (fa) => imap_(fa, f)
+}
+
+export function map_<A, B>(fa: AsyncIterable<A>, f: (a: A) => B): AsyncIterable<B> {
+  return imap_(fa, (_, a) => f(a))
 }
 
 /**
  * @dataFirst map_
  */
-export function map<A, B>(f: (a: A, i: number) => B): (fa: AsyncIterable<A>) => AsyncIterable<B> {
+export function map<A, B>(f: (a: A) => B): (fa: AsyncIterable<A>) => AsyncIterable<B> {
   return (fa) => map_(fa, f)
 }
 
-export function mapPromise_<A, B>(fa: AsyncIterable<A>, f: (a: A, i: number) => Promise<B>): AsyncIterable<B> {
+export function imapPromise_<A, B>(fa: AsyncIterable<A>, f: (i: number, a: A) => Promise<B>): AsyncIterable<B> {
   return asyncIterable(async function* () {
     let n = 0
     for await (const a of fa) {
-      yield await f(a, n)
+      yield await f(n, a)
       n++
     }
   })
 }
 
 /**
+ * @dataFirst imapPromise_
+ */
+export function imapPromise<A, B>(f: (i: number, a: A) => Promise<B>): (fa: AsyncIterable<A>) => AsyncIterable<B> {
+  return (fa) => imapPromise_(fa, f)
+}
+
+export function mapPromise_<A, B>(fa: AsyncIterable<A>, f: (a: A) => Promise<B>): AsyncIterable<B> {
+  return imapPromise_(fa, (_, a) => f(a))
+}
+
+/**
  * @dataFirst mapPromise_
  */
-export function mapPromise<A, B>(f: (a: A, i: number) => Promise<B>): (fa: AsyncIterable<A>) => AsyncIterable<B> {
+export function mapPromise<A, B>(f: (a: A) => Promise<B>): (fa: AsyncIterable<A>) => AsyncIterable<B> {
   return (fa) => mapPromise_(fa, f)
 }
 
@@ -555,7 +649,7 @@ export const Functor = P.Functor<AsyncIterableF>({
 })
 
 export const FunctorWithIndex = P.FunctorWithIndex<AsyncIterableF>({
-  imap_: map_
+  imap_
 })
 
 export const SemimonoidalFunctor = P.SemimonoidalFunctor<AsyncIterableF>({
@@ -607,9 +701,9 @@ export const Filterable = P.Filterable<AsyncIterableF>({
 })
 
 export const FilterableWithIndex = P.FilterableWithIndex<AsyncIterableF>({
-  imap_: map_,
-  ifilter_: filter_,
-  ifilterMap_: filterMap_,
-  ipartition_: partition_,
-  ipartitionMap_: partitionMap_
+  imap_,
+  ifilter_,
+  ifilterMap_,
+  ipartition_,
+  ipartitionMap_
 })

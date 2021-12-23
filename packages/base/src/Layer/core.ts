@@ -18,7 +18,7 @@ import * as Ex from '../IO/Exit'
 import * as RelMap from '../Managed/ReleaseMap'
 import * as M from '../Maybe'
 import * as Ref from '../Ref'
-import * as RefM from '../RefM'
+import * as RefM from '../SRef'
 import { tuple } from '../tuple/core'
 import { AtomicReference } from '../util/support/AtomicReference'
 import * as I from './internal/io'
@@ -150,10 +150,10 @@ export type LayerInstruction =
   | Fresh<any, any, any>
   | FromManaged<any, any, any>
   | Defer<any, any, any>
-  | CrossWithPar<any, any, any, any, any, any, any>
-  | CrossWithSeq<any, any, any, any, any, any, any>
-  | AllPar<Layer<any, any, any>[]>
-  | AllSeq<Layer<any, any, any>[]>
+  | CrossWithConcurrent<any, any, any, any, any, any, any>
+  | CrossWithSequential<any, any, any, any, any, any, any>
+  | AllConcurrent<Layer<any, any, any>[]>
+  | AllSequential<Layer<any, any, any>[]>
 
 export class Fold<R, E, A, R1, E1, A1, E2, A2> extends Layer<R & R1, E1 | E2, A1 | A2> {
   readonly _tag = LayerTag.Fold
@@ -223,7 +223,7 @@ export type MergeA<Ls extends Layer<any, any, any>[]> = UnionToIntersection<
   }[number]
 >
 
-export class CrossWithPar<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
+export class CrossWithConcurrent<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
   readonly _tag = LayerTag.CrossWithPar
 
   constructor(readonly layer: Layer<R, E, A>, readonly that: Layer<R1, E1, B>, readonly f: (a: A, b: B) => C) {
@@ -231,7 +231,7 @@ export class CrossWithPar<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C
   }
 }
 
-export class AllPar<Ls extends Layer<any, any, any>[]> extends Layer<MergeR<Ls>, MergeE<Ls>, MergeA<Ls>> {
+export class AllConcurrent<Ls extends Layer<any, any, any>[]> extends Layer<MergeR<Ls>, MergeE<Ls>, MergeA<Ls>> {
   readonly _tag = LayerTag.AllPar
 
   constructor(readonly layers: Ls & { 0: Layer<any, any, any> }) {
@@ -239,7 +239,7 @@ export class AllPar<Ls extends Layer<any, any, any>[]> extends Layer<MergeR<Ls>,
   }
 }
 
-export class CrossWithSeq<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
+export class CrossWithSequential<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C> {
   readonly _tag = LayerTag.CrossWithSeq
 
   constructor(readonly layer: Layer<R, E, A>, readonly that: Layer<R1, E1, B>, readonly f: (a: A, b: B) => C) {
@@ -247,7 +247,7 @@ export class CrossWithSeq<R, E, A, R1, E1, B, C> extends Layer<R & R1, E | E1, C
   }
 }
 
-export class AllSeq<Ls extends Layer<any, any, any>[]> extends Layer<MergeR<Ls>, MergeE<Ls>, MergeA<Ls>> {
+export class AllSequential<Ls extends Layer<any, any, any>[]> extends Layer<MergeR<Ls>, MergeE<Ls>, MergeA<Ls>> {
   readonly _tag = LayerTag.AllSeq
 
   constructor(readonly layers: Ls & { 0: Layer<any, any, any> }) {
@@ -275,7 +275,7 @@ function scope<R, E, A>(l: Layer<R, E, A>): Managed<unknown, never, (_: MemoMap)
       return Ma.succeed((memo) => Ma.chain_(memo.getOrElseMemoize(l.layer), (a) => memo.getOrElseMemoize(l.f(a))))
     }
     case LayerTag.CrossWithPar: {
-      return Ma.succeed((memo) => Ma.crossWithPar_(memo.getOrElseMemoize(l.layer), memo.getOrElseMemoize(l.that), l.f))
+      return Ma.succeed((memo) => Ma.crossWithC_(memo.getOrElseMemoize(l.layer), memo.getOrElseMemoize(l.that), l.f))
     }
     case LayerTag.CrossWithSeq: {
       return Ma.succeed((memo) => Ma.crossWith_(memo.getOrElseMemoize(l.layer), memo.getOrElseMemoize(l.that), l.f))
@@ -283,7 +283,7 @@ function scope<R, E, A>(l: Layer<R, E, A>): Managed<unknown, never, (_: MemoMap)
     case LayerTag.AllPar: {
       return Ma.succeed((memo) => {
         return pipe(
-          Ma.foreachPar_(l.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
+          Ma.foreachC_(l.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
           Ma.map(Ch.foldl({} as any, (b, a) => ({ ...b, ...a })))
         )
       })
@@ -565,7 +565,7 @@ export function crossWith_<R, E, A, R1, E1, B, C>(
   fb: Layer<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Layer<R & R1, E | E1, C> {
-  return new CrossWithSeq(fa, fb, f)
+  return new CrossWithSequential(fa, fb, f)
 }
 
 export function crossWith<A, R1, E1, B, C>(
@@ -579,7 +579,7 @@ export function cross_<R, E, A, R1, E1, B>(
   fa: Layer<R, E, A>,
   fb: Layer<R1, E1, B>
 ): Layer<R & R1, E | E1, readonly [A, B]> {
-  return new CrossWithSeq(fa, fb, tuple)
+  return new CrossWithSequential(fa, fb, tuple)
 }
 
 export function cross<R1, E1, B>(
@@ -604,42 +604,42 @@ export function ap<R1, E1, A>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function crossWithPar_<R, E, A, R1, E1, B, C>(
+export function crossWithC_<R, E, A, R1, E1, B, C>(
   fa: Layer<R, E, A>,
   fb: Layer<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Layer<R & R1, E | E1, C> {
-  return new CrossWithPar(fa, fb, f)
+  return new CrossWithConcurrent(fa, fb, f)
 }
 
-export function crossWithPar<A, R1, E1, B, C>(
+export function crossWithC<A, R1, E1, B, C>(
   fb: Layer<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: Layer<R, E, A>) => Layer<R & R1, E | E1, C> {
-  return (fa) => crossWithPar_(fa, fb, f)
+  return (fa) => crossWithC_(fa, fb, f)
 }
 
-export function crossPar_<R, E, A, R1, E1, B>(
+export function crossC_<R, E, A, R1, E1, B>(
   fa: Layer<R, E, A>,
   fb: Layer<R1, E1, B>
 ): Layer<R & R1, E | E1, readonly [A, B]> {
-  return crossWithPar_(fa, fb, tuple)
+  return crossWithC_(fa, fb, tuple)
 }
 
-export function crossPar<R1, E1, B>(
+export function crossC<R1, E1, B>(
   right: Layer<R1, E1, B>
 ): <R, E, A>(left: Layer<R, E, A>) => Layer<R & R1, E | E1, readonly [A, B]> {
   return (left) => cross_(left, right)
 }
 
-export function apPar_<R, E, A, R1, E1, B>(
+export function apC_<R, E, A, R1, E1, B>(
   fab: Layer<R, E, (a: A) => B>,
   fa: Layer<R1, E1, A>
 ): Layer<R & R1, E | E1, B> {
   return crossWith_(fab, fa, (f, a) => f(a))
 }
 
-export function apPar<R1, E1, A>(
+export function apC<R1, E1, A>(
   fa: Layer<R1, E1, A>
 ): <R, E, B>(fab: Layer<R, E, (a: A) => B>) => Layer<R & R1, E | E1, B> {
   return (fab) => ap_(fab, fa)
@@ -714,13 +714,13 @@ export function flatten<R, E, R1, E1, A>(mma: Layer<R, E, Layer<R1, E1, A>>): La
 export function all<Ls extends Layer<any, any, any>[]>(
   ...ls: Ls & { 0: Layer<any, any, any> }
 ): Layer<MergeR<Ls>, MergeE<Ls>, MergeA<Ls>> {
-  return new AllSeq(ls)
+  return new AllSequential(ls)
 }
 
-export function allPar<Ls extends Layer<any, any, any>[]>(
+export function allC<Ls extends Layer<any, any, any>[]>(
   ...ls: Ls & { 0: Layer<any, any, any> }
 ): Layer<MergeR<Ls>, MergeE<Ls>, MergeA<Ls>> {
-  return new AllPar(ls)
+  return new AllConcurrent(ls)
 }
 
 /**
@@ -731,7 +731,7 @@ export function and_<R, E, A, R2, E2, A2>(
   left: Layer<R, E, A>,
   right: Layer<R2, E2, A2>
 ): Layer<R & R2, E | E2, A & A2> {
-  return new CrossWithPar(left, right, (l, r) => ({ ...l, ...r }))
+  return new CrossWithConcurrent(left, right, (l, r) => ({ ...l, ...r }))
 }
 
 /**
@@ -752,7 +752,7 @@ export function andSeq_<R, E, A, R1, E1, A1>(
   layer: Layer<R, E, A>,
   that: Layer<R1, E1, A1>
 ): Layer<R & R1, E | E1, A & A1> {
-  return new CrossWithSeq(layer, that, (l, r) => ({ ...l, ...r }))
+  return new CrossWithSequential(layer, that, (l, r) => ({ ...l, ...r }))
 }
 
 /**
@@ -995,7 +995,7 @@ export function update<T>(
  */
 
 export class MemoMap {
-  constructor(readonly ref: RefM.URefM<HM.HashMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>>) {}
+  constructor(readonly ref: RefM.USRef<HM.HashMap<PropertyKey, readonly [I.FIO<any, any>, Finalizer]>>) {}
 
   /**
    * Checks the memo map to see if a dependency exists. If it is, immediately

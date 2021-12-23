@@ -17,7 +17,7 @@ export function findP<A>(predicate: PredicateWithIndex<number, A>): Pr.Prism<Rea
     getOrModify: (as) =>
       pipe(
         as,
-        A.find(predicate),
+        A.ifind(predicate),
         M.match(() => E.left(as), E.right)
       )
   })

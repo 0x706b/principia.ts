@@ -49,7 +49,7 @@ export function FilterableWithIndex<F>(F: FilterableWithIndexMin<HKT.F<F>>): Fil
     ifilter_ = <K, Q, W, X, I, S, R, E, A>(
       fa: HKT.FK<F, K, Q, W, X, I, S, R, E, A>,
       predicate: PredicateWithIndex<K, A>
-    ): HKT.FK<F, K, Q, W, X, I, S, R, E, A> => F.ifilterMap_(fa, (a, i) => (predicate(a, i) ? O.just(a) : O.nothing()))
+    ): HKT.FK<F, K, Q, W, X, I, S, R, E, A> => F.ifilterMap_(fa, (i, a) => (predicate(i, a) ? O.just(a) : O.nothing()))
   }
 
   if ('ipartition_' in F) {
@@ -59,7 +59,7 @@ export function FilterableWithIndex<F>(F: FilterableWithIndexMin<HKT.F<F>>): Fil
       fa: HKT.FK<F, K, Q, W, X, I, S, R, E, A>,
       predicate: PredicateWithIndex<K, A>
     ): readonly [HKT.FK<F, K, Q, W, X, I, S, R, E, A>, HKT.FK<F, K, Q, W, X, I, S, R, E, A>] =>
-      ipartitionMap_(fa, (a, i) => (predicate(a, i) ? E.right(a) : E.left(a)))
+      ipartitionMap_(fa, (i, a) => (predicate(i, a) ? E.right(a) : E.left(a)))
   }
 
   return HKT.instance<FilterableWithIndex<HKT.F<F>>>({
@@ -110,7 +110,7 @@ export interface FilterWithIndexFn_<F extends HKT.HKT, C = HKT.None> {
 }
 
 export interface FilterMapWithIndexFn<F extends HKT.HKT, C = HKT.None> {
-  <K, A, B>(f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<C, 'K', K>>) => Maybe<B>): <Q, W, X, I, S, R, E>(
+  <K, A, B>(f: (i: HKT.IndexFor<F, HKT.OrFix<C, 'K', K>>, a: A) => Maybe<B>): <Q, W, X, I, S, R, E>(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
   ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
 }
@@ -118,12 +118,12 @@ export interface FilterMapWithIndexFn<F extends HKT.HKT, C = HKT.None> {
 export interface FilterMapWithIndexFn_<F extends HKT.HKT, C = HKT.None> {
   <K, Q, W, X, I, S, R, E, A, B>(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
-    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<C, 'K', K>>) => Maybe<B>
+    f: (i: HKT.IndexFor<F, HKT.OrFix<C, 'K', K>>, a: A) => Maybe<B>
   ): HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
 }
 
 export interface PartitionMapWithIndexFn<F extends HKT.HKT, C = HKT.None> {
-  <K, A, B, B1>(f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<C, 'K', K>>) => Either<B, B1>): <Q, W, X, I, S, R, E>(
+  <K, A, B, B1>(f: (i: HKT.IndexFor<F, HKT.OrFix<C, 'K', K>>, a: A) => Either<B, B1>): <Q, W, X, I, S, R, E>(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
   ) => readonly [HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>, HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B1>]
 }
@@ -131,7 +131,7 @@ export interface PartitionMapWithIndexFn<F extends HKT.HKT, C = HKT.None> {
 export interface PartitionMapWithIndexFn_<F extends HKT.HKT, C = HKT.None> {
   <K, Q, W, X, I, S, R, E, A, B, B1>(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
-    f: (a: A, i: HKT.IndexFor<F, HKT.OrFix<C, 'K', K>>) => Either<B, B1>
+    f: (i: HKT.IndexFor<F, HKT.OrFix<C, 'K', K>>, a: A) => Either<B, B1>
   ): readonly [HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>, HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B1>]
 }
 

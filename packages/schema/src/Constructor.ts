@@ -156,7 +156,7 @@ export const Schemable: S.Schemable<ConstructorSURI> = {
     }
     const label = `{ ${pipe(
       properties,
-      R.foldl([] as string[], (b, a, k) => {
+      R.ifoldl([] as string[], (k, b, a) => {
         if (k in optional) {
           b.push(`${k}?: ${optional[k].label}`)
         } else {

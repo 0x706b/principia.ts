@@ -52,7 +52,7 @@ export class TestConsole implements Console {
             data.debugOutput
           )
       ),
-      I.crossSecond(I.whenIO_(this.live.provide(Console.put(...input)), FR.get(this.debugState)))
+      I.apSecond(I.whenIO_(this.live.provide(Console.put(...input)), FR.get(this.debugState)))
     )
   }
   putStrLn(line: string): UIO<void> {
@@ -61,7 +61,7 @@ export class TestConsole implements Console {
       Ref.update(
         (data) => new ConsoleData(data.input, Li.append_(data.output, `${line}\n`), data.errOutput, data.debugOutput)
       ),
-      I.crossSecond(I.whenIO_(this.live.provide(Console.putStrLn(line)), FR.get(this.debugState)))
+      I.apSecond(I.whenIO_(this.live.provide(Console.putStrLn(line)), FR.get(this.debugState)))
     )
   }
   putStrLnErr(line: string): UIO<void> {
@@ -70,7 +70,7 @@ export class TestConsole implements Console {
       Ref.update(
         (data) => new ConsoleData(data.input, data.output, Li.append_(data.errOutput, `${line}\n`), data.debugOutput)
       ),
-      I.crossSecond(I.whenIO_(this.live.provide(Console.putStrLnErr(line)), FR.get(this.debugState)))
+      I.apSecond(I.whenIO_(this.live.provide(Console.putStrLnErr(line)), FR.get(this.debugState)))
     )
   }
   putStrLnDebug(line: string): UIO<void> {
@@ -79,7 +79,7 @@ export class TestConsole implements Console {
       Ref.update(
         (data) => new ConsoleData(data.input, data.output, data.errOutput, Li.append_(data.debugOutput, `${line}\n`))
       ),
-      I.crossSecond(I.whenIO_(this.live.provide(Console.putStrLnDebug(line)), FR.get(this.debugState)))
+      I.apSecond(I.whenIO_(this.live.provide(Console.putStrLnDebug(line)), FR.get(this.debugState)))
     )
   }
   constructor(readonly consoleState: URef<ConsoleData>, readonly live: Live, readonly debugState: UFiberRef<boolean>) {}

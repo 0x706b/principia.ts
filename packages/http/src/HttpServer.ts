@@ -8,7 +8,7 @@ import * as L from '@principia/base/Layer'
 import * as M from '@principia/base/Managed'
 import * as Q from '@principia/base/Queue'
 import * as Ref from '@principia/base/Ref'
-import * as RefM from '@principia/base/RefM'
+import * as SRef from '@principia/base/SRef'
 import * as http from 'http'
 
 import { HttpConnection } from './HttpConnection'
@@ -43,7 +43,7 @@ export function HttpServer({ host, port }: HttpServerConfig): L.Layer<unknown, n
               runtime.run_(
                 I.gen(function* (_) {
                   const reqRef = yield* _(Ref.make(req))
-                  const resRef = yield* _(RefM.make(res))
+                  const resRef = yield* _(SRef.make(res))
                   yield* _(Q.offer_(queue, new HttpConnection(reqRef, resRef)))
                 })
               )
@@ -81,7 +81,7 @@ export function HttpServer({ host, port }: HttpServerConfig): L.Layer<unknown, n
               }
             })
           }),
-          I.crossSecond(Q.shutdown(queue))
+          I.apSecond(Q.shutdown(queue))
         )
       ),
       M.map(HttpServerTag.of)

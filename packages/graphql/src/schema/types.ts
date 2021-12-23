@@ -48,7 +48,7 @@ export class GQLField<Root, Args, Ctx, R, E, A> {
   ) {
     this.ast = createUnnamedFieldDefinitionNode({
       arguments: args
-        ? R.foldl_(args, A.empty(), (b, a: GQLInputField<any>, k) => [
+        ? R.ifoldl_(args, A.empty(), (k, b, a: GQLInputField<any>) => [
             ...b,
             createInputValueDefinitionNode({
               defaultValue: a.config.defaultValue,
@@ -139,7 +139,7 @@ export class GQLObject<N extends string, Root, Ctx, R, E, A> {
       name,
       fields: [
         ...A.chain_(interfaces, (a) => a.ast.fields || []),
-        ...R.foldl_(fields, [] as ReadonlyArray<FieldDefinitionNode>, (b, a: NonNullable<AnyOutput<any>>, k) =>
+        ...R.ifoldl_(fields, [] as ReadonlyArray<FieldDefinitionNode>, (k, b, a: NonNullable<AnyOutput<any>>) =>
           A.append_(b, addNameToUnnamedFieldDefinitionNode(a.ast, k))
         )
       ],
@@ -147,7 +147,7 @@ export class GQLObject<N extends string, Root, Ctx, R, E, A> {
     })
     this.resolvers = {
       ...A.foldl_(interfaces || [], {}, (b, a) => ({ ...b, ...a.resolvers })),
-      ...R.foldl_(fields, {}, (b, a: AnyOutput<Ctx>, k) => {
+      ...R.ifoldl_(fields, {}, (k, b, a: AnyOutput<Ctx>) => {
         if (a._tag === 'GQLField') {
           return { ...b, [k]: a.resolve }
         }
@@ -205,11 +205,11 @@ export class GQLInterface<N extends string, Ctx, R, E, A> {
   constructor(readonly name: N, readonly fields: ReadonlyRecord<string, any>, readonly resolveType: any) {
     this.ast = createInterfaceTypeDefinitionNode({
       name,
-      fields: R.foldl_(fields, [] as ReadonlyArray<FieldDefinitionNode>, (b, a: NonNullable<AnyOutput<Ctx>>, k) =>
+      fields: R.ifoldl_(fields, [] as ReadonlyArray<FieldDefinitionNode>, (k, b, a: NonNullable<AnyOutput<Ctx>>) =>
         A.append_(b, addNameToUnnamedFieldDefinitionNode(a.ast, k))
       )
     })
-    this.resolvers = R.foldl_(fields, {}, (b, a: AnyOutput<Ctx>, k) => {
+    this.resolvers = R.ifoldl_(fields, {}, (k, b, a: AnyOutput<Ctx>) => {
       if (a._tag === 'GQLField') {
         return { ...b, [k]: a.resolve }
       }
@@ -228,10 +228,10 @@ export class GQLSubscription<R, A> {
   readonly resolvers: ReadonlyRecord<string, Subscription<any, any, any, any, any, any, any, any>>
 
   constructor(readonly fields: ReadonlyRecord<string, GQLSubscriptionField<any, any>>) {
-    this.ast = R.foldl_(
+    this.ast = R.ifoldl_(
       fields,
       [] as ReadonlyArray<FieldDefinitionNode>,
-      (b, a: NonNullable<GQLSubscriptionField<any, any>>, k) =>
+      (k, b, a: NonNullable<GQLSubscriptionField<any, any>>) =>
         A.append_(b, addNameToUnnamedFieldDefinitionNode(a.ast, k))
     )
     this.resolvers = R.map_(fields, (f) => f.resolve)
@@ -256,7 +256,7 @@ export class GQLSubscriptionField<R, A> {
       nullable: type.config.nullable,
       typeName: getTypeName(type.ast),
       arguments: args
-        ? R.foldl_(args, A.empty(), (b, a, k) => [
+        ? R.ifoldl_(args, A.empty(), (k, b, a) => [
             ...b,
             createInputValueDefinitionNode({
               defaultValue: a.config.defaultValue,
@@ -282,7 +282,7 @@ export class GQLExtendObject<O extends GQLObject<any, any, any, any, any, any>, 
   readonly ast: ReadonlyArray<FieldDefinitionNode>
   readonly resolvers: ReadonlyRecord<string, any>
   constructor(readonly object: O, readonly fields: Record<string, any>) {
-    this.ast = R.foldl_(fields as any, A.empty(), (acc, v: NonNullable<AnyOutput<any>>, k) => {
+    this.ast = R.ifoldl_(fields as any, A.empty(), (k, acc, v: NonNullable<AnyOutput<any>>) => {
       switch (v._tag) {
         /*
          * case "RecursiveType":
@@ -308,7 +308,7 @@ export class GQLExtendObject<O extends GQLObject<any, any, any, any, any, any>, 
       }
     })
 
-    this.resolvers = R.foldl_(fields as any, {}, (acc, v: AnyOutput<any>, k) => {
+    this.resolvers = R.ifoldl_(fields as any, {}, (k, acc, v: AnyOutput<any>) => {
       if (v._tag === 'GQLField') {
         return { ...acc, [k]: v.resolve }
       }
@@ -332,7 +332,7 @@ export class GQLInputObject<N extends string, A> {
 
   constructor(readonly name: N, readonly fields: { [K in keyof A]: GQLInputField<A[K]> }) {
     this.ast = createInputObjectTypeDefinitionNode({
-      fields: R.foldl_(fields, [] as InputValueDefinitionNode[], (acc, v, k) => {
+      fields: R.ifoldl_(fields, [] as InputValueDefinitionNode[], (k, acc, v) => {
         return [
           ...acc,
           createInputValueDefinitionNode({
@@ -381,29 +381,26 @@ export type InputRecord = Record<string, GQLInputField<any>>
 
 type Widen<T> = T extends string ? string : T extends number ? number : T extends boolean ? boolean : T
 
-export type FieldRecord<Root, Ctx, F> = Partial<
-  {
-    [K in keyof Root]: Root[K] extends { [x: string]: any }
-      ?
-          | GQLObjectField<Root[K], Ctx, any, any, { [K1 in keyof Root[K]]: Widen<Root[K][K1]> }>
-          | GQLField<Root, any, Ctx, any, any, { [K1 in keyof Root[K]]: Widen<Root[K][K1]> }>
-      : Root[K] extends Iterable<any>
-      ? GQLScalarField<Widen<Root[K]>> | GQLField<Root, any, Ctx, any, any, Widen<Root[K]>>
-      :
-          | GQLScalarField<Widen<Root[K]>>
-          | GQLField<Root, any, Ctx, any, any, Root[K]>
-          | GQLObjectField<Root, Ctx, any, any, Widen<Root[K]>>
-          | GQLUnionField<Ctx, any>
-  }
-> &
-  {
-    [K in Exclude<keyof F, keyof Root>]:
-      | GQLField<Root, any, Ctx, any, any, any>
-      | GQLScalarField<any>
-      | GQLObjectField<Root, Ctx, any, any, any>
-      | GQLSubscriptionField<any, any>
-      | GQLUnionField<Ctx, any>
-  }
+export type FieldRecord<Root, Ctx, F> = Partial<{
+  [K in keyof Root]: Root[K] extends { [x: string]: any }
+    ?
+        | GQLObjectField<Root[K], Ctx, any, any, { [K1 in keyof Root[K]]: Widen<Root[K][K1]> }>
+        | GQLField<Root, any, Ctx, any, any, { [K1 in keyof Root[K]]: Widen<Root[K][K1]> }>
+    : Root[K] extends Iterable<any>
+    ? GQLScalarField<Widen<Root[K]>> | GQLField<Root, any, Ctx, any, any, Widen<Root[K]>>
+    :
+        | GQLScalarField<Widen<Root[K]>>
+        | GQLField<Root, any, Ctx, any, any, Root[K]>
+        | GQLObjectField<Root, Ctx, any, any, Widen<Root[K]>>
+        | GQLUnionField<Ctx, any>
+}> & {
+  [K in Exclude<keyof F, keyof Root>]:
+    | GQLField<Root, any, Ctx, any, any, any>
+    | GQLScalarField<any>
+    | GQLObjectField<Root, Ctx, any, any, any>
+    | GQLSubscriptionField<any, any>
+    | GQLUnionField<Ctx, any>
+}
 
 export type FieldResolverRecord<Fs extends FieldRecord<any, any, Fs>> = Compute<
   ExcludeMatchingProperties<

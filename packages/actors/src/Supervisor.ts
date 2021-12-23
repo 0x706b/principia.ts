@@ -23,7 +23,7 @@ export function retryOrElse<R, E, A>(
 ): Supervisor<R, E> {
   return new Supervisor<R, E>((zio, error) =>
     T.mapError_(
-      T.retryOrElse_(zio, policy, (e, a) => T.crossSecond_(orElse(e, a), T.fail(error))),
+      T.retryOrElse_(zio, policy, (e, a) => T.apSecond_(orElse(e, a), T.fail(error))),
       () => undefined
     )
   )

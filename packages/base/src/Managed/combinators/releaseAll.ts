@@ -36,7 +36,7 @@ export function releaseAll_(rm: RM.ReleaseMap, exit: Exit<any, any>, execStrateg
               ),
               I.chain((e) =>
                 pipe(
-                  execStrategy._tag === 'Sequential' ? Ex.collectAll(...e) : Ex.collectAllPar(...e),
+                  execStrategy._tag === 'Sequential' ? Ex.collectAll(...e) : Ex.collectAllC(...e),
                   M.getOrElse(() => Ex.succeed([])),
                   I.fromExit
                 )

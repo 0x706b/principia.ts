@@ -27,7 +27,7 @@ import { live as liveIOEnv } from '@principia/base/IOEnv'
 import * as L from '@principia/base/Layer'
 import * as M from '@principia/base/Managed'
 import * as Ref from '@principia/base/Ref'
-import * as RefM from '@principia/base/RefM'
+import * as SRef from '@principia/base/SRef'
 import * as Su from '@principia/base/Supervisor'
 import { HttpConnection } from '@principia/http/HttpConnection'
 import * as Status from '@principia/http/StatusCode'
@@ -140,7 +140,7 @@ export abstract class KoaApp {
           Object.defineProperty(app.context, 'connection', {
             get() {
               const req = Ref.unsafeMake(this.req)
-              const res = RefM.unsafeMake(this.res)
+              const res = SRef.unsafeMake(this.res)
               return new HttpConnection(req, res)
             }
           })

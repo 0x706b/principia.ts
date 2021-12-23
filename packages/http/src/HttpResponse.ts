@@ -14,7 +14,7 @@ import * as M from '@principia/base/Maybe'
 import * as NT from '@principia/base/Newtype'
 import * as Q from '@principia/base/Queue'
 import * as Ref from '@principia/base/Ref'
-import * as RefM from '@principia/base/RefM'
+import * as SRef from '@principia/base/SRef'
 import * as S from '@principia/base/Stream'
 import * as NS from '@principia/node/stream'
 
@@ -56,7 +56,7 @@ export const HttpResponseCompleted = NT.newtype<HttpResponseCompleted>()
 export class HttpResponse {
   eventStream: Ma.Managed<unknown, never, S.Stream<unknown, never, ResponseEvent>>
 
-  constructor(readonly ref: RefM.URefM<http.ServerResponse>) {
+  constructor(readonly ref: SRef.USRef<http.ServerResponse>) {
     this.eventStream = pipe(
       ref.get,
       Ma.fromIO,
@@ -94,7 +94,7 @@ export class HttpResponse {
                   Q.take(queue),
                   I.chain((event) => {
                     if (event._tag === 'Close') {
-                      return I.crossSecond_(done.set(true), I.succeed(Ch.end(undefined)))
+                      return I.apSecond_(done.set(true), I.succeed(Ch.end(undefined)))
                     }
                     return I.succeed(Ch.crossSecond_(Ch.write(C.single(event)), writer))
                   }),
@@ -120,11 +120,11 @@ export class HttpResponse {
   }
 
   modify<R, E>(f: (res: http.ServerResponse) => IO<R, E, http.ServerResponse>): IO<R, E, void> {
-    return RefM.updateIO_(this.ref, f)
+    return SRef.updateIO_(this.ref, f)
   }
 
   status(s: Status.StatusCode): UIO<void> {
-    return RefM.updateIO_(this.ref, (res) =>
+    return SRef.updateIO_(this.ref, (res) =>
       I.succeedLazy(() => {
         res.statusCode = s.code
         return res
@@ -141,7 +141,7 @@ export class HttpResponse {
   }
 
   set(headers: ReadonlyRecord<string, http.OutgoingHttpHeader>): FIO<HttpException, void> {
-    return RefM.updateIO_(this.ref, (res) =>
+    return SRef.updateIO_(this.ref, (res) =>
       I.defer(() => {
         const hs = Object.entries(headers)
         try {

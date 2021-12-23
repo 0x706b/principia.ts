@@ -8,15 +8,13 @@ import * as C from '../Cause/core'
 import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
 import * as Ex from '../Exit/core'
-import { flow, identity, pipe, unsafeCoerce } from '../function'
+import { flow, identity, unsafeCoerce } from '../function'
 import { genF, GenHKT } from '../Gen'
 import { isTag, mergeEnvironments } from '../Has'
-import * as L from '../List/core'
-import * as M from '../Maybe'
 import { isMaybe } from '../Maybe'
 import * as P from '../prelude'
 import * as R from '../Record'
-import { tuple } from '../tuple/core'
+import { tuple as mkTuple } from '../tuple/core'
 import { makeStack } from '../util/support/Stack'
 
 /*
@@ -394,7 +392,7 @@ export function pure<A>(a: A): Async<unknown, never, A> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function sequenceTPar<A extends ReadonlyArray<Async<any, any, any>>>(
+export function tupleC<A extends ReadonlyArray<Async<any, any, any>>>(
   ...asyncs: A & { 0: Async<any, any, any> }
 ): Async<
   P._R<A[number]>,
@@ -406,86 +404,78 @@ export function sequenceTPar<A extends ReadonlyArray<Async<any, any, any>>>(
   return new All(asyncs) as any
 }
 
-export function crossPar_<R, E, A, R1, E1, A1>(
+export function crossC_<R, E, A, R1, E1, A1>(
   fa: Async<R, E, A>,
   fb: Async<R1, E1, A1>
 ): Async<R & R1, E | E1, readonly [A, A1]> {
-  return crossWithPar_(fa, fb, tuple)
+  return crossWithC_(fa, fb, mkTuple)
 }
 
 /**
- * @dataFirst crossPar_
+ * @dataFirst crossC_
  */
-export function crossPar<R1, E1, A1>(
+export function crossC<R1, E1, A1>(
   fb: Async<R1, E1, A1>
 ): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, readonly [A, A1]> {
-  return (fa) => crossPar_(fa, fb)
+  return (fa) => crossC_(fa, fb)
 }
 
-export function crossWithPar_<R, E, A, R1, E1, B, C>(
+export function crossWithC_<R, E, A, R1, E1, B, C>(
   fa: Async<R, E, A>,
   fb: Async<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Async<R & R1, E | E1, C> {
-  return map_(sequenceTPar(fa, fb), ([a, b]) => f(a, b))
+  return map_(tupleC(fa, fb), ([a, b]) => f(a, b))
 }
 
 /**
- * @dataFirst crossWithPar_
+ * @dataFirst crossWithC_
  */
-export function crossWithPar<A, R1, E1, B, C>(
+export function crossWithC<A, R1, E1, B, C>(
   fb: Async<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, C> {
-  return (fa) => crossWithPar_(fa, fb, f)
+  return (fa) => crossWithC_(fa, fb, f)
 }
 
-export function apPar_<R, E, A, R1, E1, B>(
+export function apC_<R, E, A, R1, E1, B>(
   fab: Async<R1, E1, (a: A) => B>,
   fa: Async<R, E, A>
 ): Async<R & R1, E | E1, B> {
-  return crossWithPar_(fab, fa, (f, a) => f(a))
+  return crossWithC_(fab, fa, (f, a) => f(a))
 }
 
 /**
- * @dataFirst apPar_
+ * @dataFirst apC_
  */
-export function apPar<R, E, A>(
+export function apC<R, E, A>(
   fa: Async<R, E, A>
 ): <R1, E1, B>(fab: Async<R1, E1, (a: A) => B>) => Async<R & R1, E1 | E, B> {
-  return (fab) => apPar_(fab, fa)
+  return (fab) => apC_(fab, fa)
 }
 
-export function crossFirstPar_<R, E, A, R1, E1, A1>(
-  fa: Async<R, E, A>,
-  fb: Async<R1, E1, A1>
-): Async<R & R1, E | E1, A> {
-  return crossWithPar_(fa, fb, (a, _) => a)
+export function apFirstC_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A> {
+  return crossWithC_(fa, fb, (a, _) => a)
 }
 
 /**
- * @dataFirst crossFirstPar_
+ * @dataFirst apFirstC_
  */
-export function crossFirstPar<R1, E1, A1>(
-  fb: Async<R1, E1, A1>
-): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A> {
-  return (fa) => crossFirstPar_(fa, fb)
+export function apFirstC<R1, E1, A1>(fb: Async<R1, E1, A1>): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A> {
+  return (fa) => apFirstC_(fa, fb)
 }
 
-export function crossSecondPar_<R, E, A, R1, E1, A1>(
-  fa: Async<R, E, A>,
-  fb: Async<R1, E1, A1>
-): Async<R & R1, E | E1, A1> {
-  return crossWithPar_(fa, fb, (_, b) => b)
+export function apSecondC_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A1> {
+  return crossWithC_(fa, fb, (_, b) => b)
 }
 
 /**
- * @dataFirst crossSecondPar_
+ * @dataFirst apSecondC_
  */
-export function crossSecondPar<R1, E1, A1>(
+export function apSecondC<R1, E1, A1>(
   fb: Async<R1, E1, A1>
 ): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A1> {
-  return (fa) => crossSecondPar_(fa, fb)
+  return (fa) => apSecondC_(fa, fb)
 }
 
 /*
@@ -494,7 +484,7 @@ export function crossSecondPar<R1, E1, A1>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function sequenceT<A extends ReadonlyArray<Async<any, any, any>>>(
+export function tuple<A extends ReadonlyArray<Async<any, any, any>>>(
   ...fas: A & { 0: Async<any, any, any> }
 ): Async<P._R<A[number]>, P._E<A[number]>, { [K in keyof A]: P._A<A[K]> }> {
   return A.foldl_(
@@ -508,7 +498,7 @@ export function cross_<R, E, A, R1, E1, A1>(
   fa: Async<R, E, A>,
   fb: Async<R1, E1, A1>
 ): Async<R & R1, E | E1, readonly [A, A1]> {
-  return crossWith_(fa, fb, tuple)
+  return crossWith_(fa, fb, mkTuple)
 }
 
 /**
@@ -551,33 +541,28 @@ export function ap<R, E, A>(
   return (fab) => ap_(fab, fa)
 }
 
-export function crossFirst_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A> {
+export function apFirst_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A> {
   return crossWith_(fa, fb, (a, _) => a)
 }
 
 /**
- * @dataFirst crossFirst_
+ * @dataFirst apFirst_
  */
-export function crossFirst<R1, E1, A1>(
-  fb: Async<R1, E1, A1>
-): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A> {
-  return (fa) => crossFirst_(fa, fb)
+export function apFirst<R1, E1, A1>(fb: Async<R1, E1, A1>): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A> {
+  return (fa) => apFirst_(fa, fb)
 }
 
-export function crossSecond_<R, E, A, R1, E1, A1>(
-  fa: Async<R, E, A>,
-  fb: Async<R1, E1, A1>
-): Async<R & R1, E | E1, A1> {
+export function apSecond_<R, E, A, R1, E1, A1>(fa: Async<R, E, A>, fb: Async<R1, E1, A1>): Async<R & R1, E | E1, A1> {
   return crossWith_(fa, fb, (_, b) => b)
 }
 
 /**
- * @dataFirst crossSecond_
+ * @dataFirst apSecond_
  */
-export function crossSecond<R1, E1, A1>(
+export function apSecond<R1, E1, A1>(
   fb: Async<R1, E1, A1>
 ): <R, E, A>(fa: Async<R, E, A>) => Async<R & R1, E1 | E, A1> {
-  return (fa) => crossSecond_(fa, fb)
+  return (fa) => apSecond_(fa, fb)
 }
 
 /*
@@ -1365,8 +1350,8 @@ export const SemimonoidalFunctor = P.SemimonoidalFunctor<AsyncF>({
 
 export const SemimonoidalFunctorPar = P.SemimonoidalFunctor<AsyncF>({
   map_,
-  crossWith_: crossWithPar_,
-  cross_: crossPar_
+  crossWith_: crossWithC_,
+  cross_: crossC_
 })
 
 export const Apply = P.Apply<AsyncF>({
@@ -1378,9 +1363,9 @@ export const Apply = P.Apply<AsyncF>({
 
 export const ApplyPar = P.Apply<AsyncF>({
   map_,
-  crossWith_: crossWithPar_,
-  cross_: crossPar_,
-  ap_: apPar_
+  crossWith_: crossWithC_,
+  cross_: crossC_,
+  ap_: apC_
 })
 
 export const MonoidalFunctor = P.MonoidalFunctor<AsyncF>({
@@ -1392,8 +1377,8 @@ export const MonoidalFunctor = P.MonoidalFunctor<AsyncF>({
 
 export const MonoidalFunctorPar = P.MonoidalFunctor<AsyncF>({
   map_,
-  crossWith_: crossWithPar_,
-  cross_: crossPar_,
+  crossWith_: crossWithC_,
+  cross_: crossC_,
   unit
 })
 
@@ -1408,9 +1393,9 @@ export const Applicative = P.Applicative<AsyncF>({
 
 export const ApplicativePar = P.Applicative<AsyncF>({
   map_,
-  crossWith_: crossWithPar_,
-  cross_: crossPar_,
-  ap_: apPar_,
+  crossWith_: crossWithC_,
+  cross_: crossC_,
+  ap_: apC_,
   unit,
   pure
 })

@@ -152,7 +152,7 @@ export const LivePersistence = L.fromManaged(Persistence)(
             ),
             T.tap(([_co, delay]) => (delay > 0 ? T.sleep(delay) : T.unit())),
             T.chain(([co, _delay]) =>
-              T.foreachPar_(HM.values(co), (o) =>
+              T.foreachC_(HM.values(co), (o) =>
                 pipe(
                   cli.query(
                     'SELECT * FROM "event_journal" WHERE "domain" = $1::text AND "shard" = $2::integer AND "shard_sequence" > $3::integer ORDER BY "shard_sequence" ASC LIMIT $4::integer',
@@ -185,7 +185,7 @@ export const LivePersistence = L.fromManaged(Persistence)(
           )
 
           return pipe(
-            ST.repeatIOChunkOption(poll),
+            ST.repeatIOChunkMaybe(poll),
             ST.mapIO((row) =>
               pipe(
                 parse(row['event']['event']),
@@ -311,18 +311,21 @@ export const LivePersistence = L.fromManaged(Persistence)(
         )
       )
 
-    const set: (persistenceId: string, value: unknown, event_sequence: number) => T.IO<Has<ShardContext>, never, void> =
-      (persistenceId, value, event_sequence) =>
-        pipe(
-          computeShardForId(persistenceId),
-          T.chain((shard) =>
-            cli.query(
-              `INSERT INTO "state_journal" ("persistence_id", "shard", "state", "event_sequence") VALUES('${persistenceId}', $2::integer, $1::jsonb, $3::integer) ON CONFLICT ("persistence_id") DO UPDATE SET "state" = $1::jsonb, "event_sequence" = $3::integer`,
-              [JSON.stringify(value), shard, event_sequence]
-            )
-          ),
-          T.asUnit
-        )
+    const set: (
+      persistenceId: string,
+      value: unknown,
+      event_sequence: number
+    ) => T.IO<Has<ShardContext>, never, void> = (persistenceId, value, event_sequence) =>
+      pipe(
+        computeShardForId(persistenceId),
+        T.chain((shard) =>
+          cli.query(
+            `INSERT INTO "state_journal" ("persistence_id", "shard", "state", "event_sequence") VALUES('${persistenceId}', $2::integer, $1::jsonb, $3::integer) ON CONFLICT ("persistence_id") DO UPDATE SET "state" = $1::jsonb, "event_sequence" = $3::integer`,
+            [JSON.stringify(value), shard, event_sequence]
+          )
+        ),
+        T.asUnit
+      )
 
     const sequenceForShard = (persistenceId: string) =>
       pipe(

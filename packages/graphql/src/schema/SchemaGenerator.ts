@@ -134,16 +134,16 @@ export const makeSchemaGenerator =
         name: v.name
       }
     }
-    const extendFieldAST = R.foldl_(
+    const extendFieldAST = R.ifoldl_(
       extendTypes,
       {} as Record<string, ReadonlyArray<FieldDefinitionNode>>,
-      (b, v, k) => ({
+      (k, b, v) => ({
         ...b,
         [k]: v.ast
       })
     )
-    const extendObjectNames = R.foldl_(extendTypes, [] as string[], (acc, _v, k) => [...acc, k])
-    const objectAST         = R.foldl_(objectTypes, [] as ObjectTypeDefinitionNode[], (b, v, k) => {
+    const extendObjectNames = R.ifoldl_(extendTypes, [] as string[], (k, acc, _v) => [...acc, k])
+    const objectAST         = R.ifoldl_(objectTypes, [] as ObjectTypeDefinitionNode[], (k, b, v) => {
       return extendObjectNames.includes(k)
         ? [...b, { ...v.ast, fields: [...(v.ast.fields || []), ...extendFieldAST[k]] }]
         : [...b, v.ast]

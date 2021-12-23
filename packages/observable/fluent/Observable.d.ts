@@ -1,8 +1,8 @@
 import type { Either } from '@principia/base/Either'
 import type { Eq } from '@principia/base/Eq'
 import type { Maybe } from '@principia/base/Maybe'
-import type { PredicateWithIndex } from '@principia/base/Predicate'
-import type { RefinementWithIndex } from '@principia/base/Refinement'
+import type { Predicate, PredicateWithIndex } from '@principia/base/Predicate'
+import type { Refinement, RefinementWithIndex } from '@principia/base/Refinement'
 import type { Notification } from '@principia/observable/Notification'
 import type {
   BufferTimeConfig,
@@ -206,10 +206,7 @@ declare module '@principia/observable/Observable/core' {
     /**
      * @rewrite concatMap_ from "@principia/observable/Observable"
      */
-    concatMap<E, A, E1, B>(
-      this: Observable<E, A>,
-      f: (value: A, index: number) => ObservableInput<E1, B>
-    ): Observable<E | E1, B>
+    concatMap<E, A, E1, B>(this: Observable<E, A>, f: (value: A) => ObservableInput<E1, B>): Observable<E | E1, B>
     /**
      * @rewrite connnect_ from "@principia/observable/Observable"
      */
@@ -252,10 +249,7 @@ declare module '@principia/observable/Observable/core' {
     /**
      * @rewrite delayWith_ from "@principia/observable/Observable"
      */
-    delayWith<E, A, E1>(
-      this: Observable<E, A>,
-      f: (value: A, index: number) => Observable<E1, any>
-    ): Observable<E | E1, A>
+    delayWith<E, A, E1>(this: Observable<E, A>, f: (value: A) => Observable<E1, any>): Observable<E | E1, A>
     /**
      * @rewrite dematerialize from "@principia/observable/Observable"
      */
@@ -275,56 +269,47 @@ declare module '@principia/observable/Observable/core' {
     /**
      * @rewrite exhaustMap_ from "@principia/observable/Observable"
      */
-    exhaustMap<E, A, E1, B>(
-      this: Observable<E, A>,
-      f: (a: A, i: number) => ObservableInput<E1, B>
-    ): Observable<E | E1, B>
+    exhaustMap<E, A, E1, B>(this: Observable<E, A>, f: (a: A) => ObservableInput<E1, B>): Observable<E | E1, B>
     /**
      * @rewrite expand_ from "@principia/observable/Observable"
      */
     expand<E, A, E1, B>(
       this: Observable<E, A>,
-      f: (a: A, i: number) => ObservableInput<E1, B>,
+      f: (a: A) => ObservableInput<E1, B>,
       concurrent?: number
     ): Observable<E | E1, B>
     /**
      * @rewrite filter_ from "@principia/observable/Observable"
      */
-    filter<E, A, B extends A>(this: Observable<E, A>, refinement: RefinementWithIndex<number, A, B>): Observable<E, B>
+    filter<E, A, B extends A>(this: Observable<E, A>, refinement: Refinement<A, B>): Observable<E, B>
     /**
      * @rewrite filter_ from "@principia/observable/Observable"
      */
-    filter<E, A>(this: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, A>
+    filter<E, A>(this: Observable<E, A>, predicate: Predicate<A>): Observable<E, A>
     /**
      * @rewrite filterMap_ from "@principia/observable/Observable"
      */
-    filterMap<E, A, B>(this: Observable<E, A>, f: (value: A, index: number) => Maybe<B>): Observable<E, B>
+    filterMap<E, A, B>(this: Observable<E, A>, f: (value: A) => Maybe<B>): Observable<E, B>
     /**
      * @rewrite find_ from "@principia/observable/Observable"
      */
-    find<E, A, B extends A>(
-      this: Observable<E, A>,
-      refinement: RefinementWithIndex<number, A, B>
-    ): Observable<E, Maybe<B>>
+    find<E, A, B extends A>(this: Observable<E, A>, refinement: Refinement<A, B>): Observable<E, Maybe<B>>
     /**
      * @rewrite find_ from "@principia/observable/Observable"
      */
-    find<E, A>(this: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, Maybe<A>>
+    find<E, A>(this: Observable<E, A>, predicate: Predicate<A>): Observable<E, Maybe<A>>
     /**
      * @rewrite findIndex_ from "@principia/observable/Observable"
      */
-    findIndex<E, A, B extends A>(
-      this: Observable<E, A>,
-      refinement: RefinementWithIndex<number, A, B>
-    ): Observable<E, number>
+    findIndex<E, A, B extends A>(this: Observable<E, A>, refinement: Refinement<A, B>): Observable<E, number>
     /**
      * @rewrite findIndex_ from "@principia/observable/Observable"
      */
-    findIndex<E, A>(this: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, number>
+    findIndex<E, A>(this: Observable<E, A>, predicate: Predicate<A>): Observable<E, number>
     /**
      * @rewrite foldl_ from "@principia/observable/Observable"
      */
-    foldl<E, A, B>(this: Observable<E, A>, initial: B, f: (acc: B, value: A, index: number) => B): Observable<E, B>
+    foldl<E, A, B>(this: Observable<E, A>, initial: B, f: (acc: B, value: A) => B): Observable<E, B>
     /**
      * @rewrite forkJoin from "@principia/observable/Observable"
      */
@@ -333,17 +318,162 @@ declare module '@principia/observable/Observable/core' {
       ...sources: B
     ): Observable<E | ErrorOf<B[number]>, readonly [A, ...{ [K in keyof B]: TypeOf<B[K]> }]>
     /**
+     * @rewrite iconcatMap_ from "@principia/observable/Observable"
+     */
+    iconcatMap<E, A, E1, B>(
+      this: Observable<E, A>,
+      f: (index: number, value: A) => ObservableInput<E1, B>
+    ): Observable<E | E1, B>
+    /**
+     * @rewrite idelayWith_ from "@principia/observable/Observable"
+     */
+    idelayWith<E, A, E1>(
+      this: Observable<E, A>,
+      f: (index: number, value: A) => Observable<E1, any>
+    ): Observable<E | E1, A>
+    /**
+     * @rewrite iexhaustMap_ from "@principia/observable/Observable"
+     */
+    iexhaustMap<E, A, E1, B>(
+      this: Observable<E, A>,
+      f: (i: number, a: A) => ObservableInput<E1, B>
+    ): Observable<E | E1, B>
+    /**
+     * @rewrite iexpand_ from "@principia/observable/Observable"
+     */
+    iexpand<E, A, E1, B>(
+      this: Observable<E, A>,
+      f: (i: number, a: A) => ObservableInput<E1, B>,
+      concurrent?: number
+    ): Observable<E | E1, B>
+    /**
+     * @rewrite ifilter_ from "@principia/observable/Observable"
+     */
+    ifilter<E, A>(this: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, A>
+    /**
+     * @rewrite ifilter_ from "@principia/observable/Observable"
+     */
+    ifilter<E, A, B extends A>(this: Observable<E, A>, refinement: RefinementWithIndex<number, A, B>): Observable<E, B>
+    /**
+     * @rewrite ifilterMap_ from "@principia/observable/Observable"
+     */
+    ifilterMap<E, A, B>(this: Observable<E, A>, f: (index: number, value: A) => Maybe<B>): Observable<E, B>
+    /**
+     * @rewrite ifind_ from "@principia/observable/Observable"
+     */
+    ifind<E, A>(this: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, Maybe<A>>
+    /**
+     * @rewrite ifind_ from "@principia/observable/Observable"
+     */
+    ifind<E, A, B extends A>(this: Observable<E, A>, refinement: Refinement<number, A, B>): Observable<E, Maybe<B>>
+    /**
+     * @rewrite ifindIndex_ from "@principia/observable/Observable"
+     */
+    ifindIndex<E, A, B extends A>(
+      this: Observable<E, A>,
+      refinement: RefinementWithIndex<number, A, B>
+    ): Observable<E, number>
+    /**
+     * @rewrite ifindIndex_ from "@principia/observable/Observable"
+     */
+    ifindIndex<E, A>(this: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, number>
+    /**
+     * @rewrite ifoldl_ from "@principia/observable/Observable"
+     */
+    ifoldl<E, A, B>(this: Observable<E, A>, initial: B, f: (index: number, acc: B, value: A) => B): Observable<E, B>
+    /**
      * @rewrite ignore from "@principia/observable/Observable"
      */
     ignore<E, A>(this: Observable<E, A>): Observable<E, never>
+    /**
+     * @rewrite imap_ from "@principia/observable/Observable"
+     */
+    imap<E, A, B>(this: Observable<E, A>, f: (i: number, a: A) => B): Observable<E, B>
+    /**
+     * @rewrite imergeMap_ from "@principia/observable/Observable"
+     */
+    imergeMap<E, A, E1, B>(
+      this: Observable<E, A>,
+      f: (index: number, value: A) => ObservableInput<E1, B>,
+      concurrency?: number
+    ): Observable<E | E1, B>
+    /**
+     * @rewrite imergeScan_ from "@principia/observable/Observable"
+     */
+    imergeScan<E, A, E1, B>(
+      this: Observable<E, A>,
+      initial: B,
+      f: (index: number, acc: B, value: A) => ObservableInput<E1, B>,
+      concurrent?: number
+    ): Observable<E | E1, B>
+    /**
+     * @rewrite ipartition_ from "@principia/observable/Observable"
+     */
+    ipartition<E, A>(
+      this: Observable<E, A>,
+      predicate: PredicateWithIndex<number, A>
+    ): readonly [Observable<E, A>, Observable<E, A>]
+    /**
+     * @rewrite ipartition_ from "@principia/observable/Observable"
+     */
+    ipartition<E, A, B extends A>(
+      this: Observable<E, A>,
+      refinement: RefinementWithIndex<number, A, B>
+    ): readonly [Observable<E, Exclude<A, B>>, Observable<E, B>]
+    /**
+     * @rewrite ipartitionMap_ from "@principia/observable/Observable"
+     */
+    ipartitionMap<E, A, B, C>(
+      this: Observable<E, A>,
+      f: (index: number, value: A) => Either<B, C>
+    ): readonly [Observable<E, B>, Observable<E, C>]
     /**
      * @rewrite isEmpty from "@principia/observable/Observable"
      */
     isEmpty<E, A>(this: Observable<E, A>): Observable<E, boolean>
     /**
+     * @rewrite iscanl_ from "@principia/observable/Observable"
+     */
+    iscanl<E, A, B>(this: Observable<E, A>, initial: B, f: (index: number, acc: B, value: A) => B): Observable<E, B>
+    /**
+     * @rewrite iskipWhile_ from "@principia/observable/Observable"
+     */
+    iskipWhile<E, A>(fa: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, A>
+    /**
+     * @rewrite iswitchMap_ from "@principia/observable/Observable"
+     */
+    iswitchMap<E, A, E1, B>(
+      this: Observable<E, A>,
+      f: (index: number, value: A) => ObservableInput<E1, B>
+    ): Observable<E | E1, B>
+    /**
+     * @rewrite iswitchScan_ from "@principia/observable/Observable"
+     */
+    iswitchScan<E, A, E1, B>(
+      this: Observable<E, A>,
+      initial: B,
+      f: (index: number, acc: B, value: A) => ObservableInput<E1, B>
+    ): Observable<E | E1, B>
+    /**
+     * @rewrite itakeWhile_ from "@principia/observable/Observable"
+     */
+    itakeWhile<E, A, B extends A>(
+      this: Observable<E, A>,
+      refinement: RefinementWithIndex<number, A, B>,
+      inclusive?: boolean
+    ): Observable<E, B>
+    /**
+     * @rewrite itakeWhile_ from "@principia/observable/Observable"
+     */
+    itakeWhile<E, A>(
+      this: Observable<E, A>,
+      predicate: PredicateWithIndex<number, A>,
+      inclusive?: boolean
+    ): Observable<E, A>
+    /**
      * @rewrite map_ from "@principia/observable/Observable"
      */
-    map<E, A, B>(this: Observable<E, A>, f: (a: A, i: number) => B): Observable<E, B>
+    map<E, A, B>(this: Observable<E, A>, f: (a: A) => B): Observable<E, B>
     /**
      * @rewrite materialize from "@principia/observable/Observable"
      */
@@ -357,7 +487,7 @@ declare module '@principia/observable/Observable/core' {
      */
     mergeMap<E, A, E1, B>(
       this: Observable<E, A>,
-      f: (value: A, index: number) => ObservableInput<E1, B>,
+      f: (value: A) => ObservableInput<E1, B>,
       concurrency?: number
     ): Observable<E | E1, B>
     /**
@@ -366,7 +496,7 @@ declare module '@principia/observable/Observable/core' {
     mergeScan<E, A, E1, B>(
       this: Observable<E, A>,
       initial: B,
-      f: (acc: B, value: A, index: number) => ObservableInput<E1, B>,
+      f: (acc: B, value: A) => ObservableInput<E1, B>,
       concurrent?: number
     ): Observable<E | E1, B>
     /**
@@ -383,23 +513,20 @@ declare module '@principia/observable/Observable/core' {
     /**
      * @rewrite partition_ from "@principia/observable/Observable"
      */
-    partition<E, A>(
-      this: Observable<E, A>,
-      predicate: PredicateWithIndex<number, A>
-    ): readonly [Observable<E, A>, Observable<E, A>]
+    partition<E, A>(this: Observable<E, A>, predicate: Predicate<A>): readonly [Observable<E, A>, Observable<E, A>]
     /**
      * @rewrite partition_ from "@principia/observable/Observable"
      */
     partition<E, A, B extends A>(
       this: Observable<E, A>,
-      refinement: RefinementWithIndex<number, A, B>
+      refinement: Refinement<A, B>
     ): readonly [Observable<E, Exclude<A, B>>, Observable<E, B>]
     /**
      * @rewrite partitionMap_ from "@principia/observable/Observable"
      */
     partitionMap<E, A, B, C>(
       this: Observable<E, A>,
-      f: (value: A, index: number) => Either<B, C>
+      f: (value: A) => Either<B, C>
     ): readonly [Observable<E, B>, Observable<E, C>]
     /**
      * @rewrite raceWith_ from "@principia/observable/Observable"
@@ -445,7 +572,7 @@ declare module '@principia/observable/Observable/core' {
     /**
      * @rewrite scanl_ from "@principia/observable/Observable"
      */
-    scanl<E, A, B>(this: Observable<E, A>, initial: B, f: (acc: B, value: A, index: number) => B): Observable<E, B>
+    scanl<E, A, B>(this: Observable<E, A>, initial: B, f: (acc: B, value: A) => B): Observable<E, B>
     /**
      * @rewrite share_ from "@principia/observable/Observable"
      */
@@ -468,7 +595,7 @@ declare module '@principia/observable/Observable/core' {
     /**
      * @rewrite skipWhile_ from "@principia/observable/Observable"
      */
-    skipWhile<E, A>(fa: Observable<E, A>, predicate: PredicateWithIndex<number, A>): Observable<E, A>
+    skipWhile<E, A>(fa: Observable<E, A>, predicate: Predicate<A>): Observable<E, A>
     /**
      * @rewrite startWith_ from "@principia/observable/Observable"
      */
@@ -487,17 +614,14 @@ declare module '@principia/observable/Observable/core' {
     /**
      * @rewrite switchMap_ from "@principia/observable/Observable"
      */
-    switchMap<E, A, E1, B>(
-      this: Observable<E, A>,
-      f: (value: A, index: number) => ObservableInput<E1, B>
-    ): Observable<E | E1, B>
+    switchMap<E, A, E1, B>(this: Observable<E, A>, f: (value: A) => ObservableInput<E1, B>): Observable<E | E1, B>
     /**
      * @rewrite switchScan_ from "@principia/observable/Observable"
      */
     switchScan<E, A, E1, B>(
       this: Observable<E, A>,
       initial: B,
-      f: (acc: B, value: A, index: number) => ObservableInput<E1, B>
+      f: (acc: B, value: A) => ObservableInput<E1, B>
     ): Observable<E | E1, B>
     /**
      * @rewrite take_ from "@principia/observable/Observable"
@@ -516,17 +640,13 @@ declare module '@principia/observable/Observable/core' {
      */
     takeWhile<E, A, B extends A>(
       this: Observable<E, A>,
-      refinement: RefinementWithIndex<number, A, B>,
+      refinement: Refinement<A, B>,
       inclusive?: boolean
     ): Observable<E, B>
     /**
      * @rewrite takeWhile_ from "@principia/observable/Observable"
      */
-    takeWhile<E, A>(
-      this: Observable<E, A>,
-      predicate: PredicateWithIndex<number, A>,
-      inclusive?: boolean
-    ): Observable<E, A>
+    takeWhile<E, A>(this: Observable<E, A>, predicate: Predicate<A>, inclusive?: boolean): Observable<E, A>
     /**
      * @rewrite tap_ from "@principia/observable/Observable"
      */

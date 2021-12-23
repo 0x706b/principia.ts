@@ -46,7 +46,7 @@ export function update<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, M.Maybe<E>
     I.matchIO_(
       self.upstream,
       M.match(
-        () => I.crossSecond_(Ref.set_(self.done, true), Pull.end),
+        () => I.apSecond_(Ref.set_(self.done, true), Pull.end),
         (e) => Pull.fail(e)
       ),
       (chunk) => Ref.set_(self.cursor, tuple(chunk, 0))
@@ -61,7 +61,7 @@ export function pullElement<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, M.May
       self.cursor,
       Ref.modify(([chunk, idx]) => {
         if (idx >= chunk.length) {
-          return tuple(I.crossSecond_(update(self), pullElement(self)), tuple(C.empty<A>(), 0))
+          return tuple(I.apSecond_(update(self), pullElement(self)), tuple(C.empty<A>(), 0))
         } else {
           return tuple(I.succeed(C.unsafeGet_(chunk, idx)), tuple(C.empty<A>(), idx + 1))
         }
@@ -78,7 +78,7 @@ export function pullChunk<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, M.Maybe
       self.cursor,
       Ref.modify(([chunk, idx]) => {
         if (idx >= chunk.length) {
-          return tuple(I.crossSecond_(update(self), pullChunk(self)), tuple(C.empty<A>(), 0))
+          return tuple(I.apSecond_(update(self), pullChunk(self)), tuple(C.empty<A>(), 0))
         } else {
           return tuple(I.succeed(C.drop_(chunk, idx)), tuple(C.empty<A>(), 0))
         }

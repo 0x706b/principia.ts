@@ -12,7 +12,7 @@ import * as R from '../../Record'
 import { tuple } from '../../tuple/core'
 import { map_, mapIO_ } from '../core'
 import * as I from '../internal/io'
-import { foreachPar_ } from './foreachPar'
+import { foreachC_ } from './foreachC'
 import { makeManagedReleaseMap } from './makeManagedReleaseMap'
 
 /*
@@ -27,7 +27,7 @@ import { makeManagedReleaseMap } from './makeManagedReleaseMap'
  *
  * @trace 2
  */
-export function crossWithPar_<R, E, A, R1, E1, B, C>(
+export function crossWithC_<R, E, A, R1, E1, B, C>(
   fa: Managed<R, E, A>,
   fb: Managed<R1, E1, B>,
   f: (a: A, b: B) => C
@@ -36,7 +36,7 @@ export function crossWithPar_<R, E, A, R1, E1, B, C>(
     const innerMap = I.gives_(makeManagedReleaseMap(sequential).io, (r: R & R1) => tuple(r, parallelReleaseMap))
 
     return I.chain_(I.cross_(innerMap, innerMap), ([[_, l], [__, r]]) =>
-      I.crossWithPar_(
+      I.crossWithC_(
         I.gives_(fa.io, (_: R & R1) => tuple(_, l)),
         I.gives_(fb.io, (_: R & R1) => tuple(_, r)),
         traceAs(f, ([_, a], [__, a2]) => f(a, a2))
@@ -49,25 +49,25 @@ export function crossWithPar_<R, E, A, R1, E1, B, C>(
  * Returns a managed that executes both this managed and the specified managed,
  * in parallel, combining their results with the specified `f` function.
  *
- * @dataFirst crossWithPar_
+ * @dataFirst crossWithC_
  * @trace 1
  */
-export function crossWithPar<A, R1, E1, B, C>(
+export function crossWithC<A, R1, E1, B, C>(
   fb: Managed<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, C> {
-  return (fa) => crossWithPar_(fa, fb, f)
+  return (fa) => crossWithC_(fa, fb, f)
 }
 
 /**
  * @trace call
  */
-export function crossPar_<R, E, A, R1, E1, B>(
+export function crossC_<R, E, A, R1, E1, B>(
   fa: Managed<R, E, A>,
   fb: Managed<R1, E1, B>
 ): Managed<R & R1, E | E1, readonly [A, B]> {
   const trace = accessCallTrace()
-  return crossWithPar_(
+  return crossWithC_(
     fa,
     fb,
     traceFrom(trace, (a, b) => tuple(a, b))
@@ -75,25 +75,25 @@ export function crossPar_<R, E, A, R1, E1, B>(
 }
 
 /**
- * @dataFirst crossPar_
+ * @dataFirst crossC_
  * @trace call
  */
-export function crossPar<R1, E1, B>(
+export function crossC<R1, E1, B>(
   fb: Managed<R1, E1, B>
 ): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E | E1, readonly [A, B]> {
   const trace = accessCallTrace()
-  return (fa) => traceCall(crossPar_, trace)(fa, fb)
+  return (fa) => traceCall(crossC_, trace)(fa, fb)
 }
 
 /**
  * @trace call
  */
-export function apPar_<R, E, A, R1, E1, B>(
+export function apC_<R, E, A, R1, E1, B>(
   fab: Managed<R1, E1, (a: A) => B>,
   fa: Managed<R, E, A>
 ): Managed<R & R1, E | E1, B> {
   const trace = accessCallTrace()
-  return crossWithPar_(
+  return crossWithC_(
     fab,
     fa,
     traceFrom(trace, (f, a) => f(a))
@@ -101,25 +101,25 @@ export function apPar_<R, E, A, R1, E1, B>(
 }
 
 /**
- * @dataFirst apPar_
+ * @dataFirst apC_
  * @trace call
  */
-export function apPar<R, E, A>(
+export function apC<R, E, A>(
   fa: Managed<R, E, A>
 ): <R1, E1, B>(fab: Managed<R1, E1, (a: A) => B>) => Managed<R & R1, E | E1, B> {
   const trace = accessCallTrace()
-  return (fab) => traceCall(apPar_, trace)(fab, fa)
+  return (fab) => traceCall(apC_, trace)(fab, fa)
 }
 
 /**
  * @trace call
  */
-export function crossFirstPar_<R, E, A, R1, E1, B>(
+export function apFirstC_<R, E, A, R1, E1, B>(
   fa: Managed<R, E, A>,
   fb: Managed<R1, E1, B>
 ): Managed<R & R1, E | E1, A> {
   const trace = accessCallTrace()
-  return crossWithPar_(
+  return crossWithC_(
     fa,
     fb,
     traceFrom(trace, (a, _) => a)
@@ -127,25 +127,25 @@ export function crossFirstPar_<R, E, A, R1, E1, B>(
 }
 
 /**
- * @dataFirst crossFirstPar_
+ * @dataFirst apFirstC_
  * @trace call
  */
-export function crossFirstPar<R1, E1, B>(
+export function apFirstC<R1, E1, B>(
   fb: Managed<R1, E1, B>
 ): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, A> {
   const trace = accessCallTrace()
-  return (fa) => traceCall(crossFirstPar_, trace)(fa, fb)
+  return (fa) => traceCall(apFirstC_, trace)(fa, fb)
 }
 
 /**
  * @trace call
  */
-export function crossSecondPar_<R, E, A, R1, E1, B>(
+export function apSecondC_<R, E, A, R1, E1, B>(
   fa: Managed<R, E, A>,
   fb: Managed<R1, E1, B>
 ): Managed<R & R1, E | E1, B> {
   const trace = accessCallTrace()
-  return crossWithPar_(
+  return crossWithC_(
     fa,
     fb,
     traceFrom(trace, (_, b) => b)
@@ -153,17 +153,17 @@ export function crossSecondPar_<R, E, A, R1, E1, B>(
 }
 
 /**
- * @dataFirst crossSecondPar_
+ * @dataFirst apSecondC_
  * @trace call
  */
-export function crossSecondPar<R1, E1, B>(
+export function apSecondC<R1, E1, B>(
   fb: Managed<R1, E1, B>
 ): <R, E, A>(fa: Managed<R, E, A>) => Managed<R & R1, E1 | E, B> {
   const trace = accessCallTrace()
-  return (fa) => traceCall(crossSecondPar_, trace)(fa, fb)
+  return (fa) => traceCall(apSecondC_, trace)(fa, fb)
 }
 
-export function sequenceSPar<MR extends ReadonlyRecord<string, Managed<any, any, any>>>(
+export function structC<MR extends ReadonlyRecord<string, Managed<any, any, any>>>(
   mr: EnforceNonEmptyRecord<MR> & ReadonlyRecord<string, Managed<any, any, any>>
 ): Managed<
   _R<MR[keyof MR]>,
@@ -173,7 +173,7 @@ export function sequenceSPar<MR extends ReadonlyRecord<string, Managed<any, any,
   }
 > {
   return map_(
-    foreachPar_(R.toArray(mr), ([k, v]) => map_(v, (a) => [k, a] as const)),
+    foreachC_(R.toArray(mr), ([k, v]) => map_(v, (a) => [k, a] as const)),
     (kvs) => {
       const r = {}
       for (let i = 0; i < kvs.length; i++) {
@@ -185,7 +185,7 @@ export function sequenceSPar<MR extends ReadonlyRecord<string, Managed<any, any,
   ) as any
 }
 
-export function sequenceTPar<T extends ReadonlyArray<Managed<any, any, any>>>(
+export function tupleC<T extends ReadonlyArray<Managed<any, any, any>>>(
   ...t: T & {
     0: Managed<any, any, any>
   }
@@ -196,5 +196,5 @@ export function sequenceTPar<T extends ReadonlyArray<Managed<any, any, any>>>(
     [K in keyof T]: [T[K]] extends [Managed<any, any, infer A>] ? A : never
   }
 > {
-  return foreachPar_(t, identity) as any
+  return foreachC_(t, identity) as any
 }

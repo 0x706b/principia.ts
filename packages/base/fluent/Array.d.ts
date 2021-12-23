@@ -204,7 +204,7 @@ export interface ArrayOps {
   /**
    * @rewrite chain_ from "@principia/base/Array"
    */
-  chain<T, B>(this: ReadonlyArray<T>, f: (a: T, i: number) => ReadonlyArray<B>): ReadonlyArray<B>
+  chain<T, B>(this: ReadonlyArray<T>, f: (a: T) => ReadonlyArray<B>): ReadonlyArray<B>
 
   /**
    * @rewrite chop_ from "@principia/base/NonEmptyArray"
@@ -349,7 +349,7 @@ export interface ArrayOps {
   /**
    * @rewrite filterMap_ from "@principia/base/Array"
    */
-  filterMap<T, B>(this: ReadonlyArray<T>, f: (a: T, i: number) => Maybe<B>): ReadonlyArray<B>
+  filterMap<T, B>(this: ReadonlyArray<T>, f: (a: T) => Maybe<B>): ReadonlyArray<B>
 
   /**
    * @rewrite findLast_ from "@principia/base/Array"
@@ -394,12 +394,11 @@ export interface ArrayOps {
   /**
    * @rewrite findMap_ from "@principia/base/Array"
    */
-  findMap<A, B>(this: NonEmptyArray<A>, f: (a: A, i: number) => Maybe<B>): Maybe<B>
-
+  findMap<A, B>(this: NonEmptyArray<A>, f: (a: A) => Maybe<B>): Maybe<B>
   /**
    * @rewrite findMap_ from "@principia/base/Array"
    */
-  findMap<T, B>(this: ReadonlyArray<T>, f: (a: T, i: number) => Maybe<B>): Maybe<B>
+  findMap<T, B>(this: ReadonlyArray<T>, f: (a: T) => Maybe<B>): Maybe<B>
 
   /**
    * @rewrite flatten from "@principia/base/NonEmptyArray"
@@ -419,37 +418,37 @@ export interface ArrayOps {
   /**
    * @rewriteConstraint foldMap_ from "@principia/base/Array"
    */
-  foldMap<T, M>(this: ReadonlyArray<T>, M: Monoid<M>): (f: (a: T, i: number) => M) => M
+  foldMap<T, M>(this: ReadonlyArray<T>, M: Monoid<M>): (f: (a: T) => M) => M
 
   /**
    * @rewrite foldl_ from "@principia/base/Array"
    */
-  foldl<T, B>(this: ReadonlyArray<T>, b: B, f: (b: B, a: T, i: number) => B): B
+  foldl<T, B>(this: ReadonlyArray<T>, b: B, f: (b: B, a: T) => B): B
 
   /**
    * @rewrite foldlWhile_ from "@principia/base/Array"
    */
-  foldlWhile<T, B>(this: ReadonlyArray<T>, b: B, predicate: Predicate<B>, f: (b: B, a: T, i: number) => B): B
+  foldlWhile<T, B>(this: ReadonlyArray<T>, b: B, predicate: Predicate<B>, f: (b: B, a: T) => B): B
 
   /**
    * @rewrite foldr_ from "@principia/base/Array"
    */
-  foldr<T, B>(this: ReadonlyArray<T>, b: B, f: (a: T, b: B, i: number) => B): B
+  foldr<T, B>(this: ReadonlyArray<T>, b: B, f: (a: T, b: B) => B): B
 
   /**
    * @rewrite foldrWhile_ from "@principia/base/Array"
    */
-  foldrWhile<T, B>(this: ReadonlyArray<T>, b: B, predicate: Predicate<B>, f: (a: T, b: B, i: number) => B): B
-
-  /**
-   * @rewrite _group from "@principia/base/Array"
-   */
-  group<T>(this: NonEmptyArray<T>, E: Eq<T>): NonEmptyArray<NonEmptyArray<T>>
+  foldrWhile<T, B>(this: ReadonlyArray<T>, b: B, predicate: Predicate<B>, f: (a: T, b: B) => B): B
 
   /**
    * @rewrite _group from "@principia/base/Array"
    */
   group<T>(this: ReadonlyArray<T>, E: Eq<T>): ReadonlyArray<NonEmptyArray<T>>
+
+  /**
+   * @rewrite _group from "@principia/base/Array"
+   */
+  group<T>(this: NonEmptyArray<T>, E: Eq<T>): NonEmptyArray<NonEmptyArray<T>>
 
   /**
    * @rewrite groupBy_ from "@principia/base/Array"
@@ -465,6 +464,51 @@ export interface ArrayOps {
    * @rewriteGetter head from "@principia/base/Array"
    */
   head<T>(this: ReadonlyArray<T>): Maybe<T>
+
+  /**
+   * @rewrite ichain_ from "@principia/base/Array"
+   */
+  ichain<T, B>(this: ReadonlyArray<T>, f: (i: number, a: T) => ReadonlyArray<B>): ReadonlyArray<B>
+
+  /**
+   * @rewrite ifilterMap_ from "@principia/base/Array"
+   */
+  ifilterMap<T, B>(this: ReadonlyArray<T>, f: (i: number, a: T) => Maybe<B>): ReadonlyArray<B>
+
+  /**
+   * @rewrite ifindMap_ from "@principia/base/Array"
+   */
+  ifindMap<A, B>(this: NonEmptyArray<A>, f: (i: number, a: A) => Maybe<B>): Maybe<B>
+
+  /**
+   * @rewrite ifindMap_ from "@principia/base/Array"
+   */
+  ifindMap<T, B>(this: ReadonlyArray<T>, f: (i: number, a: T) => Maybe<B>): Maybe<B>
+
+  /**
+   * @rewriteConstraint ifoldMap_ from "@principia/base/Array"
+   */
+  ifoldMap<T, M>(this: ReadonlyArray<T>, M: Monoid<M>): (f: (i: number, a: T) => M) => M
+
+  /**
+   * @rewrite ifoldl_ from "@principia/base/Array"
+   */
+  ifoldl<T, B>(this: ReadonlyArray<T>, b: B, f: (i: number, b: B, a: T) => B): B
+
+  /**
+   * @rewrite ifoldlWhile_ from "@principia/base/Array"
+   */
+  ifoldlWhile<T, B>(this: ReadonlyArray<T>, b: B, predicate: Predicate<B>, f: (i: number, b: B, a: T) => B): B
+
+  /**
+   * @rewrite ifoldr_ from "@principia/base/Array"
+   */
+  ifoldr<T, B>(this: ReadonlyArray<T>, b: B, f: (i: number, a: T, b: B) => B): B
+
+  /**
+   * @rewrite ifoldrWhile_ from "@principia/base/Array"
+   */
+  ifoldrWhile<T, B>(this: ReadonlyArray<T>, b: B, predicate: Predicate<B>, f: (i: number, a: T, b: B) => B): B
 
   /**
    * @rewriteGetter init from "@principia/base/NonEmptyArray"
@@ -507,6 +551,94 @@ export interface ArrayOps {
   intersperse<T>(this: ReadonlyArray<T>, a: T): ReadonlyArray<T>
 
   /**
+   * @rewrite ipartition_ from "@principia/base/Array"
+   */
+  ipartition<T, B extends T>(
+    this: ReadonlyArray<T>,
+    refinement: RefinementWithIndex<number, T, B>
+  ): readonly [ReadonlyArray<T>, ReadonlyArray<B>]
+
+  /**
+   * @rewrite ipartition_ from "@principia/base/Array"
+   */
+  ipartition<T>(
+    this: ReadonlyArray<T>,
+    predicate: PredicateWithIndex<number, T>
+  ): readonly [ReadonlyArray<T>, ReadonlyArray<T>]
+
+  /**
+   * @rewrite ipartition_ from "@principia/base/Array"
+   */
+  ipartition<A, B extends A>(
+    this: NonEmptyArray<A>,
+    refinement: RefinementWithIndex<number, A, B>
+  ): readonly [ReadonlyArray<A>, ReadonlyArray<B>]
+
+  /**
+   * @rewrite ipartition_ from "@principia/base/Array"
+   */
+  ipartition<A>(
+    this: NonEmptyArray<A>,
+    predicate: PredicateWithIndex<number, A>
+  ): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
+
+  /**
+   * @rewrite ipartitionMap_ from "@principia/base/Array"
+   */
+  ipartitionMap<T, B, C>(
+    this: ReadonlyArray<T>,
+    f: (i: number, a: T) => Either<B, C>
+  ): readonly [ReadonlyArray<B>, ReadonlyArray<C>]
+
+  /**
+   * @rewrite ipartitionMap_ from "@principia/base/Array"
+   */
+  ipartitionMap<A, B, C>(
+    this: NonEmptyArray<A>,
+    f: (i: number, a: A) => Either<B, C>
+  ): readonly [ReadonlyArray<B>, ReadonlyArray<C>]
+
+  /**
+   * @rewriteConstraint itraverse_ from "@principia/base/Array"
+   */
+  itraverse<A, F extends HKT.HKT, C = HKT.None>(
+    this: NonEmptyArray<A>,
+    A: Applicative<F, C>
+  ): <K, Q, W, X, I, S, R, E, B>(
+    f: (i: number, a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, NonEmptyArray<B>>
+
+  /**
+   * @rewriteConstraint itraverse_ from "@principia/base/Array"
+   */
+  itraverse<T, F extends HKT.HKT, C = HKT.None>(
+    this: ReadonlyArray<T>,
+    A: Applicative<F, C>
+  ): <K, Q, W, X, I, S, R, E, A>(
+    f: (i: number, a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
+
+  /**
+   * @rewriteConstraint iwilt_ from "@principia/base/Array"
+   */
+  iwilt<T, F extends HKT.HKT, C = HKT.None>(
+    this: ReadonlyArray<T>,
+    A: Applicative<F, C>
+  ): <K, Q, W, X, I, S, R, E, A, B>(
+    f: (i: number, a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<A, B>>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [ReadonlyArray<A>, ReadonlyArray<B>]>
+
+  /**
+   * @rewriteConstraint iwither_ from "@principia/base/Array"
+   */
+  iwither<T, F extends HKT.HKT, C = HKT.Auto>(
+    this: ReadonlyArray<T>,
+    A: Applicative<F, C>
+  ): <K, Q, W, X, I, S, R, E, A>(
+    f: (i: number, a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Maybe<A>>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
+
+  /**
    * @rewrite last from "@principia/base/NonEmptyArray"
    */
   last<T>(this: NonEmptyArray<T>): T
@@ -539,56 +671,48 @@ export interface ArrayOps {
   /**
    * @rewrite modifyAt_ from "@principia/base/Array"
    */
-  modifyAt<A>(this: NonEmptyArray<A>, i: number, f: (a: A) => A): Maybe<NonEmptyArray<A>>
+  modifyAt<T>(this: ReadonlyArray<T>, i: number, f: (a: T) => T): Maybe<ReadonlyArray<T>>
 
   /**
    * @rewrite modifyAt_ from "@principia/base/Array"
    */
-  modifyAt<T>(this: ReadonlyArray<T>, i: number, f: (a: T) => T): Maybe<ReadonlyArray<T>>
+  modifyAt<A>(this: NonEmptyArray<A>, i: number, f: (a: A) => A): Maybe<NonEmptyArray<A>>
 
   /**
    * @rewrite mutate_ from "@principia/base/Array"
    */
   mutate<T>(this: ReadonlyArray<T>, f: (as: Array<T>) => void): ReadonlyArray<T>
+  /**
+   * @rewrite partition_ from "@principia/base/Array"
+   */
+  partition<T, B extends T>(
+    this: ReadonlyArray<T>,
+    refinement: Refinement<T, B>
+  ): readonly [ReadonlyArray<T>, ReadonlyArray<B>]
 
   /**
    * @rewrite partition_ from "@principia/base/Array"
    */
-  partition<A>(
-    this: NonEmptyArray<A>,
-    predicate: PredicateWithIndex<number, A>
-  ): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
+  partition<T>(this: ReadonlyArray<T>, predicate: Predicate<T>): readonly [ReadonlyArray<T>, ReadonlyArray<T>]
+  /**
+   * @rewrite partition_ from "@principia/base/Array"
+   */
+  partition<A>(this: NonEmptyArray<A>, predicate: Predicate<A>): readonly [ReadonlyArray<A>, ReadonlyArray<A>]
 
   /**
    * @rewrite partition_ from "@principia/base/Array"
    */
   partition<A, B extends A>(
     this: NonEmptyArray<A>,
-    refinement: RefinementWithIndex<number, A, B>
+    refinement: Refinement<A, B>
   ): readonly [ReadonlyArray<A>, ReadonlyArray<B>]
-
-  /**
-   * @rewrite partition_ from "@principia/base/Array"
-   */
-  partition<T, B extends T>(
-    this: ReadonlyArray<T>,
-    refinement: RefinementWithIndex<number, T, B>
-  ): readonly [ReadonlyArray<T>, ReadonlyArray<B>]
-
-  /**
-   * @rewrite partition_ from "@principia/base/Array"
-   */
-  partition<T>(
-    this: ReadonlyArray<T>,
-    predicate: PredicateWithIndex<number, T>
-  ): readonly [ReadonlyArray<T>, ReadonlyArray<T>]
 
   /**
    * @rewrite partitionMap_ from "@principia/base/Array"
    */
   partitionMap<T, B, C>(
     this: ReadonlyArray<T>,
-    f: (a: T, i: number) => Either<B, C>
+    f: (a: T) => Either<B, C>
   ): readonly [ReadonlyArray<B>, ReadonlyArray<C>]
 
   /**
@@ -596,8 +720,9 @@ export interface ArrayOps {
    */
   partitionMap<A, B, C>(
     this: NonEmptyArray<A>,
-    f: (a: A, i: number) => Either<B, C>
+    f: (a: A) => Either<B, C>
   ): readonly [ReadonlyArray<B>, ReadonlyArray<C>]
+
   /**
    * @rewrite prepend_ from "@principia/base/Array"
    */
@@ -624,14 +749,14 @@ export interface ArrayOps {
   rights<E, A>(this: ReadonlyArray<Either<E, A>>): ReadonlyArray<A>
 
   /**
-   * @rewrite rotate_ from "@principia/base/NonEmptyArray"
-   */
-  rotate<A>(this: NonEmptyArray<A>, n: number): NonEmptyArray<A>
-
-  /**
    * @rewrite rotate_ from "@principia/base/Array"
    */
   rotate<T>(this: ReadonlyArray<T>, n: number): ReadonlyArray<T>
+
+  /**
+   * @rewrite rotate_ from "@principia/base/NonEmptyArray"
+   */
+  rotate<A>(this: NonEmptyArray<A>, n: number): NonEmptyArray<A>
 
   /**
    * @rewrite scanl_ from "@principia/base/Array"
@@ -661,15 +786,15 @@ export interface ArrayOps {
   /**
    * @rewrite spanl_ from "@principia/base/Array"
    */
-  spanl<T>(this: ReadonlyArray<T>, predicate: Predicate<T>): readonly [ReadonlyArray<T>, ReadonlyArray<T>]
-
-  /**
-   * @rewrite spanl_ from "@principia/base/Array"
-   */
   spanl<T, B extends T>(
     this: ReadonlyArray<T>,
     refinement: Refinement<T, B>
   ): readonly [ReadonlyArray<B>, ReadonlyArray<T>]
+
+  /**
+   * @rewrite spanl_ from "@principia/base/Array"
+   */
+  spanl<T>(this: ReadonlyArray<T>, predicate: Predicate<T>): readonly [ReadonlyArray<T>, ReadonlyArray<T>]
 
   /**
    * @rewrite spanr_ from "@principia/base/Array"
@@ -746,17 +871,17 @@ export interface ArrayOps {
     this: ReadonlyArray<T>,
     A: Applicative<F, C>
   ): <K, Q, W, X, I, S, R, E, A>(
-    f: (a: T, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+    f: (a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
   ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
 
   /**
-   * @rewrite traverse_ from "@principia/base/Array"
+   * @rewriteConstraint traverse_ from "@principia/base/Array"
    */
   traverse<A, F extends HKT.HKT, C = HKT.None>(
     this: NonEmptyArray<A>,
     A: Applicative<F, C>
   ): <K, Q, W, X, I, S, R, E, B>(
-    f: (a: A, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
+    f: (a: A) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, B>
   ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, NonEmptyArray<B>>
 
   /**
@@ -796,7 +921,7 @@ export interface ArrayOps {
     this: ReadonlyArray<T>,
     A: Applicative<F, C>
   ): <K, Q, W, X, I, S, R, E, A, B>(
-    f: (a: T, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<A, B>>
+    f: (a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Either<A, B>>
   ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, readonly [ReadonlyArray<A>, ReadonlyArray<B>]>
 
   /**
@@ -806,7 +931,7 @@ export interface ArrayOps {
     this: ReadonlyArray<T>,
     A: Applicative<F, C>
   ): <K, Q, W, X, I, S, R, E, A>(
-    f: (a: T, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Maybe<A>>
+    f: (a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, Maybe<A>>
   ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
 
   /**
@@ -825,12 +950,12 @@ declare global {
     /**
      * @rewrite filter_ from "@principia/base/Array"
      */
-    filter<T>(this: ReadonlyArray<T>, refinement: PredicateWithIndex<number, T>): ReadonlyArray<T>
+    filter<T>(this: ReadonlyArray<T>, refinement: Predicate<T>): ReadonlyArray<T>
 
     /**
      * @rewrite filter_ from "@principia/base/Array"
      */
-    filter<T, B extends T>(this: ReadonlyArray<T>, refinement: RefinementWithIndex<number, T, B>): ReadonlyArray<B>
+    filter<T, B extends T>(this: ReadonlyArray<T>, refinement: Refinement<T, B>): ReadonlyArray<B>
 
     /**
      * @rewrite find_ from "@principia/base/Array"
@@ -848,14 +973,34 @@ declare global {
     findIndex<T>(this: ReadonlyArray<T>, predicate: Predicate<T>): Maybe<number>
 
     /**
-     * @rewrite map_ from "@principia/base/Array"
+     * @rewrite ifilter_ from "@principia/base/Array"
      */
-    map<T, B>(this: MutableNonEmptyArray<T>, f: (a: T, i: number) => B): NonEmptyArray<B>
+    ifilter<T, B extends T>(this: ReadonlyArray<T>, refinement: RefinementWithIndex<number, T, B>): ReadonlyArray<B>
+
+    /**
+     * @rewrite ifilter_ from "@principia/base/Array"
+     */
+    ifilter<T>(this: ReadonlyArray<T>, refinement: PredicateWithIndex<number, T>): ReadonlyArray<T>
+
+    /**
+     * @rewrite imap_ from "@principia/base/Array"
+     */
+    imap<T, B>(this: MutableNonEmptyArray<T>, f: (i: number, a: T) => B): NonEmptyArray<B>
+
+    /**
+     * @rewrite imap_ from "@principia/base/Array"
+     */
+    imap<T, B>(this: ReadonlyArray<T>, f: (i: number, a: T) => B): ReadonlyArray<B>
 
     /**
      * @rewrite map_ from "@principia/base/Array"
      */
-    map<T, B>(this: ReadonlyArray<T>, f: (a: T, i: number) => B): ReadonlyArray<B>
+    map<T, B>(this: MutableNonEmptyArray<T>, f: (a: T) => B): NonEmptyArray<B>
+
+    /**
+     * @rewrite map_ from "@principia/base/Array"
+     */
+    map<T, B>(this: ReadonlyArray<T>, f: (a: T) => B): ReadonlyArray<B>
 
     /**
      * @rewrite reverse from "@principia/base/Array"
@@ -871,22 +1016,22 @@ declare global {
     /**
      * @rewrite filter_ from "@principia/base/Array"
      */
-    filter<T>(this: ReadonlyArray<T>, refinement: PredicateWithIndex<number, T>): ReadonlyArray<T>
+    filter<T>(this: ReadonlyArray<T>, predicate: Predicate<number, T>): ReadonlyArray<T>
 
     /**
      * @rewrite filter_ from "@principia/base/Array"
      */
-    filter<T, B extends T>(this: ReadonlyArray<T>, refinement: RefinementWithIndex<number, T, B>): ReadonlyArray<B>
+    filter<T, B extends T>(this: ReadonlyArray<T>, refinement: Refinement<T, B>): ReadonlyArray<B>
 
     /**
      * @rewrite find_ from "@principia/base/Array"
      */
-    find<T, B extends T>(this: ReadonlyArray<T>, refinement: RefinementWithIndex<number, T, B>): Maybe<B>
+    find<T>(this: ReadonlyArray<T>, predicate: Predicate<T>): Maybe<T>
 
     /**
      * @rewrite find_ from "@principia/base/Array"
      */
-    find<T>(this: ReadonlyArray<T>, predicate: PredicateWithIndex<number, T>): Maybe<T>
+    find<T, B extends T>(this: ReadonlyArray<T>, refinement: Refinement<T, B>): Maybe<B>
 
     /**
      * @rewrite findIndex_ from "@principia/base/Array"
@@ -894,14 +1039,44 @@ declare global {
     findIndex<T>(this: ReadonlyArray<T>, predicate: Predicate<T>): Maybe<number>
 
     /**
-     * @rewrite map_ from "@principia/base/Array"
+     * @rewrite ifilter_ from "@principia/base/Array"
      */
-    map<T, B>(this: NonEmptyArray<T>, f: (a: T, i: number) => B): NonEmptyArray<B>
+    ifilter<T>(this: ReadonlyArray<T>, refinement: PredicateWithIndex<number, T>): ReadonlyArray<T>
+
+    /**
+     * @rewrite ifilter_ from "@principia/base/Array"
+     */
+    ifilter<T, B extends T>(this: ReadonlyArray<T>, refinement: RefinementWithIndex<number, T, B>): ReadonlyArray<B>
+
+    /**
+     * @rewrite ifind_ from "@principia/base/Array"
+     */
+    ifind<T>(this: ReadonlyArray<T>, predicate: PredicateWithIndex<number, T>): Maybe<T>
+
+    /**
+     * @rewrite ifind_ from "@principia/base/Array"
+     */
+    ifind<T, B extends T>(this: ReadonlyArray<T>, refinement: RefinementWithIndex<number, T, B>): Maybe<B>
+
+    /**
+     * @rewrite imap_ from "@principia/base/Array"
+     */
+    imap<T, B>(this: NonEmptyArray<T>, f: (i: number, a: T) => B): NonEmptyArray<B>
+
+    /**
+     * @rewrite imap_ from "@principia/base/Array"
+     */
+    imap<T, B>(this: ReadonlyArray<T>, f: (i: number, a: T) => B): ReadonlyArray<B>
 
     /**
      * @rewrite map_ from "@principia/base/Array"
      */
-    map<T, B>(this: ReadonlyArray<T>, f: (a: T, i: number) => B): ReadonlyArray<B>
+    map<T, B>(this: NonEmptyArray<T>, f: (a: T) => B): NonEmptyArray<B>
+
+    /**
+     * @rewrite map_ from "@principia/base/Array"
+     */
+    map<T, B>(this: ReadonlyArray<T>, f: (a: T) => B): ReadonlyArray<B>
 
     /**
      * @rewrite reverse from "@principia/base/Array"

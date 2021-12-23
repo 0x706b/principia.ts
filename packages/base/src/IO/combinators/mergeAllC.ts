@@ -4,8 +4,8 @@ import type { IO } from '../core'
 
 import { pipe } from '../../function'
 import * as Ref from '../../Ref'
-import { chain, crossSecond } from '../core'
-import { foreachUnitPar } from './foreach-concurrent'
+import { apSecond, chain } from '../core'
+import { foreachUnitC } from './foreachC'
 
 /**
  * Merges an `Iterable<IO>` to a single IO, working in parallel.
@@ -19,10 +19,10 @@ import { foreachUnitPar } from './foreach-concurrent'
  *
  * @trace 2
  */
-export function mergeAllPar_<R, E, A, B>(fas: Iterable<IO<R, E, A>>, b: B, f: (b: B, a: A) => B): IO<R, E, B> {
+export function mergeAllC_<R, E, A, B>(fas: Iterable<IO<R, E, A>>, b: B, f: (b: B, a: A) => B): IO<R, E, B> {
   return pipe(
     Ref.make(b),
-    chain((acc) => pipe(fas, foreachUnitPar(chain((a) => Ref.update_(acc, (b) => f(b, a)))), crossSecond(Ref.get(acc))))
+    chain((acc) => pipe(fas, foreachUnitC(chain((a) => Ref.update_(acc, (b) => f(b, a)))), apSecond(Ref.get(acc))))
   )
 }
 
@@ -38,6 +38,6 @@ export function mergeAllPar_<R, E, A, B>(fas: Iterable<IO<R, E, A>>, b: B, f: (b
  *
  * @trace 1
  */
-export function mergeAllPar<A, B>(b: B, f: (b: B, a: A) => B) {
-  return <R, E>(fas: Iterable<IO<R, E, A>>): IO<R, E, B> => mergeAllPar_(fas, b, f)
+export function mergeAllC<A, B>(b: B, f: (b: B, a: A) => B) {
+  return <R, E>(fas: Iterable<IO<R, E, A>>): IO<R, E, B> => mergeAllC_(fas, b, f)
 }

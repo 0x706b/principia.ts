@@ -6,14 +6,14 @@ import type { Managed } from '../core'
 import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
 import { identity } from '../../function'
-import { foreachPar_, foreachUnitPar_ } from './foreachPar'
+import { foreachC_, foreachUnitC_ } from './foreachC'
 
 /**
  * @trace call
  */
-export function collectAllPar<R, E, A>(mas: Iterable<Managed<R, E, A>>): Managed<R, E, Chunk<A>> {
+export function sequenceIterableC<R, E, A>(mas: Iterable<Managed<R, E, A>>): Managed<R, E, Chunk<A>> {
   const trace = accessCallTrace()
-  return foreachPar_(
+  return foreachC_(
     mas,
     traceFrom(trace, (_) => _)
   )
@@ -22,7 +22,7 @@ export function collectAllPar<R, E, A>(mas: Iterable<Managed<R, E, A>>): Managed
 /**
  * @trace call
  */
-export function collectAllUnitPar<R, E, A>(mas: Iterable<Managed<R, E, A>>): Managed<R, E, void> {
+export function sequenceIterableUnitC<R, E, A>(mas: Iterable<Managed<R, E, A>>): Managed<R, E, void> {
   const trace = accessCallTrace()
-  return traceCall(foreachUnitPar_, trace)(mas, identity)
+  return traceCall(foreachUnitC_, trace)(mas, identity)
 }

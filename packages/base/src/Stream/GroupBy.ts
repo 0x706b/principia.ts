@@ -64,7 +64,7 @@ export class GroupBy<R, E, K, V, A> {
                           pipe(
                             ref,
                             Ref.update(HM.set(k, idx)),
-                            I.crossSecond(
+                            I.apSecond(
                               pipe(
                                 out,
                                 Q.offer(Ex.succeed(tuple(k, pipe(q, Q.map(Ex.map(([, v]) => v)))))),
@@ -89,7 +89,7 @@ export class GroupBy<R, E, K, V, A> {
   apply<R1, E1, A>(f: (k: K, s: S.Stream<unknown, E, V>) => S.Stream<R1, E1, A>): S.Stream<R & R1, E | E1, A> {
     return pipe(
       this.grouped,
-      S.chainPar(
+      S.mergeMap(
         ([k, q]) => f(k, pipe(S.fromQueueWithShutdown_(q), S.flattenExitOption)),
         Number.MAX_SAFE_INTEGER,
         this.buffer

@@ -405,30 +405,30 @@ export class CrossWithIO<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B,
   isShutdown: I.UIO<boolean> = this.fa.isShutdown
 
   offer(a: A1): I.IO<RA & RA1, EA1 | EA, boolean> {
-    return I.crossWithPar_(this.fa.offer(a), this.fb.offer(a), (x, y) => x && y)
+    return I.crossWithC_(this.fa.offer(a), this.fb.offer(a), (x, y) => x && y)
   }
 
   offerAll(as: Iterable<A1>): I.IO<RA & RA1, EA1 | EA, boolean> {
-    return I.crossWithPar_(this.fa.offerAll(as), this.fb.offerAll(as), (x, y) => x && y)
+    return I.crossWithC_(this.fa.offerAll(as), this.fb.offerAll(as), (x, y) => x && y)
   }
 
-  shutdown: I.UIO<void> = I.crossWithPar_(this.fa.shutdown, this.fb.shutdown, () => undefined)
+  shutdown: I.UIO<void> = I.crossWithC_(this.fa.shutdown, this.fb.shutdown, () => undefined)
 
-  size: I.UIO<number> = I.crossWithPar_(this.fa.size, this.fb.size, (x, y) => Math.max(x, y))
+  size: I.UIO<number> = I.crossWithC_(this.fa.size, this.fb.size, (x, y) => Math.max(x, y))
 
-  take: I.IO<RB & RB1 & R3, E3 | EB | EB1, D> = I.chain_(I.crossPar_(this.fa.take, this.fb.take), ([b, c]) =>
+  take: I.IO<RB & RB1 & R3, E3 | EB | EB1, D> = I.chain_(I.crossC_(this.fa.take, this.fb.take), ([b, c]) =>
     this.f(b, c)
   )
 
   takeAll: I.IO<RB & RB1 & R3, E3 | EB | EB1, Chunk<D>> = I.chain_(
-    I.crossPar_(this.fa.takeAll, this.fb.takeAll),
+    I.crossC_(this.fa.takeAll, this.fb.takeAll),
     ([bs, cs]) => I.foreach_(C.zip_(bs, cs), ([b, c]) => this.f(b, c))
   )
 
   takeUpTo(max: number): I.IO<RB & RB1 & R3, E3 | EB | EB1, Chunk<D>> {
     return pipe(
       this.fa.takeUpTo(max),
-      I.crossPar(this.fb.takeUpTo(max)),
+      I.crossC(this.fb.takeUpTo(max)),
       I.chain(([bs, cs]) => I.foreach_(C.zip_(bs, cs), ([b, c]) => this.f(b, c)))
     )
   }
@@ -961,7 +961,7 @@ class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A>
 
     return I.uninterruptible(
       I.whenIO(F.succeed_(this.shutdownHook, undefined))(
-        I.chain_(I.foreachPar_(_unsafePollAll(this.takers), F.interruptAs(id)), () => this.strategy.shutdown)
+        I.chain_(I.foreachC_(_unsafePollAll(this.takers), F.interruptAs(id)), () => this.strategy.shutdown)
       )
     )
   })
@@ -1225,9 +1225,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
     return I.gen(function* (_) {
       const fiberId = yield* _(I.fiberId())
       const putters = yield* _(I.succeedLazy(() => _unsafePollAll(self.putters)))
-      yield* _(
-        I.foreachPar_(putters, ([, p, lastItem]) => (lastItem ? I.asUnit(F.interruptAs_(p, fiberId)) : I.unit()))
-      )
+      yield* _(I.foreachC_(putters, ([, p, lastItem]) => (lastItem ? I.asUnit(F.interruptAs_(p, fiberId)) : I.unit())))
     })
   }
 

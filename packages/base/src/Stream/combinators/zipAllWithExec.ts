@@ -100,7 +100,7 @@ export function zipAllWithExec_<R, E, A, R1, E1, B, C>(
               return pipe(
                 pullL,
                 IO.optional,
-                IO.crossWithPar(IO.optional(pullR), (l, r) => handleSuccess(l, r, excess, left, right, both)),
+                IO.crossWithC(IO.optional(pullR), (l, r) => handleSuccess(l, r, excess, left, right, both)),
                 IO.catchAllCause(flow(Ca.map(M.just), Ex.failCause, IO.succeed))
               )
             }

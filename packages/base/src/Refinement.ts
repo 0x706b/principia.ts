@@ -11,7 +11,7 @@ export interface Refinement<A, B extends A> {
 }
 
 export interface RefinementWithIndex<I, A, B extends A> {
-  (a: A, i: I): a is B
+  (i: I, a: A): a is B
 }
 
 /*

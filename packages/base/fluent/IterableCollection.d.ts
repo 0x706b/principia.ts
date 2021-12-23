@@ -132,33 +132,27 @@ export interface IterableCollectionOps {
   /**
    * @rewrite every_ from "@principia/base/Iterable"
    */
-  every<T, B extends T>(
-    this: IterableCollection<T>,
-    refinement: RefinementWithIndex<number, T, B>
-  ): this is IterableCollection<B>
+  every<T, B extends T>(this: IterableCollection<T>, refinement: Refinement<T, B>): this is IterableCollection<B>
 
   /**
    * @rewrite every_ from "@principia/base/Iterable"
    */
-  every<T>(this: IterableCollection<T>, predicate: PredicateWithIndex<number, T>): boolean
+  every<T>(this: IterableCollection<T>, predicate: Predicate<T>): boolean
 
   /**
    * @rewrite filter_ from "@principia/base/Iterable"
    */
-  filter<T>(this: IterableCollection<T>, predicate: PredicateWithIndex<number, T>): IterableCollection<T>
+  filter<T>(this: IterableCollection<T>, predicate: Predicate<T>): IterableCollection<T>
 
   /**
    * @rewrite filter_ from "@principia/base/Iterable"
    */
-  filter<T, B extends T>(
-    this: IterableCollection<T>,
-    refinement: RefinementWithIndex<number, T, B>
-  ): IterableCollection<B>
+  filter<T, B extends T>(this: IterableCollection<T>, refinement: Refinement<T, B>): IterableCollection<B>
 
   /**
    * @rewrite filterMap_ from "@principia/base/Iterable"
    */
-  filterMap<T, B>(this: IterableCollection<T>, f: (a: T, i: number) => Maybe<B>): IterableCollection<B>
+  filterMap<T, B>(this: IterableCollection<T>, f: (a: T) => Maybe<B>): IterableCollection<B>
 
   /**
    * @rewrite find_ from "@principia/base/Iterable"
@@ -169,42 +163,118 @@ export interface IterableCollectionOps {
    * @rewrite find_ from "@principia/base/Iterable"
    */
   find<T, B extends T>(this: IterableCollection<T>, refinement: Refinement<T, B>): Maybe<B>
+
   /**
    * @rewriteConstraint foldMap_ from "@principia/base/Iterable"
    */
-  foldMap<T, M>(this: IterableCollection<T>, M: Monoid<M>): (f: (a: T, i: number) => M) => M
+  foldMap<T, M>(this: IterableCollection<T>, M: Monoid<M>): (f: (a: T) => M) => M
 
   /**
    * @rewrite foldl_ from "@principia/base/Iterable"
    */
-  foldl<T, B>(this: IterableCollection<T>, b: B, f: (b: B, a: T, i: number) => B): B
+  foldl<T, B>(this: IterableCollection<T>, b: B, f: (b: B, a: T) => B): B
 
   /**
    * @rewrite foldr_ from "@principia/base/Iterable"
    */
-  foldr<T, B>(this: IterableCollection<T>, b: Eval<B>, f: (a: T, b: Eval<B>, i: number) => Eval<B>): Eval<B>
+  foldr<T, B>(this: IterableCollection<T>, b: Eval<B>, f: (a: T, b: Eval<B>) => Eval<B>): Eval<B>
+
+  /**
+   * @rewrite ievery_ from "@principia/base/Iterable"
+   */
+  ievery<T>(this: IterableCollection<T>, predicate: PredicateWithIndex<number, T>): boolean
+
+  /**
+   * @rewrite ievery_ from "@principia/base/Iterable"
+   */
+  ievery<T, B extends T>(
+    this: IterableCollection<T>,
+    refinement: RefinementWithIndex<number, T, B>
+  ): this is IterableCollection<B>
+
+  /**
+   * @rewrite ifilter_ from "@principia/base/Iterable"
+   */
+  ifilter<T>(this: IterableCollection<T>, predicate: PredicateWithIndex<number, T>): IterableCollection<T>
+
+  /**
+   * @rewrite ifilter_ from "@principia/base/Iterable"
+   */
+  ifilter<T, B extends T>(
+    this: IterableCollection<T>,
+    refinement: RefinementWithIndex<number, T, B>
+  ): IterableCollection<B>
+
+  /**
+   * @rewrite ifilterMap_ from "@principia/base/Iterable"
+   */
+  ifilterMap<T, B>(this: IterableCollection<T>, f: (i: number, a: T) => Maybe<B>): IterableCollection<B>
+
+  /**
+   * @rewriteConstraint ifoldMap_ from "@principia/base/Iterable"
+   */
+  ifoldMap<T, M>(this: IterableCollection<T>, M: Monoid<M>): (f: (i: number, a: T) => M) => M
+
+  /**
+   * @rewrite ifoldl_ from "@principia/base/Iterable"
+   */
+  ifoldl<T, B>(this: IterableCollection<T>, b: B, f: (i: number, b: B, a: T) => B): B
+
+  /**
+   * @rewrite ifoldr_ from "@principia/base/Iterable"
+   */
+  ifoldr<T, B>(this: IterableCollection<T>, b: Eval<B>, f: (i: number, a: T, b: Eval<B>) => Eval<B>): Eval<B>
+
+  /**
+   * @rewrite imap_ from "@principia/base/Iterable"
+   */
+  imap<T, B>(this: IterableCollection<T>, f: (a: T) => B): IterableCollection<B>
+
+  /**
+   * @rewrite ipartition_ from "@principia/base/Iterable"
+   */
+  ipartition<T, B extends T>(
+    this: IterableCollection<T>,
+    refinement: RefinementWithIndex<number, T, B>
+  ): readonly [IterableCollection<T>, IterableCollection<B>]
+
+  /**
+   * @rewrite ipartition_ from "@principia/base/Iterable"
+   */
+  ipartition<T>(
+    this: IterableCollection<T>,
+    refinement: PredicateWithIndex<number, T>
+  ): readonly [IterableCollection<T>, IterableCollection<T>]
+
+  /**
+   * @rewrite ipartitionMap_ from "@principia/base/Iterable"
+   */
+  ipartitionMap<T, B, C>(
+    this: IterableCollection<T>,
+    f: (i: number, a: T) => Either<B, C>
+  ): readonly [IterableCollection<B>, IterableCollection<C>]
+
+  /**
+   * @rewriteConstraint itraverse_ from "@principia/base/Iterable"
+   */
+  itraverse<T, F extends HKT.HKT, C>(
+    this: IterableCollection<T>,
+    A: Applicative<F, C>
+  ): <K, Q, W, X, I, S, R, E, A>(
+    f: (i: number, a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, IterableCollection<A>>
 
   /**
    * @rewrite map_ from "@principia/base/Iterable"
    */
-  map<T, B>(this: IterableCollection<T>, f: (a: T, i: number) => B): IterableCollection<B>
-
-  /**
-   * @rewriteConstraint mapA_ from "@principia/base/Iterable"
-   */
-  mapA<T, F extends HKT.HKT, C>(
-    this: IterableCollection<T>,
-    A: Applicative<F, C>
-  ): <K, Q, W, X, I, S, R, E, A>(
-    f: (a: T, i: number) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
-  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, IterableCollection<A>>
+  map<T, B>(this: IterableCollection<T>, f: (i: number, a: T) => B): IterableCollection<B>
 
   /**
    * @rewrite partition_ from "@principia/base/Iterable"
    */
   partition<T, B extends T>(
     this: IterableCollection<T>,
-    refinement: RefinementWithIndex<number, T, B>
+    refinement: Refinement<T, B>
   ): readonly [IterableCollection<T>, IterableCollection<B>]
 
   /**
@@ -212,7 +282,7 @@ export interface IterableCollectionOps {
    */
   partition<T>(
     this: IterableCollection<T>,
-    refinement: PredicateWithIndex<number, T>
+    predicate: Predicate<T>
   ): readonly [IterableCollection<T>, IterableCollection<T>]
 
   /**
@@ -220,7 +290,7 @@ export interface IterableCollectionOps {
    */
   partitionMap<T, B, C>(
     this: IterableCollection<T>,
-    f: (a: T, i: number) => Either<B, C>
+    f: (a: T) => Either<B, C>
   ): readonly [IterableCollection<B>, IterableCollection<C>]
 
   /**
@@ -237,6 +307,16 @@ export interface IterableCollectionOps {
    * @rewrite toArray from "@principia/base/Iterable"
    */
   toArray<T>(this: IterableCollection<T>): ReadonlyArray<T>
+
+  /**
+   * @rewriteConstraint traverse_ from "@principia/base/Iterable"
+   */
+  traverse<T, F extends HKT.HKT, C>(
+    this: IterableCollection<T>,
+    A: Applicative<F, C>
+  ): <K, Q, W, X, I, S, R, E, A>(
+    f: (a: T) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>
+  ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, IterableCollection<A>>
 
   /**
    * @rewrite zip_ from "@principia/base/Iterable"

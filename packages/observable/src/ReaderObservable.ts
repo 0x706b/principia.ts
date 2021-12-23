@@ -40,13 +40,21 @@ export function fromObservable<E, A>(fa: O.Observable<E, A>): ReaderObservable<u
  * -------------------------------------------------------------------------------------------------
  */
 
-export function map_<R, E, A, B>(fa: ReaderObservable<R, E, A>, f: (a: A, i: number) => B): ReaderObservable<R, E, B> {
-  return asksObservable((r) => pipe(fa, give(r), O.map(f)))
+export function imap_<R, E, A, B>(fa: ReaderObservable<R, E, A>, f: (i: number, a: A) => B): ReaderObservable<R, E, B> {
+  return asksObservable((r) => pipe(fa, give(r), O.imap(f)))
 }
 
-export function map<A, B>(
-  f: (a: A, i: number) => B
+export function imap<A, B>(
+  f: (i: number, a: A) => B
 ): <R, E>(fa: ReaderObservable<R, E, A>) => ReaderObservable<R, E, B> {
+  return (fa) => imap_(fa, f)
+}
+
+export function map_<R, E, A, B>(fa: ReaderObservable<R, E, A>, f: (a: A) => B): ReaderObservable<R, E, B> {
+  return imap_(fa, (_, a) => f(a))
+}
+
+export function map<A, B>(f: (a: A) => B): <R, E>(fa: ReaderObservable<R, E, A>) => ReaderObservable<R, E, B> {
   return (fa) => map_(fa, f)
 }
 
@@ -74,16 +82,31 @@ export function swap<R, E, A>(fa: ReaderObservable<R, E, A>): ReaderObservable<R
  * -------------------------------------------------------------------------------------------------
  */
 
-export function mergeMap_<R, E, A, R1, E1, B>(
+export function imergeMap_<R, E, A, R1, E1, B>(
   ma: ReaderObservable<R, E, A>,
-  f: (a: A, i: number) => ReaderObservable<R1, E1, B>,
+  f: (i: number, a: A) => ReaderObservable<R1, E1, B>,
   concurrent = Infinity
 ): ReaderObservable<R & R1, E | E1, B> {
-  return asksObservable((r) => pipe(ma, give(r), O.mergeMap(flow(f, give(r)), concurrent)))
+  return asksObservable((r) => pipe(ma, give(r), O.imergeMap(flow(f, give(r)), concurrent)))
+}
+
+export function imergeMap<A, R1, E1, B>(
+  f: (i: number, a: A) => ReaderObservable<R1, E1, B>,
+  concurrent = Infinity
+): <R, E>(ma: ReaderObservable<R, E, A>) => ReaderObservable<R & R1, E | E1, B> {
+  return (ma) => imergeMap_(ma, f, concurrent)
+}
+
+export function mergeMap_<R, E, A, R1, E1, B>(
+  ma: ReaderObservable<R, E, A>,
+  f: (a: A) => ReaderObservable<R1, E1, B>,
+  concurrent = Infinity
+): ReaderObservable<R & R1, E | E1, B> {
+  return imergeMap_(ma, (_, a) => f(a), concurrent)
 }
 
 export function mergeMap<A, R1, E1, B>(
-  f: (a: A, i: number) => ReaderObservable<R1, E1, B>,
+  f: (a: A) => ReaderObservable<R1, E1, B>,
   concurrent = Infinity
 ): <R, E>(ma: ReaderObservable<R, E, A>) => ReaderObservable<R & R1, E | E1, B> {
   return (ma) => mergeMap_(ma, f, concurrent)
@@ -170,28 +193,54 @@ export function pure<A>(a: A): ReaderObservable<unknown, never, A> {
  * -------------------------------------------------------------------------------------------------
  */
 
+export function iconcatMap_<R, E, A, R1, E1, B>(
+  ma: ReaderObservable<R, E, A>,
+  f: (i: number, a: A) => ReaderObservable<R1, E1, B>
+): ReaderObservable<R & R1, E | E1, B> {
+  return asksObservable((r) => pipe(ma, give(r), O.iconcatMap(flow(f, give(r)))))
+}
+
+export function iconcatMap<A, R1, E1, B>(
+  f: (i: number, a: A) => ReaderObservable<R1, E1, B>
+): <R, E>(ma: ReaderObservable<R, E, A>) => ReaderObservable<R & R1, E | E1, B> {
+  return (ma) => iconcatMap_(ma, f)
+}
+
 export function concatMap_<R, E, A, R1, E1, B>(
   ma: ReaderObservable<R, E, A>,
-  f: (a: A, i: number) => ReaderObservable<R1, E1, B>
+  f: (a: A) => ReaderObservable<R1, E1, B>
 ): ReaderObservable<R & R1, E | E1, B> {
-  return asksObservable((r) => pipe(ma, give(r), O.concatMap(flow(f, give(r)))))
+  return iconcatMap_(ma, (_, a) => f(a))
 }
 
 export function concatMap<A, R1, E1, B>(
-  f: (a: A, i: number) => ReaderObservable<R1, E1, B>
+  f: (a: A) => ReaderObservable<R1, E1, B>
 ): <R, E>(ma: ReaderObservable<R, E, A>) => ReaderObservable<R & R1, E | E1, B> {
   return (ma) => concatMap_(ma, f)
 }
 
+export function iswitchMap_<R, E, A, R1, E1, B>(
+  ma: ReaderObservable<R, E, A>,
+  f: (i: number, a: A) => ReaderObservable<R1, E1, B>
+): ReaderObservable<R & R1, E | E1, B> {
+  return asksObservable((r) => pipe(ma, give(r), O.iswitchMap(flow(f, give(r)))))
+}
+
+export function iswitchMap<A, R1, E1, B>(
+  f: (i: number, a: A) => ReaderObservable<R1, E1, B>
+): <R, E>(ma: ReaderObservable<R, E, A>) => ReaderObservable<R & R1, E | E1, B> {
+  return (ma) => iswitchMap_(ma, f)
+}
+
 export function switchMap_<R, E, A, R1, E1, B>(
   ma: ReaderObservable<R, E, A>,
-  f: (a: A, i: number) => ReaderObservable<R1, E1, B>
+  f: (a: A) => ReaderObservable<R1, E1, B>
 ): ReaderObservable<R & R1, E | E1, B> {
-  return asksObservable((r) => pipe(ma, give(r), O.switchMap(flow(f, give(r)))))
+  return iswitchMap_(ma, (_, a) => f(a))
 }
 
 export function switchMap<A, R1, E1, B>(
-  f: (a: A, i: number) => ReaderObservable<R1, E1, B>
+  f: (a: A) => ReaderObservable<R1, E1, B>
 ): <R, E>(ma: ReaderObservable<R, E, A>) => ReaderObservable<R & R1, E | E1, B> {
   return (ma) => switchMap_(ma, f)
 }
@@ -312,7 +361,7 @@ export const Functor: P.Functor<ReaderObservableF> = P.Functor({
 })
 
 export const FunctorWithIndex: P.FunctorWithIndex<ReaderObservableF> = P.FunctorWithIndex({
-  imap_: map_
+  imap_
 })
 
 export const SemimonoidalFunctor: P.SemimonoidalFunctor<ReaderObservableF> = P.SemimonoidalFunctor({

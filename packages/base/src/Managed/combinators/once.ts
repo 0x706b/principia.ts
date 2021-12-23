@@ -35,7 +35,7 @@ export function once<R, E, A>(ma: Managed<R, E, A>): UManaged<Managed<R, E, A>> 
             )
           )
         )
-        return pipe(complete, I.crossSecond(F.await(promise)), fromIO)
+        return pipe(complete, I.apSecond(F.await(promise)), fromIO)
       })
     )
   )

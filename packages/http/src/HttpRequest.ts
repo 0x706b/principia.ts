@@ -106,7 +106,7 @@ export class HttpRequest {
                   Q.take(queue),
                   I.chain((event) => {
                     if (event._tag === 'Close') {
-                      return I.crossSecond_(done.set(true), I.succeed(Ch.end(undefined)))
+                      return I.apSecond_(done.set(true), I.succeed(Ch.end(undefined)))
                     }
                     return I.succeed(Ch.crossSecond_(Ch.write(C.single(event)), writer))
                   }),

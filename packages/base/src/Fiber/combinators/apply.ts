@@ -1,7 +1,7 @@
 import type { Fiber, SyntheticFiber } from '../core'
 
 import * as C from '../../Cause'
-import { crossWithPar_ } from '../../IO/combinators/apply-par'
+import { crossWithC_ } from '../../IO/combinators/apply-concurrent'
 import * as Ex from '../../IO/Exit'
 import * as M from '../../Maybe'
 import * as I from '../internal/io'
@@ -55,7 +55,7 @@ export function crossWith_<E, E1, A, A1, B>(
     poll: I.crossWith_(fa.poll, fb.poll, (fa, fb) =>
       M.chain_(fa, (ea) => M.map_(fb, (eb) => Ex.crossWithCause_(ea, eb, f, C.both)))
     ),
-    await: I.result(crossWithPar_(I.chain_(fa.await, I.fromExit), I.chain_(fb.await, I.fromExit), f))
+    await: I.result(crossWithC_(I.chain_(fa.await, I.fromExit), I.chain_(fb.await, I.fromExit), f))
   }
 }
 

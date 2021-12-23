@@ -18,8 +18,8 @@ import * as Map from '../../Map'
 import * as M from '../../Maybe'
 import { not } from '../../Predicate'
 import * as Ref from '../../Ref'
-import * as RefM from '../../RefM'
 import * as Set from '../../Set'
+import * as RefM from '../../SRef'
 import { tuple } from '../../tuple/core'
 import { Sink } from './internal/Sink'
 import { Transducer } from './internal/Transducer'
@@ -182,7 +182,7 @@ export function branchAfter<R, E, I, O>(n: number, f: (c: Chunk<I>) => Transduce
                       return Ma.use_(f(s.data).push, (f) => f(M.nothing()))
                     }
                     case 'Emitting': {
-                      return I.crossFirst_(s.push(M.nothing()), s.finalizer(Ex.unit()))
+                      return I.apFirst_(s.push(M.nothing()), s.finalizer(Ex.unit()))
                     }
                   }
                 })
@@ -374,8 +374,8 @@ export function foldWhileIO<R, E, I, O>(
               ),
               I.chain(([os, s, progress]) =>
                 progress
-                  ? I.crossSecond_(state.set(M.just(s)), I.succeed(os))
-                  : I.crossSecond_(state.set(M.nothing()), I.succeed(os))
+                  ? I.apSecond_(state.set(M.just(s)), I.succeed(os))
+                  : I.apSecond_(state.set(M.nothing()), I.succeed(os))
               )
             )
         )
@@ -632,8 +632,8 @@ export function foldWeightedDecomposeIO<R, E, I, O>(
               ),
               I.chain(([os, s, dirty]) =>
                 dirty
-                  ? I.crossSecond_(state.set(M.just(s)), I.succeed(os))
-                  : I.crossSecond_(state.set(M.nothing()), I.succeed(os))
+                  ? I.apSecond_(state.set(M.just(s)), I.succeed(os))
+                  : I.apSecond_(state.set(M.nothing()), I.succeed(os))
               )
             )
         )
@@ -1046,7 +1046,7 @@ export function thenSink_<R, E, I, O, R1, E1, L, Z>(
               pipe(
                 pushMe(M.nothing()),
                 I.mapError((e) => [E.left<E | E1>(e), C.empty<L>()] as const),
-                I.chain((chunk) => I.crossSecond_(pushThat(M.just(chunk)), pushThat(M.nothing())))
+                I.chain((chunk) => I.apSecond_(pushThat(M.just(chunk)), pushThat(M.nothing())))
               ),
             (in_) =>
               pipe(

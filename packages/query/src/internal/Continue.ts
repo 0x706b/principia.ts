@@ -98,25 +98,25 @@ export function map<A, B>(f: (a: A) => B): <R, E>(fa: Continue<R, E, A>) => Cont
   return (fa) => map_(fa, f)
 }
 
-export function crossWithPar_<R, E, A, R1, E1, B, C>(
+export function crossWithC_<R, E, A, R1, E1, B, C>(
   fa: Continue<R, E, A>,
   fb: Continue<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Continue<R & R1, E | E1, C> {
   return fa._tag === 'Effect'
     ? fb._tag === 'Effect'
-      ? effect(Q.crossWithPar_(fa.query, fb.query, f))
+      ? effect(Q.crossWithC_(fa.query, fb.query, f))
       : effect(Q.crossWith_(fa.query, Q.fromIO(fb.io), f))
     : fb._tag === 'Effect'
     ? effect(pipe(Q.fromIO(fa.io), Q.crossWith(fb.query, f)))
     : get(I.crossWith_(fa.io, fb.io, f))
 }
 
-export function crossWithPar<A, R1, E1, B, C>(
+export function crossWithC<A, R1, E1, B, C>(
   fb: Continue<R1, E1, B>,
   f: (a: A, b: B) => C
 ): <R, E>(fa: Continue<R, E, A>) => Continue<R & R1, E | E1, C> {
-  return (fa) => crossWithPar_(fa, fb, f)
+  return (fa) => crossWithC_(fa, fb, f)
 }
 
 export function crossWithBatched_<R, E, A, R1, E1, B, C>(

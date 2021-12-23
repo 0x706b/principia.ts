@@ -63,7 +63,7 @@ export function getShow<C extends ReadonlyArray<S.Show<any>>>(
     (t) =>
       `[${pipe(
         components,
-        A.map((S, i) => S.show(t[i])),
+        A.imap((i, S) => S.show(t[i])),
         A.join(', ')
       )}]`
   )

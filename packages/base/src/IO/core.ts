@@ -650,16 +650,16 @@ export function ap<R, E, A>(fa: IO<R, E, A>): <R1, E1, B>(fab: IO<R1, E1, (a: A)
 /**
  * @trace call
  */
-export function crossFirst_<R, E, A, R1, E1, B>(fa: IO<R, E, A>, fb: IO<R1, E1, B>): IO<R1 & R, E1 | E, A> {
+export function apFirst_<R, E, A, R1, E1, B>(fa: IO<R, E, A>, fb: IO<R1, E1, B>): IO<R1 & R, E1 | E, A> {
   return chain_(fa, (a) => map_(fb, () => a))
 }
 
 /**
- * @dataFirst crossFirst_
+ * @dataFirst apFirst_
  * @trace call
  */
-export function crossFirst<R1, E1, B>(fb: IO<R1, E1, B>): <R, E, A>(fa: IO<R, E, A>) => IO<R1 & R, E1 | E, A> {
-  return (fa) => crossFirst_(fa, fb)
+export function apFirst<R1, E1, B>(fb: IO<R1, E1, B>): <R, E, A>(fa: IO<R, E, A>) => IO<R1 & R, E1 | E, A> {
+  return (fa) => apFirst_(fa, fb)
 }
 
 /**
@@ -670,7 +670,7 @@ export function crossFirst<R1, E1, B>(fb: IO<R1, E1, B>): <R, E, A>(fa: IO<R, E,
  *
  * @trace call
  */
-export function crossSecond_<R, E, A, R1, E1, B>(fa: IO<R, E, A>, fb: IO<R1, E1, B>): IO<R1 & R, E1 | E, B> {
+export function apSecond_<R, E, A, R1, E1, B>(fa: IO<R, E, A>, fb: IO<R1, E1, B>): IO<R1 & R, E1 | E, B> {
   return chain_(fa, () => fb)
 }
 
@@ -680,11 +680,11 @@ export function crossSecond_<R, E, A, R1, E1, B>(fa: IO<R, E, A>, fb: IO<R1, E1,
  * @category Apply
  * @since 1.0.0
  *
- * @dataFirst crossSecond_
+ * @dataFirst apSecond_
  * @trace call
  */
-export function crossSecond<R1, E1, B>(fb: IO<R1, E1, B>): <R, E, A>(fa: IO<R, E, A>) => IO<R1 & R, E1 | E, B> {
-  return (fa) => crossSecond_(fa, fb)
+export function apSecond<R1, E1, B>(fb: IO<R1, E1, B>): <R, E, A>(fa: IO<R, E, A>) => IO<R1 & R, E1 | E, B> {
+  return (fa) => apSecond_(fa, fb)
 }
 
 /**
@@ -1065,7 +1065,7 @@ export function bitap_<R, E, A, R1, E1, R2, E2>(
         (e) => chain_(onFailure(e), () => failCause(c)),
         (_) => failCause(c)
       ),
-    (a) => pipe(onSuccess(a), crossSecond(succeed(a)))
+    (a) => pipe(onSuccess(a), apSecond(succeed(a)))
   )
 }
 
@@ -1169,7 +1169,7 @@ export function tapErrorCause_<R, E, A, R1, E1>(
   fa: IO<R, E, A>,
   f: (e: Cause<E>) => IO<R1, E1, any>
 ): IO<R & R1, E | E1, A> {
-  return matchCauseIO_(fa, (c) => crossSecond_(f(c), failCause(c)), succeed)
+  return matchCauseIO_(fa, (c) => apSecond_(f(c), failCause(c)), succeed)
 }
 
 /**
@@ -1857,7 +1857,7 @@ export function causeAsError<R, E, A>(ma: IO<R, E, A>): IO<R, Cause<E>, A> {
 /**
  * @trace 1
  */
-export function chainEitherK_<R, E, A, E1, B>(ma: IO<R, E, A>, f: (a: A) => E.Either<E1, B>): IO<R, E | E1, B> {
+export function mapEither_<R, E, A, E1, B>(ma: IO<R, E, A>, f: (a: A) => E.Either<E1, B>): IO<R, E | E1, B> {
   return chain_(
     ma,
     traceAs(f, (a) => fromEither(f(a)))
@@ -1866,16 +1866,16 @@ export function chainEitherK_<R, E, A, E1, B>(ma: IO<R, E, A>, f: (a: A) => E.Ei
 
 /**
  * @trace 0
- * @dataFirst chainEitherK_
+ * @dataFirst mapEither_
  */
-export function chainEitherK<A, E1, B>(f: (a: A) => E.Either<E1, B>): <R, E>(ma: IO<R, E, A>) => IO<R, E | E1, B> {
-  return (ma) => chainEitherK_(ma, f)
+export function mapEither<A, E1, B>(f: (a: A) => E.Either<E1, B>): <R, E>(ma: IO<R, E, A>) => IO<R, E | E1, B> {
+  return (ma) => mapEither_(ma, f)
 }
 
 /**
  * @trace 1
  */
-export function chainMaybeK_<R, E, A, B>(ma: IO<R, E, A>, f: (a: A) => M.Maybe<B>): IO<R, M.Maybe<E>, B> {
+export function mapMaybe_<R, E, A, B>(ma: IO<R, E, A>, f: (a: A) => M.Maybe<B>): IO<R, M.Maybe<E>, B> {
   return chain_(
     mapError_(ma, M.just),
     traceAs(f, (a) => fromMaybe(f(a)))
@@ -1884,16 +1884,16 @@ export function chainMaybeK_<R, E, A, B>(ma: IO<R, E, A>, f: (a: A) => M.Maybe<B
 
 /**
  * @trace 0
- * @dataFirst chainMaybeK_
+ * @dataFirst mapMaybe_
  */
-export function chainMaybeK<A, B>(f: (a: A) => M.Maybe<B>): <R, E>(ma: IO<R, E, A>) => IO<R, M.Maybe<E>, B> {
-  return (ma) => chainMaybeK_(ma, f)
+export function mapMaybe<A, B>(f: (a: A) => M.Maybe<B>): <R, E>(ma: IO<R, E, A>) => IO<R, M.Maybe<E>, B> {
+  return (ma) => mapMaybe_(ma, f)
 }
 
 /**
  * @trace 1
  */
-export function chainSyncK_<R, E, A, R1, E1, B>(ma: IO<R, E, A>, f: (a: A) => Sync<R1, E1, B>): IO<R & R1, E | E1, B> {
+export function mapSync_<R, E, A, R1, E1, B>(ma: IO<R, E, A>, f: (a: A) => Sync<R1, E1, B>): IO<R & R1, E | E1, B> {
   return chain_(
     ma,
     traceAs(f, (a) => fromSync(f(a)))
@@ -1902,12 +1902,10 @@ export function chainSyncK_<R, E, A, R1, E1, B>(ma: IO<R, E, A>, f: (a: A) => Sy
 
 /**
  * @trace 0
- * @dataFirst chainSyncK_
+ * @dataFirst mapSync_
  */
-export function chainSyncK<A, R1, E1, B>(
-  f: (a: A) => Sync<R1, E1, B>
-): <R, E>(ma: IO<R, E, A>) => IO<R & R1, E | E1, B> {
-  return (ma) => chainSyncK_(ma, f)
+export function mapSync<A, R1, E1, B>(f: (a: A) => Sync<R1, E1, B>): <R, E>(ma: IO<R, E, A>) => IO<R & R1, E | E1, B> {
+  return (ma) => mapSync_(ma, f)
 }
 
 /**
@@ -1943,7 +1941,7 @@ export function collect<A, E1, A1>(f: () => E1, pf: (a: A) => Maybe<A1>): <R, E>
 /**
  * @trace call
  */
-export function collectAll<R, E, A>(as: Iterable<IO<R, E, A>>): IO<R, E, Chunk<A>> {
+export function sequenceIterable<R, E, A>(as: Iterable<IO<R, E, A>>): IO<R, E, Chunk<A>> {
   const trace = accessCallTrace()
   return foreach_(as, traceFrom(trace, flow(identity)))
 }
@@ -1951,7 +1949,7 @@ export function collectAll<R, E, A>(as: Iterable<IO<R, E, A>>): IO<R, E, Chunk<A
 /**
  * @trace call
  */
-export function collectAllUnit<R, E, A>(as: Iterable<IO<R, E, A>>): IO<R, E, void> {
+export function sequenceIterableUnit<R, E, A>(as: Iterable<IO<R, E, A>>): IO<R, E, void> {
   const trace = accessCallTrace()
   return foreachUnit_(as, traceFrom(trace, flow(identity)))
 }
@@ -2781,7 +2779,7 @@ export function foldrF<F extends HKT.HKT, C = HKT.None>(F: Foldable<F, C>) {
  */
 export function forever<R, E, A>(ma: IO<R, E, A>): IO<R, E, never> {
   const trace = accessCallTrace()
-  return pipe(ma, crossSecond(yieldNow), chain(traceFrom(trace, () => forever(ma))))
+  return pipe(ma, apSecond(yieldNow), chain(traceFrom(trace, () => forever(ma))))
 }
 
 /**
@@ -4616,7 +4614,7 @@ export function giveServices_<SS extends Record<string, Tag<any>>>(tags: SS) {
         Object.assign(
           {},
           r,
-          R.foldl_(tags, {} as any, (b, tag, k) => mergeEnvironments(tag, b, services[k]))
+          R.ifoldl_(tags, {} as any, (k, b, tag) => mergeEnvironments(tag, b, services[k]))
         )
       )
     )
@@ -4646,7 +4644,7 @@ export function giveServicesIO_<SS extends Record<string, Tag<any>>>(tags: SS) {
           Object.assign(
             {},
             r,
-            R.foldl_(tags, {} as any, (b, tag, k) => mergeEnvironments(tag, b, svcs[k]))
+            R.ifoldl_(tags, {} as any, (k, b, tag) => mergeEnvironments(tag, b, svcs[k]))
           )
         )
       )
@@ -4673,7 +4671,7 @@ export function giveServicesT_<SS extends ReadonlyArray<Tag<any>>>(...tags: SS) 
         Object.assign(
           {},
           r,
-          A.foldl_(tags, {} as any, (b, tag, i) => mergeEnvironments(tag, b, services[i]))
+          A.ifoldl_(tags, {} as any, (i, b, tag) => mergeEnvironments(tag, b, services[i]))
         )
       )
     )
@@ -4703,7 +4701,7 @@ export function giveServicesTIO_<SS extends ReadonlyArray<Tag<any>>>(...tags: SS
           Object.assign(
             {},
             r,
-            A.foldl_(tags, {} as any, (b, tag, i) => mergeEnvironments(tag, b, svcs[i]))
+            A.ifoldl_(tags, {} as any, (i, b, tag) => mergeEnvironments(tag, b, svcs[i]))
           )
         )
       )

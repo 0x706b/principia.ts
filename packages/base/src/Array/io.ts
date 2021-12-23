@@ -166,14 +166,14 @@ export function mapAccumIO<S, A, R, E, B>(
  */
 export function mapIO_<A, R, E, B>(
   as: ReadonlyArray<A>,
-  f: (a: A, i: number) => I.IO<R, E, B>
+  f: (i: number, a: A) => I.IO<R, E, B>
 ): I.IO<R, E, ReadonlyArray<B>> {
   return pipe(
     as,
-    A.foldl(I.succeed(Array(as.length)) as I.IO<R, E, Array<B>>, (computation, value, index) =>
+    A.ifoldl(I.succeed(Array(as.length)) as I.IO<R, E, Array<B>>, (index, computation, value) =>
       I.crossWith_(
         computation,
-        I.defer(() => f(value, index)),
+        I.defer(() => f(index, value)),
         (acc, b) => {
           acc[index] = b
           return acc
@@ -187,7 +187,7 @@ export function mapIO_<A, R, E, B>(
  * Effectfully maps the elements of this Array.
  */
 export function mapIO<A, R, E, B>(
-  f: (a: A, i: number) => I.IO<R, E, B>
+  f: (i: number, a: A) => I.IO<R, E, B>
 ): (as: ReadonlyArray<A>) => I.IO<R, E, ReadonlyArray<B>> {
   return (as) => mapIO_(as, f)
 }
@@ -195,37 +195,31 @@ export function mapIO<A, R, E, B>(
 /**
  * Effectfully maps the elements of this Array in parallel.
  */
-export function mapIOPar_<A, R, E, B>(
+export function mapIOC_<A, R, E, B>(
   as: ReadonlyArray<A>,
-  f: (a: A, i: number) => I.IO<R, E, B>
+  f: (i: number, a: A) => I.IO<R, E, B>
 ): I.IO<R, E, ReadonlyArray<B>> {
   return I.chain_(I.succeed<B[]>(Array(as.length)), (bs) => {
-    function fn([a, n]: [A, number]) {
+    function fn([n, a]: readonly [number, A]) {
       return I.chain_(
-        I.defer(() => f(a, n)),
+        I.defer(() => f(n, a)),
         (b) =>
           I.succeedLazy(() => {
             bs[n] = b
           })
       )
     }
-    return I.chain_(
-      I.foreachUnitPar_(
-        It.map_(as, (a, n) => [a, n] as [A, number]),
-        fn
-      ),
-      () => I.succeedLazy(() => bs)
-    )
+    return I.chain_(I.foreachUnitC_(It.zipWithIndex(as), fn), () => I.succeedLazy(() => bs))
   })
 }
 
 /**
  * Effectfully maps the elements of this Array in parallel.
  */
-export function mapIOPar<A, R, E, B>(
-  f: (a: A) => I.IO<R, E, B>
+export function mapIOC<A, R, E, B>(
+  f: (i: number, a: A) => I.IO<R, E, B>
 ): (as: ReadonlyArray<A>) => I.IO<R, E, ReadonlyArray<B>> {
-  return (as) => mapIOPar_(as, f)
+  return (as) => mapIOC_(as, f)
 }
 
 /**

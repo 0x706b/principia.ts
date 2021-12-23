@@ -18,7 +18,7 @@ export const Functor: P.Functor<ObservableF> = P.Functor({
 })
 
 export const FunctorWithIndex: P.FunctorWithIndex<ObservableF> = P.FunctorWithIndex({
-  imap_: O.map_
+  imap_: O.imap_
 })
 
 export const SemimonoidalFunctor: P.SemimonoidalFunctor<ObservableF> = P.SemimonoidalFunctor({
@@ -106,9 +106,9 @@ export const Filterable: P.Filterable<ObservableF> = P.Filterable({
 })
 
 export const FilterableWithIndex: P.FilterableWithIndex<ObservableF> = P.FilterableWithIndex({
-  imap_: O.map_,
-  ifilter_: O.filter_,
-  ifilterMap_: O.filterMap_,
-  ipartition_: O.partition_,
-  ipartitionMap_: O.partitionMap_
+  imap_: O.imap_,
+  ifilter_: O.ifilter_,
+  ifilterMap_: O.ifilterMap_,
+  ipartition_: O.ipartition_,
+  ipartitionMap_: O.ipartitionMap_
 })
