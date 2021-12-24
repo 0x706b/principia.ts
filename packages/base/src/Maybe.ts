@@ -401,26 +401,26 @@ export function ap<A>(fa: Maybe<A>): <B>(fab: Maybe<(a: A) => B>) => Maybe<B> {
   return (fab) => ap_(fab, fa)
 }
 
-export function crossFirst_<A, B>(fa: Maybe<A>, fb: Maybe<B>): Maybe<A> {
+export function apFirst_<A, B>(fa: Maybe<A>, fb: Maybe<B>): Maybe<A> {
   return crossWith_(fa, fb, (a, _) => a)
 }
 
 /**
- * @dataFirst crossFirst_
+ * @dataFirst apFirst_
  */
-export function crossFirst<B>(fb: Maybe<B>): <A>(fa: Maybe<A>) => Maybe<A> {
-  return (fa) => crossFirst_(fa, fb)
+export function apFirst<B>(fb: Maybe<B>): <A>(fa: Maybe<A>) => Maybe<A> {
+  return (fa) => apFirst_(fa, fb)
 }
 
-export function crossSecond_<A, B>(fa: Maybe<A>, fb: Maybe<B>): Maybe<B> {
+export function apSecond_<A, B>(fa: Maybe<A>, fb: Maybe<B>): Maybe<B> {
   return crossWith_(fa, fb, (_, b) => b)
 }
 
 /**
- * @dataFirst crossSecond_
+ * @dataFirst apSecond_
  */
-export function crossSecond<B>(fb: Maybe<B>): <A>(fa: Maybe<A>) => Maybe<B> {
-  return (fa) => crossSecond_(fa, fb)
+export function apSecond<B>(fb: Maybe<B>): <A>(fa: Maybe<A>) => Maybe<B> {
+  return (fa) => apSecond_(fa, fb)
 }
 
 /**
@@ -1000,26 +1000,16 @@ export const SemimonoidalFunctor = P.SemimonoidalFunctor<MaybeF>({
   cross_
 })
 
-export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
-export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
-export const mapN      = P.mapNF(SemimonoidalFunctor)
-export const crossT_   = P.crossTF_(SemimonoidalFunctor)
-/**
- * @dataFirst crossT_
- */
-export const crossT  = P.crossTF(SemimonoidalFunctor)
-export const crossS_ = P.crossSF_(SemimonoidalFunctor)
-/**
- * @dataFirst crossS_
- */
-export const crossS = P.crossSF(SemimonoidalFunctor)
-
 export const Apply = P.Apply<MaybeF>({
   map_,
   crossWith_,
   cross_,
   ap_
 })
+
+export const sequenceT = P.sequenceTF(Apply)
+export const sequenceS = P.sequenceSF(Apply)
+export const mapN      = P.mapNF(Apply)
 
 /**
  * A pipeable version of `sequenceS`

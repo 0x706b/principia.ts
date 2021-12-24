@@ -53,17 +53,11 @@ export const SemimonoidalFunctor = P.SemimonoidalFunctor<ManagedF>({
   cross_
 })
 
-export const SemimonoidalFunctorPar = P.SemimonoidalFunctor<ManagedF>({
+export const SemimonoidalFunctorC = P.SemimonoidalFunctor<ManagedF>({
   map_,
   crossWith_: crossWithC_,
   cross_: crossC_
 })
-
-export const mapN    = P.mapNF(SemimonoidalFunctor)
-export const mapNPar = P.mapNF(SemimonoidalFunctorPar)
-
-export const sequenceS    = P.sequenceSF(SemimonoidalFunctor)
-export const sequenceSPar = P.sequenceSF(SemimonoidalFunctorPar)
 
 export const Apply = P.Apply<ManagedF>({
   map_,
@@ -72,12 +66,20 @@ export const Apply = P.Apply<ManagedF>({
   ap_
 })
 
-export const ApplyPar = P.Apply<ManagedF>({
+export const mapN = P.mapNF(Apply)
+
+export const sequenceS = P.sequenceSF(Apply)
+
+export const ApplyC = P.Apply<ManagedF>({
   map_,
   crossWith_: crossWithC_,
   cross_: crossC_,
   ap_: apC_
 })
+
+export const mapNC = P.mapNF(ApplyC)
+
+export const sequenceSC = P.sequenceSF(ApplyC)
 
 export const MonoidalFunctor = P.MonoidalFunctor<ManagedF>({
   map_,
@@ -86,7 +88,7 @@ export const MonoidalFunctor = P.MonoidalFunctor<ManagedF>({
   unit
 })
 
-export const MonoidalFunctorPar = P.MonoidalFunctor<ManagedF>({
+export const MonoidalFunctorC = P.MonoidalFunctor<ManagedF>({
   map_,
   crossWith_: crossWithC_,
   cross_: crossC_,
@@ -102,7 +104,7 @@ export const Applicative = P.Applicative<ManagedF>({
   pure
 })
 
-export const ApplicativePar = P.Applicative<ManagedF>({
+export const ApplicativeC = P.Applicative<ManagedF>({
   map_,
   cross_: crossC_,
   crossWith_: crossWithC_,

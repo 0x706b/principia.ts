@@ -319,26 +319,26 @@ export function cross<Z1, B>(
   return (fa) => cross_(fa, fb)
 }
 
-export function crossFirst_<Z, A, Z1, B>(fa: FreeSemiring<Z, A>, fb: FreeSemiring<Z1, B>): FreeSemiring<Z | Z1, A> {
+export function apFirst_<Z, A, Z1, B>(fa: FreeSemiring<Z, A>, fb: FreeSemiring<Z1, B>): FreeSemiring<Z | Z1, A> {
   return crossWith_(fa, fb, (a, _) => a)
 }
 
 /**
- * @dataFirst crossFirst_
+ * @dataFirst apFirst
  */
-export function crossFirst<Z1, B>(fb: FreeSemiring<Z1, B>): <Z, A>(fa: FreeSemiring<Z, A>) => FreeSemiring<Z | Z1, A> {
-  return (fa) => crossFirst_(fa, fb)
+export function apFirst<Z1, B>(fb: FreeSemiring<Z1, B>): <Z, A>(fa: FreeSemiring<Z, A>) => FreeSemiring<Z | Z1, A> {
+  return (fa) => apFirst_(fa, fb)
 }
 
-export function crossSecond_<Z, A, Z1, B>(fa: FreeSemiring<Z, A>, fb: FreeSemiring<Z1, B>): FreeSemiring<Z | Z1, B> {
+export function apSecond_<Z, A, Z1, B>(fa: FreeSemiring<Z, A>, fb: FreeSemiring<Z1, B>): FreeSemiring<Z | Z1, B> {
   return crossWith_(fa, fb, (_, b) => b)
 }
 
 /**
- * @dataFirst crossSecond_
+ * @dataFirst apSecond_
  */
-export function crossSecond<Z1, B>(fb: FreeSemiring<Z1, B>): <Z, A>(fa: FreeSemiring<Z, A>) => FreeSemiring<Z | Z1, B> {
-  return (fa) => crossSecond_(fa, fb)
+export function apSecond<Z1, B>(fb: FreeSemiring<Z1, B>): <Z, A>(fa: FreeSemiring<Z, A>) => FreeSemiring<Z | Z1, B> {
+  return (fa) => apSecond_(fa, fb)
 }
 
 /*

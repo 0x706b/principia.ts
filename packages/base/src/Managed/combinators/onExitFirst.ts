@@ -25,7 +25,7 @@ export function onExitFirst_<R, E, A, R1>(
               I.give(r1),
               I.result,
               I.crossWith(pipe(innerReleaseMap, releaseAll(e, sequential), I.result), (l, r) =>
-                I.fromExit(Ex.crossSecond_(l, r))
+                I.fromExit(Ex.apSecond_(l, r))
               ),
               I.flatten
             )

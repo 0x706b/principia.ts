@@ -49,7 +49,7 @@ export function ensuringFirstWith_<R, E, A, R1>(
                 I.result,
                 I.crossWith(
                   I.result(releaseAll_(innerReleaseMap, e, sequential)),
-                  traceAs(cleanup, flow(Ex.crossSecond_, I.fromExit))
+                  traceAs(cleanup, flow(Ex.apSecond_, I.fromExit))
                 ),
                 I.flatten
               )

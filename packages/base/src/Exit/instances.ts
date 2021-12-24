@@ -29,16 +29,16 @@ export const SemimonoidalFunctor = P.SemimonoidalFunctor<PExitF>({
   cross_
 })
 
-export const mapN = P.mapNF<PExitF>(SemimonoidalFunctor)
-
-export const sequenceS = P.sequenceSF<PExitF>(SemimonoidalFunctor)
-
 export const Apply = P.Apply<PExitF>({
   map_,
   crossWith_,
   cross_,
   ap_
 })
+
+export const mapN = P.mapNF<PExitF>(Apply)
+
+export const sequenceS = P.sequenceSF<PExitF>(Apply)
 
 export const MonoidalFunctor = P.MonoidalFunctor<PExitF>({
   map_,

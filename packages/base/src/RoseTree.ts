@@ -155,26 +155,26 @@ export function ap<A>(fa: RoseTree<A>): <B>(fab: RoseTree<(a: A) => B>) => RoseT
   return (fab) => ap_(fab, fa)
 }
 
-export function crossFirst_<A, B>(fa: RoseTree<A>, fb: RoseTree<B>): RoseTree<A> {
+export function apFirst_<A, B>(fa: RoseTree<A>, fb: RoseTree<B>): RoseTree<A> {
   return crossWith_(fa, fb, (a, _) => a)
 }
 
 /**
- * @dataFirst crossFirst_
+ * @dataFirst apFirst_
  */
-export function crossFirst<B>(fb: RoseTree<B>): <A>(fa: RoseTree<A>) => RoseTree<A> {
-  return (fa) => crossFirst_(fa, fb)
+export function apFirst<B>(fb: RoseTree<B>): <A>(fa: RoseTree<A>) => RoseTree<A> {
+  return (fa) => apFirst_(fa, fb)
 }
 
-export function crossSecond_<A, B>(fa: RoseTree<A>, fb: RoseTree<B>): RoseTree<B> {
+export function apSecond_<A, B>(fa: RoseTree<A>, fb: RoseTree<B>): RoseTree<B> {
   return crossWith_(fa, fb, (_, b) => b)
 }
 
 /**
- * @dataFirst crossSecond_
+ * @dataFirst apSecond_
  */
-export function crossSecond<B>(fb: RoseTree<B>): <A>(fa: RoseTree<A>) => RoseTree<B> {
-  return (fa) => crossSecond_(fa, fb)
+export function apSecond<B>(fb: RoseTree<B>): <A>(fa: RoseTree<A>) => RoseTree<B> {
+  return (fa) => apSecond_(fa, fb)
 }
 
 /*

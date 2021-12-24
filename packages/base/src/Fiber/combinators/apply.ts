@@ -6,20 +6,20 @@ import * as Ex from '../../IO/Exit'
 import * as M from '../../Maybe'
 import * as I from '../internal/io'
 
-export function crossFirst_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
+export function apFirst_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
   return crossWith_(fa, fb, (a, _) => a)
 }
 
-export function crossFirst<D, B>(fb: Fiber<D, B>): <E, A>(fa: Fiber<E, A>) => SyntheticFiber<D | E, A> {
-  return (fa) => crossFirst_(fa, fb)
+export function apFirst<D, B>(fb: Fiber<D, B>): <E, A>(fa: Fiber<E, A>) => SyntheticFiber<D | E, A> {
+  return (fa) => apFirst_(fa, fb)
 }
 
-export function crossSecond_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
+export function apSecond_<E, A, D, B>(fa: Fiber<E, A>, fb: Fiber<D, B>) {
   return crossWith_(fa, fb, (_, b) => b)
 }
 
-export function crossSecond<D, B>(fb: Fiber<D, B>): <E, A>(fa: Fiber<E, A>) => SyntheticFiber<D | E, B> {
-  return (fa) => crossSecond_(fa, fb)
+export function apSecond<D, B>(fb: Fiber<D, B>): <E, A>(fa: Fiber<E, A>) => SyntheticFiber<D | E, B> {
+  return (fa) => apSecond_(fa, fb)
 }
 
 /**

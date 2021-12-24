@@ -11,7 +11,7 @@ import * as G from './Guard'
 import * as Ix from './Ix'
 import * as L from './Lens/core'
 import * as M from './Maybe'
-import * as Op from './Optional'
+import * as Op from './Optional/core'
 import * as P from './prelude'
 import { tuple } from './tuple/core'
 

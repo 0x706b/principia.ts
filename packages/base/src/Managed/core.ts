@@ -581,7 +581,7 @@ export function apSecond<R1, E1, B>(
   return (fa) => apSecond_(fa, fb)
 }
 
-export const struct = <MR extends ReadonlyRecord<string, Managed<any, any, any>>>(
+export const sequenceS = <MR extends ReadonlyRecord<string, Managed<any, any, any>>>(
   mr: P.EnforceNonEmptyRecord<MR> & Record<string, Managed<any, any, any>>
 ): Managed<
   P._R<MR[keyof MR]>,
@@ -602,7 +602,7 @@ export const struct = <MR extends ReadonlyRecord<string, Managed<any, any, any>>
     }
   ) as any
 
-export const tuple = <T extends ReadonlyArray<Managed<any, any, any>>>(
+export const sequenceT = <T extends ReadonlyArray<Managed<any, any, any>>>(
   ...mt: T & {
     0: Managed<any, any, any>
   }
@@ -947,7 +947,7 @@ export function chain_<R, E, A, R1, E1, A1>(
         I.map_(f(a).io, ([releaseThat, b]) => [
           (e) =>
             I.chain_(I.result(releaseThat(e)), (e1) =>
-              I.chain_(I.result(releaseSelf(e)), (e2) => I.fromExit(Ex.crossSecond_(e1, e2)))
+              I.chain_(I.result(releaseSelf(e)), (e2) => I.fromExit(Ex.apSecond_(e1, e2)))
             ),
           b
         ])

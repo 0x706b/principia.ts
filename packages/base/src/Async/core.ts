@@ -392,7 +392,7 @@ export function pure<A>(a: A): Async<unknown, never, A> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function tupleC<A extends ReadonlyArray<Async<any, any, any>>>(
+export function sequenceTC<A extends ReadonlyArray<Async<any, any, any>>>(
   ...asyncs: A & { 0: Async<any, any, any> }
 ): Async<
   P._R<A[number]>,
@@ -425,7 +425,7 @@ export function crossWithC_<R, E, A, R1, E1, B, C>(
   fb: Async<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Async<R & R1, E | E1, C> {
-  return map_(tupleC(fa, fb), ([a, b]) => f(a, b))
+  return map_(sequenceTC(fa, fb), ([a, b]) => f(a, b))
 }
 
 /**
@@ -484,7 +484,7 @@ export function apSecondC<R1, E1, A1>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function tuple<A extends ReadonlyArray<Async<any, any, any>>>(
+export function sequenceT<A extends ReadonlyArray<Async<any, any, any>>>(
   ...fas: A & { 0: Async<any, any, any> }
 ): Async<P._R<A[number]>, P._E<A[number]>, { [K in keyof A]: P._A<A[K]> }> {
   return A.foldl_(
@@ -1091,8 +1091,8 @@ export function runPromiseExitEnv_<R, E, A>(
         const I = asConcrete(current)
         switch (I._asyncTag) {
           case AsyncTag.Chain: {
-            const nested: Concrete = asConcrete(I.async)
-            const continuation     = I.f
+            const nested       = asConcrete(I.async)
+            const continuation = I.f
             switch (nested._asyncTag) {
               case AsyncTag.Succeed: {
                 current = continuation(nested.value)
@@ -1348,7 +1348,7 @@ export const SemimonoidalFunctor = P.SemimonoidalFunctor<AsyncF>({
   cross_
 })
 
-export const SemimonoidalFunctorPar = P.SemimonoidalFunctor<AsyncF>({
+export const SemimonoidalFunctorC = P.SemimonoidalFunctor<AsyncF>({
   map_,
   crossWith_: crossWithC_,
   cross_: crossC_
@@ -1361,12 +1361,28 @@ export const Apply = P.Apply<AsyncF>({
   ap_
 })
 
-export const ApplyPar = P.Apply<AsyncF>({
+export const apS = P.apSF(Apply)
+
+export const apT = P.apTF(Apply)
+
+export const mapN_ = P.mapNF_(Apply)
+
+export const mapN = P.mapNF(Apply)
+
+export const ApplyC = P.Apply<AsyncF>({
   map_,
   crossWith_: crossWithC_,
   cross_: crossC_,
   ap_: apC_
 })
+
+export const apSC = P.apSF(ApplyC)
+
+export const apTC = P.apTF(ApplyC)
+
+export const mapNC_ = P.mapNF_(ApplyC)
+
+export const mapNC = P.mapNF(ApplyC)
 
 export const MonoidalFunctor = P.MonoidalFunctor<AsyncF>({
   map_,
@@ -1375,7 +1391,7 @@ export const MonoidalFunctor = P.MonoidalFunctor<AsyncF>({
   unit
 })
 
-export const MonoidalFunctorPar = P.MonoidalFunctor<AsyncF>({
+export const MonoidalFunctorC = P.MonoidalFunctor<AsyncF>({
   map_,
   crossWith_: crossWithC_,
   cross_: crossC_,
@@ -1391,7 +1407,7 @@ export const Applicative = P.Applicative<AsyncF>({
   pure
 })
 
-export const ApplicativePar = P.Applicative<AsyncF>({
+export const ApplicativeC = P.Applicative<AsyncF>({
   map_,
   crossWith_: crossWithC_,
   cross_: crossC_,

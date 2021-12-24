@@ -370,18 +370,6 @@ export const SemimonoidalFunctor: P.SemimonoidalFunctor<ReaderObservableF> = P.S
   crossWith_
 })
 
-export const crossS_ = P.crossSF_(SemimonoidalFunctor)
-
-export const crossS = P.crossSF(SemimonoidalFunctor)
-
-export const crossT_ = P.crossTF_(SemimonoidalFunctor)
-
-export const crossT = P.crossTF(SemimonoidalFunctor)
-
-export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
-
-export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
-
 export const Apply: P.Apply<ReaderObservableF> = P.Apply({
   map_,
   cross_,
@@ -392,6 +380,10 @@ export const Apply: P.Apply<ReaderObservableF> = P.Apply({
 export const apS = P.apSF(Apply)
 
 export const apT = P.apTF(Apply)
+
+export const sequenceS = P.sequenceSF(Apply)
+
+export const sequenceT = P.sequenceTF(Apply)
 
 export const MonoidalFunctor: P.MonoidalFunctor<ReaderObservableF> = P.MonoidalFunctor({
   map_,

@@ -163,7 +163,7 @@ export function apSecondC<R1, E1, B>(
   return (fa) => traceCall(apSecondC_, trace)(fa, fb)
 }
 
-export function structC<MR extends ReadonlyRecord<string, Managed<any, any, any>>>(
+export function sequenceSC<MR extends ReadonlyRecord<string, Managed<any, any, any>>>(
   mr: EnforceNonEmptyRecord<MR> & ReadonlyRecord<string, Managed<any, any, any>>
 ): Managed<
   _R<MR[keyof MR]>,
@@ -185,7 +185,7 @@ export function structC<MR extends ReadonlyRecord<string, Managed<any, any, any>
   ) as any
 }
 
-export function tupleC<T extends ReadonlyArray<Managed<any, any, any>>>(
+export function sequenceTC<T extends ReadonlyArray<Managed<any, any, any>>>(
   ...t: T & {
     0: Managed<any, any, any>
   }

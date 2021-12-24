@@ -97,7 +97,7 @@ export abstract class Layer<R, E, A> {
    * has the inputs of both layers, and the outputs of both layers.
    */
   ['+++']<R1, E1, A1>(that: Layer<R1, E1, A1>): Layer<R & R1, E | E1, A & A1> {
-    return and_(that, this)
+    return andC_(that, this)
   }
 
   use<R1, E1, A1>(io: I.IO<R1 & A, E1, A1>): I.IO<R & R1, E | E1, A1> {
@@ -727,7 +727,7 @@ export function allC<Ls extends Layer<any, any, any>[]>(
  * Combines both layers, producing a new layer that
  * has the inputs of both layers, and the outputs of both layers.
  */
-export function and_<R, E, A, R2, E2, A2>(
+export function andC_<R, E, A, R2, E2, A2>(
   left: Layer<R, E, A>,
   right: Layer<R2, E2, A2>
 ): Layer<R & R2, E | E2, A & A2> {
@@ -738,17 +738,17 @@ export function and_<R, E, A, R2, E2, A2>(
  * Combines both layers, producing a new layer that
  * has the inputs of both layers, and the outputs of both layers.
  */
-export function and<R1, E1, A1>(
+export function andC<R1, E1, A1>(
   right: Layer<R1, E1, A1>
 ): <R, E, A>(left: Layer<R, E, A>) => Layer<R & R1, E1 | E, A & A1> {
-  return (left) => and_(left, right)
+  return (left) => andC_(left, right)
 }
 
 /**
  * Combines this layer with the specified layer, producing a new layer that
  * has the inputs of both layers, and the outputs of both layers.
  */
-export function andSeq_<R, E, A, R1, E1, A1>(
+export function and_<R, E, A, R1, E1, A1>(
   layer: Layer<R, E, A>,
   that: Layer<R1, E1, A1>
 ): Layer<R & R1, E | E1, A & A1> {
@@ -759,10 +759,10 @@ export function andSeq_<R, E, A, R1, E1, A1>(
  * Combines this layer with the specified layer, producing a new layer that
  * has the inputs of both layers, and the outputs of both layers.
  */
-export function andSeq<R1, E1, A1>(
+export function and<R1, E1, A1>(
   that: Layer<R1, E1, A1>
 ): <R, E, A>(layer: Layer<R, E, A>) => Layer<R & R1, E1 | E, A & A1> {
-  return (layer) => andSeq_(layer, that)
+  return (layer) => and_(layer, that)
 }
 
 function environmentFor<T>(has: H.Tag<T>, a: T): Managed<unknown, never, H.Has<T>> {

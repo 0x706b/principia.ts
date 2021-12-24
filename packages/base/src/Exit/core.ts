@@ -241,33 +241,28 @@ export function ap<Id, E, A>(
   return (fab) => ap_(fab, fa)
 }
 
-export function crossFirst_<Id, E, Id1, G, A, B>(fa: PExit<Id, E, A>, fb: PExit<Id1, G, B>): PExit<Id | Id1, E | G, A> {
+export function apFirst_<Id, E, Id1, G, A, B>(fa: PExit<Id, E, A>, fb: PExit<Id1, G, B>): PExit<Id | Id1, E | G, A> {
   return crossWithCause_(fa, fb, (a, _) => a, C.then)
 }
 
 /**
- * @dataFirst crossFirst_
+ * @dataFirst apFirst_
  */
-export function crossFirst<Id1, G, B>(
-  fb: PExit<Id1, G, B>
-): <Id, E, A>(fa: PExit<Id, E, A>) => PExit<Id | Id1, G | E, A> {
-  return (fa) => crossFirst_(fa, fb)
+export function apFirst<Id1, G, B>(fb: PExit<Id1, G, B>): <Id, E, A>(fa: PExit<Id, E, A>) => PExit<Id | Id1, G | E, A> {
+  return (fa) => apFirst_(fa, fb)
 }
 
-export function crossSecond_<Id, E, A, Id1, G, B>(
-  fa: PExit<Id, E, A>,
-  fb: PExit<Id1, G, B>
-): PExit<Id | Id1, E | G, B> {
+export function apSecond_<Id, E, A, Id1, G, B>(fa: PExit<Id, E, A>, fb: PExit<Id1, G, B>): PExit<Id | Id1, E | G, B> {
   return crossWithCause_(fa, fb, (_, b) => b, C.then)
 }
 
 /**
- * @dataFirst crossSecond_
+ * @dataFirst apSecond_
  */
-export function crossSecond<Id1, G, B>(
+export function apSecond<Id1, G, B>(
   fb: PExit<Id1, G, B>
 ): <Id, E, A>(fa: PExit<Id, E, A>) => PExit<Id | Id1, G | E, B> {
-  return (fa) => crossSecond_(fa, fb)
+  return (fa) => apSecond_(fa, fb)
 }
 
 export function apFirstC_<Id, E, Id1, G, A, B>(fa: PExit<Id, E, A>, fb: PExit<Id1, G, B>): PExit<Id | Id1, E | G, A> {

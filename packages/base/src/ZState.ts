@@ -72,19 +72,19 @@ export const crossWith_: <S, A, B, C>(fa: ZState<S, A>, fb: ZState<S, B>, f: (a:
 export const crossWith: <S, A, B, C>(fb: ZState<S, B>, f: (a: A, b: B) => C) => (fa: ZState<S, A>) => ZState<S, C> =
   Z.crossWith
 
-export const crossSecond_: <S, A, B>(fa: ZState<S, A>, fb: ZState<S, B>) => ZState<S, B> = Z.apSecond_
+export const apSecond_: <S, A, B>(fa: ZState<S, A>, fb: ZState<S, B>) => ZState<S, B> = Z.apSecond_
 
 /**
- * @dataFirst crossSecond_
+ * @dataFirst apSecond_
  */
-export const crossSecond: <S, B>(fb: ZState<S, B>) => <A>(fa: ZState<S, A>) => ZState<S, B> = Z.apSecond
+export const apSecond: <S, B>(fb: ZState<S, B>) => <A>(fa: ZState<S, A>) => ZState<S, B> = Z.apSecond
 
-export const crossFirst_: <S, A, B>(fa: ZState<S, A>, fb: ZState<S, B>) => ZState<S, A> = Z.apFirst_
+export const apFirst_: <S, A, B>(fa: ZState<S, A>, fb: ZState<S, B>) => ZState<S, A> = Z.apFirst_
 
 /**
- * @dataFirst crossFirst_
+ * @dataFirst apFirst_
  */
-export const crossFirst: <S, B>(fb: ZState<S, B>) => <A>(fa: ZState<S, A>) => ZState<S, A> = Z.apFirst
+export const apFirst: <S, B>(fb: ZState<S, B>) => <A>(fa: ZState<S, A>) => ZState<S, A> = Z.apFirst
 
 /*
  * -------------------------------------------------------------------------------------------------

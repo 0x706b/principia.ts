@@ -112,26 +112,26 @@ export function ap<R, A>(fa: Reader<R, A>): <R1, B>(fab: Reader<R1, (a: A) => B>
   return (fab) => ap_(fab, fa)
 }
 
-export function crossFirst_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, A> {
+export function apFirst_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, A> {
   return crossWith_(fa, fb, (a, _) => a)
 }
 
 /**
- * @dataFirst crossFirst_
+ * @dataFirst apFirst_
  */
-export function crossFirst<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, A> {
-  return (fa) => crossFirst_(fa, fb)
+export function apFirst<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, A> {
+  return (fa) => apFirst_(fa, fb)
 }
 
-export function crossSecond_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, B> {
+export function apSecond_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, B> {
   return crossWith_(fa, fb, (_, b) => b)
 }
 
 /**
- * @dataFirst crossSecond_
+ * @dataFirst apSecond_
  */
-export function crossSecond<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, B> {
-  return (fa) => crossSecond_(fa, fb)
+export function apSecond<R1, B>(fb: Reader<R1, B>): <R, A>(fa: Reader<R, A>) => Reader<R & R1, B> {
+  return (fa) => apSecond_(fa, fb)
 }
 
 export function cross_<R, A, R1, B>(fa: Reader<R, A>, fb: Reader<R1, B>): Reader<R & R1, readonly [A, B]> {

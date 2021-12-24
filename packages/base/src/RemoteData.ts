@@ -325,26 +325,26 @@ export function cross<E1, B>(
   return (fa) => cross_(fa, fb)
 }
 
-export function crossFirst_<E, A, E1, B>(fa: RemoteData<E, A>, fb: RemoteData<E1, B>): RemoteData<E | E1, A> {
+export function apFirst_<E, A, E1, B>(fa: RemoteData<E, A>, fb: RemoteData<E1, B>): RemoteData<E | E1, A> {
   return crossWith_(fa, fb, (a) => a)
 }
 
 /**
- * @dataFirst crossFirst_
+ * @dataFirst apFirst_
  */
-export function crossFirst<E1, B>(fb: RemoteData<E1, B>): <E, A>(fa: RemoteData<E, A>) => RemoteData<E | E1, A> {
-  return (fa) => crossFirst_(fa, fb)
+export function apFirst<E1, B>(fb: RemoteData<E1, B>): <E, A>(fa: RemoteData<E, A>) => RemoteData<E | E1, A> {
+  return (fa) => apFirst_(fa, fb)
 }
 
-export function crossSecond_<E, A, E1, B>(fa: RemoteData<E, A>, fb: RemoteData<E1, B>): RemoteData<E | E1, B> {
+export function apSecond_<E, A, E1, B>(fa: RemoteData<E, A>, fb: RemoteData<E1, B>): RemoteData<E | E1, B> {
   return crossWith_(fa, fb, (_, b) => b)
 }
 
 /**
- * @dataFirst crossSecond_
+ * @dataFirst apSecond_
  */
-export function crossSecond<E1, B>(fb: RemoteData<E1, B>): <E, A>(fa: RemoteData<E, A>) => RemoteData<E | E1, B> {
-  return (fa) => crossSecond_(fa, fb)
+export function apSecond<E1, B>(fb: RemoteData<E1, B>): <E, A>(fa: RemoteData<E, A>) => RemoteData<E | E1, B> {
+  return (fa) => apSecond_(fa, fb)
 }
 
 /*

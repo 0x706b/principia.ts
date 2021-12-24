@@ -148,26 +148,26 @@ export function ap<S, A>(fa: State<S, A>): <B>(fab: State<S, (a: A) => B>) => St
   return (fab) => ap_(fab, fa)
 }
 
-export function crossFirst_<S, A, B>(fa: State<S, A>, fb: State<S, B>): State<S, A> {
+export function apFirst_<S, A, B>(fa: State<S, A>, fb: State<S, B>): State<S, A> {
   return crossWith_(fa, fb, (a, _) => a)
 }
 
 /**
- * @dataFirst crossWith_
+ * @dataFirst apFirst_
  */
-export function crossFirst<S, B>(fb: State<S, B>): <A>(fa: State<S, A>) => State<S, A> {
-  return (fa) => crossFirst_(fa, fb)
+export function apFirst<S, B>(fb: State<S, B>): <A>(fa: State<S, A>) => State<S, A> {
+  return (fa) => apFirst_(fa, fb)
 }
 
-export function crossSecond_<S, A, B>(fa: State<S, A>, fb: State<S, B>): State<S, B> {
+export function apSecond_<S, A, B>(fa: State<S, A>, fb: State<S, B>): State<S, B> {
   return crossWith_(fa, fb, (_, b) => b)
 }
 
 /**
- * @dataFirst crossSecond_
+ * @dataFirst apSecond_
  */
-export function crossSecond<S, B>(fb: State<S, B>): <A>(fa: State<S, A>) => State<S, B> {
-  return (fa) => crossSecond_(fa, fb)
+export function apSecond<S, B>(fb: State<S, B>): <A>(fa: State<S, A>) => State<S, B> {
+  return (fa) => apSecond_(fa, fb)
 }
 
 /*

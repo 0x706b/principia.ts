@@ -442,7 +442,7 @@ export function ap<E, A>(fa: Either<E, A>): <G, B>(fab: Either<G, (a: A) => B>) 
  * @category Apply
  * @since 1.0.0
  */
-export function crossFirst_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, A> {
+export function apFirst_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, A> {
   return ap_(
     map_(fa, (a) => () => a),
     fb
@@ -455,10 +455,10 @@ export function crossFirst_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Eit
  * @category Apply
  * @since 1.0.0
  *
- * @dataFirst crossFirst_
+ * @dataFirst apFirst_
  */
-export function crossFirst<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<G | E, A> {
-  return (fa) => crossFirst_(fa, fb)
+export function apFirst<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<G | E, A> {
+  return (fa) => apFirst_(fa, fb)
 }
 
 /**
@@ -467,7 +467,7 @@ export function crossFirst<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => 
  * @category Apply
  * @since 1.0.0
  */
-export function crossSecond_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, B> {
+export function apSecond_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Either<E | G, B> {
   return ap_(
     map_(fa, () => (b: B) => b),
     fb
@@ -480,10 +480,10 @@ export function crossSecond_<E, A, G, B>(fa: Either<E, A>, fb: Either<G, B>): Ei
  * @category Apply
  * @since 1.0.0
  *
- * @dataFirst crossSecond_
+ * @dataFirst apSecond_
  */
-export function crossSecond<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<G | E, B> {
-  return (fa) => crossSecond_(fa, fb)
+export function apSecond<G, B>(fb: Either<G, B>): <E, A>(fa: Either<E, A>) => Either<G | E, B> {
+  return (fa) => apSecond_(fa, fb)
 }
 
 /**
@@ -1123,24 +1123,6 @@ export const SemimonoidalFunctor = P.SemimonoidalFunctor<EitherF>({
   cross_
 })
 
-export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
-export const mapN_     = P.mapNF_(SemimonoidalFunctor)
-/**
- * @dataFirst mapN_
- */
-export const mapN      = P.mapNF(SemimonoidalFunctor)
-export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
-export const crossS_   = P.crossSF_(SemimonoidalFunctor)
-/**
- * @dataFirst crossS_
- */
-export const crossS  = P.crossSF(SemimonoidalFunctor)
-export const crossT_ = P.crossTF_(SemimonoidalFunctor)
-/**
- * @dataFirst crossT_
- */
-export const crossT = P.crossTF(SemimonoidalFunctor)
-
 export const Apply = P.Apply<EitherF>({
   map_,
   crossWith_,
@@ -1149,7 +1131,19 @@ export const Apply = P.Apply<EitherF>({
 })
 
 export const apS = P.apSF(Apply)
+
 export const apT = P.apTF(Apply)
+
+export const sequenceT = P.sequenceTF(Apply)
+
+export const mapN_ = P.mapNF_(Apply)
+
+/**
+ * @dataFirst mapN_
+ */
+export const mapN = P.mapNF(Apply)
+
+export const sequenceS = P.sequenceSF(Apply)
 
 /**
  * @category Instances

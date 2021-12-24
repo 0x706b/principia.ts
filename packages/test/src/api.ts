@@ -127,7 +127,7 @@ export function allAsync<A extends NonEmptyArray<As.Async<any, any, TestResult>>
   ...results: A
 ): As.Async<_R<A[number]>, _E<A[number]>, TestResult> {
   return pipe(
-    As.tupleC(...results) as As.Async<any, any, NonEmptyArray<TestResult>>,
+    As.sequenceTC(...results) as As.Async<any, any, NonEmptyArray<TestResult>>,
     As.map(NA.fold(BA.SemigroupAll<FailureDetails>()))
   )
 }

@@ -326,22 +326,22 @@ export const ap_: <R, E, A, Q, D, B>(fab: Sync<R, E, (a: A) => B>, fa: Sync<Q, D
 export const ap: <Q, D, A>(fa: Sync<Q, D, A>) => <R, E, B>(fab: Sync<R, E, (a: A) => B>) => Sync<Q & R, D | E, B> =
   Z.zap
 
-export const crossFirst_: <R, E, A, R1, E1, B>(fa: Sync<R, E, A>, fb: Sync<R1, E1, B>) => Sync<R & R1, E | E1, A> =
+export const apFirst_: <R, E, A, R1, E1, B>(fa: Sync<R, E, A>, fb: Sync<R1, E1, B>) => Sync<R & R1, E | E1, A> =
   Z.zipFirst_
 
 /**
- * @dataFirst crossFirst_
+ * @dataFirst apFirst_
  */
-export const crossFirst: <R1, E1, B>(fb: Sync<R1, E1, B>) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, A> =
+export const apFirst: <R1, E1, B>(fb: Sync<R1, E1, B>) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, A> =
   Z.zipFirst
 
-export const crossSecond_: <R, E, A, R1, E1, B>(fa: Sync<R, E, A>, fb: Sync<R1, E1, B>) => Sync<R & R1, E | E1, B> =
+export const apSecond_: <R, E, A, R1, E1, B>(fa: Sync<R, E, A>, fb: Sync<R1, E1, B>) => Sync<R & R1, E | E1, B> =
   Z.zipSecond_
 
 /**
- * @dataFirst crossSecond_
+ * @dataFirst apSecond_
  */
-export const crossSecond: <R1, E1, B>(fb: Sync<R1, E1, B>) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, B> =
+export const apSecond: <R1, E1, B>(fb: Sync<R1, E1, B>) => <R, E, A>(fa: Sync<R, E, A>) => Sync<R & R1, E | E1, B> =
   Z.zipSecond
 
 export function liftA2_<A, B, C>(f: (a: A, b: B) => C): (a: USync<A>, b: USync<B>) => USync<C> {
@@ -874,17 +874,6 @@ export const Bifunctor = P.Bifunctor<SyncF>({
 
 export const SemimonoidalFunctor = P.SemimonoidalFunctor<SyncF>({ map_, crossWith_, cross_ })
 
-export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
-
-export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
-
-export const mapN_ = P.mapNF_(SemimonoidalFunctor)
-
-/**
- * @dataFirst mapN_
- */
-export const mapN = P.mapNF(SemimonoidalFunctor)
-
 export const Apply = P.Apply<SyncF>({
   map_,
   crossWith_,
@@ -894,6 +883,17 @@ export const Apply = P.Apply<SyncF>({
 
 export const apS = P.apSF(Apply)
 export const apT = P.apTF(Apply)
+
+export const sequenceT = P.sequenceTF(Apply)
+
+export const sequenceS = P.sequenceSF(Apply)
+
+export const mapN_ = P.mapNF_(Apply)
+
+/**
+ * @dataFirst mapN_
+ */
+export const mapN = P.mapNF(Apply)
 
 export const MonoidalFunctor = P.MonoidalFunctor<SyncF>({
   map_,

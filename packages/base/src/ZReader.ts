@@ -103,19 +103,19 @@ export const ap_: <R, A, R1, B>(fab: ZReader<R1, (a: A) => B>, fa: ZReader<R, A>
  */
 export const ap: <R, A>(fa: ZReader<R, A>) => <R1, B>(fab: ZReader<R1, (a: A) => B>) => ZReader<R & R1, B> = Z.zap
 
-export const crossFirst_: <R, A, R1, B>(fa: ZReader<R, A>, fb: ZReader<R1, B>) => ZReader<R & R1, A> = Z.zipFirst_
+export const apFirst_: <R, A, R1, B>(fa: ZReader<R, A>, fb: ZReader<R1, B>) => ZReader<R & R1, A> = Z.zipFirst_
 
 /**
- * @dataFirst crossFirst_
+ * @dataFirst apFirst_
  */
-export const crossFirst: <R1, B>(fb: ZReader<R1, B>) => <R, A>(fa: ZReader<R, A>) => ZReader<R & R1, A> = Z.zipFirst
+export const apFirst: <R1, B>(fb: ZReader<R1, B>) => <R, A>(fa: ZReader<R, A>) => ZReader<R & R1, A> = Z.zipFirst
 
-export const crossSecond_: <R, A, R1, B>(fa: ZReader<R, A>, fb: ZReader<R1, B>) => ZReader<R & R1, B> = Z.zipSecond_
+export const apSecond_: <R, A, R1, B>(fa: ZReader<R, A>, fb: ZReader<R1, B>) => ZReader<R & R1, B> = Z.zipSecond_
 
 /**
- * @dataFirst crossSecond_
+ * @dataFirst apSecond_
  */
-export const crossSecond: <R1, B>(fb: ZReader<R1, B>) => <R, A>(fa: ZReader<R, A>) => ZReader<R & R1, B> = Z.zipSecond
+export const apSecond: <R1, B>(fb: ZReader<R1, B>) => <R, A>(fa: ZReader<R, A>) => ZReader<R & R1, B> = Z.zipSecond
 
 /*
  * -------------------------------------------------------------------------------------------------

@@ -1966,14 +1966,15 @@ export const Functor = P.Functor<ZF>({ map_ })
 
 export const SemimonoidalFunctor = P.SemimonoidalFunctor<ZF>({ map_, crossWith_, cross_ })
 
-export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
-export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
-export const crossS_   = P.crossSF_(SemimonoidalFunctor)
-export const crossS    = P.crossSF(SemimonoidalFunctor)
-export const crossT_   = P.crossTF_(SemimonoidalFunctor)
-export const crossT    = P.crossTF(SemimonoidalFunctor)
-
 export const Apply = P.Apply<ZF>({ map_, crossWith_, cross_, ap_ })
+
+export const sequenceT = P.sequenceTF(Apply)
+
+export const sequenceS = P.sequenceSF(Apply)
+
+export const apT = P.apTF(Apply)
+
+export const apS = P.apSF(Apply)
 
 export const MonoidalFunctor = P.MonoidalFunctor<ZF>({ map_, crossWith_, cross_, unit })
 

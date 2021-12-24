@@ -23,16 +23,16 @@ export const SemimonoidalFunctor = P.SemimonoidalFunctor<PCauseF>({
   cross_
 })
 
-export const mapN = mapNF(SemimonoidalFunctor)
-
-export const sequenceS = sequenceSF(SemimonoidalFunctor)
-
 export const Apply = P.Apply<PCauseF>({
   map_,
   crossWith_,
   cross_,
   ap_
 })
+
+export const mapN = mapNF(Apply)
+
+export const sequenceS = sequenceSF(Apply)
 
 export const MonoidalFunctor = P.MonoidalFunctor<PCauseF>({
   map_,

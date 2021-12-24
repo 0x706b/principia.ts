@@ -30,7 +30,7 @@ export function onExit_<R, E, A, R1>(
               innerReleaseMap,
               releaseAll(e, sequential),
               I.result,
-              I.crossWith(pipe(cleanup(exitEA), I.give(r1), I.result), (l, r) => I.fromExit(Ex.crossSecond_(l, r))),
+              I.crossWith(pipe(cleanup(exitEA), I.give(r1), I.result), (l, r) => I.fromExit(Ex.apSecond_(l, r))),
               I.flatten
             )
           )

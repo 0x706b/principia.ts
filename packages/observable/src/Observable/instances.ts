@@ -27,18 +27,6 @@ export const SemimonoidalFunctor: P.SemimonoidalFunctor<ObservableF> = P.Semimon
   crossWith_: O.crossWith_
 })
 
-export const crossS_ = P.crossSF_(SemimonoidalFunctor)
-
-export const crossS = P.crossSF(SemimonoidalFunctor)
-
-export const crossT_ = P.crossTF_(SemimonoidalFunctor)
-
-export const crossT = P.crossTF(SemimonoidalFunctor)
-
-export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
-
-export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
-
 export const Apply: P.Apply<ObservableF> = P.Apply({
   map_: O.map_,
   cross_: O.cross_,
@@ -49,6 +37,10 @@ export const Apply: P.Apply<ObservableF> = P.Apply({
 export const apS = P.apSF(Apply)
 
 export const apT = P.apTF(Apply)
+
+export const sequenceS = P.sequenceSF(Apply)
+
+export const sequenceT = P.sequenceTF(Apply)
 
 export const MonoidalFunctor: P.MonoidalFunctor<ObservableF> = P.MonoidalFunctor({
   map_: O.map_,

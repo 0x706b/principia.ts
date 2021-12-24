@@ -1715,7 +1715,7 @@ export function aggregateAsyncWithinEither_<R, E, A extends A1, R1, E1, A1, B, R
   type HandoffSignal = HO.HandoffSignal<C, E | E1, A1>
   type SinkEndReason = SER.SinkEndReason<C>
 
-  const deps = I.tuple(
+  const deps = I.sequenceT(
     HO.make<HandoffSignal>(),
     Ref.make<SinkEndReason>(new SER.SinkEnd()),
     Ref.make(C.empty<A1>()),

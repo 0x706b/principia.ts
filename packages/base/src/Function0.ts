@@ -83,7 +83,7 @@ export function cross<B>(fb: Function0<B>): <A>(fa: Function0<A>) => Function0<r
   return (fa) => cross_(fa, fb)
 }
 
-export function crossFirst_<A, B>(fa: Function0<A>, fb: Function0<B>): Function0<A> {
+export function apFirst_<A, B>(fa: Function0<A>, fb: Function0<B>): Function0<A> {
   return () => {
     const a = fa()
     fb()
@@ -92,13 +92,13 @@ export function crossFirst_<A, B>(fa: Function0<A>, fb: Function0<B>): Function0
 }
 
 /**
- * @dataFirst crossFirst_
+ * @dataFirst apFirst_
  */
-export function crossFirst<B>(fb: Function0<B>): <A>(fa: Function0<A>) => Function0<A> {
-  return (fa) => crossFirst_(fa, fb)
+export function apFirst<B>(fb: Function0<B>): <A>(fa: Function0<A>) => Function0<A> {
+  return (fa) => apFirst_(fa, fb)
 }
 
-export function crossSecond_<A, B>(fa: Function0<A>, fb: Function0<B>): Function0<B> {
+export function apSecond_<A, B>(fa: Function0<A>, fb: Function0<B>): Function0<B> {
   return () => {
     fa()
     return fb()
@@ -106,10 +106,10 @@ export function crossSecond_<A, B>(fa: Function0<A>, fb: Function0<B>): Function
 }
 
 /**
- * @dataFirst crossSecond_
+ * @dataFirst apSecond_
  */
-export function crossSecond<B>(fb: Function0<B>): <A>(fa: Function0<A>) => Function0<B> {
-  return (fa) => crossSecond_(fa, fb)
+export function apSecond<B>(fb: Function0<B>): <A>(fa: Function0<A>) => Function0<B> {
+  return (fa) => apSecond_(fa, fb)
 }
 
 /*

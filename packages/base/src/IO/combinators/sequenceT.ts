@@ -12,13 +12,13 @@ export type TupleA<T extends NonEmptyArray<IO<any, any, any>>> = {
   [K in keyof T]: [T[K]] extends [IO<any, any, infer A>] ? A : never
 }
 
-export function tuple<A extends NonEmptyArray<IO<any, any, any>>>(
+export function sequenceT<A extends NonEmptyArray<IO<any, any, any>>>(
   ...t: A
 ): IO<_R<A[number]>, _E<A[number]>, TupleA<A>> {
   return foreach_(t, identity) as any
 }
 
-export function tupleC<A extends NonEmptyArray<IO<any, any, any>>>(
+export function sequenceTC<A extends NonEmptyArray<IO<any, any, any>>>(
   ...t: A
 ): IO<_R<A[number]>, _E<A[number]>, TupleA<A>> {
   return foreachC_(t, identity) as any

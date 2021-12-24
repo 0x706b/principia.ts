@@ -46,7 +46,7 @@ export function ensuringWith_<R, E, A, R1>(
               pipe(
                 releaseAll_(innerReleaseMap, e, sequential),
                 I.result,
-                I.crossWith(pipe(cleanup(exitEA), I.give(r), I.result), traceAs(cleanup, Ex.crossSecond_))
+                I.crossWith(pipe(cleanup(exitEA), I.give(r), I.result), traceAs(cleanup, Ex.apSecond_))
               )
             )
           )

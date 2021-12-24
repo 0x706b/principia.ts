@@ -23,15 +23,6 @@ export const Functor = P.Functor<EvalF>({ map_ })
 
 export const SemimonoidalFunctor = P.SemimonoidalFunctor<EvalF>({ map_, crossWith_, cross_ })
 
-export const sequenceT = P.sequenceTF(SemimonoidalFunctor)
-export const sequenceS = P.sequenceSF(SemimonoidalFunctor)
-
-export const mapN_ = P.mapNF_(SemimonoidalFunctor)
-
-/**
- * @dataFirst mapN_
- */
-export const mapN = P.mapNF(SemimonoidalFunctor)
 
 export const Apply = P.Apply<EvalF>({
   map_,
@@ -42,6 +33,17 @@ export const Apply = P.Apply<EvalF>({
 
 export const apS = P.apSF(Apply)
 export const apT = P.apTF(Apply)
+
+export const sequenceT = P.sequenceTF(Apply)
+
+export const sequenceS = P.sequenceSF(Apply)
+
+export const mapN_ = P.mapNF_(Apply)
+
+/**
+ * @dataFirst mapN_
+ */
+export const mapN = P.mapNF(Apply)
 
 export const MonoidalFunctor = P.MonoidalFunctor<EvalF>({
   map_,
