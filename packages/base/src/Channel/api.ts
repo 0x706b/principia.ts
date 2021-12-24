@@ -6,6 +6,7 @@ import type { Predicate } from '../Predicate'
 import type { Channel } from './core'
 import type { ChannelState } from './internal/ChannelState'
 import type { AsyncInputConsumer, AsyncInputProducer } from './internal/producer'
+import type { UpstreamPullRequest } from './internal/UpstreamPullRequest'
 
 import * as AR from '../Array'
 import * as A from '../Chunk'
@@ -38,24 +39,26 @@ import {
   crossSecond_,
   Defer,
   Done,
-  Effect,
   Emit,
   end,
   Ensuring,
   Fail,
   failCause,
   Fold,
+  FromIO,
   Give,
   map_,
   PipeTo,
   Read,
   succeed
 } from './core'
-import { ChannelExecutor } from './internal/ChannelExecutor'
+import { ChannelExecutor, readUpstream } from './internal/ChannelExecutor'
 import * as State from './internal/ChannelState'
+import * as CED from './internal/ChildExecutorDecision'
 import * as MD from './internal/MergeDecision'
 import * as MS from './internal/MergeState'
 import { makeSingleProducerAsyncInput } from './internal/SingleProducerAsyncInput'
+import * as UPS from './internal/UpstreamPullStrategy'
 
 export function succeedLazy<OutDone>(
   effect: () => OutDone
@@ -316,7 +319,7 @@ export function concatMapWith_<
   InDone2,
   OutErr2
 >(
-  self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone2>,
+  channel: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone2>,
   f: (o: OutElem) => Channel<Env2, InErr2, InElem2, InDone2, OutErr2, OutElem2, OutDone>,
   g: (o: OutDone, o1: OutDone) => OutDone,
   h: (o: OutDone, o2: OutDone2) => OutDone3
@@ -332,7 +335,14 @@ export function concatMapWith_<
     OutDone,
     OutDone2,
     OutDone3
-  >(g, h, self, f)
+  >(
+    g,
+    h,
+    () => UPS.PullAfterNext(M.nothing()),
+    () => CED.Continue,
+    channel,
+    f
+  )
 }
 
 /**
@@ -352,6 +362,83 @@ export function concatMapWith<OutDone, OutElem, Env2, InErr2, InElem2, InDone2, 
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone2>
 ) => Channel<Env & Env2, InErr & InErr2, InElem & InElem2, InDone & InDone2, OutErr | OutErr2, OutElem2, OutDone3> {
   return (self) => concatMapWith_(self, f, g, h)
+}
+
+/**
+ * Returns a new channel whose outputs are fed to the specified factory function, which creates
+ * new channels in response. These new channels are sequentially concatenated together, and all
+ * their outputs appear as outputs of the newly returned channel. The provided merging function
+ * is used to merge the terminal values of all channels into the single terminal value of the
+ * returned channel.
+ */
+export function concatMapWithCustom_<
+  Env,
+  InErr,
+  InElem,
+  InDone,
+  OutErr,
+  OutElem,
+  OutElem2,
+  OutDone,
+  OutDone2,
+  OutDone3,
+  Env2,
+  InErr2,
+  InElem2,
+  InDone2,
+  OutErr2
+>(
+  channel: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone2>,
+  f: (o: OutElem) => Channel<Env2, InErr2, InElem2, InDone2, OutErr2, OutElem2, OutDone>,
+  g: (o: OutDone, o1: OutDone) => OutDone,
+  h: (o: OutDone, o2: OutDone2) => OutDone3,
+  onPull: (_: UpstreamPullRequest<OutElem>) => UPS.UpstreamPullStrategy<OutElem2>,
+  onEmit: (_: OutElem2) => CED.ChildExecutorDecision
+): Channel<Env & Env2, InErr & InErr2, InElem & InElem2, InDone & InDone2, OutErr | OutErr2, OutElem2, OutDone3> {
+  return new ConcatAll<
+    Env & Env2,
+    InErr & InErr2,
+    InElem & InElem2,
+    InDone & InDone2,
+    OutErr | OutErr2,
+    OutElem,
+    OutElem2,
+    OutDone,
+    OutDone2,
+    OutDone3
+  >(g, h, onPull, onEmit, channel, f)
+}
+
+/**
+ * Returns a new channel whose outputs are fed to the specified factory function, which creates
+ * new channels in response. These new channels are sequentially concatenated together, and all
+ * their outputs appear as outputs of the newly returned channel. The provided merging function
+ * is used to merge the terminal values of all channels into the single terminal value of the
+ * returned channel.
+ *
+ * @dataFirst concatMapWithCustom_
+ */
+export function concatMapWithCustom<
+  OutDone,
+  OutElem,
+  Env2,
+  InErr2,
+  InElem2,
+  InDone2,
+  OutErr2,
+  OutElem2,
+  OutDone2,
+  OutDone3
+>(
+  f: (o: OutElem) => Channel<Env2, InErr2, InElem2, InDone2, OutErr2, OutElem2, OutDone>,
+  g: (o: OutDone, o1: OutDone) => OutDone,
+  h: (o: OutDone, o2: OutDone2) => OutDone3,
+  onPull: (_: UpstreamPullRequest<OutElem>) => UPS.UpstreamPullStrategy<OutElem2>,
+  onEmit: (_: OutElem2) => CED.ChildExecutorDecision
+): <Env, InErr, InElem, InDone, OutErr>(
+  self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone2>
+) => Channel<Env & Env2, InErr & InErr2, InElem & InElem2, InDone & InDone2, OutErr | OutErr2, OutElem2, OutDone3> {
+  return (self) => concatMapWithCustom_(self, f, g, h, onPull, onEmit)
 }
 
 /**
@@ -396,7 +483,14 @@ export function concatAllWith_<
     OutDone,
     OutDone2,
     OutDone3
-  >(f, g, channels, identity)
+  >(
+    f,
+    g,
+    () => UPS.PullAfterNext(M.nothing()),
+    () => CED.Continue,
+    channels,
+    identity
+  )
 }
 
 /**
@@ -678,7 +772,7 @@ export function drain<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
  * Use an effect to end a channel
  */
 export function fromIO<R, E, A>(io: IO<R, E, A>): Channel<R, unknown, unknown, unknown, E, never, A> {
-  return new Effect(io)
+  return new FromIO(io)
 }
 
 /**
@@ -1364,6 +1458,9 @@ function runManagedInterpret<Env, InErr, InDone, OutErr, OutDone>(
       case State.ChannelStateTag.Done: {
         return I.fromExit(exec.getDone())
       }
+      case State.ChannelStateTag.Read: {
+        return readUpstream(channelState, () => runManagedInterpret(exec.run(), exec))
+      }
     }
   }
   throw new Error('Bug')
@@ -1387,6 +1484,9 @@ function toPullInterpret<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
     case State.ChannelStateTag.Done: {
       const done = exec.getDone()
       return Ex.match_(done, I.failCause, flow(E.left, I.succeed))
+    }
+    case State.ChannelStateTag.Read: {
+      return readUpstream(channelState, () => toPullInterpret(exec.run(), exec))
     }
   }
 }

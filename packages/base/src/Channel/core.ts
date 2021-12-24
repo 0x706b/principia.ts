@@ -1,7 +1,10 @@
 import type { IO, URIO } from '../IO'
 import type { Cause } from '../IO/Cause'
 import type { Exit } from '../IO/Exit'
+import type { ChildExecutorDecision } from './internal/ChildExecutorDecision'
 import type { AsyncInputProducer } from './internal/producer'
+import type { UpstreamPullRequest } from './internal/UpstreamPullRequest'
+import type { UpstreamPullStrategy } from './internal/UpstreamPullStrategy'
 
 import * as Ex from '../Exit'
 import { tuple } from '../tuple/core'
@@ -15,7 +18,7 @@ export const ChannelTag = {
   Read: 'Read',
   Done: 'Done',
   Halt: 'Halt',
-  Effect: 'Effect',
+  FromIO: 'FromIO',
   Emit: 'Emit',
   Defer: 'Defer',
   Ensuring: 'Ensuring',
@@ -166,8 +169,8 @@ export class Fail<OutErr> extends Channel<unknown, unknown, unknown, unknown, Ou
   }
 }
 
-export class Effect<Env, OutErr, OutDone> extends Channel<Env, unknown, unknown, unknown, OutErr, never, OutDone> {
-  readonly _tag = ChannelTag.Effect
+export class FromIO<Env, OutErr, OutDone> extends Channel<Env, unknown, unknown, unknown, OutErr, never, OutDone> {
+  readonly _tag = ChannelTag.FromIO
   constructor(readonly io: IO<Env, OutErr, OutDone>) {
     super()
   }
@@ -222,6 +225,8 @@ export class ConcatAll<
   constructor(
     readonly combineInners: (_: OutDone, __: OutDone) => OutDone,
     readonly combineAll: (_: OutDone, __: OutDone2) => OutDone3,
+    readonly onPull: (_: UpstreamPullRequest<OutElem>) => UpstreamPullStrategy<OutElem2>,
+    readonly onEmit: (_: OutElem2) => ChildExecutorDecision,
     readonly value: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone2>,
     readonly k: (_: OutElem) => Channel<Env, InErr, InElem, InDone, OutErr, OutElem2, OutDone>
   ) {
@@ -286,7 +291,7 @@ export function concrete<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   | Read<Env, InErr, InElem, InDone, OutErr, any, OutElem, OutDone, any>
   | Done<OutDone>
   | Fail<OutErr>
-  | Effect<Env, OutErr, OutDone>
+  | FromIO<Env, OutErr, OutDone>
   | Emit<OutElem, OutDone>
   | ConcatAll<Env, InErr, InElem, InDone, OutErr, any, OutElem, any, OutDone, any>
   | Bridge<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>

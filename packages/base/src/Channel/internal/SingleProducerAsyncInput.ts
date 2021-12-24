@@ -155,7 +155,7 @@ export class SingleProducerAsyncInput<Err, Elem, Done>
             case StateTag.Emit: {
               return tuple(
                 pipe(F.await(p), T.matchCause(onError, E.match(onDone, onElement))),
-                new StateEmit(state.notifyConsumers.push(p))
+                new StateEmit(state.notifyConsumers.enqueue(p))
               )
             }
             case StateTag.Error: {

@@ -2,22 +2,27 @@ import type { IO, URIO } from '../../IO'
 import type { Cause } from '../../IO/Cause'
 import type * as Ca from '../../IO/Cause'
 import type { Exit } from '../../IO/Exit'
-import type { List, MutableList } from '../../List'
+import type { List } from '../../List'
+import type { Stack } from '../../util/support/Stack'
 import type { ChannelState } from './ChannelState'
+import type * as UPS from './UpstreamPullStrategy'
 
 import * as F from '../../Fiber'
-import { absurd, pipe } from '../../function'
+import { constVoid, identity, pipe } from '../../function'
 import * as I from '../../IO'
 import * as Ex from '../../IO/Exit'
 import * as L from '../../List'
 import * as M from '../../Maybe'
+import { ImmutableQueue } from '../../util/support/ImmutableQueue'
+import { makeStack } from '../../util/support/Stack'
 import * as C from '../core'
 import * as State from './ChannelState'
+import * as CED from './ChildExecutorDecision'
+import * as UPR from './UpstreamPullRequest'
 
 type ErasedChannel<R> = C.Channel<R, unknown, unknown, unknown, unknown, unknown, unknown>
-type ErasedExecutor<R> = ChannelExecutor<R, unknown, unknown, unknown, unknown, unknown, unknown>
+export type ErasedExecutor<R> = ChannelExecutor<R, unknown, unknown, unknown, unknown, unknown, unknown>
 type ErasedContinuation<R> = C.Continuation<R, unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown>
-type ErasedFinalizer<R> = C.ContinuationFinalizer<R, unknown, unknown>
 
 type Finalizer<R> = (exit: Exit<any, any>) => I.URIO<R, any>
 
@@ -27,31 +32,150 @@ type Finalizer<R> = (exit: Exit<any, any>) => I.URIO<R, any>
  * -------------------------------------------------------------------------------------------------
  */
 
-type SubexecutorStack<R> = FromKAnd<R> | Inner<R>
+type Subexecutor<R> = PullFromUpstream<R> | PullFromChild<R> | DrainChildExecutors<R> | Emit<R>
 
 const SubexecutorStackTag = {
-  FromKAnd: 'FromKAnd',
-  Inner: 'Inner'
+  PullFromUpstream: 'PullFromUpstream',
+  PullFromChild: 'PullFromChild',
+  DrainChildExecutors: 'DrainChildExecutors',
+  Emit: 'Emit'
 } as const
 
-class FromKAnd<R> {
-  readonly _tag = SubexecutorStackTag.FromKAnd
-  constructor(readonly fromK: ErasedExecutor<R>, readonly rest: Inner<R>) {}
+class PullFromUpstream<R> {
+  readonly _tag = SubexecutorStackTag.PullFromUpstream
+  constructor(
+    readonly upstreamExecutor: ErasedExecutor<R>,
+    readonly createChild: (_: any) => ErasedChannel<R>,
+    readonly lastDone: any,
+    readonly activeChildExecutors: ImmutableQueue<PullFromChild<R> | null>,
+    readonly combineChildResults: (x: any, y: any) => any,
+    readonly combineWithChildResult: (x: any, y: any) => any,
+    readonly onPull: (_: UPR.UpstreamPullRequest<any>) => UPS.UpstreamPullStrategy<any>,
+    readonly onEmit: (_: any) => CED.ChildExecutorDecision
+  ) {}
+  close(ex: Ex.Exit<any, any>): I.URIO<R, Ex.Exit<any, any>> | null {
+    const fin1 = this.upstreamExecutor.close(ex)
+    const fins = this.activeChildExecutors
+      .map((child) => (child !== null ? child.childExecutor.close(ex) : null))
+      .enqueue(fin1)
+    return fins.foldl(null as I.URIO<R, Exit<any, any>> | null, (acc, next): I.URIO<R, Exit<any, any>> | null => {
+      if (acc === null) {
+        if (next === null) {
+          return null
+        } else {
+          return I.result(next)
+        }
+      } else {
+        if (next === null) {
+          return acc
+        } else {
+          return I.crossWith_(acc, I.result(next), Ex.apSecond_)
+        }
+      }
+    })
+  }
+
+  enqueuePullFromChild(child: PullFromChild<R>): Subexecutor<R> {
+    return new PullFromUpstream(
+      this.upstreamExecutor,
+      this.createChild,
+      this.lastDone,
+      this.activeChildExecutors.enqueue(child),
+      this.combineChildResults,
+      this.combineWithChildResult,
+      this.onPull,
+      this.onEmit
+    )
+  }
 }
 
-class Inner<R> {
-  readonly _tag = SubexecutorStackTag.Inner
+class PullFromChild<R> {
+  readonly _tag = SubexecutorStackTag.PullFromChild
   constructor(
-    readonly exec: ErasedExecutor<R>,
-    readonly subK: (_: unknown) => ErasedChannel<R>,
-    readonly lastDone: unknown,
-    readonly combineSubK: (_: unknown, __: unknown) => unknown,
-    readonly combineSubKAndInner: (_: unknown, __: unknown) => unknown
+    readonly childExecutor: ErasedExecutor<R>,
+    readonly parentSubexecutor: Subexecutor<R>,
+    readonly onEmit: (_: any) => CED.ChildExecutorDecision
   ) {}
-  close(ex: Exit<unknown, unknown>): URIO<R, Exit<unknown, unknown>> | null {
-    const fin = this.exec.close(ex)
-    if (fin) return I.result(fin)
-    else return null
+
+  close(ex: Ex.Exit<any, any>): I.URIO<R, Ex.Exit<any, any>> | null {
+    const fin1 = this.childExecutor.close(ex)
+    const fin2 = this.parentSubexecutor.close(ex)
+    if (fin1 === null) {
+      if (fin2 === null) {
+        return null
+      } else {
+        return fin2
+      }
+    } else {
+      if (fin2 === null) {
+        return I.result(fin1)
+      } else {
+        return I.crossWith_(I.result(fin1), fin2, Ex.apSecond_)
+      }
+    }
+  }
+
+  enqueuePullFromChild(_child: PullFromChild<R>): Subexecutor<R> {
+    return this
+  }
+}
+
+class DrainChildExecutors<R> {
+  readonly _tag = SubexecutorStackTag.DrainChildExecutors
+  constructor(
+    readonly upstreamExecutor: ErasedExecutor<R>,
+    readonly lastDone: any,
+    readonly activeChildExecutors: ImmutableQueue<PullFromChild<R> | null>,
+    readonly upstreamDone: Ex.Exit<any, any>,
+    readonly combineChildResults: (x: any, y: any) => any,
+    readonly combineWithChildResult: (x: any, y: any) => any,
+    readonly onPull: (_: UPR.UpstreamPullRequest<any>) => UPS.UpstreamPullStrategy<any>
+  ) {}
+
+  close(ex: Ex.Exit<any, any>): I.URIO<R, Ex.Exit<any, any>> | null {
+    const fin1 = this.upstreamExecutor.close(ex)
+    const fins = this.activeChildExecutors
+      .map((child) => (child !== null ? child.childExecutor.close(ex) : null))
+      .enqueue(fin1)
+    return fins.foldl(null as I.URIO<R, Exit<any, any>> | null, (acc, next): I.URIO<R, Exit<any, any>> | null => {
+      if (acc === null) {
+        if (next === null) {
+          return null
+        } else {
+          return I.result(next)
+        }
+      } else {
+        if (next === null) {
+          return acc
+        } else {
+          return I.crossWith_(acc, I.result(next), Ex.apSecond_)
+        }
+      }
+    })
+  }
+
+  enqueuePullFromChild(child: PullFromChild<R>): Subexecutor<R> {
+    return new DrainChildExecutors(
+      this.upstreamExecutor,
+      this.lastDone,
+      this.activeChildExecutors.enqueue(child),
+      this.upstreamDone,
+      this.combineChildResults,
+      this.combineWithChildResult,
+      this.onPull
+    )
+  }
+}
+
+class Emit<R> {
+  readonly _tag = SubexecutorStackTag.Emit
+  constructor(readonly value: any, readonly next: Subexecutor<R> | null) {}
+  close(ex: Ex.Exit<any, any>): I.URIO<R, Exit<any, any>> | null {
+    return this.next !== null ? this.next.close(ex) : null
+  }
+
+  enqueuePullFromChild(_child: PullFromChild<R>): Subexecutor<R> {
+    return this
   }
 }
 
@@ -60,22 +184,85 @@ class Inner<R> {
  * ChannelExecutor
  * -------------------------------------------------------------------------------------------------
  */
-
-const endUnit = new C.Done(() => void 0)
-
-function maybeCloseBoth<Env>(
-  l: IO<Env, never, unknown> | undefined,
-  r: IO<Env, never, unknown> | undefined
-): URIO<Env, Exit<never, unknown>> | undefined {
-  if (l && r) return pipe(I.result(l), I.crossWith(I.result(r), Ex.apSecond_))
-  else if (l) return I.result(l)
-  else if (r) return I.result(r)
+export function readUpstream<R, E, A>(r: State.Read<R, E>, cont: () => IO<R, E, A>): IO<R, E, A> {
+  let readStack: Stack<State.Read<any, any>> | undefined = makeStack(r)
+  const read = (): I.IO<R, E, A> => {
+    const current = readStack!.value
+    readStack     = readStack!.previous
+    const state   = current.upstream!.run()
+    State.concrete(state)
+    switch (state._tag) {
+      case State.ChannelStateTag.Emit: {
+        const emitEffect = current.onEmit(current.upstream!.getEmit())
+        if (readStack === undefined) {
+          if (emitEffect === null) {
+            return I.defer(cont)
+          } else {
+            return pipe(
+              emitEffect,
+              I.chain(() => cont())
+            )
+          }
+        } else {
+          if (emitEffect === null) {
+            return I.defer(read)
+          } else {
+            return pipe(
+              emitEffect,
+              I.chain(() => read())
+            )
+          }
+        }
+      }
+      case State.ChannelStateTag.Done: {
+        const doneEffect = current.onDone(current.upstream!.getDone())
+        if (readStack === undefined) {
+          if (doneEffect === null) {
+            return I.defer(cont)
+          } else {
+            return pipe(
+              doneEffect,
+              I.chain(() => cont())
+            )
+          }
+        } else {
+          if (doneEffect === null) {
+            return I.defer(read)
+          } else {
+            return pipe(
+              doneEffect,
+              I.chain(() => read())
+            )
+          }
+        }
+      }
+      case State.ChannelStateTag.Effect: {
+        readStack = makeStack(current, readStack)
+        return pipe(
+          current.onEffect(state.io as I.IO<unknown, never, void>),
+          I.catchAllCause((cause) =>
+            I.defer(() => {
+              const doneEffect = current.onDone(Ex.failCause(cause))
+              return doneEffect === null ? I.unit() : doneEffect
+            })
+          ),
+          I.chain(() => read())
+        )
+      }
+      case State.ChannelStateTag.Read: {
+        readStack = makeStack(current, readStack)
+        readStack = makeStack(state, readStack)
+        return I.defer(read)
+      }
+    }
+  }
+  return read()
 }
 
 export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> {
   private input: ErasedExecutor<Env> | null = null
   private inProgressFinalizer: URIO<Env, Exit<unknown, unknown>> | null = null
-  private subexecutorStack: SubexecutorStack<Env> | null = null
+  private activeSubexecutor: Subexecutor<Env> | null = null
   private doneStack: List<ErasedContinuation<Env>> = L.empty()
   private done: Exit<unknown, unknown> | null = null
   private cancelled: Exit<OutErr, OutDone> | null = null
@@ -90,6 +277,239 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
   ) {
     this.currentChannel = initialChannel() as ErasedChannel<Env>
     this.close          = this.close.bind(this)
+  }
+
+  getDone() {
+    return this.done as Exit<OutErr, OutDone>
+  }
+
+  getEmit() {
+    return this.emitted as OutElem
+  }
+
+  cancelWith(exit: Exit<OutErr, OutDone>) {
+    this.cancelled = exit
+  }
+
+  run(): ChannelState<Env, OutErr> {
+    let result: ChannelState<Env, unknown> | null = null
+
+    while (result === null) {
+      if (this.cancelled !== null) {
+        result = this.processCancellation()
+      } else if (this.activeSubexecutor !== null) {
+        result = this.runSubexecutor()
+      } else {
+        if (this.currentChannel === null) {
+          return State._Done
+        } else {
+          C.concrete(this.currentChannel)
+          const currentChannel = this.currentChannel
+
+          switch (currentChannel._tag) {
+            case C.ChannelTag.Bridge: {
+              if (this.input !== null) {
+                const inputExecutor = this.input
+                this.input          = null
+                const drainer: URIO<Env, unknown> = pipe(
+                  currentChannel.input.awaitRead,
+                  I.chain(() => {
+                    const state = inputExecutor.run()
+
+                    State.concrete(state)
+
+                    switch (state._tag) {
+                      case State.ChannelStateTag.Done: {
+                        const done = inputExecutor.getDone()
+                        return Ex.match_(
+                          done,
+                          (cause) => currentChannel.input.error(cause),
+                          (value) => currentChannel.input.done(value)
+                        )
+                      }
+                      case State.ChannelStateTag.Emit: {
+                        return pipe(
+                          currentChannel.input.emit(inputExecutor.getEmit()),
+                          I.chain(() => drainer)
+                        )
+                      }
+                      case State.ChannelStateTag.Effect: {
+                        return pipe(
+                          state.effect,
+                          I.matchCauseIO(
+                            (cause) => currentChannel.input.error(cause),
+                            () => drainer
+                          )
+                        )
+                      }
+                      case State.ChannelStateTag.Read: {
+                        return pipe(
+                          readUpstream(state, () => drainer),
+                          I.catchAllCause((cause) => currentChannel.input.error(cause))
+                        )
+                      }
+                    }
+                  })
+                )
+                result = new State.Effect(
+                  pipe(
+                    I.fork(drainer),
+                    I.chain((fiber) =>
+                      I.succeedLazy(() => {
+                        this.addFinalizer((exit) =>
+                          pipe(
+                            F.interrupt(fiber),
+                            I.chain(() =>
+                              I.defer(() => {
+                                const effect = this.restorePipe(exit, inputExecutor)
+                                if (effect !== null) {
+                                  return effect
+                                } else {
+                                  return I.unit()
+                                }
+                              })
+                            )
+                          )
+                        )
+                      })
+                    )
+                  )
+                )
+              }
+              break
+            }
+            case C.ChannelTag.PipeTo: {
+              const previousInput = this.input
+              const leftExec      = new ChannelExecutor(
+                currentChannel.left,
+                this.providedEnv,
+                this.executeCloseLastSubstream
+              )
+              leftExec.input = previousInput
+              this.input     = leftExec
+              this.addFinalizer((exit) => {
+                const effect = this.restorePipe(exit, previousInput!)
+                if (effect !== null) {
+                  return effect
+                } else {
+                  return I.unit()
+                }
+              })
+              this.currentChannel = currentChannel.right()
+              break
+            }
+            case C.ChannelTag.Read: {
+              result = new State.Read(
+                this.input,
+                identity,
+                (out) => {
+                  this.currentChannel = currentChannel.more(out)
+                  return null
+                },
+                (exit) => {
+                  this.currentChannel = currentChannel.done.onExit(exit)
+                  return null
+                }
+              )
+              break
+            }
+            case C.ChannelTag.Done: {
+              result = this.doneSucceed(currentChannel.terminal())
+              break
+            }
+            case C.ChannelTag.Halt: {
+              result = this.doneHalt(currentChannel.cause())
+              break
+            }
+            case C.ChannelTag.FromIO: {
+              const pio =
+                this.providedEnv === null ? currentChannel.io : I.giveSome_(currentChannel.io, this.providedEnv as Env)
+              result = new State.Effect(
+                I.matchCauseIO_(
+                  pio,
+                  (cause) => {
+                    const state = this.doneHalt(cause)
+                    State.concrete(state!)
+                    if (state !== null && state._tag === State.ChannelStateTag.Effect) {
+                      return state.effect
+                    } else {
+                      return I.unit()
+                    }
+                  },
+                  (z) => {
+                    const state = this.doneSucceed(z)
+                    State.concrete(state!)
+                    if (state !== null && state._tag === State.ChannelStateTag.Effect) {
+                      return state.effect
+                    } else {
+                      return I.unit()
+                    }
+                  }
+                )
+              )
+              break
+            }
+            case C.ChannelTag.Defer: {
+              this.currentChannel = currentChannel.effect()
+              break
+            }
+            case C.ChannelTag.Emit: {
+              this.emitted        = currentChannel.out()
+              this.currentChannel = this.activeSubexecutor !== null ? null : C.end(undefined)
+              result              = State._Emit
+              break
+            }
+            case C.ChannelTag.Ensuring: {
+              this.runEnsuring(currentChannel)
+              break
+            }
+            case C.ChannelTag.ConcatAll: {
+              const innerExecuteLastClose = (f: I.URIO<Env, any>) =>
+                I.succeedLazy(() => {
+                  const prevLastClose     = this.closeLastSubstream === null ? I.unit() : this.closeLastSubstream
+                  this.closeLastSubstream = I.chain_(prevLastClose, () => f)
+                })
+              const exec             = new ChannelExecutor(() => currentChannel.value, this.providedEnv, innerExecuteLastClose)
+              exec.input             = this.input
+              this.activeSubexecutor = new PullFromUpstream(
+                exec,
+                currentChannel.k,
+                null,
+                ImmutableQueue.empty(),
+                currentChannel.combineInners,
+                currentChannel.combineAll,
+                currentChannel.onPull,
+                currentChannel.onEmit
+              )
+              this.closeLastSubstream = null
+              this.currentChannel     = null
+              break
+            }
+            case C.ChannelTag.Fold: {
+              this.doneStack      = L.prepend_(this.doneStack, currentChannel.k)
+              this.currentChannel = currentChannel.value
+              break
+            }
+            case C.ChannelTag.BracketOut: {
+              result = this.runBracketOut(currentChannel)
+              break
+            }
+            case C.ChannelTag.Give: {
+              const previousEnv   = this.providedEnv
+              this.providedEnv    = currentChannel.environment
+              this.currentChannel = currentChannel.inner
+              this.addFinalizer(() =>
+                I.succeedLazy(() => {
+                  this.providedEnv = previousEnv
+                })
+              )
+              break
+            }
+          }
+        }
+      }
+    }
+    return result as ChannelState<Env, OutErr>
   }
 
   private restorePipe(exit: Exit<unknown, unknown>, prev: ErasedExecutor<Env>): IO<Env, never, unknown> | null {
@@ -163,26 +583,8 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
           )
         : null
 
-    let closeSubexecutors: URIO<Env, Exit<unknown, unknown>> | null = null
-
-    if (this.subexecutorStack !== null) {
-      if (this.subexecutorStack._tag === SubexecutorStackTag.Inner) {
-        closeSubexecutors = this.subexecutorStack.close(exit)
-      } else {
-        const fin1 = this.subexecutorStack.fromK.close(exit)
-        const fin2 = this.subexecutorStack.rest.close(exit)
-
-        if (fin1 === null && fin2 === null) {
-          closeSubexecutors = null
-        } else if (fin1 !== null && fin2 !== null) {
-          closeSubexecutors = pipe(I.result(fin1), I.crossWith(I.result(fin2), Ex.apSecond_))
-        } else if (fin1 !== null) {
-          closeSubexecutors = I.result(fin1)
-        } else {
-          closeSubexecutors = I.result(fin2!)
-        }
-      }
-    }
+    let closeSubexecutors: URIO<Env, Exit<unknown, unknown>> | null =
+      this.activeSubexecutor === null ? null : this.activeSubexecutor.close(exit)
 
     let closeSelf: URIO<Env, Exit<unknown, unknown>> | null = null
 
@@ -208,18 +610,6 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
         I.uninterruptible
       )
     }
-  }
-
-  getDone() {
-    return this.done as Exit<OutErr, OutDone>
-  }
-
-  getEmit() {
-    return this.emitted as OutElem
-  }
-
-  cancelWith(exit: Exit<OutErr, OutDone>) {
-    this.cancelled = exit
   }
 
   private processCancellation(): ChannelState<Env, unknown> {
@@ -257,7 +647,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
         (a) => this.doneSucceed(a)
       )
     )
-    this.subexecutorStack = null
+    this.activeSubexecutor = null
     return state
   }
 
@@ -268,7 +658,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
       (out) => this.doneSucceed(out)
     )
 
-    this.subexecutorStack = null
+    this.activeSubexecutor = null
 
     if (state === null) {
       return I.unit()
@@ -296,152 +686,371 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     )
   }
 
-  private drainFromKAndSubexecutor(exec: ErasedExecutor<Env>, rest: Inner<Env>): ChannelState<Env, unknown> | null {
-    const handleSubexecFailure = (cause: Ca.Cause<any>): ChannelState<Env, any> | null => {
-      return this.finishSubexecutorWithCloseEffect(
-        Ex.failCause(cause),
-        (exit) => rest.exec.close(exit),
-        (exit) => exec.close(exit)
-      )
-    }
-    const state = exec.run()
-    State.concrete(state)
-    switch (state._tag) {
-      case State.ChannelStateTag.Emit: {
-        this.emitted = exec.getEmit()
-        return State._Emit
-      }
-      case State.ChannelStateTag.Effect: {
-        return new State.Effect(
-          pipe(
-            state.effect,
-            I.catchAllCause((cause) => {
-              const state = handleSubexecFailure(cause)
-              if (state === null) {
-                return I.unit()
-              } else {
-                return state.effect
-              }
-            })
-          )
-        )
-      }
-      case State.ChannelStateTag.Done: {
-        const e = exec.getDone()
-        return Ex.match_(
-          e,
-          (cause) => handleSubexecFailure(cause),
-          (doneValue) => {
-            const modifiedRest = new Inner(
-              rest.exec,
-              rest.subK,
-              rest.lastDone !== null ? rest.combineSubK(rest.lastDone, doneValue) : doneValue,
-              rest.combineSubK,
-              rest.combineSubKAndInner
-            )
+  private runSubexecutor(): ChannelState<Env, unknown> | null {
+    const activeSubexecutor = this.activeSubexecutor!
 
-            this.closeLastSubstream = exec.close(e)
-            this.replaceSubexecutor(modifiedRest)
-            return null
-          }
+    switch (activeSubexecutor._tag) {
+      case SubexecutorStackTag.PullFromUpstream: {
+        return this.pullFromUpstream(activeSubexecutor)
+      }
+      case SubexecutorStackTag.DrainChildExecutors: {
+        return this.drainChildExecutors(activeSubexecutor)
+      }
+      case SubexecutorStackTag.PullFromChild: {
+        return this.pullFromChild(
+          activeSubexecutor.childExecutor,
+          activeSubexecutor.parentSubexecutor,
+          activeSubexecutor.onEmit,
+          activeSubexecutor
         )
+      }
+      case SubexecutorStackTag.Emit: {
+        this.emitted           = activeSubexecutor.value
+        this.activeSubexecutor = activeSubexecutor.next
+        return new State.Emit()
       }
     }
   }
 
-  private drainInnerSubExecutor(inner: Inner<Env>): ChannelState<Env, unknown> | null {
-    const state = inner.exec.run()
-    State.concrete(state)
+  private replaceSubexecutor(nextSubExec: Subexecutor<Env>): void {
+    this.currentChannel    = null
+    this.activeSubexecutor = nextSubExec
+  }
 
-    switch (state._tag) {
-      case State.ChannelStateTag.Emit: {
+  private applyUpstreamPullStrategy(
+    upstreamFinished: boolean,
+    queue: ImmutableQueue<PullFromChild<Env> | null>,
+    strategy: UPS.UpstreamPullStrategy<any>
+  ): readonly [M.Maybe<any>, ImmutableQueue<PullFromChild<Env> | null>] {
+    switch (strategy._tag) {
+      case 'PullAfterNext': {
+        return [
+          strategy.emitSeparator,
+          !upstreamFinished || queue.exists((_) => _ !== null) ? queue.prepend(null) : queue
+        ]
+      }
+      case 'PullAfterAllEnqueued': {
+        return [
+          strategy.emitSeparator,
+          !upstreamFinished || queue.exists((_) => _ !== null) ? queue.enqueue(null) : queue
+        ]
+      }
+    }
+  }
+
+  private pullFromUpstream(subexec: PullFromUpstream<Env>): ChannelState<Env, any> | null {
+    return pipe(
+      subexec.activeChildExecutors.dequeue(),
+      M.match(
+        () => this.performPullFromUpstream(subexec),
+        ([activeChild, rest]) => {
+          if (activeChild === null) {
+            return this.performPullFromUpstream(
+              new PullFromUpstream(
+                subexec.upstreamExecutor,
+                subexec.createChild,
+                subexec.lastDone,
+                rest,
+                subexec.combineChildResults,
+                subexec.combineWithChildResult,
+                subexec.onPull,
+                subexec.onEmit
+              )
+            )
+          } else {
+            this.replaceSubexecutor(
+              new PullFromChild(
+                activeChild.childExecutor,
+                new PullFromUpstream(
+                  subexec.upstreamExecutor,
+                  subexec.createChild,
+                  subexec.lastDone,
+                  rest,
+                  subexec.combineChildResults,
+                  subexec.combineWithChildResult,
+                  subexec.onPull,
+                  subexec.onEmit
+                ),
+                activeChild.onEmit
+              )
+            )
+            return null
+          }
+        }
+      )
+    )
+  }
+
+  private performPullFromUpstream(subexec: PullFromUpstream<Env>): ChannelState<Env, any> {
+    return new State.Read(
+      subexec.upstreamExecutor,
+      (effect) => {
+        const closeLast         = this.closeLastSubstream === null ? I.unit() : this.closeLastSubstream
+        this.closeLastSubstream = null
+        return I.apSecond_(this.executeCloseLastSubstream(closeLast), effect)
+      },
+      (emitted) => {
         if (this.closeLastSubstream !== null) {
           const closeLast         = this.closeLastSubstream
           this.closeLastSubstream = null
-          return new State.Effect(
-            pipe(
-              this.executeCloseLastSubstream(closeLast),
-              I.map(() => {
-                const fromK: ErasedExecutor<Env> = new ChannelExecutor(
-                  () => inner.subK(inner.exec.getEmit()),
-                  this.providedEnv,
-                  (_) => this.executeCloseLastSubstream(_)
-                )
-                fromK.input           = this.input
-                this.subexecutorStack = new FromKAnd(fromK, inner)
-              })
-            )
+          return pipe(
+            this.executeCloseLastSubstream(closeLast),
+            I.map(() => {
+              const childExecutor = new ChannelExecutor(
+                () => subexec.createChild(emitted),
+                this.providedEnv,
+                (_) => this.executeCloseLastSubstream(_)
+              )
+              childExecutor.input = this.input
+              const [emitSeparator, updatedChildExecutors] = this.applyUpstreamPullStrategy(
+                false,
+                subexec.activeChildExecutors,
+                subexec.onPull(new UPR.Pulled(this.emitted))
+              )
+              this.activeSubexecutor = new PullFromChild(
+                childExecutor,
+                new PullFromUpstream(
+                  subexec.upstreamExecutor,
+                  subexec.createChild,
+                  subexec.lastDone,
+                  updatedChildExecutors,
+                  subexec.combineChildResults,
+                  subexec.combineWithChildResult,
+                  subexec.onPull,
+                  subexec.onEmit
+                ),
+                subexec.onEmit
+              )
+              if (M.isJust(emitSeparator)) {
+                this.activeSubexecutor = new Emit(emitSeparator.value, this.activeSubexecutor)
+              }
+            })
           )
         } else {
-          const fromK: ErasedExecutor<Env> = new ChannelExecutor(
-            () => inner.subK(inner.exec.getEmit()),
+          const childExecutor = new ChannelExecutor(
+            () => subexec.createChild(emitted),
             this.providedEnv,
             (_) => this.executeCloseLastSubstream(_)
           )
-          fromK.input           = this.input
-          this.subexecutorStack = new FromKAnd(fromK, inner)
+          childExecutor.input = this.input
+
+          const [emitSeparator, updatedChildExecutors] = this.applyUpstreamPullStrategy(
+            false,
+            subexec.activeChildExecutors,
+            subexec.onPull(new UPR.Pulled(emitted))
+          )
+
+          this.activeSubexecutor = new PullFromChild(
+            childExecutor,
+            new PullFromUpstream(
+              subexec.upstreamExecutor,
+              subexec.createChild,
+              subexec.lastDone,
+              updatedChildExecutors,
+              subexec.combineChildResults,
+              subexec.combineWithChildResult,
+              subexec.onPull,
+              subexec.onEmit
+            ),
+            subexec.onEmit
+          )
+
+          if (M.isJust(emitSeparator)) {
+            this.activeSubexecutor = new Emit(emitSeparator.value, this.activeSubexecutor)
+          }
           return null
         }
-      }
-      case State.ChannelStateTag.Done: {
-        const lastClose = this.closeLastSubstream
-        const e         = inner.exec.getDone()
-        return Ex.match_(
-          e,
-          () =>
-            this.finishSubexecutorWithCloseEffect(
-              e,
-              () => lastClose,
-              (exit) => inner.exec.close(exit)
-            ),
-          (innerDoneValue) => {
-            const doneValue = Ex.succeed(inner.combineSubKAndInner(inner.lastDone, innerDoneValue))
-            return this.finishSubexecutorWithCloseEffect(
-              doneValue,
-              () => lastClose,
-              (exit) => inner.exec.close(exit)
+      },
+      (exit) => {
+        if (subexec.activeChildExecutors.exists((_) => _ !== null)) {
+          const drain = new DrainChildExecutors(
+            subexec.upstreamExecutor,
+            subexec.lastDone,
+            subexec.activeChildExecutors.prepend(null),
+            subexec.upstreamExecutor.getDone(),
+            subexec.combineChildResults,
+            subexec.combineWithChildResult,
+            subexec.onPull
+          )
+
+          if (this.closeLastSubstream !== null) {
+            const closeLast         = this.closeLastSubstream
+            this.closeLastSubstream = null
+            return pipe(
+              this.executeCloseLastSubstream(closeLast),
+              I.map(() => {
+                this.replaceSubexecutor(drain)
+              })
             )
+          } else {
+            this.replaceSubexecutor(drain)
+            return null
           }
-        )
-      }
-      case State.ChannelStateTag.Effect: {
-        const closeLast         = this.closeLastSubstream === null ? I.unit() : this.closeLastSubstream
-        this.closeLastSubstream = null
-        return new State.Effect(
-          pipe(
-            this.executeCloseLastSubstream(closeLast),
-            I.apSecond(
+        } else {
+          const lastClose = this.closeLastSubstream
+          return pipe(
+            this.finishSubexecutorWithCloseEffect(
               pipe(
-                state.effect,
-                I.catchAllCause((cause) => {
-                  const state = this.finishSubexecutorWithCloseEffect(Ex.failCause(cause), inner.exec.close)
-                  if (state === null) {
-                    return I.unit()
-                  } else {
-                    return state.effect
-                  }
-                })
+                exit,
+                Ex.map((_) => subexec.combineWithChildResult(subexec.lastDone, _))
+              ),
+              () => lastClose,
+              (exit) => subexec.upstreamExecutor.close(exit)
+            ),
+            State.effectOrNullIgnored
+          )
+        }
+      }
+    )
+  }
+
+  private drainChildExecutors(subexec: DrainChildExecutors<Env>): ChannelState<Env, any> | null {
+    return pipe(
+      subexec.activeChildExecutors.dequeue(),
+      M.match(
+        () => {
+          const lastClose = this.closeLastSubstream
+          if (lastClose !== null) {
+            this.addFinalizer((_) => lastClose)
+          }
+          return this.finishSubexecutorWithCloseEffect(
+            subexec.upstreamDone,
+            () => lastClose,
+            (_) => subexec.upstreamExecutor.close(_)
+          )
+        },
+        ([activeChild, rest]) => {
+          if (activeChild === null) {
+            const [emitSeparator, remainingExecutors] = this.applyUpstreamPullStrategy(
+              true,
+              rest,
+              subexec.onPull(new UPR.NoUpstream(rest.count((_) => _ !== null)))
+            )
+            this.replaceSubexecutor(
+              new DrainChildExecutors(
+                subexec.upstreamExecutor,
+                subexec.lastDone,
+                remainingExecutors,
+                subexec.upstreamExecutor.getDone(),
+                subexec.combineChildResults,
+                subexec.combineWithChildResult,
+                subexec.onPull
               )
             )
+            return pipe(
+              emitSeparator,
+              M.match(
+                () => null,
+                (value) => {
+                  this.emitted = value
+                  return new State.Emit()
+                }
+              )
+            )
+          } else {
+            this.replaceSubexecutor(
+              new PullFromChild(
+                activeChild.childExecutor,
+                new DrainChildExecutors(
+                  subexec.upstreamExecutor,
+                  subexec.lastDone,
+                  rest,
+                  subexec.upstreamExecutor.getDone(),
+                  subexec.combineChildResults,
+                  subexec.combineWithChildResult,
+                  subexec.onPull
+                ),
+                activeChild.onEmit
+              )
+            )
+            return null
+          }
+        }
+      )
+    )
+  }
+
+  private pullFromChild(
+    childExecutor: ErasedExecutor<Env>,
+    parentSubexecutor: Subexecutor<Env>,
+    onEmitted: (_: any) => CED.ChildExecutorDecision,
+    subexec: PullFromChild<Env>
+  ): ChannelState<Env, any> | null {
+    const handleSubexecFailure = (cause: Ca.Cause<any>): ChannelState<Env, any> | null => {
+      return this.finishSubexecutorWithCloseEffect(
+        Ex.failCause(cause),
+        (_) => parentSubexecutor.close(_),
+        (_) => childExecutor.close(_)
+      )
+    }
+
+    const finishWithDoneValue = (doneValue: any): void => {
+      switch (parentSubexecutor._tag) {
+        case SubexecutorStackTag.PullFromUpstream: {
+          const modifiedParent = new PullFromUpstream(
+            parentSubexecutor.upstreamExecutor,
+            parentSubexecutor.createChild,
+            parentSubexecutor.lastDone !== null
+              ? parentSubexecutor.combineChildResults(parentSubexecutor.lastDone, doneValue)
+              : doneValue,
+            parentSubexecutor.activeChildExecutors,
+            parentSubexecutor.combineChildResults,
+            parentSubexecutor.combineWithChildResult,
+            parentSubexecutor.onPull,
+            parentSubexecutor.onEmit
           )
-        )
+          this.closeLastSubstream = childExecutor.close(Ex.succeed(doneValue))
+          this.replaceSubexecutor(modifiedParent)
+          break
+        }
+        case SubexecutorStackTag.DrainChildExecutors: {
+          const modifiedParent = new DrainChildExecutors(
+            parentSubexecutor.upstreamExecutor,
+            parentSubexecutor.lastDone !== null
+              ? parentSubexecutor.combineChildResults(parentSubexecutor.lastDone, doneValue)
+              : doneValue,
+            parentSubexecutor.activeChildExecutors,
+            parentSubexecutor.upstreamDone,
+            parentSubexecutor.combineChildResults,
+            parentSubexecutor.combineWithChildResult,
+            parentSubexecutor.onPull
+          )
+          this.closeLastSubstream = childExecutor.close(Ex.succeed(doneValue))
+          this.replaceSubexecutor(modifiedParent)
+          break
+        }
+        default: {
+          throw new Error('Bug: this should not get here')
+        }
       }
     }
-  }
 
-  private drainSubexecutor(): ChannelState<Env, unknown> | null {
-    const subexecutorStack = this.subexecutorStack!
-
-    if (subexecutorStack._tag === SubexecutorStackTag.Inner) {
-      return this.drainInnerSubExecutor(subexecutorStack)
-    } else {
-      return this.drainFromKAndSubexecutor(subexecutorStack.fromK, subexecutorStack.rest)
-    }
-  }
-
-  private replaceSubexecutor(nextSubExec: Inner<Env>): void {
-    this.currentChannel   = null
-    this.subexecutorStack = nextSubExec
+    return new State.Read(
+      childExecutor,
+      identity,
+      (emitted) => {
+        pipe(
+          onEmitted(emitted),
+          CED.match(
+            constVoid,
+            (doneValue) => finishWithDoneValue(doneValue),
+            () => {
+              const modifiedParent = parentSubexecutor.enqueuePullFromChild(subexec)
+              this.replaceSubexecutor(modifiedParent)
+            }
+          )
+        )
+        this.activeSubexecutor = new Emit(emitted, this.activeSubexecutor)
+        return null
+      },
+      Ex.match(
+        (cause) => pipe(handleSubexecFailure(cause), State.effectOrNullIgnored),
+        (doneValue) => {
+          finishWithDoneValue(doneValue)
+          return null
+        }
+      )
+    )
   }
 
   private doneSucceed(z: unknown): ChannelState<Env, unknown> | null {
@@ -534,67 +1143,6 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     this.doneStack = L.prepend_(this.doneStack, new C.ContinuationFinalizer(f))
   }
 
-  private runRead(
-    read: C.Read<Env, unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown>
-  ): ChannelState<Env, unknown> | null {
-    if (this.input === null) {
-      this.currentChannel = read.more(undefined)
-      return null
-    } else {
-      const go = (state: ChannelState<Env, any>): I.URIO<Env, void> => {
-        State.concrete(state)
-        switch (state._tag) {
-          case State.ChannelStateTag.Emit: {
-            return I.succeedLazy(() => {
-              this.currentChannel = read.more(this.input!.getEmit())
-            })
-          }
-          case State.ChannelStateTag.Done: {
-            return I.succeedLazy(() => {
-              this.currentChannel = read.done.onExit(this.input!.getDone())
-            })
-          }
-          case State.ChannelStateTag.Effect: {
-            return I.matchCauseIO_(
-              state.effect,
-              (cause) =>
-                I.succeedLazy(() => {
-                  this.currentChannel = read.done.onHalt(cause)
-                }),
-              () => go(this.input!.run())
-            )
-          }
-        }
-      }
-      const state = this.input.run()
-      State.concrete(state)
-      switch (state._tag) {
-        case State.ChannelStateTag.Emit: {
-          this.currentChannel = read.more(this.input.getEmit())
-          return null
-        }
-        case State.ChannelStateTag.Done: {
-          this.currentChannel = read.done.onExit(this.input.getDone())
-          return null
-        }
-        case State.ChannelStateTag.Effect: {
-          return new State.Effect(
-            pipe(
-              state.effect,
-              I.matchCauseIO(
-                (cause) =>
-                  I.succeedLazy(() => {
-                    this.currentChannel = read.done.onHalt(cause)
-                  }),
-                () => go(this.input!.run())
-              )
-            )
-          )
-        }
-      }
-    }
-  }
-
   private runBracketOut(bracketOut: C.BracketOut<Env, unknown, unknown, unknown>): ChannelState<Env, unknown> | null {
     return new State.Effect(
       I.uninterruptibleMask(({ restore }) =>
@@ -617,208 +1165,5 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
   private runEnsuring(ensuring: C.Ensuring<Env, any, any, any, any, any, any>) {
     this.addFinalizer(ensuring.finalizer)
     this.currentChannel = ensuring.channel
-  }
-
-  run(): ChannelState<Env, OutErr> {
-    let result: ChannelState<Env, unknown> | null = null
-
-    while (result === null) {
-      if (this.cancelled !== null) {
-        result = this.processCancellation()
-      } else if (this.subexecutorStack !== null) {
-        result = this.drainSubexecutor()
-      } else {
-        if (this.currentChannel === null) {
-          return State._Done
-        } else {
-          C.concrete(this.currentChannel)
-          const currentChannel = this.currentChannel
-
-          switch (currentChannel._tag) {
-            case C.ChannelTag.Bridge: {
-              if (this.input !== null) {
-                const inputExecutor = this.input
-                this.input          = null
-                const drainer: URIO<Env, unknown> = pipe(
-                  currentChannel.input.awaitRead,
-                  I.apSecond(
-                    I.defer(() => {
-                      const state = inputExecutor.run()
-
-                      State.concrete(state)
-
-                      switch (state._tag) {
-                        case State.ChannelStateTag.Done: {
-                          const done = inputExecutor.getDone()
-                          return Ex.match_(
-                            done,
-                            (cause) => currentChannel.input.error(cause),
-                            (value) => currentChannel.input.done(value)
-                          )
-                        }
-                        case State.ChannelStateTag.Emit: {
-                          return pipe(
-                            currentChannel.input.emit(inputExecutor.getEmit()),
-                            I.chain(() => drainer)
-                          )
-                        }
-                        case State.ChannelStateTag.Effect: {
-                          return pipe(
-                            state.effect,
-                            I.matchCauseIO(
-                              (cause) => currentChannel.input.error(cause),
-                              () => drainer
-                            )
-                          )
-                        }
-                      }
-                    })
-                  )
-                )
-                result = new State.Effect(
-                  pipe(
-                    I.fork(drainer),
-                    I.chain((fiber) =>
-                      I.succeedLazy(() => {
-                        this.addFinalizer((exit) =>
-                          pipe(
-                            F.interrupt(fiber),
-                            I.chain(() =>
-                              I.defer(() => {
-                                const effect = this.restorePipe(exit, inputExecutor)
-                                if (effect !== null) {
-                                  return effect
-                                } else {
-                                  return I.unit()
-                                }
-                              })
-                            )
-                          )
-                        )
-                      })
-                    )
-                  )
-                )
-              }
-              break
-            }
-            case C.ChannelTag.PipeTo: {
-              const previousInput = this.input
-              const leftExec      = new ChannelExecutor(
-                currentChannel.left,
-                this.providedEnv,
-                this.executeCloseLastSubstream
-              )
-              leftExec.input = previousInput
-              this.input     = leftExec
-              this.addFinalizer((exit) => {
-                const effect = this.restorePipe(exit, previousInput!)
-                if (effect !== null) {
-                  return effect
-                } else {
-                  return I.unit()
-                }
-              })
-              this.currentChannel = currentChannel.right()
-              break
-            }
-            case C.ChannelTag.Read: {
-              result = this.runRead(currentChannel)
-              break
-            }
-            case C.ChannelTag.Done: {
-              result = this.doneSucceed(currentChannel.terminal())
-              break
-            }
-            case C.ChannelTag.Halt: {
-              result = this.doneHalt(currentChannel.cause())
-              break
-            }
-            case C.ChannelTag.Effect: {
-              const pio =
-                this.providedEnv === null ? currentChannel.io : I.giveSome_(currentChannel.io, this.providedEnv as Env)
-              result = new State.Effect(
-                I.matchCauseIO_(
-                  pio,
-                  (cause) => {
-                    const state = this.doneHalt(cause)
-                    State.concrete(state!)
-                    if (state !== null && state._tag === State.ChannelStateTag.Effect) {
-                      return state.effect
-                    } else {
-                      return I.unit()
-                    }
-                  },
-                  (z) => {
-                    const state = this.doneSucceed(z)
-                    State.concrete(state!)
-                    if (state !== null && state._tag === State.ChannelStateTag.Effect) {
-                      return state.effect
-                    } else {
-                      return I.unit()
-                    }
-                  }
-                )
-              )
-              break
-            }
-            case C.ChannelTag.Defer: {
-              this.currentChannel = currentChannel.effect()
-              break
-            }
-            case C.ChannelTag.Emit: {
-              this.emitted        = currentChannel.out()
-              this.currentChannel = C.end(undefined)
-              result              = State._Emit
-              break
-            }
-            case C.ChannelTag.Ensuring: {
-              this.runEnsuring(currentChannel)
-              break
-            }
-            case C.ChannelTag.ConcatAll: {
-              const innerExecuteLastClose = (f: I.URIO<Env, any>) =>
-                I.succeedLazy(() => {
-                  const prevLastClose     = this.closeLastSubstream === null ? I.unit() : this.closeLastSubstream
-                  this.closeLastSubstream = I.chain_(prevLastClose, () => f)
-                })
-              const exec            = new ChannelExecutor(() => currentChannel.value, this.providedEnv, innerExecuteLastClose)
-              exec.input            = this.input
-              this.subexecutorStack = new Inner(
-                exec,
-                currentChannel.k,
-                null,
-                currentChannel.combineInners,
-                currentChannel.combineAll
-              )
-              this.closeLastSubstream = null
-              this.currentChannel     = null
-              break
-            }
-            case C.ChannelTag.Fold: {
-              this.doneStack      = L.prepend_(this.doneStack, currentChannel.k)
-              this.currentChannel = currentChannel.value
-              break
-            }
-            case C.ChannelTag.BracketOut: {
-              result = this.runBracketOut(currentChannel)
-              break
-            }
-            case C.ChannelTag.Give: {
-              const previousEnv   = this.providedEnv
-              this.providedEnv    = currentChannel.environment
-              this.currentChannel = currentChannel.inner
-              this.addFinalizer(() =>
-                I.succeedLazy(() => {
-                  this.providedEnv = previousEnv
-                })
-              )
-              break
-            }
-          }
-        }
-      }
-    }
-    return result as ChannelState<Env, OutErr>
   }
 }

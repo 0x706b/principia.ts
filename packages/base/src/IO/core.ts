@@ -41,7 +41,7 @@ import { NoSuchElementError } from '../Error'
 import * as Ev from '../Eval'
 import { RuntimeException } from '../Exception'
 import { none, showFiberId } from '../Fiber/FiberId'
-import { constant, flow, identity, pipe } from '../function'
+import { constant, constVoid, flow, identity, pipe } from '../function'
 import { isTag, mergeEnvironments } from '../Has'
 import * as I from '../Iterable'
 import * as M from '../Maybe'
@@ -3125,6 +3125,10 @@ export function ifLazy<R, E, A, R1, E1, A1>(
   onFalse: () => IO<R1, E1, A1>
 ): (b: () => boolean) => IO<R & R1, E | E1, A | A1> {
   return (b) => ifLazy_(b, onTrue, onFalse)
+}
+
+export function ignore<R, E, A>(fa: IO<R, E, A>): URIO<R, void> {
+  return pipe(fa, match(constVoid, constVoid))
 }
 
 /**

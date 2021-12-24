@@ -1,13 +1,15 @@
-import type { Either } from '../../internal/Either'
 import type { IO } from '../../IO'
+import type { Exit } from '../../IO/Exit'
+import type { ErasedExecutor } from './ChannelExecutor'
 
-import * as E from '../../Either'
+import { pipe } from '../../function'
 import * as I from '../../IO'
 
 export const ChannelStateTag = {
   Emit: 'Emit',
   Done: 'Done',
-  Effect: 'Effect'
+  Effect: 'Effect',
+  Read: 'Read'
 } as const
 
 export const ChannelStateTypeId = Symbol.for('@principia/base/ChannelState')
@@ -44,19 +46,29 @@ export class Effect<R, E> extends ChannelState<R, E> {
   }
 }
 
-export function concrete<R, E>(_: ChannelState<R, E>): asserts _ is Emit | Done | Effect<R, E> {
+export class Read<R, E> extends ChannelState<R, E> {
+  readonly _tag = ChannelStateTag.Read
+  constructor(
+    readonly upstream: ErasedExecutor<R> | null,
+    readonly onEffect: (_: I.IO<R, never, void>) => I.IO<R, never, void>,
+    readonly onEmit: (_: any) => I.IO<R, never, void> | null,
+    readonly onDone: (exit: Exit<any, any>) => I.IO<R, never, void> | null
+  ) {
+    super()
+  }
+}
+
+/**
+ * @optimize remove
+ */
+export function concrete<R, E>(_: ChannelState<R, E>): asserts _ is Emit | Done | Effect<R, E> | Read<R, E> {
   //
 }
 
-export function unroll<R, E>(runStep: () => ChannelState<R, E>): IO<R, E, Either<Emit, Done>> {
-  const state = runStep()
-  concrete(state)
-  switch (state._tag) {
-    case ChannelStateTag.Done:
-      return I.succeed(E.right(_Done))
-    case ChannelStateTag.Emit:
-      return I.succeed(E.left(_Emit))
-    case ChannelStateTag.Effect:
-      return I.apSecond_(state.io, unroll(runStep))
+export function effectOrNullIgnored<R, E>(channelState: ChannelState<R, E> | null): I.IO<R, never, void> | null {
+  if (channelState === null) {
+    return null
   }
+  concrete(channelState)
+  return channelState._tag === ChannelStateTag.Effect ? pipe(channelState.effect, I.ignore, I.asUnit) : null
 }

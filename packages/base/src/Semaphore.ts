@@ -109,7 +109,7 @@ export class Semaphore {
             E.match(
               (q): [Acquisition, E.Either<ImmutableQueue<Entry>, number>] => [
                 new Acquisition(F.await(p), this.restore(p, n)),
-                E.left(q.push([p, n]))
+                E.left(q.enqueue([p, n]))
               ],
               (m): [Acquisition, E.Either<ImmutableQueue<Entry>, number>] => {
                 if (m >= n) {
