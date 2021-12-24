@@ -17,142 +17,247 @@ import * as L from '@principia/base/Layer'
 import * as Ma from '@principia/base/Managed'
 import * as M from '@principia/base/Maybe'
 import * as Str from '@principia/base/string'
+import { tuple } from '@principia/base/tuple'
 import { matchTag, matchTag_ } from '@principia/base/util/match'
 
 import { Annotations, tagged, TestAnnotationMap } from './Annotation'
 import * as Annotation from './Annotation'
 import { Ignored } from './TestSuccess'
 
-export type XSpec<R, E> = Spec<R, TestFailure<E>, TestSuccess>
+export type Spec<R, E> = PSpec<R, TestFailure<E>, TestSuccess>
 
-export class Spec<R, E, T> {
-  constructor(readonly caseValue: SpecCase<R, E, T, Spec<R, E, T>>) {}
-  ['@@']<R, E, R1, E1>(this: XSpec<R, E>, aspect: TestAspect<R1, E1>): XSpec<R & R1, E | E1> {
+export class PSpec<R, E, T> {
+  readonly _R!: (_: R) => void
+  readonly _E!: () => E
+  readonly _T!: () => T
+  constructor(readonly caseValue: SpecCase<R, E, T, PSpec<R, E, T>>) {}
+  ['@@']<R, E, R1, E1>(this: Spec<R, E>, aspect: TestAspect<R1, E1>): Spec<R & R1, E | E1> {
     return aspect.all(this)
   }
 }
 
-export class SuiteCase<R, E, A> {
-  readonly _tag = 'Suite'
-  constructor(
-    readonly label: string,
-    readonly specs: Ma.Managed<R, E, ReadonlyArray<A>>,
-    readonly exec: Maybe<ExecutionStrategy>
-  ) {}
+export class ExecCase<Spec> {
+  readonly _tag = 'Exec'
+  constructor(readonly exec: ExecutionStrategy, readonly spec: Spec) {}
+}
+
+export class LabeledCase<Spec> {
+  readonly _tag = 'Labeled'
+  constructor(readonly label: string, readonly spec: Spec) {}
+}
+
+export class ManagedCase<R, E, Spec> {
+  readonly _tag = 'Managed'
+  constructor(readonly managed: Ma.Managed<R, E, Spec>) {}
+}
+
+export class MultipleCase<Spec> {
+  readonly _tag = 'Multiple'
+  constructor(readonly specs: C.Chunk<Spec>) {}
+}
+
+function isMultiple<R, E, T, A>(s: SpecCase<R, E, T, A>): s is MultipleCase<A> {
+  return s._tag === 'Multiple'
 }
 
 export class TestCase<R, E, T> {
+  readonly _R!: (_: R) => void
+  readonly _E!: () => E
+  readonly _A!: () => T
   readonly _tag = 'Test'
-  constructor(readonly label: string, readonly test: I.IO<R, E, T>, readonly annotations: TestAnnotationMap) {}
+  constructor(readonly test: I.IO<R, E, T>, readonly annotations: TestAnnotationMap) {}
 }
 
-export type SpecCase<R, E, T, A> = SuiteCase<R, E, A> | TestCase<R, E, T>
+export type SpecCase<R, E, T, A> =
+  | ExecCase<A>
+  | LabeledCase<A>
+  | ManagedCase<R, E, A>
+  | MultipleCase<A>
+  | TestCase<R, E, T>
 
-export function suite<R, E, T>(
-  label: string,
-  specs: Ma.Managed<R, E, ReadonlyArray<Spec<R, E, T>>>,
-  exec: Maybe<ExecutionStrategy>
-): Spec<R, E, T> {
-  return new Spec(new SuiteCase(label, specs, exec))
+export function exec<R, E, T>(exec: ExecutionStrategy, spec: PSpec<R, E, T>): PSpec<R, E, T> {
+  return new PSpec(new ExecCase(exec, spec))
 }
 
-export function test<R, E, T>(label: string, test: I.IO<R, E, T>, annotations: TestAnnotationMap): Spec<R, E, T> {
-  return new Spec(new TestCase(label, test, annotations))
+export function labeled<R, E, T>(label: string, spec: PSpec<R, E, T>): PSpec<R, E, T> {
+  return new PSpec(new LabeledCase(label, spec))
 }
 
-export function annotated<R, E, T>(spec: Spec<R, E, T>): Spec<R & Has<Annotations>, Annotated<E>, Annotated<T>> {
-  return transform_(
-    spec,
-    matchTag({
-      Suite: ({ label, specs, exec }) =>
-        new SuiteCase(
-          label,
-          Ma.mapError_(specs, (e) => [e, TestAnnotationMap.empty] as const),
-          exec
-        ),
-      Test: ({ label, test, annotations }) => new TestCase(label, Annotations.withAnnotation(test), annotations)
-    })
-  )
+export function managed<R, E, T>(managed: Ma.Managed<R, E, PSpec<R, E, T>>): PSpec<R, E, T> {
+  return new PSpec(new ManagedCase(managed))
 }
 
-export function fold_<R, E, T, Z>(spec: Spec<R, E, T>, f: (_: SpecCase<R, E, T, Z>) => Z): Z {
-  return matchTag_(spec.caseValue, {
-    Suite: ({ label, specs, exec }) =>
-      f(
-        new SuiteCase(
-          label,
-          Ma.map_(
-            specs,
-            A.map((spec) => fold_(spec, f))
-          ),
-          exec
-        )
-      ),
-    Test: f
+export function multiple<R, E, T>(specs: C.Chunk<PSpec<R, E, T>>): PSpec<R, E, T> {
+  return new PSpec(new MultipleCase(specs))
+}
+
+export function test<R, E, T>(test: I.IO<R, E, T>, annotations: TestAnnotationMap): PSpec<R, E, T> {
+  return new PSpec(new TestCase(test, annotations))
+}
+
+export const empty: PSpec<unknown, never, never> = multiple(C.empty())
+
+export function mapSpecCase_<R, E, T, A, B>(fa: SpecCase<R, E, T, A>, f: (a: A) => B): SpecCase<R, E, T, B> {
+  return matchTag_(fa, {
+    Exec: ({ exec, spec }) => new ExecCase(exec, f(spec)),
+    Labeled: ({ label, spec }) => new LabeledCase(label, f(spec)),
+    Managed: ({ managed }) => new ManagedCase(pipe(managed, Ma.map(f))),
+    Multiple: ({ specs }) => new MultipleCase(pipe(specs, C.map(f))),
+    Test: ({ test, annotations }) => new TestCase(test, annotations)
   })
 }
 
-export function countTests_<R, E, T>(spec: Spec<R, E, T>, f: (t: T) => boolean): Ma.Managed<R, E, number> {
+export function mapSpecCase<A, B>(f: (a: A) => B): <R, E, T>(fa: SpecCase<R, E, T, A>) => SpecCase<R, E, T, B> {
+  return (fa) => mapSpecCase_(fa, f)
+}
+
+export function annotated<R, E, T>(spec: PSpec<R, E, T>): PSpec<R & Has<Annotations>, Annotated<E>, Annotated<T>> {
+  return transform_(
+    spec,
+    matchTag(
+      {
+        Managed: ({ managed }) =>
+          new ManagedCase(
+            pipe(
+              managed,
+              Ma.mapError((e) => tuple(e, TestAnnotationMap.empty))
+            )
+          ),
+        Test: ({ test, annotations }) => new TestCase(Annotations.withAnnotation(test), annotations)
+      },
+      identity
+    )
+  )
+}
+
+export function fold_<R, E, T, Z>(spec: PSpec<R, E, T>, f: (_: SpecCase<R, E, T, Z>) => Z): Z {
+  return matchTag_(spec.caseValue, {
+    Exec: ({ exec, spec }) => f(new ExecCase(exec, fold_(spec, f))),
+    Labeled: ({ label, spec }) => f(new LabeledCase(label, fold_(spec, f))),
+    Managed: ({ managed }) =>
+      f(
+        new ManagedCase(
+          pipe(
+            managed,
+            Ma.map((spec) => fold_(spec, f))
+          )
+        )
+      ),
+    Multiple: ({ specs }) =>
+      f(
+        new MultipleCase(
+          pipe(
+            specs,
+            C.map((spec) => fold_(spec, f))
+          )
+        )
+      ),
+    Test: (t) => f(t)
+  })
+}
+
+export function countTests_<R, E, T>(spec: PSpec<R, E, T>, f: (t: T) => boolean): Ma.Managed<R, E, number> {
   return fold_(
     spec,
     matchTag({
-      Suite: ({ specs }) => Ma.chain_(specs, flow(Ma.foreach(identity), Ma.map(C.foldl(0, (b, a) => b + a)))),
-      Test: ({ test }) => I.toManaged_(I.map_(test, (t) => (f(t) ? 1 : 0)))
+      Exec: ({ spec }) => spec,
+      Labeled: ({ spec }) => spec,
+      Managed: ({ managed }) => Ma.flatten(managed),
+      // TODO: Implement Chunk sum
+      Multiple: ({ specs }) => pipe(specs, Ma.sequenceIterable, Ma.map(C.foldl(0, (b, a) => b + a))),
+      Test: ({ test }) =>
+        pipe(
+          test,
+          I.map((t) => (f(t) ? 1 : 0)),
+          I.toManaged()
+        )
     })
   )
 }
 
-export function filterLabels_<R, E, T>(spec: Spec<R, E, T>, f: (label: string) => boolean): Maybe<Spec<R, E, T>> {
+export function filterLabels_<R, E, T>(spec: PSpec<R, E, T>, f: (label: string) => boolean): Maybe<PSpec<R, E, T>> {
   return matchTag_(spec.caseValue, {
-    Suite: (s) =>
-      f(s.label)
-        ? M.just(suite(s.label, s.specs, s.exec))
-        : M.just(
-            suite(
-              s.label,
-              Ma.map_(
-                s.specs,
-                A.chain((spec) =>
-                  M.match_(
-                    filterLabels_(spec, f),
-                    () => A.empty<Spec<R, E, T>>(),
-                    (spec) => [spec]
-                  )
-                )
-              ),
-              s.exec
-            )
+    Exec: (c) =>
+      pipe(
+        filterLabels_(c.spec, f),
+        M.map((spec) => exec(c.exec, spec))
+      ),
+    Labeled: ({ label, spec }) =>
+      f(label)
+        ? M.just(labeled(label, spec))
+        : pipe(
+            filterLabels_(spec, f),
+            M.map((spec) => labeled(label, spec))
           ),
-    Test: (t) => (f(t.label) ? M.just(test(t.label, t.test, t.annotations)) : M.nothing())
+    Managed: (c) =>
+      pipe(
+        c.managed,
+        Ma.map((spec) =>
+          pipe(
+            filterLabels_(spec, f),
+            M.getOrElse(() => empty)
+          )
+        ),
+        managed,
+        M.just
+      ),
+    Multiple: ({ specs }) => {
+      const filtered = pipe(
+        specs,
+        C.filterMap((spec) => filterLabels_(spec, f))
+      )
+      return C.isEmpty(filtered) ? M.nothing() : M.just(multiple(filtered))
+    },
+    Test: () => M.nothing()
   })
 }
 
 export function filterAnnotations_<R, E, T, V>(
-  spec: Spec<R, E, T>,
+  spec: PSpec<R, E, T>,
   key: TestAnnotation<V>,
   f: (v: V) => boolean
-): Maybe<Spec<R, E, T>> {
+): Maybe<PSpec<R, E, T>> {
   return matchTag_(spec.caseValue, {
-    Suite: ({ label, specs, exec }) =>
+    Exec: (s) =>
+      pipe(
+        filterAnnotations_(s.spec, key, f),
+        M.map((spec) => exec(s.exec, spec))
+      ),
+    Labeled: ({ label, spec }) =>
+      pipe(
+        filterAnnotations_(spec, key, f),
+        M.map((spec) => labeled(label, spec))
+      ),
+    Managed: (c) =>
       M.just(
-        suite(
-          label,
-          Ma.map_(
-            specs,
-            A.filterMap((s) => filterAnnotations_(s, key, f))
-          ),
-          exec
+        managed(
+          pipe(
+            c.managed,
+            Ma.map((spec) =>
+              pipe(
+                filterAnnotations_(spec, key, f),
+                M.getOrElse(() => empty)
+              )
+            )
+          )
         )
       ),
-    Test: (t) => (f(t.annotations.get(key)) ? M.just(test(t.label, t.test, t.annotations)) : M.nothing())
+    Multiple: ({ specs }) => {
+      const filtered = pipe(
+        specs,
+        C.filterMap((spec) => filterAnnotations_(spec, key, f))
+      )
+      return C.isEmpty(filtered) ? M.nothing() : M.just(multiple(filtered))
+    },
+    Test: (c) => (f(c.annotations.get(key)) ? M.just(test(c.test, c.annotations)) : M.nothing())
   })
 }
 
-export function filterTags_<R, E, T>(spec: Spec<R, E, T>, f: (tag: string) => boolean): Maybe<Spec<R, E, T>> {
+export function filterTags_<R, E, T>(spec: PSpec<R, E, T>, f: (tag: string) => boolean): Maybe<PSpec<R, E, T>> {
   return filterAnnotations_(spec, tagged, Set.some(f))
 }
 
-export function filterByArgs_<R, E>(spec: XSpec<R, E>, args: TestArgs): XSpec<R, E> {
+export function filterByArgs_<R, E>(spec: Spec<R, E>, args: TestArgs): Spec<R, E> {
   const filtered = A.isEmpty(args.testSearchTerms)
     ? A.isEmpty(args.tagSearchTerms)
       ? M.nothing()
@@ -182,49 +287,81 @@ export function filterByArgs_<R, E>(spec: XSpec<R, E>, args: TestArgs): XSpec<R,
 }
 
 export function foldM_<R, E, T, R1, E1, Z>(
-  spec: Spec<R, E, T>,
+  spec: PSpec<R, E, T>,
   f: (_: SpecCase<R, E, T, Z>) => Ma.Managed<R1, E1, Z>,
   defExec: ExecutionStrategy
 ): Ma.Managed<R & R1, E1, Z> {
   return matchTag_(spec.caseValue, {
-    Suite: ({ label, specs, exec }) =>
-      Ma.matchCauseManaged_(
-        specs,
-        (c) => f(new SuiteCase(label, Ma.failCause(c), exec)),
-        flow(
-          Ma.foreachExec(
-            M.getOrElse_(exec, () => defExec),
-            (spec) => Ma.release(foldM_(spec, f, defExec))
-          ),
-          Ma.chain((z) => f(new SuiteCase(label, Ma.succeed(C.toArray(z)), exec)))
+    Exec: ({ exec, spec }) =>
+      pipe(
+        spec,
+        foldM(f, exec),
+        Ma.chain((z) => f(new ExecCase(exec, z)))
+      ),
+    Labeled: ({ label, spec }) =>
+      pipe(
+        spec,
+        foldM(f, defExec),
+        Ma.chain((z) => f(new LabeledCase(label, z)))
+      ),
+    Managed: ({ managed }) =>
+      pipe(
+        managed,
+        Ma.matchCauseManaged(
+          (c) => f(new ManagedCase(Ma.halt(c))),
+          (spec) =>
+            pipe(
+              spec,
+              foldM(f, defExec),
+              Ma.chain((z) => f(new ManagedCase(Ma.succeed(z))))
+            )
         )
+      ),
+    Multiple: ({ specs }) =>
+      pipe(
+        specs,
+        Ma.foreachExec(defExec, flow(foldM(f, defExec), Ma.release)),
+        Ma.chain((zs) => f(new MultipleCase(zs)))
       ),
     Test: f
   })
 }
 
+export function foldM<R, E, T, R1, E1, Z>(
+  f: (_: SpecCase<R, E, T, Z>) => Ma.Managed<R1, E1, Z>,
+  defExec: ExecutionStrategy
+): (spec: PSpec<R, E, T>) => Ma.Managed<R & R1, E1, Z> {
+  return (spec) => foldM_(spec, f, defExec)
+}
+
 export function foreachExec_<R, E, T, R1, E1, A>(
-  spec: Spec<R, E, T>,
+  spec: PSpec<R, E, T>,
   onFailure: (c: Cause<E>) => I.IO<R1, E1, A>,
   onSuccess: (t: T) => I.IO<R1, E1, A>,
   defExec: ExecutionStrategy
-): Ma.Managed<R & R1, never, Spec<R & R1, E1, A>> {
+): Ma.Managed<R & R1, never, PSpec<R & R1, E1, A>> {
   return foldM_(
     spec,
     matchTag({
-      Suite: ({ label, specs, exec }) =>
-        Ma.matchCause_(
-          specs,
-          (e) => test(label, onFailure(e), TestAnnotationMap.empty),
-          (t) => suite(label, Ma.succeed(t), exec)
-        ),
-      Test: (t) =>
-        I.toManaged_(
-          I.matchCause_(
-            t.test,
-            (e) => test(t.label, onFailure(e), t.annotations),
-            (a) => test(t.label, onSuccess(a), t.annotations)
+      Exec: (c) => Ma.succeed(exec(c.exec, c.spec)),
+      Labeled: ({ label, spec }) => Ma.succeed(labeled(label, spec)),
+      Managed: (c) =>
+        pipe(
+          c.managed,
+          Ma.matchCause(
+            (c) => test(onFailure(c), TestAnnotationMap.empty),
+            (t) => managed(Ma.succeed(t))
           )
+        ),
+      Multiple: ({ specs }) => Ma.succeed(multiple(specs)),
+      Test: (c) =>
+        pipe(
+          c.test,
+          I.matchCause(
+            (e) => test(onFailure(e), c.annotations),
+            (t) => test(onSuccess(t), c.annotations)
+          ),
+          I.toManaged()
         )
     }),
     defExec
@@ -235,145 +372,188 @@ export function foreachExec<E, T, R1, E1, A>(
   onFailure: (c: Cause<E>) => I.IO<R1, E1, A>,
   onSuccess: (t: T) => I.IO<R1, E1, A>,
   defExec: ExecutionStrategy
-): <R>(spec: Spec<R, E, T>) => Ma.Managed<R & R1, never, Spec<R & R1, E1, A>> {
+): <R>(spec: PSpec<R, E, T>) => Ma.Managed<R & R1, never, PSpec<R & R1, E1, A>> {
   return (spec) => foreachExec_(spec, onFailure, onSuccess, defExec)
 }
 
 export function transform_<R, E, T, R1, E1, T1>(
-  spec: Spec<R, E, T>,
-  f: (_: SpecCase<R, E, T, Spec<R1, E1, T1>>) => SpecCase<R1, E1, T1, Spec<R1, E1, T1>>
-): Spec<R1, E1, T1> {
+  spec: PSpec<R, E, T>,
+  f: (_: SpecCase<R, E, T, PSpec<R1, E1, T1>>) => SpecCase<R1, E1, T1, PSpec<R1, E1, T1>>
+): PSpec<R1, E1, T1> {
   return matchTag_(spec.caseValue, {
-    Suite: ({ label, specs, exec }) =>
-      new Spec(
-        f(
-          new SuiteCase(
-            label,
-            Ma.map_(
-              specs,
-              A.map((spec) => transform_(spec, f))
-            ),
-            exec
-          )
-        )
-      ),
-    Test: (t) => new Spec(f(t))
+    Exec: ({ exec, spec }) => new PSpec(f(new ExecCase(exec, transform_(spec, f)))),
+    Labeled: ({ label, spec }) => new PSpec(f(new LabeledCase(label, transform_(spec, f)))),
+    Managed: ({ managed }) => new PSpec(f(new ManagedCase(pipe(managed, Ma.map(transform(f)))))),
+    Multiple: ({ specs }) => new PSpec(f(new MultipleCase(pipe(specs, C.map(transform(f)))))),
+    Test: (t) => new PSpec(f(t))
   })
 }
 
-export function mapError_<R, E, T, E1>(spec: Spec<R, E, T>, f: (e: E) => E1): Spec<R, E1, T> {
+export function transform<R, E, T, R1, E1, T1>(
+  f: (_: SpecCase<R, E, T, PSpec<R1, E1, T1>>) => SpecCase<R1, E1, T1, PSpec<R1, E1, T1>>
+): (spec: PSpec<R, E, T>) => PSpec<R1, E1, T1> {
+  return (spec) => transform_(spec, f)
+}
+
+export function mapError_<R, E, T, E1>(spec: PSpec<R, E, T>, f: (e: E) => E1): PSpec<R, E1, T> {
   return transform_(
     spec,
-    matchTag({
-      Suite: ({ label, specs, exec }) => new SuiteCase(label, Ma.mapError_(specs, f), exec),
-      Test: ({ label, test, annotations }) => new TestCase(label, I.mapError_(test, f), annotations)
-    })
+    matchTag(
+      {
+        Managed: ({ managed }) => new ManagedCase(pipe(managed, Ma.mapError(f))),
+        Test: ({ test, annotations }) => new TestCase(pipe(test, I.mapError(f)), annotations)
+      },
+      identity
+    )
   )
 }
 
-export function gives_<R, E, T, R0>(spec: Spec<R, E, T>, f: (r0: R0) => R): Spec<R0, E, T> {
+export function gives_<R, E, T, R0>(spec: PSpec<R, E, T>, f: (r0: R0) => R): PSpec<R0, E, T> {
   return transform_(
     spec,
-    matchTag({
-      Suite: ({ label, specs, exec }) => new SuiteCase(label, Ma.gives_(specs, f), exec),
-      Test: ({ label, test, annotations }) => new TestCase(label, I.gives_(test, f), annotations)
-    })
+    matchTag(
+      {
+        Managed: ({ managed }) => new ManagedCase(pipe(managed, Ma.gives(f))),
+        Test: ({ test, annotations }) => new TestCase(pipe(test, I.gives(f)), annotations)
+      },
+      identity
+    )
   )
 }
 
-export function gives<R0, R>(f: (r0: R0) => R): <E, T>(spec: Spec<R, E, T>) => Spec<R0, E, T> {
+export function gives<R0, R>(f: (r0: R0) => R): <E, T>(spec: PSpec<R, E, T>) => PSpec<R0, E, T> {
   return (spec) => gives_(spec, f)
 }
 
-export function giveSome_<R0, R, E, T>(spec: Spec<R & R0, E, T>, r: R): Spec<R0, E, T> {
+export function giveSome_<R0, R, E, T>(spec: PSpec<R & R0, E, T>, r: R): PSpec<R0, E, T> {
   return gives_(spec, (r0) => ({ ...r, ...r0 }))
 }
 
-export function giveSome<R>(r: R): <R0, E, T>(spec: Spec<R & R0, E, T>) => Spec<R0, E, T> {
+export function giveSome<R>(r: R): <R0, E, T>(spec: PSpec<R & R0, E, T>) => PSpec<R0, E, T> {
   return (spec) => gives_(spec, (r0) => ({ ...r, ...r0 }))
 }
 
-export function give_<R, E, T>(spec: Spec<R, E, T>, r: R): Spec<unknown, E, T> {
+export function give_<R, E, T>(spec: PSpec<R, E, T>, r: R): PSpec<unknown, E, T> {
   return gives_(spec, () => r)
 }
 
-export function give<R>(r: R): <E, T>(spec: Spec<R, E, T>) => Spec<unknown, E, T> {
+export function give<R>(r: R): <E, T>(spec: PSpec<R, E, T>) => PSpec<unknown, E, T> {
   return (spec) => give_(spec, r)
 }
 
-export function giveLayer<R, R1, E1>(layer: L.Layer<R1, E1, R>): <E, T>(spec: Spec<R, E, T>) => Spec<R1, E | E1, T> {
+export function giveLayer<R, R1, E1>(layer: L.Layer<R1, E1, R>): <E, T>(spec: PSpec<R, E, T>) => PSpec<R1, E | E1, T> {
   return (spec) =>
     transform_(
       spec,
-      matchTag({
-        Suite: ({ label, specs, exec }) => new SuiteCase(label, Ma.giveLayer(layer)(specs), exec),
-        Test: ({ label, test, annotations }) => new TestCase(label, I.giveLayer(layer)(test), annotations)
-      })
+      matchTag(
+        {
+          Managed: ({ managed }) => new ManagedCase(pipe(managed, Ma.giveLayer(layer))),
+          Test: ({ test, annotations }) => new TestCase(pipe(test, I.giveLayer(layer)), annotations)
+        },
+        identity
+      )
     )
 }
 
 export function giveSomeLayer<R1, E1, A1>(
   layer: L.Layer<R1, E1, A1>
-): <R, E, T>(spec: Spec<R & A1, E, T>) => Spec<R & R1, E | E1, T> {
-  return <R, E, T>(spec: Spec<R & A1, E, T>) => giveLayer(layer['+++'](L.identity<R>()))(spec)
+): <R, E, T>(spec: PSpec<R & A1, E, T>) => PSpec<R & R1, E | E1, T> {
+  return <R, E, T>(spec: PSpec<R & A1, E, T>) => giveLayer(layer['+++'](L.identity<R>()))(spec)
 }
 
 export function giveSomeLayerShared<R1, E1, A1>(
   layer: L.Layer<R1, E1, A1>
-): <R, E, T>(spec: Spec<R & A1, E, T>) => Spec<R & R1, E | E1, T> {
-  return <R, E, T>(spec: Spec<R & A1, E, T>) =>
+): <R, E, T>(spec: PSpec<R & A1, E, T>) => PSpec<R & R1, E | E1, T> {
+  return <R, E, T>(spec: PSpec<R & A1, E, T>) =>
     matchTag_(spec.caseValue, {
-      Suite: ({ label, specs, exec }) =>
-        suite(
-          label,
+      Exec: (c) => exec(c.exec, pipe(c.spec, giveSomeLayerShared(layer))),
+      Labeled: ({ label, spec }) => labeled(label, pipe(spec, giveSomeLayerShared(layer))),
+      Managed: (c) =>
+        managed(
           pipe(
             L.memoize(layer),
-            Ma.chain((layer) => Ma.map_(specs, A.map(giveSomeLayer(layer)))),
+            Ma.chain((layer) => pipe(c.managed, Ma.map(giveSomeLayer(layer)))),
             Ma.giveSomeLayer(layer)
-          ),
-          exec
+          )
         ),
-      Test: (t) => test(t.label, I.giveSomeLayer(layer)(t.test), t.annotations)
+      Multiple: ({ specs }) =>
+        managed(
+          pipe(
+            L.memoize(layer),
+            Ma.map((layer) => multiple(pipe(specs, C.map(giveSomeLayer(layer)))))
+          )
+        ),
+      Test: (c) => test(pipe(c.test, I.giveSomeLayer(layer)), c.annotations)
     })
 }
 
 export function execute<R, E, T>(
-  spec: Spec<R, E, T>,
+  spec: PSpec<R, E, T>,
   defExec: ExecutionStrategy
-): Ma.Managed<R, never, Spec<unknown, E, T>> {
+): Ma.Managed<R, never, PSpec<unknown, E, T>> {
   return Ma.asksManaged((r: R) => pipe(spec, give(r), foreachExec(I.failCause, I.succeed, defExec)))
 }
 
 export function whenM_<R, E, R1, E1>(
-  spec: Spec<R, E, TestSuccess>,
+  spec: PSpec<R, E, TestSuccess>,
   b: I.IO<R1, E1, boolean>
-): Spec<R & R1 & Has<Annotations>, E | E1, TestSuccess> {
+): PSpec<R & R1 & Has<Annotations>, E | E1, TestSuccess> {
   return matchTag_(spec.caseValue, {
-    Suite: ({ label, specs, exec }) =>
-      suite(
-        label,
-        Ma.ifManaged_(I.toManaged_(b), specs, Ma.succeed(A.empty<Spec<R & R1, E | E1, TestSuccess>>())),
-        exec
+    Exec: (c) => exec(c.exec, pipe(c.spec, whenM(b))),
+    Labeled: ({ label, spec }) => labeled(label, pipe(spec, whenM(b))),
+    Managed: (c) =>
+      managed(
+        pipe(
+          Ma.fromIO(b),
+          Ma.chain((b) => (b ? c.managed : Ma.succeed(empty)))
+        )
       ),
-    Test: (t) =>
+    Multiple: ({ specs }) => multiple(pipe(specs, C.map(whenM(b)))),
+    Test: (c) =>
       test(
-        t.label,
-        I.ifIO_(b, t.test, I.as_(Annotations.annotate(Annotation.ignored, 1), new Ignored())),
-        t.annotations
+        pipe(b, I.chain(I.if(c.test, pipe(Annotations.annotate(Annotation.ignored, 1), I.as(new Ignored()))))),
+        c.annotations
       )
   })
 }
 
-export function when_<R, E>(spec: Spec<R, E, TestSuccess>, b: boolean): Spec<R & Has<Annotations>, E, TestSuccess> {
+export function whenM<R, E, R1, E1>(
+  b: I.IO<R1, E1, boolean>
+): (spec: PSpec<R, E, TestSuccess>) => PSpec<R & R1 & Has<Annotations>, E | E1, TestSuccess> {
+  return (spec) => whenM_(spec, b)
+}
+
+export function when_<R, E>(spec: PSpec<R, E, TestSuccess>, b: boolean): PSpec<R & Has<Annotations>, E, TestSuccess> {
   return whenM_(spec, I.succeed(b))
 }
 
-export function annotate_<R, E, T, V>(spec: Spec<R, E, T>, key: TestAnnotation<V>, value: V): Spec<R, E, T> {
+export function annotate_<R, E, T, V>(spec: PSpec<R, E, T>, key: TestAnnotation<V>, value: V): PSpec<R, E, T> {
   return transform_(
     spec,
-    matchTag({
-      Suite: (c) => c,
-      Test: (t) => new TestCase(t.label, t.test, t.annotations.annotate(key, value))
-    })
+    matchTag(
+      {
+        Test: ({ test, annotations }) => new TestCase(test, annotations.annotate(key, value))
+      },
+      identity
+    )
   )
+}
+
+export function combine_<R, E, A, R1, E1, B>(sa: PSpec<R, E, A>, sb: PSpec<R1, E1, B>): PSpec<R & R1, E | E1, A | B> {
+  if (isMultiple(sa.caseValue) && isMultiple(sb.caseValue)) {
+    return multiple(C.concat_<PSpec<R & R1, E | E1, A | B>>(sa.caseValue.specs, sb.caseValue.specs))
+  }
+  if (isMultiple(sa.caseValue)) {
+    return multiple(C.append_<PSpec<R & R1, E | E1, A | B>, PSpec<R & R1, E | E1, A | B>>(sa.caseValue.specs, sb))
+  }
+  if (isMultiple(sb.caseValue)) {
+    return multiple(C.prepend_<PSpec<R & R1, E | E1, A | B>>(sb.caseValue.specs, sa))
+  }
+  return multiple(C.make<PSpec<R & R1, E | E1, A | B>>(sa, sb))
+}
+
+export function combine<R1, E1, B>(
+  sb: PSpec<R1, E1, B>
+): <R, E, A>(sa: PSpec<R, E, A>) => PSpec<R & R1, E | E1, A | B> {
+  return (sa) => combine_(sa, sb)
 }

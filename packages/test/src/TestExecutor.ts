@@ -19,7 +19,7 @@ import * as S from './Spec'
 import * as TF from './TestFailure'
 
 export interface TestExecutor<R> {
-  readonly run: <E>(spec: S.XSpec<R & Has<Annotations>, E>, defExec: ExecutionStrategy) => UIO<ExecutedSpec<E>>
+  readonly run: <E>(spec: S.Spec<R & Has<Annotations>, E>, defExec: ExecutionStrategy) => UIO<ExecutedSpec<E>>
   readonly environment: Layer<unknown, never, R>
 }
 
@@ -27,7 +27,7 @@ export function defaultTestExecutor<R>(
   env: Layer<unknown, never, R & Has<Annotations>>
 ): TestExecutor<R & Has<Annotations>> {
   return {
-    run: <E>(spec: S.XSpec<R & Has<Annotations>, E>, defExec: ExecutionStrategy): UIO<ExecutedSpec<E>> =>
+    run: <E>(spec: S.Spec<R & Has<Annotations>, E>, defExec: ExecutionStrategy): UIO<ExecutedSpec<E>> =>
       pipe(
         S.annotated(spec),
         S.giveLayer(env),
@@ -48,11 +48,14 @@ export function defaultTestExecutor<R>(
             S.foldM_(
               s,
               matchTag({
-                Suite: ({ label, specs }) => M.map_(specs, (specs) => ES.suite(label, specs)),
-                Test: ({ label, test, annotations }) =>
+                Exec: ({ spec }) => M.succeed(spec),
+                Labeled: ({ label, spec }) => M.succeed(ES.labeled(label, spec)),
+                Managed: ({ managed }) => managed,
+                Multiple: ({ specs }) => M.succeed(ES.multiple(specs)),
+                Test: ({ test, annotations }) =>
                   I.toManaged_(
                     I.map_(test, ([result, dynamicAnnotations]) =>
-                      ES.test(label, result, annotations.combine(dynamicAnnotations))
+                      ES.test(result, annotations.combine(dynamicAnnotations))
                     )
                   )
               }),

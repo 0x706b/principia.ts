@@ -6,7 +6,7 @@ import type { TestAnnotationRenderer } from './TestAnnotationRenderer'
 import type { Cause } from '@principia/base/IO/Cause'
 import type { USync } from '@principia/base/Sync'
 
-import * as A from '@principia/base/Array'
+import * as C from '@principia/base/Chunk'
 import * as E from '@principia/base/Either'
 import { absurd, identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
@@ -34,8 +34,9 @@ export function logStats<E>(duration: number, executedSpec: ExecutedSpec<E>): st
   const [success, ignore, failure] = ES.fold_<E, readonly [number, number, number]>(
     executedSpec,
     matchTag({
-      Suite: ({ specs }) =>
-        A.foldl_(
+      Labeled: ({ spec }) => spec,
+      Multiple: ({ specs }) =>
+        C.foldl_(
           specs,
           [0, 0, 0] as readonly [number, number, number],
           ([x1, x2, x3], [y1, y2, y3]) => [x1 + y1, x2 + y2, x3 + y3] as const
@@ -65,45 +66,57 @@ export function render<E>(
   const loop = (
     executedSpec: USync<ExecutedSpec<E>>,
     depth: number,
-    ancestors: L.List<TestAnnotationMap>
+    ancestors: L.List<TestAnnotationMap>,
+    labels: L.List<string>
   ): USync<L.List<RenderedResult<string>>> =>
     Sy.chain_(executedSpec, (executedSpec) =>
-      matchTag_(executedSpec, {
-        Suite: ({ label, specs }) => {
+      matchTag_(executedSpec.caseValue, {
+        Labeled: ({ label, spec }) => loop(Sy.succeed(spec), depth, ancestors, L.prepend_(labels, label)),
+        Multiple: ({ specs }) => {
           const hasFailures = ES.exists_(
             executedSpec,
-            matchTag({
-              Test: ({ test }) => E.isLeft(test),
-              Suite: () => false
-            })
+            matchTag(
+              {
+                Test: ({ test }) => E.isLeft(test)
+              },
+              () => false
+            )
           )
           const annotations = ES.fold_<E, TestAnnotationMap>(
             executedSpec,
             matchTag({
-              Suite: ({ specs }) => A.foldl_(specs, TestAnnotationMap.empty, (b, a) => b.combine(a)),
+              Labeled: ({ spec }) => spec,
+              Multiple: ({ specs }) => C.foldl_(specs, TestAnnotationMap.empty, (b, a) => b.combine(a)),
               Test: ({ annotations }) => annotations
             })
           )
           const status: Status = hasFailures ? Failed : Passed
-          const renderedLabel  = A.isEmpty(specs)
+          const renderedLabel  = C.isEmpty(specs)
             ? L.empty()
             : hasFailures
-            ? L.single(renderFailureLabel(label, depth))
-            : L.single(renderSuccessLabel(label, depth))
+            ? L.single(renderFailureLabel(pipe(labels, L.reverse, L.join(' - ')), depth))
+            : L.single(renderSuccessLabel(pipe(labels, L.reverse, L.join(' - ')), depth))
 
           const renderedAnnotations = testAnnotationRenderer.run(ancestors, annotations)
 
           const rest = pipe(
             specs,
-            Sy.foreachList((es) => loop(Sy.succeed(es), depth + tabSize, L.prepend_(ancestors, annotations))),
-            Sy.map((rr) => L.flatten(rr))
+            Sy.foreachList((es) =>
+              loop(Sy.succeed(es), depth + tabSize, L.prepend_(ancestors, annotations), L.empty())
+            ),
+            Sy.map(L.flatten)
           )
 
           return Sy.map_(rest, (rest) =>
-            L.prepend_(rest, rendered(Suite, label, status, depth, renderedLabel).withAnnotations(renderedAnnotations))
+            L.prepend_(
+              rest,
+              rendered(Suite, pipe(labels, L.reverse, L.join(' - ')), status, depth, renderedLabel).withAnnotations(
+                renderedAnnotations
+              )
+            )
           )
         },
-        Test: ({ label, test, annotations }) => {
+        Test: ({ test, annotations }) => {
           const renderedAnnotations = testAnnotationRenderer.run(ancestors, annotations)
           const renderedResult      = E.match_(
             test,
@@ -113,7 +126,13 @@ export function render<E>(
                   BA.fold_(
                     result,
                     (details: FailureDetails) =>
-                      rendered(Test, label, Failed, depth, renderFailure(label, depth, details)),
+                      rendered(
+                        Test,
+                        pipe(labels, L.reverse, L.join(' - ')),
+                        Failed,
+                        depth,
+                        renderFailure(pipe(labels, L.reverse, L.join(' - ')), depth, details)
+                      ),
                     (_, __) => _['&&'](__),
                     (_, __) => _['||'](__),
                     (_) => _['!']()
@@ -123,17 +142,26 @@ export function render<E>(
                 Sy.succeed(
                   rendered(
                     Test,
-                    label,
+                    pipe(labels, L.reverse, L.join(' - ')),
                     Failed,
                     depth,
-                    L.list(renderFailureLabel(label, depth), renderCause(cause, depth))
+                    L.list(renderFailureLabel(pipe(labels, L.reverse, L.join(' - ')), depth), renderCause(cause, depth))
                   )
                 )
             }),
             matchTag({
               Succeeded: () =>
-                Sy.succeed(rendered(Test, label, Passed, depth, L.single(withOffset(depth)(`${green('+')} ${label}`)))),
-              Ignored: () => Sy.succeed(rendered(Test, label, Ignored, depth, L.empty()))
+                Sy.succeed(
+                  rendered(
+                    Test,
+                    pipe(labels, L.reverse, L.join(' - ')),
+                    Passed,
+                    depth,
+                    L.single(withOffset(depth)(`${green('+')} ${pipe(labels, L.reverse, L.join(' - '))}`))
+                  )
+                ),
+              Ignored: () =>
+                Sy.succeed(rendered(Test, pipe(labels, L.reverse, L.join(' - ')), Ignored, depth, L.empty()))
             })
           )
 
@@ -142,7 +170,7 @@ export function render<E>(
       })
     )
 
-  return Sy.run(loop(Sy.succeed(executedSpec), 0, L.empty()))
+  return Sy.run(loop(Sy.succeed(executedSpec), 0, L.empty(), L.empty()))
 }
 
 function rendered(

@@ -5,18 +5,17 @@ import type { Clock } from '@principia/base/Clock'
 import type { ExecutionStrategy } from '@principia/base/ExecutionStrategy'
 import type { Has } from '@principia/base/Has'
 import type { IO } from '@principia/base/IO'
-import type { Predicate } from '@principia/base/Predicate'
 import type { Schedule } from '@principia/base/Schedule'
 
 import * as A from '@principia/base/Array'
+import * as C from '@principia/base/Chunk'
 import { Console } from '@principia/base/Console'
 import * as Ex from '@principia/base/Exit'
 import * as Fi from '@principia/base/Fiber'
-import { constTrue, pipe } from '@principia/base/function'
+import { identity, pipe } from '@principia/base/function'
 import * as Set from '@principia/base/HashSet'
 import * as I from '@principia/base/IO'
 import * as Ma from '@principia/base/Managed'
-import * as M from '@principia/base/Maybe'
 import * as Sc from '@principia/base/Schedule'
 import * as Str from '@principia/base/string'
 import { hashString } from '@principia/base/Structural'
@@ -34,29 +33,25 @@ export class TestAspect<R, E> {
   readonly _R!: (_: R) => void
   readonly _E!: () => E
 
-  constructor(
-    readonly some: <R1, E1>(predicate: (label: string) => boolean, spec: S.XSpec<R1, E1>) => S.XSpec<R & R1, E | E1>
-  ) {}
+  constructor(readonly some: <R1, E1>(spec: S.Spec<R1, E1>) => S.Spec<R & R1, E | E1>) {}
 
-  all<R1, E1>(spec: S.XSpec<R1, E1>): S.XSpec<R & R1, E | E1> {
-    return this.some(constTrue, spec)
+  all<R1, E1>(spec: S.Spec<R1, E1>): S.Spec<R & R1, E | E1> {
+    return this.some(spec)
   }
 
   ['>>>']<R1 extends R, E1 extends E>(
     this: TestAspect<R | R1, E | E1>,
     that: TestAspect<R1, E1>
   ): TestAspect<R & R1, E | E1> {
-    return new TestAspect((predicate, spec) => that.some(predicate, this.some(predicate, spec)))
+    return new TestAspect((spec) => that.some(this.some(spec)))
   }
 }
 
 export class ConstrainedTestAspect<R0, R, E0, E> {
-  constructor(
-    readonly some: (predicate: (label: string) => boolean, spec: S.XSpec<R0, E0>) => S.XSpec<R0 & R, E0 | E>
-  ) {}
+  constructor(readonly some: (spec: S.Spec<R0, E0>) => S.Spec<R0 & R, E0 | E>) {}
 
-  all(spec: S.XSpec<R0, E0>): S.XSpec<R0 & R, E0 | E> {
-    return this.some(constTrue, spec)
+  all(spec: S.Spec<R0, E0>): S.Spec<R0 & R, E0 | E> {
+    return this.some(spec)
   }
 }
 
@@ -66,14 +61,15 @@ export class PerTest<R, E> extends TestAspect<R, E> {
       test: IO<R1, TestFailure<E1>, TestSuccess>
     ) => IO<R & R1, TestFailure<E | E1>, TestSuccess>
   ) {
-    super((predicate: Predicate<string>, spec) =>
+    super((spec) =>
       S.transform_(
         spec,
-        matchTag({
-          Suite: (s) => s,
-          Test: ({ label, test, annotations }) =>
-            new S.TestCase(label, predicate(label) ? this.perTest(test) : test, annotations)
-        })
+        matchTag(
+          {
+            Test: ({ test, annotations }) => new S.TestCase(this.perTest(test), annotations)
+          },
+          identity
+        )
       )
     )
   }
@@ -83,14 +79,15 @@ export class ConstrainedPerTest<R0, R, E0, E> extends ConstrainedTestAspect<R0, 
   constructor(
     readonly perTest: (test: IO<R0, TestFailure<E0>, TestSuccess>) => IO<R0 & R, TestFailure<E0 | E>, TestSuccess>
   ) {
-    super((predicate, spec) =>
+    super((spec) =>
       S.transform_(
         spec,
-        matchTag({
-          Suite: (s) => s,
-          Test: ({ label, test, annotations }) =>
-            new S.TestCase(label, predicate(label) ? this.perTest(test) : test, annotations)
-        })
+        matchTag(
+          {
+            Test: ({ test, annotations }) => new S.TestCase(this.perTest(test), annotations)
+          },
+          identity
+        )
       )
     )
   }
@@ -100,9 +97,9 @@ export type TestAspectAtLeastR<R> = TestAspect<R, never>
 
 export type TestAspectPoly = TestAspect<unknown, never>
 
-export const identity: TestAspectPoly = new TestAspect((predicate, spec) => spec)
+export const id: TestAspectPoly = new TestAspect((spec) => spec)
 
-export const ignore: TestAspectAtLeastR<Has<Annotations>> = new TestAspect((predicate, spec) => S.when_(spec, false))
+export const ignore: TestAspectAtLeastR<Has<Annotations>> = new TestAspect((spec) => S.when_(spec, false))
 
 export function after<R, E>(effect: IO<R, E, any>): TestAspect<R, E> {
   return new PerTest((test) =>
@@ -132,26 +129,11 @@ export function aroundAll<R, E, A, R1>(
   before: I.IO<R, E, A>,
   after: (a: A) => I.IO<R1, never, any>
 ): TestAspect<R & R1, E> {
-  return new TestAspect(<R0, E0>(predicate: (label: string) => boolean, spec: S.XSpec<R0, E0>) => {
-    const aroundAll = (
-      specs: Ma.Managed<R0, TestFailure<E0>, ReadonlyArray<S.Spec<R0, TestFailure<E0>, TestSuccess>>>
-    ): Ma.Managed<R0 & R1 & R, TestFailure<E | E0>, ReadonlyArray<S.Spec<R0, TestFailure<E0>, TestSuccess>>> =>
-      pipe(before, Ma.bracket(after), Ma.mapError(TF.fail), Ma.apSecond(specs))
-
-    const around = (
-      test: I.IO<R0, TestFailure<E0>, TestSuccess>
-    ): I.IO<R0 & R1 & R, TestFailure<E | E0>, TestSuccess> =>
-      pipe(
-        before,
-        I.mapError(TF.fail),
-        I.bracket(() => test, after)
-      )
-
-    return matchTag_(spec.caseValue, {
-      Suite: ({ label, specs, exec }) => S.suite(label, aroundAll(specs), exec),
-      Test: ({ label, test, annotations }) => S.test(label, around(test), annotations)
-    })
-  })
+  return new TestAspect(<R0, E0>(spec: S.Spec<R0, E0>) =>
+    S.managed<R & R1 & R0, TestFailure<E | E0>, TestSuccess>(
+      pipe(before, Ma.bracket(after), Ma.mapError(TF.fail), Ma.as(spec))
+    )
+  )
 }
 
 export function aspect<R0, E0>(
@@ -172,17 +154,7 @@ export function beforeAll<R0, E0>(effect: I.IO<R0, E0, any>): TestAspect<R0, E0>
 export const eventually = new PerTest((test) => I.eventually(test))
 
 export function executionStrategy(exec: ExecutionStrategy): TestAspectPoly {
-  return new TestAspect(
-    <R1, E1>(predicate: (label: string) => boolean, spec: S.XSpec<R1, E1>): S.XSpec<R1, E1> =>
-      S.transform_(
-        spec,
-        matchTag({
-          Suite: (s) =>
-            M.isNothing(s.exec) && predicate(s.label) ? new S.SuiteCase(s.label, s.specs, M.just(exec)) : s,
-          Test: (t) => t
-        })
-      )
-  )
+  return new TestAspect((spec) => S.exec(exec, spec))
 }
 
 export function repeat<R0>(
@@ -227,7 +199,7 @@ export const nonFlaky: TestAspectAtLeastR<Has<Annotations> & Has<TestConfig>> = 
 )
 
 export function annotate<V>(key: TestAnnotation<V>, value: V): TestAspectPoly {
-  return new TestAspect((predicate, spec) => S.annotate_(spec, key, value))
+  return new TestAspect((spec) => S.annotate_(spec, key, value))
 }
 
 export function tag(tag: string): TestAspectPoly {
@@ -235,56 +207,48 @@ export function tag(tag: string): TestAspectPoly {
 }
 
 export function timeoutWarning(duration: number): TestAspect<Has<Live>, any> {
-  return new TestAspect(<R1, E1>(_: (label: string) => boolean, spec: S.XSpec<R1, E1>) => {
-    const loop = (labels: ReadonlyArray<string>, spec: S.XSpec<R1, E1>): S.XSpec<R1 & Has<Live>, E1> =>
+  return new TestAspect(<R1, E1>(spec: S.Spec<R1, E1>) => {
+    const loop = (labels: ReadonlyArray<string>, spec: S.Spec<R1, E1>): S.Spec<R1 & Has<Live>, E1> =>
       matchTag_(spec.caseValue, {
-        Suite: ({ label, specs, exec }) =>
-          S.suite(
-            label,
-            Ma.map_(
-              specs,
-              A.map((spec) => loop(A.append_(labels, label), spec))
-            ),
-            exec
+        Exec: ({ exec, spec }) => S.exec(exec, loop(labels, spec)),
+        Labeled: ({ label, spec }) => S.labeled(label, loop(A.append_(labels, label), spec)),
+        Managed: ({ managed }) =>
+          S.managed(
+            pipe(
+              managed,
+              Ma.map((spec) => loop(labels, spec))
+            )
           ),
-        Test: ({ label, test, annotations }) => S.test(label, warn(labels, label, test, duration), annotations)
+        Multiple: ({ specs }) =>
+          S.multiple(
+            pipe(
+              specs,
+              C.map((spec) => loop(labels, spec))
+            )
+          ),
+        Test: ({ test, annotations }) => S.test(warn(labels, test, duration), annotations)
       })
 
     return loop(A.empty(), spec)
   })
 }
 
-function warn<R, E>(
-  suiteLabels: ReadonlyArray<string>,
-  testLabel: string,
-  test: I.IO<R, TestFailure<E>, TestSuccess>,
-  duration: number
-) {
+function warn<R, E>(labels: ReadonlyArray<string>, test: I.IO<R, TestFailure<E>, TestSuccess>, duration: number) {
   return I.raceWith_(
     test,
-    withLive_(showWarning(suiteLabels, testLabel, duration), I.delay(duration)),
+    withLive_(showWarning(labels, duration), I.delay(duration)),
     (result, fiber) => I.apSecond_(Fi.interrupt(fiber), I.fromExit(result)),
     (_, fiber) => Fi.join(fiber)
   )
 }
 
-function showWarning(suiteLabels: ReadonlyArray<string>, testLabel: string, duration: number) {
-  return Live.live(Console.putStrLn(renderWarning(suiteLabels, testLabel, duration)))
+function showWarning(labels: ReadonlyArray<string>, duration: number) {
+  return Live.live(Console.putStrLn(renderWarning(labels, duration)))
 }
 
-function renderWarning(suiteLabels: ReadonlyArray<string>, testLabel: string, duration: number) {
-  return renderSuiteLabels(suiteLabels) + renderTest(testLabel, duration)
-}
-
-function renderSuiteLabels(suiteLabels: ReadonlyArray<string>) {
-  return pipe(
-    suiteLabels,
-    A.map((label) => `in Suite "${label}", `),
-    A.reverse,
-    A.join('')
-  )
-}
-
-function renderTest(testLabel: string, duration: number) {
-  return `test "${testLabel}" has taken more than ${duration} milliseconds to execute. If this is not expected, consider using TestAspect.timeout to timeout runaway tests for faster diagnostics`
+function renderWarning(labels: ReadonlyArray<string>, duration: number) {
+  return `Test ${pipe(
+    labels,
+    A.join(' - ')
+  )} has taken more than ${duration} milliseconds to execute. If this is not expected, consider using TestAspect.timeout to timeout runaway tests for faster diagnostics`
 }

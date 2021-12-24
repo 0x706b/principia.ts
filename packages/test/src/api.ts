@@ -20,7 +20,6 @@ import * as E from '@principia/base/Either'
 import * as Ev from '@principia/base/Eval'
 import { flow, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
-import * as Ma from '@principia/base/Managed'
 import * as M from '@principia/base/Maybe'
 import * as NA from '@principia/base/NonEmptyArray'
 import * as S from '@principia/base/Stream'
@@ -33,11 +32,10 @@ import { GenFailureDetails } from './GenFailureDetails'
 import { FailureDetails } from './Render'
 import * as Sa from './Sample'
 import * as Spec from './Spec'
+import * as T from './Test'
 import { TestConfig } from './TestConfig'
 import { defaultTestExecutor } from './TestExecutor'
-import * as TF from './TestFailure'
 import { TestRunner } from './TestRunner'
-import * as TS from './TestSuccess'
 
 export type TestReporter<E> = (duration: number, spec: ExecutedSpec<E>) => URIO<Has<TestLogger>, void>
 
@@ -132,46 +130,32 @@ export function allAsync<A extends NonEmptyArray<As.Async<any, any, TestResult>>
   )
 }
 
-type MergeR<Specs extends ReadonlyArray<Spec.XSpec<any, any>>> = UnionToIntersection<
+type MergeR<Specs extends ReadonlyArray<Spec.Spec<any, any>>> = UnionToIntersection<
   {
-    [K in keyof Specs]: [Specs[K]] extends [Spec.XSpec<infer R, any>] ? (unknown extends R ? never : R) : never
+    [K in keyof Specs]: [Specs[K]] extends [Spec.Spec<infer R, any>] ? (unknown extends R ? never : R) : never
   }[number]
 >
 
-type MergeE<Specs extends ReadonlyArray<Spec.XSpec<any, any>>> = {
-  [K in keyof Specs]: [Specs[K]] extends [Spec.XSpec<any, infer E>] ? E : never
+type MergeE<Specs extends ReadonlyArray<Spec.Spec<any, any>>> = {
+  [K in keyof Specs]: [Specs[K]] extends [Spec.Spec<any, infer E>] ? E : never
 }[number]
 
-export function suite<Specs extends ReadonlyArray<Spec.XSpec<any, any>>>(
+export function suite<Specs extends ReadonlyArray<Spec.Spec<any, any>>>(
   label: string,
   ...specs: Specs
-): Spec.XSpec<MergeR<Specs>, MergeE<Specs>> {
-  return Spec.suite(label, Ma.succeed(specs), M.nothing())
+): Spec.Spec<MergeR<Specs>, MergeE<Specs>> {
+  return Spec.labeled(label, Spec.multiple(C.from(specs)))
 }
 
-export function testIO<R, E>(label: string, assertion: () => IO<R, E, TestResult>): Spec.XSpec<R, E> {
-  return Spec.test(
-    label,
-    I.matchCauseIO_(
-      I.defer(assertion),
-      flow(TF.failCause, I.fail),
-      flow(
-        BA.failures,
-        M.match(
-          () => I.succeed(new TS.Succeeded(BA.success(undefined))),
-          (failures) => I.fail(TF.assertion(failures))
-        )
-      )
-    ),
-    TestAnnotationMap.empty
-  )
+export function testIO<R, E>(label: string, assertion: () => IO<R, E, TestResult>): Spec.Spec<R, E> {
+  return Spec.labeled(label, Spec.test(T.fromAssertion(assertion), TestAnnotationMap.empty))
 }
 
-export function testAsync<R, E>(label: string, assertion: () => As.Async<R, E, TestResult>): Spec.XSpec<R, E> {
+export function testAsync<R, E>(label: string, assertion: () => As.Async<R, E, TestResult>): Spec.Spec<R, E> {
   return testIO(label, () => I.fromAsync(assertion()))
 }
 
-export function test(label: string, assertion: () => TestResult): Spec.XSpec<unknown, never> {
+export function test(label: string, assertion: () => TestResult): Spec.Spec<unknown, never> {
   return testIO(label, () => I.succeedLazy(assertion))
 }
 

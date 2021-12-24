@@ -49,7 +49,7 @@ class EitherSpec extends DefaultRunnableSpec {
         ['&&'](assertAp(E.left('a'), E.right(2), E.left('a')))
         ['&&'](assertAp(E.left('a'), E.left('b'), E.left('a')))),
 
-    test('crossSecond', () => assert_(pipe(E.right('a'), E.crossSecond(E.right(1))), deepStrictEqualTo(E.right(1)))),
+    test('crossSecond', () => assert_(pipe(E.right('a'), E.apSecond(E.right(1))), deepStrictEqualTo(E.right(1)))),
 
     test('chain', () => {
       const f = (s: string): E.Either<boolean, number> => E.right(s.length)
@@ -263,7 +263,7 @@ class EitherSpec extends DefaultRunnableSpec {
     suite(
       'getWitherable',
       testIO('wither', () => {
-        const wither = E.getWitherable(S.Monoid).wither(I.ApplicativePar)
+        const wither = E.getWitherable(S.Monoid).wither(I.ApplicativeC)
         const p      = (n: number) => n > 2
         const f      = (n: number) => I.succeed(p(n) ? M.just(n + 1) : M.nothing())
         return allIO(
@@ -273,7 +273,7 @@ class EitherSpec extends DefaultRunnableSpec {
         )
       }),
       testIO('wilt', () => {
-        const wilt = E.getWitherable(S.Monoid).wilt(I.ApplicativePar)
+        const wilt = E.getWitherable(S.Monoid).wilt(I.ApplicativeC)
         const p    = (n: number) => n > 2
         const f    = (n: number) => I.succeed(p(n) ? E.right(n + 1) : E.left(n - 1))
         return allIO(

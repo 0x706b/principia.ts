@@ -1,4 +1,4 @@
-import type { XSpec } from './Spec'
+import type { Spec } from './Spec'
 import type * as TA from './TestArgs'
 import type { Clock } from '@principia/base/Clock'
 import type { Has } from '@principia/base/Has'
@@ -16,7 +16,7 @@ import { TestLogger } from './TestLogger'
 
 export abstract class RunnableSpec<R, E> extends AbstractRunnableSpec<R, E> {
   readonly _tag = 'RunnableSpec'
-  run(spec: XSpec<R, E>): URIO<Has<TestLogger> & Has<Clock>, number> {
+  run(spec: Spec<R, E>): URIO<Has<TestLogger> & Has<Clock>, number> {
     const self = this
     return I.gen(function* (_) {
       const results     = yield* _(self.runSpec(spec))

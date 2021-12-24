@@ -1,7 +1,7 @@
 import type { Annotations } from './Annotation'
 import type { TestReporter } from './api'
 import type { ExecutedSpec } from './ExecutedSpec'
-import type { XSpec } from './Spec'
+import type { Spec } from './Spec'
 import type { TestExecutor } from './TestExecutor'
 import type { Clock } from '@principia/base/Clock'
 import type { Platform } from '@principia/base/Fiber'
@@ -31,7 +31,7 @@ export class TestRunner<R, E> {
     this.run = this.run.bind(this)
   }
 
-  run(spec: XSpec<R & Has<Annotations>, E>): URIO<Has<TestLogger> & Has<Clock>, ExecutedSpec<E>> {
+  run(spec: Spec<R & Has<Annotations>, E>): URIO<Has<TestLogger> & Has<Clock>, ExecutedSpec<E>> {
     return pipe(
       this.executor.run(spec, parallelN(10)),
       I.timed,
