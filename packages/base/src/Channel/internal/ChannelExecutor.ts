@@ -189,11 +189,13 @@ export function readUpstream<R, E, A>(r: State.Read<R, E>, cont: () => IO<R, E, 
   const read = (): I.IO<R, E, A> => {
     const current = readStack!.value
     readStack     = readStack!.previous
-    const state   = current.upstream!.run()
-    State.concrete(state)
+    if (current.upstream === null) {
+      return I.defer(cont)
+    }
+    const state = current.upstream.run()
     switch (state._tag) {
       case State.ChannelStateTag.Emit: {
-        const emitEffect = current.onEmit(current.upstream!.getEmit())
+        const emitEffect = current.onEmit(current.upstream.getEmit())
         if (readStack === undefined) {
           if (emitEffect === null) {
             return I.defer(cont)
@@ -215,7 +217,7 @@ export function readUpstream<R, E, A>(r: State.Read<R, E>, cont: () => IO<R, E, 
         }
       }
       case State.ChannelStateTag.Done: {
-        const doneEffect = current.onDone(current.upstream!.getDone())
+        const doneEffect = current.onDone(current.upstream.getDone())
         if (readStack === undefined) {
           if (doneEffect === null) {
             return I.defer(cont)
@@ -276,7 +278,6 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     private executeCloseLastSubstream: (_: I.URIO<Env, unknown>) => I.URIO<Env, unknown>
   ) {
     this.currentChannel = initialChannel() as ErasedChannel<Env>
-    this.close          = this.close.bind(this)
   }
 
   getDone() {
@@ -315,8 +316,6 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
                   currentChannel.input.awaitRead,
                   I.chain(() => {
                     const state = inputExecutor.run()
-
-                    State.concrete(state)
 
                     switch (state._tag) {
                       case State.ChannelStateTag.Done: {
@@ -388,7 +387,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
               leftExec.input = previousInput
               this.input     = leftExec
               this.addFinalizer((exit) => {
-                const effect = this.restorePipe(exit, previousInput!)
+                const effect = this.restorePipe(exit, previousInput)
                 if (effect !== null) {
                   return effect
                 } else {
@@ -429,7 +428,6 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
                   pio,
                   (cause) => {
                     const state = this.doneHalt(cause)
-                    State.concrete(state!)
                     if (state !== null && state._tag === State.ChannelStateTag.Effect) {
                       return state.effect
                     } else {
@@ -438,7 +436,6 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
                   },
                   (z) => {
                     const state = this.doneSucceed(z)
-                    State.concrete(state!)
                     if (state !== null && state._tag === State.ChannelStateTag.Effect) {
                       return state.effect
                     } else {
@@ -512,10 +509,10 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     return result as ChannelState<Env, OutErr>
   }
 
-  private restorePipe(exit: Exit<unknown, unknown>, prev: ErasedExecutor<Env>): IO<Env, never, unknown> | null {
+  private restorePipe(exit: Exit<unknown, unknown>, prev: ErasedExecutor<Env> | null): IO<Env, never, unknown> | null {
     const currInput = this.input
     this.input      = prev
-    return currInput!.close(exit)
+    return currInput !== null ? currInput.close(exit) : null
   }
 
   private popAllFinalizers(exit: Exit<unknown, unknown>): URIO<Env, Exit<unknown, unknown>> {

@@ -492,7 +492,7 @@ export function asyncIO<R, E, A, R1 = R, E1 = E>(
                   )
                 )
               ),
-            (a) => I.succeed(Ch.crossSecond_(Ch.write(a), loop))
+            (a) => I.succeed(Ch.chain_(Ch.write(a), () => loop))
           ),
           Ch.unwrap
         )

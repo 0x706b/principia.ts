@@ -1445,7 +1445,6 @@ function runManagedInterpret<Env, InErr, InDone, OutErr, OutDone>(
 ): IO<Env, OutErr, OutDone> {
   // eslint-disable-next-line no-constant-condition
   while (1) {
-    State.concrete(channelState)
     switch (channelState._tag) {
       case State.ChannelStateTag.Effect: {
         return I.chain_(channelState.effect, () => runManagedInterpret(exec.run(), exec))
@@ -1470,7 +1469,6 @@ function toPullInterpret<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   channelState: ChannelState<Env, OutErr>,
   exec: ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
 ): IO<Env, OutErr, E.Either<OutDone, OutElem>> {
-  State.concrete(channelState)
   switch (channelState._tag) {
     case State.ChannelStateTag.Effect: {
       return pipe(
