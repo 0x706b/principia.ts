@@ -2,38 +2,38 @@ import type { Atomic } from './TRef'
 
 import { Versioned } from './Versioned'
 
-export const EntryTypeId = Symbol.for('@principia/base/IO/stm/Entry')
+export const EntryTypeId = Symbol.for('@principia/base/stm/Entry')
 export type EntryTypeId = typeof EntryTypeId
 
 export class Entry {
-  readonly _typeId: EntryTypeId = EntryTypeId
+  readonly [EntryTypeId]: EntryTypeId = EntryTypeId
 
-  constructor(readonly use: <X>(f: <S>(entry: EntryOps<S>) => X) => X) {}
+  constructor(readonly use: <X>(f: <S>(entry: ConcreteEntry<S>) => X) => X) {}
 }
 
-export function makeEntry<A0>(tref0: Atomic<A0>, isNew0: boolean): Entry {
+export function make<A0>(tref0: Atomic<A0>, isNew0: boolean): Entry {
   const versioned = tref0.versioned
-  const ops       = new EntryOps<A0>(tref0, versioned, versioned.value, isNew0, false)
+  const ops       = new ConcreteEntry<A0>(tref0, versioned, versioned.value, isNew0, false)
   return new Entry((f) => f(ops))
 }
 
-export const EntryOpsTypeId = Symbol.for('@principia/base/IO/stm/EntryOps')
-export type EntryOpsTypeId = typeof EntryOpsTypeId
+export const ConcreteEntryTypeId = Symbol.for('@principia/base/stm/ConcreteEntry')
+export type ConcreteEntryTypeId = typeof ConcreteEntryTypeId
 
-export class EntryOps<S> {
-  readonly _typeId: EntryOpsTypeId = EntryOpsTypeId
+export class ConcreteEntry<S> {
+  readonly [ConcreteEntryTypeId]: ConcreteEntryTypeId = ConcreteEntryTypeId
 
-  readonly tref: Atomic<S>
-  readonly expected: Versioned<S>
-  newValue: S
-  readonly isNew: boolean
-  _isChanged: boolean
+  protected newValue: S
+  private _isChanged: boolean
 
-  constructor(tref: Atomic<S>, expected: Versioned<S>, newValue: S, isNew: boolean, isChanged: boolean) {
-    this.tref       = tref
-    this.expected   = expected
+  constructor(
+    readonly tref: Atomic<S>,
+    readonly expected: Versioned<S>,
+    newValue: S,
+    readonly isNew: boolean,
+    isChanged: boolean
+  ) {
     this.newValue   = newValue
-    this.isNew      = isNew
     this._isChanged = isChanged
   }
 
@@ -51,7 +51,7 @@ export class EntryOps<S> {
   }
 
   copy(): Entry {
-    const ops = new EntryOps<S>(this.tref, this.expected, this.newValue, this.isNew, this.isChanged())
+    const ops = new ConcreteEntry<S>(this.tref, this.expected, this.newValue, this.isNew, this.isChanged())
     return new Entry((f) => f(ops))
   }
 

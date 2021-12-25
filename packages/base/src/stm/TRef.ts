@@ -8,13 +8,13 @@ import * as E from '../Either'
 import { identity } from '../function'
 import * as M from '../Maybe'
 import { AtomicReference } from '../util/support/AtomicReference'
-import { makeEntry } from './Entry'
+import * as En from './Entry'
 import { emptyTodoMap } from './Journal'
 import * as STM from './STM/core'
 import * as _ from './STM/primitives'
 import { Versioned } from './Versioned'
 
-export const TRefTypeId = Symbol.for('@principia/base/IO/stm/TRef')
+export const TRefTypeId = Symbol.for('@principia/base/stm/TRef')
 export type TRefTypeId = typeof TRefTypeId
 
 /**
@@ -33,7 +33,7 @@ export type TRefTypeId = typeof TRefTypeId
  * the value inside the `TRef` should be immutable.
  */
 export interface TRef<EA, EB, A, B> {
-  readonly _typeId: TRefTypeId
+  readonly [TRefTypeId]: TRefTypeId
   readonly _EA: () => EA
   readonly _EB: () => EB
   readonly _A: (_: A) => void
@@ -61,7 +61,7 @@ export interface UTRef<A> extends TRef<never, never, A, A> {}
 export interface ETRef<E, A> extends TRef<E, E, A, A> {}
 
 export class Atomic<A> implements TRef<never, never, A, A> {
-  readonly _typeId: TRefTypeId = TRefTypeId
+  readonly [TRefTypeId]: TRefTypeId = TRefTypeId
   readonly _tag = 'Atomic'
   readonly _EA!: () => never
   readonly _EB!: () => never
@@ -92,7 +92,7 @@ export class Atomic<A> implements TRef<never, never, A, A> {
 }
 
 export class Derived<S, EA, EB, A, B> implements TRef<EA, EB, A, B> {
-  readonly _typeId: TRefTypeId = TRefTypeId
+  readonly [TRefTypeId]: TRefTypeId = TRefTypeId
   readonly _tag = 'Derived'
   readonly _EA!: () => EA
   readonly _EB!: () => EB
@@ -141,7 +141,7 @@ export class Derived<S, EA, EB, A, B> implements TRef<EA, EB, A, B> {
 }
 
 export class DerivedAll<S, EA, EB, A, B> implements TRef<EA, EB, A, B> {
-  readonly _typeId: TRefTypeId = TRefTypeId
+  readonly [TRefTypeId]: TRefTypeId = TRefTypeId
   readonly _tag = 'DerivedAll'
   readonly _EA!: () => EA
   readonly _EB!: () => EB
@@ -193,7 +193,7 @@ function getOrMakeEntry<A>(self: Atomic<A>, journal: Journal): Entry {
   if (journal.has(self)) {
     return journal.get(self)!
   }
-  const entry = makeEntry(self, false)
+  const entry = En.make(self, false)
   journal.set(self, entry)
   return entry
 }
@@ -223,7 +223,7 @@ export function get<EA, EB, A, B>(self: TRef<EA, EB, A, B>): _.STM<unknown, EB, 
  * Unsafely retrieves the value of the `TRef`.
  */
 export function unsafeGet_<EA, EB, A, B>(self: TRef<EA, EB, A, B>, journal: Journal): A {
-  return getOrMakeEntry(self.atomic, journal).use((_) => _.unsafeGet<A>())
+  return getOrMakeEntry(self.atomic, journal).use((entry) => entry.unsafeGet<A>())
 }
 
 /**
@@ -354,13 +354,13 @@ export function getAndSet_<EA, A>(self: ETRef<EA, A>, a: A): _.STM<unknown, EA, 
     case 'Atomic': {
       return new _.Effect((journal) => {
         const entry    = getOrMakeEntry(self, journal)
-        const oldValue = entry.use((_) => _.unsafeGet<A>())
-        entry.use((_) => _.unsafeSet(a))
+        const oldValue = entry.use((entry) => entry.unsafeGet<A>())
+        entry.use((entry) => entry.unsafeSet(a))
         return oldValue
       })
     }
     default: {
-      return modify_(self, (_) => [_, a])
+      return modify_(self, (oldA) => [oldA, a])
     }
   }
 }
@@ -563,7 +563,7 @@ export function makeWith<A>(a: () => A): _.STM<unknown, never, UTRef<A>> {
     const versioned = new Versioned(value)
     const todo      = new AtomicReference(emptyTodoMap)
     const tref      = new Atomic(versioned, todo)
-    journal.set(tref, makeEntry(tref, true))
+    journal.set(tref, En.make(tref, true))
     return tref
   })
 }
@@ -577,7 +577,7 @@ export function make<A>(a: A): _.STM<unknown, never, UTRef<A>> {
     const versioned = new Versioned(value)
     const todo      = new AtomicReference(emptyTodoMap)
     const tref      = new Atomic(versioned, todo)
-    journal.set(tref, makeEntry(tref, true))
+    journal.set(tref, En.make(tref, true))
     return tref
   })
 }

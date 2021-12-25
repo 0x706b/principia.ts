@@ -2,6 +2,7 @@ import type { FiberId } from '../../Fiber'
 import type { Journal } from '../Journal'
 
 import * as E from '../../Either'
+import { pipe } from '../../function'
 import { isObject } from '../../util/predicates'
 
 export const STMTag = {
@@ -116,6 +117,18 @@ export function isHaltException(u: unknown): u is HaltException<unknown> {
   return isObject(u) && HaltExceptionTypeId in u
 }
 
+export const InterruptExceptionTypeId = Symbol.for('@principia/base/IO/stm/InterruptException')
+export type InterruptExceptionTypeId = typeof InterruptExceptionTypeId
+
+export class InterruptException {
+  readonly [InterruptExceptionTypeId]: InterruptExceptionTypeId = InterruptExceptionTypeId
+  constructor(readonly fiberId: FiberId) {}
+}
+
+export function isInterruptException(u: unknown): u is InterruptException {
+  return isObject(u) && InterruptExceptionTypeId in u
+}
+
 export const RetryExceptionTypeId = Symbol.for('@principia/base/IO/stm/RetryException')
 export type RetryExceptionTypeId = typeof RetryExceptionTypeId
 
@@ -202,4 +215,18 @@ export function ensuring_<R, E, A, R1, B>(self: STM<R, E, A>, finalizer: STM<R1,
     (e) => chain_(finalizer, () => fail(e)),
     (a) => chain_(finalizer, () => succeed(a))
   )
+}
+
+/**
+ * Returns the fiber id of the fiber committing the transaction.
+ */
+export const fiberId: STM<unknown, never, FiberId> = new Effect((_, fiberId) => fiberId)
+
+/**
+ * Interrupts the fiber running the effect with the specified fiber id.
+ */
+export function interruptAs(fiberId: FiberId): STM<unknown, never, never> {
+  return new Effect(() => {
+    throw new InterruptException(fiberId)
+  })
 }

@@ -121,6 +121,8 @@ export class STMDriver<R, E, A> {
               if (!curr) {
                 exit = TEx.halt(e.e)
               }
+            } else if (STM.isInterruptException(e)) {
+              exit = TEx.interrupt(e.fiberId)
             } else {
               throw e
             }

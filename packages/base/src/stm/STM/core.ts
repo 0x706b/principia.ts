@@ -7,11 +7,13 @@ import type { STM } from './primitives'
 import * as E from '../../Either'
 import { NoSuchElementError } from '../../Error'
 import { RuntimeException } from '../../Exception'
-import { constVoid, identity } from '../../function'
+import { constVoid, identity, pipe } from '../../function'
 import * as I from '../../IO'
 import * as M from '../../Maybe'
 import { AtomicBoolean } from '../../util/support/AtomicBoolean'
-import { tryCommit, tryCommitAsync } from '../Journal'
+import { AtomicReference } from '../../util/support/AtomicReference'
+import { tryCommitAsync, tryCommitSync } from '../Journal'
+import * as CS from '../State'
 import { DoneTypeId, SuspendTypeId } from '../TryCommit'
 import { txnId } from '../TxnId'
 import * as _ from './primitives'
@@ -493,6 +495,41 @@ export function asJustError<R, E, A>(stm: STM<R, E, A>): STM<R, M.Maybe<E>, A> {
   return mapError_(stm, M.just)
 }
 
+export function atomically<R, E, A>(stm: STM<R, E, A>): I.IO<R, E, A> {
+  return I.asksIO((r: R) =>
+    I.deferWith((_, fiberId) => {
+      const result = tryCommitSync(fiberId, stm, r)
+      switch (result._tag) {
+        case DoneTypeId: {
+          return I.fromExit(result.exit)
+        }
+        case SuspendTypeId: {
+          const id    = txnId()
+          const state = new AtomicReference<CS.CommitState<E, A>>(CS.Running)
+          const async = I.async(tryCommitAsync(result.journal, fiberId, stm, id, state, r))
+          return I.uninterruptibleMask(({ restore }) =>
+            pipe(
+              restore(async),
+              I.catchAllCause((cause) => {
+                state.compareAndSet(CS.Running, CS.Interrupted)
+                const newState = state.get
+                switch (newState._tag) {
+                  case 'Done': {
+                    return I.fromExit(newState.exit)
+                  }
+                  default: {
+                    return I.failCause(cause)
+                  }
+                }
+              })
+            )
+          )
+        }
+      }
+    })
+  )
+}
+
 /**
  * Simultaneously filters and flatMaps the value produced by this effect.
  * Continues on the effect returned from pf.
@@ -666,24 +703,7 @@ export function compose<R, R1, E1>(that: STM<R1, E1, R>) {
  * Commits this transaction atomically.
  */
 export function commit<R, E, A>(stm: STM<R, E, A>): I.IO<R, E, A> {
-  return I.asksIO((r: R) =>
-    I.deferWith((_, fiberId) => {
-      const v = tryCommit(fiberId, stm, r)
-
-      switch (v._typeId) {
-        case DoneTypeId: {
-          return v.io
-        }
-        case SuspendTypeId: {
-          const id        = txnId()
-          const done      = new AtomicBoolean(false)
-          const interrupt = I.succeedLazy(() => done.set(true))
-          const io        = I.async(tryCommitAsync(v.journal, fiberId, stm, id, done, r))
-          return I.ensuring_(io, interrupt)
-        }
-      }
-    })
-  )
+  return atomically(stm)
 }
 
 /**
@@ -1017,6 +1037,11 @@ export function head<R, E, A>(stm: STM<R, E, Iterable<A>>): STM<R, M.Maybe<E>, A
 export function ignore<R, E, A>(stm: STM<R, E, A>): STM<R, never, void> {
   return match_(stm, constVoid, constVoid)
 }
+
+/**
+ * Interrupts the fiber running the effect.
+ */
+export const interrupt: STM<unknown, never, never> = pipe(_.fiberId, chain(_.interruptAs))
 
 /**
  * Returns whether this effect is a failure.
