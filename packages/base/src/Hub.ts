@@ -270,7 +270,7 @@ export class UnsafeHub<A> extends HubInternal<unknown, unknown, never, never, A,
   capacity = this.hub.capacity
   isShutdown = I.succeedLazy(() => this.shutdownFlag.get)
   shutdown = pipe(
-    I.fiberId(),
+    I.fiberId,
     I.chain((fiberId) =>
       I.defer(() => {
         this.shutdownFlag.set(true)
@@ -421,7 +421,7 @@ class UnsafeSubscription<A> extends Q.QueueInternal<never, unknown, unknown, nev
   isShutdown: I.UIO<boolean> = I.succeedLazy(() => this.shutdownFlag.get)
 
   shutdown: I.UIO<void> = pipe(
-    I.fiberId(),
+    I.fiberId,
     I.chain((fiberId) =>
       I.defer(() => {
         this.shutdownFlag.set(true)
@@ -447,7 +447,7 @@ class UnsafeSubscription<A> extends Q.QueueInternal<never, unknown, unknown, nev
   offerAll = (_: Iterable<never>): I.IO<never, unknown, boolean> => I.succeed(false)
 
   take: I.IO<unknown, never, A> = pipe(
-    I.fiberId(),
+    I.fiberId,
     I.chain((fiberId) =>
       I.defer(() => {
         if (this.shutdownFlag.get) {
@@ -1002,7 +1002,7 @@ export class BackPressure<A> extends Strategy<A> {
     isShutdown: AtomicBoolean
   ): I.UIO<boolean> {
     return pipe(
-      I.fiberId(),
+      I.fiberId,
       I.chain((fiberId) =>
         I.defer(() => {
           const promise = F.unsafeMake<never, boolean>(fiberId)
@@ -1025,7 +1025,7 @@ export class BackPressure<A> extends Strategy<A> {
   get shutdown(): I.UIO<void> {
     return pipe(
       I.do,
-      I.chainS('fiberId', () => I.fiberId()),
+      I.chainS('fiberId', () => I.fiberId),
       I.chainS('publishers', () => I.succeedLazy(() => _unsafePollAllQueue(this.publishers))),
       I.tap(({ fiberId, publishers }) =>
         I.foreachC_(publishers, ([_, promise, last]) => (last ? I.asUnit(F.interruptAs_(promise, fiberId)) : I.unit()))

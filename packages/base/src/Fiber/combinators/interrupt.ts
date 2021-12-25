@@ -11,7 +11,7 @@ import * as I from '../../IO/core'
  * Otherwise, the effect will resume when the fiber exits.
  */
 export function interrupt<E, A>(fiber: Fiber<E, A>): UIO<Exit<E, A>> {
-  return I.chain_(I.fiberId(), (id) => fiber.interruptAs(id))
+  return I.chain_(I.fiberId, (id) => fiber.interruptAs(id))
 }
 
 /**

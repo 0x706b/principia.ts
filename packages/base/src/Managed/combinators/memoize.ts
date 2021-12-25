@@ -19,7 +19,7 @@ export function memoize<R, E, A, B>(
   f: (a: A) => Ma.Managed<R, E, B>
 ): Ma.Managed<unknown, never, (a: A) => I.IO<R, E, B>> {
   return Ma.gen(function* (_) {
-    const fiberId = yield* _(I.fiberId())
+    const fiberId = yield* _(I.fiberId)
     const ref     = yield* _(Ref.make(HM.makeDefault<A, F.Future<E, B>>()))
     const scope   = yield* _(scopeManaged())
 

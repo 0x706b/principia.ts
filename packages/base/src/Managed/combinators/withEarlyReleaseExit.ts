@@ -40,7 +40,7 @@ export function withEarlyReleaseExit(
 export function withEarlyRelease<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, readonly [I.UIO<unknown>, A]> {
   const trace = accessCallTrace()
   return chain_(
-    fiberId(),
+    fiberId,
     traceFrom(trace, (id) => withEarlyReleaseExit_(ma, Ex.interrupt(id)))
   )
 }

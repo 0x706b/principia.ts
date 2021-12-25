@@ -186,7 +186,7 @@ export class SingleProducerAsyncInput<Err, Elem, Done>
     (d) => Ex.fail(E.right(d))
   )
 
-  close = T.chain_(T.fiberId(), (id) => this.error(Ca.interrupt(id)))
+  close = T.chain_(T.fiberId, (id) => this.error(Ca.interrupt(id)))
 
   awaitRead: T.UIO<void> = pipe(
     this.ref,

@@ -1223,7 +1223,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
   get shutdown(): I.UIO<void> {
     const self = this
     return I.gen(function* (_) {
-      const fiberId = yield* _(I.fiberId())
+      const fiberId = yield* _(I.fiberId)
       const putters = yield* _(I.succeedLazy(() => _unsafePollAll(self.putters)))
       yield* _(I.foreachC_(putters, ([, p, lastItem]) => (lastItem ? I.asUnit(F.interruptAs_(p, fiberId)) : I.unit())))
     })

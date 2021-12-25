@@ -23,5 +23,5 @@ export function interruptAllAs(id: FiberId): (fs: Iterable<Fiber<any, any>>) => 
  * Interrupts all fibers and awaits their interruption
  */
 export function interruptAll(fs: Iterable<Fiber<any, any>>): UIO<void> {
-  return I.chain_(I.fiberId(), (id) => interruptAllAs_(fs, id))
+  return I.chain_(I.fiberId, (id) => interruptAllAs_(fs, id))
 }

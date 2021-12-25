@@ -40,7 +40,7 @@ export function interruptAs(fiberId: FiberId): FIO<never, never> {
  * Returns an effect that is interrupted as if by the fiber calling this
  * method.
  */
-export const interrupt: IO<unknown, never, never> = chain_(fiberId(), interruptAs)
+export const interrupt: IO<unknown, never, never> = chain_(fiberId, interruptAs)
 
 /**
  * Switches the interrupt status for this effect. If `true` is used, then the
@@ -206,7 +206,7 @@ export function disconnect<R, E, A>(effect: IO<R, E, A>): IO<R, E, A> {
   const trace = accessCallTrace()
   return uninterruptibleMask(
     traceFrom(trace, ({ restore }) =>
-      chain_(fiberId(), (id) =>
+      chain_(fiberId, (id) =>
         chain_(forkDaemon(restore(effect)), (fiber) =>
           onInterrupt_(restore(join(fiber)), () => forkDaemon(fiber.interruptAs(id)))
         )

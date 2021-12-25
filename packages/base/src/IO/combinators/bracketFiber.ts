@@ -21,7 +21,7 @@ export function bracketFiber_<R, E, A, R1, E1, B>(
   ma: IO<R, E, A>,
   use: (f: RuntimeFiber<E, A>) => IO<R1, E1, B>
 ): IO<R & R1, E1, Exit<E, A>> {
-  return bracket_(forkDaemon(ma), (f) => chain_(fiberId(), (id) => f.interruptAs(id)), use)
+  return bracket_(forkDaemon(ma), (f) => chain_(fiberId, (id) => f.interruptAs(id)), use)
 }
 
 /**

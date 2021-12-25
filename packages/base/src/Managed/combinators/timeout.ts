@@ -30,7 +30,7 @@ export function timeout<R, E, A>(ma: Managed<R, E, A>, d: number): Managed<R & H
             RM.add_(outerReleaseMap, (ex) => RM.releaseAll_(innerReleaseMap, ex, sequential))
           )
 
-          const id         = yield* _(I.fiberId())
+          const id         = yield* _(I.fiberId)
           const raceResult = yield* _(
             pipe(
               ma.io,

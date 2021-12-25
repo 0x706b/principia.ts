@@ -179,7 +179,7 @@ export function failCause<E>(cause: Cause<E>): <A>(future: Future<E, A>) => I.UI
  */
 export function interrupt<E, A>(future: Future<E, A>): I.UIO<boolean> {
   return pipe(
-    I.fiberId(),
+    I.fiberId,
     I.chain((id) => fulfillWith_(future, interruptAsIO(id)))
   )
 }
@@ -213,8 +213,8 @@ export function isDone<E, A>(future: Future<E, A>): I.UIO<boolean> {
 /**
  * Makes a new future to be completed by the fiber creating the future.
  */
-export function make<E, A>() {
-  return I.chain_(I.fiberId(), (id) => makeAs<E, A>(id))
+export function make<E, A>(): I.IO<unknown, never, Future<E, A>> {
+  return I.chain_(I.fiberId, (id) => makeAs<E, A>(id))
 }
 
 /**

@@ -323,9 +323,7 @@ export function deferWith<R, E, A>(io: (platform: Platform<unknown>, id: FiberId
  * @category Constructors
  * @since 1.0.0
  */
-export function fiberId(): IO<unknown, never, FiberId> {
-  return descriptorWith((d) => succeed(d.id))
-}
+export const fiberId: IO<unknown, never, FiberId> = descriptorWith((d) => succeed(d.id))
 
 /**
  * Checks the current `Platform`
