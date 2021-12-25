@@ -11,7 +11,7 @@ import { foreachC_ as ioForeachC_, foreachUnitC_ as ioForeachUnitC_ } from '../.
 import { tuple } from '../../tuple/core'
 import { mapIO } from '../core'
 import * as I from '../internal/io'
-import { makeManagedReleaseMap, makeManagedReleaseMapPar } from './makeManagedReleaseMap'
+import * as RM from '../ReleaseMap'
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` in parallel,
@@ -23,10 +23,10 @@ import { makeManagedReleaseMap, makeManagedReleaseMapPar } from './makeManagedRe
  */
 export function foreachC_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E, B>): Managed<R, E, Chunk<B>> {
   return pipe(
-    makeManagedReleaseMapPar,
+    RM.makeManagedC,
     mapIO((parallelReleaseMap) => {
       const makeInnerMap = pipe(
-        makeManagedReleaseMap(sequential).io,
+        RM.makeManaged(sequential).io,
         I.map(([_, x]) => x),
         I.gives((r0: unknown) => tuple(r0, parallelReleaseMap))
       )
@@ -68,10 +68,10 @@ export function foreachC<R, E, A, B>(f: (a: A) => Managed<R, E, B>): (as: Iterab
  */
 export function foreachUnitC_<R, E, A>(as: Iterable<A>, f: (a: A) => Managed<R, E, unknown>): Managed<R, E, void> {
   return pipe(
-    makeManagedReleaseMapPar,
+    RM.makeManagedC,
     mapIO((parallelReleaseMap) => {
       const makeInnerMap = pipe(
-        makeManagedReleaseMap(sequential).io,
+        RM.makeManaged(sequential).io,
         I.map(([_, x]) => x),
         I.gives((r0: unknown) => tuple(r0, parallelReleaseMap))
       )

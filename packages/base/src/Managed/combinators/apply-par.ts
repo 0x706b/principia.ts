@@ -12,8 +12,8 @@ import * as R from '../../Record'
 import { tuple } from '../../tuple/core'
 import { map_, mapIO_ } from '../core'
 import * as I from '../internal/io'
+import { makeManaged } from '../ReleaseMap'
 import { foreachC_ } from './foreachC'
-import { makeManagedReleaseMap } from './makeManagedReleaseMap'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -32,8 +32,8 @@ export function crossWithC_<R, E, A, R1, E1, B, C>(
   fb: Managed<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Managed<R & R1, E | E1, C> {
-  return mapIO_(makeManagedReleaseMap(parallel), (parallelReleaseMap) => {
-    const innerMap = I.gives_(makeManagedReleaseMap(sequential).io, (r: R & R1) => tuple(r, parallelReleaseMap))
+  return mapIO_(makeManaged(parallel), (parallelReleaseMap) => {
+    const innerMap = I.gives_(makeManaged(sequential).io, (r: R & R1) => tuple(r, parallelReleaseMap))
 
     return I.chain_(I.cross_(innerMap, innerMap), ([[_, l], [__, r]]) =>
       I.crossWithC_(

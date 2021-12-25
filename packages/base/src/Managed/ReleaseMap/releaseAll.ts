@@ -5,22 +5,25 @@ import type { Exit } from '../../IO/Exit'
 
 import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
-import * as Ch from '../../Chunk/core'
 import { pipe } from '../../function'
 import { foreachExec as foreachExecIO } from '../../IO/combinators/foreachExec'
 import * as Ex from '../../IO/Exit'
 import * as M from '../../Maybe'
 import * as Ref from '../../Ref'
 import * as I from '../internal/io'
-import * as RM from '../ReleaseMap'
+import * as RM from './core'
 
 /**
  * @trace call
  */
-export function releaseAll_(rm: RM.ReleaseMap, exit: Exit<any, any>, execStrategy: ExecutionStrategy): I.UIO<any> {
+export function releaseAll_(
+  releaseMap: RM.ReleaseMap,
+  exit: Exit<any, any>,
+  execStrategy: ExecutionStrategy
+): I.UIO<any> {
   const trace = accessCallTrace()
   return pipe(
-    rm.ref,
+    RM.ReleaseMap.reverseGet(releaseMap),
     Ref.modify((s): [I.UIO<any>, RM.State] => {
       switch (s._tag) {
         case 'Exited': {
@@ -29,7 +32,7 @@ export function releaseAll_(rm: RM.ReleaseMap, exit: Exit<any, any>, execStrateg
         case 'Running': {
           return [
             pipe(
-              Array.from(RM.finalizers(s)).reverse(),
+              Array.from(s.finalizers).reverse(),
               foreachExecIO(
                 execStrategy,
                 traceFrom(trace, ([, f]) => I.result(s.update(f)(exit)))

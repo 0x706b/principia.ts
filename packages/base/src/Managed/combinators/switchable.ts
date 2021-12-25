@@ -11,8 +11,7 @@ import * as M from '../../Maybe'
 import { tuple } from '../../tuple/core'
 import * as Ma from '../core'
 import * as I from '../internal/io'
-import * as RelMap from '../ReleaseMap'
-import { releaseAll_ } from './releaseAll'
+import * as RM from '../ReleaseMap'
 import { releaseMap } from './releaseMap'
 
 /**
@@ -36,7 +35,7 @@ export function switchable<R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) =
     const rm  = yield* _(releaseMap())
     const key = yield* _(
       pipe(
-        RelMap.addIfOpen(rm, (_) => I.unit()),
+        RM.addIfOpen_(rm, (_) => I.unit()),
         I.chain(M.match(() => I.interrupt, I.succeed)),
         Ma.fromIO
       )
@@ -47,7 +46,7 @@ export function switchable<R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) =
           I.gen(function* (_) {
             yield* _(
               pipe(
-                RelMap.replace(rm, key, (_) => I.unit()),
+                RM.replace_(rm, key, (_) => I.unit()),
                 I.chain(
                   M.match(
                     () => I.unit(),
@@ -57,9 +56,9 @@ export function switchable<R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) =
               )
             )
             const r     = yield* _(I.ask<R>())
-            const inner = yield* _(RelMap.make)
+            const inner = yield* _(RM.make)
             const a     = yield* _(pipe(newResource.io, I.give(tuple(r, inner)), restore))
-            yield* _(RelMap.replace(rm, key, (exit) => releaseAll_(inner, exit, sequential)))
+            yield* _(RM.replace_(rm, key, (exit) => RM.releaseAll_(inner, exit, sequential)))
             return a[1]
           })
         )

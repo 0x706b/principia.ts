@@ -14,7 +14,6 @@ import { tuple } from '../../tuple/core'
 import { Managed } from '../core'
 import * as I from '../internal/_io'
 import * as RM from '../ReleaseMap'
-import { releaseAll_ } from './releaseAll'
 
 /**
  * @trace call
@@ -27,7 +26,9 @@ export function timeout<R, E, A>(ma: Managed<R, E, A>, d: number): Managed<R & H
         I.gen(function* (_) {
           const [r, outerReleaseMap] = yield* _(I.ask<readonly [R & Has<Clock>, RM.ReleaseMap]>())
           const innerReleaseMap      = yield* _(RM.make)
-          const earlyRelease         = yield* _(RM.add(outerReleaseMap, (ex) => releaseAll_(innerReleaseMap, ex, sequential)))
+          const earlyRelease         = yield* _(
+            RM.add_(outerReleaseMap, (ex) => RM.releaseAll_(innerReleaseMap, ex, sequential))
+          )
 
           const id         = yield* _(I.fiberId())
           const raceResult = yield* _(
@@ -50,7 +51,7 @@ export function timeout<R, E, A>(ma: Managed<R, E, A>, d: number): Managed<R & H
               (fiber) =>
                 pipe(
                   fiber.interruptAs(id),
-                  I.ensuring(releaseAll_(innerReleaseMap, Ex.interrupt(id), sequential)),
+                  I.ensuring(RM.releaseAll_(innerReleaseMap, Ex.interrupt(id), sequential)),
                   I.forkDaemon,
                   I.as(M.nothing())
                 ),

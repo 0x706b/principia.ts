@@ -169,7 +169,7 @@ export class Chain<R_, E_, O, O2> {
               )
             )
             yield* _(self.currInnerStream.set(pull))
-            yield* _(self.innerFinalizer.set((e) => Ma.releaseAll_(releaseMap, e, sequential)))
+            yield* _(self.innerFinalizer.set((e) => RM.releaseAll_(releaseMap, e, sequential)))
           })
         )
       )
@@ -292,7 +292,7 @@ export function fromManaged<R, E, A>(ma: Ma.Managed<R, E, A>): Stream<R, E, A> {
   return new Stream(
     Ma.gen(function* (_) {
       const doneRef   = yield* _(Ref.managedRef(false))
-      const finalizer = yield* _(Ma.makeManagedReleaseMap(sequential))
+      const finalizer = yield* _(RM.makeManaged(sequential))
 
       const pull = I.uninterruptibleMask(({ restore }) =>
         pipe(
@@ -2338,7 +2338,7 @@ export function catchAllCause_<R, E, A, R1, E1, B>(
               RM.make,
               I.chain((releaseMap) =>
                 pipe(
-                  finalizerRef.set((exit) => Ma.releaseAll_(releaseMap, exit, sequential)),
+                  finalizerRef.set((exit) => RM.releaseAll_(releaseMap, exit, sequential)),
                   I.chain(() =>
                     pipe(
                       restore(stream.proc.io),

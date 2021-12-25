@@ -8,9 +8,9 @@ import { accessCallTrace, traceCall } from '@principia/compile/util'
 import { parallel, parallelN } from '../../ExecutionStrategy'
 import { pipe } from '../../function'
 import * as M from '../../Maybe'
+import { concurrency } from '../combinators/concurrency'
 import { bracketExit_, chain } from '../core'
-import * as RM from '../ReleaseMap'
-import { concurrency } from './concurrency'
+import * as RM from './core'
 import { releaseAll_ } from './releaseAll'
 
 /**
@@ -20,17 +20,17 @@ import { releaseAll_ } from './releaseAll'
  *
  * @trace call
  */
-export function makeManagedReleaseMap(es: ExecutionStrategy): Managed<unknown, never, RM.ReleaseMap> {
+export function makeManaged(es: ExecutionStrategy): Managed<unknown, never, RM.ReleaseMap> {
   const trace = accessCallTrace()
   return traceCall(bracketExit_, trace)(RM.make, (rm, e) => releaseAll_(rm, e, es))
 }
 
-export const makeManagedReleaseMapPar: Managed<unknown, never, RM.ReleaseMap> = pipe(
+export const makeManagedC: Managed<unknown, never, RM.ReleaseMap> = pipe(
   concurrency,
   chain(
     M.match(
-      () => makeManagedReleaseMap(parallel),
-      (n) => makeManagedReleaseMap(parallelN(n))
+      () => makeManaged(parallel),
+      (n) => makeManaged(parallelN(n))
     )
   )
 )

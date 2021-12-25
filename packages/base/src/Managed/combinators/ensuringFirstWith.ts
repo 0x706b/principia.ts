@@ -11,8 +11,7 @@ import * as Ex from '../../IO/Exit'
 import { tuple } from '../../tuple/core'
 import { Managed } from '../core'
 import * as I from '../internal/io'
-import { add, make } from '../ReleaseMap'
-import { releaseAll_ } from './releaseAll'
+import * as RM from '../ReleaseMap'
 
 /**
  * Ensures that a cleanup function runs when this ZManaged is finalized, before
@@ -31,7 +30,7 @@ export function ensuringFirstWith_<R, E, A, R1>(
       traceFrom(trace, ({ restore }) =>
         I.gen(function* (_) {
           const [r, outerReleaseMap] = yield* _(I.ask<readonly [R & R1, ReleaseMap]>())
-          const innerReleaseMap      = yield* _(make)
+          const innerReleaseMap      = yield* _(RM.make)
           const exitEA               = yield* _(
             pipe(
               self.io,
@@ -42,13 +41,13 @@ export function ensuringFirstWith_<R, E, A, R1>(
             )
           )
           const releaseMapEntry = yield* _(
-            add(outerReleaseMap, (e) =>
+            RM.add_(outerReleaseMap, (e) =>
               pipe(
                 cleanup(exitEA),
                 I.give(r),
                 I.result,
                 I.crossWith(
-                  I.result(releaseAll_(innerReleaseMap, e, sequential)),
+                  I.result(RM.releaseAll_(innerReleaseMap, e, sequential)),
                   traceAs(cleanup, flow(Ex.apSecond_, I.fromExit))
                 ),
                 I.flatten

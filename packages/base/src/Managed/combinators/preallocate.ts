@@ -9,7 +9,6 @@ import { tuple } from '../../tuple/core'
 import { Managed } from '../core'
 import * as I from '../internal/io'
 import * as RM from '../ReleaseMap'
-import { releaseAll_ } from './releaseAll'
 
 /**
  * Preallocates the managed resource, resulting in a Managed that reserves
@@ -37,13 +36,13 @@ export function preallocate<R, E, A>(ma: Managed<R, E, A>): I.IO<R, E, Managed<u
         const preallocated = yield* _(
           Ex.matchIO_(
             tp,
-            (c) => pipe(releaseAll_(rm, Ex.failCause(c), sequential), I.apSecond(I.failCause(c))),
+            (c) => pipe(RM.releaseAll_(rm, Ex.failCause(c), sequential), I.apSecond(I.failCause(c))),
             ([release, a]) =>
               I.succeed(
                 new Managed(
                   I.asksIO(([_, relMap]: readonly [unknown, RM.ReleaseMap]) =>
                     pipe(
-                      RM.add(relMap, release),
+                      RM.add_(relMap, release),
                       I.map((fin) => tuple(fin, a))
                     )
                   )
@@ -73,7 +72,7 @@ export function preallocateManaged<R, E, A>(ma: Managed<R, E, A>): Managed<R, E,
         new Managed(
           I.asksIO(([_, releaseMap]: readonly [unknown, RM.ReleaseMap]) =>
             pipe(
-              RM.add(releaseMap, release),
+              RM.add_(releaseMap, release),
               I.map((_) => tuple(_, a))
             )
           )

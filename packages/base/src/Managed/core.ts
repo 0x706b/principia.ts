@@ -26,7 +26,7 @@ import * as R from '../Record'
 import * as Ref from '../Ref/core'
 import { tuple as mkTuple } from '../tuple/core'
 import * as I from './internal/io'
-import { add, addIfOpen, noopFinalizer, release, updateAll } from './ReleaseMap'
+import { add_, addIfOpen_, noopFinalizer, release_, updateAll_ } from './ReleaseMap/core'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -312,7 +312,7 @@ export function bracketExit_<R, E, A, R1>(
             I.chain(
               traceFrom(trace, (a) =>
                 pipe(
-                  add(r[1], (ex) => pipe(release(a, ex), I.give(r[0]))),
+                  add_(r[1], (ex) => pipe(release(a, ex), I.give(r[0]))),
                   I.map((rm) => mkTuple(rm, a))
                 )
               )
@@ -343,7 +343,7 @@ export function makeReserve<R, E, R2, E2, A>(reservation: I.IO<R, E, Reservation
         I.gen(function* (_) {
           const [r, releaseMap] = yield* _(I.ask<readonly [R & R2, ReleaseMap]>())
           const reserved        = yield* _(I.give_(reservation, r))
-          const releaseKey      = yield* _(addIfOpen(releaseMap, (x) => I.give_(reserved.release(x), r)))
+          const releaseKey      = yield* _(addIfOpen_(releaseMap, (x) => I.give_(reserved.release(x), r)))
           const finalizerAndA   = yield* _(
             I.defer(() => {
               switch (releaseKey._tag) {
@@ -355,7 +355,7 @@ export function makeReserve<R, E, R2, E2, A>(reservation: I.IO<R, E, Reservation
                     reserved.acquire,
                     I.gives(([r]: readonly [R & R2, ReleaseMap]) => r),
                     restore,
-                    I.map((a): readonly [Finalizer, A] => mkTuple((e) => release(releaseMap, releaseKey.value, e), a))
+                    I.map((a): readonly [Finalizer, A] => mkTuple((e) => release_(releaseMap, releaseKey.value, e), a))
                   )
                 }
               }
@@ -1824,7 +1824,7 @@ export function ignoreReleaseFailures<R, E, A>(ma: Managed<R, E, A>): Managed<R,
       I.ask<readonly [R, ReleaseMap]>(),
       I.tap(
         traceFrom(trace, ([, rm]) =>
-          updateAll(
+          updateAll_(
             rm,
             (finalizer) => (exit) =>
               pipe(

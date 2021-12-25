@@ -11,8 +11,7 @@ import * as Ex from '../../IO/Exit'
 import { tuple } from '../../tuple/core'
 import { Managed } from '../core'
 import * as I from '../internal/io'
-import { add, make } from '../ReleaseMap'
-import { releaseAll_ } from './releaseAll'
+import * as RM from '../ReleaseMap'
 
 /**
  * Ensures that a cleanup function runs when this Managed is finalized, after
@@ -31,7 +30,7 @@ export function ensuringWith_<R, E, A, R1>(
       traceFrom(trace, ({ restore }) =>
         I.gen(function* (_) {
           const [r, outerReleaseMap] = yield* _(I.ask<readonly [R & R1, ReleaseMap]>())
-          const innerReleaseMap      = yield* _(make)
+          const innerReleaseMap      = yield* _(RM.make)
           const exitEA               = yield* _(
             pipe(
               self.io,
@@ -42,9 +41,9 @@ export function ensuringWith_<R, E, A, R1>(
             )
           )
           const releaseMapEntry = yield* _(
-            add(outerReleaseMap, (e) =>
+            RM.add_(outerReleaseMap, (e) =>
               pipe(
-                releaseAll_(innerReleaseMap, e, sequential),
+                RM.releaseAll_(innerReleaseMap, e, sequential),
                 I.result,
                 I.crossWith(pipe(cleanup(exitEA), I.give(r), I.result), traceAs(cleanup, Ex.apSecond_))
               )

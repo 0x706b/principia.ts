@@ -1,5 +1,4 @@
 import ts from 'typescript'
-import { inspect } from 'util'
 
 function isInternal(n: ts.Node): n is ts.Node & { __sig_tags: string[] } {
   return '__sig_tags' in n

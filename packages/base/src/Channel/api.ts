@@ -790,7 +790,7 @@ export function managedOut<R, E, A>(
         I.map(([_, out]) => tuple(out, releaseMap))
       )
     ),
-    bracketOutExit(([_, releaseMap], exit) => Ma.releaseAll_(releaseMap, exit, sequential)),
+    bracketOutExit(([_, releaseMap], exit) => RM.releaseAll_(releaseMap, exit, sequential)),
     mapOut(([a]) => a)
   )
 }
@@ -2584,7 +2584,7 @@ export function managed_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1, OutE
         chain(use)
       )
     },
-    (releaseMap, exit) => Ma.releaseAll_(releaseMap, exit, sequential)
+    (releaseMap, exit) => RM.releaseAll_(releaseMap, exit, sequential)
   )
 }
 

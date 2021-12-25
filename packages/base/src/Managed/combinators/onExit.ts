@@ -4,7 +4,7 @@ import * as Ex from '../../IO/Exit'
 import * as Ma from '../core'
 import * as I from '../internal/io'
 import * as RM from '../ReleaseMap'
-import { releaseAll } from './releaseAll'
+import { releaseAll } from '../ReleaseMap'
 
 export function onExit_<R, E, A, R1>(
   ma: Ma.Managed<R, E, A>,
@@ -25,7 +25,7 @@ export function onExit_<R, E, A, R1>(
           )
         )
         const releaseMapEntry = yield* _(
-          RM.add(outerReleaseMap, (e) =>
+          RM.add_(outerReleaseMap, (e) =>
             pipe(
               innerReleaseMap,
               releaseAll(e, sequential),

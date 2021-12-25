@@ -15,7 +15,7 @@ import { mergeEnvironments, tag } from '../Has'
 import * as HM from '../HashMap'
 import * as Ca from '../IO/Cause'
 import * as Ex from '../IO/Exit'
-import * as RelMap from '../Managed/ReleaseMap'
+import * as RM from '../Managed/ReleaseMap'
 import * as M from '../Maybe'
 import * as Ref from '../Ref'
 import * as RefM from '../SRef'
@@ -1019,7 +1019,7 @@ export class MemoMap {
                 I.onExit(
                   Ex.match(
                     () => I.unit(),
-                    () => RelMap.add(rm, release)
+                    () => RM.add_(rm, release)
                   )
                 ),
                 I.map((x) => [release, x] as readonly [Finalizer, A])
@@ -1031,13 +1031,13 @@ export class MemoMap {
             return I.gen(function* (_) {
               const observers    = yield* _(Ref.make(0))
               const promise      = yield* _(F.make<E, A>())
-              const finalizerRef = yield* _(Ref.make<Finalizer>(RelMap.noopFinalizer))
+              const finalizerRef = yield* _(Ref.make<Finalizer>(RM.noopFinalizer))
 
               const resource = I.uninterruptibleMask(({ restore }) =>
                 I.gen(function* (_) {
                   const env                  = yield* _(I.ask<readonly [R, ReleaseMap]>())
                   const [a, outerReleaseMap] = env
-                  const innerReleaseMap      = yield* _(RelMap.make)
+                  const innerReleaseMap      = yield* _(RM.make)
                   const tp                   = yield* _(
                     pipe(
                       scope(layer),
@@ -1052,7 +1052,7 @@ export class MemoMap {
                           (cause): I.IO<unknown, E, readonly [Finalizer, A]> =>
                             pipe(
                               F.failCause_(promise, cause),
-                              I.chain(() => Ma.releaseAll_(innerReleaseMap, ex, sequential) as I.FIO<E, any>),
+                              I.chain(() => RM.releaseAll_(innerReleaseMap, ex, sequential) as I.FIO<E, any>),
                               I.chain(() => I.failCause(cause))
                             ),
                           ([, a]) =>
@@ -1060,14 +1060,14 @@ export class MemoMap {
                               yield* _(
                                 finalizerRef.set((e) =>
                                   pipe(
-                                    Ma.releaseAll_(innerReleaseMap, e, sequential),
+                                    RM.releaseAll_(innerReleaseMap, e, sequential),
                                     I.whenIO(Ref.modify_(observers, (n) => [n === 1, n - 1]))
                                   )
                                 )
                               )
                               yield* _(Ref.update_(observers, (n) => n + 1))
                               const outerFinalizer = yield* _(
-                                RelMap.add(outerReleaseMap, (e) => I.chain_(finalizerRef.get, (f) => f(e)))
+                                RM.add_(outerReleaseMap, (e) => I.chain_(finalizerRef.get, (f) => f(e)))
                               )
                               yield* _(F.succeed_(promise, a))
                               return tuple(outerFinalizer, a)

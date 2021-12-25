@@ -5,6 +5,7 @@ import { parallel } from './ExecutionStrategy'
 import * as Fi from './Fiber'
 import { identity, pipe } from './function'
 import * as F from './Future'
+import * as HM from './HashMap'
 import * as I from './IO'
 import * as Ex from './IO/Exit'
 import * as M from './Managed'
@@ -125,7 +126,7 @@ export function concrete<RA, RB, EA, EB, A, B>(
 export function makeBounded<A>(requestedCapacity: number): I.UIO<UHub<A>> {
   return I.chain_(
     I.succeedLazy(() => _makeBounded<A>(requestedCapacity)),
-    (_) => _make(_, new BackPressure())
+    (hub) => _make(hub, new BackPressure())
   )
 }
 
@@ -137,7 +138,7 @@ export function makeBounded<A>(requestedCapacity: number): I.UIO<UHub<A>> {
  * For best performance use capacities that are powers of two.
  */
 export function unsafeMakeBounded<A>(requestedCapacity: number): UHub<A> {
-  const releaseMap = new RM.ReleaseMap(Ref.unsafeMake<RM.State>(new RM.Running(0, new Map(), identity)))
+  const releaseMap = RM.ReleaseMap.get(Ref.unsafeMake<RM.State>(new RM.Running(0, HM.makeDefault(), identity)))
 
   return _unsafeMake(
     _makeBounded<A>(requestedCapacity),
@@ -160,7 +161,7 @@ export function makeDropping<A>(requestedCapacity: number): I.UIO<UHub<A>> {
     I.succeedLazy(() => {
       return _makeBounded<A>(requestedCapacity)
     }),
-    (_) => _make(_, new Dropping())
+    (hub) => _make(hub, new Dropping())
   )
 }
 
@@ -171,7 +172,7 @@ export function makeDropping<A>(requestedCapacity: number): I.UIO<UHub<A>> {
  * For best performance use capacities that are powers of two.
  */
 export function unsafeMakeDropping<A>(requestedCapacity: number): UHub<A> {
-  const releaseMap = new RM.ReleaseMap(Ref.unsafeMake<RM.State>(new RM.Running(0, new Map(), identity)))
+  const releaseMap = RM.ReleaseMap.get(Ref.unsafeMake<RM.State>(new RM.Running(0, HM.makeDefault(), identity)))
 
   return _unsafeMake(
     _makeBounded<A>(requestedCapacity),
@@ -194,7 +195,7 @@ export function makeSliding<A>(requestedCapacity: number): I.UIO<UHub<A>> {
     I.succeedLazy(() => {
       return _makeBounded<A>(requestedCapacity)
     }),
-    (_) => _make(_, new Sliding())
+    (hub) => _make(hub, new Sliding())
   )
 }
 
@@ -205,7 +206,7 @@ export function makeSliding<A>(requestedCapacity: number): I.UIO<UHub<A>> {
  * For best performance use capacities that are powers of two.
  */
 export function unsafeMakeSliding<A>(requestedCapacity: number): UHub<A> {
-  const releaseMap = new RM.ReleaseMap(Ref.unsafeMake<RM.State>(new RM.Running(0, new Map(), identity)))
+  const releaseMap = RM.ReleaseMap.get(Ref.unsafeMake<RM.State>(new RM.Running(0, HM.makeDefault(), identity)))
 
   return _unsafeMake(
     _makeBounded<A>(requestedCapacity),
@@ -225,7 +226,7 @@ export function makeUnbounded<A>(): I.UIO<UHub<A>> {
     I.succeedLazy(() => {
       return _makeUnbounded<A>()
     }),
-    (_) => _make(_, new Dropping())
+    (hub) => _make(hub, new Dropping())
   )
 }
 
@@ -233,7 +234,7 @@ export function makeUnbounded<A>(): I.UIO<UHub<A>> {
  * Creates an unbounded hub.
  */
 export function unsafeMakeUnbounded<A>(): UHub<A> {
-  const releaseMap = new RM.ReleaseMap(Ref.unsafeMake<RM.State>(new RM.Running(0, new Map(), identity)))
+  const releaseMap = RM.ReleaseMap.get(Ref.unsafeMake<RM.State>(new RM.Running(0, HM.makeDefault(), identity)))
 
   return _unsafeMake(
     _makeUnbounded<A>(),
@@ -274,7 +275,7 @@ export class UnsafeHub<A> extends HubInternal<unknown, unknown, never, never, A,
       I.defer(() => {
         this.shutdownFlag.set(true)
         return pipe(
-          M.releaseAll_(this.releaseMap, Ex.interrupt(fiberId), parallel),
+          RM.releaseAll_(this.releaseMap, Ex.interrupt(fiberId), parallel),
           I.apSecond(this.strategy.shutdown),
           I.whenIO(F.succeed_(this.shutdownHook, undefined))
         )
@@ -296,7 +297,7 @@ export class UnsafeHub<A> extends HubInternal<unknown, unknown, never, never, A,
     M.chainS('dequeue', () => I.toManaged_(subscription(this.hub, this.subscribers, this.strategy))),
     M.tap(({ dequeue }) =>
       M.bracketExit_(
-        RM.add(this.releaseMap, (_) => Q.shutdown(dequeue)),
+        RM.add_(this.releaseMap, (_) => Q.shutdown(dequeue)),
         (finalizer, exit) => finalizer(exit)
       )
     ),

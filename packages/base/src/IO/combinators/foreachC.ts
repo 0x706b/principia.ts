@@ -13,7 +13,7 @@ import { flow, identity, pipe } from '../../function'
 import * as F from '../../Future'
 import * as It from '../../Iterable'
 import { Managed } from '../../Managed/core'
-import * as RM from '../../Managed/ReleaseMap'
+import * as RM from '../../Managed/ReleaseMap/core'
 import * as M from '../../Maybe'
 import * as Q from '../../Queue'
 import * as Ref from '../../Ref/core'
@@ -323,7 +323,7 @@ export function fork<R, E, A>(self: Managed<R, E, A>): Managed<R, never, Runtime
             )
           )
           const releaseMapEntry = yield* _(
-            RM.add(outerReleaseMap, (e) =>
+            RM.add_(outerReleaseMap, (e) =>
               pipe(fiber, interruptFiber, I.apSecond(releaseAllSequential_(innerReleaseMap, e)))
             )
           )
@@ -335,9 +335,9 @@ export function fork<R, E, A>(self: Managed<R, E, A>): Managed<R, never, Runtime
   )
 }
 
-function releaseAllSequential_(_: RM.ReleaseMap, exit: Exit<any, any>): I.UIO<any> {
+function releaseAllSequential_(releaseMap: RM.ReleaseMap, exit: Exit<any, any>): I.UIO<any> {
   return pipe(
-    _.ref,
+    RM.ReleaseMap.reverseGet(releaseMap),
     Ref.modify((s): [I.UIO<any>, RM.State] => {
       switch (s._tag) {
         case 'Exited': {
@@ -346,7 +346,7 @@ function releaseAllSequential_(_: RM.ReleaseMap, exit: Exit<any, any>): I.UIO<an
         case 'Running': {
           return [
             I.chain_(
-              I.foreach_(Array.from(RM.finalizers(s)).reverse(), ([_, f]) => I.result(s.update(f)(exit))),
+              I.foreach_(Array.from(s.finalizers).reverse(), ([_, f]) => I.result(s.update(f)(exit))),
               (e) => I.fromExit(M.getOrElse_(Ex.collectAll(...e), () => Ex.succeed([])))
             ),
             new RM.Exited(s.nextKey, exit, s.update)
