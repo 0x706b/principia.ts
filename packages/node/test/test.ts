@@ -15,6 +15,6 @@ pipe(
   stream1,
   transform1,
   S.run(fs.createWriteSink('./test/text3.txt')),
-  I.crossSecond(pipe(stream2, transform2, S.run(fs.createWriteSink('./test/text4.txt')))),
+  I.apSecond(pipe(stream2, transform2, S.run(fs.createWriteSink('./test/text4.txt')))),
   I.run((ex) => console.log(ex))
 )

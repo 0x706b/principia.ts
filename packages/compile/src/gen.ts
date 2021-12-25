@@ -1,4 +1,5 @@
 import ts from 'typescript'
+import { inspect } from 'util'
 
 function isInternal(n: ts.Node): n is ts.Node & { __sig_tags: string[] } {
   return '__sig_tags' in n
@@ -8,7 +9,9 @@ function handleStatement(
   s: ts.Statement,
   factory: ts.NodeFactory,
   moduleIdentifier: ts.Identifier,
+  checker: ts.TypeChecker,
   ctx: ts.TransformationContext,
+  sourceFile: ts.SourceFile,
   nodes: Array<readonly [ts.Expression, [ts.Expression, ts.ParameterDeclaration | undefined]]>
 ): ts.Expression | undefined {
   if (ts.isVariableStatement(s)) {
@@ -41,14 +44,45 @@ function handleStatement(
         if (hasYieldResult.value) {
           throw 'unhandled statement, cannot optimize'
         }
+        const hasRecursion: Box<boolean> = { value: false }
+        ts.visitEachChild(d.initializer, hasRecursiveIdentifierVisitor(d.name, hasRecursion, checker, ctx), ctx)
+        const effect = hasRecursion.value
+          ? factory.createCallExpression(
+              factory.createParenthesizedExpression(
+                factory.createFunctionExpression(
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  factory.createBlock([
+                    factory.createVariableStatement(
+                      undefined,
+                      factory.createVariableDeclarationList(
+                        [factory.createVariableDeclaration(d.name, undefined, undefined, d.initializer)],
+                        ts.NodeFlags.Const
+                      )
+                    ),
+                    factory.createReturnStatement(
+                      factory.createCallExpression(
+                        factory.createPropertyAccessExpression(moduleIdentifier, 'pure'),
+                        undefined,
+                        [factory.createIdentifier(d.name.getText(sourceFile))]
+                      )
+                    )
+                  ])
+                )
+              ),
+              undefined,
+              undefined
+            )
+          : factory.createCallExpression(factory.createPropertyAccessExpression(moduleIdentifier, 'pure'), undefined, [
+              d.initializer
+            ])
         nodes.push([
           factory.createPropertyAccessExpression(moduleIdentifier, 'chain_'),
-          [
-            factory.createCallExpression(factory.createPropertyAccessExpression(moduleIdentifier, 'pure'), undefined, [
-              d.initializer
-            ]),
-            factory.createParameterDeclaration(undefined, undefined, undefined, d.name)
-          ]
+          [effect, factory.createParameterDeclaration(undefined, undefined, undefined, d.name)]
         ])
       } else {
         throw 'unhandled statement, cannot optimize'
@@ -112,6 +146,24 @@ const hasYieldVisitor =
     return ts.visitEachChild(node, hasYieldVisitor(result, ctx), ctx)
   }
 
+const hasRecursiveIdentifierVisitor =
+  (
+    identifier: ts.BindingName,
+    result: Box<boolean>,
+    checker: ts.TypeChecker,
+    ctx: ts.TransformationContext
+  ): ts.Visitor =>
+  (node) => {
+    if (ts.isIdentifier(node)) {
+      const nodeType       = checker.getTypeAtLocation(node)
+      const identifierType = checker.getTypeAtLocation(identifier)
+      if (nodeType !== undefined && identifierType !== undefined && nodeType === identifierType) {
+        result.value = true
+      }
+    }
+    return ts.visitEachChild(node, hasRecursiveIdentifierVisitor(identifier, result, checker, ctx), ctx)
+  }
+
 export default function gen(program: ts.Program, opts?: { optimizeGen?: boolean }) {
   const optimizeGen = !(opts?.optimizeGen === false)
   const checker     = program.getTypeChecker()
@@ -158,7 +210,7 @@ export default function gen(program: ts.Program, opts?: { optimizeGen?: boolean 
                 let ret: ts.Expression | undefined = undefined
                 for (const s of statements) {
                   try {
-                    ret = handleStatement(s, factory, moduleIdentifier, ctx, nodes)
+                    ret = handleStatement(s, factory, moduleIdentifier, checker, ctx, sourceFile, nodes)
                   } catch {
                     return node
                   }
