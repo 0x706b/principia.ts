@@ -58,6 +58,9 @@ export function addIfOpen_(releaseMap: ReleaseMap, finalizer: Finalizer): I.UIO<
   )
 }
 
+/**
+ * @dataFirst addIfOpen_
+ */
 export function addIfOpen(finalizer: Finalizer): (releaseMap: ReleaseMap) => I.UIO<Maybe<number>> {
   return (releaseMap) => addIfOpen_(releaseMap, finalizer)
 }
@@ -86,6 +89,9 @@ export function release_(releaseMap: ReleaseMap, key: number, exit: Exit<any, an
   )
 }
 
+/**
+ * @dataFirst release_
+ */
 export function release(key: number, exit: Exit<any, any>): (releaseMap: ReleaseMap) => I.IO<unknown, never, any> {
   return (releaseMap) => release_(releaseMap, key, exit)
 }
@@ -102,6 +108,9 @@ export function add_(releaseMap: ReleaseMap, finalizer: Finalizer): I.UIO<Finali
   )
 }
 
+/**
+ * @dataFirst add_
+ */
 export function add(finalizer: Finalizer): (releaseMap: ReleaseMap) => I.UIO<Finalizer> {
   return (releaseMap) => add_(releaseMap, finalizer)
 }
@@ -126,6 +135,9 @@ export function replace_(releaseMap: ReleaseMap, key: number, finalizer: Finaliz
   )
 }
 
+/**
+ * @dataFirst replace_
+ */
 export function replace(key: number, finalizer: Finalizer): (releaseMap: ReleaseMap) => I.UIO<Maybe<Finalizer>> {
   return (releaseMap) => replace_(releaseMap, key, finalizer)
 }
@@ -141,6 +153,9 @@ export function updateAll_(releaseMap: ReleaseMap, f: (_: Finalizer) => Finalize
   })
 }
 
+/**
+ * @dataFirst updateAll_
+ */
 export function updateAll(f: (finalizer: Finalizer) => Finalizer): (releaseMap: ReleaseMap) => I.UIO<void> {
   return (releaseMap) => updateAll_(releaseMap, f)
 }

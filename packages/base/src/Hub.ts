@@ -140,7 +140,7 @@ export function makeBounded<A>(requestedCapacity: number): I.UIO<UHub<A>> {
 export function unsafeMakeBounded<A>(requestedCapacity: number): UHub<A> {
   const releaseMap = RM.ReleaseMap.get(Ref.unsafeMake<RM.State>(new RM.Running(0, HM.makeDefault(), identity)))
 
-  return _unsafeMake(
+  return unsafeMake(
     _makeBounded<A>(requestedCapacity),
     subscribersHashSet<A>(),
     releaseMap,
@@ -174,7 +174,7 @@ export function makeDropping<A>(requestedCapacity: number): I.UIO<UHub<A>> {
 export function unsafeMakeDropping<A>(requestedCapacity: number): UHub<A> {
   const releaseMap = RM.ReleaseMap.get(Ref.unsafeMake<RM.State>(new RM.Running(0, HM.makeDefault(), identity)))
 
-  return _unsafeMake(
+  return unsafeMake(
     _makeBounded<A>(requestedCapacity),
     subscribersHashSet<A>(),
     releaseMap,
@@ -208,7 +208,7 @@ export function makeSliding<A>(requestedCapacity: number): I.UIO<UHub<A>> {
 export function unsafeMakeSliding<A>(requestedCapacity: number): UHub<A> {
   const releaseMap = RM.ReleaseMap.get(Ref.unsafeMake<RM.State>(new RM.Running(0, HM.makeDefault(), identity)))
 
-  return _unsafeMake(
+  return unsafeMake(
     _makeBounded<A>(requestedCapacity),
     subscribersHashSet<A>(),
     releaseMap,
@@ -236,7 +236,7 @@ export function makeUnbounded<A>(): I.UIO<UHub<A>> {
 export function unsafeMakeUnbounded<A>(): UHub<A> {
   const releaseMap = RM.ReleaseMap.get(Ref.unsafeMake<RM.State>(new RM.Running(0, HM.makeDefault(), identity)))
 
-  return _unsafeMake(
+  return unsafeMake(
     _makeUnbounded<A>(),
     subscribersHashSet<A>(),
     releaseMap,
@@ -248,8 +248,8 @@ export function unsafeMakeUnbounded<A>(): UHub<A> {
 
 function _make<A>(hub: UHubInternal<A>, strategy: Strategy<A>): I.UIO<UHub<A>> {
   return I.chain_(RM.make, (releaseMap) => {
-    return I.map_(F.make<never, void>(), (promise) => {
-      return _unsafeMake(hub, subscribersHashSet<A>(), releaseMap, promise, new AtomicBoolean(false), strategy)
+    return I.map_(F.make<never, void>(), (future) => {
+      return unsafeMake(hub, subscribersHashSet<A>(), releaseMap, future, new AtomicBoolean(false), strategy)
     })
   })
 }
@@ -267,8 +267,11 @@ export class UnsafeHub<A> extends HubInternal<unknown, unknown, never, never, A,
   }
 
   awaitShutdown = F.await(this.shutdownHook)
+
   capacity = this.hub.capacity
+
   isShutdown = I.succeedLazy(() => this.shutdownFlag.get)
+
   shutdown = pipe(
     I.fiberId,
     I.chain((fiberId) =>
@@ -292,16 +295,16 @@ export class UnsafeHub<A> extends HubInternal<unknown, unknown, never, never, A,
     return I.succeed(this.hub.size())
   })
 
-  subscribe = pipe(
-    M.do,
-    M.chainS('dequeue', () => I.toManaged_(subscription(this.hub, this.subscribers, this.strategy))),
-    M.tap(({ dequeue }) =>
-      M.bracketExit_(
-        RM.add_(this.releaseMap, (_) => Q.shutdown(dequeue)),
-        (finalizer, exit) => finalizer(exit)
+  subscribe: M.UManaged<Q.Dequeue<A>> = pipe(
+    subscription(this.hub, this.subscribers, this.strategy),
+    I.toManaged(),
+    M.tap((dequeue) =>
+      pipe(
+        this.releaseMap,
+        RM.add(() => Q.shutdown(dequeue)),
+        M.bracketExit((finalizer, exit) => finalizer(exit))
       )
-    ),
-    M.map(({ dequeue }) => dequeue)
+    )
   )
 
   publish = (a: A): I.IO<unknown, never, boolean> =>
@@ -339,7 +342,7 @@ export class UnsafeHub<A> extends HubInternal<unknown, unknown, never, never, A,
 /**
  * Unsafely creates a hub with the specified strategy.
  */
-function _unsafeMake<A>(
+function unsafeMake<A>(
   hub: UHubInternal<A>,
   subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<F.Future<never, A>>>>,
   releaseMap: RM.ReleaseMap,
@@ -388,13 +391,13 @@ function subscription<A>(
   subscribers: HS.HashSet<HashedPair<SubscriptionInternal<A>, MutableQueue<F.Future<never, A>>>>,
   strategy: Strategy<A>
 ): I.UIO<Q.Dequeue<A>> {
-  return I.map_(F.make<never, void>(), (promise) => {
+  return I.map_(F.make<never, void>(), (future) => {
     return unsafeSubscription(
       hub,
       subscribers,
       hub.subscribe(),
       new Unbounded<F.Future<never, A>>(),
-      promise,
+      future,
       new AtomicBoolean(false),
       strategy
     )
@@ -458,22 +461,22 @@ class UnsafeSubscription<A> extends Q.QueueInternal<never, unknown, unknown, nev
         const message = this.pollers.isEmpty ? this.subscription.poll(empty) : empty
 
         if (message === null) {
-          const promise = F.unsafeMake<never, A>(fiberId)
+          const future = F.unsafeMake<never, A>(fiberId)
 
           return I.onInterrupt_(
             I.defer(() => {
-              this.pollers.offer(promise)
+              this.pollers.offer(future)
               this.subscribers.add(new HashedPair(this.subscription, this.pollers))
               this.strategy.unsafeCompletePollers(this.hub, this.subscribers, this.subscription, this.pollers)
               if (this.shutdownFlag.get) {
                 return I.interrupt
               } else {
-                return F.await(promise)
+                return F.await(future)
               }
             }),
             () =>
               I.succeedLazy(() => {
-                _unsafeRemove(this.pollers, promise)
+                _unsafeRemove(this.pollers, future)
               })
           )
         } else {
@@ -964,7 +967,7 @@ export abstract class Strategy<A> {
         if (pollResult === null) {
           _unsafeOfferAll(pollers, C.prepend_(_unsafePollAllQueue(pollers), poller))
         } else {
-          _unsafeCompletePromise(poller, pollResult)
+          _unsafeCompleteFuture(poller, pollResult)
           this.unsafeOnHubEmptySpace(hub, subscribers)
         }
       }
@@ -1005,17 +1008,17 @@ export class BackPressure<A> extends Strategy<A> {
       I.fiberId,
       I.chain((fiberId) =>
         I.defer(() => {
-          const promise = F.unsafeMake<never, boolean>(fiberId)
+          const future = F.unsafeMake<never, boolean>(fiberId)
 
           return pipe(
             I.defer(() => {
-              this.unsafeOffer(as, promise)
+              this.unsafeOffer(as, future)
               this.unsafeOnHubEmptySpace(hub, subscribers)
               this.unsafeCompleteSubscribers(hub, subscribers)
 
-              return isShutdown.get ? I.interrupt : F.await(promise)
+              return isShutdown.get ? I.interrupt : F.await(future)
             }),
-            I.onInterrupt(() => I.succeedLazy(() => this.unsafeRemove(promise)))
+            I.onInterrupt(() => I.succeedLazy(() => this.unsafeRemove(future)))
           )
         })
       )
@@ -1023,15 +1026,17 @@ export class BackPressure<A> extends Strategy<A> {
   }
 
   get shutdown(): I.UIO<void> {
-    return pipe(
-      I.do,
-      I.chainS('fiberId', () => I.fiberId),
-      I.chainS('publishers', () => I.succeedLazy(() => _unsafePollAllQueue(this.publishers))),
-      I.tap(({ fiberId, publishers }) =>
-        I.foreachC_(publishers, ([_, promise, last]) => (last ? I.asUnit(F.interruptAs_(promise, fiberId)) : I.unit()))
-      ),
-      I.asUnit
-    )
+    const self = this
+    return I.gen(function* (_) {
+      const fiberId    = yield* _(I.fiberId)
+      const publishers = yield* _(I.succeedLazy(() => _unsafePollAllQueue(self.publishers)))
+      yield* _(
+        pipe(
+          publishers,
+          I.foreachC(([_, future, last]) => (last ? F.interruptAs_(future, fiberId) : I.unit()))
+        )
+      )
+    })
   }
 
   unsafeOnHubEmptySpace(
@@ -1050,7 +1055,7 @@ export class BackPressure<A> extends Strategy<A> {
         const published = hub.publish(publisher[0])
 
         if (published && publisher[2]) {
-          _unsafeCompletePromise(publisher[1], true)
+          _unsafeCompleteFuture(publisher[1], true)
         } else if (!published) {
           _unsafeOfferAll(this.publishers, C.prepend_(_unsafePollAllQueue(this.publishers), publisher))
         }
@@ -1059,24 +1064,24 @@ export class BackPressure<A> extends Strategy<A> {
     }
   }
 
-  private unsafeOffer(as: Iterable<A>, promise: F.Future<never, boolean>): void {
+  private unsafeOffer(as: Iterable<A>, future: F.Future<never, boolean>): void {
     const it = as[Symbol.iterator]()
     let curr = it.next()
 
     if (!curr.done) {
       let next
       while ((next = it.next()) && !next.done) {
-        this.publishers.offer([curr.value, promise, false] as const)
+        this.publishers.offer([curr.value, future, false] as const)
         curr = next
       }
-      this.publishers.offer([curr.value, promise, true] as const)
+      this.publishers.offer([curr.value, future, true] as const)
     }
   }
 
-  private unsafeRemove(promise: F.Future<never, boolean>): void {
+  private unsafeRemove(future: F.Future<never, boolean>): void {
     _unsafeOfferAll(
       this.publishers,
-      C.filter_(_unsafePollAllQueue(this.publishers), ([_, a]) => a !== promise)
+      C.filter_(_unsafePollAllQueue(this.publishers), ([_, a]) => a !== future)
     )
   }
 }
@@ -1911,10 +1916,10 @@ function _makeUnbounded<A>(): UHubInternal<A> {
 }
 
 /**
- * Unsafely completes a promise with the specified value.
+ * Unsafely completes a future with the specified value.
  */
-function _unsafeCompletePromise<A>(promise: F.Future<never, A>, a: A): void {
-  F.unsafeDone(I.succeed(a))(promise)
+function _unsafeCompleteFuture<A>(future: F.Future<never, A>, a: A): void {
+  F.unsafeDone(I.succeed(a))(future)
 }
 
 /**
