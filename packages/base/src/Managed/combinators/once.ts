@@ -4,10 +4,11 @@ import type { Managed, UManaged } from '../core'
 
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
+import * as FR from '../../FiberRef/core'
 import { pipe } from '../../function'
 import * as F from '../../Future'
 import { once as onceIO } from '../../IO/combinators/once'
-import { fromIO, mapIO_ } from '../core'
+import * as Ma from '../core'
 import * as I from '../internal/io'
 import { releaseMap } from './releaseMap'
 
@@ -18,25 +19,24 @@ import { releaseMap } from './releaseMap'
  */
 export function once<R, E, A>(ma: Managed<R, E, A>): UManaged<Managed<R, E, A>> {
   const trace = accessCallTrace()
-  return mapIO_(
-    releaseMap(),
-    traceFrom(trace, (finalizers) =>
-      I.gen(function* (_) {
-        const promise  = yield* _(F.make<E, A>())
-        const complete = yield* _(
-          onceIO(
-            I.asksIO((r: R) =>
-              pipe(
-                ma.io,
-                I.give([r, finalizers] as const),
-                I.map(([_, a]) => a),
-                (_) => F.fulfill_(promise, _)
-              )
+  return pipe(
+    releaseMap,
+    Ma.mapIO(
+      traceFrom(trace, (finalizers) =>
+        I.gen(function* (_) {
+          const future   = yield* _(F.make<E, A>())
+          const complete = yield* _(
+            pipe(
+              Ma.currentReleaseMap,
+              FR.locally(finalizers, ma.io),
+              I.map(([_, a]) => a),
+              I.fulfill(future),
+              onceIO
             )
           )
-        )
-        return pipe(complete, I.apSecond(F.await(promise)), fromIO)
-      })
+          return pipe(complete, I.apSecond(F.await(future)), Ma.fromIO)
+        })
+      )
     )
   )
 }

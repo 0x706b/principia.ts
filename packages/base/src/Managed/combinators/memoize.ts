@@ -1,6 +1,6 @@
 // tracing: off
 
-import { traceCall } from '@principia/compile/util'
+import { traceAs } from '@principia/compile/util'
 
 import { pipe } from '../../function'
 import * as F from '../../Future'
@@ -21,7 +21,7 @@ export function memoize<R, E, A, B>(
   return Ma.gen(function* (_) {
     const fiberId = yield* _(I.fiberId)
     const ref     = yield* _(Ref.make(HM.makeDefault<A, F.Future<E, B>>()))
-    const scope   = yield* _(scopeManaged())
+    const scope   = yield* _(scopeManaged)
 
     return (a: A) =>
       pipe(
@@ -32,18 +32,18 @@ export function memoize<R, E, A, B>(
             HM.get(a),
             M.match(
               () => {
-                const promise = F.unsafeMake<E, B>(fiberId)
+                const future = F.unsafeMake<E, B>(fiberId)
                 return [
                   pipe(
-                    traceCall(scope.apply, f['$trace'])(f(a)),
+                    traceAs(f, scope.apply)(f(a)),
                     I.map(([_, b]) => b),
-                    fulfill(promise),
-                    I.apSecond(F.await(promise))
+                    fulfill(future),
+                    I.apSecond(F.await(future))
                   ),
-                  HM.set_(map, a, promise)
+                  HM.set_(map, a, future)
                 ]
               },
-              (promise) => [F.await(promise), map]
+              (future) => [F.await(future), map]
             )
           )
         ),

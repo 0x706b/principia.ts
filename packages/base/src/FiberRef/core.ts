@@ -1,10 +1,8 @@
 import type { FIO, IO, UIO } from '../IO/core'
-import type { Managed } from '../Managed'
 
 import * as E from '../Either'
 import { flow, identity, pipe } from '../function'
 import { FiberRefDelete, FiberRefLocally, FiberRefModify, FiberRefWith } from '../IO/core'
-import * as Ma from '../Managed/core'
 import * as M from '../Maybe'
 import { matchTag_ } from '../prelude'
 import { tuple } from '../tuple'
@@ -63,8 +61,6 @@ export interface FiberRef<EA, EB, A, B> {
    */
   readonly locally: <R, EC, C>(use: IO<R, EC, C>, value: A) => IO<R, EA | EC, C>
 
-  readonly locallyManaged: (value: A) => Managed<unknown, EA, void>
-
   readonly getWith: <R, E, C>(f: (b: B) => I.IO<R, E, C>) => I.IO<R, EB | E, C>
 }
 
@@ -111,15 +107,6 @@ export class Runtime<A> implements FiberRef<never, never, A, A> {
 
   locally<R, EC, C>(use: IO<R, EC, C>, value: A): IO<R, EC, C> {
     return new FiberRefLocally(value, this, use)
-  }
-
-  locallyManaged(a: A): Managed<unknown, never, void> {
-    return pipe(
-      this.get,
-      I.chain((old) => pipe(this.set(a), I.as(old))),
-      Ma.bracket((a) => this.set(a)),
-      Ma.asUnit
-    )
   }
 
   set(value: A): UIO<void> {
@@ -227,27 +214,6 @@ export class Derived<EA, EB, A, B> implements FiberRef<EA, EB, A, B> {
     )
   }
 
-  locallyManaged(a: A): Managed<unknown, EA, void> {
-    return pipe(
-      this.use((value, _, setEither) =>
-        pipe(
-          value.get,
-          I.chain((old) =>
-            pipe(
-              setEither(a),
-              E.match(
-                (e) => I.fail(e),
-                (s) => pipe(value.set(s), I.as(old))
-              )
-            )
-          ),
-          Ma.bracket((s) => value.set(s))
-        )
-      ),
-      Ma.asUnit
-    )
-  }
-
   set(a: A): FIO<EA, void> {
     return this.use((value, _, setEither) =>
       pipe(
@@ -278,26 +244,6 @@ export class DerivedAll<EA, EB, A, B> implements FiberRef<EA, EB, A, B> {
     this.match    = this.match.bind(this)
     this.matchAll = this.matchAll.bind(this)
     this.set      = this.set.bind(this)
-  }
-  locallyManaged(a: A): Managed<unknown, EA, void> {
-    return pipe(
-      this.use((value, _, setEither) =>
-        pipe(
-          value.get,
-          I.chain((old) =>
-            pipe(
-              setEither(a)(old),
-              E.match(
-                (e) => I.fail(e),
-                (s) => pipe(value.set(s), I.as(old))
-              )
-            )
-          ),
-          Ma.bracket((s) => value.set(s))
-        )
-      ),
-      Ma.asUnit
-    )
   }
 
   match<EC, ED, C, D>(
@@ -403,7 +349,7 @@ export class DerivedAll<EA, EB, A, B> implements FiberRef<EA, EB, A, B> {
 type Concrete<EA, EB, A, B> = Runtime<A> | Derived<EA, EB, A, B> | DerivedAll<EA, EB, A, B>
 
 // @ts-expect-error
-function concrete<EA, EB, A, B>(_: FiberRef<EA, EB, A, B>): asserts _ is Concrete<EA, EB, A, B> {
+export function concrete<EA, EB, A, B>(_: FiberRef<EA, EB, A, B>): asserts _ is Concrete<EA, EB, A, B> {
   //
 }
 
@@ -582,14 +528,4 @@ export function getWith<B, R, E, C>(
   f: (b: B) => I.IO<R, E, C>
 ): <EA, EB, A>(fiberRef: FiberRef<EA, EB, A, B>) => I.IO<R, EB | E, C> {
   return (fiberRef) => fiberRef.getWith(f)
-}
-
-export function locallyManaged_<EA, EB, A, B>(fiberRef: FiberRef<EA, EB, A, B>, value: A): Managed<unknown, EA, void> {
-  return fiberRef.locallyManaged(value)
-}
-
-export function locallyManaged<A>(
-  value: A
-): <EA, EB, B>(fiberRef: FiberRef<EA, EB, A, B>) => Managed<unknown, EA, void> {
-  return (fiberRef) => locallyManaged_(fiberRef, value)
 }

@@ -2,10 +2,9 @@
 
 import type { ReleaseMap } from '../ReleaseMap'
 
-import { accessCallTrace, traceFrom } from '@principia/compile/util'
-
+import * as FR from '../../FiberRef/core'
 import { pipe } from '../../function'
-import { Managed } from '../core'
+import { currentReleaseMap, Managed } from '../core'
 import * as I from '../internal/io'
 import { noopFinalizer } from '../ReleaseMap'
 
@@ -14,9 +13,9 @@ import { noopFinalizer } from '../ReleaseMap'
  *
  * @trace call
  */
-export function releaseMap(): Managed<unknown, never, ReleaseMap> {
-  const trace = accessCallTrace()
-  return new Managed(
-    pipe(I.ask<readonly [unknown, ReleaseMap]>(), I.map(traceFrom(trace, (tp) => [noopFinalizer, tp[1]])))
+export const releaseMap: Managed<unknown, never, ReleaseMap> = new Managed(
+  pipe(
+    FR.get(currentReleaseMap),
+    I.map((releaseMap) => [noopFinalizer, releaseMap])
   )
-}
+)

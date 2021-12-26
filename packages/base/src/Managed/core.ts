@@ -16,6 +16,7 @@ import * as A from '../Array/core'
 import * as Ch from '../Chunk/core'
 import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
+import * as FR from '../FiberRef/core'
 import { flow, identity as identityFn, pipe } from '../function'
 import { isTag } from '../Has'
 import * as C from '../IO/Cause'
@@ -26,7 +27,7 @@ import * as R from '../Record'
 import * as Ref from '../Ref/core'
 import { tuple as mkTuple } from '../tuple/core'
 import * as I from './internal/io'
-import { add_, addIfOpen_, noopFinalizer, release_, updateAll_ } from './ReleaseMap/core'
+import * as RM from './ReleaseMap/core'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -42,12 +43,14 @@ export class Managed<R, E, A> {
   readonly [I._R]: (_: R) => void
   readonly [I._E]: () => E
   readonly [I._A]: () => A
-  constructor(readonly io: I.IO<readonly [R, ReleaseMap], E, readonly [Finalizer, A]>) {}
+  constructor(readonly io: I.IO<R, E, readonly [Finalizer, A]>) {}
 }
 
 export type UManaged<A> = Managed<unknown, never, A>
 export type URManaged<R, A> = Managed<R, never, A>
 export type FManaged<E, A> = Managed<unknown, E, A>
+
+export const currentReleaseMap: FR.UFiberRef<ReleaseMap> = FR.unsafeMake(RM.unsafeMake())
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -77,8 +80,7 @@ export function fromIO<R, E, A>(effect: I.IO<R, E, A>) {
     I.uninterruptibleMask(({ restore }) =>
       pipe(
         restore(effect),
-        I.gives(([r, _]: readonly [R, ReleaseMap]) => r),
-        I.map((a) => mkTuple(noopFinalizer, a))
+        I.map((a) => mkTuple(RM.noopFinalizer, a))
       )
     )
   )
@@ -301,25 +303,15 @@ export function bracketExit_<R, E, A, R1>(
   release: (a: A, exit: Exit<any, any>) => I.IO<R1, never, unknown>
 ): Managed<R & R1, E, A> {
   const trace = accessCallTrace()
-  return new Managed<R & R1, E, A>(
-    pipe(
-      I.ask<readonly [R & R1, ReleaseMap]>(),
-      I.chain(
-        traceAs(acquire, (r) =>
-          pipe(
-            acquire,
-            I.give(r[0]),
-            I.chain(
-              traceFrom(trace, (a) =>
-                pipe(
-                  add_(r[1], (ex) => pipe(release(a, ex), I.give(r[0]))),
-                  I.map((rm) => mkTuple(rm, a))
-                )
-              )
-            )
-          )
-        )
-      )
+  return new Managed(
+    I.uninterruptible(
+      I.gen(function* (_) {
+        const r               = yield* _(I.ask<R1>())
+        const releaseMap      = yield* _(FR.get(currentReleaseMap))
+        const a               = yield* _(acquire)
+        const releaseMapEntry = yield* _(RM.add_(releaseMap, (exit) => pipe(release(a, exit), I.give(r))))
+        return [releaseMapEntry, a]
+      })
     )
   )
 }
@@ -335,30 +327,27 @@ export function bracketExit_<R, E, A, R1>(
  *
  * @trace call
  */
-export function makeReserve<R, E, R2, E2, A>(reservation: I.IO<R, E, Reservation<R2, E2, A>>) {
+export function fromReservationIO<R, E, R2, E2, A>(reservation: I.IO<R, E, Reservation<R2, E2, A>>) {
   const trace = accessCallTrace()
   return new Managed<R & R2, E | E2, A>(
     I.uninterruptibleMask(
       traceFrom(trace, ({ restore }) =>
         I.gen(function* (_) {
-          const [r, releaseMap] = yield* _(I.ask<readonly [R & R2, ReleaseMap]>())
-          const reserved        = yield* _(I.give_(reservation, r))
-          const releaseKey      = yield* _(addIfOpen_(releaseMap, (x) => I.give_(reserved.release(x), r)))
-          const finalizerAndA   = yield* _(
+          const r             = yield* _(I.ask<R & R2>())
+          const releaseMap    = yield* _(FR.get(currentReleaseMap))
+          const reserved      = yield* _(reservation)
+          const releaseKey    = yield* _(RM.addIfOpen_(releaseMap, (x) => I.give_(reserved.release(x), r)))
+          const finalizerAndA = yield* _(
             I.defer(() => {
-              switch (releaseKey._tag) {
-                case 'Nothing': {
-                  return I.interrupt
-                }
-                case 'Just': {
-                  return pipe(
-                    reserved.acquire,
-                    I.gives(([r]: readonly [R & R2, ReleaseMap]) => r),
-                    restore,
-                    I.map((a): readonly [Finalizer, A] => mkTuple((e) => release_(releaseMap, releaseKey.value, e), a))
+              return M.match_(
+                releaseKey,
+                () => I.interrupt,
+                (key) =>
+                  pipe(
+                    restore(reserved.acquire),
+                    I.map((a): readonly [Finalizer, A] => [(exit) => RM.release_(releaseMap, key, exit), a])
                   )
-                }
-              }
+              )
             })
           )
           return finalizerAndA
@@ -417,7 +406,7 @@ export function makeReservation<R2>(
  */
 export function fromReservation<R, E, A>(reservation: Reservation<R, E, A>): Managed<R, E, A> {
   const trace = accessCallTrace()
-  return traceCall(makeReserve, trace)(I.pure(reservation))
+  return traceCall(fromReservationIO, trace)(I.pure(reservation))
 }
 
 /**
@@ -885,12 +874,14 @@ export function mapIO_<R, E, A, R1, E1, B>(
   f: (a: A) => I.IO<R1, E1, B>
 ): Managed<R & R1, E | E1, B> {
   return new Managed<R & R1, E | E1, B>(
-    I.chain_(
+    pipe(
       fa.io,
-      traceAs(f, ([fin, a]) =>
-        I.gives_(
-          I.map_(f(a), (b) => [fin, b]),
-          ([r]: readonly [R & R1, ReleaseMap]) => r
+      I.chain(
+        traceAs(f, ([fin, a]) =>
+          pipe(
+            f(a),
+            I.map((b) => [fin, b])
+          )
         )
       )
     )
@@ -1166,7 +1157,7 @@ export function asksManaged<R0, R, E, A>(f: (r: R0) => Managed<R, E, A>): Manage
  * @trace 1
  */
 export function gives_<R, E, A, R0>(ma: Managed<R, E, A>, f: (r0: R0) => R): Managed<R0, E, A> {
-  return new Managed(I.asksIO(traceAs(f, ([r0, rm]: readonly [R0, ReleaseMap]) => I.give_(ma.io, [f(r0), rm]))))
+  return new Managed(pipe(ma.io, I.gives(f)))
 }
 
 /**
@@ -1821,17 +1812,14 @@ export function ignoreReleaseFailures<R, E, A>(ma: Managed<R, E, A>): Managed<R,
   const trace = accessCallTrace()
   return new Managed(
     pipe(
-      I.ask<readonly [R, ReleaseMap]>(),
+      FR.get(currentReleaseMap),
       I.tap(
-        traceFrom(trace, ([, rm]) =>
-          updateAll_(
-            rm,
-            (finalizer) => (exit) =>
-              pipe(
-                finalizer(exit),
-                I.catchAllCause(() => I.unit())
-              )
-          )
+        RM.updateAll(
+          (finalizer) => (exit) =>
+            pipe(
+              finalizer(exit),
+              I.catchAllCause(() => I.unit())
+            )
         )
       ),
       I.apSecond(ma.io)

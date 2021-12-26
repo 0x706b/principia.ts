@@ -9,10 +9,11 @@ import { accessCallTrace, traceAs, traceFrom } from '@principia/compile/util'
 import * as Ch from '../../Chunk/core'
 import { interrupt as interruptFiber } from '../../Fiber/combinators/interrupt'
 import * as FiberId from '../../Fiber/FiberId'
+import * as FR from '../../FiberRef/core'
 import { flow, identity, pipe } from '../../function'
 import * as F from '../../Future'
 import * as It from '../../Iterable'
-import { Managed } from '../../Managed/core'
+import * as Ma from '../../Managed/core'
 import * as RM from '../../Managed/ReleaseMap/core'
 import * as M from '../../Maybe'
 import * as Q from '../../Queue'
@@ -22,7 +23,7 @@ import { AtomicNumber } from '../../util/support/AtomicNumber'
 import * as C from '../Cause'
 import * as I from '../core'
 import * as Ex from '../Exit'
-import { bracketExit_ } from './bracketExit'
+import { bracketExit, bracketExit_ } from './bracketExit'
 import { concurrencyWith } from './concurrency'
 import { forkDaemon, transplant } from './core-scope'
 import { uninterruptibleMask } from './interrupt'
@@ -280,21 +281,31 @@ export function awaitAll<E, A>(as: Iterable<Fiber<E, A>>): I.IO<unknown, never, 
  *
  * @trace 1
  */
-export function use_<R, E, A, R2, E2, B>(ma: Managed<R, E, A>, f: (a: A) => I.IO<R2, E2, B>): I.IO<R & R2, E | E2, B> {
-  return bracketExit_(
+export function use_<R, E, A, R2, E2, B>(
+  ma: Ma.Managed<R, E, A>,
+  f: (a: A) => I.IO<R2, E2, B>
+): I.IO<R & R2, E | E2, B> {
+  return pipe(
     RM.make,
-    traceAs(f, (rm) =>
+    I.chain((releaseMap) =>
       pipe(
-        uninterruptibleMask(({ restore }) =>
+        Ma.currentReleaseMap,
+        FR.locally(
+          releaseMap,
           pipe(
-            restore(ma.io),
-            I.gives((r: R) => tuple(r, rm))
+            FR.get(Ma.currentReleaseMap),
+            bracketExit(
+              () =>
+                pipe(
+                  ma.io,
+                  I.chain(([_, a]) => f(a))
+                ),
+              releaseAllSequential_
+            )
           )
-        ),
-        I.chain(([, a]) => f(a))
+        )
       )
-    ),
-    releaseAllSequential_
+    )
   )
 }
 
@@ -305,21 +316,27 @@ export function use_<R, E, A, R2, E2, B>(ma: Managed<R, E, A>, f: (a: A) => I.IO
  *
  * @trace call
  */
-export function fork<R, E, A>(self: Managed<R, E, A>): Managed<R, never, RuntimeFiber<E, A>> {
+export function fork<R, E, A>(self: Ma.Managed<R, E, A>): Ma.Managed<R, never, RuntimeFiber<E, A>> {
   const trace = accessCallTrace()
-  return new Managed(
+  return new Ma.Managed(
     uninterruptibleMask(
       traceFrom(trace, ({ restore }) =>
         I.gen(function* (_) {
-          const [r, outerReleaseMap] = yield* _(I.ask<readonly [R, RM.ReleaseMap]>())
-          const innerReleaseMap      = yield* _(RM.make)
-          const fiber                = yield* _(
+          const outerReleaseMap = yield* _(FR.get(Ma.currentReleaseMap))
+          const innerReleaseMap = yield* _(RM.make)
+          const fiber           = yield* _(
             pipe(
-              self.io,
-              I.map(([, a]) => a),
-              forkDaemon,
-              I.give(tuple(r, innerReleaseMap)),
-              restore
+              Ma.currentReleaseMap,
+              FR.locally(
+                innerReleaseMap,
+                restore(
+                  pipe(
+                    self.io,
+                    I.map(([_, a]) => a),
+                    forkDaemon
+                  )
+                )
+              )
             )
           )
           const releaseMapEntry = yield* _(

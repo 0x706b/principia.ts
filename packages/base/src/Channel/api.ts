@@ -14,6 +14,7 @@ import * as E from '../Either'
 import * as Ev from '../Eval'
 import { sequential } from '../ExecutionStrategy'
 import * as F from '../Fiber'
+import * as FR from '../FiberRef/core'
 import { flow, identity, pipe } from '../function'
 import * as PR from '../Future'
 import * as H from '../Hub'
@@ -784,10 +785,15 @@ export function managedOut<R, E, A>(
   return pipe(
     RM.make,
     I.chain((releaseMap) =>
-      pipe(
-        managed.io,
-        I.gives((_: R) => tuple(_, releaseMap)),
-        I.map(([_, out]) => tuple(out, releaseMap))
+      I.uninterruptibleMask(({ restore }) =>
+        pipe(
+          Ma.currentReleaseMap,
+          FR.locally(releaseMap, restore(managed.io)),
+          I.matchCauseIO(
+            (cause) => pipe(releaseMap, RM.releaseAll(Ex.failCause(cause), sequential), I.apSecond(I.failCause(cause))),
+            ([_, out]) => I.succeed(tuple(out, releaseMap))
+          )
+        )
       )
     ),
     bracketOutExit(([_, releaseMap], exit) => RM.releaseAll_(releaseMap, exit, sequential)),
@@ -2576,9 +2582,9 @@ export function managed_<Env, Env1, InErr, InElem, InDone, OutErr, OutErr1, OutE
       return pipe(
         fromIO<Env, OutErr, A>(
           pipe(
-            m.io,
-            I.gives((_: Env) => tuple(_, releaseMap)),
-            I.map(([, a]) => a)
+            Ma.currentReleaseMap,
+            FR.locally(releaseMap, m.io),
+            I.map(([_, a]) => a)
           )
         ),
         chain(use)

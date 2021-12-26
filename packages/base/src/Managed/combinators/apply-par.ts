@@ -7,12 +7,13 @@ import type { Managed } from '../core'
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
 
 import { concurrent, sequential } from '../../ExecutionStrategy'
-import { identity } from '../../function'
+import * as FR from '../../FiberRef/core'
+import { identity, pipe } from '../../function'
 import * as R from '../../Record'
 import { tuple } from '../../tuple/core'
-import { map_, mapIO_ } from '../core'
+import * as Ma from '../core'
 import * as I from '../internal/io'
-import { makeManaged } from '../ReleaseMap'
+import * as RM from '../ReleaseMap'
 import { foreachC_ } from './foreachC'
 
 /*
@@ -32,17 +33,29 @@ export function crossWithC_<R, E, A, R1, E1, B, C>(
   fb: Managed<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Managed<R & R1, E | E1, C> {
-  return mapIO_(makeManaged(concurrent), (parallelReleaseMap) => {
-    const innerMap = I.gives_(makeManaged(sequential).io, (r: R & R1) => tuple(r, parallelReleaseMap))
-
-    return I.chain_(I.cross_(innerMap, innerMap), ([[_, l], [__, r]]) =>
-      I.crossWithC_(
-        I.gives_(fa.io, (_: R & R1) => tuple(_, l)),
-        I.gives_(fb.io, (_: R & R1) => tuple(_, r)),
-        traceAs(f, ([_, a], [__, a2]) => f(a, a2))
+  return pipe(
+    RM.makeManaged(concurrent),
+    Ma.mapIO((parallelReleaseMap) => {
+      const innerMap = pipe(Ma.currentReleaseMap, FR.locally(parallelReleaseMap, RM.makeManaged(sequential).io))
+      return pipe(
+        innerMap,
+        I.cross(innerMap),
+        I.chain(([[_, l], [__, r]]) =>
+          pipe(
+            Ma.currentReleaseMap,
+            FR.locally(l, fa.io),
+            I.crossWithC(
+              pipe(Ma.currentReleaseMap, FR.locally(r, fb.io)),
+              // We can safely discard the finalizers here because the resulting Managed's early
+              // release will trigger the ReleaseMap, which would release both finalizers in
+              // parallel.
+              ([_, a], [__, b]) => f(a, b)
+            )
+          )
+        )
       )
-    )
-  })
+    })
+  )
 }
 
 /**
@@ -172,8 +185,8 @@ export function sequenceSC<MR extends ReadonlyRecord<string, Managed<any, any, a
     [K in keyof MR]: [MR[K]] extends [Managed<any, any, infer A>] ? A : never
   }
 > {
-  return map_(
-    foreachC_(R.toArray(mr), ([k, v]) => map_(v, (a) => [k, a] as const)),
+  return Ma.map_(
+    foreachC_(R.toArray(mr), ([k, v]) => Ma.map_(v, (a) => [k, a] as const)),
     (kvs) => {
       const r = {}
       for (let i = 0; i < kvs.length; i++) {

@@ -1,14 +1,12 @@
 // tracing: off
 
 import type { Managed } from '../core'
+import type * as I from '../internal/io'
 import type { Finalizer } from '../ReleaseMap'
 
-import { accessCallTrace, traceFrom } from '@principia/compile/util'
-
+import * as FR from '../../FiberRef/core'
 import { pipe } from '../../function'
-import { tuple } from '../../tuple/core'
-import { map } from '../core'
-import * as I from '../internal/io'
+import * as Ma from '../core'
 import { releaseMap } from './releaseMap'
 
 export class ManagedScope {
@@ -23,22 +21,13 @@ export class ManagedScope {
 /**
  * @trace call
  */
-export function scope(): Managed<unknown, never, ManagedScope> {
-  const trace = accessCallTrace()
-  return pipe(
-    releaseMap(),
-    map(
-      traceFrom(
-        trace,
-        (finalizers) =>
-          new ManagedScope(
-            <R, E, A>(managed: Managed<R, E, A>): I.IO<R, E, readonly [Finalizer, A]> =>
-              pipe(
-                I.ask<R>(),
-                I.chain((r) => I.give_(managed.io, tuple(r, finalizers)))
-              )
-          )
+export const scope: Managed<unknown, never, ManagedScope> = pipe(
+  releaseMap,
+  Ma.map(
+    (finalizers) =>
+      new ManagedScope(
+        <R, E, A>(managed: Managed<R, E, A>): I.IO<R, E, readonly [Finalizer, A]> =>
+          pipe(Ma.currentReleaseMap, FR.locally(finalizers, managed.io))
       )
-    )
   )
-}
+)

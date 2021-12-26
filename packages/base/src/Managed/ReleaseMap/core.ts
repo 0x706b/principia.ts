@@ -36,7 +36,11 @@ export type State = Exited | Running
 
 export const noopFinalizer: Finalizer = () => I.unit()
 
-export const make = I.map_(Ref.make<State>(new Running(0, HM.makeDefault(), identity)), ReleaseMap.get)
+export function unsafeMake(): ReleaseMap {
+  return ReleaseMap.get(Ref.unsafeMake<State>(new Running(0, HM.makeDefault(), identity)))
+}
+
+export const make: I.UIO<ReleaseMap> = I.succeedLazy(() => unsafeMake())
 
 export function addIfOpen_(releaseMap: ReleaseMap, finalizer: Finalizer): I.UIO<Maybe<number>> {
   return pipe(

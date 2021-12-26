@@ -1,4 +1,5 @@
 import { sequential } from '../../ExecutionStrategy'
+import * as FR from '../../FiberRef/core'
 import { pipe } from '../../function'
 import * as Ma from '../core'
 import * as I from '../internal/io'
@@ -11,9 +12,14 @@ export function reserve<R, E, A>(ma: Ma.Managed<R, E, A>): I.UIO<Ma.Reservation<
     I.map((releaseMap) =>
       Ma.makeReservation_(
         pipe(
-          ma.io,
-          I.gives((r: R) => [r, releaseMap] as const),
-          I.map(([, a]) => a)
+          Ma.currentReleaseMap,
+          FR.locally(
+            releaseMap,
+            pipe(
+              ma.io,
+              I.map(([_, a]) => a)
+            )
+          )
         ),
         (exit) => releaseAll_(releaseMap, exit, sequential)
       )

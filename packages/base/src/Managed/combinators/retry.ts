@@ -3,12 +3,9 @@
 import type { Clock } from '../../Clock'
 import type { Has } from '../../Has'
 import type { Schedule } from '../../Schedule'
-import type { ReleaseMap } from '../ReleaseMap'
 
-import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
+import { accessCallTrace, traceCall } from '@principia/compile/util'
 
-import { pipe } from '../../function'
-import { tuple } from '../../tuple/core'
 import { Managed } from '../core'
 import * as I from '../internal/_io'
 
@@ -20,18 +17,7 @@ export function retry_<R, E, A, R1, O>(
   policy: Schedule<R1, E, O>
 ): Managed<R & R1 & Has<Clock>, E, A> {
   const trace = accessCallTrace()
-  return new Managed(
-    I.asksIO(
-      traceFrom(trace, ([env, releaseMap]: readonly [R & R1 & Has<Clock>, ReleaseMap]) =>
-        pipe(
-          ma.io,
-          I.gives((_: R & R1 & Has<Clock>) => tuple(_, releaseMap)),
-          I.retry(policy),
-          I.give(env)
-        )
-      )
-    )
-  )
+  return new Managed(traceCall(I.retry_, trace)(ma.io, policy))
 }
 
 /**

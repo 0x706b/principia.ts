@@ -5,6 +5,7 @@ import type { Managed } from '../core'
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
 import { sequential } from '../../ExecutionStrategy'
+import * as FR from '../../FiberRef/core'
 import { pipe } from '../../function'
 import * as Ex from '../../IO/Exit'
 import * as M from '../../Maybe'
@@ -32,7 +33,7 @@ import { releaseMap } from './releaseMap'
 export function switchable<R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) => I.IO<R, E, A>> {
   const trace = accessCallTrace()
   return Ma.gen(function* (_) {
-    const rm  = yield* _(releaseMap())
+    const rm  = yield* _(releaseMap)
     const key = yield* _(
       pipe(
         RM.addIfOpen_(rm, (_) => I.unit()),
@@ -55,9 +56,8 @@ export function switchable<R, E, A>(): Managed<R, never, (x: Managed<R, E, A>) =
                 )
               )
             )
-            const r     = yield* _(I.ask<R>())
             const inner = yield* _(RM.make)
-            const a     = yield* _(pipe(newResource.io, I.give(tuple(r, inner)), restore))
+            const a     = yield* _(restore(pipe(Ma.currentReleaseMap, FR.locally(inner, newResource.io))))
             yield* _(RM.replace_(rm, key, (exit) => RM.releaseAll_(inner, exit, sequential)))
             return a[1]
           })

@@ -1,4 +1,5 @@
 import { sequential } from '../../ExecutionStrategy'
+import * as FR from '../../FiberRef/core'
 import { pipe } from '../../function'
 import * as Ex from '../../IO/Exit'
 import * as Ma from '../core'
@@ -13,10 +14,25 @@ export function onExitFirst_<R, E, A, R1>(
   return new Ma.Managed(
     I.uninterruptibleMask(({ restore }) =>
       I.gen(function* (_) {
-        const [r1, outerReleaseMap] = yield* _(I.ask<readonly [R & R1, RM.ReleaseMap]>())
-        const innerReleaseMap       = yield* _(RM.make)
-        const exitEA                = yield* _(
-          pipe(restore(ma.io), I.result, I.map(Ex.map(([, a]) => a)), I.give([r1, innerReleaseMap] as const))
+        const r1              = yield* _(I.ask<R1>())
+        const outerReleaseMap = yield* _(FR.get(Ma.currentReleaseMap))
+        const innerReleaseMap = yield* _(RM.make)
+        const exitEA          = yield* _(
+          pipe(
+            Ma.currentReleaseMap,
+            FR.locally(
+              innerReleaseMap,
+              pipe(
+                restore(
+                  pipe(
+                    ma.io,
+                    I.map(([_, a]) => a)
+                  )
+                ),
+                I.result
+              )
+            )
+          )
         )
         const releaseMapEntry = yield* _(
           RM.add_(outerReleaseMap, (e) =>

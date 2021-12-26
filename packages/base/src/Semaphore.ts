@@ -167,14 +167,14 @@ export function withPermit(s: Semaphore): <R, E, A>(io: I.IO<R, E, A>) => I.IO<R
  * Acquires `n` permits in a `Managed` and releases the permits in the finalizer.
  */
 export function withPermitsManaged_(s: Semaphore, n: number): Ma.Managed<unknown, never, void> {
-  return Ma.makeReserve(I.map_(s.prepare(n), (a) => Ma.makeReservation_(a.waitAcquire, () => a.release)))
+  return Ma.fromReservationIO(I.map_(s.prepare(n), (a) => Ma.makeReservation_(a.waitAcquire, () => a.release)))
 }
 
 /**
  * Acquires `n` permits in a `Managed` and releases the permits in the finalizer.
  */
 export function withPermitsManaged(n: number): (s: Semaphore) => Ma.Managed<unknown, never, void> {
-  return (s) => Ma.makeReserve(I.map_(s.prepare(n), (a) => Ma.makeReservation(() => a.release)(a.waitAcquire)))
+  return (s) => Ma.fromReservationIO(I.map_(s.prepare(n), (a) => Ma.makeReservation(() => a.release)(a.waitAcquire)))
 }
 
 /**

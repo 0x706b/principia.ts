@@ -7,42 +7,53 @@ import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
 import * as E from '../../Either'
 import { sequential } from '../../ExecutionStrategy'
+import * as Fi from '../../Fiber'
+import * as FR from '../../FiberRef/core'
 import { flow, pipe } from '../../function'
 import * as Ex from '../../IO/Exit'
 import * as M from '../../Maybe'
 import { tuple } from '../../tuple/core'
-import { Managed } from '../core'
+import * as Ma from '../core'
 import * as I from '../internal/_io'
 import * as RM from '../ReleaseMap'
 
 /**
  * @trace call
  */
-export function timeout<R, E, A>(ma: Managed<R, E, A>, d: number): Managed<R & Has<Clock>, E, M.Maybe<A>> {
+export function timeout<R, E, A>(ma: Ma.Managed<R, E, A>, d: number): Ma.Managed<R & Has<Clock>, E, M.Maybe<A>> {
   const trace = accessCallTrace()
-  return new Managed(
+  return new Ma.Managed(
     I.uninterruptibleMask(
       traceFrom(trace, ({ restore }) =>
         I.gen(function* (_) {
-          const [r, outerReleaseMap] = yield* _(I.ask<readonly [R & Has<Clock>, RM.ReleaseMap]>())
-          const innerReleaseMap      = yield* _(RM.make)
-          const earlyRelease         = yield* _(
+          const outerReleaseMap = yield* _(FR.get(Ma.currentReleaseMap))
+          const innerReleaseMap = yield* _(RM.make)
+          const earlyRelease    = yield* _(
             RM.add_(outerReleaseMap, (ex) => RM.releaseAll_(innerReleaseMap, ex, sequential))
           )
 
-          const id         = yield* _(I.fiberId)
           const raceResult = yield* _(
-            pipe(
-              ma.io,
-              I.give(tuple(r, innerReleaseMap)),
-              I.raceWith(
-                pipe(I.sleep(d), I.as(M.nothing())),
-                (result, sleeper) =>
-                  pipe(sleeper.interruptAs(id), I.apSecond(I.fromExit(Ex.map_(result, ([, a]) => E.right(a))))),
-                (_, resultFiber) => I.succeed(E.left(resultFiber))
-              ),
-              I.give(r),
-              restore
+            restore(
+              pipe(
+                Ma.currentReleaseMap,
+                FR.locally(innerReleaseMap, ma.io),
+                I.raceWith(
+                  pipe(I.sleep(d), I.as(M.nothing())),
+                  (result, sleeper) =>
+                    pipe(
+                      Fi.interrupt(sleeper),
+                      I.apSecond(
+                        I.fromExit(
+                          pipe(
+                            result,
+                            Ex.map(([_, a]) => E.right(a))
+                          )
+                        )
+                      )
+                    ),
+                  (_, resultFiber) => I.succeed(E.left(resultFiber))
+                )
+              )
             )
           )
           const a = yield* _(
@@ -50,10 +61,15 @@ export function timeout<R, E, A>(ma: Managed<R, E, A>, d: number): Managed<R & H
               raceResult,
               (fiber) =>
                 pipe(
-                  fiber.interruptAs(id),
-                  I.ensuring(RM.releaseAll_(innerReleaseMap, Ex.interrupt(id), sequential)),
-                  I.forkDaemon,
-                  I.as(M.nothing())
+                  I.fiberId,
+                  I.chain((id) =>
+                    pipe(
+                      Fi.interrupt(fiber),
+                      I.ensuring(RM.releaseAll_(innerReleaseMap, Ex.interrupt(id), sequential)),
+                      I.forkDaemon,
+                      I.as(M.nothing())
+                    )
+                  )
                 ),
               flow(M.just, I.succeed)
             )

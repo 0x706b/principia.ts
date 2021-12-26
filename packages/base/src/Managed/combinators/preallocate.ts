@@ -3,10 +3,12 @@
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
 import { sequential } from '../../ExecutionStrategy'
-import { pipe } from '../../function'
+import * as FR from '../../FiberRef/core'
+import { flow, pipe } from '../../function'
 import * as Ex from '../../IO/Exit'
 import { tuple } from '../../tuple/core'
 import { Managed } from '../core'
+import * as Ma from '../core'
 import * as I from '../internal/io'
 import * as RM from '../ReleaseMap'
 
@@ -23,27 +25,23 @@ export function preallocate<R, E, A>(ma: Managed<R, E, A>): I.IO<R, E, Managed<u
   return I.uninterruptibleMask(
     traceFrom(trace, ({ restore }) =>
       I.gen(function* (_) {
-        const rm = yield* _(RM.make)
-        const tp = yield* _(
-          pipe(
-            ma.io,
-            I.gives((r: R) => tuple(r, rm)),
-            restore,
-            I.result
-          )
-        )
+        const releaseMap = yield* _(RM.make)
+        const tp         = yield* _(pipe(restore(pipe(Ma.currentReleaseMap, FR.locally(releaseMap, ma.io))), I.result))
 
         const preallocated = yield* _(
           Ex.matchIO_(
             tp,
-            (c) => pipe(RM.releaseAll_(rm, Ex.failCause(c), sequential), I.apSecond(I.failCause(c))),
+            (c) => pipe(RM.releaseAll_(releaseMap, Ex.failCause(c), sequential), I.apSecond(I.failCause(c))),
             ([release, a]) =>
               I.succeed(
                 new Managed(
-                  I.asksIO(([_, relMap]: readonly [unknown, RM.ReleaseMap]) =>
-                    pipe(
-                      RM.add_(relMap, release),
-                      I.map((fin) => tuple(fin, a))
+                  pipe(
+                    FR.get(Ma.currentReleaseMap),
+                    I.chain(
+                      flow(
+                        RM.add(release),
+                        I.map((fin) => tuple(fin, a))
+                      )
                     )
                   )
                 )
@@ -65,19 +63,24 @@ export function preallocate<R, E, A>(ma: Managed<R, E, A>): I.IO<R, E, Managed<u
 export function preallocateManaged<R, E, A>(ma: Managed<R, E, A>): Managed<R, E, Managed<unknown, never, A>> {
   const trace = accessCallTrace()
   return new Managed(
-    I.map_(
+    pipe(
       ma.io,
-      traceFrom(trace, ([release, a]) => [
-        release,
-        new Managed(
-          I.asksIO(([_, releaseMap]: readonly [unknown, RM.ReleaseMap]) =>
+      I.map(
+        traceFrom(trace, ([release, a]) => [
+          release,
+          new Managed(
             pipe(
-              RM.add_(releaseMap, release),
-              I.map((_) => tuple(_, a))
+              FR.get(Ma.currentReleaseMap),
+              I.chain(
+                flow(
+                  RM.add(release),
+                  I.map((fin) => tuple(fin, a))
+                )
+              )
             )
           )
-        )
-      ])
+        ])
+      )
     )
   )
 }
