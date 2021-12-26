@@ -14,13 +14,12 @@ export class BufferedPull<R, E, A> {
   ) {}
 }
 
-export function make<R, E, A>(upstream: I.IO<R, M.Maybe<E>, C.Chunk<A>>) {
-  return pipe(
-    I.do,
-    I.chainS('done', () => Ref.make(false)),
-    I.chainS('cursor', () => Ref.make(tuple(C.empty<A>(), 0))),
-    I.map(({ cursor, done }) => new BufferedPull<R, E, A>(upstream, done, cursor))
-  )
+export function make<R, E, A>(upstream: I.IO<R, M.Maybe<E>, C.Chunk<A>>): I.UIO<BufferedPull<R, E, A>> {
+  return I.gen(function* (_) {
+    const done   = yield* _(Ref.make(false))
+    const cursor = yield* _(Ref.make(tuple(C.empty<A>(), 0)))
+    return new BufferedPull(upstream, done, cursor)
+  })
 }
 
 export function ifNotDone_<R, R1, E, E1, A, A1>(
