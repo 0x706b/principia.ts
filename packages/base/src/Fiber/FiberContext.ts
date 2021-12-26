@@ -404,7 +404,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                   }
 
                   case IOTag.FiberRefGetAll: {
-                    current = this.unsafeNextEffect(current.make(this.fiberRefLocals))
+                    current = concrete(current.make(this.fiberRefLocals))
                     break
                   }
 
