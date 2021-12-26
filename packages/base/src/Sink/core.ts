@@ -1,4 +1,3 @@
-import type * as E from '../Either'
 import type { Has } from '../Has'
 import type { Predicate } from '../Predicate'
 
@@ -6,6 +5,7 @@ import * as Ch from '../Channel'
 import * as MD from '../Channel/internal/MergeDecision'
 import * as C from '../Chunk'
 import { Clock } from '../Clock'
+import * as E from '../Either'
 import { flow, pipe } from '../function'
 import * as H from '../Hub'
 import * as I from '../IO'
@@ -56,6 +56,53 @@ export function managed<A, R1, E1, In, L, Z>(
 
 export function succeed<A>(a: A): Sink<unknown, unknown, never, never, A> {
   return new Sink(Ch.succeed(a))
+}
+
+function pullFromPush<R, E, I, L, Z>(
+  push: (_: M.Maybe<C.Chunk<I>>) => I.IO<R, readonly [E.Either<E, Z>, C.Chunk<L>], void>
+): Ch.Channel<R, never, C.Chunk<I>, any, E, C.Chunk<L>, Z> {
+  return Ch.readWith(
+    (inp: C.Chunk<I>) =>
+      pipe(
+        M.just(inp),
+        push,
+        Ch.fromIO,
+        Ch.matchChannel(
+          ([ez, leftovers]) =>
+            pipe(
+              ez,
+              E.match(
+                (e) => pipe(Ch.write(leftovers), Ch.crossSecond(Ch.fail(e))),
+                (z) => pipe(Ch.write(leftovers), Ch.crossSecond(Ch.succeed(z)))
+              )
+            ),
+          () => pullFromPush(push)
+        )
+      ),
+    Ch.fail,
+    () =>
+      pipe(
+        push(M.nothing()),
+        Ch.fromIO,
+        Ch.matchChannel(
+          ([ez, leftovers]) =>
+            pipe(
+              ez,
+              E.match(
+                (e) => pipe(Ch.write(leftovers), Ch.crossSecond(Ch.fail(e))),
+                (z) => pipe(Ch.write(leftovers), Ch.crossSecond(Ch.succeed(z)))
+              )
+            ),
+          () => Ch.fromIO(I.haltMessage('empty sink'))
+        )
+      )
+  )
+}
+
+export function fromPush<R, E, I, L, Z>(
+  push: Ma.Managed<R, never, (_: M.Maybe<C.Chunk<I>>) => I.IO<R, readonly [E.Either<E, Z>, C.Chunk<L>], void>>
+): Sink<R, E, I, L, Z> {
+  return new Sink(pipe(push, Ma.map(pullFromPush), Ch.unwrapManaged))
 }
 
 /*
