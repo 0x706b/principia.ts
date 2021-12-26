@@ -66,6 +66,10 @@ export interface IOStaticOps {
    */
   Category: typeof I.Category
   /**
+   * @rewriteStatic Concurrency from "@principia/base/IO"
+   */
+  Concurrency: typeof IO.Concurrency
+  /**
    * @rewriteStatic Functor from "@principia/base/IO"
    */
   Functor: typeof I.Functor
@@ -121,6 +125,14 @@ export interface IOStaticOps {
    * @rewriteStatic checkInterruptible from "@principia/base/IO"
    */
   checkInterruptible: typeof I.checkInterruptible
+  /**
+   * @rewriteStatic concurrency from "@principia/base/IO"
+   */
+  concurrency: typeof IO.concurrency
+  /**
+   * @rewriteStatic concurrencyWith from "@principia/base/IO"
+   */
+  concurrencyWith: typeof IO.concurrencyWith
   /**
    * @rewriteStatic defer from "@principia/base/IO"
    */
@@ -1863,6 +1875,16 @@ export interface IOOps<R, E, A> {
    * @trace call
    */
   whenIO<R, E, A, R1, E1>(this: I.IO<R, E, A>, b: I.IO<R1, E1, boolean>): I.IO<R & R1, E | E1, void>
+
+  /**
+   * @rewrite withConcurrency_ from "@principia/base/IO"
+   */
+  withConcurrency<R, E, A>(this: I.IO<R, E, A>, n: number): I.IO<R, E, A>
+
+  /**
+   * @rewriteGetter withConcurrencyUnbounded from "@principia/base/IO"
+   */
+  withConcurrencyUnbounded: I.IO<R, E, A>
 
   /**
    * @rewriteGetter zipEnvFirst from "@principia/base/IO"

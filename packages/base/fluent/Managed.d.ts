@@ -101,6 +101,10 @@ interface ManagedStaticOps {
     release: (a: A, exit: Exit<any, any>) => I.IO<R1, never, unknown>
   ): <R, E>(acquire: I.IO<R, E, A>) => M.Managed<R & R1, E, A>
   /**
+   * @rewriteStatic concurrency from "@principia/base/Managed"
+   */
+  concurrency: typeof M.concurrency
+  /**
    * @rewriteStatic defer from "@principia/base/Managed"
    */
   defer: typeof M.defer
@@ -1078,6 +1082,16 @@ declare module '@principia/base/Managed/core' {
       this: M.Managed<R, E, A>,
       mb: M.Managed<R1, E1, boolean>
     ): M.Managed<R & R1, E | E1, void>
+
+    /**
+     * @rewrite withConcurrency_ from "@principia/base/Managed"
+     */
+    withConcurrency<R, E, A>(this: M.Managed<R, E, A>, n: number): M.Managed<R, E, A>
+
+    /**
+     * @rewriteGetter withConcurrencyUnbounded from "@principia/base/Managed"
+     */
+    withConcurrencyUnbounded: M.Managed<R, E, A>
 
     /**
      * @rewriteGetter withEarlyRelease from "@principia/base/Managed"
