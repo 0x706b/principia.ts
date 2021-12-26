@@ -1,9 +1,9 @@
 // tracing: off
 
 import type { Chunk } from '../../Chunk/core'
-import type { ExecutionStrategy } from '../../ExecutionStrategy'
 import type { Managed } from '../core'
 
+import * as ES from '../../ExecutionStrategy'
 import { pipe } from '../../function'
 import { foreach_ } from '../core'
 import { withConcurrency, withConcurrencyUnbounded } from './concurrency'
@@ -19,20 +19,15 @@ import { foreachC } from './foreachC'
  */
 export function foreachExec_<R, E, A, B>(
   as: Iterable<A>,
-  es: ExecutionStrategy,
+  strategy: ES.ExecutionStrategy,
   f: (a: A) => Managed<R, E, B>
 ): Managed<R, E, Chunk<B>> {
-  switch (es._tag) {
-    case 'Sequential': {
-      return foreach_(as, f)
-    }
-    case 'Parallel': {
-      return pipe(as, foreachC(f), withConcurrencyUnbounded)
-    }
-    case 'ParallelN': {
-      return pipe(as, foreachC(f), withConcurrency(es.n))
-    }
-  }
+  return ES.match_(
+    strategy,
+    () => foreach_(as, f),
+    () => pipe(as, foreachC(f), withConcurrencyUnbounded),
+    (fiberBound) => pipe(as, foreachC(f), withConcurrency(fiberBound))
+  )
 }
 
 /**
@@ -45,8 +40,8 @@ export function foreachExec_<R, E, A, B>(
  * @trace 1
  */
 export function foreachExec<R, E, A, B>(
-  es: ExecutionStrategy,
+  strategy: ES.ExecutionStrategy,
   f: (a: A) => Managed<R, E, B>
 ): (as: Iterable<A>) => Managed<R, E, Chunk<B>> {
-  return (as) => foreachExec_(as, es, f)
+  return (as) => foreachExec_(as, strategy, f)
 }

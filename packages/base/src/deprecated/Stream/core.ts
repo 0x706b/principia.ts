@@ -15,7 +15,7 @@ import { Clock } from '../../Clock'
 import * as E from '../../Either'
 import { NoSuchElementError, PrematureGeneratorExitError } from '../../Error'
 import { RuntimeException } from '../../Exception'
-import { parallel, sequential } from '../../ExecutionStrategy'
+import { concurrent, sequential } from '../../ExecutionStrategy'
 import * as Fi from '../../Fiber'
 import { constTrue, flow, identity, pipe } from '../../function'
 import * as F from '../../Future'
@@ -5393,7 +5393,7 @@ export function zipAllWith_<R, E, A, R1, E1, B, C>(
   right: (b: B) => C,
   both: (a: A, b: B) => C
 ): Stream<R & R1, E | E1, C> {
-  return zipAllWithExec_(ma, mb, parallel, left, right, both)
+  return zipAllWithExec_(ma, mb, concurrent, left, right, both)
 }
 
 /**
@@ -5743,7 +5743,7 @@ export function zipWithC_<R, E, A, R1, E1, B, C>(
   mb: Stream<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Stream<R & R1, E | E1, C> {
-  return zipWithExec_(ma, mb, f, parallel)
+  return zipWithExec_(ma, mb, f, concurrent)
 }
 
 /**

@@ -6,7 +6,7 @@ import type { Managed } from '../core'
 
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
 
-import { parallel, sequential } from '../../ExecutionStrategy'
+import { concurrent, sequential } from '../../ExecutionStrategy'
 import { identity } from '../../function'
 import * as R from '../../Record'
 import { tuple } from '../../tuple/core'
@@ -32,7 +32,7 @@ export function crossWithC_<R, E, A, R1, E1, B, C>(
   fb: Managed<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Managed<R & R1, E | E1, C> {
-  return mapIO_(makeManaged(parallel), (parallelReleaseMap) => {
+  return mapIO_(makeManaged(concurrent), (parallelReleaseMap) => {
     const innerMap = I.gives_(makeManaged(sequential).io, (r: R & R1) => tuple(r, parallelReleaseMap))
 
     return I.chain_(I.cross_(innerMap, innerMap), ([[_, l], [__, r]]) =>

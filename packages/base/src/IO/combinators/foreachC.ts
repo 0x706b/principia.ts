@@ -72,7 +72,7 @@ function foreachConcurrentUnboundedUnit_<R, E, A>(as: Iterable<A>, f: (a: A) => 
                   foreachConcurrentUnbounded_(fibers, interruptFiber),
                   I.chain((exits) =>
                     pipe(
-                      Ex.collectAllC(...exits),
+                      Ex.collectAllC(exits),
                       M.match(
                         () => I.failCause(C.stripFailures(cause)),
                         (exit) =>
@@ -347,7 +347,7 @@ function releaseAllSequential_(releaseMap: RM.ReleaseMap, exit: Exit<any, any>):
           return [
             I.chain_(
               I.foreach_(Array.from(s.finalizers).reverse(), ([_, f]) => I.result(s.update(f)(exit))),
-              (e) => I.fromExit(M.getOrElse_(Ex.collectAll(...e), () => Ex.succeed([])))
+              (e) => I.fromExit(M.getOrElse_(Ex.collectAll(e), () => Ex.succeed(Ch.empty())))
             ),
             new RM.Exited(s.nextKey, exit, s.update)
           ]

@@ -5,7 +5,7 @@ import type { Managed } from '../core'
 
 import { accessCallTrace, traceCall } from '@principia/compile/util'
 
-import { parallel, parallelN } from '../../ExecutionStrategy'
+import { concurrent, concurrentBounded } from '../../ExecutionStrategy'
 import { pipe } from '../../function'
 import * as M from '../../Maybe'
 import { concurrency } from '../combinators/concurrency'
@@ -29,8 +29,8 @@ export const makeManagedC: Managed<unknown, never, RM.ReleaseMap> = pipe(
   concurrency,
   chain(
     M.match(
-      () => makeManaged(parallel),
-      (n) => makeManaged(parallelN(n))
+      () => makeManaged(concurrent),
+      (n) => makeManaged(concurrentBounded(n))
     )
   )
 )

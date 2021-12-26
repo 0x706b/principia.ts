@@ -11,7 +11,7 @@ import type { Layer } from '@principia/base/Layer'
 
 import { ClockTag, LiveClock } from '@principia/base/Clock'
 import { ConsoleTag, LiveConsole } from '@principia/base/Console'
-import { parallelN } from '@principia/base/ExecutionStrategy'
+import { concurrentBounded } from '@principia/base/ExecutionStrategy'
 import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as L from '@principia/base/Layer'
@@ -33,7 +33,7 @@ export class TestRunner<R, E> {
 
   run(spec: Spec<R & Has<Annotations>, E>): URIO<Has<TestLogger> & Has<Clock>, ExecutedSpec<E>> {
     return pipe(
-      this.executor.run(spec, parallelN(10)),
+      this.executor.run(spec, concurrentBounded(10)),
       I.timed,
       I.chain(([duration, results]) => I.as_(this.reporter(duration, results), results))
     )

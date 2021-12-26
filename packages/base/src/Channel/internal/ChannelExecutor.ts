@@ -676,7 +676,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
       I.foreach((cont) => I.result(cont(exit))),
       I.map((results) =>
         pipe(
-          Ex.collectAll(...results),
+          Ex.collectAll(results),
           M.getOrElse(() => Ex.unit())
         )
       )

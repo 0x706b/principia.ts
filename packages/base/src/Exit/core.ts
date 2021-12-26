@@ -544,41 +544,25 @@ export function unit(): PExit<never, never, void> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function collectAll<Id, E, A>(
-  ...exits: ReadonlyArray<PExit<Id, E, A>>
-): M.Maybe<PExit<Id, E, ReadonlyArray<A>>> {
+export function collectAll<Id, E, A>(exits: Ch.Chunk<PExit<Id, E, A>>): M.Maybe<PExit<Id, E, Ch.Chunk<A>>> {
   return pipe(
-    A.head(exits),
+    Ch.head(exits),
     M.map((head) =>
       pipe(
-        A.drop_(exits, 1),
-        A.foldl(
-          pipe(
-            head,
-            map((x): ReadonlyArray<A> => [x])
-          ),
-          (acc, el) => crossWithCause_(acc, el, (acc, el) => [el, ...acc], C.then)
-        ),
-        map(A.reverse)
+        Ch.drop_(exits, 1),
+        Ch.foldl(pipe(head, map(Ch.single)), (acc, el) => crossWithCause_(acc, el, Ch.append_, C.then))
       )
     )
   )
 }
 
-export function collectAllC<Id, E, A>(...exits: ReadonlyArray<PExit<Id, E, A>>): M.Maybe<PExit<Id, E, readonly A[]>> {
+export function collectAllC<Id, E, A>(exits: Ch.Chunk<PExit<Id, E, A>>): M.Maybe<PExit<Id, E, Ch.Chunk<A>>> {
   return pipe(
-    A.head(exits),
+    Ch.head(exits),
     M.map((head) =>
       pipe(
-        A.drop_(exits, 1),
-        A.foldl(
-          pipe(
-            head,
-            map((x): ReadonlyArray<A> => [x])
-          ),
-          (acc, el) => crossWithCause_(acc, el, (acc, el) => [el, ...acc], C.both)
-        ),
-        map(A.reverse)
+        Ch.drop_(exits, 1),
+        Ch.foldl(pipe(head, map(Ch.single)), (acc, el) => crossWithCause_(acc, el, Ch.append_, C.both))
       )
     )
   )

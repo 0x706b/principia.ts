@@ -321,7 +321,7 @@ class IOSpec extends DefaultRunnableSpec {
       ),
       testIO("fails if cause doesn't match", () =>
         pipe(
-          I.fiberId(),
+          I.fiberId,
           I.chain((fiberId) =>
             pipe(
               I.interrupt,

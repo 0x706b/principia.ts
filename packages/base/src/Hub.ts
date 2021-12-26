@@ -1,7 +1,7 @@
 import type { MutableQueue } from './util/support/MutableQueue'
 
 import * as C from './Chunk'
-import { parallel } from './ExecutionStrategy'
+import { concurrent } from './ExecutionStrategy'
 import * as Fi from './Fiber'
 import { identity, pipe } from './function'
 import * as F from './Future'
@@ -275,7 +275,7 @@ export class UnsafeHub<A> extends HubInternal<unknown, unknown, never, never, A,
       I.defer(() => {
         this.shutdownFlag.set(true)
         return pipe(
-          RM.releaseAll_(this.releaseMap, Ex.interrupt(fiberId), parallel),
+          RM.releaseAll_(this.releaseMap, Ex.interrupt(fiberId), concurrent),
           I.apSecond(this.strategy.shutdown),
           I.whenIO(F.succeed_(this.shutdownHook, undefined))
         )
