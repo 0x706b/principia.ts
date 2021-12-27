@@ -50,7 +50,7 @@
   "dependencies": {
     "@principia/base": "^0.28.4",
     "@principia/http": "^0.21.4",
-    "express": "^4.17.1"
+    "express": "^4.17.2"
   },
   "devDependencies": {
     "@types/express": "^4.17.13",
