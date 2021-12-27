@@ -8,10 +8,8 @@ import type { Refinement } from '@principia/base/Refinement'
 import type { Stream } from '@principia/base/Stream'
 
 import * as A from '@principia/base/Array'
-import * as E from '@principia/base/Either'
 import { IllegalArgumentError, NoSuchElementError } from '@principia/base/Error'
-import { sequential } from '@principia/base/ExecutionStrategy'
-import { identity, pipe } from '@principia/base/function'
+import { flow, identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as M from '@principia/base/Maybe'
 import * as N from '@principia/base/number'
@@ -19,7 +17,6 @@ import { OrderedMap } from '@principia/base/OrderedMap'
 import * as OM from '@principia/base/OrderedMap'
 import { Random } from '@principia/base/Random'
 import * as S from '@principia/base/Stream'
-import * as Th from '@principia/base/These'
 import { tuple } from '@principia/base/tuple'
 
 import { Sample, shrinkFractional } from '../Sample'
@@ -44,7 +41,7 @@ export interface GenF extends HKT.HKT {
 export class Gen<R, A> {
   readonly _R!: (_: R) => void
   readonly _A!: () => A
-  constructor(readonly sample: Stream<R, never, Sample<R, A>>) {}
+  constructor(readonly sample: Stream<R, never, M.Maybe<Sample<R, A>>>) {}
 }
 
 export interface LengthConstraints {
@@ -90,19 +87,19 @@ export interface FloatConstraints {
  */
 
 export function constant<A>(a: A): Gen<unknown, A> {
-  return new Gen(S.succeed(Sa.noShrink(a)))
+  return new Gen(S.succeed(M.just(Sa.noShrink(a))))
 }
 
 export function defer<R, A>(gen: () => Gen<R, A>): Gen<R, A> {
-  return pipe(I.succeedLazy(gen), fromEffect, flatten)
+  return pipe(I.succeedLazy(gen), fromIO, flatten)
 }
 
-export function fromEffect<R, A>(effect: IO<R, never, A>): Gen<R, A> {
-  return new Gen(S.fromIO(I.map_(effect, Sa.noShrink)))
+export function fromIO<R, A>(effect: IO<R, never, A>): Gen<R, A> {
+  return fromIOSample(pipe(effect, I.map(Sa.noShrink)))
 }
 
-export function fromEffectSample<R, A>(effect: IO<R, never, Sample<R, A>>): Gen<R, A> {
-  return new Gen(S.fromIO(effect))
+export function fromIOSample<R, A>(effect: IO<R, never, Sample<R, A>>): Gen<R, A> {
+  return new Gen(pipe(effect, I.map(M.just), S.fromIO))
 }
 
 /*
@@ -111,16 +108,16 @@ export function fromEffectSample<R, A>(effect: IO<R, never, Sample<R, A>>): Gen<
  * -------------------------------------------------------------------------------------------------
  */
 
-export const anyBigInt: Gen<Has<Random>, bigint> = fromEffectSample(
+export const anyBigInt: Gen<Has<Random>, bigint> = fromIOSample(
   I.map_(
     Random.nextBigIntBetween(BigInt(-1) << BigInt(255), (BigInt(1) << BigInt(255)) - BigInt(1)),
     Sa.shrinkBigInt(BigInt(0))
   )
 )
 
-export const anyDouble: Gen<Has<Random>, number> = fromEffectSample(I.map_(Random.next, shrinkFractional(0)))
+export const anyDouble: Gen<Has<Random>, number> = fromIOSample(I.map_(Random.next, shrinkFractional(0)))
 
-export const anyInt: Gen<Has<Random>, number> = fromEffectSample(I.map_(Random.nextInt, Sa.shrinkIntegral(0)))
+export const anyInt: Gen<Has<Random>, number> = fromIOSample(I.map_(Random.nextInt, Sa.shrinkIntegral(0)))
 
 export const boolean: Gen<Has<Random>, boolean> = oneOf(constant(true), constant(false))
 
@@ -129,7 +126,7 @@ export const empty: Gen<unknown, never> = new Gen(S.empty)
 export const exponential: Gen<Has<Random>, number> = map_(uniform(), (n) => -Math.log(1 - n))
 
 export function int(constraints: NumberConstraints = {}): Gen<Has<Random>, number> {
-  return fromEffectSample(
+  return fromIOSample(
     I.defer(() => {
       const min = constraints.min ?? -0x80000000
       const max = constraints.max ?? 0x7fffffff
@@ -147,7 +144,7 @@ export function nat(max = 0x7fffffff): Gen<Has<Random>, number> {
 }
 
 export function uniform(): Gen<Has<Random>, number> {
-  return fromEffectSample(I.map_(Random.next, Sa.shrinkFractional(0.0)))
+  return fromIOSample(I.map_(Random.next, Sa.shrinkFractional(0.0)))
 }
 
 export function unit(): Gen<unknown, void> {
@@ -183,7 +180,7 @@ export function cross<R1, B>(fb: Gen<R1, B>): <R, A>(fa: Gen<R, A>) => Gen<R & R
  */
 
 export function map_<R, A, B>(fa: Gen<R, A>, f: (a: A) => B): Gen<R, B> {
-  return new Gen(S.map_(fa.sample, Sa.map(f)))
+  return new Gen(pipe(fa.sample, S.map(M.map(Sa.map(f)))))
 }
 
 export function map<A, B>(f: (a: A) => B): <R>(fa: Gen<R, A>) => Gen<R, B> {
@@ -191,7 +188,12 @@ export function map<A, B>(f: (a: A) => B): <R>(fa: Gen<R, A>) => Gen<R, B> {
 }
 
 export function mapIO_<R, A, R1, B>(fa: Gen<R, A>, f: (a: A) => IO<R1, never, B>): Gen<R & R1, B> {
-  return new Gen(S.mapIO_(fa.sample, Sa.foreach(f)))
+  return new Gen(
+    S.mapIO_(
+      fa.sample,
+      M.match(() => I.succeed(M.nothing()), flow(Sa.foreach(f), I.map(M.just)))
+    )
+  )
 }
 
 export function mapIO<A, R1, B>(f: (a: A) => IO<R1, never, B>): <R>(fa: Gen<R, A>) => Gen<R & R1, B> {
@@ -206,20 +208,14 @@ export function mapIO<A, R1, B>(f: (a: A) => IO<R1, never, B>): <R>(fa: Gen<R, A
 
 export function chain_<R, A, R1, B>(ma: Gen<R, A>, f: (a: A) => Gen<R1, B>): Gen<R & R1, B> {
   return new Gen(
-    pipe(
-      ma.sample,
-      S.chain((sample) => {
-        const values  = f(sample.value).sample
-        const shrinks = pipe(
-          new Gen(sample.shrink),
-          chain((a) => f(a))
-        ).sample
-        return pipe(
-          values,
-          S.map((sample) => Sa.chain_(sample, (b) => new Sample(b, shrinks)))
-        )
-      })
-    )
+    Sa.chainStream(ma.sample, (sample) => {
+      const values  = f(sample.value).sample
+      const shrinks = pipe(
+        new Gen(sample.shrink),
+        chain((a) => f(a))
+      ).sample
+      return pipe(values, S.map(M.map(Sa.chain((b) => new Sample(b, shrinks)))))
+    })
   )
 }
 
@@ -240,11 +236,9 @@ export function flatten<R, R1, A>(mma: Gen<R, Gen<R1, A>>): Gen<R & R1, A> {
 export function filter_<R, A, B extends A>(fa: Gen<R, A>, f: Refinement<A, B>): Gen<R, B>
 export function filter_<R, A>(fa: Gen<R, A>, f: Predicate<A>): Gen<R, A>
 export function filter_<R, A>(fa: Gen<R, A>, f: Predicate<A>): Gen<R, A> {
-  return new Gen(
-    pipe(
-      fa.sample,
-      S.chain((sample) => (f(sample.value) ? Sa.filter_(sample, f) : S.empty))
-    )
+  return pipe(
+    fa,
+    chain((a) => (f(a) ? constant(a) : empty))
   )
 }
 
@@ -309,14 +303,16 @@ export function oneOf<A extends ReadonlyArray<Gen<any, any>>>(
 }
 
 export function reshrink_<R, A, R1, B>(gen: Gen<R, A>, f: (a: A) => Sample<R1, B>): Gen<R & R1, B> {
-  return new Gen(S.map_(gen.sample, (s) => f(s.value)) as Stream<R & R1, never, Sample<R & R1, B>>)
+  return new Gen(
+    pipe(gen.sample as Stream<R & R1, never, M.Maybe<Sample<R, A>>>, S.map(M.map((sample) => f(sample.value))))
+  )
 }
 
 export function reshrink<A, R1, B>(f: (a: A) => Sample<R1, B>): <R>(gen: Gen<R, A>) => Gen<R & R1, B> {
   return (gen) => reshrink_(gen, f)
 }
 
-export const size: Gen<Has<Sized>, number> = fromEffect(Sized.size)
+export const size: Gen<Has<Sized>, number> = fromIO(Sized.size)
 
 export function sized<R, A>(f: (size: number) => Gen<R, A>): Gen<R & Has<Sized>, A> {
   return chain_(size, f)
@@ -350,7 +346,7 @@ export function unfoldGenN<S, R, A>(n: number, s: S, f: (s: S) => Gen<R, readonl
 }
 
 export function unwrap<R, R1, A>(effect: I.URIO<R, Gen<R1, A>>): Gen<R & R1, A> {
-  return pipe(fromEffect(effect), flatten)
+  return pipe(fromIO(effect), flatten)
 }
 
 export function weighted<R, A>(...gs: ReadonlyArray<readonly [Gen<R, A>, number]>): Gen<R & Has<Random>, A> {
@@ -378,35 +374,12 @@ export function weighted<R, A>(...gs: ReadonlyArray<readonly [Gen<R, A>, number]
 }
 
 export function zipWith_<R, A, R1, B, C>(fa: Gen<R, A>, fb: Gen<R1, B>, f: (a: A, b: B) => C): Gen<R & R1, C> {
-  const left: Stream<R, never, E.Either<Sample<R, A>, Sample<R, A>>> = pipe(
-    fa.sample,
-    S.map(E.right),
-    S.concat(pipe(fa.sample, S.map(E.left))),
-    S.forever
-  )
-  const right: Stream<R1, never, E.Either<Sample<R1, B>, Sample<R1, B>>> = pipe(
-    fb.sample,
-    S.map(E.right),
-    S.concat(pipe(fb.sample, S.map(E.left))),
-    S.forever
-  )
-  return new Gen(
-    pipe(
-      left,
-      S.zipAllWithExec(right, sequential, Th.left, Th.right, Th.both),
-      S.collectWhile(
-        Th.match(
-          () => M.nothing(),
-          () => M.nothing(),
-          (l, r) =>
-            E.isRight(l) && E.isRight(r)
-              ? M.just(Sa.zipWith_(l.right, r.right, f))
-              : E.isRight(l) && E.isLeft(r)
-              ? M.just(Sa.zipWith_(l.right, r.left, f))
-              : E.isLeft(l) && E.isRight(r)
-              ? M.just(Sa.zipWith_(l.left, r.right, f))
-              : M.nothing()
-        )
+  return pipe(
+    fa,
+    chain((a) =>
+      pipe(
+        fb,
+        map((b) => f(a, b))
       )
     )
   )

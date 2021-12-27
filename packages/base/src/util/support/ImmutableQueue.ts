@@ -18,6 +18,14 @@ export class ImmutableQueue<A> implements Iterable<A> {
     return this.backing.length
   }
 
+  get head(): M.Maybe<A> {
+    return L.head(this.backing)
+  }
+
+  get tail(): ImmutableQueue<A> {
+    return new ImmutableQueue(L.tail(this.backing))
+  }
+
   dequeue() {
     if (L.isNonEmpty(this.backing)) {
       return M.just([L.unsafeHead(this.backing)!, new ImmutableQueue(L.tail(this.backing))] as const)

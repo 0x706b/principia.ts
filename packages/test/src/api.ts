@@ -169,7 +169,7 @@ export function checkM<R, A, R1, E>(
 ): IO<R & R1 & Has<TestConfig>, E, TestResult> {
   return pipe(
     TestConfig.samples,
-    I.chain((n) => checkStream(pipe(rv.sample, S.forever, S.take(n)), test))
+    I.chain((n) => checkStream(pipe(rv.sample, S.forever, S.collectJust, S.take(n)), test))
   )
 }
 

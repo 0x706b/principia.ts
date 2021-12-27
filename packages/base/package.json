@@ -58,14 +58,6 @@
       "import": "./dist/dist/esm/Chunk/index.js",
       "require": "./dist/dist/cjs/Chunk/index.js"
     },
-    "./deprecated/Stream": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/deprecated/Stream/index.js",
-        "require": "./dist/dist-traced/cjs/deprecated/Stream/index.js"
-      },
-      "import": "./dist/dist/esm/deprecated/Stream/index.js",
-      "require": "./dist/dist/cjs/deprecated/Stream/index.js"
-    },
     "./Eval": {
       "traced": {
         "import": "./dist/dist-traced/esm/Eval/index.js",
@@ -97,6 +89,14 @@
       },
       "import": "./dist/dist/esm/Fiber/index.js",
       "require": "./dist/dist/cjs/Fiber/index.js"
+    },
+    "./FiberRef/combinators": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/FiberRef/combinators/index.js",
+        "require": "./dist/dist-traced/cjs/FiberRef/combinators/index.js"
+      },
+      "import": "./dist/dist/esm/FiberRef/combinators/index.js",
+      "require": "./dist/dist/cjs/FiberRef/combinators/index.js"
     },
     "./FiberRef": {
       "traced": {
@@ -185,6 +185,14 @@
       },
       "import": "./dist/dist/esm/Managed/index.js",
       "require": "./dist/dist/cjs/Managed/index.js"
+    },
+    "./Managed/ReleaseMap": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/Managed/ReleaseMap/index.js",
+        "require": "./dist/dist-traced/cjs/Managed/ReleaseMap/index.js"
+      },
+      "import": "./dist/dist/esm/Managed/ReleaseMap/index.js",
+      "require": "./dist/dist/cjs/Managed/ReleaseMap/index.js"
     },
     "./NonEmptyArray": {
       "traced": {

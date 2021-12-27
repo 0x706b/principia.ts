@@ -5,6 +5,7 @@ import type { ArrayInt64 } from '@principia/base/util/pure-rand/distribution/int
 import { IllegalArgumentError } from '@principia/base/Error'
 import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
+import * as M from '@principia/base/Maybe'
 import { Random } from '@principia/base/Random'
 import * as S from '@principia/base/Stream'
 
@@ -31,9 +32,9 @@ export function arrayInt64(min: ArrayInt64, max: ArrayInt64): Gen<Has<Random>, A
       if (uncheckedValue.data.length === 1) {
         uncheckedValue.data.unshift(0)
       }
-      return Sa.shrinkArrayInt64(min)(uncheckedValue as ArrayInt64)
+      return M.just(Sa.shrinkArrayInt64(min)(uncheckedValue as ArrayInt64))
     }),
-    (_) => new Gen(_)
+    (sample) => new Gen(sample)
   )
 }
 

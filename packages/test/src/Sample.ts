@@ -1,29 +1,28 @@
 import type { IO } from '@principia/base/IO'
-import type { Maybe } from '@principia/base/Maybe'
 import type { Predicate } from '@principia/base/Predicate'
 import type { Stream } from '@principia/base/Stream'
 import type { ArrayInt64 } from '@principia/base/util/pure-rand/distribution/internals/ArrayInt'
 
-import * as Ca from '@principia/base/Cause'
+import * as Ch from '@principia/base/Channel'
+import * as CED from '@principia/base/Channel/internal/ChildExecutorDecision'
+import * as UPR from '@principia/base/Channel/internal/UpstreamPullRequest'
+import * as UPS from '@principia/base/Channel/internal/UpstreamPullStrategy'
 import * as C from '@principia/base/Chunk'
-import * as Ex from '@principia/base/Exit'
-import { pipe } from '@principia/base/function'
+import * as E from '@principia/base/Either'
+import { constVoid, flow, identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
-import * as O from '@principia/base/Maybe'
+import * as M from '@principia/base/Maybe'
 import * as S from '@principia/base/Stream'
 import { tuple } from '@principia/base/tuple'
 
 import { add64, halve64, isEqual64, substract64 } from './util/math'
 
 export class Sample<R, A> {
-  constructor(readonly value: A, readonly shrink: Stream<R, never, Sample<R, A>>) {}
+  constructor(readonly value: A, readonly shrink: Stream<R, never, M.Maybe<Sample<R, A>>>) {}
 }
 
 export function map_<R, A, B>(ma: Sample<R, A>, f: (a: A) => B): Sample<R, B> {
-  return new Sample(
-    f(ma.value),
-    S.map_(ma.shrink, (s) => map_(s, f))
-  )
+  return new Sample(f(ma.value), S.map_(ma.shrink, M.map(map(f))))
 }
 
 export function map<A, B>(f: (a: A) => B): <R>(ma: Sample<R, A>) => Sample<R, B> {
@@ -32,13 +31,7 @@ export function map<A, B>(f: (a: A) => B): <R>(ma: Sample<R, A>) => Sample<R, B>
 
 export function chain_<R, A, R1, B>(ma: Sample<R, A>, f: (a: A) => Sample<R1, B>): Sample<R & R1, B> {
   const sample = f(ma.value)
-  return new Sample(
-    sample.value,
-    S.concat_(
-      sample.shrink,
-      S.map_(ma.shrink, (s) => chain_(s, f))
-    )
-  )
+  return new Sample(sample.value, mergeStream(sample.shrink, pipe(ma.shrink, S.map(M.map(chain(f))))))
 }
 
 export function chain<A, R1, B>(f: (a: A) => Sample<R1, B>): <R>(ma: Sample<R, A>) => Sample<R & R1, B> {
@@ -47,15 +40,25 @@ export function chain<A, R1, B>(f: (a: A) => Sample<R1, B>): <R>(ma: Sample<R, A
 
 export function shrinkSearch_<R, A>(ma: Sample<R, A>, f: Predicate<A>): Stream<R, never, A> {
   if (!f(ma.value)) {
-    return S.fromChunk(C.single(ma.value))
+    return S.succeed(ma.value)
   } else {
     return pipe(
-      S.fromChunk(C.single(ma.value)),
+      S.succeed(ma.value),
       S.concat(
         pipe(
           ma.shrink,
-          S.takeUntil((v) => f(v.value)),
-          S.chain((s) => shrinkSearch_(s, f))
+          S.takeUntil(
+            M.match(
+              () => false,
+              (v) => f(v.value)
+            )
+          ),
+          S.chain(
+            flow(
+              M.map(shrinkSearch(f)),
+              M.getOrElse(() => S.empty)
+            )
+          )
         )
       )
     )
@@ -76,7 +79,10 @@ export function foreach_<R, A, R1, B>(
       (b) =>
         new Sample(
           b,
-          S.mapIO_(ma.shrink, (s) => foreach_(s, f))
+          S.mapIO_(
+            ma.shrink,
+            M.match(() => I.succeed(M.nothing()), flow(foreach(f), I.map(M.just)))
+          )
         )
     )
   )
@@ -114,15 +120,20 @@ export function cross<R1, B>(mb: Sample<R1, B>): <R, A>(ma: Sample<R, A>) => Sam
   return (ma) => cross_(ma, mb)
 }
 
-export function filter_<R, A>(ma: Sample<R, A>, f: Predicate<A>): Stream<R, never, Sample<R, A>> {
+export function filter_<R, A>(ma: Sample<R, A>, f: Predicate<A>): Stream<R, never, M.Maybe<Sample<R, A>>> {
   if (f(ma.value)) {
-    return S.fromChunk(
-      C.single(
+    return S.succeed(
+      M.just(
         new Sample(
           ma.value,
           pipe(
             ma.shrink,
-            S.chain((s) => filter_(s, f))
+            S.chain(
+              flow(
+                M.map(filter(f)),
+                M.getOrElse(() => S.empty)
+              )
+            )
           )
         )
       )
@@ -130,117 +141,30 @@ export function filter_<R, A>(ma: Sample<R, A>, f: Predicate<A>): Stream<R, neve
   } else {
     return pipe(
       ma.shrink,
-      S.chain((s) => filter_(s, f))
+      S.chain(
+        flow(
+          M.map(filter(f)),
+          M.getOrElse(() => S.empty)
+        )
+      )
     )
   }
 }
 
-export function filter<A>(f: Predicate<A>): <R>(ma: Sample<R, A>) => Stream<R, never, Sample<R, A>> {
+export function filter<A>(f: Predicate<A>): <R>(ma: Sample<R, A>) => Stream<R, never, M.Maybe<Sample<R, A>>> {
   return (ma) => filter_(ma, f)
 }
 
 export function zipWith_<R, A, R1, B, C>(ma: Sample<R, A>, mb: Sample<R1, B>, f: (a: A, b: B) => C): Sample<R & R1, C> {
-  type State = readonly [boolean, boolean, Maybe<Sample<R, A>>, Maybe<Sample<R1, B>>]
-  const value  = f(ma.value, mb.value)
-  const shrink = S.combine_(
-    ma.shrink,
-    mb.shrink,
-    <State>[false, false, O.nothing(), O.nothing()],
-    ([leftDone, rightDone, s1, s2], left, right) =>
+  return pipe(
+    ma,
+    chain((a) =>
       pipe(
-        I.result(left),
-        I.crossWith(I.result(right), (ea, eb) => {
-          if (Ex.isSuccess(ea)) {
-            if (Ex.isSuccess(eb)) {
-              // Success && Success
-              return Ex.succeed(
-                tuple(zipWith_(ea.value, eb.value, f), tuple(leftDone, rightDone, O.just(ea.value), O.just(eb.value)))
-              )
-            } else {
-              // Success && Failure
-              return pipe(
-                eb.cause,
-                Ca.sequenceCauseOption,
-                O.match(
-                  () =>
-                    O.match_(
-                      s2,
-                      () =>
-                        Ex.succeed(
-                          tuple(
-                            map_(ea.value, (a) => f(a, mb.value)),
-                            tuple(leftDone, true, O.just(ea.value), s2)
-                          )
-                        ),
-                      (r) =>
-                        Ex.succeed(tuple(zipWith_(ea.value, r, f), tuple(leftDone, rightDone, O.just(ea.value), s2)))
-                    ),
-                  (cause) => Ex.failCause(cause)
-                )
-              )
-            }
-          } else {
-            if (Ex.isSuccess(eb)) {
-              // Failure && Success
-              return pipe(
-                ea.cause,
-                Ca.sequenceCauseOption,
-                O.match(
-                  () =>
-                    O.match_(
-                      s1,
-                      () =>
-                        Ex.succeed(
-                          tuple(
-                            map_(eb.value, (b) => f(ma.value, b)),
-                            tuple(true, rightDone, s1, O.just(eb.value))
-                          )
-                        ),
-                      (l) =>
-                        Ex.succeed(tuple(zipWith_(l, eb.value, f), tuple(leftDone, rightDone, s1, O.just(eb.value))))
-                    ),
-                  (cause) => Ex.failCause(cause)
-                )
-              )
-            } else {
-              // Failure && Failure
-              const causeL = Ca.sequenceCauseOption(ea.cause)
-              const causeR = Ca.sequenceCauseOption(eb.cause)
-              if (O.isJust(causeL)) {
-                if (O.isJust(causeR)) {
-                  return Ex.failCause(Ca.both(causeL.value, causeR.value))
-                } else {
-                  return Ex.failCause(causeL.value)
-                }
-              } else {
-                if (O.isJust(causeR)) {
-                  return Ex.failCause(causeR.value)
-                } else {
-                  if (!leftDone && s2._tag === 'Just') {
-                    return Ex.succeed(
-                      tuple(
-                        map_(s2.value, (b) => f(ma.value, b)),
-                        tuple(true, rightDone, s1, s2)
-                      )
-                    )
-                  } else if (!rightDone && s1._tag === 'Just') {
-                    return Ex.succeed(
-                      tuple(
-                        map_(s1.value, (a) => f(a, mb.value)),
-                        tuple(leftDone, true, O.nothing(), s2)
-                      )
-                    )
-                  } else {
-                    return Ex.fail(O.nothing())
-                  }
-                }
-              }
-            }
-          }
-        })
+        mb,
+        map((b) => f(a, b))
       )
+    )
   )
-  return new Sample(value, shrink)
 }
 
 export function zipWith<A, R1, B, C>(
@@ -270,11 +194,11 @@ export function shrinkFractional(smallest: number): (a: number) => Sample<unknow
         S.unfold(smallest, (min) => {
           const mid = min + (max - min) / 2
           if (mid === max) {
-            return O.nothing()
+            return M.nothing()
           } else if (Math.abs(max - mid) < 0.001) {
-            return O.just([min, max])
+            return M.just([min, max])
           } else {
-            return O.just([mid, mid])
+            return M.just([mid, mid])
           }
         })
       )
@@ -297,11 +221,11 @@ export function shrinkBigInt(smallest: bigint): (a: bigint) => Sample<unknown, b
         S.unfold(smallest, (min) => {
           const mid = min + (max - min) / BigInt(2)
           if (mid === max) {
-            return O.nothing()
+            return M.nothing()
           } else if (bigIntAbs(max - mid) === BigInt(1)) {
-            return O.just([mid, max])
+            return M.just([mid, max])
           } else {
-            return O.just([mid, mid])
+            return M.just([mid, mid])
           }
         })
       )
@@ -316,11 +240,11 @@ export function shrinkIntegral(smallest: number): (a: number) => Sample<unknown,
         S.unfold(smallest, (min) => {
           const mid = min + quot(max - min, 2)
           if (mid === max) {
-            return O.nothing()
+            return M.nothing()
           } else if (Math.abs(max - mid) === 1) {
-            return O.just([mid, max])
+            return M.just([mid, max])
           } else {
-            return O.just([mid, mid])
+            return M.just([mid, mid])
           }
         })
       )
@@ -335,9 +259,9 @@ export function shrinkArrayInt64(target: ArrayInt64): (value: ArrayInt64) => Sam
         S.unfold(target, (min) => {
           const mid = add64(min, halve64(substract64(max, min)))
           if (isEqual64(mid, max)) {
-            return O.nothing()
+            return M.nothing()
           } else {
-            return O.just([mid, max])
+            return M.just([mid, max])
           }
         })
       )
@@ -350,7 +274,78 @@ export function unfold<R, A, S>(s: S, f: (s: S) => readonly [A, Stream<R, never,
     value,
     pipe(
       shrink,
-      S.map((s) => unfold(s, f))
+      S.map((s) => M.just(unfold(s, f)))
     )
+  )
+}
+
+function mergeStream<R, A, R1, B>(
+  left: S.Stream<R, never, M.Maybe<A>>,
+  right: S.Stream<R1, never, M.Maybe<B>>
+): S.Stream<R & R1, never, M.Maybe<A | B>> {
+  return chainStream(
+    S.fromChunk(C.make(M.just(left), M.just<S.Stream<R & R1, never, M.Maybe<A | B>>>(right))),
+    identity
+  )
+}
+
+export function chainStream<R, A, R1, B>(
+  stream: S.Stream<R, never, M.Maybe<A>>,
+  f: (a: A) => S.Stream<R1, never, M.Maybe<B>>
+): S.Stream<R & R1, never, M.Maybe<B>> {
+  return pipe(
+    new S.Stream(
+      pipe(
+        S.rechunk_(stream, 1).channel,
+        Ch.concatMapWithCustom(
+          (as) =>
+            pipe(
+              as,
+              C.map(
+                M.match(
+                  () => S.succeed(E.left(false)).channel,
+                  (a) => pipe(f(a), S.rechunk(1), S.map(M.match(() => E.left(true), E.right))).channel
+                )
+              ),
+              C.foldl(
+                Ch.unit() as Ch.Channel<R1, unknown, unknown, unknown, never, C.Chunk<E.Either<boolean, B>>, unknown>,
+                Ch.crossSecond_
+              )
+            ),
+          constVoid,
+          constVoid,
+          UPR.match(
+            flow(
+              C.head,
+              M.flatten,
+              M.match(
+                () => UPS.PullAfterAllEnqueued(M.nothing()),
+                () => UPS.PullAfterNext(M.nothing())
+              )
+            ),
+            (activeDownstreamCount) =>
+              UPS.PullAfterAllEnqueued(activeDownstreamCount > 0 ? M.just(C.single(E.left(false))) : M.nothing())
+          ),
+          (chunk: C.Chunk<E.Either<boolean, B>>) =>
+            pipe(
+              C.head(chunk),
+              M.match(
+                () => CED.Continue,
+                E.match(
+                  (b) => (b ? CED.Yield : CED.Continue),
+                  () => CED.Continue
+                )
+              )
+            )
+        )
+      )
+    ),
+    S.filter(
+      E.match(
+        (b) => !b,
+        () => true
+      )
+    ),
+    S.map(E.match(() => M.nothing(), M.just))
   )
 }

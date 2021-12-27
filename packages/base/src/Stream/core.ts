@@ -199,13 +199,17 @@ function unfoldChunkLoop<S, A>(
     f(s),
     M.match(
       () => Ch.unit(),
-      ([as, s]) => pipe(Ch.write(as), Ch.crossSecond(unfoldChunkLoop(s, f)))
+      ([as, s]) =>
+        pipe(
+          Ch.write(as),
+          Ch.chain(() => unfoldChunkLoop(s, f))
+        )
     )
   )
 }
 
 export function unfoldChunk<S, A>(s: S, f: (s: S) => M.Maybe<readonly [C.Chunk<A>, S]>): Stream<unknown, never, A> {
-  return new Stream(unfoldChunkLoop(s, f))
+  return new Stream(Ch.deferTotal(() => unfoldChunkLoop(s, f)))
 }
 
 export function unfold<S, A>(s: S, f: (s: S) => M.Maybe<readonly [A, S]>): Stream<unknown, never, A> {
@@ -2233,33 +2237,36 @@ export function catchJustCause<R1, E, E1, A1>(pf: (e: Ca.Cause<E>) => M.Maybe<St
 }
 
 class Rechunker<A> {
-  private builder = C.builder<A>()
+  private builder: Array<A> = []
   private pos = 0
 
   constructor(readonly n: number) {}
 
   write(elem: A) {
-    this.builder.append(elem)
+    this.builder.push(elem)
     this.pos += 1
 
     if (this.pos === this.n) {
-      const result = this.builder.result()
-
-      this.builder = C.builder()
+      const result = this.builder
+      this.builder = []
       this.pos     = 0
 
-      return result
+      return C.from(result)
     }
 
     return null
   }
 
-  emitOfNotEmpty() {
+  emitOfNotEmpty(): Ch.Channel<unknown, unknown, unknown, unknown, never, C.Chunk<A>, void> {
     if (this.pos !== 0) {
-      return Ch.write(this.builder.result())
+      return Ch.write(C.from(this.builder))
     } else {
       return Ch.unit()
     }
+  }
+
+  get isEmpty(): boolean {
+    return this.pos === 0
   }
   /* eslint-enable */
 }
@@ -2311,48 +2318,46 @@ export function changes<A>(E: P.Eq<A>): <R, E>(stream: Stream<R, E, A>) => Strea
   return (stream) => changesWith_(stream, E.equals_)
 }
 
+function rechunkProcess<E, In>(
+  rechunker: Rechunker<In>,
+  target: number
+): Ch.Channel<unknown, E, C.Chunk<In>, unknown, E, C.Chunk<In>, unknown> {
+  return Ch.readWithCause(
+    (chunk: C.Chunk<In>) => {
+      if (chunk.length === target && rechunker.isEmpty) {
+        return pipe(Ch.write(chunk), Ch.crossSecond(rechunkProcess<E, In>(rechunker, target)))
+      } else if (chunk.length > 0) {
+        const chunks: Array<C.Chunk<In>> = []
+        let result: C.Chunk<In> | null   = null
+        let i = 0
+        while (i < chunk.length) {
+          while (i < chunk.length && result === null) {
+            result = rechunker.write(C.unsafeGet_(chunk, i))
+            i     += 1
+          }
+          if (result !== null) {
+            chunks.push(result)
+            result = null
+          }
+        }
+
+        return pipe(Ch.writeAll(chunks), Ch.crossSecond(rechunkProcess<E, In>(rechunker, target)))
+      } else {
+        return rechunkProcess<E, In>(rechunker, target)
+      }
+    },
+    (cause) => pipe(rechunker.emitOfNotEmpty(), Ch.crossSecond(Ch.failCause(cause))),
+    () => rechunker.emitOfNotEmpty()
+  )
+}
+
 /**
  * Re-chunks the elements of the stream into chunks of
  * `n` elements each.
  * The last chunk might contain less than `n` elements
  */
 export function rechunk_<R, E, A>(stream: Stream<R, E, A>, n: number): Stream<R, E, A> {
-  return unwrap(
-    I.succeedLazy(() => {
-      const rechunker = new Rechunker<A>(n)
-      const process: Ch.Channel<R, E, C.Chunk<A>, unknown, E, C.Chunk<A>, void> = Ch.readWithCause(
-        (chunk) => {
-          const chunkSize = chunk.length
-
-          if (chunkSize > 0) {
-            let chunks                    = L.empty<C.Chunk<A>>()
-            let result: C.Chunk<A> | null = null
-            let i = 0
-
-            while (i < chunkSize) {
-              while (i < chunkSize && result === null) {
-                result = rechunker.write(C.unsafeGet_(chunk, i))
-                i     += 1
-              }
-
-              if (result !== null) {
-                chunks = L.prepend_(chunks, result)
-                result = null
-              }
-            }
-
-            return Ch.crossSecond_(Ch.writeAll(...L.toArray(L.reverse(chunks))), process)
-          }
-
-          return process
-        },
-        (cause) => Ch.crossSecond_(rechunker.emitOfNotEmpty(), Ch.failCause(cause)),
-        (_) => rechunker.emitOfNotEmpty()
-      )
-
-      return new Stream(Ch.pipeTo_(stream.channel, process))
-    })
-  )
+  return new Stream(Ch.pipeTo_(stream.channel, rechunkProcess(new Rechunker(n), n)))
 }
 
 /**

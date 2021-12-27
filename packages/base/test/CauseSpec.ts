@@ -13,7 +13,7 @@ class CauseSpec extends DefaultRunnableSpec {
       'Monad Laws',
       testIO('LeftIdentity', () => check(causes, (c) => pipe(c, C.chain(C.fail), assert(equalTo(c))))),
       testIO('RightIdentity', () =>
-        check(causes, (c) =>
+        check(causes, (c) => 
           pipe(
             c,
             C.map((a) => C.map_(C.unit(), () => a)),

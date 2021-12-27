@@ -648,22 +648,6 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     return state
   }
 
-  private finishWithExit(exit: Exit<unknown, unknown>): IO<Env, unknown, unknown> {
-    const state: ChannelState<Env, unknown> | null = Ex.match_(
-      exit,
-      (cause) => this.doneHalt(cause),
-      (out) => this.doneSucceed(out)
-    )
-
-    this.activeSubexecutor = null
-
-    if (state === null) {
-      return I.unit()
-    } else {
-      return state.effect
-    }
-  }
-
   private runFinalizers(
     finalizers: List<(e: Exit<unknown, unknown>) => URIO<Env, unknown>>,
     exit: Exit<unknown, unknown>
@@ -684,26 +668,24 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
   }
 
   private runSubexecutor(): ChannelState<Env, unknown> | null {
-    const activeSubexecutor = this.activeSubexecutor!
-
-    switch (activeSubexecutor._tag) {
+    switch (this.activeSubexecutor!._tag) {
       case SubexecutorStackTag.PullFromUpstream: {
-        return this.pullFromUpstream(activeSubexecutor)
+        return this.pullFromUpstream(this.activeSubexecutor as PullFromUpstream<Env>)
       }
       case SubexecutorStackTag.DrainChildExecutors: {
-        return this.drainChildExecutors(activeSubexecutor)
+        return this.drainChildExecutors(this.activeSubexecutor as DrainChildExecutors<Env>)
       }
       case SubexecutorStackTag.PullFromChild: {
         return this.pullFromChild(
-          activeSubexecutor.childExecutor,
-          activeSubexecutor.parentSubexecutor,
-          activeSubexecutor.onEmit,
-          activeSubexecutor
+          (this.activeSubexecutor as PullFromChild<Env>).childExecutor,
+          (this.activeSubexecutor as PullFromChild<Env>).parentSubexecutor,
+          (this.activeSubexecutor as PullFromChild<Env>).onEmit,
+          this.activeSubexecutor as PullFromChild<Env>
         )
       }
       case SubexecutorStackTag.Emit: {
-        this.emitted           = activeSubexecutor.value
-        this.activeSubexecutor = activeSubexecutor.next
+        this.emitted           = (this.activeSubexecutor as Emit<Env>).value
+        this.activeSubexecutor = (this.activeSubexecutor as Emit<Env>).next
         return new State.Emit()
       }
     }
@@ -802,7 +784,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
               const [emitSeparator, updatedChildExecutors] = this.applyUpstreamPullStrategy(
                 false,
                 subexec.activeChildExecutors,
-                subexec.onPull(new UPR.Pulled(this.emitted))
+                subexec.onPull(new UPR.Pulled(emitted))
               )
               this.activeSubexecutor = new PullFromChild(
                 childExecutor,
@@ -863,7 +845,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
           const drain = new DrainChildExecutors(
             subexec.upstreamExecutor,
             subexec.lastDone,
-            subexec.activeChildExecutors.prepend(null),
+            subexec.activeChildExecutors.enqueue(null),
             subexec.upstreamExecutor.getDone(),
             subexec.combineChildResults,
             subexec.combineWithChildResult,
