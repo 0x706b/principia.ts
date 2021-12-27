@@ -8,7 +8,7 @@ import * as C from '../Cause/core'
 import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
 import * as Ex from '../Exit/core'
-import { flow, identity, unsafeCoerce } from '../function'
+import { flow, identity, pipe, unsafeCoerce } from '../function'
 import { genF, GenHKT } from '../Gen'
 import { isTag, mergeEnvironments } from '../Has'
 import { isMaybe } from '../Maybe'
@@ -971,6 +971,14 @@ export function ensuring<R1>(finalizer: Async<R1, never, void>): <R, E, A>(ma: A
   return (ma) => ensuring_(ma, finalizer)
 }
 
+export function foreachC_<A, R, E, B>(as: Iterable<A>, f: (a: A) => Async<R, E, B>): Async<R, E, ReadonlyArray<B>> {
+  return new All(pipe(A.from(as), A.map(f)))
+}
+
+export function foreachC<A, R, E, B>(f: (a: A) => Async<R, E, B>): (as: Iterable<A>) => Async<R, E, ReadonlyArray<B>> {
+  return (as) => foreachC_(as, f)
+}
+
 export function result<R, E, A>(ma: Async<R, E, A>): Async<R, never, Exit<E, A>> {
   return matchCauseAsync_(ma, flow(Ex.failCause, succeed), flow(Ex.succeed, succeed))
 }
@@ -1201,33 +1209,38 @@ export function runPromiseExitEnv_<R, E, A>(
             break
           }
           case AsyncTag.All: {
+            const innerInterruptionState     = new InterruptionState()
+            const removeInterruptionListener = interruptionState.addListener(() => {
+              innerInterruptionState.interrupt()
+            })
             const exits: ReadonlyArray<Exit<any, any>> = await Promise.all(
-              A.map_(I.asyncs, (a) => runPromiseExitEnv_(a, currentEnvironment, interruptionState))
-            )
-            const results = []
-            let errored   = false
-            for (let i = 0; i < exits.length && !errored; i++) {
-              const e = exits[i]
-              switch (e._tag) {
-                case 'Success': {
-                  results.push(e.value)
-                  break
-                }
-                case 'Failure': {
-                  if (C.interrupted(e.cause)) {
-                    errored     = true
-                    interrupted = true
-                    current     = undefined
-                  } else {
-                    errored = true
-                    current = failCause(e.cause)
+              A.map_(I.asyncs, (a) =>
+                runPromiseExitEnv_(a, currentEnvironment, innerInterruptionState).then((exit) => {
+                  if (Ex.isFailure(exit)) {
+                    innerInterruptionState.interrupt()
                   }
-                  break
+                  return exit
+                })
+              )
+            )
+            removeInterruptionListener()
+            const results: Array<any>        = []
+            let accumulatedCause: Cause<any> = C.empty
+            exits.forEach((exit) => {
+              Ex.match_(
+                exit,
+                (c) => {
+                  accumulatedCause = C.both(accumulatedCause, c)
+                },
+                (value) => {
+                  results.push(value)
                 }
-              }
-            }
-            if (!errored) {
+              )
+            })
+            if (C.isEmpty(accumulatedCause)) {
               current = succeed(results)
+            } else {
+              current = failCause(accumulatedCause)
             }
             break
           }
@@ -1481,7 +1494,7 @@ class InterruptionState {
   private isInterrupted = false
   readonly listeners = new Set<() => void>()
 
-  listen(f: () => void): RemoveListener {
+  addListener(f: () => void): RemoveListener {
     this.listeners.add(f)
     return () => {
       this.listeners.delete(f)
@@ -1493,10 +1506,12 @@ class InterruptionState {
   }
 
   interrupt() {
-    this.isInterrupted = true
-    this.listeners.forEach((f) => {
-      f()
-    })
+    if (!this.isInterrupted) {
+      this.isInterrupted = true
+      this.listeners.forEach((f) => {
+        f()
+      })
+    }
   }
 }
 
@@ -1521,7 +1536,7 @@ class CancellablePromise<E, A> {
     }
     const onInterrupt: Array<() => void> = []
 
-    const removeListener = this.interruptionState.listen(() => {
+    const removeListener = this.interruptionState.addListener(() => {
       onInterrupt.forEach((f) => {
         f()
       })

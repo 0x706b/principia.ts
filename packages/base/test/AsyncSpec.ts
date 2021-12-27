@@ -2,7 +2,17 @@ import * as As from '@principia/base/Async'
 import * as Ca from '@principia/base/Cause'
 import * as Ex from '@principia/base/Exit'
 import { pipe } from '@principia/base/function'
-import { allAsync, assertAsync, equalTo, suite, testAsync } from '@principia/test'
+import {
+  allAsync,
+  assert_,
+  assertAsync,
+  deepStrictEqualTo,
+  equalTo,
+  fails,
+  isInterrupted,
+  suite,
+  testAsync
+} from '@principia/test'
 import { DefaultRunnableSpec } from '@principia/test/DefaultRunnableSpec'
 
 class AsyncSpec extends DefaultRunnableSpec {
@@ -59,6 +69,40 @@ class AsyncSpec extends DefaultRunnableSpec {
           As.succeed(1),
           As.mapError((e: string) => e + '1'),
           assertAsync(equalTo(1))
+        )
+      )
+    ),
+    suite(
+      'foreachC',
+      testAsync('runs effects in parallel', () => {
+        const results: Array<number> = []
+        return pipe(
+          [4, 3, 2, 1],
+          As.foreachC((n) =>
+            As.async<never, void>((resolve) => {
+              setTimeout(() => {
+                results.push(n)
+                resolve()
+              }, n)
+            })
+          ),
+          As.chain(() => As.succeedLazy(() => assert_(results, deepStrictEqualTo([1, 2, 3, 4]))))
+        )
+      }),
+      testAsync('interrupts all concurrent effects if one fails', () =>
+        pipe(
+          [2, 4, 7, 100],
+          As.foreachC((n) =>
+            pipe(
+              As.async<string, number>((resolve, reject) => {
+                setTimeout(() => {
+                  n % 2 === 0 ? resolve(n) : reject('odd number')
+                }, n)
+              })
+            )
+          ),
+          As.result,
+          assertAsync(fails(equalTo('odd number')))
         )
       )
     ),

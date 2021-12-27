@@ -7,10 +7,10 @@ import type { Show } from '@principia/base/Show'
 import * as A from '@principia/base/Array'
 import * as E from '@principia/base/Either'
 import * as Ev from '@principia/base/Eval'
+import * as Ex from '@principia/base/Exit'
 import { flow, identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as C from '@principia/base/IO/Cause'
-import * as Ex from '@principia/base/IO/Exit'
 import * as It from '@principia/base/Iterable'
 import * as L from '@principia/base/List'
 import * as O from '@principia/base/Maybe'
@@ -179,7 +179,7 @@ export function deepStrictEqualTo(expected: unknown, show?: S.Show<unknown>): As
   )
 }
 
-export function halts(assertion0: Assertion<any>): Assertion<Ex.Exit<any, any>> {
+export function halts(assertion0: Assertion<any>): Assertion<Ex.PExit<any, any, any>> {
   return assertionRec(
     'halts',
     [param(assertion0)],
@@ -192,7 +192,7 @@ export function exists<A>(assertion: Assertion<A>): Assertion<Iterable<A>> {
   return assertionRec('exists', [param(assertion)], assertion, It.find(assertion.test))
 }
 
-export function fails<E>(assertion: Assertion<E>): Assertion<Exit<E, any>> {
+export function fails<E>(assertion: Assertion<E>): Assertion<Ex.PExit<any, E, any>> {
   return assertionRec(
     'fails',
     [param(assertion)],
@@ -287,7 +287,7 @@ export function not<A>(assertion: Assertion<A>): Assertion<A> {
   return assertionDirect('not', [param(assertion)], (actual) => BA.not(assertion.run(actual)))
 }
 
-export function succeeds<A>(assertion: Assertion<A>): Assertion<Exit<any, A>> {
+export function succeeds<A>(assertion: Assertion<A>): Assertion<Ex.PExit<any, any, A>> {
   return assertionRec(
     'succeeds',
     [param(assertion)],
@@ -296,7 +296,7 @@ export function succeeds<A>(assertion: Assertion<A>): Assertion<Exit<any, A>> {
   )
 }
 
-export const isInterrupted: Assertion<Exit<any, any>> = assertion(
+export const isInterrupted: Assertion<Ex.PExit<any, any, any>> = assertion(
   'isInterrupted',
   [],
   Ex.match(C.interrupted, () => false)
