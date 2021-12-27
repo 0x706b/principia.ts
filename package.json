@@ -34,6 +34,7 @@
     "@typescript-eslint/parser": "^5.8.0",
     "babel-plugin-annotate-pure-calls": "^0.4.0",
     "benny": "^3.7.1",
+    "chalk": "4.1.2",
     "commitizen": "^4.2.4",
     "concurrently": "^6.5.1",
     "cpx": "^1.5.0",
