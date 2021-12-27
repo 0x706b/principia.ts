@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.22.0](https://github.com/0x706b/principia.ts/compare/@principia/node@0.21.4...@principia/node@0.22.0) (2021-12-27)
+
+
+### Bug Fixes
+
+* **fiber:** fix interruption of suspended `Fiber` ([a3dc28f](https://github.com/0x706b/principia.ts/commit/a3dc28f345b81c68869fff8b2c36ab41113d5254))
+
+
+### Features
+
+* **compile:** allow recursive expressions inside optimized gen ([64b8456](https://github.com/0x706b/principia.ts/commit/64b8456b947ec2c47d4e0f707c7b44aad44c0a1e))
+* **io:** scope implosion (via ZIO) ([d3fc099](https://github.com/0x706b/principia.ts/commit/d3fc099bb4f5941c96397ae1133de6ed02449bef))
+
+
+
+
+
 ## [0.21.4](https://github.com/0x706b/principia.ts/compare/@principia/node@0.21.3...@principia/node@0.21.4) (2021-12-15)
 
 **Note:** Version bump only for package @principia/node

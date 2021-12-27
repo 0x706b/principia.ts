@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.27.0](https://github.com/0x706b/principia.ts/compare/@principia/observable@0.26.4...@principia/observable@0.27.0) (2021-12-27)
+
+
+### Bug Fixes
+
+* **fiber:** fix interruption of suspended `Fiber` ([a3dc28f](https://github.com/0x706b/principia.ts/commit/a3dc28f345b81c68869fff8b2c36ab41113d5254))
+
+
+### Features
+
+* **prelude:** `crossFirst`/`crossSecond` -> `apFirst`/`apSecond` ([ac3ce0f](https://github.com/0x706b/principia.ts/commit/ac3ce0f7259b971931d23df4007356a8f9d7dbf7))
+
+
+
+
+
 ## [0.26.4](https://github.com/0x706b/principia.ts/compare/@principia/observable@0.26.3...@principia/observable@0.26.4) (2021-12-15)
 
 **Note:** Version bump only for package @principia/observable

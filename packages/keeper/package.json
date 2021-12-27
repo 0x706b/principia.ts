@@ -1,6 +1,6 @@
 {
   "name": "@principia/keeper",
-  "version": "0.21.4",
+  "version": "0.21.5",
   "description": "Keeper",
   "repository": {
     "type": "git",
@@ -48,8 +48,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@principia/base": "^0.28.4",
-    "@principia/schema": "^0.22.4",
+    "@principia/base": "^0.29.0",
+    "@principia/schema": "^0.22.5",
     "node-zookeeper-client": "^1.1.1"
   },
   "devDependencies": {

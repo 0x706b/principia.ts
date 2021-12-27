@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.21.0](https://github.com/0x706b/principia.ts/compare/@principia/compile@0.20.0...@principia/compile@0.21.0) (2021-12-27)
+
+
+### Features
+
+* **compile:** allow recursive expressions inside optimized gen ([64b8456](https://github.com/0x706b/principia.ts/commit/64b8456b947ec2c47d4e0f707c7b44aad44c0a1e))
+
+
+
+
+
 # [0.20.0](https://github.com/0x706b/principia.ts/compare/@principia/compile@0.19.2...@principia/compile@0.20.0) (2021-12-15)
 
 

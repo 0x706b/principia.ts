@@ -1,6 +1,6 @@
 {
   "name": "@principia/logger",
-  "version": "0.19.4",
+  "version": "0.19.5",
   "description": "Logger",
   "repository": {
     "type": "git",
@@ -48,8 +48,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@principia/base": "^0.28.4",
-    "@principia/node": "^0.21.4",
+    "@principia/base": "^0.29.0",
+    "@principia/node": "^0.22.0",
     "chalk": "4.1.2",
     "date-fns": "^2.27.0",
     "strip-ansi": "^7.0.1"

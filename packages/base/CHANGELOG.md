@@ -3,6 +3,39 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.29.0](https://github.com/0x706b/principia.ts/compare/@principia/base@0.28.4...@principia/base@0.29.0) (2021-12-27)
+
+
+### Bug Fixes
+
+* **fiber:** fix interruption of suspended `Fiber` ([a3dc28f](https://github.com/0x706b/principia.ts/commit/a3dc28f345b81c68869fff8b2c36ab41113d5254))
+* **fiber:** small fixes ([e3cde71](https://github.com/0x706b/principia.ts/commit/e3cde713a94eac07171fa9743cd2e0226682566d))
+* **lens:** uncomment things ([f577038](https://github.com/0x706b/principia.ts/commit/f5770380e539b58d32c373cd39331d9b73aa1ee7))
+* mitigate circular deps ([31067c3](https://github.com/0x706b/principia.ts/commit/31067c328f26c893e816cf9be4346db4fcccdc32))
+* **test:** update tests ([ec40478](https://github.com/0x706b/principia.ts/commit/ec404787a854e43f7d0c5005a5c8375654ce0980))
+
+
+### Features
+
+* **array:** remove `_ap` ([223cc6e](https://github.com/0x706b/principia.ts/commit/223cc6e13f9d85055cc60053ec97341e0b6c2db9))
+* **async:** add `foreachC` to `Async` ([8cc38d5](https://github.com/0x706b/principia.ts/commit/8cc38d58c30982db35c928778248f515046abc11))
+* **channel:** `Channel` stack safety and customizable `ConcatAll` (via ZIO) ([49a2135](https://github.com/0x706b/principia.ts/commit/49a2135f01ed582fbe97720d3f8cb3479c300a7f))
+* **fluent:** add concurrency operators ([2b7f3ff](https://github.com/0x706b/principia.ts/commit/2b7f3ffa0b99d71bc2fe07399a4c22116adf2b5a))
+* **io:** compositional concurrency (via ZIO) ([657cfbf](https://github.com/0x706b/principia.ts/commit/657cfbf1e3c994619d2c4ed2a02a9a2acbb19a2a))
+* **io:** make `fiberId` a constant ([bbbb7b8](https://github.com/0x706b/principia.ts/commit/bbbb7b8d973d5b6caa468bc795bbada670b9c67f))
+* **io:** polymorphic `FiberRef` ([df4a889](https://github.com/0x706b/principia.ts/commit/df4a88984dc17207682b31ff5145e8623fa4fb72))
+* **io:** scope implosion (via ZIO) ([d3fc099](https://github.com/0x706b/principia.ts/commit/d3fc099bb4f5941c96397ae1133de6ed02449bef))
+* **io:** support propagating `FiberRef` values across `Fiber` boundaries (via ZIO) ([99ed563](https://github.com/0x706b/principia.ts/commit/99ed5633500b63382a8aacc4f5ba0cabaac47b48))
+* **managed:** use `FiberRef` for containing `ReleaseMap` ([b91fe1c](https://github.com/0x706b/principia.ts/commit/b91fe1cb9ab72aebb65c21cf86f6a7e1510b39b0))
+* **prelude:** `crossFirst`/`crossSecond` -> `apFirst`/`apSecond` ([ac3ce0f](https://github.com/0x706b/principia.ts/commit/ac3ce0f7259b971931d23df4007356a8f9d7dbf7))
+* **sink:** implement `fromPush` (via ZIO) ([09f3e51](https://github.com/0x706b/principia.ts/commit/09f3e51c5163220f092384f6a24fe3d0e6de3946))
+* **test:** breadth-first search random generators (via ZIO) ([d53dcff](https://github.com/0x706b/principia.ts/commit/d53dcff585372e7dd308b162fb857680e8ebd8aa))
+* **test:** support combining specs (via ZIO) ([423d3bd](https://github.com/0x706b/principia.ts/commit/423d3bd8e96631dd03f1bb89de9dfd54e863feae))
+
+
+
+
+
 ## [0.28.4](https://github.com/0x706b/principia.ts/compare/@principia/base@0.28.3...@principia/base@0.28.4) (2021-12-15)
 
 

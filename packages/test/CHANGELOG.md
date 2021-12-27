@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.24.0](https://github.com/0x706b/principia.ts/compare/@principia/test@0.23.4...@principia/test@0.24.0) (2021-12-27)
+
+
+### Bug Fixes
+
+* **fiber:** fix interruption of suspended `Fiber` ([a3dc28f](https://github.com/0x706b/principia.ts/commit/a3dc28f345b81c68869fff8b2c36ab41113d5254))
+
+
+### Features
+
+* **async:** add `foreachC` to `Async` ([8cc38d5](https://github.com/0x706b/principia.ts/commit/8cc38d58c30982db35c928778248f515046abc11))
+* **io:** compositional concurrency (via ZIO) ([657cfbf](https://github.com/0x706b/principia.ts/commit/657cfbf1e3c994619d2c4ed2a02a9a2acbb19a2a))
+* **prelude:** `crossFirst`/`crossSecond` -> `apFirst`/`apSecond` ([ac3ce0f](https://github.com/0x706b/principia.ts/commit/ac3ce0f7259b971931d23df4007356a8f9d7dbf7))
+* **test:** breadth-first search random generators (via ZIO) ([d53dcff](https://github.com/0x706b/principia.ts/commit/d53dcff585372e7dd308b162fb857680e8ebd8aa))
+* **test:** support combining specs (via ZIO) ([423d3bd](https://github.com/0x706b/principia.ts/commit/423d3bd8e96631dd03f1bb89de9dfd54e863feae))
+
+
+
+
+
 ## [0.23.4](https://github.com/0x706b/principia.ts/compare/@principia/test@0.23.3...@principia/test@0.23.4) (2021-12-15)
 
 **Note:** Version bump only for package @principia/test

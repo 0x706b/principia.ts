@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.21.0](https://github.com/0x706b/principia.ts/compare/@principia/query@0.20.4...@principia/query@0.21.0) (2021-12-27)
+
+
+### Bug Fixes
+
+* **fiber:** fix interruption of suspended `Fiber` ([a3dc28f](https://github.com/0x706b/principia.ts/commit/a3dc28f345b81c68869fff8b2c36ab41113d5254))
+
+
+### Features
+
+* **io:** compositional concurrency (via ZIO) ([657cfbf](https://github.com/0x706b/principia.ts/commit/657cfbf1e3c994619d2c4ed2a02a9a2acbb19a2a))
+
+
+
+
+
 ## [0.20.4](https://github.com/0x706b/principia.ts/compare/@principia/query@0.20.3...@principia/query@0.20.4) (2021-12-15)
 
 **Note:** Version bump only for package @principia/query

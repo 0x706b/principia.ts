@@ -1,6 +1,6 @@
 {
   "name": "@principia/base",
-  "version": "0.28.4",
+  "version": "0.29.0",
   "description": "Base datatypes",
   "repository": {
     "type": "git",
@@ -390,8 +390,8 @@
     ]
   },
   "dependencies": {
-    "@principia/compile": "^0.20.0",
-    "@principia/typelevel": "^0.1.0"
+    "@principia/compile": "^0.21.0",
+    "@principia/typelevel": "^0.1.1"
   },
   "devDependencies": {
     "@babel/cli": "^7.16.0",
