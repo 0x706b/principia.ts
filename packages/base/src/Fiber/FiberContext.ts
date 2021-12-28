@@ -229,8 +229,42 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
               } else {
                 switch (current._tag) {
                   case IOTag.Chain: {
-                    this.unsafePushStackFrame(new ApplyFrame(current.f))
-                    current = concrete(current.io)
+                    const nested = concrete(current.io)
+                    const k      = current.f
+
+                    switch (nested._tag) {
+                      case IOTag.Succeed: {
+                        if (this.platform.traceEffects && this.unsafeIsInTracingRegion) {
+                          this.unsafeAddTraceValue(nested.trace)
+                        }
+                        current = concrete(k(nested.value))
+                        break
+                      }
+                      case IOTag.SucceedLazy: {
+                        if (this.platform.traceEffects && this.unsafeIsInTracingRegion) {
+                          this.unsafeAddTrace(nested.effect)
+                        }
+                        current = concrete(k(nested.effect()))
+                        break
+                      }
+                      case IOTag.SucceedLazyWith: {
+                        if (this.platform.traceEffects && this.unsafeIsInTracingRegion) {
+                          this.unsafeAddTrace(nested.effect)
+                        }
+                        current = concrete(k(nested.effect(this.platform, this.fiberId)))
+                        break
+                      }
+                      case IOTag.Yield: {
+                        current = null
+                        this.unsafeRunLater(concrete(unit()))
+                        break
+                      }
+                      default: {
+                        this.unsafePushStackFrame(new ApplyFrame(current.f))
+                        current = concrete(current.io)
+                        break
+                      }
+                    }
                     break
                   }
                   case IOTag.SetTracingStatus: {

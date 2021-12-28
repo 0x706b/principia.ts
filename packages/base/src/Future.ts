@@ -9,10 +9,9 @@ import { pipe } from './function'
 import { interruptAs as interruptAsIO, uninterruptibleMask } from './IO/combinators/interrupt'
 import * as I from './IO/core'
 import * as M from './Maybe'
-import { AtomicReference } from './util/support/AtomicReference'
 
 export class Future<E, A> {
-  constructor(readonly state: AtomicReference<State<E, A>>, readonly blockingOn: FiberId) {}
+  constructor(public state: State<E, A>, readonly blockingOn: FiberId) {}
 }
 
 export type State<E, A> = Done<E, A> | Pending<E, A>
@@ -66,13 +65,13 @@ export function fulfill<R, E, A>(io: I.IO<R, E, A>): (future: Future<E, A>) => I
  */
 export function fulfillWith_<E, A>(future: Future<E, A>, io: FIO<E, A>): I.UIO<boolean> {
   return I.succeedLazy(() => {
-    const state = future.state.get
-    switch (state._tag) {
+    switch (future.state._tag) {
       case 'Done': {
         return false
       }
       case 'Pending': {
-        future.state.set(new Done(io))
+        const state  = future.state
+        future.state = new Done(io)
         state.joiners.forEach((f) => {
           f(io)
         })
@@ -207,7 +206,7 @@ export function interruptAs(id: FiberId): <E, A>(future: Future<E, A>) => I.UIO<
  * already been completed with a value or an error and false otherwise.
  */
 export function isDone<E, A>(future: Future<E, A>): I.UIO<boolean> {
-  return I.succeedLazy(() => future.state.get._tag === 'Done')
+  return I.succeedLazy(() => future.state._tag === 'Done')
 }
 
 /**
@@ -230,11 +229,9 @@ export function makeAs<E, A>(fiberId: FiberId) {
  */
 export function poll<E, A>(future: Future<E, A>): I.UIO<Maybe<FIO<E, A>>> {
   return I.succeedLazy(() => {
-    const state = future.state.get
-
-    switch (state._tag) {
+    switch (future.state._tag) {
       case 'Done': {
-        return M.just(state.value)
+        return M.just(future.state.value)
       }
       case 'Pending': {
         return M.nothing()
@@ -260,9 +257,9 @@ export function succeed<A>(a: A) {
 }
 
 export function unsafeDone_<E, A>(future: Future<E, A>, io: FIO<E, A>) {
-  const state = future.state.get
-  if (state._tag === 'Pending') {
-    future.state.set(new Done(io))
+  if (future.state._tag === 'Pending') {
+    const state  = future.state
+    future.state = new Done(io)
     Array.from(state.joiners)
       .reverse()
       .forEach((f) => {
@@ -279,7 +276,7 @@ export function unsafeDone<E, A>(io: FIO<E, A>) {
 }
 
 export function unsafeMake<E, A>(fiberId: FiberId) {
-  return new Future<E, A>(new AtomicReference(new Pending([])), fiberId)
+  return new Future<E, A>(new Pending([]), fiberId)
 }
 
 /**
@@ -288,26 +285,15 @@ export function unsafeMake<E, A>(fiberId: FiberId) {
  */
 function wait<E, A>(future: Future<E, A>): I.IO<unknown, E, A> {
   return I.asyncInterrupt<unknown, E, A>((k) => {
-    let result
-    let retry = true
-    while (retry) {
-      const oldState = future.state.get
-      let newState
-      switch (oldState._tag) {
-        case 'Done': {
-          newState = oldState
-          result   = E.right(oldState.value)
-          break
-        }
-        case 'Pending': {
-          newState = new Pending([k, ...oldState.joiners])
-          result   = E.left(interruptJoiner(future, k))
-          break
-        }
+    switch (future.state._tag) {
+      case 'Done': {
+        return E.right(future.state.value)
       }
-      retry = !future.state.compareAndSet(oldState, newState)
+      case 'Pending': {
+        future.state = new Pending([k, ...future.state.joiners])
+        return E.left(interruptJoiner(future, k))
+      }
     }
-    return result as any
   }, future.blockingOn)
 }
 
@@ -315,21 +301,14 @@ export { wait as await }
 
 function interruptJoiner<E, A>(future: Future<E, A>, joiner: (a: FIO<E, A>) => void): I.Canceler<unknown> {
   return I.succeedLazy(() => {
-    let retry = true
-    while (retry) {
-      const oldState = future.state.get
-      let newState
-      switch (oldState._tag) {
-        case 'Pending': {
-          newState = new Pending(oldState.joiners.filter((j) => j !== joiner))
-          break
-        }
-        case 'Done': {
-          newState = oldState
-          break
-        }
+    switch (future.state._tag) {
+      case 'Pending': {
+        future.state = new Pending(future.state.joiners.filter((j) => j !== joiner))
+        break
       }
-      retry = !future.state.compareAndSet(oldState, newState)
+      case 'Done': {
+        break
+      }
     }
   })
 }

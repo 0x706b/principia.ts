@@ -6,7 +6,6 @@ import * as I from '../IO/core'
 import * as M from '../Maybe'
 import { tuple } from '../tuple/core'
 import { matchTag } from '../util/match'
-import { AtomicReference } from '../util/support/AtomicReference'
 import * as At from './atomic'
 
 export interface Ref<EA, EB, A, B> {
@@ -201,7 +200,7 @@ export class Derived<EA, EB, A, B> implements Ref<EA, EB, A, B> {
 export class Atomic<A> implements Ref<never, never, A, A> {
   readonly _tag = 'Atomic'
 
-  constructor(readonly value: AtomicReference<A>) {
+  constructor(private value: A) {
     this.match    = this.match.bind(this)
     this.matchAll = this.matchAll.bind(this)
     this.set      = this.set.bind(this)
@@ -226,13 +225,21 @@ export class Atomic<A> implements Ref<never, never, A, A> {
     return new DerivedAll<EC, ED, C, D>((f) => f(this, bd, ca))
   }
 
+  get unsafeGet(): A {
+    return this.value
+  }
+
+  unsafeSet(a: A): void {
+    this.value = a
+  }
+
   get get(): UIO<A> {
-    return I.succeedLazy(() => this.value.get)
+    return I.succeedLazy(() => this.value)
   }
 
   set(a: A): UIO<void> {
     return I.succeedLazy(() => {
-      this.value.set(a)
+      this.value = a
     })
   }
 }
@@ -264,14 +271,14 @@ export function concrete<EA, EB, A>(ref: Ref<EA, EB, A, A>) {
  * Creates a new `Ref` with the specified value.
  */
 export function make<A>(a: A): UIO<URef<A>> {
-  return I.succeedLazy(() => new Atomic(new AtomicReference(a)))
+  return I.succeedLazy(() => new Atomic(a))
 }
 
 /**
  * Creates a new `Ref` with the specified value.
  */
 export function unsafeMake<A>(a: A): URef<A> {
-  return new Atomic(new AtomicReference(a))
+  return new Atomic(a)
 }
 
 /*
