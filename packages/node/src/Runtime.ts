@@ -1,27 +1,32 @@
 import type { Trace, TraceElement } from '@principia/base/Fiber/trace'
 import type { CustomRuntime } from '@principia/base/IO'
 
+import * as Ex from '@principia/base/Exit'
 import * as Fiber from '@principia/base/Fiber'
-import { interruptAllAs } from '@principia/base/Fiber'
+import { interruptAllAs_ } from '@principia/base/Fiber'
+import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
-import { defaultRuntime } from '@principia/base/IO'
+import { defaultRuntime, defaultSupervisor } from '@principia/base/IO'
 import * as Cause from '@principia/base/IO/Cause'
 import * as L from '@principia/base/List'
-import * as Super from '@principia/base/Supervisor'
 import * as S from '@principia/base/Sync'
 import { AtomicBoolean } from '@principia/base/util/support/AtomicBoolean'
 import path from 'path'
 
 export function defaultTeardown(status: number, id: Fiber.FiberId, onExit: (status: number) => void) {
-  I.run_(interruptAllAs(id)(Super.mainFibers), () => {
-    setTimeout(() => {
-      if (Super.mainFibers.size === 0) {
-        onExit(status)
-      } else {
-        defaultTeardown(status, id, onExit)
-      }
-    }, 0)
-  })
+  pipe(
+    defaultSupervisor.value,
+    I.tap((fibers) => interruptAllAs_(fibers, id)),
+    I.run((exit) => {
+      setTimeout(() => {
+        if (Ex.isSuccess(exit) && exit.value.length === 0) {
+          onExit(status)
+        } else {
+          defaultTeardown(status, id, onExit)
+        }
+      })
+    })
+  )
 }
 
 export const defaultHook =

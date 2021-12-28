@@ -212,7 +212,10 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       let current: Instruction | null = this.nextIO
       this.nextIO                     = null
       const fastPathChainContinuationTrace = new AtomicReference<TraceElement | undefined>(undefined)
+      const superviseOps                   = this.currentSupervisor !== Super.none
+
       currentFiber.set(this)
+      superviseOps && this.currentSupervisor.unsafeOnResume(this)
 
       while (current !== null) {
         try {
@@ -227,6 +230,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                 this.unsafeRunLater(current)
                 current = null
               } else {
+                superviseOps && this.currentSupervisor.unsafeOnEffect(this, current)
                 switch (current._tag) {
                   case IOTag.Chain: {
                     const nested = concrete(current.io)
@@ -489,7 +493,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
                   case IOTag.Supervise: {
                     const oldSupervisor    = this.currentSupervisor
-                    const newSupervisor    = current.supervisor.and(oldSupervisor)
+                    const newSupervisor    = Super.cross_(current.supervisor, oldSupervisor)
                     this.currentSupervisor = newSupervisor
                     this.unsafeAddFinalizer(
                       succeedLazy(() => {
@@ -555,6 +559,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       }
     } finally {
       currentFiber.set(null)
+      this.currentSupervisor !== Super.none && this.currentSupervisor.unsafeOnSuspend(this)
     }
   }
 

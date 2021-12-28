@@ -34,6 +34,8 @@ export const prettyReporter: FailureReporter = (e) => {
  */
 export type AsyncCancel<E, A> = I.UIO<Exit<E, A>>
 
+export const defaultSupervisor = Super.unsafeTrack()
+
 export const defaultPlatform = new Platform({
   executionTraceLength: 25,
   stackTraceLength: 25,
@@ -47,7 +49,7 @@ export const defaultPlatform = new Platform({
   renderer: C.defaultRenderer,
   reportFailure: constVoid,
   maxYieldOp: 128,
-  supervisor: Super.trackMainFibers
+  supervisor: defaultSupervisor
 })
 
 export class CustomRuntime<R, A> {
