@@ -14,12 +14,12 @@ export class Executing<E, A> {
   readonly _tag = 'Executing'
 
   constructor(
-    readonly status: FS.FiberStatus,
-    readonly observers: Array<Callback<never, Exit<E, A>>>,
-    readonly suppressed: C.Cause<never>,
-    readonly interruptors: Set<FiberId>,
-    readonly asyncCanceller: CS.CancellerState,
-    readonly mailbox: UIO<any> | null
+    public status: FS.FiberStatus,
+    public observers: Set<Callback<never, Exit<E, A>>>,
+    public suppressed: C.Cause<never>,
+    public interruptors: Set<FiberId>,
+    public asyncCanceller: CS.CancellerState,
+    public mailbox: UIO<any> | null
   ) {}
 }
 
@@ -34,7 +34,7 @@ export class Done<E, A> {
 }
 
 export function initial<E, A>(): FiberState<E, A> {
-  return new Executing(new FS.Running(false), [], C.empty, new Set(), new CS.Empty(), null)
+  return new Executing(new FS.Running(false), new Set(), C.empty, new Set(), new CS.Empty(), null)
 }
 
 export function interruptorsCause<E, A>(state: FiberState<E, A>): C.Cause<never> {
