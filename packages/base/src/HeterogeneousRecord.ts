@@ -372,7 +372,7 @@ function _intersect<A extends ReadonlyArray<Record<string, any>>>(
 }
 
 export function intersect<A extends ReadonlyArray<Record<string, any>>>(...members: A): UnionToIntersection<A[number]> {
-  return _intersect(...members).value
+  return Ev.run(_intersect(...members))
 }
 
 /*

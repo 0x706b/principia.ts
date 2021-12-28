@@ -1,8 +1,9 @@
+import type { Stack } from '../util/support/Stack'
 import type { FiberId } from './FiberId'
 
-import * as Ev from '../Eval'
 import * as L from '../List/core'
 import * as M from '../Maybe'
+import { makeStack } from '../util/support/Stack'
 import { prettyFiberId } from './FiberId'
 
 export type TraceElement = NoLocation | SourceLocation
@@ -31,8 +32,14 @@ export class Trace {
   ) {}
 }
 
-export function ancestryLength(trace: Trace): number {
-  return Ev.evaluate(ancestryLengthEval(trace, 0))
+function ancestryLength(trace: Trace): number {
+  let i       = 0
+  let current = trace.parentTrace
+  while (M.isJust(current)) {
+    i++
+    current = current.value.parentTrace
+  }
+  return i
 }
 
 export function parents(trace: Trace): L.List<Trace> {
@@ -60,11 +67,20 @@ export function prettyLocation(traceElement: TraceElement) {
 }
 
 export function prettyTrace(trace: Trace): string {
-  return Ev.evaluate(prettyTraceEval(trace))
-}
-
-export function prettyTraceEval(trace: Trace): Ev.Eval<string> {
-  return Ev.gen(function* (_) {
+  let stack: Stack<Trace> | undefined = undefined
+  let current: Trace | null           = trace
+  while (current) {
+    stack = makeStack(current, stack)
+    if (M.isJust(current.parentTrace)) {
+      current = current.parentTrace.value
+    } else {
+      current = null
+    }
+  }
+  let traces: L.List<Array<string>> = L.emptyPushable()
+  while (stack) {
+    const trace      = stack.value
+    stack            = stack.previous
     const execTrace  = !L.isEmpty(trace.executionTrace)
     const stackTrace = !L.isEmpty(trace.stackTrace)
 
@@ -84,22 +100,21 @@ export function prettyTraceEval(trace: Trace): Ev.Eval<string> {
         ]
       : [`Fiber: ${prettyFiberId(trace.fiberId)} was supposed to continue to: <empty trace>`]
 
-    const parent = trace.parentTrace
-
-    const ancestry =
-      parent._tag === 'Nothing'
-        ? [`Fiber: ${prettyFiberId(trace.fiberId)} was spawned by: <empty trace>`]
-        : [`Fiber: ${prettyFiberId(trace.fiberId)} was spawned by:\n`, yield* _(prettyTraceEval(parent.value))]
-
-    return ['', ...stackPrint, '', ...execPrint, '', ...ancestry].join('\n')
-  })
-}
-
-function ancestryLengthEval(trace: Trace, i: number): Ev.Eval<number> {
-  const parent = trace.parentTrace
-  if (parent._tag === 'Nothing') {
-    return Ev.now(i)
-  } else {
-    return Ev.defer(() => ancestryLengthEval(parent.value, i + 1))
+    traces = L.prepend_(traces, [
+      '',
+      ...stackPrint,
+      '',
+      ...execPrint,
+      '',
+      `Fiber ${prettyFiberId(trace.fiberId)} was spawned by:`,
+    ])
   }
+
+  return L.ifoldl_(traces, '' as string, (index, acc, trace) => {
+    if (L.get_(traces, index + 1)._tag === 'Nothing') {
+      return acc + `${trace.join('\n')} <empty trace>`
+    } else {
+      return acc + `${trace.join('\n')}\n`
+    }
+  })
 }

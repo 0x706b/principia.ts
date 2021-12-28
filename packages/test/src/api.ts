@@ -44,7 +44,8 @@ function traverseResultLoop<A>(whole: AssertionValue<A>, failureDetails: Failure
     return BA.success(failureDetails)
   } else {
     const fragment = whole.result
-    const result   = BA.isTrue(fragment.value) ? fragment.value : BA.not(fragment.value)
+    const r0       = Ev.run(fragment)
+    const result   = BA.isTrue(r0) ? r0 : BA.not(r0)
     return BA.chain_(result, (fragment) =>
       traverseResultLoop(fragment, FailureDetails([whole, ...failureDetails.assertion], failureDetails.gen))
     )

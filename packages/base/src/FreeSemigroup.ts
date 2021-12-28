@@ -77,7 +77,7 @@ function foldSafe_<A, B>(
 }
 
 export function fold_<A, B>(fs: FreeSemigroup<A>, onElement: (value: A) => B, onCombine: (left: B, right: B) => B): B {
-  return foldSafe_(fs, onElement, onCombine).value
+  return Ev.run(foldSafe_(fs, onElement, onCombine))
 }
 
 /**

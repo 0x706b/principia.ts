@@ -4,6 +4,7 @@ import type { Eval } from '@principia/base/Eval'
 import type * as S from '@principia/base/Show'
 
 import * as A from '@principia/base/Array'
+import * as Ev from '@principia/base/Eval'
 import { pipe } from '@principia/base/function'
 import * as str from '@principia/base/string'
 import * as Sh from '@principia/base/Structural/Showable'
@@ -29,6 +30,6 @@ export class AssertionValue<A> {
   }
 
   isSameAssertionAs(that: AssertionValue<A>) {
-    return this.assertion.value.rendered === that.assertion.value.rendered
+    return Ev.run(this.assertion).rendered === Ev.run(that.assertion).rendered
   }
 }

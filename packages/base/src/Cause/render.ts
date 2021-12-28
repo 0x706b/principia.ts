@@ -227,9 +227,5 @@ export const defaultErrorToLines = (error: unknown) =>
   error instanceof Error ? renderError(error) : lines(renderToString(error))
 
 export function makePrettyPrint<Id, E>(renderer: Renderer<Id, E>): (cause: PCause<Id, E>) => string {
-  return (cause) => prettySafe(cause, renderer).value
+  return (cause) => Ev.run(prettySafe(cause, renderer))
 }
-
-// export function pretty<Id, E>(cause: GenericCause<Id, E>, renderer: Renderer<Id, E>): string {
-//   return prettySafe(cause, renderer).value
-// }

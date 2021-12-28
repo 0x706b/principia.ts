@@ -1396,7 +1396,7 @@ export function comprehension<A, R>(
   f: (...xs: ReadonlyArray<A>) => R,
   g: (...xs: ReadonlyArray<A>) => boolean = () => true
 ): ReadonlyArray<R> {
-  return comprehensionLoop([], input, f, g).value
+  return Ev.run(comprehensionLoop([], input, f, g))
 }
 
 /**

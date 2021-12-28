@@ -469,7 +469,7 @@ export function fromEither<E, A>(either: E.Either<E, A>): IO<unknown, E, A> {
  */
 export function fromEval<A>(ma: Eval<A>): IO<unknown, never, A> {
   const trace = accessCallTrace()
-  return succeedLazy(traceFrom(trace, () => ma.value))
+  return succeedLazy(traceFrom(trace, () => Ev.run(ma)))
 }
 
 /**
@@ -2123,7 +2123,7 @@ export function extend<R, E, A, B>(f: (wa: IO<R, E, A>) => B): (wa: IO<R, E, A>)
  */
 export function evaluate<A>(a: Eval<A>): UIO<A> {
   const trace = accessCallTrace()
-  return succeedLazy(traceFrom(trace, () => a.value))
+  return succeedLazy(traceFrom(trace, () => Ev.run(a)))
 }
 
 /**
@@ -2826,7 +2826,7 @@ export function foldrF_<F extends HKT.HKT, C = HKT.None>(F: P.Foldable<F, C>) {
     b: UIO<B>,
     f: (a: A, b: IO<R1, E1, B>) => IO<R1, E1, B>
   ): IO<R1, E1, B> =>
-    Ev.evaluate(F.foldr_(fa, Ev.now(b as IO<R1, E1, B>), (a, b) => Ev.now(f(a, flatten(fromEval(b))))))
+    Ev.run(F.foldr_(fa, Ev.now(b as IO<R1, E1, B>), (a, b) => Ev.now(f(a, flatten(fromEval(b))))))
 }
 
 /**

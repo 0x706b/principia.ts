@@ -1,231 +1,139 @@
-/*
- * -------------------------------------------------------------------------------------------------
- * `Eval` is a port of the Eval monad from typelevel's `cats` library
- * -------------------------------------------------------------------------------------------------
- */
-
+import type { _A } from '../prelude'
 import type { Stack } from '../util/support/Stack'
 
 import { identity } from '../function'
-import * as E from '../internal/Either'
-import * as M from '../internal/Maybe'
 import { tuple } from '../internal/tuple'
-import { AtomicReference } from '../util/support/AtomicReference'
 import { makeStack } from '../util/support/Stack'
 
 export const EvalTypeId = Symbol.for('@principia/base/Eval')
 export type EvalTypeId = typeof EvalTypeId
 
-export const EvalTag = {
-  Now: 'Now',
-  Later: 'Later',
-  Always: 'Always',
-  Defer: 'Defer',
-  Bind: 'Chain',
-  Memoize: 'Memoize'
-} as const
-
-/**
- * `Eval<A>` is a monad that controls evaluation, providing a way to perform
- * stack-safe recursion through an internal trampoline.
- *
- * NOTE: `Eval` is for pure computation _only_. Side-effects should not be
- * performed within `Eval`. If you must perform side-effects,
- * use `Sync`, `Async`, or `IO` from the `io` package
- */
-export abstract class Eval<A> {
-  readonly _A!: () => A
-
-  abstract get value(): A
-  abstract get memoize(): Eval<A>
+export interface Eval<A> {
+  readonly [EvalTypeId]: EvalTypeId
+  readonly _A: () => A
 }
 
-class Now<A> extends Eval<A> {
-  readonly _evalTag = EvalTag.Now
-  constructor(readonly a: A) {
-    super()
+export class Value<A> implements Eval<A> {
+  readonly _tag = 0
+  readonly _A!: () => A
+  readonly [EvalTypeId]: EvalTypeId = EvalTypeId
+  constructor(readonly value: A) {}
+}
+
+export class Defer<A> implements Eval<A> {
+  readonly _tag = 1
+  readonly _A!: () => A
+  readonly [EvalTypeId]: EvalTypeId = EvalTypeId
+  constructor(readonly make: () => Eval<A>) {}
+}
+
+export class Chain<A, B> implements Eval<B> {
+  readonly _tag = 2
+  readonly _A!: () => B
+  readonly [EvalTypeId]: EvalTypeId = EvalTypeId
+  constructor(readonly ma: Eval<A>, readonly f: (a: A) => Eval<B>) {}
+}
+
+type Concrete = Value<any> | Defer<any> | Chain<any, any>
+
+/**
+ * @optimize remove
+ */
+function concrete(_: Eval<any>): asserts _ is Concrete {
+  //
+}
+
+export function run<A>(computation: Eval<A>): A {
+  let frames: Stack<(a: any) => Eval<any>> | undefined = undefined
+  let out = undefined
+  let cur = computation
+  while (cur != null) {
+    concrete(cur)
+    switch (cur._tag) {
+      case 2:
+        concrete(cur.ma)
+        switch (cur.ma._tag) {
+          case 0:
+            cur = cur.f(cur.ma.value)
+            break
+          default:
+            frames = makeStack(cur.f, frames)
+            cur    = cur.ma
+            break
+        }
+        break
+      case 1:
+        cur = cur.make()
+        break
+      case 0:
+        out = cur.value
+        if (frames) {
+          cur    = frames.value(out)
+          frames = frames.previous
+        } else {
+          cur = null!
+        }
+        break
+    }
   }
-  get value() {
-    return this.a
-  }
-  get memoize() {
-    return this
-  }
+  return out
+}
+
+export function now<A>(a: A): Eval<A> {
+  return new Value(a)
+}
+
+export function defer<A>(make: () => Eval<A>): Eval<A> {
+  return new Defer(make)
+}
+
+export function always<A>(make: () => A): Eval<A> {
+  return defer(() => now(make()))
 }
 
 const UNSET = Symbol.for('@principia/base/Eval/UNSET')
 
-class Later<A> extends Eval<A> {
-  readonly [EvalTypeId]: EvalTypeId = EvalTypeId
-  readonly _evalTag = EvalTag.Later
-  private result: A | typeof UNSET = UNSET
-  constructor(private thunk: () => A) {
-    super()
-  }
-  get value() {
-    if (this.result !== UNSET) {
-      return this.result
-    } else {
-      const result = this.thunk()
-      this.thunk   = null!
-      this.result  = result
-      return result
-    }
-  }
-  get memoize() {
-    return this
-  }
+export function later<A>(make: () => A): Eval<A> {
+  let v: A | typeof UNSET = UNSET
+  // eslint-disable-next-line no-param-reassign
+  return always(() => (v === UNSET ? (((v = make()), (make = null!)), v) : v))
 }
 
-class Always<A> extends Eval<A> {
-  readonly [EvalTypeId]: EvalTypeId = EvalTypeId
-  readonly _evalTag = EvalTag.Always
-  constructor(readonly thunk: () => A) {
-    super()
-  }
-  get value() {
-    return this.thunk()
-  }
-  get memoize() {
-    return new Later(this.thunk)
-  }
-}
-
-class Defer<A> extends Eval<A> {
-  readonly [EvalTypeId]: EvalTypeId = EvalTypeId
-  readonly _evalTag = EvalTag.Defer
-  constructor(readonly thunk: () => Eval<A>) {
-    super()
-  }
-  get value() {
-    return evaluate(this.thunk())
-  }
-  get memoize(): Eval<A> {
-    return new Memoize(this)
-  }
-}
-
-class Chain<A, B> extends Eval<B> {
-  readonly [EvalTypeId]: EvalTypeId = EvalTypeId
-  readonly _evalTag = EvalTag.Bind
-  constructor(readonly ma: Eval<A>, readonly f: (a: A) => Eval<B>) {
-    super()
-  }
-  get value(): B {
-    return evaluate(this)
-  }
-  get memoize(): Eval<B> {
-    return new Memoize(this)
-  }
-}
-
-class Memoize<A> extends Eval<A> {
-  readonly [EvalTypeId]: EvalTypeId = EvalTypeId
-  readonly _evalTag = EvalTag.Memoize
-  constructor(readonly ma: Eval<A>) {
-    super()
-  }
-  public result: A | typeof UNSET = UNSET
-
-  get memoize() {
-    return this
-  }
-
-  get value(): A {
-    if (this.result !== UNSET) {
-      return this.result
-    } else {
-      const a     = evaluate(this)
-      this.result = a
-      return this.result
-    }
-  }
-}
-
-/*
- * -------------------------------------------------------------------------------------------------
- * Constructors
- * -------------------------------------------------------------------------------------------------
- */
-
-/**
- * Construct a lazy Eval<A> instance.
- *
- * This type can be used for "lazy" values. In some sense it is
- * equivalent to using a thunked value.
- *
- * This type will evaluate the computation every time the value is
- * required. It should be avoided except when laziness is required and
- * caching must be avoided. Generally, prefer `later`.
- */
-export function always<A>(thunk: () => A): Eval<A> {
-  return new Always(thunk)
+export function chain_<A, B>(ma: Eval<A>, f: (a: A) => Eval<B>): Eval<B> {
+  return new Chain(ma, f)
 }
 
 /**
- * Defer is a type of Eval that is used to defer computations
- * which produce Eval.
+ * @dataFirst chain_
  */
-export function defer<A>(thunk: () => Eval<A>): Eval<A> {
-  return new Defer(thunk)
+export function chain<A, B>(f: (a: A) => Eval<B>): (ma: Eval<A>) => Eval<B> {
+  return (ma) => chain_(ma, f)
+}
+
+export function flatten<A>(mma: Eval<Eval<A>>): Eval<A> {
+  return chain_(mma, identity)
+}
+
+export function map_<A, B>(fa: Eval<A>, f: (a: A) => B): Eval<B> {
+  return chain_(fa, (a) => now(f(a)))
 }
 
 /**
- * Construct a lazy Eval instance.
- *
- * This type should be used for most "lazy" values. In some sense it
- * is equivalent to using a thunked value, but is cached for speed
- * after the initial computation.
- *
- * When caching is not required or desired (e.g. if the value produced
- * may be large) prefer `always`. When there is no computation
- * necessary, prefer `now`.
- *
- * Once `later` has been evaluated, the closure (and any values captured
- * by the closure) will not be retained, and will be available for
- * garbage collection.
+ * @dataFirst map_
  */
-export function later<A>(f: () => A): Eval<A> {
-  return new Later(f)
+export function map<A, B>(f: (a: A) => B): (fa: Eval<A>) => Eval<B> {
+  return (fa) => map_(fa, f)
 }
 
-/**
- * Construct an eager Eval instance.
- *
- * In some sense it is equivalent to using a `const` in a typical computation.
- *
- * This type should be used when an A value is already in hand, or
- * when the computation to produce an A value is pure and very fast.
- */
-export function now<A>(a: A): Eval<A> {
-  return new Now(a)
-}
-
-/*
- * -------------------------------------------------------------------------------------------------
- * Applicative
- * -------------------------------------------------------------------------------------------------
- */
-
-export function pure<A>(a: A): Eval<A> {
-  return now(a)
-}
-
-/*
- * -------------------------------------------------------------------------------------------------
- * Apply
- * -------------------------------------------------------------------------------------------------
- */
-
-export function crossWith_<A, B, C>(ma: Eval<A>, mb: Eval<B>, f: (a: A, b: B) => C): Eval<C> {
-  return chain_(ma, (a) => map_(mb, (b) => f(a, b)))
+export function crossWith_<A, B, C>(fa: Eval<A>, fb: Eval<B>, f: (a: A, b: B) => C): Eval<C> {
+  return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
 /**
  * @dataFirst crossWith_
  */
-export function crossWith<A, B, C>(mb: Eval<B>, f: (a: A, b: B) => C): (ma: Eval<A>) => Eval<C> {
-  return (ma) => crossWith_(ma, mb, f)
+export function crossWith<A, B, C>(fb: Eval<B>, f: (a: A, b: B) => C): (fa: Eval<A>) => Eval<C> {
+  return (fa) => crossWith_(fa, fb, f)
 }
 
 export function cross_<A, B>(ma: Eval<A>, mb: Eval<B>): Eval<readonly [A, B]> {
@@ -250,144 +158,54 @@ export function ap<A>(ma: Eval<A>): <B>(mab: Eval<(a: A) => B>) => Eval<B> {
   return (mab) => ap_(mab, ma)
 }
 
-/*
- * -------------------------------------------------------------------------------------------------
- * Functor
- * -------------------------------------------------------------------------------------------------
- */
-
-export function map_<A, B>(fa: Eval<A>, f: (a: A) => B): Eval<B> {
-  return chain_(fa, (a) => now(f(a)))
-}
-
-/**
- * @dataFirst map_
- */
-export function map<A, B>(f: (a: A) => B): (fa: Eval<A>) => Eval<B> {
-  return (fa) => map_(fa, f)
-}
-
-/*
- * -------------------------------------------------------------------------------------------------
- * Monad
- * -------------------------------------------------------------------------------------------------
- */
-
-export function chain_<A, B>(ma: Eval<A>, f: (a: A) => Eval<B>): Eval<B> {
-  return new Chain(ma, f)
-}
-
-/**
- * @dataFirst chain_
- */
-export function chain<A, B>(f: (a: A) => Eval<B>): (ma: Eval<A>) => Eval<B> {
-  return (ma) => chain_(ma, f)
-}
-
-export function flatten<A>(mma: Eval<Eval<A>>): Eval<A> {
-  return chain_(mma, identity)
-}
-
-/*
- * -------------------------------------------------------------------------------------------------
- * Unit
- * -------------------------------------------------------------------------------------------------
- */
-
 export function unit(): Eval<void> {
   return now(undefined)
 }
 
-/*
- * -------------------------------------------------------------------------------------------------
- * Runtime
- * -------------------------------------------------------------------------------------------------
- */
+export function pure<A>(a: A): Eval<A> {
+  return now(a)
+}
 
-type Concrete = Now<any> | Later<any> | Always<any> | Defer<any> | Chain<any, any> | Memoize<any>
+export function sequenceT<A extends ReadonlyArray<Eval<any>>>(...computations: A): Eval<{ [K in keyof A]: _A<A[K]> }> {
+  return defer(() => now(computations.map((e) => run(e)))) as Eval<any>
+}
 
-export function evaluate<A>(e: Eval<A>): A {
-  const addToMemo =
-    <A1>(m: Memoize<A1>) =>
-    (a: A1): Eval<A1> => {
-      m.result = a
-      return new Now(a)
+interface GenEval<A> {
+  readonly _A: () => A
+  computation: Eval<A>
+  [Symbol.iterator](): Generator<GenEval<A>, A, any>
+}
+
+function mkGenEval<A>(computation: Eval<A>): GenEval<A> {
+  return {
+    computation,
+    *[Symbol.iterator]() {
+      return yield this
     }
+  } as GenEval<A>
+}
 
-  let frames  = undefined as Stack<(_: any) => Eval<any>> | undefined
-  let current = e as Eval<any> | undefined
-  let result  = null
+const __adapter = mkGenEval
 
-  function pushContinuation(cont: (_: any) => Eval<any>) {
-    frames = makeStack(cont, frames)
+function runGen<T extends GenEval<A>, A>(
+  state: IteratorYieldResult<T> | IteratorReturnResult<A>,
+  iterator: Generator<T, A, any>
+): Eval<A> {
+  if (state.done) {
+    return now(state.value)
   }
+  return chain_(state.value.computation, (a) => {
+    const next = iterator.next(a)
+    return runGen(next, iterator)
+  })
+}
 
-  function popContinuation() {
-    const current = frames?.value
-    frames        = frames?.previous
-    return current
-  }
-
-  while (current != null) {
-    const I = current as Concrete
-    switch (I._evalTag) {
-      case EvalTag.Bind: {
-        current = I.ma
-        pushContinuation(I.f)
-        break
-      }
-      case EvalTag.Now: {
-        result             = I.a
-        const continuation = popContinuation()
-        if (continuation) {
-          current = continuation(result)
-        } else {
-          current = undefined
-        }
-        break
-      }
-      case EvalTag.Later: {
-        result             = I.value
-        const continuation = popContinuation()
-        if (continuation) {
-          current = continuation(result)
-        } else {
-          current = undefined
-        }
-        break
-      }
-      case EvalTag.Always: {
-        result             = I.thunk()
-        const continuation = popContinuation()
-        if (continuation) {
-          current = continuation(result)
-        } else {
-          current = undefined
-        }
-        break
-      }
-      case EvalTag.Defer: {
-        current = I.thunk()
-        break
-      }
-      case EvalTag.Memoize: {
-        if (I.result !== UNSET) {
-          result             = I.result
-          const continuation = popContinuation()
-          if (continuation) {
-            current = continuation(result)
-            break
-          } else {
-            current = undefined
-            break
-          }
-        } else {
-          pushContinuation(addToMemo(I))
-          current = I.ma
-          break
-        }
-      }
-    }
-  }
-  return result
+export function gen<T extends GenEval<any>, A>(
+  f: (i: { <A>(_: Eval<A>): GenEval<A> }) => Generator<T, A, any>
+): Eval<A> {
+  return defer(() => {
+    const iterator = f(__adapter)
+    const state    = iterator.next()
+    return runGen(state, iterator)
+  })
 }

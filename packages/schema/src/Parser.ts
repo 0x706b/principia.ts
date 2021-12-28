@@ -1792,7 +1792,7 @@ function keyOfEval<P extends AnyParser>(parser: P): Ev.Eval<ReadonlyArray<RoseTr
 }
 
 export function keyOf<P extends AnyParser>(decoder: P): ReadonlyArray<RoseTree<string | number>> {
-  return keyOfEval(decoder).value
+  return Ev.run(keyOfEval(decoder))
 }
 
 export type Pick<D, Prop extends PropertyKey> = D extends FromStructP<infer P>

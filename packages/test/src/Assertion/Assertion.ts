@@ -87,10 +87,10 @@ export function assertion<A>(
             return BA.failure(new AssertionValue(actual, assertion, result, show))
           }
         })
-        return result.value
+        return Ev.run(result)
       })
   )
-  return assertion.value
+  return Ev.run(assertion)
 }
 
 export function assertionDirect<A>(
@@ -112,7 +112,7 @@ export function assertionRec<A, B>(
     assertionDirect(name, params, (a) =>
       O.match_(
         get(a),
-        () => orElse(AssertionData(resultAssertion.value, a)),
+        () => orElse(AssertionData(Ev.run(resultAssertion), a)),
         (b) => {
           const innerResult = assertion.run(b)
           const result      = Ev.later((): BA.FreeBooleanAlgebra<AssertionValue<any>> => {
@@ -122,12 +122,12 @@ export function assertionRec<A, B>(
               return BA.failure(new AssertionValue(b, Ev.now(assertion), Ev.now(innerResult)))
             }
           })
-          return result.value
+          return Ev.run(result)
         }
       )
     )
   )
-  return resultAssertion.value
+  return Ev.run(resultAssertion)
 }
 
 export const anything: Assertion<any> = assertion('anything', [], () => true)

@@ -60,7 +60,7 @@ export const EmptyConstructor = class Empty {
     return _emptyHash
   }
   [Equ.$equals](that: unknown): boolean {
-    return isCause(that) && this.equalsEval(that).value
+    return isCause(that) && Ev.run(this.equalsEval(that))
   }
 
   equalsEval(that: PCause<unknown, unknown>): Ev.Eval<boolean> {
@@ -104,7 +104,7 @@ export const FailConstructor = class Fail<E> implements Fail<E> {
     return Ha._combineHash(Ha.hash(this._tag), Ha.hash(this.value))
   }
   [Equ.$equals](that: unknown): boolean {
-    return isCause(that) && this.equalsEval(that).value
+    return isCause(that) && Ev.run(this.equalsEval(that))
   }
 
   equalsEval(that: PCause<unknown, unknown>): Ev.Eval<boolean> {
@@ -149,7 +149,7 @@ export const HaltConstructor = class Halt implements Halt {
     return Ha._combineHash(Ha.hash(this._tag), Ha.hash(this.value))
   }
   [Equ.$equals](that: unknown): boolean {
-    return isCause(that) && this.equalsEval(that).value
+    return isCause(that) && Ev.run(this.equalsEval(that))
   }
 
   equalsEval(that: PCause<unknown, unknown>): Ev.Eval<boolean> {
@@ -195,7 +195,7 @@ export const InterruptConstructor = class Interrupt<Id> implements Interrupt<Id>
   }
 
   [Equ.$equals](that: unknown): boolean {
-    return isCause(that) && this.equalsEval(that).value
+    return isCause(that) && Ev.run(this.equalsEval(that))
   }
 
   equalsEval(that: PCause<unknown, unknown>): Ev.Eval<boolean> {
@@ -242,7 +242,7 @@ export const ThenConstructor = class Then<Id, E> {
   }
 
   [Equ.$equals](that: unknown): boolean {
-    return isCause(that) && this.equalsEval(that).value
+    return isCause(that) && Ev.run(this.equalsEval(that))
   }
 
   equalsEval(that: PCause<unknown, unknown>): Ev.Eval<boolean> {
@@ -287,7 +287,7 @@ export const BothConstructor = class Both<Id, E> {
   }
 
   [Equ.$equals](that: unknown): boolean {
-    return isCause(that) && this.equalsEval(that).value
+    return isCause(that) && Ev.run(this.equalsEval(that))
   }
 
   equalsEval(that: PCause<unknown, unknown>): Ev.Eval<boolean> {
@@ -332,7 +332,7 @@ export const TracedConstructor = class Traced<Id, E> {
   }
 
   [Equ.$equals](that: unknown): boolean {
-    return isCause(that) && this.equalsEval(that).value
+    return isCause(that) && Ev.run(this.equalsEval(that))
   }
 
   equalsEval(that: PCause<unknown, unknown>): Ev.Eval<boolean> {
@@ -460,7 +460,7 @@ export function containsEval<Id, E, Id1, E1 extends E = E>(
 }
 
 export function contains_<Id, E, Id1, E1 extends E = E>(cause: PCause<Id, E>, that: PCause<Id1, E1>): boolean {
-  return containsEval(cause, that).value
+  return Ev.run(containsEval(cause, that))
 }
 
 /**
@@ -680,7 +680,7 @@ export function findEval<Id, E, A>(cause: PCause<Id, E>, f: (cause: PCause<Id, E
  * @since 1.0.0
  */
 export function find_<Id, E, A>(cause: PCause<Id, E>, f: (cause: PCause<Id, E>) => M.Maybe<A>): M.Maybe<A> {
-  return findEval(cause, f).value
+  return Ev.run(findEval(cause, f))
 }
 
 /**
@@ -812,7 +812,7 @@ export function fold_<Id, E, A>(
   onBoth: (l: A, r: A) => A,
   onTraced: (_: A, trace: Trace) => A
 ): A {
-  return foldEval(cause, onEmpty, onFail, onHalt, onInterrupt, onThen, onBoth, onTraced).value
+  return Ev.run(foldEval(cause, onEmpty, onFail, onHalt, onInterrupt, onThen, onBoth, onTraced))
 }
 
 /**
@@ -832,7 +832,7 @@ export function fold<Id, E, A>(
   onBoth: (l: A, r: A) => A,
   onTraced: (_: A, trace: Trace) => A
 ): (cause: PCause<Id, E>) => A {
-  return (cause) => foldEval(cause, onEmpty, onFail, onHalt, onInterrupt, onThen, onBoth, onTraced).value
+  return (cause) => Ev.run(foldEval(cause, onEmpty, onFail, onHalt, onInterrupt, onThen, onBoth, onTraced))
 }
 
 /*
@@ -967,14 +967,14 @@ export function ap<Id1, E>(fa: PCause<Id1, E>): <Id, D>(fab: PCause<Id, (a: E) =
  */
 
 export function equals<Id, E>(x: PCause<Id, E>, y: PCause<Id, E>): boolean {
-  return x.equalsEval(y).value
+  return Ev.run(x.equalsEval(y))
 }
 
 export const EqStructural: Eq<PCause<any, any>> = makeEq(equals)
 
 export function getEq<Id, E>(EId: Eq<Id>, E: Eq<E>): Eq<PCause<Id, E>> {
   const equalsE = equals_(EId, E)
-  return Eq((x, y) => equalsE(x, y).value)
+  return Eq((x, y) => Ev.run(equalsE(x, y)))
 }
 
 /*
@@ -1048,7 +1048,7 @@ function chainEval<Id, E, Id1, D>(ma: PCause<Id, E>, f: (e: E) => PCause<Id1, D>
  * @since 1.0.0
  */
 export function chain_<Id, E, Id1, D>(ma: PCause<Id, E>, f: (e: E) => PCause<Id1, D>): PCause<Id | Id1, D> {
-  return chainEval(ma, f).value
+  return Ev.run(chainEval(ma, f))
 }
 
 /**
@@ -1240,7 +1240,7 @@ function keepDefectsEval<Id, E>(cause: PCause<Id, E>): Ev.Eval<M.Maybe<PCause<ne
  * return only `Halt` cause/finalizer defects.
  */
 export function keepDefects<Id, E>(cause: PCause<Id, E>): M.Maybe<PCause<never, never>> {
-  return keepDefectsEval(cause).value
+  return Ev.run(keepDefectsEval(cause))
 }
 
 /**
@@ -1287,7 +1287,7 @@ function stripFailuresEval<Id, E>(cause: PCause<Id, E>): Ev.Eval<PCause<Id, neve
  * Discards all typed failures kept on this `Cause`.
  */
 export function stripFailures<Id, E>(cause: PCause<Id, E>): PCause<Id, never> {
-  return stripFailuresEval(cause).value
+  return Ev.run(stripFailuresEval(cause))
 }
 
 /**
@@ -1334,7 +1334,7 @@ export function stripInterruptsEval<Id, E>(cause: PCause<Id, E>): Ev.Eval<PCause
  * Discards all interrupts kept on this `Cause`.
  */
 export function stripInterrupts<Id, E>(cause: PCause<Id, E>): PCause<Id, E> {
-  return stripInterruptsEval(cause).value
+  return Ev.run(stripInterruptsEval(cause))
 }
 
 function filterDefectsEval<Id, E>(cause: PCause<Id, E>, pf: Predicate<unknown>): Ev.Eval<M.Maybe<PCause<Id, E>>> {
@@ -1396,7 +1396,7 @@ function filterDefectsEval<Id, E>(cause: PCause<Id, E>, pf: Predicate<unknown>):
  * remaining causes.
  */
 export function filterDefects_<Id, E>(cause: PCause<Id, E>, pf: Predicate<unknown>): M.Maybe<PCause<Id, E>> {
-  return filterDefectsEval(cause, pf).value
+  return Ev.run(filterDefectsEval(cause, pf))
 }
 
 /**
@@ -1407,7 +1407,7 @@ export function filterDefects_<Id, E>(cause: PCause<Id, E>, pf: Predicate<unknow
  * @dataFirst filterDefects_
  */
 export function filterDefects(pf: Predicate<unknown>): <Id, E>(cause: PCause<Id, E>) => M.Maybe<PCause<Id, E>> {
-  return (cause) => filterDefectsEval(cause, pf).value
+  return (cause) => Ev.run(filterDefectsEval(cause, pf))
 }
 
 function sequenceCauseEitherEval<Id, E, A>(cause: PCause<Id, E.Either<E, A>>): Ev.Eval<E.Either<PCause<Id, E>, A>> {
@@ -1463,7 +1463,7 @@ function sequenceCauseEitherEval<Id, E, A>(cause: PCause<Id, E.Either<E, A>>): E
  * Converts the specified `Cause<Either<E, A>>` to an `Either<Cause<E>, A>`.
  */
 export function sequenceCauseEither<Id, E, A>(cause: PCause<Id, E.Either<E, A>>): E.Either<PCause<Id, E>, A> {
-  return sequenceCauseEitherEval(cause).value
+  return Ev.run(sequenceCauseEitherEval(cause))
 }
 
 function sequenceCauseOptionEval<Id, E>(cause: PCause<Id, M.Maybe<E>>): Ev.Eval<M.Maybe<PCause<Id, E>>> {
@@ -1523,7 +1523,7 @@ function sequenceCauseOptionEval<Id, E>(cause: PCause<Id, M.Maybe<E>>): Ev.Eval<
  * Converts the specified `Cause<Option<E>>` to an `Option<Cause<E>>`.
  */
 export function sequenceCauseOption<Id, E>(cause: PCause<Id, M.Maybe<E>>): M.Maybe<PCause<Id, E>> {
-  return sequenceCauseOptionEval(cause).value
+  return Ev.run(sequenceCauseOptionEval(cause))
 }
 
 /**
@@ -1629,7 +1629,7 @@ export function untracedEval<Id, E>(cause: PCause<Id, E>): Ev.Eval<PCause<Id, E>
  * Returns a `Cause` that has been stripped of all tracing information.
  */
 export function untraced<Id, E>(cause: PCause<Id, E>): PCause<Id, E> {
-  return untracedEval(cause).value
+  return Ev.run(untracedEval(cause))
 }
 
 /*
@@ -1955,10 +1955,10 @@ function structuralEqualEmpty<Id, A>(l: PCause<Id, A>, r: PCause<Id, A>): Ev.Eva
     } else if (l.right._tag === CauseTag.Empty) {
       return l.left.equalsEval(r)
     } else {
-      return Ev.pure(false)
+      return Ev.now(false)
     }
   } else {
-    return Ev.pure(false)
+    return Ev.now(false)
   }
 }
 
@@ -1978,7 +1978,7 @@ function structuralThenAssociate<Id, A>(l: PCause<Id, A>, r: PCause<Id, A>): Ev.
       A.foldl(true, B.and_)
     )
   } else {
-    return Ev.pure(false)
+    return Ev.now(false)
   }
 }
 
@@ -2016,7 +2016,7 @@ function strcturalThenDistribute<Id, A>(l: PCause<Id, A>, r: PCause<Id, A>): Ev.
       A.foldl(true, B.and_)
     )
   } else {
-    return Ev.pure(false)
+    return Ev.now(false)
   }
 }
 
@@ -2024,7 +2024,7 @@ function structuralEqualThen<Id, A>(l: PCause<Id, A>, r: PCause<Id, A>): Ev.Eval
   if (l._tag === CauseTag.Then && r._tag === CauseTag.Then) {
     return Ev.crossWith_(l.left.equalsEval(r.left), l.right.equalsEval(r.right), B.and_)
   } else {
-    return Ev.pure(false)
+    return Ev.now(false)
   }
 }
 
@@ -2044,7 +2044,7 @@ function structuralBothAssociate<Id, A>(l: PCause<Id, A>, r: PCause<Id, A>): Ev.
       A.foldl(true, B.and_)
     )
   } else {
-    return Ev.pure(false)
+    return Ev.now(false)
   }
 }
 
@@ -2082,7 +2082,7 @@ function structuralBothDistribute<Id, A>(l: PCause<Id, A>, r: PCause<Id, A>): Ev
       A.foldl(true, B.and_)
     )
   } else {
-    return Ev.pure(false)
+    return Ev.now(false)
   }
 }
 
@@ -2090,7 +2090,7 @@ function structuralEqualBoth<Id, A>(l: PCause<Id, A>, r: PCause<Id, A>): Ev.Eval
   if (l._tag === CauseTag.Both && r._tag === CauseTag.Both) {
     return Ev.crossWith_(l.left.equalsEval(r.left), l.right.equalsEval(r.right), B.and_)
   } else {
-    return Ev.pure(false)
+    return Ev.now(false)
   }
 }
 
@@ -2364,7 +2364,7 @@ function bothAssociate<Id, A>(EId: P.Eq<Id>, E: P.Eq<A>, l: PCause<Id, A>, r: PC
       A.foldl(true, B.and_)
     )
   } else {
-    return Ev.pure(false)
+    return Ev.now(false)
   }
 }
 
@@ -2403,7 +2403,7 @@ function bothDistribute<Id, A>(EId: P.Eq<Id>, E: P.Eq<A>, l: PCause<Id, A>, r: P
       A.foldl(true, B.and_)
     )
   } else {
-    return Ev.pure(false)
+    return Ev.now(false)
   }
 }
 
@@ -2420,7 +2420,7 @@ function thenAssociate<Id, A>(EId: P.Eq<Id>, E: P.Eq<A>, l: PCause<Id, A>, r: PC
       A.foldl(true, B.and_)
     )
   } else {
-    return Ev.pure(false)
+    return Ev.now(false)
   }
 }
 
@@ -2459,7 +2459,7 @@ function thenDistribute<Id, A>(EId: P.Eq<Id>, E: P.Eq<A>, l: PCause<Id, A>, r: P
       A.foldl(true, B.and_)
     )
   } else {
-    return Ev.pure(false)
+    return Ev.now(false)
   }
 }
 
@@ -2468,7 +2468,7 @@ function equalBoth<Id, A>(EId: P.Eq<Id>, E: P.Eq<A>, l: PCause<Id, A>, r: PCause
   if (l._tag === CauseTag.Both && r._tag === CauseTag.Both) {
     return Ev.crossWith_(equalsE(l.left, r.left), equalsE(l.right, r.right), B.and_)
   } else {
-    return Ev.pure(false)
+    return Ev.now(false)
   }
 }
 
@@ -2477,7 +2477,7 @@ function equalThen<Id, A>(EId: P.Eq<Id>, E: P.Eq<A>, l: PCause<Id, A>, r: PCause
   if (l._tag === CauseTag.Then && r._tag === CauseTag.Then) {
     return Ev.crossWith_(equalsE(l.left, r.left), equalsE(l.right, r.right), B.and_)
   } else {
-    return Ev.pure(false)
+    return Ev.now(false)
   }
 }
 
@@ -2489,10 +2489,10 @@ function equalEmpty<Id, A>(EId: P.Eq<Id>, E: P.Eq<A>, l: PCause<Id, A>, r: PCaus
     } else if (l.right._tag === CauseTag.Empty) {
       return equalsE(l.left, r)
     } else {
-      return Ev.pure(false)
+      return Ev.now(false)
     }
   } else {
-    return Ev.pure(false)
+    return Ev.now(false)
   }
 }
 

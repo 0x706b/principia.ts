@@ -44,7 +44,7 @@ export class Single<A> {
     return Ha.hash(this.value)
   }
   [Eq.$equals](that: unknown): boolean {
-    return isFreeSemiring(that) && this.equalsEval(that).value
+    return isFreeSemiring(that) && Ev.run(this.equalsEval(that))
   }
 
   equalsEval(that: FreeSemiring<any, unknown>): Ev.Eval<boolean> {
@@ -62,7 +62,7 @@ export class Then<Z, A> {
     return hashCode(this)
   }
   [Eq.$equals](that: unknown): boolean {
-    return isFreeSemiring(that) && this.equalsEval(that).value
+    return isFreeSemiring(that) && Ev.run(this.equalsEval(that))
   }
 
   equalsEval(that: FreeSemiring<any, unknown>): Ev.Eval<boolean> {
@@ -88,7 +88,7 @@ export class Empty {
     return _emptyHash
   }
   [Eq.$equals](that: unknown): boolean {
-    return isFreeSemiring(that) && this.equalsEval(that).value
+    return isFreeSemiring(that) && Ev.run(this.equalsEval(that))
   }
 
   equalsEval(that: FreeSemiring<any, unknown>): Ev.Eval<boolean> {
@@ -106,7 +106,7 @@ export class Both<Z, A> {
     return hashCode(this)
   }
   [Eq.$equals](that: unknown): boolean {
-    return isFreeSemiring(that) && this.equalsEval(that).value
+    return isFreeSemiring(that) && Ev.run(this.equalsEval(that))
   }
 
   equalsEval(that: FreeSemiring<any, unknown>): Ev.Eval<boolean> {
@@ -495,7 +495,7 @@ export function first<A>(ma: FreeSemiring<never, A>): A {
 
 export function getEq<A>(E: P.Eq<A>): P.Eq<FreeSemiring<any, A>> {
   const equalsE = equals_(E)
-  return P.Eq((x, y) => equalsE(x, y).value)
+  return P.Eq((x, y) => Ev.run(equalsE(x, y)))
 }
 
 export const Functor = P.Functor<FreeSemiringF>({ map_ })

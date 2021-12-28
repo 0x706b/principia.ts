@@ -272,7 +272,7 @@ export function fold_<A, B>(
   onOr: (_: B, __: B) => B,
   onNot: (_: B) => B
 ): B {
-  return Ev.evaluate(foldSafe_(ba, onValue, onAnd, onOr, onNot))
+  return Ev.run(foldSafe_(ba, onValue, onAnd, onOr, onNot))
 }
 
 export function fold<A, B>(

@@ -830,7 +830,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
         oldState.asyncCanceller._tag === 'Registered'
       ) {
         const newState = new State.Executing(
-          Status.withInterrupting(true)(oldState.status),
+          Status.withInterrupting(oldState.status, true),
           oldState.observers,
           oldState.suppressed,
           new Set(oldState.interruptors).add(fiberId),
@@ -961,7 +961,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       case 'Executing': {
         this.state.set(
           new State.Executing(
-            Status.withInterrupting(value)(oldState.status),
+            Status.withInterrupting(oldState.status, value),
             oldState.observers,
             oldState.suppressed,
             oldState.interruptors,

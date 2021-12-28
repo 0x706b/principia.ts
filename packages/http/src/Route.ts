@@ -135,7 +135,7 @@ export function middleware_<R, E, R1, E1>(
   routes: Routes<R, E>,
   middle: (cont: RouteFn<R, E>) => (conn: HttpConnection, next: FIO<E, HttpResponseCompleted>) => IO<R1, E1, any>
 ): Routes<R1, E1> {
-  return middlewareSafe(routes, middle).value
+  return Ev.run(middlewareSafe(routes, middle))
 }
 
 /*
@@ -214,7 +214,7 @@ function toArray<R, E>(routes: Routes<R, E>): ReadonlyArray<RouteMatch<R, E>> {
         }
       }
     })
-  return go(routes).value
+  return Ev.run(go(routes))
 }
 
 export const isRouterDraining = FR.unsafeMake(false, identity, (a, b) => a && b)

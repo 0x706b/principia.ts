@@ -109,14 +109,14 @@ function renderAssertionFailureDetails(failureDetails: NonEmptyArray<AssertionVa
     })
   }
 
-  return renderFragment(failureDetails[0], offset)['++'](Ev.evaluate(loop(failureDetails, Message.empty)))
+  return renderFragment(failureDetails[0], offset)['++'](Ev.run(loop(failureDetails, Message.empty)))
 }
 
 function renderWhole(fragment: AssertionValue<any>, whole: AssertionValue<any>, offset: number): Line {
   return withOffset(offset + tabSize)(
     blue(whole.showValue(offset + tabSize))
       ['+'](renderSatisfied(whole))
-      ['++'](highlight(cyan(whole.assertion.value.rendered), fragment.assertion.value.rendered))
+      ['++'](highlight(cyan(Ev.run(whole.assertion).rendered), Ev.run(fragment.assertion).rendered))
   )
 }
 
@@ -144,7 +144,7 @@ function renderGenFailureDetails(failureDetails: Maybe<GenFailureDetails>, offse
 
 function renderFragment(fragment: AssertionValue<any>, offset: number): Message {
   const assertionMessage = pipe(
-    fragment.assertion.value.rendered.split(/\n/),
+    Ev.run(fragment.assertion).rendered.split(/\n/),
     A.map((s) => withOffset(offset + tabSize)(cyan(s).toLine())),
     (lines) => new Message(L.from(lines))
   )
@@ -167,7 +167,7 @@ function highlight(fragment: Fragment, substring: string, colorCode = YELLOW): L
 }
 
 function renderSatisfied(fragment: AssertionValue<any>): Fragment {
-  return BA.isTrue(fragment.result.value) ? new Fragment(' satisfied ') : new Fragment(' did not satisfy ')
+  return BA.isTrue(Ev.run(fragment.result)) ? new Fragment(' satisfied ') : new Fragment(' did not satisfy ')
 }
 
 export function renderCause(cause: Cause<any>, offset: number): Message {

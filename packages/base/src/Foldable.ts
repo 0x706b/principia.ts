@@ -168,7 +168,7 @@ export function getFind_<F extends HKT.HKT, C = HKT.None>(F: FoldableMin<F, C>):
   return <K, Q, W, X, I, S, R, E, A>(
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     predicate: Predicate<A>
-  ): Maybe<A> => F.foldr_(fa, Ev.now(Mb.nothing<A>()), (a, b) => (predicate(a) ? Ev.now(Mb.just(a)) : b)).value
+  ): Maybe<A> => Ev.run(F.foldr_(fa, Ev.now(Mb.nothing<A>()), (a, b) => (predicate(a) ? Ev.now(Mb.just(a)) : b)))
 }
 
 export interface FindFn<F extends HKT.HKT, C = HKT.None> {
@@ -215,7 +215,7 @@ export function getFindM_<F extends HKT.HKT, CF = HKT.None>(F: FoldableMin<F, CF
       fromFoldable(F)(fa),
       Mb.match(
         () => M.pure(E.right(Mb.nothing())),
-        ([a, src]) => M.map_(p(a), (b) => (b ? E.right(Mb.just(a)) : E.left(src.value)))
+        ([a, src]) => M.map_(p(a), (b) => (b ? E.right(Mb.just(a)) : E.left(Ev.run(src))))
       )
     )
 }
@@ -331,7 +331,7 @@ export function getFoldrM_<F extends HKT.HKT, CF = HKT.None>(F: FoldableMin<F, C
         Mb.match_(
           src,
           () => M.pure(E.right(z)),
-          ([a, src]) => M.map_(f(a, z), (b) => E.left([b, src.value] as const))
+          ([a, src]) => M.map_(f(a, z), (b) => E.left([b, Ev.run(src)] as const))
         )
       )
     }
@@ -407,7 +407,7 @@ export interface ExistsFn_<F extends HKT.HKT, C = HKT.None> {
 }
 
 export function getExists_<F extends HKT.HKT, C = HKT.None>(F: FoldableMin<F, C>): ExistsFn_<F, C> {
-  return (fa, predicate) => F.foldr_(fa, Ev.now(false), (a, b) => (predicate(a) ? Ev.now(true) : b)).value
+  return (fa, predicate) => Ev.run(F.foldr_(fa, Ev.now<boolean>(false), (a, b) => (predicate(a) ? Ev.now(true) : b)))
 }
 
 export interface ExistsFn<F extends HKT.HKT, C = HKT.None> {
@@ -449,7 +449,7 @@ export function getExistsM_<F extends HKT.HKT, CF = HKT.None>(F: FoldableMin<F, 
       fromFoldable(F)(fa),
       Mb.match(
         () => M.pure(E.right(false)),
-        ([a, src]) => M.map_(p(a), (bb) => (bb ? E.right(true) : E.left(src.value)))
+        ([a, src]) => M.map_(p(a), (bb) => (bb ? E.right(true) : E.left(Ev.run(src))))
       )
     )
 }
@@ -479,7 +479,7 @@ export function getEvery_<F extends HKT.HKT, C = HKT.None>(F: FoldableMin<F, C>)
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     predicate: Predicate<A>
   ): fa is HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A> =>
-    F.foldr_(fa, Ev.now(true), (a, b) => (predicate(a) ? b : Ev.now(false))).value
+    Ev.run(F.foldr_(fa, Ev.now<boolean>(true), (a, b) => (predicate(a) ? b : Ev.now(false))))
 }
 
 export interface EveryFn<F extends HKT.HKT, C = HKT.None> {
@@ -528,7 +528,7 @@ export function getEveryM_<F extends HKT.HKT, CF = HKT.None>(F: FoldableMin<F, C
       fromFoldable(F)(fa),
       Mb.match(
         () => M.pure(E.right(true)),
-        ([a, src]) => M.map_(p(a), (bb) => (!bb ? E.right(false) : E.left(src.value)))
+        ([a, src]) => M.map_(p(a), (bb) => (!bb ? E.right(false) : E.left(Ev.run(src))))
       )
     )
 }
@@ -551,7 +551,7 @@ export interface ToIterableFn<F extends HKT.HKT, C = HKT.None> {
 
 export function getToIterable<F extends HKT.HKT, C = HKT.None>(F: FoldableMin<F, C>): ToIterableFn<F, C> {
   return <K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>) =>
-    F.foldr_(fa, Ev.now(It.never as Iterable<A>), (a, b) => Ev.map_(b, It.append(a))).value
+    Ev.run(F.foldr_(fa, Ev.now(It.never as Iterable<A>), (a, b) => Ev.map_(b, It.append(a))))
 }
 
 /*
@@ -564,5 +564,7 @@ type Source<A> = Maybe<readonly [A, Eval<Source<A>>]>
 
 function fromFoldable<F extends HKT.HKT, C>(F: FoldableMin<F, C>) {
   return <K, Q, W, X, I, S, R, E, A>(fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>): Source<A> =>
-    F.foldr_(fa, Ev.now<Source<A>>(Mb.nothing()), (a, evalSrc) => Ev.later(() => Mb.just([a, evalSrc] as const))).value
+    Ev.run(
+      F.foldr_(fa, Ev.now<Source<A>>(Mb.nothing()), (a, evalSrc) => Ev.later(() => Mb.just([a, evalSrc] as const)))
+    )
 }

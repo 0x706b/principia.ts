@@ -635,7 +635,7 @@ export function fold_<E, B>(
     SumE: (b: B) => B
   }
 ): B {
-  return foldEval(de, leaf, patterns).value
+  return Ev.run(foldEval(de, leaf, patterns))
 }
 
 export function fold<E, B>(

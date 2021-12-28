@@ -1,7 +1,5 @@
 import type { FiberId } from './FiberId'
 
-import * as Ev from '../Eval'
-
 export class Done {
   readonly _tag = 'Done'
 }
@@ -29,77 +27,36 @@ export class Suspended {
 export type FiberStatus = Done | Finishing | Running | Suspended
 
 export function isInterrupting(s: FiberStatus): boolean {
-  let current: FiberStatus | undefined = s
-  while (current) {
-    switch (current._tag) {
-      case 'Running': {
-        return current.interrupting
-      }
-      case 'Finishing': {
-        return current.interrupting
-      }
-      case 'Done': {
-        return false
-      }
-      case 'Suspended': {
-        current = current.previous
-        break
-      }
-    }
+  switch (s._tag) {
+    case 'Done':
+      return false
+    case 'Suspended':
+      return isInterrupting(s.previous)
+    default:
+      return s.interrupting
   }
-  throw new Error('absurd')
 }
 
-/**
- * @internal
- */
-export function withInterruptingEval(s: FiberStatus, b: boolean): Ev.Eval<FiberStatus> {
-  return Ev.gen(function* (_) {
-    switch (s._tag) {
-      case 'Done': {
-        return s
-      }
-      case 'Finishing': {
-        return new Finishing(b)
-      }
-      case 'Running': {
-        return new Running(b)
-      }
-      case 'Suspended': {
-        return new Suspended(yield* _(withInterruptingEval(s.previous, b)), s.interruptible, s.epoch, s.blockingOn)
-      }
-    }
-  })
-}
-
-export function withInterrupting(b: boolean): (s: FiberStatus) => FiberStatus {
-  return (s) => Ev.evaluate(withInterruptingEval(s, b))
-}
-
-/**
- * @internal
- */
-export function toFinishingEval(s: FiberStatus): Ev.Eval<FiberStatus> {
-  return Ev.gen(function* (_) {
-    switch (s._tag) {
-      case 'Done': {
-        return s
-      }
-      case 'Finishing': {
-        return s
-      }
-      case 'Running': {
-        return s
-      }
-      case 'Suspended': {
-        return yield* _(toFinishingEval(s.previous))
-      }
-    }
-  })
+export function withInterrupting(s: FiberStatus, b: boolean): FiberStatus {
+  switch (s._tag) {
+    case 'Done':
+      return s
+    case 'Finishing':
+      return new Finishing(b)
+    case 'Running':
+      return new Running(b)
+    case 'Suspended':
+      return new Suspended(withInterrupting(s.previous, b), s.interruptible, s.epoch, s.blockingOn)
+  }
 }
 
 export function toFinishing(s: FiberStatus): FiberStatus {
-  return Ev.evaluate(toFinishingEval(s))
+  switch (s._tag) {
+    case 'Suspended':
+      return toFinishing(s.previous)
+    default:
+      return s
+  }
 }
 
 export function isDone(s: FiberStatus): boolean {

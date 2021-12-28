@@ -812,7 +812,7 @@ export function comprehension<A, R>(
   input: NonEmptyArray<NonEmptyArray<A>>,
   f: (...xs: ReadonlyArray<A>) => R
 ): NonEmptyArray<R> {
-  return comprehensionLoop([], input, f).value
+  return Ev.run(comprehensionLoop([], input, f))
 }
 
 /**

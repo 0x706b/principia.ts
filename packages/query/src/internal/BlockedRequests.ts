@@ -81,7 +81,7 @@ export function mapDataSources<R, R1>(br: BlockedRequests<R>, f: DataSourceAspec
       }
     })
 
-  return Ev.evaluate(go(br, f))
+  return Ev.run(go(br, f))
 }
 
 export function gives_<R, R0>(br: BlockedRequests<R>, f: Described<(r0: R0) => R>): BlockedRequests<R0> {
@@ -103,7 +103,7 @@ export function gives_<R, R0>(br: BlockedRequests<R>, f: Described<(r0: R0) => R
       }
     })
 
-  return Ev.evaluate(go(br, f))
+  return Ev.run(go(br, f))
 }
 
 export function run_<R>(br: BlockedRequests<R>, cache: Cache): I.IO<R, never, void> {
@@ -166,7 +166,7 @@ function flatten<R>(blockedRequests: BlockedRequests<R>): List<Sequential<R>> {
       }
     })
 
-  return Ev.evaluate(go(L.list(blockedRequests), L.empty()))
+  return Ev.run(go(L.list(blockedRequests), L.empty()))
 }
 
 function step<R>(c: BlockedRequests<R>): readonly [Par.Parallel<R>, List<BlockedRequests<R>>] {
@@ -239,7 +239,7 @@ function step<R>(c: BlockedRequests<R>): readonly [Par.Parallel<R>, List<Blocked
       }
     })
 
-  return Ev.evaluate(go(c, L.empty(), Par.empty(), L.empty()))
+  return Ev.run(go(c, L.empty(), Par.empty(), L.empty()))
 }
 
 const getIterableSize = (it: Iterable<any> | undefined): number => (it ? Array.from(it).length : 0)
