@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.30.0](https://github.com/0x706b/principia.ts/compare/@principia/base@0.29.0...@principia/base@0.30.0) (2021-12-29)
+
+
+### Features
+
+* **z:** refactor `Z` interpreter ([8c9b561](https://github.com/0x706b/principia.ts/commit/8c9b561f3dc3821116846a52ddbc38936bf45532))
+
+
+### Performance Improvements
+
+* **base:** remove unnecessary use of `AtomicReference` ([3ac1d40](https://github.com/0x706b/principia.ts/commit/3ac1d40b8863b1e2cebd03c870f7b9f083982166))
+* **fiber:** directly mutate `FiberState` ([7505002](https://github.com/0x706b/principia.ts/commit/750500219f8632576683d069bd6a3f2954b0e2dc))
+
+
+
+
+
 # [0.29.0](https://github.com/0x706b/principia.ts/compare/@principia/base@0.28.4...@principia/base@0.29.0) (2021-12-27)
 
 

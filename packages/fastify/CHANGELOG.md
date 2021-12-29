@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.6](https://github.com/0x706b/principia.ts/compare/@principia/fastify@0.2.5...@principia/fastify@0.2.6) (2021-12-29)
+
+**Note:** Version bump only for package @principia/fastify
+
+
+
+
+
 ## [0.2.5](https://github.com/0x706b/principia.ts/compare/@principia/fastify@0.2.4...@principia/fastify@0.2.5) (2021-12-27)
 
 

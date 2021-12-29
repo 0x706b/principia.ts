@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.27.1](https://github.com/0x706b/principia.ts/compare/@principia/observable@0.27.0...@principia/observable@0.27.1) (2021-12-29)
+
+**Note:** Version bump only for package @principia/observable
+
+
+
+
+
 # [0.27.0](https://github.com/0x706b/principia.ts/compare/@principia/observable@0.26.4...@principia/observable@0.27.0) (2021-12-27)
 
 
