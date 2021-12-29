@@ -68,10 +68,8 @@ function concrete(z: Z<any, any, any, any, any, any>): asserts z is Concrete {
 
 const ZTag = {
   Succeed: 'Succeed',
-  EffectTotal: 'EffectTotal',
-  EffectPartial: 'EffectPartial',
-  DeferTotal: 'DeferTotal',
-  DeferPartial: 'DeferPartial',
+  SucceedLazy: 'SucceedLazy',
+  Defer: 'Defer',
   Fail: 'Fail',
   Modify: 'Modify',
   Chain: 'Chain',
@@ -91,34 +89,18 @@ class Succeed<A> extends Z<never, unknown, never, unknown, never, A> {
   }
 }
 
-class EffectTotal<A> extends Z<never, unknown, never, unknown, never, A> {
+class SucceedLazy<A> extends Z<never, unknown, never, unknown, never, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag = ZTag.EffectTotal
+  readonly _tag = ZTag.SucceedLazy
   constructor(readonly effect: () => A) {
     super()
   }
 }
 
-class EffectPartial<E, A> extends Z<never, unknown, never, unknown, E, A> {
+class Defer<W, S1, S2, R, E, A> extends Z<W, S1, S2, R, E, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag = ZTag.EffectPartial
-  constructor(readonly effect: () => A, readonly onThrow: (u: unknown) => E) {
-    super()
-  }
-}
-
-class DeferTotal<W, S1, S2, R, E, A> extends Z<W, S1, S2, R, E, A> {
-  readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag = ZTag.DeferTotal
+  readonly _tag = ZTag.Defer
   constructor(readonly z: () => Z<W, S1, S2, R, E, A>) {
-    super()
-  }
-}
-
-class DeferPartial<W, S1, S2, R, E, A, E1> extends Z<W, S1, S2, R, E | E1, A> {
-  readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag = ZTag.DeferPartial
-  constructor(readonly z: () => Z<W, S1, S2, R, E, A>, readonly onThrow: (u: unknown) => E1) {
     super()
   }
 }
@@ -206,10 +188,8 @@ type Concrete =
   | Match<any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any, any>
   | Asks<any, any, any, any, any, any, any>
   | Give<any, any, any, any, any, any>
-  | DeferTotal<any, any, any, any, any, any>
-  | EffectTotal<any>
-  | EffectPartial<any, any>
-  | DeferPartial<any, any, any, any, any, any, any>
+  | Defer<any, any, any, any, any, any>
+  | SucceedLazy<any>
   | Tell<any>
   | Censor<any, any, any, any, any, any, any>
 
@@ -220,35 +200,59 @@ type Concrete =
  */
 
 export function deferTry<W, S1, S2, R, E, A>(ma: () => Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, unknown, A> {
-  return new DeferPartial(ma, identity)
+  return defer(() => {
+    try {
+      return ma()
+    } catch (u) {
+      throw new ZError(Ca.fail(u))
+    }
+  })
 }
 
 export function deferTryCatch<W, S1, S2, R, E, A, E1>(
   ma: () => Z<W, S1, S2, R, E, A>,
   f: (e: unknown) => E1
 ): Z<W, S1, S2, R, E | E1, A> {
-  return new DeferPartial(ma, f)
+  return defer(() => {
+    try {
+      return ma()
+    } catch (u) {
+      throw new ZError(Ca.fail(f(u)))
+    }
+  })
 }
 
 export function defer<W, S1, S2, R, E, A>(ma: () => Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, E, A> {
-  return new DeferTotal(ma)
+  return new Defer(ma)
 }
 
 function _try<A>(effect: () => A): Z<never, unknown, never, unknown, unknown, A> {
-  return new EffectPartial(effect, identity)
+  return succeedLazy(() => {
+    try {
+      return effect()
+    } catch (u) {
+      throw new ZError(Ca.fail(u))
+    }
+  })
 }
 
 export { _try as try }
 
 export function succeedLazy<A, W = never, S1 = unknown, S2 = never>(effect: () => A): Z<W, S1, S2, unknown, never, A> {
-  return new EffectTotal(effect)
+  return new SucceedLazy(effect)
 }
 
 export function tryCatch<A, E>(
   effect: () => A,
   onThrow: (reason: unknown) => E
 ): Z<never, unknown, never, unknown, E, A> {
-  return new EffectPartial(effect, onThrow)
+  return succeedLazy(() => {
+    try {
+      return effect()
+    } catch (u) {
+      throw new ZError(Ca.fail(onThrow(u)))
+    }
+  })
 }
 
 export function fail<E>(e: E): Z<never, unknown, never, unknown, E, never> {
@@ -1596,181 +1600,198 @@ export function runAll_<W, S1, S2, E, A>(
   ma: Z<W, S1, S2, unknown, E, A>,
   s: S1
 ): readonly [C.Chunk<W>, Exit<E, readonly [S2, A]>] {
-  let frames = undefined as Stack<Frame> | undefined
+  let stack: Stack<Frame> | undefined = undefined
+  let s0          = s as any
+  let result: any = null
+  let environment = undefined as Stack<any> | undefined
+  let failed      = false
+  let current     = ma as Z<any, any, any, any, any, any> | undefined
+  let log         = C.empty<W>()
 
-  let s0            = s as any
-  let result: any   = null
-  const environment = undefined as Stack<any> | undefined
-  let failed        = false
-  let current       = ma as Z<any, any, any, any, any, any> | undefined
-  let log           = C.empty<W>()
-
-  function popContinuation() {
-    const current = frames?.value
-    frames        = frames?.previous
+  function unsafePopStackFrame() {
+    const current = stack?.value
+    stack         = stack?.previous
     return current
   }
 
-  function pushContinuation(cont: Frame) {
-    frames = makeStack(cont, frames)
+  function unsafePushStackFrame(cont: Frame) {
+    stack = makeStack(cont, stack)
   }
 
-  function popEnv() {
+  function unsafePopEnv() {
     const current = environment?.value
-    frames        = environment?.previous
+    environment   = environment?.previous
     return current
   }
 
-  function pushEnv(env: any) {
-    frames = makeStack(env, environment)
+  function unsafePushEnv(env: any) {
+    environment = makeStack(env, environment)
   }
 
-  function findNextErrorHandler() {
+  function unsafeUnwindStack() {
     let unwinding = true
     while (unwinding) {
-      const next = popContinuation()
+      const next = unsafePopStackFrame()
 
       if (next == null) {
         unwinding = false
       } else {
         if (next._zTag === 'MatchFrame') {
           unwinding = false
-          pushContinuation(new ApplyFrame(next.failure))
+          unsafePushStackFrame(new ApplyFrame(next.failure))
         }
       }
     }
   }
 
   while (current != null) {
-    const Z = current
-    concrete(Z)
+    try {
+      while (current != null) {
+        const Z: Z<any, any, any, any, any, any> = current
+        concrete(Z)
 
-    switch (Z._tag) {
-      case ZTag.Chain: {
-        current = Z.z
-        pushContinuation(new ApplyFrame(Z.cont))
-        break
-      }
-      case ZTag.EffectTotal: {
-        result                = Z.effect()
-        const nextInstruction = popContinuation()
-        if (nextInstruction) {
-          current = nextInstruction.apply(result)
-        } else {
-          current = undefined
-        }
-        break
-      }
-      case ZTag.EffectPartial: {
-        try {
-          current = succeed(Z.effect())
-        } catch (e) {
-          current = fail(Z.onThrow(e))
-        }
-        break
-      }
-      case ZTag.DeferTotal: {
-        current = Z.z()
-        break
-      }
-      case ZTag.DeferPartial: {
-        try {
-          current = Z.z()
-        } catch (e) {
-          current = fail(Z.onThrow(e))
-        }
-        break
-      }
-      case ZTag.Succeed: {
-        result          = Z.value
-        const nextInstr = popContinuation()
-        if (nextInstr) {
-          current = nextInstr.apply(result)
-        } else {
-          current = undefined
-        }
-        break
-      }
-      case ZTag.Fail: {
-        findNextErrorHandler()
-        const nextInst = popContinuation()
-        if (nextInst) {
-          current = nextInst.apply(Z.cause)
-        } else {
-          failed  = true
-          result  = Z.cause
-          current = undefined
-        }
-        break
-      }
-      case ZTag.Match: {
-        current     = Z.z
-        const state = s0
-        pushContinuation(
-          new MatchFrame(
-            (cause: Cause<any>) => {
-              const m = apSecond_(put(state), Z.onFailure(log, cause))
-              log     = C.empty()
-              return m
-            },
-            (a) => {
-              const m = Z.onSuccess(log, a)
-              log     = C.empty()
-              return m
+        switch (Z._tag) {
+          case ZTag.Chain: {
+            const nested       = Z.z
+            const continuation = Z.cont
+            concrete(nested)
+            switch (nested._tag) {
+              case ZTag.Succeed: {
+                current = continuation(nested.value)
+                break
+              }
+              case ZTag.SucceedLazy: {
+                current = continuation(nested.effect())
+                break
+              }
+              case ZTag.Modify: {
+                const updated = nested.run(s0)
+                result        = updated[0]
+                s0            = updated[1]
+                current       = continuation(result)
+                break
+              }
+              default: {
+                current = nested
+                unsafePushStackFrame(new ApplyFrame(continuation))
+                break
+              }
             }
-          )
-        )
-        break
-      }
-      case ZTag.Asks: {
-        current = Z.asks(environment?.value || {})
-        break
-      }
-      case ZTag.Give: {
-        pushEnv(Z.env)
-        current = matchZ_(
-          Z.z,
-          (e) => apSecond_(succeed(popEnv()), fail(e)),
-          (a) => apSecond_(succeed(popEnv()), succeed(a))
-        )
-        break
-      }
-      case ZTag.Modify: {
-        const updated  = Z.run(s0)
-        s0             = updated[1]
-        result         = updated[0]
-        const nextInst = popContinuation()
-        if (nextInst) {
-          current = nextInst.apply(result)
-        } else {
-          current = undefined
-        }
-        break
-      }
-      case ZTag.Tell: {
-        log            = Z.log
-        const nextInst = popContinuation()
-        if (nextInst) {
-          current = nextInst.apply(result)
-        } else {
-          current = undefined
-        }
-        break
-      }
-      case ZTag.Censor: {
-        current = Z.z
-        pushContinuation(
-          new MatchFrame(
-            (cause: Cause<any>) => {
-              log = Z.modifyLog(log)
-              return failCause(cause)
-            },
-            (a) => {
-              log = Z.modifyLog(log)
-              return succeed(a)
+            break
+          }
+          case ZTag.SucceedLazy: {
+            result                = Z.effect()
+            const nextInstruction = unsafePopStackFrame()
+            if (nextInstruction) {
+              current = nextInstruction.apply(result)
+            } else {
+              current = undefined
             }
-          )
-        )
+            break
+          }
+          case ZTag.Defer: {
+            current = Z.z()
+            break
+          }
+          case ZTag.Succeed: {
+            result          = Z.value
+            const nextInstr = unsafePopStackFrame()
+            if (nextInstr) {
+              current = nextInstr.apply(result)
+            } else {
+              current = undefined
+            }
+            break
+          }
+          case ZTag.Fail: {
+            unsafeUnwindStack()
+            const nextInst = unsafePopStackFrame()
+            if (nextInst) {
+              current = nextInst.apply(Z.cause)
+            } else {
+              failed  = true
+              result  = Z.cause
+              current = undefined
+            }
+            break
+          }
+          case ZTag.Match: {
+            current     = Z.z
+            const state = s0
+            unsafePushStackFrame(
+              new MatchFrame(
+                (cause: Cause<any>) => {
+                  const m = apSecond_(put(state), Z.onFailure(log, cause))
+                  log     = C.empty()
+                  return m
+                },
+                (a) => {
+                  const m = Z.onSuccess(log, a)
+                  log     = C.empty()
+                  return m
+                }
+              )
+            )
+            break
+          }
+          case ZTag.Asks: {
+            current = Z.asks(environment?.value || {})
+            break
+          }
+          case ZTag.Give: {
+            unsafePushEnv(Z.env)
+            current = matchZ_(
+              Z.z,
+              (e) => apSecond_(succeed(unsafePopEnv()), fail(e)),
+              (a) => apSecond_(succeed(unsafePopEnv()), succeed(a))
+            )
+            break
+          }
+          case ZTag.Modify: {
+            const updated  = Z.run(s0)
+            s0             = updated[1]
+            result         = updated[0]
+            const nextInst = unsafePopStackFrame()
+            if (nextInst) {
+              current = nextInst.apply(result)
+            } else {
+              current = undefined
+            }
+            break
+          }
+          case ZTag.Tell: {
+            log            = Z.log
+            const nextInst = unsafePopStackFrame()
+            if (nextInst) {
+              current = nextInst.apply(result)
+            } else {
+              current = undefined
+            }
+            break
+          }
+          case ZTag.Censor: {
+            current = Z.z
+            unsafePushStackFrame(
+              new MatchFrame(
+                (cause: Cause<any>) => {
+                  log = Z.modifyLog(log)
+                  return failCause(cause)
+                },
+                (a) => {
+                  log = Z.modifyLog(log)
+                  return succeed(a)
+                }
+              )
+            )
+          }
+        }
+      }
+    } catch (e) {
+      if (isZError(e)) {
+        current = failCause(e.cause)
+      } else {
+        failed = true
+        result = Ca.halt(e)
       }
     }
   }
@@ -2138,4 +2159,16 @@ export function gen<T extends GenZ<any, any, any, any, any>, A>(
 
     return run(state)
   })
+}
+
+export const ZErrorTypeId = Symbol.for('@principia/base/Z/ZError')
+export type ZErrorTypeId = typeof ZErrorTypeId
+
+export class ZError<E> {
+  readonly [ZErrorTypeId]: ZErrorTypeId = ZErrorTypeId
+  constructor(readonly cause: Cause<E>) {}
+}
+
+export function isZError(u: unknown): u is ZError<unknown> {
+  return isObject(u) && ZErrorTypeId in u
 }
