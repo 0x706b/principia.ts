@@ -100,7 +100,7 @@ class SucceedLazy<A> extends Z<never, unknown, never, unknown, never, A> {
 class Defer<W, S1, S2, R, E, A> extends Z<W, S1, S2, R, E, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
   readonly _tag = ZTag.Defer
-  constructor(readonly z: () => Z<W, S1, S2, R, E, A>) {
+  constructor(readonly make: () => Z<W, S1, S2, R, E, A>) {
     super()
   }
 }
@@ -124,7 +124,7 @@ class Modify<S1, S2, A> extends Z<never, S1, S2, unknown, never, A> {
 class Chain<W, S1, S2, R, E, A, W1, S3, Q, D, B> extends Z<W | W1, S1, S3, Q & R, D | E, B> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
   readonly _tag = ZTag.Chain
-  constructor(readonly z: Z<W, S1, S2, R, E, A>, readonly cont: (a: A) => Z<W1, S2, S3, Q, D, B>) {
+  constructor(readonly ma: Z<W, S1, S2, R, E, A>, readonly f: (a: A) => Z<W1, S2, S3, Q, D, B>) {
     super()
   }
 }
@@ -159,7 +159,7 @@ class Asks<W, R0, S1, S2, R, E, A> extends Z<W, S1, S2, R0 & R, E, A> {
 class Give<W, S1, S2, R, E, A> extends Z<W, S1, S2, unknown, E, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
   readonly _tag = ZTag.Give
-  constructor(readonly z: Z<W, S1, S2, R, E, A>, readonly env: R) {
+  constructor(readonly ma: Z<W, S1, S2, R, E, A>, readonly env: R) {
     super()
   }
 }
@@ -175,7 +175,7 @@ class Tell<W> extends Z<W, unknown, never, unknown, never, void> {
 class Censor<W, S1, S2, R, E, A, W1> extends Z<W1, S1, S2, R, E, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
   readonly _tag = ZTag.Censor
-  constructor(readonly z: Z<W, S1, S2, R, E, A>, readonly modifyLog: (ws: C.Chunk<W>) => C.Chunk<W1>) {
+  constructor(readonly ma: Z<W, S1, S2, R, E, A>, readonly modifyLog: (ws: C.Chunk<W>) => C.Chunk<W1>) {
     super()
   }
 }
@@ -1652,8 +1652,8 @@ export function runAll_<W, S1, S2, E, A>(
 
         switch (Z._tag) {
           case ZTag.Chain: {
-            const nested       = Z.z
-            const continuation = Z.cont
+            const nested       = Z.ma
+            const continuation = Z.f
             concrete(nested)
             switch (nested._tag) {
               case ZTag.Succeed: {
@@ -1690,7 +1690,7 @@ export function runAll_<W, S1, S2, E, A>(
             break
           }
           case ZTag.Defer: {
-            current = Z.z()
+            current = Z.make()
             break
           }
           case ZTag.Succeed: {
@@ -1741,7 +1741,7 @@ export function runAll_<W, S1, S2, E, A>(
           case ZTag.Give: {
             unsafePushEnv(Z.env)
             current = matchZ_(
-              Z.z,
+              Z.ma,
               (e) => apSecond_(succeed(unsafePopEnv()), fail(e)),
               (a) => apSecond_(succeed(unsafePopEnv()), succeed(a))
             )
@@ -1770,7 +1770,7 @@ export function runAll_<W, S1, S2, E, A>(
             break
           }
           case ZTag.Censor: {
-            current = Z.z
+            current = Z.ma
             unsafePushStackFrame(
               new MatchFrame(
                 (cause: Cause<any>) => {
