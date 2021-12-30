@@ -927,6 +927,18 @@ export function foldMap<M>(M: P.Monoid<M>): <A>(f: (a: A) => M) => (fa: List<A>)
   return (f) => (fa) => foldMapM_(fa, f)
 }
 
+export function mapAccum_<A, S, B>(fa: List<A>, s: S, f: (s: S, a: A) => readonly [B, S]): readonly [List<B>, S] {
+  return foldl_(fa, [emptyPushable(), s], ([acc, s], a) => {
+    const r = f(s, a)
+    push(r[0], acc)
+    return [acc, r[1]]
+  })
+}
+
+export function mapAccum<A, S, B>(s: S, f: (s: S, a: A) => readonly [B, S]): (l: List<A>) => readonly [List<B>, S] {
+  return (l) => mapAccum_(l, s, f)
+}
+
 /*
  * -------------------------------------------------------------------------------------------------
  * Functor
@@ -1646,6 +1658,14 @@ export function findLastIndex<A>(predicate: Predicate<A>): (as: List<A>) => numb
   return (as) => findLastIndex_(as, predicate)
 }
 
+export function iforEach_<A>(as: List<A>, f: (i: number, a: A) => void): void {
+  ifoldl_(as, undefined as void, (index, _, element) => f(index, element))
+}
+
+export function iforEach<A>(f: (i: number, a: A) => void): (as: List<A>) => void {
+  return (as) => iforEach_(as, f)
+}
+
 /**
  * Invokes a given callback for each element in the list from left to
  * right. Returns `undefined`.
@@ -1912,7 +1932,7 @@ export function mutableClone<A>(as: List<A>): MutableList<A> {
  * @complexity O(n)
  */
 export function none_<A>(as: List<A>, predicate: Predicate<A>): boolean {
-  return !some_(as, predicate)
+  return !exists_(as, predicate)
 }
 
 /**
@@ -2173,7 +2193,7 @@ export function slice(from: number, to: number): <A>(as: List<A>) => List<A> {
  *
  * @complexity O(n)
  */
-export function some_<A>(as: List<A>, predicate: Predicate<A>): boolean {
+export function exists_<A>(as: List<A>, predicate: Predicate<A>): boolean {
   return foldlCb<A, PredState>(someCb, { predicate, result: false }, as).result
 }
 
@@ -2182,10 +2202,10 @@ export function some_<A>(as: List<A>, predicate: Predicate<A>): boolean {
  * which the predicate returns true.
  *
  * @complexity O(n)
- * @dataFirst some_
+ * @dataFirst exists_
  */
-export function some<A>(predicate: Predicate<A>): (as: List<A>) => boolean {
-  return (as) => some_(as, predicate)
+export function exists<A>(predicate: Predicate<A>): (as: List<A>) => boolean {
+  return (as) => exists_(as, predicate)
 }
 
 /**
@@ -3804,7 +3824,7 @@ function foldlNodeCb<A, B>(cb: FoldCb<A, B>, state: B, node: Node, depth: number
   let j    = offset
   let cont
   for (let i = 0; i < to; ++i) {
-    [cont, j] = foldlNodeCb(cb, state, node, depth, j)
+    [cont, j] = foldlNodeCb(cb, state, array[i], depth - 1, j)
     if (!cont) {
       return [false, j]
     }

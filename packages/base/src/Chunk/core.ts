@@ -67,7 +67,7 @@ abstract class ChunkImplementation<A> extends Chunk<A> implements Iterable<A> {
   abstract readonly length: number
   abstract readonly binary: boolean
   abstract get(n: number): A
-  abstract toArray(n: number, dest: Array<A> | Uint8Array): void
+  abstract copyToArray(n: number, dest: Array<A> | Uint8Array): void
   abstract readonly left: ChunkImplementation<A>
   abstract readonly right: ChunkImplementation<A>
 
@@ -90,23 +90,25 @@ abstract class ChunkImplementation<A> extends Chunk<A> implements Iterable<A> {
   }
 
   private arrayLikeCache: ArrayLike<unknown> | undefined
+
   arrayLike(): ArrayLike<A> {
     if (this.arrayLikeCache) {
       return this.arrayLikeCache as ArrayLike<A>
     }
     const arr = this.binary ? alloc(this.length) : new Array(this.length)
-    this.toArray(0, arr)
+    this.copyToArray(0, arr)
     this.arrayLikeCache = arr
     return arr as ArrayLike<A>
   }
 
   private arrayCache: Array<unknown> | undefined
+
   array(): ReadonlyArray<A> {
     if (this.arrayCache) {
       return this.arrayCache as Array<A>
     }
     const arr = new Array(this.length)
-    this.toArray(0, arr)
+    this.copyToArray(0, arr)
     this.arrayCache = arr
     return arr as Array<A>
   }
@@ -126,7 +128,7 @@ abstract class ChunkImplementation<A> extends Chunk<A> implements Iterable<A> {
     }
     if (that._chunkTag === ChunkTag.PrependN) {
       const chunk = fromArray(A.takeLast_(that.buffer as Array<A>, that.bufferUsed))
-      return this.concat(chunk).concat(that)
+      return this.concat(chunk).concat(that.end)
     }
     const diff = that.depth - this.depth
     if (Math.abs(diff) <= 1) {
@@ -258,7 +260,7 @@ class Empty<A> extends ChunkImplementation<A> {
   foreach<B>(_: (a: never) => B): void {
     return
   }
-  toArray(_: number, __: Array<A> | Uint8Array): void {
+  copyToArray(_: number, __: Array<A> | Uint8Array): void {
     return
   }
   [Symbol.iterator](): Iterator<A> {
@@ -306,13 +308,12 @@ class Concat<A> extends ChunkImplementation<A> {
     this.left.foreach(f)
     this.right.foreach(f)
   }
-  toArray(n: number, dest: Array<A> | Uint8Array): void {
-    this.left.toArray(n, dest)
-    this.right.toArray(n + this.left.length, dest)
+  copyToArray(n: number, dest: Array<A> | Uint8Array): void {
+    this.left.copyToArray(n, dest)
+    this.right.copyToArray(n + this.left.length, dest)
   }
   [Symbol.iterator](): Iterator<A> {
-    const arr = this.arrayLike()
-    return arr[Symbol.iterator]()
+    return It.concat_(this.left, this.right)[Symbol.iterator]()
   }
   arrayIterator(): Iterator<ArrayLike<A>> {
     return It.concat_(
@@ -334,6 +335,7 @@ class AppendN<A> extends ChunkImplementation<A> {
   depth = 0
   left = _Empty
   right = _Empty
+
   constructor(
     readonly start: ChunkImplementation<A>,
     readonly buffer: Array<unknown> | Uint8Array,
@@ -343,6 +345,11 @@ class AppendN<A> extends ChunkImplementation<A> {
   ) {
     super()
   }
+
+  [Symbol.iterator](): Iterator<A> {
+    return It.concat_(this.start, It.take_(this.buffer as Array<A>, this.bufferUsed))[Symbol.iterator]()
+  }
+
   append<A1>(a: A1): ChunkImplementation<A | A1> {
     const binary = this.binary && isByte(a)
     if (this.bufferUsed < this.buffer.length && this.chain.compareAndSet(this.bufferUsed, this.bufferUsed + 1)) {
@@ -381,6 +388,7 @@ class AppendN<A> extends ChunkImplementation<A> {
       )
     }
   }
+
   get(n: number): A {
     if (n < this.start.length) {
       return this.start.get(n)
@@ -388,10 +396,12 @@ class AppendN<A> extends ChunkImplementation<A> {
       return this.buffer[n - this.start.length] as A
     }
   }
-  toArray(n: number, dest: Array<A> | Uint8Array): void {
-    this.start.toArray(n, dest)
+
+  copyToArray(n: number, dest: Array<A> | Uint8Array): void {
+    this.start.copyToArray(n, dest)
     copyArray(this.buffer as ArrayLike<A>, 0, dest, this.start.length + n, this.bufferUsed)
   }
+
   foreach<B>(f: (a: A) => B): void {
     this.start.foreach(f)
     for (let i = 0; i < this.bufferUsed; i++) {
@@ -399,6 +409,7 @@ class AppendN<A> extends ChunkImplementation<A> {
     }
   }
 }
+
 class PrependN<A> extends ChunkImplementation<A> {
   readonly _chunkTag = ChunkTag.PrependN
 
@@ -415,6 +426,11 @@ class PrependN<A> extends ChunkImplementation<A> {
   ) {
     super()
   }
+
+  [Symbol.iterator](): Iterator<A> {
+    return It.concat_(It.take_(this.buffer as Array<A>, this.bufferUsed), this.end)[Symbol.iterator]()
+  }
+
   prepend<A1>(a: A1): ChunkImplementation<A | A1> {
     const binary = this.binary && isByte(a)
     if (this.bufferUsed < this.buffer.length && this.chain.compareAndSet(this.bufferUsed, this.bufferUsed + 1)) {
@@ -457,16 +473,19 @@ class PrependN<A> extends ChunkImplementation<A> {
       )
     }
   }
+
   get(n: number): A {
     return n < this.bufferUsed
       ? (this.buffer[BUFFER_SIZE - this.bufferUsed + n] as A)
       : this.end.get(n - this.bufferUsed)
   }
-  toArray(n: number, dest: Array<A> | Uint8Array) {
+
+  copyToArray(n: number, dest: Array<A> | Uint8Array) {
     const length = Math.min(this.bufferUsed, Math.max(dest.length - n, 0))
     copyArray(this.buffer, BUFFER_SIZE - this.bufferUsed, dest, n, length)
-    this.end.toArray(n + length, dest)
+    this.end.copyToArray(n + length, dest)
   }
+
   foreach<B>(f: (a: A) => B): void {
     for (let i = BUFFER_SIZE - this.bufferUsed - 1; i < BUFFER_SIZE; i++) {
       f(this.buffer[i] as A)
@@ -539,8 +558,8 @@ class Update<A> extends ChunkImplementation<A> {
     }
   }
 
-  toArray(n: number, dest: Array<A>): void {
-    this.chunk.toArray(n, dest)
+  copyToArray(n: number, dest: Array<A>): void {
+    this.chunk.copyToArray(n, dest)
     for (let i = 0; i < this.used; i++) {
       const index = this.bufferIndices[i]
       const value = this.bufferValues[i]
@@ -557,23 +576,30 @@ class Singleton<A> extends ChunkImplementation<A> {
   left = _Empty
   right = _Empty
   binary = isByte(this.value)
+
   constructor(readonly value: A) {
     super()
   }
+
   get(n: number): A {
     if (n === 0) {
       return this.value
     }
     throw new ArrayIndexOutOfBoundsException(n)
   }
+
   foreach<B>(f: (a: A) => B): void {
     f(this.value)
   }
-  toArray(n: number, dest: Array<A> | Uint8Array) {
+
+  copyToArray(n: number, dest: Array<A> | Uint8Array) {
     dest[n] = this.value
   }
+
   [Symbol.iterator] = It.singleton(this.value)[Symbol.iterator]
+
   arrayIterator = It.singleton([this.value])[Symbol.iterator]
+
   reverseArrayIterator = this.arrayIterator
 }
 
@@ -585,12 +611,15 @@ class Slice<A> extends ChunkImplementation<A> {
   left = _Empty
   right = _Empty
   binary = this.chunk.binary
+
   constructor(readonly chunk: ChunkImplementation<A>, readonly offset: number, readonly l: number) {
     super()
   }
+
   get(n: number): A {
     return this.chunk.get(this.offset + n)
   }
+
   foreach<B>(f: (a: A) => B): void {
     let i = 0
     while (i < this.length) {
@@ -598,7 +627,8 @@ class Slice<A> extends ChunkImplementation<A> {
       i++
     }
   }
-  toArray(n: number, dest: Array<A> | Uint8Array) {
+
+  copyToArray(n: number, dest: Array<A> | Uint8Array) {
     let i = 0
     let j = n
     while (i < this.length) {
@@ -617,27 +647,34 @@ class Arr<A> extends ChunkImplementation<A> {
   left = _Empty
   right = _Empty
   binary = false
+
   constructor(readonly _array: ReadonlyArray<A>) {
     super()
   }
+
   get(n: number): A {
     if (n >= this.length || n < 0) {
       throw new ArrayIndexOutOfBoundsException(n)
     }
     return this._array[n]
   }
+
   foreach<B>(f: (a: A) => B): void {
     for (let i = 0; i < this.length; i++) {
       f(this._array[i])
     }
   }
-  toArray(n: number, dest: Array<A> | Uint8Array): void {
+
+  copyToArray(n: number, dest: Array<A> | Uint8Array): void {
     copyArray(this._array, 0, dest, n, this.length)
   }
+
   [Symbol.iterator](): Iterator<A> {
     return this._array[Symbol.iterator]()
   }
+
   arrayIterator = It.singleton(this._array)[Symbol.iterator]
+
   reverseArrayIterator = this.arrayIterator
 }
 
@@ -649,27 +686,34 @@ class BinArr extends ChunkImplementation<Byte> {
   left = _Empty
   right = _Empty
   binary = true
+
   constructor(readonly _array: ByteArray) {
     super()
   }
+
   get(n: number): Byte {
     if (n >= this.length || n < 0) {
       throw new ArrayIndexOutOfBoundsException(n)
     }
     return this._array[n]
   }
+
   foreach<B>(f: (a: Byte) => B): void {
     for (let i = 0; i < this.length; i++) {
       f(this._array[i])
     }
   }
+
   [Symbol.iterator](): Iterator<Byte> {
     return this._array[Symbol.iterator]()
   }
-  toArray(n: number, dest: Array<Byte> | Uint8Array): void {
+
+  copyToArray(n: number, dest: Array<Byte> | Uint8Array): void {
     copyArray(this._array, 0, dest, n, this.length)
   }
+
   arrayIterator = It.singleton(this._array)[Symbol.iterator]
+
   reverseArrayIterator = this.arrayIterator
 }
 
@@ -1078,12 +1122,8 @@ export function imap_<A, B>(chunk: Chunk<A>, f: (i: number, a: A) => B): Chunk<B
       return _Empty
     }
     case ChunkTag.Arr: {
-      const arr = chunk.arrayLike()
-      const out = new Array<B>(chunk.length)
-      for (let i = 0; i < chunk.length; i++) {
-        out[i] = f(i, arr[i])
-      }
-      return new Arr(out)
+      const arr = chunk.array()
+      return new Arr(A.imap_(arr, f))
     }
     default: {
       let b          = empty<B>()
