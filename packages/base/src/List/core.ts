@@ -527,7 +527,7 @@ export function cross<B>(fb: List<B>): <A>(fa: List<A>) => List<readonly [A, B]>
 export function zipWith_<A, B, C>(as: List<A>, bs: List<B>, f: (a: A, b: B) => C): List<C> {
   const swapped  = bs.length < as.length
   const iterator = (swapped ? as : bs)[Symbol.iterator]()
-  return imap_((swapped ? bs : as) as any, (a: any) => {
+  return imap_((swapped ? bs : as) as any, (_, a: any) => {
     const b: any = iterator.next().value
     return swapped ? f(b, a) : f(a, b)
   })

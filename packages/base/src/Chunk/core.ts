@@ -1,8 +1,9 @@
-import type { Byte, ByteArray } from '../Byte'
+import type { Byte } from '../Byte'
 import type { Either } from '../Either'
 import type { Eq } from '../Eq'
 import type { Predicate } from '../Predicate'
 import type { These } from '../These'
+import type { Stack } from '../util/support/Stack'
 
 import * as A from '../Array/core'
 import * as E from '../Either'
@@ -20,6 +21,7 @@ import * as Th from '../These'
 import { tuple } from '../tuple/core'
 import { isByte } from '../util/predicates'
 import { AtomicNumber } from '../util/support/AtomicNumber'
+import { makeStack } from '../util/support/Stack'
 
 export interface ChunkF extends HKT.HKT {
   readonly type: Chunk<this['A']>
@@ -45,11 +47,11 @@ export const ChunkTag = {
   Slice: 'Slice',
   Singleton: 'Singleton',
   Arr: 'Arr',
-  BinArr: 'BinArr'
+  ByteArray: 'ByteArray'
 } as const
 
 export abstract class Chunk<A> implements Iterable<A>, Ha.Hashable, Equ.Equatable {
-  readonly [ChunkTypeId]: ChunkTypeId = ChunkTypeId
+  readonly _typeId: ChunkTypeId = ChunkTypeId
   readonly _A!: () => A
   abstract readonly length: number
   abstract [Symbol.iterator](): Iterator<A>
@@ -188,25 +190,13 @@ abstract class ChunkImplementation<A> extends Chunk<A> implements Iterable<A> {
     const binary = this.binary && isByte(a)
     const buffer = this.binary && binary ? alloc(BUFFER_SIZE) : new Array(BUFFER_SIZE)
     buffer[0]    = a
-    return new AppendN<A | A1>(
-      this as ChunkImplementation<A | A1>,
-      buffer,
-      1,
-      new AtomicNumber(1),
-      this.binary && binary
-    )
+    return new AppendN<A | A1>(this as ChunkImplementation<A | A1>, buffer, 1, this.binary && binary)
   }
   prepend<A1>(a: A1): ChunkImplementation<A | A1> {
     const binary            = this.binary && isByte(a)
     const buffer            = this.binary && binary ? alloc(BUFFER_SIZE) : new Array(BUFFER_SIZE)
     buffer[BUFFER_SIZE - 1] = a
-    return new PrependN<A | A1>(
-      this as ChunkImplementation<A | A1>,
-      buffer,
-      1,
-      new AtomicNumber(1),
-      this.binary && binary
-    )
+    return new PrependN<A | A1>(this as ChunkImplementation<A | A1>, buffer, 1, this.binary && binary)
   }
 
   update<A1>(index: number, a1: A1): ChunkImplementation<A | A1> {
@@ -340,7 +330,6 @@ class AppendN<A> extends ChunkImplementation<A> {
     readonly start: ChunkImplementation<A>,
     readonly buffer: Array<unknown> | Uint8Array,
     readonly bufferUsed: number,
-    readonly chain: AtomicNumber,
     readonly binary: boolean
   ) {
     super()
@@ -352,7 +341,7 @@ class AppendN<A> extends ChunkImplementation<A> {
 
   append<A1>(a: A1): ChunkImplementation<A | A1> {
     const binary = this.binary && isByte(a)
-    if (this.bufferUsed < this.buffer.length && this.chain.compareAndSet(this.bufferUsed, this.bufferUsed + 1)) {
+    if (this.bufferUsed < this.buffer.length) {
       if (this.binary && !binary) {
         const buffer = new Array(BUFFER_SIZE)
         for (let i = 0; i < BUFFER_SIZE; i++) {
@@ -363,7 +352,6 @@ class AppendN<A> extends ChunkImplementation<A> {
           this.start as ChunkImplementation<A | A1>,
           this.buffer,
           this.bufferUsed + 1,
-          this.chain,
           this.binary && binary
         )
       }
@@ -372,7 +360,6 @@ class AppendN<A> extends ChunkImplementation<A> {
         this.start as ChunkImplementation<A | A1>,
         this.buffer,
         this.bufferUsed + 1,
-        this.chain,
         this.binary && binary
       )
     } else {
@@ -383,7 +370,6 @@ class AppendN<A> extends ChunkImplementation<A> {
         this.start.concat(chunk) as ChunkImplementation<A | A1>,
         buffer,
         1,
-        new AtomicNumber(1),
         this.binary && binary
       )
     }
@@ -421,7 +407,6 @@ class PrependN<A> extends ChunkImplementation<A> {
     readonly end: ChunkImplementation<A>,
     readonly buffer: Array<unknown> | Uint8Array,
     readonly bufferUsed: number,
-    readonly chain: AtomicNumber,
     readonly binary: boolean
   ) {
     super()
@@ -433,7 +418,7 @@ class PrependN<A> extends ChunkImplementation<A> {
 
   prepend<A1>(a: A1): ChunkImplementation<A | A1> {
     const binary = this.binary && isByte(a)
-    if (this.bufferUsed < this.buffer.length && this.chain.compareAndSet(this.bufferUsed, this.bufferUsed + 1)) {
+    if (this.bufferUsed < this.buffer.length) {
       if (this.binary && !binary) {
         const buffer = new Array(BUFFER_SIZE)
         for (let i = 0; i < BUFFER_SIZE; i++) {
@@ -444,7 +429,6 @@ class PrependN<A> extends ChunkImplementation<A> {
           this.end as ChunkImplementation<A | A1>,
           buffer,
           this.bufferUsed + 1,
-          this.chain,
           this.binary && binary
         )
       }
@@ -453,7 +437,6 @@ class PrependN<A> extends ChunkImplementation<A> {
         this.end as ChunkImplementation<A | A1>,
         this.buffer,
         this.bufferUsed + 1,
-        this.chain,
         this.binary && binary
       )
     } else {
@@ -468,7 +451,6 @@ class PrependN<A> extends ChunkImplementation<A> {
         chunk.concat(this.end) as ChunkImplementation<A | A1>,
         buffer,
         1,
-        new AtomicNumber(1),
         this.binary && binary
       )
     }
@@ -678,8 +660,8 @@ class Arr<A> extends ChunkImplementation<A> {
   reverseArrayIterator = this.arrayIterator
 }
 
-class BinArr extends ChunkImplementation<Byte> {
-  readonly _chunkTag = ChunkTag.BinArr
+class ByteArray<A> extends ChunkImplementation<A> {
+  readonly _chunkTag = ChunkTag.ByteArray
 
   length = this._array.length
   depth = 0
@@ -687,34 +669,38 @@ class BinArr extends ChunkImplementation<Byte> {
   right = _Empty
   binary = true
 
-  constructor(readonly _array: ByteArray) {
+  constructor(readonly _array: Uint8Array) {
     super()
   }
 
-  get(n: number): Byte {
+  get(n: number): A {
     if (n >= this.length || n < 0) {
       throw new ArrayIndexOutOfBoundsException(n)
     }
-    return this._array[n]
+    return unsafeCoerce(this._array[n])
   }
 
-  foreach<B>(f: (a: Byte) => B): void {
+  foreach<B>(f: (a: A) => B): void {
     for (let i = 0; i < this.length; i++) {
-      f(this._array[i])
+      f(unsafeCoerce(this._array[i]))
     }
   }
 
-  [Symbol.iterator](): Iterator<Byte> {
-    return this._array[Symbol.iterator]()
+  [Symbol.iterator](): Iterator<A> {
+    return unsafeCoerce(this._array[Symbol.iterator]())
   }
 
-  copyToArray(n: number, dest: Array<Byte> | Uint8Array): void {
-    copyArray(this._array, 0, dest, n, this.length)
+  copyToArray(n: number, dest: Array<A> | Uint8Array): void {
+    copyArray(this._array, 0, unsafeCoerce(dest), n, this.length)
   }
 
-  arrayIterator = It.singleton(this._array)[Symbol.iterator]
+  arrayIterator(): Iterator<Array<A>> {
+    return unsafeCoerce(It.singleton(this._array)[Symbol.iterator]())
+  }
 
-  reverseArrayIterator = this.arrayIterator
+  reverseArrayIterator(): Iterator<Array<A>> {
+    return unsafeCoerce(this.arrayIterator())
+  }
 }
 
 /**
@@ -722,7 +708,7 @@ class BinArr extends ChunkImplementation<Byte> {
  */
 export function concrete<A>(
   _: Chunk<A>
-): asserts _ is Empty<A> | Singleton<A> | Concat<A> | AppendN<A> | PrependN<A> | Slice<A> | Arr<A> {
+): asserts _ is Empty<A> | Singleton<A> | Concat<A> | AppendN<A> | PrependN<A> | Slice<A> | Arr<A> | ByteArray<A> {
   //
 }
 
@@ -743,7 +729,7 @@ function fromArray<A>(array: ArrayLike<A>): ChunkImplementation<A> {
   if (array.length === 0) {
     return _Empty
   } else {
-    return 'buffer' in array ? (new BinArr(array as any) as any) : new Arr(Array.from(array))
+    return 'buffer' in array ? (new ByteArray(array as any) as any) : new Arr(Array.from(array))
   }
 }
 
@@ -777,7 +763,7 @@ export function from<A>(as: Iterable<A>): Chunk<A> {
 }
 
 export function fromBuffer(bytes: Uint8Array): Chunk<Byte> {
-  return new BinArr(bytes as any)
+  return new ByteArray(bytes as any)
 }
 
 export function make<A>(...as: ReadonlyArray<A>): Chunk<A> {
@@ -814,7 +800,7 @@ export function isNonEmpty<A>(chunk: Chunk<A>): boolean {
 export function isChunk<A>(u: Iterable<A>): u is Chunk<A>
 export function isChunk(u: unknown): u is Chunk<unknown>
 export function isChunk(u: unknown): u is Chunk<unknown> {
-  return P.isObject(u) && ChunkTypeId in u
+  return P.isObject(u) && '_typeId' in u && u['_typeId'] === ChunkTypeId
 }
 
 /*
@@ -1149,8 +1135,118 @@ export function imap<A, B>(f: (i: number, a: A) => B): (chunk: Chunk<A>) => Chun
   return (chunk) => imap_(chunk, f)
 }
 
+function mapArrayLike<A, B>(as: ArrayLike<A>, len: number, f: (a: A) => B): Chunk<B> {
+  let bs = empty<B>()
+  for (let i = 0; i < len; i++) {
+    bs = append_(bs, f(as[i]))
+  }
+  return bs
+}
+
+function mapArrayLikeReverse<A, B>(as: ArrayLike<A>, len: number, f: (a: A) => B): Chunk<B> {
+  let bs = empty<B>()
+  for (let i = BUFFER_SIZE - 1; i > BUFFER_SIZE - len - 1; i--) {
+    bs = prepend_(bs, f(as[i]))
+  }
+  return bs
+}
+
+class DoneFrame {
+  readonly _tag = 'Done'
+}
+
+class ConcatLeftFrame<A> {
+  readonly _tag = 'ConcatLeft'
+  constructor(readonly chunk: Concat<A>) {}
+}
+
+class ConcatRightFrame<B> {
+  readonly _tag = 'ConcatRight'
+  constructor(readonly leftResult: Chunk<B>) {}
+}
+
+class AppendFrame<A> {
+  readonly _tag = 'Append'
+  constructor(readonly buffer: ArrayLike<A>, readonly bufferUsed: number) {}
+}
+
+class PrependFrame<A> {
+  readonly _tag = 'Prepend'
+  constructor(readonly buffer: ArrayLike<A>, readonly bufferUsed: number) {}
+}
+
+type Frame<A, B> = DoneFrame | ConcatLeftFrame<A> | ConcatRightFrame<B> | AppendFrame<A> | PrependFrame<A>
+
 export function map_<A, B>(chunk: Chunk<A>, f: (a: A) => B): Chunk<B> {
-  return imap_(chunk, (_, a) => f(a))
+  let current = chunk
+
+  let stack: Stack<Frame<A, B>> = makeStack({ _tag: 'Done' })
+
+  let result: Chunk<B> = empty()
+
+  recursion: while (stack) {
+    // eslint-disable-next-line no-constant-condition
+    pushing: while (true) {
+      concrete<A>(current)
+      switch (current._chunkTag) {
+        case ChunkTag.Singleton: {
+          result = new Singleton(f(current.value))
+          break pushing
+        }
+        case ChunkTag.Empty: {
+          result = _Empty
+          break pushing
+        }
+        case ChunkTag.Arr: {
+          result = new Arr(A.map_(current._array, f))
+          break pushing
+        }
+        case ChunkTag.Concat: {
+          stack   = makeStack(new ConcatLeftFrame(current), stack)
+          current = current.left
+          continue pushing
+        }
+        case ChunkTag.AppendN: {
+          stack   = makeStack(new AppendFrame(current.buffer as ArrayLike<A>, current.bufferUsed), stack)
+          current = current.start
+          continue pushing
+        }
+        case ChunkTag.PrependN: {
+          stack   = makeStack(new PrependFrame(current.buffer as ArrayLike<A>, current.bufferUsed), stack)
+          current = current.end
+          continue pushing
+        }
+      }
+    }
+    // eslint-disable-next-line no-constant-condition
+    popping: while (true) {
+      const top = stack.value
+      stack     = stack.previous!
+      switch (top._tag) {
+        case 'Done': {
+          return result
+        }
+        case 'ConcatLeft': {
+          current = top.chunk.right
+          stack   = makeStack(new ConcatRightFrame(result), stack)
+          continue recursion
+        }
+        case 'ConcatRight': {
+          result = concat_(top.leftResult, result)
+          continue popping
+        }
+        case 'Append': {
+          result = concat_(result, mapArrayLike(top.buffer, top.bufferUsed, f))
+          continue popping
+        }
+        case 'Prepend': {
+          result = concat_(mapArrayLikeReverse(top.buffer, top.bufferUsed, f), result)
+          continue popping
+        }
+      }
+    }
+  }
+  throw new Error('bug')
 }
 
 /**

@@ -667,9 +667,24 @@ export function unit(): Iterable<void> {
  */
 
 export function concat_<A>(ia: Iterable<A>, ib: Iterable<A>): Iterable<A> {
-  return iterable(function* () {
-    yield* ia
-    yield* ib
+  return iterable(() => {
+    const iterA = ia[Symbol.iterator]()
+    let doneA   = false
+    let iterB: Iterator<A>
+    return {
+      next() {
+        if (!doneA) {
+          const r = iterA.next()
+          if (r.done) {
+            doneA = true
+            iterB = ib[Symbol.iterator]()
+            return iterB.next()
+          }
+          return r
+        }
+        return iterB.next()
+      }
+    }
   })
 }
 
@@ -722,12 +737,28 @@ export function find<A>(predicate: P.Predicate<A>): (ia: Iterable<A>) => Maybe<A
 }
 
 export function take_<A>(ia: Iterable<A>, n: number): Iterable<A> {
-  return iterable(function* () {
-    let i = 0
-    for (const value of ia) {
-      yield value
-      i++
-      if (i >= n) break
+  return iterable<A>(() => {
+    const iterator = ia[Symbol.iterator]()
+    let i          = 0
+    let done       = false
+    return {
+      next() {
+        const r = iterator.next()
+        if (r.done || i >= n) {
+          return this.return!()
+        }
+        i++
+        return { done: false, value: r.value }
+      },
+      return(value?: unknown) {
+        if (!done) {
+          done = true
+          if (typeof iterator.return === 'function') {
+            iterator.return()
+          }
+        }
+        return { done: true, value }
+      }
     }
   })
 }

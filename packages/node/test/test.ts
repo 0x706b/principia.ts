@@ -11,10 +11,14 @@ const transform1 = zlib.gzip()
 const stream2    = fs.createReadStream('./test/text3.txt')
 const transform2 = zlib.gunzip()
 
+console.time('A')
+
 pipe(
   stream1,
   transform1,
   S.run(fs.createWriteSink('./test/text3.txt')),
   I.apSecond(pipe(stream2, transform2, S.run(fs.createWriteSink('./test/text4.txt')))),
-  I.run((ex) => console.log(ex))
+  I.run((ex) => {
+    console.timeEnd('A')
+  })
 )
