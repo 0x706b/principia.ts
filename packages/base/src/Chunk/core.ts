@@ -469,7 +469,7 @@ class PrependN<A> extends ChunkImplementation<A> {
   }
 
   foreach<B>(f: (a: A) => B): void {
-    for (let i = BUFFER_SIZE - this.bufferUsed - 1; i < BUFFER_SIZE; i++) {
+    for (let i = BUFFER_SIZE - this.bufferUsed; i < BUFFER_SIZE; i++) {
       f(this.buffer[i] as A)
     }
     this.end.foreach(f)
@@ -1098,55 +1098,23 @@ export function getEq<A>(E: P.Eq<A>): P.Eq<Chunk<A>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function imap_<A, B>(chunk: Chunk<A>, f: (i: number, a: A) => B): Chunk<B> {
-  concrete<A>(chunk)
-  switch (chunk._chunkTag) {
-    case ChunkTag.Singleton: {
-      return new Singleton(f(0, chunk.value))
-    }
-    case ChunkTag.Empty: {
-      return _Empty
-    }
-    case ChunkTag.Arr: {
-      const arr = chunk.array()
-      return new Arr(A.imap_(arr, f))
-    }
-    default: {
-      let b          = empty<B>()
-      const iterator = chunk.arrayIterator()
-      let result: IteratorResult<ArrayLike<A>>
-      let i          = 0
-      while (!(result = iterator.next()).done) {
-        const as = result.value
-        for (let j = 0; j < as.length; j++) {
-          b = append_(b, f(i, as[j]))
-          i++
-        }
-      }
-      return b
-    }
-  }
-}
-
-/**
- * @dataFirst imap_
- */
-export function imap<A, B>(f: (i: number, a: A) => B): (chunk: Chunk<A>) => Chunk<B> {
-  return (chunk) => imap_(chunk, f)
-}
-
-function mapArrayLike<A, B>(as: ArrayLike<A>, len: number, f: (a: A) => B): Chunk<B> {
+function mapArrayLike<A, B>(as: ArrayLike<A>, len: number, startIndex: number, f: (i: number, a: A) => B): Chunk<B> {
   let bs = empty<B>()
   for (let i = 0; i < len; i++) {
-    bs = append_(bs, f(as[i]))
+    bs = append_(bs, f(i + startIndex, as[i]))
   }
   return bs
 }
 
-function mapArrayLikeReverse<A, B>(as: ArrayLike<A>, len: number, f: (a: A) => B): Chunk<B> {
+function mapArrayLikeReverse<A, B>(
+  as: ArrayLike<A>,
+  len: number,
+  endIndex: number,
+  f: (i: number, a: A) => B
+): Chunk<B> {
   let bs = empty<B>()
-  for (let i = BUFFER_SIZE - 1; i > BUFFER_SIZE - len - 1; i--) {
-    bs = prepend_(bs, f(as[i]))
+  for (let i = BUFFER_SIZE - 1, j = 0; i > BUFFER_SIZE - len - 1; i--, j++) {
+    bs = prepend_(bs, f(endIndex - j, as[i]))
   }
   return bs
 }
@@ -1157,7 +1125,7 @@ class DoneFrame {
 
 class ConcatLeftFrame<A> {
   readonly _tag = 'ConcatLeft'
-  constructor(readonly chunk: Concat<A>) {}
+  constructor(readonly chunk: Concat<A>, readonly currentIndex: number) {}
 }
 
 class ConcatRightFrame<B> {
@@ -1167,20 +1135,22 @@ class ConcatRightFrame<B> {
 
 class AppendFrame<A> {
   readonly _tag = 'Append'
-  constructor(readonly buffer: ArrayLike<A>, readonly bufferUsed: number) {}
+  constructor(readonly buffer: ArrayLike<A>, readonly bufferUsed: number, readonly startIndex: number) {}
 }
 
 class PrependFrame<A> {
   readonly _tag = 'Prepend'
-  constructor(readonly buffer: ArrayLike<A>, readonly bufferUsed: number) {}
+  constructor(readonly buffer: ArrayLike<A>, readonly bufferUsed: number, readonly endIndex: number) {}
 }
 
 type Frame<A, B> = DoneFrame | ConcatLeftFrame<A> | ConcatRightFrame<B> | AppendFrame<A> | PrependFrame<A>
 
-export function map_<A, B>(chunk: Chunk<A>, f: (a: A) => B): Chunk<B> {
+export function imap_<A, B>(chunk: Chunk<A>, f: (i: number, a: A) => B): Chunk<B> {
   let current = chunk
 
-  let stack: Stack<Frame<A, B>> = makeStack({ _tag: 'Done' })
+  let index = 0
+
+  let stack: Stack<Frame<A, B>> = makeStack(new DoneFrame())
 
   let result: Chunk<B> = empty()
 
@@ -1190,7 +1160,7 @@ export function map_<A, B>(chunk: Chunk<A>, f: (a: A) => B): Chunk<B> {
       concrete<A>(current)
       switch (current._chunkTag) {
         case ChunkTag.Singleton: {
-          result = new Singleton(f(current.value))
+          result = new Singleton(f(index++, current.value))
           break pushing
         }
         case ChunkTag.Empty: {
@@ -1198,23 +1168,38 @@ export function map_<A, B>(chunk: Chunk<A>, f: (a: A) => B): Chunk<B> {
           break pushing
         }
         case ChunkTag.Arr: {
-          result = new Arr(A.map_(current._array, f))
+          result = new Arr(A.imap_(current._array, (i, a) => f(i + index, a)))
+          index += current.length
           break pushing
         }
         case ChunkTag.Concat: {
-          stack   = makeStack(new ConcatLeftFrame(current), stack)
+          stack   = makeStack(new ConcatLeftFrame(current, index), stack)
           current = current.left
           continue pushing
         }
         case ChunkTag.AppendN: {
-          stack   = makeStack(new AppendFrame(current.buffer as ArrayLike<A>, current.bufferUsed), stack)
+          stack   = makeStack(new AppendFrame(current.buffer as ArrayLike<A>, current.bufferUsed, index), stack)
           current = current.start
           continue pushing
         }
         case ChunkTag.PrependN: {
-          stack   = makeStack(new PrependFrame(current.buffer as ArrayLike<A>, current.bufferUsed), stack)
+          stack = makeStack(
+            new PrependFrame(current.buffer as ArrayLike<A>, current.bufferUsed, index + current.bufferUsed - 1),
+            stack
+          )
+          index  += current.bufferUsed
           current = current.end
           continue pushing
+        }
+        case ChunkTag.Slice: {
+          let r = empty<B>()
+          for (let i = 0; i < current.length; i++) {
+            r = append_(r, f(i + index, unsafeGet_(current, i)))
+          }
+
+          result = r
+          index += current.length
+          break pushing
         }
       }
     }
@@ -1236,17 +1221,28 @@ export function map_<A, B>(chunk: Chunk<A>, f: (a: A) => B): Chunk<B> {
           continue popping
         }
         case 'Append': {
-          result = concat_(result, mapArrayLike(top.buffer, top.bufferUsed, f))
+          result = concat_(result, mapArrayLike(top.buffer, top.bufferUsed, index, f))
           continue popping
         }
         case 'Prepend': {
-          result = concat_(mapArrayLikeReverse(top.buffer, top.bufferUsed, f), result)
+          result = concat_(mapArrayLikeReverse(top.buffer, top.bufferUsed, top.endIndex, f), result)
           continue popping
         }
       }
     }
   }
   throw new Error('bug')
+}
+
+/**
+ * @dataFirst imap_
+ */
+export function imap<A, B>(f: (i: number, a: A) => B): (chunk: Chunk<A>) => Chunk<B> {
+  return (chunk) => imap_(chunk, f)
+}
+
+export function map_<A, B>(chunk: Chunk<A>, f: (a: A) => B): Chunk<B> {
+  return imap_(chunk, (_, a) => f(a))
 }
 
 /**
