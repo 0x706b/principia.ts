@@ -3337,7 +3337,7 @@ function intersperseWriter<R, E, A, A1>(
     (inp: C.Chunk<A>) => {
       const builder  = C.builder<A | A1>()
       let flagResult = isFirst
-      C.foreach_(inp, (a) => {
+      C.forEach_(inp, (a) => {
         if (flagResult) {
           flagResult = false
           builder.append(a)

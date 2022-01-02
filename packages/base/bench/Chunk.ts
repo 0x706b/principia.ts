@@ -5,17 +5,17 @@ import * as b from 'benny'
 
 const c1 = C.range(0, 1000)
 let c2   = C.empty<number>()
-for (let i = 0; i < 1000; i++) {
+for (let i = 0; i < 100; i++) {
   c2 = C.prepend_(c2, i)
 }
-for (let i = 0; i < 1000; i++) {
+c2 = C.concat_(c2, C.single(6372))
+for (let i = 0; i < 100; i++) {
   c2 = C.append_(c2, i)
 }
-c2 = C.concat_(c2, c2)
 
-console.time('A')
-C.map_(c2, (n) => n + 1)
-console.timeEnd('A')
+C.iforEach_(c2, (i, a) => {
+  console.log([i, a])
+})
 
 const l1 = L.range(0, 1000)
 let l2   = L.empty<number>()
@@ -26,10 +26,6 @@ for (let i = 0; i < 1000; i++) {
   l2 = L.append_(l2, i)
 }
 l2 = L.concat_(l2, l2)
-
-console.time('B')
-L.map_(l2, (n) => n + 1)
-console.timeEnd('B')
 
 const a1 = A.range(0, 1000)
 let a2   = A.empty<number>()
@@ -43,6 +39,9 @@ a2 = A.concat_(a2, a2)
 
 b.suite(
   'chunk',
+  b.add('chunk foldl', () => {
+    C.foldl_(c2, 0, (b, a) => b + a)
+  }),
   /*
    * b.add('chunk prepend', () => {
    *   let chunk = C.empty<number>()
@@ -59,15 +58,17 @@ b.suite(
    *   L.forEach_(list, (n) => n)
    * }),
    */
-  b.add('chunk map', () => {
-    C.map_(c2, (n) => n + 1)
-  }),
-  b.add('list map', () => {
-    L.map_(l2, (n) => n + 1)
-  }),
-  b.add('array map', () => {
-    A.map_(a2, (n) => n + 1)
-  }),
+  /*
+   * b.add('chunk map', () => {
+   *   C.map_(c2, (n) => n + 1)
+   * }),
+   * b.add('list map', () => {
+   *   L.map_(l2, (n) => n + 1)
+   * }),
+   * b.add('array map', () => {
+   *   A.map_(a2, (n) => n + 1)
+   * }),
+   */
   /*
    * b.add('chunk append', () => {
    *   let chunk = C.empty<number>()

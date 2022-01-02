@@ -87,8 +87,8 @@ abstract class ChunkImplementation<A> extends Chunk<A> implements Iterable<A> {
     return this.materialize()[Symbol.iterator]()
   }
 
-  foreach<B>(f: (a: A) => B): void {
-    this.materialize().foreach(f)
+  foreach<B>(startIndex: number, f: (i: number, a: A) => B): void {
+    this.materialize().foreach(startIndex, f)
   }
 
   private arrayLikeCache: ArrayLike<unknown> | undefined
@@ -247,7 +247,7 @@ class Empty<A> extends ChunkImplementation<A> {
   get(_: number): A {
     throw new ArrayIndexOutOfBoundsException(_)
   }
-  foreach<B>(_: (a: never) => B): void {
+  foreach<B>(_: number, __: (i: number, a: never) => B): void {
     return
   }
   copyToArray(_: number, __: Array<A> | Uint8Array): void {
@@ -294,9 +294,9 @@ class Concat<A> extends ChunkImplementation<A> {
   get(n: number): A {
     return n < this.left.length ? this.left.get(n) : this.right.get(n - this.left.length)
   }
-  foreach<B>(f: (a: A) => B): void {
-    this.left.foreach(f)
-    this.right.foreach(f)
+  foreach<B>(startIndex: number, f: (i: number, a: A) => B): void {
+    this.left.foreach(startIndex, f)
+    this.right.foreach(startIndex + this.left.length, f)
   }
   copyToArray(n: number, dest: Array<A> | Uint8Array): void {
     this.left.copyToArray(n, dest)
@@ -388,10 +388,10 @@ class AppendN<A> extends ChunkImplementation<A> {
     copyArray(this.buffer as ArrayLike<A>, 0, dest, this.start.length + n, this.bufferUsed)
   }
 
-  foreach<B>(f: (a: A) => B): void {
-    this.start.foreach(f)
+  foreach<B>(startIndex: number, f: (i: number, a: A) => B): void {
+    this.start.foreach(startIndex, f)
     for (let i = 0; i < this.bufferUsed; i++) {
-      f(this.buffer[i] as A)
+      f(startIndex + this.start.length + i, this.buffer[i] as A)
     }
   }
 }
@@ -468,11 +468,11 @@ class PrependN<A> extends ChunkImplementation<A> {
     this.end.copyToArray(n + length, dest)
   }
 
-  foreach<B>(f: (a: A) => B): void {
-    for (let i = BUFFER_SIZE - this.bufferUsed; i < BUFFER_SIZE; i++) {
-      f(this.buffer[i] as A)
+  foreach<B>(startIndex: number, f: (i: number, a: A) => B): void {
+    for (let i = BUFFER_SIZE - this.bufferUsed, j = 0; i < BUFFER_SIZE; i++, j++) {
+      f(startIndex + j, this.buffer[i] as A)
     }
-    this.end.foreach(f)
+    this.end.foreach(startIndex + this.bufferUsed, f)
   }
 }
 
@@ -570,8 +570,8 @@ class Singleton<A> extends ChunkImplementation<A> {
     throw new ArrayIndexOutOfBoundsException(n)
   }
 
-  foreach<B>(f: (a: A) => B): void {
-    f(this.value)
+  foreach<B>(startIndex: number, f: (i: number, a: A) => B): void {
+    f(startIndex, this.value)
   }
 
   copyToArray(n: number, dest: Array<A> | Uint8Array) {
@@ -602,10 +602,10 @@ class Slice<A> extends ChunkImplementation<A> {
     return this.chunk.get(this.offset + n)
   }
 
-  foreach<B>(f: (a: A) => B): void {
+  foreach<B>(startIndex: number, f: (i: number, a: A) => B): void {
     let i = 0
     while (i < this.length) {
-      f(this.get(i))
+      f(startIndex + i, this.get(i))
       i++
     }
   }
@@ -641,9 +641,9 @@ class Arr<A> extends ChunkImplementation<A> {
     return this._array[n]
   }
 
-  foreach<B>(f: (a: A) => B): void {
+  foreach<B>(startIndex: number, f: (i: number, a: A) => B): void {
     for (let i = 0; i < this.length; i++) {
-      f(this._array[i])
+      f(startIndex + i, this._array[i])
     }
   }
 
@@ -680,9 +680,9 @@ class ByteArray<A> extends ChunkImplementation<A> {
     return unsafeCoerce(this._array[n])
   }
 
-  foreach<B>(f: (a: A) => B): void {
+  foreach<B>(startIndex: number, f: (i: number, a: A) => B): void {
     for (let i = 0; i < this.length; i++) {
-      f(unsafeCoerce(this._array[i]))
+      f(startIndex + i, unsafeCoerce(this._array[i]))
     }
   }
 
@@ -961,16 +961,28 @@ export function concat<A>(ys: Chunk<A>): (xs: Chunk<A>) => Chunk<A> {
   return (xs) => concat_(xs, ys)
 }
 
-export function foreach_<A, B>(chunk: Chunk<A>, f: (a: A) => B): void {
-  concrete(chunk)
-  chunk.foreach(f)
+export function iforEach_<A, B>(as: Chunk<A>, f: (i: number, a: A) => B): void {
+  concrete(as)
+  as.foreach(0, f)
 }
 
 /**
- * @dataFirst foreach_
+ * @dataFirst iforEach_
  */
-export function foreach<A, B>(f: (a: A) => B): (chunk: Chunk<A>) => void {
-  return (chunk) => foreach_(chunk, f)
+export function iforEach<A, B>(f: (i: number, a: A) => B): (as: Chunk<A>) => void {
+  return (as) => iforEach_(as, f)
+}
+
+export function forEach_<A, B>(as: Chunk<A>, f: (a: A) => B): void {
+  concrete(as)
+  return as.foreach(0, (_, a) => f(a))
+}
+
+/**
+ * @dataFirst forEach_
+ */
+export function forEach<A, B>(f: (a: A) => B): (as: Chunk<A>) => void {
+  return (as) => forEach_(as, f)
 }
 
 export function prepend_<A>(chunk: Chunk<A>, a: A): Chunk<A> {
@@ -1113,8 +1125,8 @@ function mapArrayLikeReverse<A, B>(
   f: (i: number, a: A) => B
 ): Chunk<B> {
   let bs = empty<B>()
-  for (let i = BUFFER_SIZE - 1, j = 0; i > BUFFER_SIZE - len - 1; i--, j++) {
-    bs = prepend_(bs, f(endIndex - j, as[i]))
+  for (let i = BUFFER_SIZE - len, j = len - 1; i < BUFFER_SIZE; i++, j--) {
+    bs = append_(bs, f(endIndex - j, as[i]))
   }
   return bs
 }
@@ -1125,6 +1137,7 @@ class DoneFrame {
 
 class ConcatLeftFrame<A> {
   readonly _tag = 'ConcatLeft'
+
   constructor(readonly chunk: Concat<A>, readonly currentIndex: number) {}
 }
 
@@ -1138,12 +1151,12 @@ class AppendFrame<A> {
   constructor(readonly buffer: ArrayLike<A>, readonly bufferUsed: number, readonly startIndex: number) {}
 }
 
-class PrependFrame<A> {
+class PrependFrame<A, B> {
   readonly _tag = 'Prepend'
-  constructor(readonly buffer: ArrayLike<A>, readonly bufferUsed: number, readonly endIndex: number) {}
+  constructor(readonly pre: Chunk<B>, readonly end: Chunk<A>) {}
 }
 
-type Frame<A, B> = DoneFrame | ConcatLeftFrame<A> | ConcatRightFrame<B> | AppendFrame<A> | PrependFrame<A>
+type Frame<A, B> = DoneFrame | ConcatLeftFrame<A> | ConcatRightFrame<B> | AppendFrame<A> | PrependFrame<A, B>
 
 export function imap_<A, B>(chunk: Chunk<A>, f: (i: number, a: A) => B): Chunk<B> {
   let current = chunk
@@ -1184,19 +1197,25 @@ export function imap_<A, B>(chunk: Chunk<A>, f: (i: number, a: A) => B): Chunk<B
         }
         case ChunkTag.PrependN: {
           stack = makeStack(
-            new PrependFrame(current.buffer as ArrayLike<A>, current.bufferUsed, index + current.bufferUsed - 1),
+            new PrependFrame(
+              mapArrayLikeReverse(
+                current.buffer as ArrayLike<A>,
+                current.bufferUsed,
+                index + current.bufferUsed - 1,
+                f
+              ),
+              current.end
+            ),
             stack
           )
-          index  += current.bufferUsed
-          current = current.end
-          continue pushing
+          index += current.bufferUsed
+          break pushing
         }
         case ChunkTag.Slice: {
           let r = empty<B>()
           for (let i = 0; i < current.length; i++) {
             r = append_(r, f(i + index, unsafeGet_(current, i)))
           }
-
           result = r
           index += current.length
           break pushing
@@ -1225,8 +1244,9 @@ export function imap_<A, B>(chunk: Chunk<A>, f: (i: number, a: A) => B): Chunk<B
           continue popping
         }
         case 'Prepend': {
-          result = concat_(mapArrayLikeReverse(top.buffer, top.bufferUsed, top.endIndex, f), result)
-          continue popping
+          current = top.end
+          stack   = makeStack(new ConcatRightFrame(top.pre), stack)
+          continue recursion
         }
       }
     }
@@ -1803,7 +1823,7 @@ export function chainRecBreadthFirst_<A, B>(a: A, f: (a: A) => Chunk<Either<A, B
 
   function go(e: Either<A, B>): void {
     if (e._tag === 'Left') {
-      foreach_(f(e.left), (ab) => ((buffer = append_(buffer, ab)), undefined))
+      forEach_(f(e.left), (ab) => ((buffer = append_(buffer, ab)), undefined))
     } else {
       out = append_(out, e.right)
     }

@@ -20,7 +20,7 @@ const mergeExits =
     const results = Ch.builder<B>()
     let errored   = false
 
-    Ch.foreach_(exits, (e) => {
+    Ch.forEach_(exits, (e) => {
       if (e._tag === 'Left') {
         errored = true
         errors.append(e.left)

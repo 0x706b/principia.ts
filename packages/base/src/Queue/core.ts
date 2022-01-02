@@ -934,7 +934,7 @@ class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A>
         pipe(
           pTakers,
           C.zip(forTakers),
-          C.foreach(([taker, item]) => {
+          C.forEach(([taker, item]) => {
             _unsafeCompletePromise(taker, item)
           })
         )

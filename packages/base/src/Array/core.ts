@@ -1555,9 +1555,8 @@ export function dropLastWhile<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<
 export function elem_<A>(E: P.Eq<A>): (as: ReadonlyArray<A>, a: A) => boolean {
   return (as, a) => {
     const predicate = (element: A) => E.equals_(element, a)
-    let i           = 0
     const len       = as.length
-    for (; i < len; i++) {
+    for (let i = 0; i < len; i++) {
       if (predicate(as[i])) {
         return true
       }
