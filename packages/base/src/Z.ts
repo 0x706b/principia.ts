@@ -1126,7 +1126,7 @@ export function writeAll_<W, S1, S2, R, E, A, W1>(
   ma: Z<W, S1, S2, R, E, A>,
   ws: C.Chunk<W1>
 ): Z<W | W1, S1, S2, R, E, A> {
-  return censor_(ma, C.concatW(ws))
+  return censor_(ma, C.concat<W | W1>(ws))
 }
 
 /**
