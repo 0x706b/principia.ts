@@ -4,17 +4,15 @@ export const ZippedTypeId = Symbol.for('@principia/base/Zipped')
 export type ZippedTypeId = typeof ZippedTypeId
 
 export class Zipped<A extends ReadonlyArray<unknown>> implements Iterable<A[number]> {
-  declare readonly [ZippedTypeId]: ZippedTypeId
-  constructor(readonly array: A) {
-    this[ZippedTypeId] = ZippedTypeId
-  }
+  readonly _typeId: ZippedTypeId = ZippedTypeId
+  constructor(readonly array: A) {}
   [Symbol.iterator]() {
     return this.array[Symbol.iterator]()
   }
 }
 
-export function isZipped(_: unknown): _ is Zipped<any> {
-  return isObject(_) && ZippedTypeId in _
+export function isZipped(u: unknown): u is Zipped<any> {
+  return isObject(u) && '_typeId' in u && u['_typeId'] === ZippedTypeId
 }
 
 export function zip<A, B>(a: A, b: B): Zip<A, B> {
