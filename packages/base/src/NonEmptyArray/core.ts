@@ -366,8 +366,8 @@ export function zip<B>(fb: NonEmptyArray<B>): <A>(fa: NonEmptyArray<A>) => NonEm
 }
 
 export function zipWith_<A, B, C>(fa: NonEmptyArray<A>, fb: NonEmptyArray<B>, f: (a: A, b: B) => C): NonEmptyArray<C> {
-  const cs  = [f(fa[0], fb[0])] as MutableNonEmptyArray<C>
   const len = Math.min(fa.length, fb.length)
+  const cs  = allocWithHead(f(fa[0], fb[0]), len)
   for (let i = 1; i < len; i++) {
     cs[i] = f(fa[i], fb[i])
   }
@@ -1171,8 +1171,8 @@ export function union_<A>(E: P.Eq<A>): (xs: NonEmptyArray<A>, ys: NonEmptyArray<
  * @since 1.0.0
  */
 export function unzip<A, B>(as: NonEmptyArray<readonly [A, B]>): readonly [NonEmptyArray<A>, NonEmptyArray<B>] {
-  const fa: MutableNonEmptyArray<A> = [as[0][0]]
-  const fb: MutableNonEmptyArray<B> = [as[0][1]]
+  const fa: MutableNonEmptyArray<A> = allocWithHead(as[0][0], as.length)
+  const fb: MutableNonEmptyArray<B> = allocWithHead(as[0][1], as.length)
 
   for (let i = 1; i < as.length; i++) {
     fa[i] = as[i][0]

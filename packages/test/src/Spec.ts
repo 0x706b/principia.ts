@@ -541,7 +541,7 @@ export function annotate_<R, E, T, V>(spec: PSpec<R, E, T>, key: TestAnnotation<
 
 export function combine_<R, E, A, R1, E1, B>(sa: PSpec<R, E, A>, sb: PSpec<R1, E1, B>): PSpec<R & R1, E | E1, A | B> {
   if (isMultiple(sa.caseValue) && isMultiple(sb.caseValue)) {
-    return multiple(C.concat_<PSpec<R & R1, E | E1, A | B>>(sa.caseValue.specs, sb.caseValue.specs))
+    return multiple(C.concat_(sa.caseValue.specs as C.Chunk<PSpec<R & R1, E | E1, A | B>>, sb.caseValue.specs))
   }
   if (isMultiple(sa.caseValue)) {
     return multiple(C.append_<PSpec<R & R1, E | E1, A | B>, PSpec<R & R1, E | E1, A | B>>(sa.caseValue.specs, sb))

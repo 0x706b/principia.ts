@@ -154,7 +154,7 @@ export function alt<A>(that: () => ReadonlyArray<A>): (fa: ReadonlyArray<A>) => 
  * @category Applicative
  * @since 1.0.0
  */
-export const pure: <A>(a: A) => NonEmptyArray<A> = NEA.pure
+export const pure: <A>(a: A) => ReadonlyArray<A> = NEA.pure
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -306,22 +306,7 @@ export function compact<A>(as: ReadonlyArray<Maybe<A>>): ReadonlyArray<A> {
  * @since 1.0.0
  */
 export function separate<E, A>(fa: ReadonlyArray<Either<E, A>>): readonly [ReadonlyArray<E>, ReadonlyArray<A>] {
-  const len   = fa.length
-  const left  = [] as Array<E>
-  const right = [] as Array<A>
-  for (let i = 0; i < len; i++) {
-    const ea = fa[i]
-    E.match_(
-      ea,
-      (e) => {
-        left.push(e)
-      },
-      (a) => {
-        right.push(a)
-      }
-    )
-  }
-  return [left, right]
+  return partitionMap_(fa, identity)
 }
 
 /*
@@ -848,22 +833,7 @@ export function chain<A, B>(f: (a: A) => ReadonlyArray<B>): (fa: ReadonlyArray<A
  * @since 1.0.0
  */
 export function flatten<A>(mma: ReadonlyArray<ReadonlyArray<A>>): ReadonlyArray<A> {
-  let rLen  = 0
-  const len = mma.length
-  for (let i = 0; i < len; i++) {
-    rLen += mma[i].length
-  }
-  const r   = Array(rLen)
-  let start = 0
-  for (let i = 0; i < len; i++) {
-    const arr = mma[i]
-    const l   = arr.length
-    for (let j = 0; j < l; j++) {
-      r[j + start] = arr[j]
-    }
-    start += l
-  }
-  return r
+  return chain_(mma, identity)
 }
 
 /*
@@ -1247,14 +1217,14 @@ export const wilt: P.WiltFn<ArrayF> = (A) => {
  * @category combinators
  * @since 1.0.0
  */
-export function append_<A>(init: ReadonlyArray<A>, end: A): NonEmptyArray<A> {
+export function append_<A>(init: ReadonlyArray<A>, end: A): ReadonlyArray<A> {
   const len = init.length
   const r   = Array(len + 1)
   for (let i = 0; i < len; i++) {
     r[i] = init[i]
   }
   r[len] = end
-  return r as unknown as NonEmptyArray<A>
+  return r
 }
 
 /**
@@ -1262,7 +1232,7 @@ export function append_<A>(init: ReadonlyArray<A>, end: A): NonEmptyArray<A> {
  * @since 1.0.0
  * @dataFirst append_
  */
-export function append<A>(end: A): (init: ReadonlyArray<A>) => NonEmptyArray<A> {
+export function append<A>(end: A): (init: ReadonlyArray<A>) => ReadonlyArray<A> {
   return (init) => append_(init, end)
 }
 
@@ -1504,13 +1474,8 @@ export function dropLast(n: number): <A>(as: ReadonlyArray<A>) => ReadonlyArray<
  * @since 1.0.0
  */
 export function dropWhile_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): ReadonlyArray<A> {
-  const i    = spanIndexLeft_(as, predicate)
-  const l    = as.length
-  const rest = Array(l - i)
-  for (let j = i; j < l; j++) {
-    rest[j - i] = as[j]
-  }
-  return rest
+  const i = spanIndexLeft_(as, predicate)
+  return as.slice(i)
 }
 
 /**
@@ -1527,12 +1492,8 @@ export function dropWhile<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) 
  * @since 1.0.0
  */
 export function dropLastWhile_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): ReadonlyArray<A> {
-  const i    = spanIndexRight_(as, predicate)
-  const rest = Array(i + 1)
-  for (let j = 0; j <= i; j++) {
-    rest[j] = as[j]
-  }
-  return rest
+  const i = spanIndexRight_(as, predicate)
+  return as.slice(0, i + 1)
 }
 
 /**
@@ -1609,15 +1570,32 @@ export function findLast<A>(predicate: P.Predicate<A>): (as: ReadonlyArray<A>) =
  * @category combinators
  * @since 1.0.0
  */
-export function findLastMap_<A, B>(as: ReadonlyArray<A>, f: (a: A) => Maybe<B>): Maybe<B> {
+export function ifindLastMap_<A, B>(as: ReadonlyArray<A>, f: (i: number, a: A) => Maybe<B>): Maybe<B> {
   const len = as.length
   for (let i = len - 1; i >= 0; i--) {
-    const v = f(as[i])
+    const v = f(i, as[i])
     if (M.isJust(v)) {
       return v
     }
   }
   return M.nothing()
+}
+
+/**
+ * @category combinators
+ * @since 1.0.0
+ * @dataFirst ifindLastMap_
+ */
+export function ifindLastMap<A, B>(f: (i: number, a: A) => Maybe<B>): (as: ReadonlyArray<A>) => Maybe<B> {
+  return (as) => ifindLastMap_(as, f)
+}
+
+/**
+ * @category combinators
+ * @since 1.0.0
+ */
+export function findLastMap_<A, B>(as: ReadonlyArray<A>, f: (a: A) => Maybe<B>): Maybe<B> {
+  return ifindLastMap_(as, (_, a) => f(a))
 }
 
 /**
@@ -1636,13 +1614,7 @@ export function findLastMap<A, B>(f: (a: A) => Maybe<B>): (as: ReadonlyArray<A>)
  * @since 1.0.0
  */
 export function findIndex_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Maybe<number> {
-  const len = as.length
-  for (let i = 0; i < len; i++) {
-    if (predicate(as[i])) {
-      return M.just(i)
-    }
-  }
-  return M.nothing()
+  return ifindMap_(as, (i, a) => (predicate(a) ? M.just(i) : M.nothing()))
 }
 
 /**
@@ -1742,13 +1714,7 @@ export function findMap<A, B>(f: (a: A) => Maybe<B>): (as: ReadonlyArray<A>) => 
  * @since 1.0.0
  */
 export function findLastIndex_<A>(as: ReadonlyArray<A>, predicate: P.Predicate<A>): Maybe<number> {
-  const len = as.length
-  for (let i = len - 1; i >= 0; i--) {
-    if (predicate(as[i])) {
-      return M.just(i)
-    }
-  }
-  return M.nothing()
+  return ifindLastMap_(as, (i, a) => (predicate(a) ? M.just(i) : M.nothing()))
 }
 
 /**
@@ -2083,7 +2049,7 @@ export function modifyAt<A>(i: number, f: (a: A) => A): (as: ReadonlyArray<A>) =
  * @category combinators
  * @since 1.0.0
  */
-export const prependW_: <A, B>(tail: ReadonlyArray<A>, head: B) => NonEmptyArray<A | B> = NEA.prependW_
+export const prependW_: <A, B>(tail: ReadonlyArray<A>, head: B) => ReadonlyArray<A | B> = NEA.prependW_
 
 /**
  * @category combinators
@@ -2091,13 +2057,13 @@ export const prependW_: <A, B>(tail: ReadonlyArray<A>, head: B) => NonEmptyArray
  *
  * @dataFirst prependW_
  */
-export const prependW: <B>(head: B) => <A>(tail: ReadonlyArray<A>) => NonEmptyArray<A | B> = NEA.prependW
+export const prependW: <B>(head: B) => <A>(tail: ReadonlyArray<A>) => ReadonlyArray<A | B> = NEA.prependW
 
 /**
  * @category combinators
  * @since 1.0.0
  */
-export const prepend_: <A>(tail: ReadonlyArray<A>, head: A) => NonEmptyArray<A> = NEA.prepend_
+export const prepend_: <A>(tail: ReadonlyArray<A>, head: A) => ReadonlyArray<A> = NEA.prepend_
 
 /**
  * @category combinators
@@ -2105,7 +2071,7 @@ export const prepend_: <A>(tail: ReadonlyArray<A>, head: A) => NonEmptyArray<A> 
  *
  * @dataFirst prepend_
  */
-export const prepend: <A>(head: A) => (tail: ReadonlyArray<A>) => NonEmptyArray<A> = NEA.prepend
+export const prepend: <A>(head: A) => (tail: ReadonlyArray<A>) => ReadonlyArray<A> = NEA.prepend
 
 /**
  * @category combinators
@@ -2264,7 +2230,7 @@ export function slice(start?: number, end?: number): <A>(as: ReadonlyArray<A>) =
  * @since 1.0.0
  */
 export function sort<B>(O: P.Ord<B>): <A extends B>(as: ReadonlyArray<A>) => ReadonlyArray<A> {
-  return (as) => (isEmpty(as) ? empty() : as.length === 1 ? as : mutableClone(as).sort((a, b) => O.compare_(a, b)))
+  return (as) => (isEmpty(as) ? as : as.length === 1 ? as : mutableClone(as).sort((a, b) => O.compare_(a, b)))
 }
 
 /**
@@ -2522,8 +2488,8 @@ export function updateAt<A>(i: number, a: A): (as: ReadonlyArray<A>) => Maybe<Re
  * @since 1.0.0
  */
 export function unzip<A, B>(as: ReadonlyArray<readonly [A, B]>): readonly [ReadonlyArray<A>, ReadonlyArray<B>] {
-  const fa: Array<A> = []
-  const fb: Array<B> = []
+  const fa: Array<A> = new Array(as.length)
+  const fb: Array<B> = new Array(as.length)
 
   for (let i = 0; i < as.length; i++) {
     fa[i] = as[i][0]
