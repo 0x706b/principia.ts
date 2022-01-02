@@ -841,16 +841,16 @@ export interface IOOps<R, E, A> {
   as<R, E, A, B>(this: I.IO<R, E, A>, b: B): I.IO<R, E, B>
 
   /**
-   * @rewriteGetter asJust from "@principia/base/IO"
+   * @rewrite asJust from "@principia/base/IO"
    * @trace getter
    */
-  asJust: I.IO<R, E, Maybe<A>>
+  asJust<R, E, A>(this: I.IO<R, E, A>): I.IO<R, E, Maybe<A>>
 
   /**
-   * @rewriteGetter asJustError from "@principia/base/IO"
+   * @rewrite asJustError from "@principia/base/IO"
    * @trace getter
    */
-  asJustError: I.IO<R, Maybe<E>, A>
+  asJustError<R, E, A>(this: I.IO<R, E, A>): I.IO<R, Maybe<E>, A>
 
   /**
    * @rewriteGetter asUnit from "@principia/base/IO"
@@ -1244,12 +1244,6 @@ export interface IOOps<R, E, A> {
   ): I.IO<R & R1 & R2, E | E1 | E2, A1 | A2>
 
   /**
-   * @rewrite in_ from "@principia/base/IO"
-   * @trace call
-   */
-  in<R, E, A>(this: I.IO<R, E, A>, scope: Scope<any>): I.IO<R, E, A>
-
-  /**
    * @rewriteGetter interruptAllChildren from "@principia/base/IO"
    * @trace getter
    */
@@ -1496,7 +1490,7 @@ export interface IOOps<R, E, A> {
     that: I.IO<R1, E1, A1>,
     leftWins: (exit: Exit<E, A>, fiber: Fiber<E1, A1>) => I.IO<R2, E2, A2>,
     rightWins: (exit: Exit<E1, A1>, fiber: Fiber<E, A>) => I.IO<R3, E3, A3>,
-    scope?: Maybe<Scope<Exit<any, any>>>
+    scope?: Maybe<Scope>
   ): I.IO<R & R1 & R2 & R3, E2 | E3, A2 | A3>
 
   /**
