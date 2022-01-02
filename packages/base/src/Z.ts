@@ -497,12 +497,12 @@ export function matchCauseZ_<W, S1, S2, R, E, A, W1, S0, S3, R1, E1, B, W2, S4, 
     (ws, e) =>
       pipe(
         onFailure(e),
-        censor((w1s) => C.concatW_(ws, w1s))
+        censor((w1s) => C.concat_(ws, w1s))
       ),
     (ws, a) =>
       pipe(
         onSuccess(a),
-        censor((w2s) => C.concatW_(ws, w2s))
+        censor((w2s) => C.concat_(ws, w2s))
       )
   )
 }

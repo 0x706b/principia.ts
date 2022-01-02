@@ -923,35 +923,22 @@ export function toBuffer(chunk: Chunk<Byte>): Uint8Array {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function append_<A, A1>(chunk: Chunk<A>, a1: A1): Chunk<A | A1> {
-  concrete(chunk)
-  return chunk.append(a1)
+export function append_<A, A1>(as: Chunk<A>, a: A1): Chunk<A | A1> {
+  concrete(as)
+  return as.append(a)
 }
 
 /**
  * @dataFirst append_
  */
-export function append<A>(a: A): (chunk: Chunk<A>) => Chunk<A> {
-  return (chunk) => append_(chunk, a)
+export function append<A>(a: A): (as: Chunk<A>) => Chunk<A> {
+  return (as) => append_(as, a)
 }
 
-export function concatW_<A, B>(as: Chunk<A>, bs: Chunk<B>): Chunk<A | B> {
-  concrete(as)
-  concrete(bs)
-  return as.concat(bs as any)
-}
-
-/**
- * @dataFirst concatW_
- */
-export function concatW<B>(bs: Chunk<B>): <A>(as: Chunk<A>) => Chunk<A | B> {
-  return (as) => concatW_(as, bs)
-}
-
-export function concat_<A>(xs: Chunk<A>, ys: Chunk<A>): Chunk<A> {
+export function concat_<A, B>(xs: Chunk<A>, ys: Chunk<B>): Chunk<A | B> {
   concrete(xs)
   concrete(ys)
-  return xs.concat(ys)
+  return (xs as ChunkImplementation<A | B>).concat(ys)
 }
 
 /**
@@ -985,9 +972,9 @@ export function forEach<A, B>(f: (a: A) => B): (as: Chunk<A>) => void {
   return (as) => forEach_(as, f)
 }
 
-export function prepend_<A>(chunk: Chunk<A>, a: A): Chunk<A> {
-  concrete(chunk)
-  return chunk.prepend(a)
+export function prepend_<A>(as: Chunk<A>, a: A): Chunk<A> {
+  concrete(as)
+  return as.prepend(a)
 }
 
 /**
@@ -1072,8 +1059,8 @@ export function ap<A>(fa: Chunk<A>): <B>(fab: Chunk<(a: A) => B>) => Chunk<B> {
   return (fab) => ap_(fab, fa)
 }
 
-export function cross_<A, B>(as: Chunk<A>, bs: Chunk<B>): Chunk<readonly [A, B]> {
-  return crossWith_(as, bs, tuple)
+export function cross_<A, B>(fa: Chunk<A>, fb: Chunk<B>): Chunk<readonly [A, B]> {
+  return crossWith_(fa, fb, tuple)
 }
 
 /**
@@ -1083,15 +1070,15 @@ export function cross<B>(bs: Chunk<B>): <A>(as: Chunk<A>) => Chunk<readonly [A, 
   return (as) => cross_(as, bs)
 }
 
-export function crossWith_<A, B, C>(as: Chunk<A>, bs: Chunk<B>, f: (a: A, b: B) => C): Chunk<C> {
-  return chain_(as, (a) => map_(bs, (b) => f(a, b)))
+export function crossWith_<A, B, C>(fa: Chunk<A>, fb: Chunk<B>, f: (a: A, b: B) => C): Chunk<C> {
+  return chain_(fa, (a) => map_(fb, (b) => f(a, b)))
 }
 
 /**
  * @dataFirst crossWith_
  */
-export function crossWith<A, B, C>(bs: Chunk<B>, f: (a: A, b: B) => C): (as: Chunk<A>) => Chunk<C> {
-  return (as) => crossWith_(as, bs, f)
+export function crossWith<A, B, C>(fb: Chunk<B>, f: (a: A, b: B) => C): (fa: Chunk<A>) => Chunk<C> {
+  return (fa) => crossWith_(fa, fb, f)
 }
 
 /*
@@ -1158,8 +1145,8 @@ class PrependFrame<A, B> {
 
 type Frame<A, B> = DoneFrame | ConcatLeftFrame<A> | ConcatRightFrame<B> | AppendFrame<A> | PrependFrame<A, B>
 
-export function imap_<A, B>(chunk: Chunk<A>, f: (i: number, a: A) => B): Chunk<B> {
-  let current = chunk
+export function imap_<A, B>(fa: Chunk<A>, f: (i: number, a: A) => B): Chunk<B> {
+  let current = fa
 
   let index = 0
 
@@ -1257,19 +1244,19 @@ export function imap_<A, B>(chunk: Chunk<A>, f: (i: number, a: A) => B): Chunk<B
 /**
  * @dataFirst imap_
  */
-export function imap<A, B>(f: (i: number, a: A) => B): (chunk: Chunk<A>) => Chunk<B> {
-  return (chunk) => imap_(chunk, f)
+export function imap<A, B>(f: (i: number, a: A) => B): (fa: Chunk<A>) => Chunk<B> {
+  return (fa) => imap_(fa, f)
 }
 
-export function map_<A, B>(chunk: Chunk<A>, f: (a: A) => B): Chunk<B> {
-  return imap_(chunk, (_, a) => f(a))
+export function map_<A, B>(fa: Chunk<A>, f: (a: A) => B): Chunk<B> {
+  return imap_(fa, (_, a) => f(a))
 }
 
 /**
  * @dataFirst map_
  */
-export function map<A, B>(f: (a: A) => B): (chunk: Chunk<A>) => Chunk<B> {
-  return (chunk) => map_(chunk, f)
+export function map<A, B>(f: (a: A) => B): (fa: Chunk<A>) => Chunk<B> {
+  return (fa) => map_(fa, f)
 }
 
 /*
@@ -1328,15 +1315,15 @@ export function alt<A>(that: () => Chunk<A>): (fa: Chunk<A>) => Chunk<A> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function zipWith_<A, B, C>(as: Chunk<A>, bs: Chunk<B>, f: (a: A, b: B) => C): Chunk<C> {
-  concrete(as)
-  concrete(bs)
-  const length = Math.min(as.length, bs.length)
+export function zipWith_<A, B, C>(fa: Chunk<A>, fb: Chunk<B>, f: (a: A, b: B) => C): Chunk<C> {
+  concrete(fa)
+  concrete(fb)
+  const length = Math.min(fa.length, fb.length)
   if (length === 0) {
     return empty()
   } else {
-    const leftIterator  = as.arrayIterator()
-    const rightIterator = bs.arrayIterator()
+    const leftIterator  = fa.arrayIterator()
+    const rightIterator = fb.arrayIterator()
     const out           = builder<C>()
     let left: IteratorResult<ArrayLike<A>>  = null as any
     let right: IteratorResult<ArrayLike<B>> = null as any
@@ -1369,19 +1356,19 @@ export function zipWith_<A, B, C>(as: Chunk<A>, bs: Chunk<B>, f: (a: A, b: B) =>
 /**
  * @dataFirst zipWith_
  */
-export function zipWith<A, B, C>(bs: Chunk<B>, f: (a: A, b: B) => C): (as: Chunk<A>) => Chunk<C> {
-  return (as) => zipWith_(as, bs, f)
+export function zipWith<A, B, C>(fb: Chunk<B>, f: (a: A, b: B) => C): (fa: Chunk<A>) => Chunk<C> {
+  return (fa) => zipWith_(fa, fb, f)
 }
 
-export function zip_<A, B>(as: Chunk<A>, bs: Chunk<B>): Chunk<readonly [A, B]> {
-  return zipWith_(as, bs, tuple)
+export function zip_<A, B>(fa: Chunk<A>, fb: Chunk<B>): Chunk<readonly [A, B]> {
+  return zipWith_(fa, fb, tuple)
 }
 
 /**
  * @dataFirst zip_
  */
-export function zip<B>(bs: Chunk<B>): <A>(as: Chunk<A>) => Chunk<readonly [A, B]> {
-  return (as) => zip_(as, bs)
+export function zip<B>(fb: Chunk<B>): <A>(fa: Chunk<A>) => Chunk<readonly [A, B]> {
+  return (fa) => zip_(fa, fb)
 }
 
 /*
@@ -1738,16 +1725,16 @@ export function separate<E, A>(as: Chunk<Either<E, A>>): readonly [Chunk<E>, Chu
 
 export function getOrd<A>(O: P.Ord<A>): P.Ord<Chunk<A>> {
   return P.Ord({
-    compare_: (a, b) => {
-      concrete(a)
-      concrete(b)
+    compare_: (xs, ys) => {
+      concrete(xs)
+      concrete(ys)
 
-      const leftLength  = a.length
-      const rightLength = b.length
+      const leftLength  = xs.length
+      const rightLength = ys.length
       const length      = Math.min(leftLength, rightLength)
 
-      const leftIterator                  = a.arrayIterator()
-      const rightIterator                 = b.arrayIterator()
+      const leftIterator                  = xs.arrayIterator()
+      const rightIterator                 = ys.arrayIterator()
       let left: ArrayLike<A> | undefined  = undefined
       let right: ArrayLike<A> | undefined = undefined
       let leftArrayLength                 = 0
@@ -2031,15 +2018,15 @@ export function chunksOf(n: number): <A>(as: Chunk<A>) => Chunk<Chunk<A>> {
 /**
  * Transforms all elements of the chunk for as long as the specified partial function is defined.
  */
-export function collectWhile_<A, B>(self: Chunk<A>, f: (a: A) => M.Maybe<B>): Chunk<B> {
-  concrete(self)
+export function collectWhile_<A, B>(as: Chunk<A>, f: (a: A) => M.Maybe<B>): Chunk<B> {
+  concrete(as)
 
-  switch (self._chunkTag) {
+  switch (as._chunkTag) {
     case ChunkTag.Singleton: {
-      return M.match_(f(self.value), () => empty(), single)
+      return M.match_(f(as.value), () => empty(), single)
     }
     case ChunkTag.Arr: {
-      const array = self.arrayLike()
+      const array = as.arrayLike()
       let dest    = empty<B>()
       for (let i = 0; i < array.length; i++) {
         const rhs = f(array[i]!)
@@ -2052,7 +2039,7 @@ export function collectWhile_<A, B>(self: Chunk<A>, f: (a: A) => M.Maybe<B>): Ch
       return dest
     }
     default: {
-      return collectWhile_(self.materialize(), f)
+      return collectWhile_(as.materialize(), f)
     }
   }
 }
@@ -2062,8 +2049,8 @@ export function collectWhile_<A, B>(self: Chunk<A>, f: (a: A) => M.Maybe<B>): Ch
  *
  * @dataFirst collectWhile_
  */
-export function collectWhile<A, B>(f: (a: A) => M.Maybe<B>): (self: Chunk<A>) => Chunk<B> {
-  return (self) => collectWhile_(self, f)
+export function collectWhile<A, B>(f: (a: A) => M.Maybe<B>): (as: Chunk<A>) => Chunk<B> {
+  return (as) => collectWhile_(as, f)
 }
 
 export function drop_<A>(as: Chunk<A>, n: number): Chunk<A> {
@@ -2220,18 +2207,18 @@ export function get(n: number): <A>(as: Chunk<A>) => M.Maybe<A> {
   return (as) => get_(as, n)
 }
 
-export function join_(chunk: Chunk<string>, separator: string): string {
-  if (chunk.length === 0) {
+export function join_(strings: Chunk<string>, separator: string): string {
+  if (strings.length === 0) {
     return ''
   }
-  return foldl_(unsafeTail(chunk), unsafeGet_(chunk, 0), (b, s) => b + separator + s)
+  return foldl_(unsafeTail(strings), unsafeGet_(strings, 0), (b, s) => b + separator + s)
 }
 
 /**
  * @dataFirst join_
  */
-export function join(separator: string): (chunk: Chunk<string>) => string {
-  return (chunk) => join_(chunk, separator)
+export function join(separator: string): (strings: Chunk<string>) => string {
+  return (strings) => join_(strings, separator)
 }
 
 /**
@@ -2310,9 +2297,9 @@ export function splitAt(n: number): <A>(as: Chunk<A>) => readonly [Chunk<A>, Chu
 /**
  * Splits this chunk on the first element that matches this predicate.
  */
-export function splitWhere_<A>(self: Chunk<A>, f: (a: A) => boolean): readonly [Chunk<A>, Chunk<A>] {
-  concrete(self)
-  const iterator = self.arrayIterator()
+export function splitWhere_<A>(as: Chunk<A>, f: (a: A) => boolean): readonly [Chunk<A>, Chunk<A>] {
+  concrete(as)
+  const iterator = as.arrayIterator()
   let next
   let cont       = true
   let i          = 0
@@ -2332,7 +2319,7 @@ export function splitWhere_<A>(self: Chunk<A>, f: (a: A) => boolean): readonly [
     }
   }
 
-  return splitAt_(self, i)
+  return splitAt_(as, i)
 }
 
 /**
@@ -2340,8 +2327,8 @@ export function splitWhere_<A>(self: Chunk<A>, f: (a: A) => boolean): readonly [
  *
  * @dataFirst splitWhere_
  */
-export function splitWhere<A>(f: (a: A) => boolean): (self: Chunk<A>) => readonly [Chunk<A>, Chunk<A>] {
-  return (self) => splitWhere_(self, f)
+export function splitWhere<A>(f: (a: A) => boolean): (as: Chunk<A>) => readonly [Chunk<A>, Chunk<A>] {
+  return (as) => splitWhere_(as, f)
 }
 
 export function take_<A>(as: Chunk<A>, n: number): Chunk<A> {
@@ -2425,34 +2412,34 @@ export function unsafeHead<A>(as: Chunk<A>): A {
  * in that it will throw an exception if the chunk is empty. Consider using
  * `tail` to explicitly handle the possibility that the chunk is empty
  */
-export function unsafeTail<A>(self: Chunk<A>): Chunk<A> {
-  concrete(self)
-  if (self.length === 0) {
+export function unsafeTail<A>(as: Chunk<A>): Chunk<A> {
+  concrete(as)
+  if (as.length === 0) {
     throw new ArrayIndexOutOfBoundsException(1)
   }
 
-  return drop_(self, 1)
+  return drop_(as, 1)
 }
 
-export function unsafeUpdateAt_<A, A1>(chunk: Chunk<A>, index: number, elem: A1): Chunk<A | A1> {
-  concrete(chunk)
-  return chunk.update(index, elem)
+export function unsafeUpdateAt_<A, A1>(as: Chunk<A>, i: number, a: A1): Chunk<A | A1> {
+  concrete(as)
+  return as.update(i, a)
 }
 
-export function unsafeUpdateAt<A1>(index: number, elem: A1): <A>(chunk: Chunk<A>) => Chunk<A | A1> {
-  return (chunk) => unsafeUpdateAt_(chunk, index, elem)
+export function unsafeUpdateAt<A1>(i: number, a: A1): <A>(as: Chunk<A>) => Chunk<A | A1> {
+  return (as) => unsafeUpdateAt_(as, i, a)
 }
 
-export function updateAt_<A, A1>(chunk: Chunk<A>, index: number, elem: A1): M.Maybe<Chunk<A | A1>> {
+export function updateAt_<A, A1>(as: Chunk<A>, i: number, a: A1): M.Maybe<Chunk<A | A1>> {
   try {
-    return M.just(unsafeUpdateAt_(chunk, index, elem))
+    return M.just(unsafeUpdateAt_(as, i, a))
   } catch {
     return M.nothing()
   }
 }
 
-export function updateAt<A1>(index: number, elem: A1): <A>(chunk: Chunk<A>) => M.Maybe<Chunk<A | A1>> {
-  return (chunk) => updateAt_(chunk, index, elem)
+export function updateAt<A1>(i: number, a: A1): <A>(as: Chunk<A>) => M.Maybe<Chunk<A | A1>> {
+  return (as) => updateAt_(as, i, a)
 }
 
 export function zipWithIndexOffset_<A>(as: Chunk<A>, offset: number): Chunk<readonly [A, number]> {
