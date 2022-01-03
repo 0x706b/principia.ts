@@ -180,7 +180,7 @@ export function pure<A>(a: A): Iterable<A> {
     let done = false
     return {
       next() {
-        return !done ? { done, value: a } : this.return!()
+        return !done ? ((done = true), { done: false, value: a }) : this.return!()
       },
       return(value?: unknown) {
         if (!done) {
@@ -1023,7 +1023,7 @@ export function every<A>(predicate: P.Predicate<A>): (as: Iterable<A>) => boolea
 
 export function iforEach_<A, B>(as: Iterable<A>, f: (i: number, a: A) => B): void {
   let i = 0
-  for(const a of as) {
+  for (const a of as) {
     f(i, a)
     i++
   }
