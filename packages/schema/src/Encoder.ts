@@ -75,11 +75,11 @@ export function id<A>(): Encoder<A, A> {
   return Encoder(identity)
 }
 
-export function andThen_<A, O, O1>(ia: Encoder<A, O>, ab: Encoder<O, O1>): Encoder<A, O1> {
+export function compose_<A, O, O1>(ia: Encoder<A, O>, ab: Encoder<O, O1>): Encoder<A, O1> {
   return Encoder(flow(ia.encode, ab.encode))
 }
 
-export function andThen<O, O1>(ab: Encoder<O, O1>): <A>(ia: Encoder<A, O>) => Encoder<A, O1> {
+export function compose<O, O1>(ab: Encoder<O, O1>): <A>(ia: Encoder<A, O>) => Encoder<A, O1> {
   return (ia) => Encoder(flow(ia.encode, ab.encode))
 }
 
@@ -378,7 +378,7 @@ export const Schemable: S.Schemable<EncoderSURI> = {
   tuple: (components) => tuple(...components),
   sum: (tag) => (members) => sum(tag)(members),
   lazy: (f) => lazy(f),
-  andThen: (_, ab) => ab,
+  compose: (_, ab) => ab,
   custom: (_) => _[EncoderSURI],
   refine: (E) => E,
   constrain: (E) => E,

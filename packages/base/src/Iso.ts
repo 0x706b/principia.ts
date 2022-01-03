@@ -38,12 +38,12 @@ export interface IsoF extends HKT.HKT {
   }
 }
 
-export function andThenLens_<S, T, A, B, C, D>(sa: PIso<S, T, A, B>, ab: PLens<A, B, C, D>): PLens<S, T, C, D> {
-  return L.andThen_(sa, ab)
+export function composeLens_<S, T, A, B, C, D>(sa: PIso<S, T, A, B>, ab: PLens<A, B, C, D>): PLens<S, T, C, D> {
+  return L.compose_(sa, ab)
 }
 
-export function andThenLens<A, B, C, D>(ab: PLens<A, B, C, D>): <S, T>(sa: PIso<S, T, A, B>) => PLens<S, T, C, D> {
-  return (sa) => andThenLens_(sa, ab)
+export function composeLens<A, B, C, D>(ab: PLens<A, B, C, D>): <S, T>(sa: PIso<S, T, A, B>) => PLens<S, T, C, D> {
+  return (sa) => composeLens_(sa, ab)
 }
 
 /*
@@ -58,7 +58,7 @@ export function andThenLens<A, B, C, D>(ab: PLens<A, B, C, D>): <S, T>(sa: PIso<
  * @category Semigroupoid
  * @since 1.0.0
  */
-export function andThen_<S, T, A, B, C, D>(sa: PIso<S, T, A, B>, ab: PIso<A, B, C, D>): PIso<S, T, C, D> {
+export function compose_<S, T, A, B, C, D>(sa: PIso<S, T, A, B>, ab: PIso<A, B, C, D>): PIso<S, T, C, D> {
   return PIso({
     get: flow(sa.get, ab.get),
     reverseGet: flow(ab.reverseGet, sa.reverseGet)
@@ -71,8 +71,8 @@ export function andThen_<S, T, A, B, C, D>(sa: PIso<S, T, A, B>, ab: PIso<A, B, 
  * @category Semigroupoid
  * @since 1.0.0
  */
-export function andThen<A, B, C, D>(ab: PIso<A, B, C, D>): <S, T>(sa: PIso<S, T, A, B>) => PIso<S, T, C, D> {
-  return (sa) => andThen_(sa, ab)
+export function compose<A, B, C, D>(ab: PIso<A, B, C, D>): <S, T>(sa: PIso<S, T, A, B>) => PIso<S, T, C, D> {
+  return (sa) => compose_(sa, ab)
 }
 
 /**
@@ -92,7 +92,7 @@ export function id<S, T>(): PIso<S, T, S, T> {
  */
 export const Category = P.Category<IsoF>({
   id,
-  andThen_
+  compose_
 })
 
 /*

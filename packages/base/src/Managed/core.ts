@@ -1499,7 +1499,7 @@ export function sequenceIterableUnit<R, E, A>(mas: Iterable<Managed<R, E, A>>): 
 /**
  * @trace call
  */
-export function andThen_<R, E, A, E1, B>(ma: Managed<R, E, A>, mb: Managed<A, E1, B>): Managed<R, E | E1, B> {
+export function compose_<R, E, A, E1, B>(ma: Managed<R, E, A>, mb: Managed<A, E1, B>): Managed<R, E | E1, B> {
   const trace = accessCallTrace()
   return chain_(
     ma,
@@ -1510,32 +1510,9 @@ export function andThen_<R, E, A, E1, B>(ma: Managed<R, E, A>, mb: Managed<A, E1
 /**
  * @trace call
  */
-export function andThen<A, E1, B>(mb: Managed<A, E1, B>): <R, E>(ma: Managed<R, E, A>) => Managed<R, E | E1, B> {
+export function compose<A, E1, B>(mb: Managed<A, E1, B>): <R, E>(ma: Managed<R, E, A>) => Managed<R, E | E1, B> {
   const trace = accessCallTrace()
-  return (ma) => traceCall(andThen_, trace)(ma, mb)
-}
-
-/**
- * Executes the second effect and then provides its output as an environment to this effect
- *
- * @trace call
- */
-export function compose_<R, E, A, R1, E1>(ma: Managed<R, E, A>, mr: Managed<R1, E1, R>): Managed<R1, E | E1, A> {
-  const trace = accessCallTrace()
-  return pipe(
-    ask<R1>(),
-    chain(traceFrom(trace, (r1) => giveSome_(mr, r1))),
-    chain(traceFrom(trace, (r) => giveSome_(ma, r)))
-  )
-}
-
-/**
- * Executes the second effect and then provides its output as an environment to this effect
- *
- * @trace call
- */
-export function compose<R, R1, E1>(mr: Managed<R1, E1, R>): <E, A>(ma: Managed<R, E, A>) => Managed<R1, E | E1, A> {
-  return (ma) => compose_(ma, mr)
+  return (ma) => traceCall(compose_, trace)(ma, mb)
 }
 
 /**

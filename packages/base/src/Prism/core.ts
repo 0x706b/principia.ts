@@ -78,8 +78,8 @@ export function fromNullable<A>(): Prism<A, NonNullable<A>> {
  * @category Compositions
  * @since 1.0.0
  */
-export function andThenLens_<S, T, A, B, C, D>(sa: PPrism<S, T, A, B>, ab: PLens<A, B, C, D>): POptional<S, T, C, D> {
-  return Op.andThen_(sa, ab)
+export function composeLens_<S, T, A, B, C, D>(sa: PPrism<S, T, A, B>, ab: PLens<A, B, C, D>): POptional<S, T, C, D> {
+  return Op.compose_(sa, ab)
 }
 
 /**
@@ -88,10 +88,10 @@ export function andThenLens_<S, T, A, B, C, D>(sa: PPrism<S, T, A, B>, ab: PLens
  * @category Compositions
  * @since 1.0.0
  */
-export function andThenLens<A, B, C, D>(
+export function composeLens<A, B, C, D>(
   ab: PLens<A, B, C, D>
 ): <S, T>(sa: PPrism<S, T, A, B>) => POptional<S, T, C, D> {
-  return (sa) => andThenLens_(sa, ab)
+  return (sa) => composeLens_(sa, ab)
 }
 
 /**
@@ -100,11 +100,11 @@ export function andThenLens<A, B, C, D>(
  * @category Compositions
  * @since 1.0.0
  */
-export function andThenOptional_<S, T, A, B, C, D>(
+export function composeOptional_<S, T, A, B, C, D>(
   sa: PPrism<S, T, A, B>,
   ab: POptional<A, B, C, D>
 ): POptional<S, T, C, D> {
-  return Op.andThen_(sa, ab)
+  return Op.compose_(sa, ab)
 }
 
 /**
@@ -113,23 +113,23 @@ export function andThenOptional_<S, T, A, B, C, D>(
  * @category Compositions
  * @since 1.0.0
  */
-export function andThenOptional<A, B, C, D>(
+export function composeOptional<A, B, C, D>(
   ab: POptional<A, B, C, D>
 ): <S, T>(sa: PPrism<S, T, A, B>) => POptional<S, T, C, D> {
-  return (sa) => andThenOptional_(sa, ab)
+  return (sa) => composeOptional_(sa, ab)
 }
 
-export function andThenTraversal_<S, T, A, B, C, D>(
+export function composeTraversal_<S, T, A, B, C, D>(
   sa: PPrism<S, T, A, B>,
   ab: PTraversal<A, B, C, D>
 ): PTraversal<S, T, C, D> {
-  return Tr.andThen_(sa, ab)
+  return Tr.compose_(sa, ab)
 }
 
-export function andThenTraversal<A, B, C, D>(
+export function composeTraversal<A, B, C, D>(
   ab: PTraversal<A, B, C, D>
 ): <S, T>(sa: PPrism<S, T, A, B>) => PTraversal<S, T, C, D> {
-  return (sa) => andThenTraversal_(sa, ab)
+  return (sa) => composeTraversal_(sa, ab)
 }
 
 /*
@@ -155,7 +155,7 @@ export function id<S, T>(): PPrism<S, T, S, T> {
  * @category Semigroupoid
  * @since 1.0.0
  */
-export function andThen_<S, T, A, B, C, D>(sa: PPrism<S, T, A, B>, ab: PPrism<A, B, C, D>): PPrism<S, T, C, D> {
+export function compose_<S, T, A, B, C, D>(sa: PPrism<S, T, A, B>, ab: PPrism<A, B, C, D>): PPrism<S, T, C, D> {
   return PPrism({
     getOrModify: (s) =>
       pipe(
@@ -177,8 +177,8 @@ export function andThen_<S, T, A, B, C, D>(sa: PPrism<S, T, A, B>, ab: PPrism<A,
  * @category Semigroupoid
  * @since 1.0.0
  */
-export function andThen<A, B, C, D>(ab: PPrism<A, B, C, D>): <S, T>(sa: PPrism<S, T, A, B>) => PPrism<S, T, C, D> {
-  return (sa) => andThen_(sa, ab)
+export function compose<A, B, C, D>(ab: PPrism<A, B, C, D>): <S, T>(sa: PPrism<S, T, A, B>) => PPrism<S, T, C, D> {
+  return (sa) => compose_(sa, ab)
 }
 
 /**
@@ -186,7 +186,7 @@ export function andThen<A, B, C, D>(ab: PPrism<A, B, C, D>): <S, T>(sa: PPrism<S
  * @since 1.0.0
  */
 export const Category = P.Category<PrismF>({
-  andThen_,
+  compose_: compose_,
   id
 })
 
@@ -237,13 +237,13 @@ export const Invariant: P.Invariant<PrismF> = HKT.instance({
  * @since 1.0.0
  */
 export function nullable<S, A>(sa: Prism<S, A>): Prism<S, NonNullable<A>> {
-  return andThen_(sa, fromNullable())
+  return compose_(sa, fromNullable())
 }
 
 export function filter_<S, A, B extends A>(sa: Prism<S, A>, refinement: Refinement<A, B>): Prism<S, B>
 export function filter_<S, A>(sa: Prism<S, A>, predicate: Predicate<A>): Prism<S, A>
 export function filter_<S, A>(sa: Prism<S, A>, predicate: Predicate<A>): Prism<S, A> {
-  return andThen_(sa, fromPredicate(predicate))
+  return compose_(sa, fromPredicate(predicate))
 }
 
 /**
@@ -253,7 +253,7 @@ export function filter_<S, A>(sa: Prism<S, A>, predicate: Predicate<A>): Prism<S
 export function filter<A, B extends A>(refinement: Refinement<A, B>): <S>(sa: Prism<S, A>) => Prism<S, B>
 export function filter<A>(predicate: Predicate<A>): <S>(sa: Prism<S, A>) => Prism<S, A>
 export function filter<A>(predicate: Predicate<A>): <S>(sa: Prism<S, A>) => Prism<S, A> {
-  return andThen(fromPredicate(predicate))
+  return compose(fromPredicate(predicate))
 }
 
 /**
@@ -265,7 +265,7 @@ export function filter<A>(predicate: Predicate<A>): <S>(sa: Prism<S, A>) => Pris
 export function traverse<T extends HKT.HKT, C = HKT.None>(
   T: P.Traversable<T, C>
 ): <S, K, Q, W, X, I, S_, R, E, A>(sta: Prism<S, HKT.Kind<T, C, K, Q, W, X, I, S_, R, E, A>>) => Traversal<S, A> {
-  return andThenTraversal(Tr.fromTraversable(T)())
+  return composeTraversal(Tr.fromTraversable(T)())
 }
 
 export function newtype<T extends Newtype<any, any>>(getMaybe: Predicate<T['_A']>): Prism<T['_A'], T> {

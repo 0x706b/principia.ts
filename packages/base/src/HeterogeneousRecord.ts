@@ -395,7 +395,7 @@ export function getPropL<A extends Record<string, any>>() {
 }
 
 export function propL_<S, A, P extends keyof A>(sa: L.Lens<S, A>, prop: P): L.Lens<S, A[P]> {
-  return L.andThen_(sa, getPropL<A>()(prop))
+  return L.compose_(sa, getPropL<A>()(prop))
 }
 
 /**
@@ -430,7 +430,7 @@ export function propsL_<S, A, P extends keyof A>(
   sa: L.Lens<S, A>,
   ...props: [P, P, ...Array<P>]
 ): L.Lens<S, { [K in P]: A[K] }> {
-  return L.andThen_(sa, getPropsL<A>()(...props))
+  return L.compose_(sa, getPropsL<A>()(...props))
 }
 
 /**

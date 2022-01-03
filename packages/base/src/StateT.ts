@@ -38,14 +38,14 @@ export interface StateT<F extends HKT.HKT, C = HKT.None> extends HKT.HKT {
 
 export function getStateT<F extends HKT.HKT, C = HKT.None>(M: Monad<F, C>): MonadState<StateT<F>, C>
 export function getStateT<F>(M: Monad<HKT.F<F>>): MonadState<StateT<HKT.F<F>>> {
-  const map_: MonadState<StateT<HKT.F<F>>>['map_'] = (fa, f) => pipe(fa, F.andThen(M.map(([a, s]) => [f(a), s])))
+  const map_: MonadState<StateT<HKT.F<F>>>['map_'] = (fa, f) => pipe(fa, F.composef(M.map(([a, s]) => [f(a), s])))
 
-  const chain_: MonadState<StateT<HKT.F<F>>>['chain_'] = (ma, f) => pipe(ma, F.andThen(M.chain(([a, s1]) => f(a)(s1))))
+  const chain_: MonadState<StateT<HKT.F<F>>>['chain_'] = (ma, f) => pipe(ma, F.composef(M.chain(([a, s1]) => f(a)(s1))))
 
   const crossWith_: MonadState<StateT<HKT.F<F>>>['crossWith_'] = (fa, fb, f) =>
     pipe(
       fa,
-      F.andThen(
+      F.composef(
         M.chain(([a, s1]) =>
           pipe(
             fb(s1),

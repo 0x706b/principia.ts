@@ -48,14 +48,14 @@ export abstract class Layer<R, E, A> {
   }
 
   /**
-   * Symbolic alias for `andThen`
+   * Symbolic alias for `compose`
    */
   ['>=>']<E1, A1>(that: Layer<A, E1, A1>): Layer<R, E | E1, A1> {
-    return andThen_(this, that)
+    return compose_(this, that)
   }
 
   /**
-   * Symbolic alias for `compose`
+   * Symbolic alias for `compose`, in reverse
    */
   ['<=<']<R1, E1>(that: Layer<R1, E1, R>): Layer<R1, E | E1, A> {
     return that['>=>'](this)
@@ -546,7 +546,7 @@ export function restrict<Tags extends H.Tag<any>[]>(
   UnionToIntersection<{ [k in keyof Tags]: [Tags[k]] extends [H.Tag<infer A>] ? H.Has<A> : never }[number]>
 > {
   return (layer) =>
-    andThen_(
+    compose_(
       layer,
       fromRawIO(
         I.asksServicesT(...ts)((...services) =>
@@ -862,7 +862,7 @@ export function matchLayer<E, A, R1, E1, B, E2, C>(
  * layer, resulting in a new layer with the inputs of the `from`, and the
  * outputs of the `to` layer.
  */
-export function andThen_<R, E, A, E1, A1>(from: Layer<R, E, A>, to: Layer<A, E1, A1>): Layer<R, E | E1, A1> {
+export function compose_<R, E, A, E1, A1>(from: Layer<R, E, A>, to: Layer<A, E1, A1>): Layer<R, E | E1, A1> {
   return matchLayer_(
     from,
     fromRawFunctionIO((_: readonly [unknown, Cause<E>]) => I.failCause(_[1])),
@@ -875,30 +875,10 @@ export function andThen_<R, E, A, E1, A1>(from: Layer<R, E, A>, to: Layer<A, E1,
  * layer, resulting in a new layer with the inputs of the `from`, and the
  * outputs of the `to` layer.
  *
- * @dataFirst andThen_
- */
-export function andThen<A, E1, A1>(to: Layer<A, E1, A1>): <R, E>(from: Layer<R, E, A>) => Layer<R, E | E1, A1> {
-  return (from) => andThen_(from, to)
-}
-
-/**
- * Feeds the output services of the `from` layer into the input of the `to` layer
- * layer, resulting in a new layer with the inputs of the `from`, and the
- * outputs of the `to` layer.
- */
-export function compose_<R, E, A, E1, A1>(to: Layer<A, E1, A1>, from: Layer<R, E, A>): Layer<R, E | E1, A1> {
-  return andThen_(from, to)
-}
-
-/**
- * Feeds the output services of the `from` layer into the input of the `to` layer
- * layer, resulting in a new layer with the inputs of the `from`, and the
- * outputs of the `to` layer.
- *
  * @dataFirst compose_
  */
-export function compose<R, E, A>(from: Layer<R, E, A>): <E1, A1>(to: Layer<A, E1, A1>) => Layer<R, E | E1, A1> {
-  return (to) => compose_(to, from)
+export function compose<A, E1, A1>(to: Layer<A, E1, A1>): <R, E>(from: Layer<R, E, A>) => Layer<R, E | E1, A1> {
+  return (from) => compose_(from, to)
 }
 
 /**

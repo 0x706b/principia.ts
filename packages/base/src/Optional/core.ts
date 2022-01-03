@@ -75,7 +75,7 @@ export interface OptionalF extends HKT.HKT {
 export const fromFind = Op.fromFind
 
 export function fromNullable<S, A>(sa: Optional<S, A>): Optional<S, NonNullable<A>> {
-  return andThen_(sa, Pr.fromNullable())
+  return compose_(sa, Pr.fromNullable())
 }
 
 /*
@@ -113,7 +113,7 @@ export function id<S, T>(): POptional<S, T, S, T> {
   })
 }
 
-export function andThen_<S, T, A, B, C, D>(
+export function compose_<S, T, A, B, C, D>(
   sa: POptional<S, T, A, B>,
   ab: POptional<A, B, C, D>
 ): POptional<S, T, C, D> {
@@ -132,23 +132,23 @@ export function andThen_<S, T, A, B, C, D>(
   })
 }
 
-export function andThen<A, B, C, D>(
+export function compose<A, B, C, D>(
   ab: POptional<A, B, C, D>
 ): <S, T>(sa: POptional<S, T, A, B>) => POptional<S, T, C, D> {
-  return (sa) => andThen_(sa, ab)
+  return (sa) => compose_(sa, ab)
 }
 
-export function andThenTraversal_<S, T, A, B, C, D>(
+export function composeTraversal_<S, T, A, B, C, D>(
   sa: POptional<S, T, A, B>,
   ab: PTraversal<A, B, C, D>
 ): PTraversal<S, T, C, D> {
-  return Tr.andThen_(sa, ab)
+  return Tr.compose_(sa, ab)
 }
 
-export function andThenTraversal<A, B, C, D>(
+export function composeTraversal<A, B, C, D>(
   ab: PTraversal<A, B, C, D>
 ): <S, T>(sa: POptional<S, T, A, B>) => PTraversal<S, T, C, D> {
-  return (sa) => andThenTraversal_(sa, ab)
+  return (sa) => composeTraversal_(sa, ab)
 }
 
 /*
@@ -160,7 +160,7 @@ export function andThenTraversal<A, B, C, D>(
 export function filter_<S, A, B extends A>(sa: Optional<S, A>, refinement: P.Refinement<A, B>): Optional<S, B>
 export function filter_<S, A>(sa: Optional<S, A>, predicate: P.Predicate<A>): Optional<S, A>
 export function filter_<S, A>(sa: Optional<S, A>, predicate: P.Predicate<A>): Optional<S, A> {
-  return andThen_(sa, Pr.fromPredicate(predicate))
+  return compose_(sa, Pr.fromPredicate(predicate))
 }
 
 /**
@@ -175,5 +175,5 @@ export function filter<A>(predicate: P.Predicate<A>): <S>(sa: Optional<S, A>) =>
 export function traverse<T extends HKT.HKT, C = HKT.None>(
   T: P.Traversable<T, C>
 ): <S, K, Q, W, X, I, S_, R, E, A>(sta: Optional<S, HKT.Kind<T, C, K, Q, W, X, I, S_, R, E, A>>) => Traversal<S, A> {
-  return flow(Tr.andThen(Tr.fromTraversable(T)()))
+  return flow(Tr.compose(Tr.fromTraversable(T)()))
 }

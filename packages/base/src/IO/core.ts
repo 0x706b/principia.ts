@@ -1479,23 +1479,6 @@ export function and<R1, E1>(mb: IO<R1, E1, boolean>): <R, E>(ma: IO<R, E, boolea
 }
 
 /**
- * @trace call
- */
-export function andThen_<R, E, A, E1, B>(ra: IO<R, E, A>, ab: IO<A, E1, B>): IO<R, E | E1, B> {
-  const trace = accessCallTrace()
-  return pipe(ra, chain(traceFrom(trace, (a) => give_(ab, a))))
-}
-
-/**
- * @dataFirst andThen_
- * @trace call
- */
-export function andThen<A, E1, B>(ab: IO<A, E1, B>): <R, E>(ra: IO<R, E, A>) => IO<R, E | E1, B> {
-  const trace = accessCallTrace()
-  return (ra) => traceCall(andThen_, trace)(ra, ab)
-}
-
-/**
  * Maps the success value of this IO to the specified constant value.
  *
  * @category Combinators
@@ -1982,21 +1965,18 @@ export function collectIO<A, R1, E1, A1, E2>(
 /**
  * @trace call
  */
-export function compose_<R, E, A, R0, E1>(me: IO<R, E, A>, that: IO<R0, E1, R>): IO<R0, E1 | E, A> {
+export function compose_<R, E, A, E1, B>(ra: IO<R, E, A>, ab: IO<A, E1, B>): IO<R, E | E1, B> {
   const trace = accessCallTrace()
-  return chain_(
-    that,
-    traceFrom(trace, (r) => give_(me, r))
-  )
+  return pipe(ra, chain(traceFrom(trace, (a) => give_(ab, a))))
 }
 
 /**
  * @dataFirst compose_
  * @trace call
  */
-export function compose<R, R0, E1>(that: IO<R0, E1, R>): <E, A>(me: IO<R, E, A>) => IO<R0, E1 | E, A> {
+export function compose<A, E1, B>(ab: IO<A, E1, B>): <R, E>(ra: IO<R, E, A>) => IO<R, E | E1, B> {
   const trace = accessCallTrace()
-  return (me) => traceCall(compose_, trace)(me, that)
+  return (ra) => traceCall(compose_, trace)(ra, ab)
 }
 
 export function condIO_<R, R1, E, A>(b: boolean, onTrue: URIO<R, A>, onFalse: URIO<R1, E>): IO<R & R1, E, A> {
@@ -2825,8 +2805,7 @@ export function foldrF_<F extends HKT.HKT, C = HKT.None>(F: P.Foldable<F, C>) {
     fa: HKT.Kind<F, C, K, Q, W, X, I, S, R, E, A>,
     b: UIO<B>,
     f: (a: A, b: IO<R1, E1, B>) => IO<R1, E1, B>
-  ): IO<R1, E1, B> =>
-    Ev.run(F.foldr_(fa, Ev.now(b as IO<R1, E1, B>), (a, b) => Ev.now(f(a, flatten(fromEval(b))))))
+  ): IO<R1, E1, B> => Ev.run(F.foldr_(fa, Ev.now(b as IO<R1, E1, B>), (a, b) => Ev.now(f(a, flatten(fromEval(b))))))
 }
 
 /**

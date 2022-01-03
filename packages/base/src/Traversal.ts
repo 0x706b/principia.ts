@@ -103,11 +103,11 @@ export function id<S, T>(): PTraversal<S, T, S, T> {
  * @category Semigroupoid
  * @since 1.0.0
  */
-export function andThen_<S, T, A, B, C, D>(
+export function compose_<S, T, A, B, C, D>(
   sa: PTraversal<S, T, A, B>,
   ab: PTraversal<A, B, C, D>
 ): PTraversal<S, T, C, D> {
-  return Tr.andThen_(sa, ab)
+  return Tr.compose_(sa, ab)
 }
 
 /**
@@ -116,15 +116,15 @@ export function andThen_<S, T, A, B, C, D>(
  * @category Semigroupoid
  * @since 1.0.0
  */
-export function andThen<A, B, C, D>(
+export function compose<A, B, C, D>(
   ab: PTraversal<A, B, C, D>
 ): <S, T>(sa: PTraversal<S, T, A, B>) => PTraversal<S, T, C, D> {
-  return (sa) => andThen_(sa, ab)
+  return (sa) => compose_(sa, ab)
 }
 
 export const Category = P.Category<TraversalF>({
   id,
-  andThen_
+  compose_
 })
 
 /*
@@ -156,7 +156,7 @@ export function replace<A>(a: A): <S>(sa: Traversal<S, A>) => (s: S) => S {
 export function filter<A, B extends A>(refinement: Refinement<A, B>): <S>(sa: Traversal<S, A>) => Traversal<S, B>
 export function filter<A>(predicate: Predicate<A>): <S>(sa: Traversal<S, A>) => Traversal<S, A>
 export function filter<A>(predicate: Predicate<A>): <S>(sa: Traversal<S, A>) => Traversal<S, A> {
-  return andThen(Pr.fromPredicate(predicate))
+  return compose(Pr.fromPredicate(predicate))
 }
 
 /**
@@ -168,7 +168,7 @@ export function filter<A>(predicate: Predicate<A>): <S>(sa: Traversal<S, A>) => 
 export function traverse<T extends HKT.HKT, C = HKT.None>(
   T: P.Traversable<T, C>
 ): <K, Q, W, X, I, S_, R, S, A>(sta: Traversal<S, HKT.Kind<T, C, K, Q, W, X, I, S_, R, S, A>>) => Traversal<S, A> {
-  return andThen(fromTraversable(T)())
+  return compose(fromTraversable(T)())
 }
 
 /**

@@ -3,7 +3,7 @@ import type { Gen } from './Gen'
 import type { Guard } from './Guard'
 import type { CoreURIS } from './Modules'
 import type * as PE from './ParseError'
-import type { AndThenE, Parser } from './Parser'
+import type { ComposeE, Parser } from './Parser'
 import type { AnyUS, Schema } from './Schema/core'
 import type {
   AnyPropertyWithInstance,
@@ -237,12 +237,12 @@ export interface RequiredSchemable<F extends URIS> {
    * -------------------------------------------
    */
 
-  readonly andThen: <I, CI, E, CE, A, O, CI1, E1, CE1, B, O1>(
+  readonly compose: <I, CI, E, CE, A, O, CI1, E1, CE1, B, O1>(
     ia: Kind<F, I, CI, E, CE, A, O>,
     ab: Kind<F, A, CI1, E1, CE1, B, O1>,
     _ia: Schema<CoreURIS | F, I, CI, E, CE, A, O, unknown>,
     _ab: Schema<F, A, CI1, E1, CE1, B, O1, unknown>
-  ) => Kind<F, I, CI1, AndThenE<E, E1>, CE1, B, O1>
+  ) => Kind<F, I, CI1, ComposeE<E, E1>, CE1, B, O1>
 
   /*
    * -------------------------------------------
@@ -268,7 +268,7 @@ export interface RequiredSchemable<F extends URIS> {
     error: (a: A) => E1,
     warn: (a: B) => Maybe<W>,
     label: string
-  ) => Kind<F, I, CI, AndThenE<E, PE.RefinementE<E1 | W>>, AndThenE<CE, PE.RefinementE<E1 | W>>, B, O>
+  ) => Kind<F, I, CI, ComposeE<E, PE.RefinementE<E1 | W>>, ComposeE<CE, PE.RefinementE<E1 | W>>, B, O>
 
   /*
    * -------------------------------------------
@@ -283,7 +283,7 @@ export interface RequiredSchemable<F extends URIS> {
     error: (a: A) => E1,
     warn: (a: A) => Maybe<W>,
     label: string
-  ) => Kind<F, I, CI, AndThenE<E, PE.RefinementE<E1 | W>>, AndThenE<CE, PE.RefinementE<E1 | W>>, A, O>
+  ) => Kind<F, I, CI, ComposeE<E, PE.RefinementE<E1 | W>>, ComposeE<CE, PE.RefinementE<E1 | W>>, A, O>
 
   /*
    * -------------------------------------------
@@ -355,7 +355,7 @@ export interface RequiredSchemable<F extends URIS> {
     s: Kind<F, I, CI, E, CE, A, O>,
     prism: Prism<A, N>,
     _: Schema<F, I, CI, E, CE, A, O, any>
-  ) => Kind<F, I, CI, AndThenE<E, PE.NewtypePrismLE<A>>, AndThenE<CE, PE.NewtypePrismLE<A>>, N, O>
+  ) => Kind<F, I, CI, ComposeE<E, PE.NewtypePrismLE<A>>, ComposeE<CE, PE.NewtypePrismLE<A>>, N, O>
 }
 
 export interface OptionalSchemable<F extends URIS> {

@@ -160,15 +160,15 @@ export const tap: <A, R1, B>(f: (a: A) => ZReader<R1, B>) => <R>(ma: ZReader<R, 
  * -------------------------------------------------------------------------------------------------
  */
 
-export function andThen_<R, A, B>(ra: ZReader<R, A>, ab: ZReader<A, B>): ZReader<R, B> {
+export function compose_<R, A, B>(ra: ZReader<R, A>, ab: ZReader<A, B>): ZReader<R, B> {
   return chain_(ra, (a) => give_(ab, a))
 }
 
 /**
- * @dataFirst andThen_
+ * @dataFirst compose_
  */
-export function andThen<A, B>(ab: ZReader<A, B>): <R>(ra: ZReader<R, A>) => ZReader<R, B> {
-  return (ra) => andThen_(ra, ab)
+export function compose<A, B>(ab: ZReader<A, B>): <R>(ra: ZReader<R, A>) => ZReader<R, B> {
+  return (ra) => compose_(ra, ab)
 }
 
 /*

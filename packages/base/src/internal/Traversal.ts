@@ -24,7 +24,7 @@ export function makePTraversal<S, T, A, B>(Tr: PTraversalMin<S, T, A, B>): PTrav
   }
 }
 
-export function andThen_<S, T, A, B, C, D>(
+export function compose_<S, T, A, B, C, D>(
   sa: PTraversal<S, T, A, B>,
   ab: PTraversal<A, B, C, D>
 ): PTraversal<S, T, C, D> {

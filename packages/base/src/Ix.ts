@@ -37,7 +37,7 @@ export interface IndexFn<S, I, A> {
  * @since 1.0.0
  */
 export function fromAt<T, J, B>(at: At<T, J, M.Maybe<B>>): Ix<T, J, B> {
-  return Ix((i) => Op.andThen_(at.at(i), Pr.prismJust<B>()))
+  return Ix((i) => Op.compose_(at.at(i), Pr.prismJust<B>()))
 }
 
 /**
@@ -45,5 +45,5 @@ export function fromAt<T, J, B>(at: At<T, J, M.Maybe<B>>): Ix<T, J, B> {
  * @since 1.0.0
  */
 export function fromIso<T, S>(iso: Iso<T, S>): <I, A>(sia: Ix<S, I, A>) => Ix<T, I, A> {
-  return (sia) => Ix((i) => Op.andThen_(iso, sia.ix(i)))
+  return (sia) => Ix((i) => Op.compose_(iso, sia.ix(i)))
 }

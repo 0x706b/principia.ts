@@ -131,7 +131,7 @@ export function fromParse<I, E, A>(f: (i: I) => These<E, A>, label: string): Fro
  */
 
 export interface RefineP<From extends AnyParser, W, E, A extends TypeOf<From>>
-  extends AndThenP<From, FromRefinementP<TypeOf<From>, W, E, A>> {}
+  extends ComposeP<From, FromRefinementP<TypeOf<From>, W, E, A>> {}
 
 /**
  * Refines a Parser with the given type predicate
@@ -146,7 +146,7 @@ export function refine_<From extends AnyParser, W, E, B extends TypeOf<From>>(
   warn: (b: B) => O.Maybe<W>,
   label: string
 ): RefineP<From, W, E, B> {
-  return andThen_(from, fromRefinement(refinement, error, warn, label))
+  return compose_(from, fromRefinement(refinement, error, warn, label))
 }
 
 /**
@@ -164,7 +164,7 @@ export function refine<From extends AnyParser, W, E, B extends TypeOf<From>>(
   return (from) => refine_(from, refinement, error, warn, label)
 }
 
-export interface ConstrainP<From extends AnyParser, W, E> extends AndThenP<From, FromPredicateP<TypeOf<From>, W, E>> {}
+export interface ConstrainP<From extends AnyParser, W, E> extends ComposeP<From, FromPredicateP<TypeOf<From>, W, E>> {}
 
 export function constrain_<From extends AnyParser, W, E>(
   from: From,
@@ -173,7 +173,7 @@ export function constrain_<From extends AnyParser, W, E>(
   warn: (b: TypeOf<From>) => O.Maybe<W>,
   label: string
 ): ConstrainP<From, W, E> {
-  return andThen_(from, fromPredicate(predicate, error, warn, label))
+  return compose_(from, fromPredicate(predicate, error, warn, label))
 }
 
 export function constrain<From extends AnyParser, W, E>(
@@ -191,7 +191,7 @@ export function constrain<From extends AnyParser, W, E>(
  * -------------------------------------------
  */
 
-export interface ParseP<From extends AnyParser, E, A> extends AndThenP<From, FromParseP<TypeOf<From>, E, A>> {}
+export interface ParseP<From extends AnyParser, E, A> extends ComposeP<From, FromParseP<TypeOf<From>, E, A>> {}
 
 /**
  * Feeds the output of a Parser into a parsing function
@@ -208,8 +208,8 @@ export function parse_<I, E, A, E1, B>(
   from: Parser<I, E, A>,
   parse: (a: A) => These<E1, B>,
   label: string
-): Parser<I, AndThenE<E, PE.ParserE<E1>>, B> {
-  return andThen_(from, fromParse(parse, label))
+): Parser<I, ComposeE<E, PE.ParserE<E1>>, B> {
+  return compose_(from, fromParse(parse, label))
 }
 
 /**
@@ -428,12 +428,12 @@ export function id<A>(): IdP<A> {
   }
 }
 
-export type AndThenE<E1, E2> = [E1] extends [never]
+export type ComposeE<E1, E2> = [E1] extends [never]
   ? [E2] extends [never]
     ? never
-    : AndThenE<E2, E2>
+    : ComposeE<E2, E2>
   : [E2] extends [never]
-  ? AndThenE<E1, E1>
+  ? ComposeE<E1, E1>
   : E1 extends PE.CompositionE<infer A>
   ? E2 extends PE.CompositionE<infer B>
     ? PE.CompositionE<A | B>
@@ -442,10 +442,10 @@ export type AndThenE<E1, E2> = [E1] extends [never]
   ? PE.CompositionE<E1 | B>
   : PE.CompositionE<E1 | E2>
 
-export interface AndThenP<From, To>
-  extends Parser<InputOf<From>, AndThenE<ErrorOf<From>, ErrorOf<To>>, TypeOf<To>>,
+export interface ComposeP<From, To>
+  extends Parser<InputOf<From>, ComposeE<ErrorOf<From>, ErrorOf<To>>, TypeOf<To>>,
     HasParserContinuation {
-  readonly _tag: 'AndThen'
+  readonly _tag: 'Compose'
   readonly from: From
   readonly to: To
 }
@@ -456,17 +456,17 @@ export interface AndThenP<From, To>
  * @category Category
  * @since 1.0.0
  */
-export function andThen_<From extends AnyParser, To extends Parser<TypeOf<From>, any, any>>(
+export function compose_<From extends AnyParser, To extends Parser<TypeOf<From>, any, any>>(
   from: From,
   to: To
-): AndThenP<From, To>
-export function andThen_<I, E, A, E1, B>(ia: Parser<I, E, A>, ab: Parser<A, E1, B>): Parser<I, AndThenE<E, E1>, B>
-export function andThen_<From extends Parser<any, any, any>, To extends Parser<TypeOf<From>, any, any>>(
+): ComposeP<From, To>
+export function compose_<I, E, A, E1, B>(ia: Parser<I, E, A>, ab: Parser<A, E1, B>): Parser<I, ComposeE<E, E1>, B>
+export function compose_<From extends Parser<any, any, any>, To extends Parser<TypeOf<From>, any, any>>(
   from: From,
   to: To
-): AndThenP<From, To> {
+): ComposeP<From, To> {
   return {
-    _tag: 'AndThen',
+    _tag: 'Compose',
     label: `(${from.label} >>> ${to.label})`,
     from,
     to,
@@ -477,7 +477,7 @@ export function andThen_<From extends Parser<any, any, any>, To extends Parser<T
         const e0 = es[0]
         const e1 = es[1]
         if (!e1) {
-          return (PE.isCompositionE(e0) ? e0 : PE.compositionE([e0])) as AndThenE<ErrorOf<From>, ErrorOf<To>>
+          return (PE.isCompositionE(e0) ? e0 : PE.compositionE([e0])) as ComposeE<ErrorOf<From>, ErrorOf<To>>
         }
         const errors = PE.isCompositionE(e0)
           ? PE.isCompositionE(e1)
@@ -486,7 +486,7 @@ export function andThen_<From extends Parser<any, any, any>, To extends Parser<T
           : PE.isCompositionE(e1)
           ? NA.prepend_(e1.errors, e0)
           : NA.make(e0, e1)
-        return PE.compositionE(errors) as AndThenE<ErrorOf<From>, ErrorOf<To>>
+        return PE.compositionE(errors) as ComposeE<ErrorOf<From>, ErrorOf<To>>
       })
     ),
     [ParserContinuation]: to
@@ -499,15 +499,15 @@ export function andThen_<From extends Parser<any, any, any>, To extends Parser<T
  * @category Category
  * @since 1.0.0
  */
-export function andThen<From extends Parser<any, any, any>, To extends Parser<TypeOf<From>, any, any>>(
+export function compose<From extends Parser<any, any, any>, To extends Parser<TypeOf<From>, any, any>>(
   ab: To
-): (ia: From) => AndThenP<From, To>
+): (ia: From) => ComposeP<From, To>
 // @ts-expect-error incompatible implementation signature since typescript@4.5
-export function andThen<A, E1, B>(ab: Parser<A, E1, B>): <I, E>(ia: Parser<I, E, A>) => Parser<I, AndThenE<E, E1>, B>
-export function andThen<From extends Parser<any, any, any>, To extends Parser<TypeOf<From>, any, any>>(
+export function compose<A, E1, B>(ab: Parser<A, E1, B>): <I, E>(ia: Parser<I, E, A>) => Parser<I, ComposeE<E, E1>, B>
+export function compose<From extends Parser<any, any, any>, To extends Parser<TypeOf<From>, any, any>>(
   ab: To
-): (ia: From) => AndThenP<From, To> {
-  return (ia) => andThen_(ia, ab)
+): (ia: From) => ComposeP<From, To> {
+  return (ia) => compose_(ia, ab)
 }
 
 /*
@@ -1713,7 +1713,7 @@ export type Concrete =
   | MapP<AnyParser, any>
   | MapLeftP<AnyParser, any>
   | IdP<any>
-  | AndThenP<AnyParser, AnyParser>
+  | ComposeP<AnyParser, AnyParser>
   | UnionP<NonEmptyArray<AnyParser>>
   | IntersectP<NonEmptyArray<AnyParser>>
   | FromStructP<Record<string, AnyParser>>
@@ -1746,7 +1746,7 @@ function asConcrete(d: AnyParser): Concrete {
 function keyOfEval<P extends AnyParser>(parser: P): Ev.Eval<ReadonlyArray<RoseTree<string | number>>> {
   const d = asConcrete(parser)
   switch (d._tag) {
-    case 'AndThen': {
+    case 'Compose': {
       return Ev.defer(() => pipe(keyOfEval(d.from), Ev.crossWith(keyOfEval(d.to), A.concat_)))
     }
     case 'FromPartial':
@@ -1849,7 +1849,7 @@ export function pick_(decoder: AnyParser, prop: string): FSync<void, AnyParser> 
       case 'Lazy': {
         return pick_(d.parser() as AnyParser, prop)
       }
-      case 'AndThen': {
+      case 'Compose': {
         return pick_(d.to as AnyParser, prop)
       }
       default: {

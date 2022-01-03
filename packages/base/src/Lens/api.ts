@@ -35,7 +35,7 @@ export const component_ = Tu.componentL_
 export const component = Tu.componentL
 
 export function index_<S, A>(sa: L.Lens<S, ReadonlyArray<A>>, i: number): O.Optional<S, A> {
-  return L.andThenOptional_(sa, A.ix(i))
+  return L.composeOptional_(sa, A.ix(i))
 }
 
 /**
@@ -46,7 +46,7 @@ export function index(i: number): <S, A>(sa: L.Lens<S, ReadonlyArray<A>>) => O.O
 }
 
 export function key_<S, A>(sa: L.Lens<S, R.ReadonlyRecord<string, A>>, k: string): O.Optional<S, A> {
-  return L.andThenOptional_(sa, R.ix(k))
+  return L.composeOptional_(sa, R.ix(k))
 }
 
 /**

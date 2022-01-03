@@ -188,7 +188,7 @@ export function chain<F>(
   return (f) => (ma) => chain_(F)(ma, f)
 }
 
-export function andThen_<F extends HKT.HKT, TC>(
+export function compose_<F extends HKT.HKT, TC>(
   F: P.Chain<F, TC>
 ): <K, Q, W, X, I, S, R, E, A, B, K1, Q1, W1, X1, I1, S1, R1, E1, C>(
   ma: Kleisli<F, TC, K, Q, W, X, I, S, R, E, A, B>,
@@ -224,7 +224,7 @@ export function andThen_<F extends HKT.HKT, TC>(
   return (ma, f) => shift(F)((a) => F.chain_(ma(a), f))
 }
 
-export function andThen<F extends HKT.HKT, TC>(
+export function compose<F extends HKT.HKT, TC>(
   F: P.Chain<F, TC>
 ): <B, K1, Q1, W1, X1, I1, S1, R1, E1, C>(
   f: (a: B) => HKT.Kind<F, TC, K1, Q1, W1, X1, I1, S1, R1, E1, C>
@@ -257,94 +257,11 @@ export function andThen<F extends HKT.HKT, TC>(
   A,
   C
 >
-export function andThen<F>(
+export function compose<F>(
   F: P.Chain<HKT.F<F>>
 ): <B, K, Q, W, X, I, S, R, E, C>(
   f: (a: B) => HKT.FK<F, K, Q, W, X, I, S, R, E, C>
 ) => <A>(ma: KleisliFK<F, K, Q, W, X, I, S, R, E, A, B>) => KleisliFK<F, K, Q, W, X, I, S, R, E, A, C> {
-  return (f) => (ma) => andThen_(F)(ma, f)
-}
-
-export function compose_<F extends HKT.HKT, TC>(
-  F: P.Chain<F, TC>
-): <K, Q, W, X, I, S, R, E, A, B, K1, Q1, W1, X1, I1, S1, R1, E1, Z>(
-  ma: Kleisli<F, TC, K, Q, W, X, I, S, R, E, A, B>,
-  f: (
-    _: Z
-  ) => HKT.Kind<
-    F,
-    TC,
-    HKT.Intro<F, 'K', K, K1>,
-    HKT.Intro<F, 'Q', Q, Q1>,
-    HKT.Intro<F, 'W', W, W1>,
-    HKT.Intro<F, 'X', X, X1>,
-    HKT.Intro<F, 'I', I, I1>,
-    HKT.Intro<F, 'S', S, S1>,
-    HKT.Intro<F, 'R', R, R1>,
-    HKT.Intro<F, 'E', E, E1>,
-    A
-  >
-) => Kleisli<
-  F,
-  TC,
-  HKT.Mix<F, 'K', [K, K1]>,
-  HKT.Mix<F, 'Q', [Q, Q1]>,
-  HKT.Mix<F, 'W', [W, W1]>,
-  HKT.Mix<F, 'X', [X, X1]>,
-  HKT.Mix<F, 'I', [I, I1]>,
-  HKT.Mix<F, 'S', [S, S1]>,
-  HKT.Mix<F, 'R', [R, R1]>,
-  HKT.Mix<F, 'E', [E, E1]>,
-  Z,
-  B
->
-export function compose_<F>(
-  F: P.Chain<HKT.F<F>>
-): <K, Q, W, X, I, S, R, E, A, B, Z>(
-  ma: KleisliFK<F, K, Q, W, X, I, S, R, E, A, B>,
-  f: (_: Z) => HKT.FK<F, K, Q, W, X, I, S, R, E, A>
-) => KleisliFK<F, K, Q, W, X, I, S, R, E, Z, B> {
-  return (ma, f) => shift(F)((z) => F.chain_(f(z), ma))
-}
-
-export function compose<F extends HKT.HKT, TC>(
-  F: P.Chain<F, TC>
-): <A, K1, Q1, W1, X1, I1, S1, R1, E1, Z>(
-  f: (_: Z) => HKT.Kind<F, TC, K1, Q1, W1, X1, I1, S1, R1, E1, A>
-) => <K, Q, W, X, I, S, R, E, A, B>(
-  ma: Kleisli<
-    F,
-    TC,
-    HKT.Intro<F, 'K', K1, K>,
-    HKT.Intro<F, 'Q', Q1, Q>,
-    HKT.Intro<F, 'W', W1, W>,
-    HKT.Intro<F, 'X', X1, X>,
-    HKT.Intro<F, 'I', I1, I>,
-    HKT.Intro<F, 'S', S1, S>,
-    HKT.Intro<F, 'R', R1, R>,
-    HKT.Intro<F, 'E', E1, E>,
-    A,
-    B
-  >
-) => Kleisli<
-  F,
-  TC,
-  HKT.Mix<F, 'K', [K1, K]>,
-  HKT.Mix<F, 'Q', [Q1, Q]>,
-  HKT.Mix<F, 'W', [W1, W]>,
-  HKT.Mix<F, 'X', [X1, X]>,
-  HKT.Mix<F, 'I', [I1, I]>,
-  HKT.Mix<F, 'S', [S1, S]>,
-  HKT.Mix<F, 'R', [R1, R]>,
-  HKT.Mix<F, 'E', [E1, E]>,
-  Z,
-  B
->
-export function compose<F>(
-  F: P.Chain<HKT.F<F>>
-): <K, Q, W, X, I, S, R, E, A, Z>(
-  f: (_: Z) => HKT.FK<F, K, Q, W, X, I, S, R, E, A>
-) => <B>(ma: KleisliFK<F, K, Q, W, X, I, S, R, E, A, B>) => KleisliFK<F, K, Q, W, X, I, S, R, E, Z, B> {
   return (f) => (ma) => compose_(F)(ma, f)
 }
 
@@ -768,6 +685,6 @@ export function Category<F extends HKT.HKT, C>(F: P.Monad<F, C>): P.Category<Kle
 export function Category<F>(F: P.Monad<HKT.F<F>>): P.Category<KleisliCategoryF<HKT.F<F>>> {
   return P.Category({
     id: ask(F),
-    andThen_: andThen_(F)
+    compose_: compose_(F)
   })
 }

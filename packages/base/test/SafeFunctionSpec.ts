@@ -9,7 +9,7 @@ class EitherSpec extends DefaultRunnableSpec {
     test('stack-safe compositon', () => {
       let f = F.single((x: number) => x + 1)
       for (let i = 0; i < 100000; i++) {
-        f = F.andThen_(f, (x) => x + 1)
+        f = F.composef_(f, (x) => x + 1)
       }
       return assert_(
         E.tryCatch(() => f(0), identity),

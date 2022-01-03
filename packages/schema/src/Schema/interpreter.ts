@@ -1,12 +1,12 @@
 import type { AnyKind, Kind, Schemable, URIS } from '../Schemable'
 import type { ChunkS } from './chunk'
 import type {
-  AndThenS,
   AnyS,
   AnySOf,
   AnyUSOf,
   ArrayS,
   BooleanS,
+  ComposeS,
   ConstrainS,
   ConstructorS,
   DecoderS,
@@ -77,7 +77,7 @@ type Restrict0<R, S> = S extends R
   ? unknown extends Restrict0<R, F>
     ? unknown
     : S
-  : S extends AndThenS<infer F, infer T>
+  : S extends ComposeS<infer F, infer T>
   ? unknown extends Restrict0<R, F | T>
     ? unknown
     : S
@@ -107,7 +107,7 @@ type ConcreteOf<U extends URIS> =
   | ConstrainS<AnySOf<U>, unknown, unknown>
   | MapDecoderErrorS<AnySOf<U>, unknown>
   | MapConstructorErrorS<AnySOf<U>, unknown>
-  | AndThenS<AnySOf<U>, AnySOf<U>>
+  | ComposeS<AnySOf<U>, AnySOf<U>>
   | MapOutputS<AnySOf<U>, unknown>
   | IdentityS<URIS, any>
   | DecoderS<AnySOf<U>, unknown, unknown>
@@ -233,8 +233,8 @@ export const defaultInterpreter: Interpreter =
           instance = S.union(s, schema.members)
           break
         }
-        case 'AndThen': {
-          instance = S.andThen(toS(schema.prev), toS(schema.next), schema.prev, schema.next)
+        case 'Compose': {
+          instance = S.compose(toS(schema.prev), toS(schema.next), schema.prev, schema.next)
           break
         }
         case 'MapDecoderError': {

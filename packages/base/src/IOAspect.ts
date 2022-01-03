@@ -16,7 +16,7 @@ export class IOAspect<R, E, A, EC = unknown> {
     this: IOAspect<R, E, A, EC>,
     that: IOAspect<R1, E1, B, EC>
   ): IOAspect<R & R1, E | E1, B, EC> {
-    return andThen_(this, that)
+    return compose_(this, that)
   }
 }
 
@@ -36,15 +36,15 @@ export function retry<R, E>(schedule: Schedule<R, E, unknown>): IOAspect<Has<Clo
   return new IOAspect((io) => I.retry_(io, schedule))
 }
 
-export function andThen_<R, E extends EC, A, EC, R1, E1, B extends A>(
+export function compose_<R, E extends EC, A, EC, R1, E1, B extends A>(
   aspectA: IOAspect<R, E, A, EC>,
   aspectB: IOAspect<R1, E1, B, EC>
 ): IOAspect<R & R1, E | E1, B, EC> {
   return new IOAspect((io) => aspectB.apply(aspectA.apply(io)))
 }
 
-export function andThen<A, EC, R1, E1, B extends A>(
+export function compose<A, EC, R1, E1, B extends A>(
   aspectB: IOAspect<R1, E1, B, EC>
 ): <R, E extends EC>(aspectA: IOAspect<R, E, A, EC>) => IOAspect<R & R1, E | E1, B, EC> {
-  return (aspectA) => andThen_(aspectA, aspectB)
+  return (aspectA) => compose_(aspectA, aspectB)
 }

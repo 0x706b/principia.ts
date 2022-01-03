@@ -13,21 +13,21 @@ export class StreamAspect<R, E, A, EC = unknown> {
     this: StreamAspect<R, E, A, EC>,
     that: StreamAspect<R1, E1, B, EC>
   ): StreamAspect<R & R1, E | E1, B, EC> {
-    return andThen_(this, that)
+    return compose_(this, that)
   }
 }
 
-export function andThen_<R, E extends EC, A, EC, R1, E1, B extends A>(
+export function compose_<R, E extends EC, A, EC, R1, E1, B extends A>(
   aspectA: StreamAspect<R, E, A, EC>,
   aspectB: StreamAspect<R1, E1, B, EC>
 ): StreamAspect<R & R1, E | E1, B, EC> {
   return new StreamAspect((stream) => aspectB.apply(aspectA.apply(stream)))
 }
 
-export function andThen<A, EC, R1, E1, B extends A>(
+export function compose<A, EC, R1, E1, B extends A>(
   aspectB: StreamAspect<R1, E1, B, EC>
 ): <R, E extends EC>(aspectA: StreamAspect<R, E, A, EC>) => StreamAspect<R & R1, E | E1, B, EC> {
-  return (aspectA) => andThen_(aspectA, aspectB)
+  return (aspectA) => compose_(aspectA, aspectB)
 }
 
 export function rechunk(n: number): StreamAspect<unknown, never, unknown> {

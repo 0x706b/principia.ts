@@ -3,7 +3,7 @@ import type * as Eq from '@principia/base/Eq'
 import type * as HKT from '@principia/base/HKT'
 import type { MonoidalFunctor } from '@principia/base/prelude'
 
-import { andThen_, tuple, tupleFlip, tupleUnit } from '@principia/base/Equivalence'
+import { compose_, tuple, tupleFlip, tupleUnit } from '@principia/base/Equivalence'
 import * as N from '@principia/base/number'
 import * as S from '@principia/base/string'
 import * as fc from 'fast-check'
@@ -32,7 +32,7 @@ function LeftIdentityLaw<F, A>(
   F: MonoidalFunctor<HKT.F<F>>,
   S: MaybeAsyncEq<HKT.FK1<F, A>>
 ): (fa: HKT.FK1<F, A>) => Promise<boolean> {
-  const equiv = andThen_(tupleFlip<void, A>(), tupleUnit())
+  const equiv = compose_(tupleFlip<void, A>(), tupleUnit())
   return (fa) => {
     const left  = F.cross_(F.unit(), fa)
     const right = fa

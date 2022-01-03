@@ -122,7 +122,7 @@ export const Schemable: S.Schemable<GenSURI> = {
   tuple: (components) => G.tuple(...components) as any,
   sum: (tag) => (members) => sum(tag)(members) as any,
   lazy: (f) => lazy(f),
-  andThen: (_, ab) => ab,
+  compose: (_, ab) => ab,
   custom: (_) => _[GenSURI],
   refine: (Gen, _, refinement) => G.filter_(Gen, refinement),
   constrain: (Gen, _, predicate) => G.filter_(Gen, predicate),

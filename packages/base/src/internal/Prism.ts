@@ -20,7 +20,7 @@ export function makePPrism<S, T, A, B>(Pr: PPrismMin<S, T, A, B>): PPrism<S, T, 
   }
 }
 
-export function andThen_<S, T, A, B, C, D>(sa: PPrism<S, T, A, B>, ab: PPrism<A, B, C, D>): PPrism<S, T, C, D> {
+export function compose_<S, T, A, B, C, D>(sa: PPrism<S, T, A, B>, ab: PPrism<A, B, C, D>): PPrism<S, T, C, D> {
   return makePPrism({
     getOrModify: (s) =>
       pipe(

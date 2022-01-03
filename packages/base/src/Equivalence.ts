@@ -39,13 +39,13 @@ export function tupleFlip<A, B>(): Equivalence<readonly [A, B], readonly [B, A]>
   }
 }
 
-export function andThen_<A, B, C>(ab: Equivalence<A, B>, bc: Equivalence<B, C>): Equivalence<A, C> {
+export function compose_<A, B, C>(ab: Equivalence<A, B>, bc: Equivalence<B, C>): Equivalence<A, C> {
   return {
     from: (c) => ab.from(bc.from(c)),
     to: (a) => bc.to(ab.to(a))
   }
 }
 
-export function andThen<B, C>(bc: Equivalence<B, C>): <A>(ab: Equivalence<A, B>) => Equivalence<A, C> {
-  return (ab) => andThen_(ab, bc)
+export function compose<B, C>(bc: Equivalence<B, C>): <A>(ab: Equivalence<A, B>) => Equivalence<A, C> {
+  return (ab) => compose_(ab, bc)
 }

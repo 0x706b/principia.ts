@@ -58,7 +58,7 @@ export function splitF<F>(P: Choice<HKT.F<F>>, C: Category<HKT.F<F>>): SplitFn<H
   return <K, Q, W, X, S, R, E, A, B, C, D>(
     pab: HKT.FK<F, K, Q, W, X, A, S, R, E, B>,
     pcd: HKT.FK<F, K, Q, W, X, C, S, R, E, D>
-  ): HKT.FK<F, K, Q, W, X, Either<A, C>, S, R, E, Either<B, D>> => pipe(P.left<C>()(pab), C.andThen(P.right<B>()(pcd)))
+  ): HKT.FK<F, K, Q, W, X, Either<A, C>, S, R, E, Either<B, D>> => pipe(P.left<C>()(pab), C.compose(P.right<B>()(pcd)))
 }
 
 export interface FanInFn<F extends HKT.HKT, TC = HKT.None> {
@@ -101,7 +101,7 @@ export function fanInF<F>(P: Choice<HKT.F<F>>, C: Category<HKT.F<F>>): FanInFn<H
   ): HKT.FK<F, K, Q, W, X, Either<A, B>, S, R, E, C> =>
     pipe(
       splitPC(pac, pbc),
-      C.andThen(
+      C.compose(
         pipe(
           C.id<C>(),
           P.lmap((cc) => (cc._tag === 'Left' ? cc.left : cc.right))

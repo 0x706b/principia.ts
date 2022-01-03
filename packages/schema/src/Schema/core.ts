@@ -6,7 +6,7 @@ import type { Gen, GenSURI } from '../Gen'
 import type { Guard, GuardSURI } from '../Guard'
 import type { ConstructorSURI, CoreURIS, DecoderSURI } from '../Modules'
 import type * as PE from '../ParseError'
-import type { AndThenE, Parser } from '../Parser'
+import type { ComposeE, Parser } from '../Parser'
 import type { IdentityOmits, IdentityOmitURIS, IdentityRequires, IdentityRequireURIS, Kind, URIS } from '../Schemable'
 import type { CastToNumber } from '../util'
 import type { SchemaAnnotation } from './SchemaAnnotation'
@@ -59,8 +59,8 @@ export abstract class Schema<U extends URIS, In, CIn, Err, CErr, Type, Out, Api>
   abstract readonly api: Api
 
   private annotations = SchemaAnnotationMap.empty;
-  ['>>>']<To extends Schema<U, Type, any, any, any, any, any, any>>(to: To): AndThenS<this, To> {
-    return andThen_(this, to) as any
+  ['>>>']<To extends Schema<U, Type, any, any, any, any, any, any>>(to: To): ComposeS<this, To> {
+    return compose_(this, to) as any
   }
 
   abstract clone(): Schema<U, In, CIn, Err, CErr, Type, Out, Api>
@@ -268,7 +268,7 @@ export const TagSTypeId = Symbol('@principia/schema/Schema/TagS')
 export type TagSTypeId = typeof TagSTypeId
 
 export class TagS<T extends string> extends Schema<URIS, unknown, T, PE.LiteralLE<T>, never, T, T, TagApi<T>> {
-  readonly _tag                     = 'Tag';
+  readonly _tag = 'Tag'
   readonly [TagSTypeId]: TagSTypeId = TagSTypeId
 
   constructor(readonly tag: T) {
@@ -948,19 +948,19 @@ function pipeApi<From extends AnyS, To extends AnyS>(from: From, to: To): PipeAp
   return { from, to }
 }
 
-export class AndThenS<Prev extends AnyS, Next extends AnyS>
+export class ComposeS<Prev extends AnyS, Next extends AnyS>
   extends Schema<
     URISIn<Prev>,
     InputOf<Prev>,
     CInputOf<Next>,
-    AndThenE<ErrorOf<Prev>, ErrorOf<Next>>,
+    ComposeE<ErrorOf<Prev>, ErrorOf<Next>>,
     CErrorOf<Next>,
     TypeOf<Next>,
     OutputOf<Next>,
     PipeApi<Prev, Next>
   >
   implements HasSchemaContinuation {
-  readonly _tag = 'AndThen'
+  readonly _tag = 'Compose'
 
   constructor(readonly prev: Prev, readonly next: Next) {
     super()
@@ -972,36 +972,36 @@ export class AndThenS<Prev extends AnyS, Next extends AnyS>
 
   readonly [SchemaContinuation] = this.next
 
-  clone(): AndThenS<Prev, Next> {
-    return new AndThenS(this.prev, this.next)
+  clone(): ComposeS<Prev, Next> {
+    return new ComposeS(this.prev, this.next)
   }
 }
 
-export function andThen_<
+export function compose_<
   From extends AnyS,
   To extends Schema<URISIn<From>, TypeOf<From>, any, any, any, any, any, any>
->(from: From, to: To): AndThenS<From, To>
-export function andThen_<U extends URIS, I, CI, E, CE, A, O, Y, CI1, E1, CE1, B, O1, Y1>(
+>(from: From, to: To): ComposeS<From, To>
+export function compose_<U extends URIS, I, CI, E, CE, A, O, Y, CI1, E1, CE1, B, O1, Y1>(
   from: Schema<U, I, CI, E, CE, A, O, Y>,
   to: Schema<U, A, CI1, E1, CE1, B, O1, Y1>
-): AndThenS<typeof from, typeof to>
-export function andThen_<
+): ComposeS<typeof from, typeof to>
+export function compose_<
   From extends AnyS,
   To extends Schema<URISIn<From>, TypeOf<From>, any, any, any, any, any, any>
->(from: From, to: To): AndThenS<From, To> {
-  return new AndThenS(from, to)
+>(from: From, to: To): ComposeS<From, To> {
+  return new ComposeS(from, to)
 }
 
-export function andThen<U extends URIS, U1 extends U, A, CI1, E1, CE1, A1, O1, Y1>(
+export function compose<U extends URIS, U1 extends U, A, CI1, E1, CE1, A1, O1, Y1>(
   to: Schema<U1, A, CI1, E1, CE1, A1, O1, Y1>
-): <I, E, O, CI, CE, Y>(from: Schema<U, I, CI, E, CE, A, O, Y>) => AndThenS<typeof from, typeof to>
-export function andThen<From extends AnyS, To extends Schema<URISIn<From>, TypeOf<From>, any, any, any, any, any, any>>(
+): <I, E, O, CI, CE, Y>(from: Schema<U, I, CI, E, CE, A, O, Y>) => ComposeS<typeof from, typeof to>
+export function compose<From extends AnyS, To extends Schema<URISIn<From>, TypeOf<From>, any, any, any, any, any, any>>(
   to: To
-): (from: From) => AndThenS<From, To>
-export function andThen<From extends AnyS, To extends Schema<URISIn<From>, TypeOf<From>, any, any, any, any, any, any>>(
+): (from: From) => ComposeS<From, To>
+export function compose<From extends AnyS, To extends Schema<URISIn<From>, TypeOf<From>, any, any, any, any, any, any>>(
   to: To
-): (from: From) => AndThenS<From, To> {
-  return (from) => andThen_(from, to)
+): (from: From) => ComposeS<From, To> {
+  return (from) => compose_(from, to)
 }
 
 /*

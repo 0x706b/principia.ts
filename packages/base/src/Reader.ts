@@ -168,26 +168,15 @@ export function crossWith<A, R1, B, C>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function andThen_<A, B, C>(ab: Reader<A, B>, bc: Reader<B, C>): Reader<A, C> {
+export function compose_<A, B, C>(ab: Reader<A, B>, bc: Reader<B, C>): Reader<A, C> {
   return flow(ab, bc)
-}
-
-/**
- * @dataFirst andThen_
- */
-export function andThen<B, C>(bc: Reader<B, C>): <A>(ab: Reader<A, B>) => Reader<A, C> {
-  return (ab) => andThen_(ab, bc)
-}
-
-export function compose_<A, B, C>(bc: Reader<B, C>, ab: Reader<A, B>): Reader<A, C> {
-  return andThen_(ab, bc)
 }
 
 /**
  * @dataFirst compose_
  */
-export function compose<A, B>(ab: Reader<A, B>): <C>(bc: Reader<B, C>) => Reader<A, C> {
-  return (bc) => andThen_(ab, bc)
+export function compose<B, C>(bc: Reader<B, C>): <A>(ab: Reader<A, B>) => Reader<A, C> {
+  return (ab) => compose_(ab, bc)
 }
 
 export function id<R>(): Reader<R, R> {
@@ -342,7 +331,6 @@ export const Profunctor = P.Profunctor<ReaderF>({
 })
 
 export const Category = P.Category<ReaderCategoryF>({
-  andThen_,
   compose_,
   id
 })

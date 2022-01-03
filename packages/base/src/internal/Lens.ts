@@ -19,7 +19,7 @@ export function id<S, T = S>(): PLens<S, T, S, T> {
   })
 }
 
-export function andThen_<S, T, A, B, C, D>(sa: PLens<S, T, A, B>, ab: PLens<A, B, C, D>): PLens<S, T, C, D> {
+export function compose_<S, T, A, B, C, D>(sa: PLens<S, T, A, B>, ab: PLens<A, B, C, D>): PLens<S, T, C, D> {
   return makePLens({
     get: flow(sa.get, ab.get),
     set_: (s, d) => sa.modify_(s, ab.set(d))

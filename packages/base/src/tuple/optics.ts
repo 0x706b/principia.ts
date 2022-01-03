@@ -25,7 +25,7 @@ export function componentL_<S, A extends ReadonlyArray<unknown>, P extends keyof
   sa: L.Lens<S, A>,
   prop: P
 ): L.Lens<S, A[P]> {
-  return L.andThen_(sa, getComponentL<A>()(prop))
+  return L.compose_(sa, getComponentL<A>()(prop))
 }
 
 /**

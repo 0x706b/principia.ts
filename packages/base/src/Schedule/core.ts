@@ -45,10 +45,10 @@ export class Schedule<R, I, O> {
     return intersect_(this, that)
   }
   ['>>>']<R1, O1>(that: Schedule<R1, O, O1>): Schedule<R & R1, I, O1> {
-    return andThen_(this, that)
+    return compose_(this, that)
   }
   ['<<<']<R1, I1>(that: Schedule<R1, I1, I>): Schedule<R & R1, I1, O> {
-    return compose_(this, that)
+    return compose_(that, this)
   }
   ['||']<R1, I1, O1>(that: Schedule<R1, I1, O1>): Schedule<R & R1, I & I1, readonly [O, O1]> {
     return union_(this, that)
@@ -628,7 +628,7 @@ export function collectAll<R, I, O>(sc: Schedule<R, I, O>): Schedule<R, I, reado
   return fold_(sc, [] as ReadonlyArray<O>, (xs, x) => [...xs, x])
 }
 
-function andThenLoop<R, I, O, R1, O1>(
+function composeLoop<R, I, O, R1, O1>(
   s1: StepFunction<R, I, O>,
   s2: StepFunction<R1, O, O1>
 ): StepFunction<R & R1, I, O1> {
@@ -647,7 +647,7 @@ function andThenLoop<R, I, O, R1, O1>(
                   return makeDone(d2.out)
                 }
                 case 'Continue': {
-                  return makeContinue(d2.out, Math.max(d.interval, d2.interval), andThenLoop(d.next, d2.next))
+                  return makeContinue(d2.out, Math.max(d.interval, d2.interval), composeLoop(d.next, d2.next))
                 }
               }
             })
@@ -657,23 +657,13 @@ function andThenLoop<R, I, O, R1, O1>(
     )
 }
 
-export function andThen_<R, I, O, R1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, O, O1>): Schedule<R & R1, I, O1> {
-  return new Schedule(andThenLoop(sc.step, that.step))
+export function compose_<R, I, O, R1, O1>(sc: Schedule<R, I, O>, that: Schedule<R1, O, O1>): Schedule<R & R1, I, O1> {
+  return new Schedule(composeLoop(sc.step, that.step))
 }
 
-export function andThen<O, R1, O1>(
+export function compose<O, R1, O1>(
   that: Schedule<R1, O, O1>
 ): <R, I>(sc: Schedule<R, I, O>) => Schedule<R & R1, I, O1> {
-  return (sc) => andThen_(sc, that)
-}
-
-export function compose_<R, I, O, R1, I1>(sc: Schedule<R, I, O>, that: Schedule<R1, I1, I>): Schedule<R & R1, I1, O> {
-  return andThen_(that, sc)
-}
-
-export function compose<I, R1, I1>(
-  that: Schedule<R1, I1, I>
-): <R, O>(sc: Schedule<R, I, O>) => Schedule<R & R1, I1, O> {
   return (sc) => compose_(sc, that)
 }
 

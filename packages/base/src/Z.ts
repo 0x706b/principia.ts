@@ -784,7 +784,7 @@ export function apSecond<W, S, R1, E1, B>(
  * -------------------------------------------------------------------------------------------------
  */
 
-export function andThen_<W, S1, S2, A, E, B, W1, S3, E1, C>(
+export function compose_<W, S1, S2, A, E, B, W1, S3, E1, C>(
   ab: Z<W, S1, S2, A, E, B>,
   bc: Z<W1, S2, S3, B, E1, C>
 ): Z<W | W1, S1, S3, A, E | E1, C> {
@@ -792,28 +792,12 @@ export function andThen_<W, S1, S2, A, E, B, W1, S3, E1, C>(
 }
 
 /**
- * @dataFirst andThen_
- */
-export function andThen<S2, B, W1, S3, E1, C>(
-  bc: Z<W1, S2, S3, B, E1, C>
-): <W, S1, A, E>(ab: Z<W, S1, S2, A, E, B>) => Z<W | W1, S1, S3, A, E | E1, C> {
-  return (ab) => andThen_(ab, bc)
-}
-
-export function compose_<W, S1, S2, A, E, B, W1, S3, E1, C>(
-  bc: Z<W, S2, S3, B, E, C>,
-  ab: Z<W1, S1, S2, A, E1, B>
-): Z<W | W1, S1, S3, A, E | E1, C> {
-  return andThen_(ab, bc)
-}
-
-/**
  * @dataFirst compose_
  */
-export function compose<S1, S2, B, W1, A, E1>(
-  ab: Z<W1, S1, S2, A, E1, B>
-): <W, S3, E, C>(bc: Z<W, S2, S3, B, E, C>) => Z<W | W1, S1, S3, A, E | E1, C> {
-  return (bc) => andThen_(ab, bc)
+export function compose<S2, B, W1, S3, E1, C>(
+  bc: Z<W1, S2, S3, B, E1, C>
+): <W, S1, A, E>(ab: Z<W, S1, S2, A, E, B>) => Z<W | W1, S1, S3, A, E | E1, C> {
+  return (ab) => compose_(ab, bc)
 }
 
 /*
@@ -2076,14 +2060,12 @@ export const MonadState = P.MonadState<ZF>({
 
 export const ReaderCategory = P.Category<ZReaderCategoryF>({
   id: () => asks(identity),
-  andThen_,
   compose_
 })
 
 export const StateCategory = P.Category<ZStateCategoryF>({
   id: () => modify((a) => [a, a]),
-  andThen_: (ab, bc) => chain_(ab, () => bc),
-  compose_: (bc, ab) => chain_(ab, () => bc)
+  compose_: (ab, bc) => chain_(ab, () => bc)
 })
 
 export const Do = P.Do(Monad)

@@ -6,21 +6,21 @@ import * as Tu from '../tuple'
 import * as O from './core'
 
 export function prop_<S, A, P extends keyof A>(sa: O.Optional<S, A>, prop: P): O.Optional<S, A[P]> {
-  return O.andThen_(sa, HR.propL_(L.id<A>(), prop))
+  return O.compose_(sa, HR.propL_(L.id<A>(), prop))
 }
 
 /**
  * @dataFirst prop_
  */
 export function prop<A, P extends keyof A>(prop: P): <S>(sa: O.Optional<S, A>) => O.Optional<S, A[P]> {
-  return O.andThen(HR.propL_(L.id<A>(), prop))
+  return O.compose(HR.propL_(L.id<A>(), prop))
 }
 
 export function props_<S, A, P extends keyof A>(
   sa: O.Optional<S, A>,
   ...props: [P, P, ...Array<P>]
 ): O.Optional<S, { [K in P]: A[K] }> {
-  return O.andThen_(sa, HR.propsL_(L.id<A>(), ...props))
+  return O.compose_(sa, HR.propsL_(L.id<A>(), ...props))
 }
 
 /**
@@ -29,14 +29,14 @@ export function props_<S, A, P extends keyof A>(
 export function props<A, P extends keyof A>(
   ...props: [P, P, ...Array<P>]
 ): <S>(sa: O.Optional<S, A>) => O.Optional<S, { [K in P]: A[K] }> {
-  return O.andThen(HR.propsL_(L.id<A>(), ...props))
+  return O.compose(HR.propsL_(L.id<A>(), ...props))
 }
 
 export function component_<S, A extends ReadonlyArray<unknown>, P extends keyof A>(
   sa: O.Optional<S, A>,
   prop: P
 ): O.Optional<S, A[P]> {
-  return O.andThen_(sa, Tu.componentL_(L.id<A>(), prop))
+  return O.compose_(sa, Tu.componentL_(L.id<A>(), prop))
 }
 
 /**
@@ -45,11 +45,11 @@ export function component_<S, A extends ReadonlyArray<unknown>, P extends keyof 
 export function component<A extends ReadonlyArray<unknown>, P extends keyof A>(
   prop: P
 ): <S>(sa: O.Optional<S, A>) => O.Optional<S, A[P]> {
-  return O.andThen(Tu.componentL_(L.id<A>(), prop))
+  return O.compose(Tu.componentL_(L.id<A>(), prop))
 }
 
 export function index_<S, A>(sa: O.Optional<S, ReadonlyArray<A>>, i: number): O.Optional<S, A> {
-  return O.andThen_(sa, A.ix(i))
+  return O.compose_(sa, A.ix(i))
 }
 
 /**
@@ -60,7 +60,7 @@ export function index(i: number): <S, A>(sa: O.Optional<S, ReadonlyArray<A>>) =>
 }
 
 export function key_<S, A>(sa: O.Optional<S, R.ReadonlyRecord<string, A>>, k: string): O.Optional<S, A> {
-  return O.andThen_(sa, R.ix(k))
+  return O.compose_(sa, R.ix(k))
 }
 
 /**

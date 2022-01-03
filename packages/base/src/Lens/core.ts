@@ -53,8 +53,8 @@ export interface LensF extends HKT.HKT {
  * @category Compositions
  * @since 1.0.0
  */
-export function andThenPrism_<S, T, A, B, C, D>(sa: PLens<S, T, A, B>, ab: PPrism<A, B, C, D>): POptional<S, T, C, D> {
-  return Op.andThen_(sa, ab)
+export function composePrism_<S, T, A, B, C, D>(sa: PLens<S, T, A, B>, ab: PPrism<A, B, C, D>): POptional<S, T, C, D> {
+  return Op.compose_(sa, ab)
 }
 
 /**
@@ -63,10 +63,10 @@ export function andThenPrism_<S, T, A, B, C, D>(sa: PLens<S, T, A, B>, ab: PPris
  * @category Compositions
  * @since 1.0.0
  */
-export function andThenPrism<A, B, C, D>(
+export function composePrism<A, B, C, D>(
   ab: PPrism<A, B, C, D>
 ): <S, T>(sa: PLens<S, T, A, B>) => POptional<S, T, C, D> {
-  return (sa) => andThenPrism_(sa, ab)
+  return (sa) => composePrism_(sa, ab)
 }
 
 /**
@@ -75,11 +75,11 @@ export function andThenPrism<A, B, C, D>(
  * @category Compositions
  * @since 1.0.0
  */
-export function andThenOptional_<S, T, A, B, C, D>(
+export function composeOptional_<S, T, A, B, C, D>(
   sa: PLens<S, T, A, B>,
   ab: POptional<A, B, C, D>
 ): POptional<S, T, C, D> {
-  return Op.andThen_(sa, ab)
+  return Op.compose_(sa, ab)
 }
 
 /**
@@ -88,23 +88,23 @@ export function andThenOptional_<S, T, A, B, C, D>(
  * @category Compositions
  * @since 1.0.0
  */
-export function andThenOptional<A, B, C, D>(
+export function composeOptional<A, B, C, D>(
   ab: POptional<A, B, C, D>
 ): <S, T>(sa: PLens<S, T, A, B>) => POptional<S, T, C, D> {
-  return (sa) => andThenOptional_(sa, ab)
+  return (sa) => composeOptional_(sa, ab)
 }
 
-export function andThenTraversal_<S, T, A, B, C, D>(
+export function composeTraversal_<S, T, A, B, C, D>(
   sa: PLens<S, T, A, B>,
   ab: PTraversal<A, B, C, D>
 ): PTraversal<S, T, C, D> {
-  return Tr.andThen_(sa, ab)
+  return Tr.compose_(sa, ab)
 }
 
-export function andThenTraversal<A, B, C, D>(
+export function composeTraversal<A, B, C, D>(
   ab: PTraversal<A, B, C, D>
 ): <S, T>(sa: PLens<S, T, A, B>) => PTraversal<S, T, C, D> {
-  return (sa) => andThenTraversal_(sa, ab)
+  return (sa) => composeTraversal_(sa, ab)
 }
 
 /*
@@ -126,7 +126,7 @@ export function id<S, T = S>(): PLens<S, T, S, T> {
  * @category Semigroupoid
  * @since 1.0.0
  */
-export function andThen_<S, T, A, B, C, D>(sa: PLens<S, T, A, B>, ab: PLens<A, B, C, D>): PLens<S, T, C, D> {
+export function compose_<S, T, A, B, C, D>(sa: PLens<S, T, A, B>, ab: PLens<A, B, C, D>): PLens<S, T, C, D> {
   return PLens({
     get: flow(sa.get, ab.get),
     set_: (s, d) => sa.modify_(s, ab.set(d))
@@ -139,8 +139,8 @@ export function andThen_<S, T, A, B, C, D>(sa: PLens<S, T, A, B>, ab: PLens<A, B
  * @category Semigroupoid
  * @since 1.0.0
  */
-export function andThen<A, B, C, D>(ab: PLens<A, B, C, D>): <S, T>(sa: PLens<S, T, A, B>) => PLens<S, T, C, D> {
-  return (sa) => andThen_(sa, ab)
+export function compose<A, B, C, D>(ab: PLens<A, B, C, D>): <S, T>(sa: PLens<S, T, A, B>) => PLens<S, T, C, D> {
+  return (sa) => compose_(sa, ab)
 }
 
 /**
@@ -149,7 +149,7 @@ export function andThen<A, B, C, D>(ab: PLens<A, B, C, D>): <S, T>(sa: PLens<S, 
  */
 export const Category = P.Category<LensF>({
   id,
-  andThen_
+  compose_: compose_
 })
 
 /*
@@ -199,13 +199,13 @@ export const Invariant: P.Invariant<LensF> = HKT.instance({
  * @since 1.0.0
  */
 export function fromNullable<S, A>(sa: Lens<S, A>): Optional<S, NonNullable<A>> {
-  return andThenPrism_(sa, Pr.fromNullable<A>())
+  return composePrism_(sa, Pr.fromNullable<A>())
 }
 
 export function filter_<S, A, B extends A>(sa: Lens<S, A>, refinement: Refinement<A, B>): Optional<S, B>
 export function filter_<S, A>(sa: Lens<S, A>, predicate: Predicate<A>): Optional<S, A>
 export function filter_<S, A>(sa: Lens<S, A>, predicate: Predicate<A>): Optional<S, A> {
-  return andThenPrism_(sa, Pr.fromPredicate(predicate))
+  return composePrism_(sa, Pr.fromPredicate(predicate))
 }
 
 /**
@@ -229,5 +229,5 @@ export function filter<A>(predicate: Predicate<A>): <S>(sa: Lens<S, A>) => Optio
 export function traverse<T extends HKT.HKT, C = HKT.None>(
   T: P.Traversable<T, C>
 ): <S, K, Q, W, X, I, S_, R, E, A>(sta: Lens<S, HKT.Kind<T, C, K, Q, W, X, I, S_, R, E, A>>) => Traversal<S, A> {
-  return flow(andThenTraversal(Tr.fromTraversable(T)()))
+  return flow(composeTraversal(Tr.fromTraversable(T)()))
 }

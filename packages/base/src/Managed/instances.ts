@@ -4,7 +4,6 @@ import type { Managed } from './core'
 import * as P from '../prelude'
 import { apC_, crossC_, crossWithC_ } from './combinators/apply-par'
 import {
-  andThen_,
   ap_,
   bimap_,
   catchAll_,
@@ -139,6 +138,5 @@ export const MonadExcept = P.MonadExcept<ManagedF>({
 
 export const Category = P.Category<ManagedCategoryF>({
   id,
-  andThen_,
   compose_
 })

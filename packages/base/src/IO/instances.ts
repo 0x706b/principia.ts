@@ -8,7 +8,6 @@ import { apSF, apTF, mapNF, sequenceSF } from '../prelude'
 import * as P from '../prelude'
 import { apC_, crossC_, crossWithC_ } from './combinators'
 import {
-  andThen_,
   ap_,
   bimap_,
   catchAll_,
@@ -176,6 +175,5 @@ export const MonadExcept = P.MonadExcept<IOF>({
 
 export const Category = P.Category<IOCategoryF>({
   id,
-  andThen_,
   compose_
 })

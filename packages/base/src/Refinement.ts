@@ -30,15 +30,15 @@ export function fromMaybeK<A, B extends A>(pf: (a: A) => O.Maybe<B>): Refinement
  * -------------------------------------------------------------------------------------------------
  */
 
-export function andThen_<A, B extends A, C extends B>(ab: Refinement<A, B>, bc: Refinement<B, C>): Refinement<A, C> {
+export function compose_<A, B extends A, C extends B>(ab: Refinement<A, B>, bc: Refinement<B, C>): Refinement<A, C> {
   return (i): i is C => ab(i) && bc(i)
 }
 
 /**
- * @dataFirst andThen_
+ * @dataFirst compose_
  */
-export function andThen<A, B extends A, C extends B>(bc: Refinement<B, C>): (ab: Refinement<A, B>) => Refinement<A, C> {
-  return (ab) => andThen_(ab, bc)
+export function compose<A, B extends A, C extends B>(bc: Refinement<B, C>): (ab: Refinement<A, B>) => Refinement<A, C> {
+  return (ab) => compose_(ab, bc)
 }
 
 export function id<A>(): Refinement<A, A> {

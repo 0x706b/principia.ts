@@ -468,17 +468,17 @@ export function bimap<R, E, A, E1, B>(g: (e: E) => E1, f: (a: A) => B): (stm: ST
 /**
  * Propagates the given environment to stm.
  */
-export function andThen_<R, E, A, E1, B>(stm: STM<R, E, A>, that: STM<A, E1, B>): STM<R, E | E1, B> {
+export function compose_<R, E, A, E1, B>(stm: STM<R, E, A>, that: STM<A, E1, B>): STM<R, E | E1, B> {
   return chain_(stm, (a) => giveAll_(that, a))
 }
 
 /**
  * Propagates the given environment to stm.
  *
- * @dataFirst andThen_
+ * @dataFirst compose_
  */
-export function andThen<A, E1, B>(that: STM<A, E1, B>): <R, E>(stm: STM<R, E, A>) => STM<R, E | E1, B> {
-  return (stm) => andThen_(stm, that)
+export function compose<A, E1, B>(that: STM<A, E1, B>): <R, E>(stm: STM<R, E, A>) => STM<R, E | E1, B> {
+  return (stm) => compose_(stm, that)
 }
 
 /**
@@ -681,22 +681,6 @@ export function checkWith(predicate: () => boolean) {
  */
 export function check(predicate: boolean) {
   return checkWith(() => predicate)
-}
-
-/**
- * Propagates stm environment to that.
- */
-export function compose_<R, E, A, R1, E1>(stm: STM<R, E, A>, that: STM<R1, E1, R>) {
-  return andThen_(that, stm)
-}
-
-/**
- * Propagates stm environment to that.
- *
- * @dataFirst compose_
- */
-export function compose<R, R1, E1>(that: STM<R1, E1, R>) {
-  return <E, A>(stm: STM<R, E, A>) => andThen_(that, stm)
 }
 
 /**

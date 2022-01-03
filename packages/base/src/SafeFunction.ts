@@ -35,7 +35,7 @@ export function concat<A, B, C>(f: SafeFunction<A, B>, g: SafeFunction<B, C>): S
   return Object.assign(run(_), _)
 }
 
-export function andThen_<A, B, C>(ab: SafeFunction<A, B>, bc: (b: B) => C): SafeFunction<A, C> {
+export function composef_<A, B, C>(ab: SafeFunction<A, B>, bc: (b: B) => C): SafeFunction<A, C> {
   concrete(ab)
   if (ab._tag === 'Single' && ab.index < MAX_STACK_DEPTH) {
     return single(flow(ab.f, bc), ab.index + 1)
@@ -50,13 +50,13 @@ export function andThen_<A, B, C>(ab: SafeFunction<A, B>, bc: (b: B) => C): Safe
 }
 
 /**
- * @dataFirst andThen_
+ * @dataFirst composef_
  */
-export function andThen<B, C>(bc: (b: B) => C): <A>(ab: SafeFunction<A, B>) => SafeFunction<A, C> {
-  return (ab) => andThen_(ab, bc)
+export function composef<B, C>(bc: (b: B) => C): <A>(ab: SafeFunction<A, B>) => SafeFunction<A, C> {
+  return (ab) => composef_(ab, bc)
 }
 
-export function pipeTo_<A, B, C>(ab: SafeFunction<A, B>, bc: SafeFunction<B, C>): SafeFunction<A, C> {
+export function compose_<A, B, C>(ab: SafeFunction<A, B>, bc: SafeFunction<B, C>): SafeFunction<A, C> {
   concrete(ab)
   concrete(bc)
   if (ab._tag === 'Single') {
@@ -96,10 +96,10 @@ export function pipeTo_<A, B, C>(ab: SafeFunction<A, B>, bc: SafeFunction<B, C>)
 }
 
 /**
- * @dataFirst pipeTo_
+ * @dataFirst compose_
  */
-export function pipeTo<B, C>(bc: SafeFunction<B, C>): <A>(ab: SafeFunction<A, B>) => SafeFunction<A, C> {
-  return (ab) => pipeTo_(ab, bc)
+export function compose<B, C>(bc: SafeFunction<B, C>): <A>(ab: SafeFunction<A, B>) => SafeFunction<A, C> {
+  return (ab) => compose_(ab, bc)
 }
 
 function rotateAccum<A, B, C>(left: SafeFunction<A, B>, right: SafeFunction<B, C>): SafeFunction<A, C> {

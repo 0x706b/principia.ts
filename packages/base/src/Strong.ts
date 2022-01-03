@@ -58,7 +58,7 @@ export function splitF<F>(S: Strong<HKT.F<F>>, C: Category<HKT.F<F>>): SplitF<HK
   return <K, Q, W, X, S, R, E, A, B, C, D>(
     pab: HKT.FK<F, K, Q, W, X, A, S, R, E, B>,
     pcd: HKT.FK<F, K, Q, W, X, C, S, R, E, D>
-  ) => C.andThen_(S.first<C>()(pab), S.second<B>()(pcd))
+  ) => C.compose_(S.first<C>()(pab), S.second<B>()(pcd))
 }
 
 export interface FanOutF<F extends HKT.HKT, TC = HKT.None> {
@@ -102,7 +102,7 @@ export function fanOutF<F>(S: Strong<HKT.F<F>>, C: Category<HKT.F<F>>): FanOutF<
     return pipe(
       C.id<A>(),
       S.map((a: A) => tuple(a, a)),
-      C.andThen(splitSC(pab, pbc))
+      C.compose(splitSC(pab, pbc))
     )
   }
 }

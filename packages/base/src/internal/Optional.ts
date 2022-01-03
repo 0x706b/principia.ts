@@ -35,7 +35,7 @@ export function makePOptional<S, T, A, B>(Op: POptionalMin<S, T, A, B>): POption
   }
 }
 
-export function andThen_<S, T, A, B, C, D>(
+export function compose_<S, T, A, B, C, D>(
   sa: POptional<S, T, A, B>,
   ab: POptional<A, B, C, D>
 ): POptional<S, T, C, D> {
