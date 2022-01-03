@@ -103,10 +103,6 @@ declare module '@principia/base/Layer/core' {
      */
     andSeq<R, E, A, R1, E1, A1>(this: Layer<R, E, A>, that: Layer<R1, E1, A1>): Layer<R & R1, E1 | E, A & A1>
     /**
-     * @rewrite andThen_ from "@principia/base/Layer"
-     */
-    andThen<R, E, A, E1, A1>(this: Layer<R, E, A>, to: Layer<A, E1, A1>): Layer<R, E | E1, A1>
-    /**
      * @rewriteGetter build from "@principia/base/Layer"
      */
     build: M.Managed<R, E, A>
@@ -124,7 +120,7 @@ declare module '@principia/base/Layer/core' {
     /**
      * @rewrite compose_ from "@principia/base/Layer"
      */
-    compose<R, E, A, R0, E1>(this: Layer<R, E, A>, from: Layer<R0, E1, R>): Layer<R0, E | E1, A>
+    compose<R, E, A, E1, A1>(this: Layer<R, E, A>, to: Layer<A, E1, A1>): Layer<R, E | E1, A1>
     /**
      * @rewrite cross_ from "@principia/base/Layer"
      */

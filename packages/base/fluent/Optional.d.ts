@@ -28,28 +28,28 @@ export interface POptionalStaticOps {
 
 export interface POptionalOps {
   /**
-   * @rewrite andThenTraversal_ from "@principia/base/Optional"
-   */
-  andThen<S, T, A, B, C, D>(this: Op.POptional<S, T, A, B>, that: PTraversal<A, B, C, D>): PTraversal<S, T, C, D>
-  /**
-   * @rewrite andThen_ from "@principia/base/Optional"
-   */
-  andThen<S, T, A, B, C, D>(this: Op.POptional<S, T, A, B>, that: Op.POptional<A, B, C, D>): Op.POptional<S, T, C, D>
-  /**
-   * @rewrite andThen_ from "@principia/base/Optional"
-   */
-  andThen<S, T, A, B, C, D>(this: Op.POptional<S, T, A, B>, that: PPrism<A, B, C, D>): Op.POptional<S, T, C, D>
-  /**
-   * @rewrite andThen_ from "@principia/base/Optional"
-   */
-  andThen<S, T, A, B, C, D>(this: Op.POptional<S, T, A, B>, that: PLens<A, B, C, D>): Op.POptional<S, T, C, D>
-  /**
    * @rewrite component_ from "@principia/base/Optional"
    */
   component<S, A extends ReadonlyArray<unknown>, P extends keyof A>(
     this: Op.Optional<S, A>,
     prop: P
   ): Op.Optional<S, A[P]>
+  /**
+   * @rewrite compose_ from "@principia/base/Optional"
+   */
+  compose<S, T, A, B, C, D>(this: Op.POptional<S, T, A, B>, that: Op.POptional<A, B, C, D>): Op.POptional<S, T, C, D>
+  /**
+   * @rewrite compose_ from "@principia/base/Optional"
+   */
+  compose<S, T, A, B, C, D>(this: Op.POptional<S, T, A, B>, that: PPrism<A, B, C, D>): Op.POptional<S, T, C, D>
+  /**
+   * @rewrite compose_ from "@principia/base/Optional"
+   */
+  compose<S, T, A, B, C, D>(this: Op.POptional<S, T, A, B>, that: PLens<A, B, C, D>): Op.POptional<S, T, C, D>
+  /**
+   * @rewrite compose_ from "@principia/base/Optional"
+   */
+  compose<S, T, A, B, C, D>(this: Op.POptional<S, T, A, B>, that: PTraversal<A, B, C, D>): PTraversal<S, T, C, D>
   /**
    * @rewrite filter_ from "@principia/base/Optional"
    */

@@ -38,25 +38,25 @@ interface PLensStaticOps {
 
 interface PLensOps {
   /**
-   * @rewrite andThen_ from "@principia/base/Lens"
-   */
-  andThen<S, T, A, B, C, D>(this: L.PLens<S, T, A, B>, that: L.PLens<A, B, C, D>): L.PLens<S, T, C, D>
-  /**
-   * @rewrite andThenPrism_ from "@principia/base/Lens"
-   */
-  andThen<S, T, A, B, C, D>(this: L.PLens<S, T, A, B>, that: PPrism<A, B, C, D>): POptional<S, T, C, D>
-  /**
-   * @rewrite andThenOptional_ from "@principia/base/Lens"
-   */
-  andThen<S, T, A, B, C, D>(this: L.PLens<S, T, A, B>, that: POptional<A, B, C, D>): POptional<S, T, C, D>
-  /**
-   * @rewrite andThenTraversal_ from "@principia/base/Lens"
-   */
-  andThen<S, T, A, B, C, D>(this: L.PLens<S, T, A, B>, that: PTraversal<A, B, C, D>): PTraversal<S, T, C, D>
-  /**
    * @rewrite component_ from "@principia/base/Lens"
    */
   component<S, A extends ReadonlyArray<unknown>, P extends keyof A>(this: L.Lens<S, A>, prop: P): L.Lens<S, A[P]>
+  /**
+   * @rewrite compose_ from "@principia/base/Lens"
+   */
+  compose<S, T, A, B, C, D>(this: L.PLens<S, T, A, B>, that: PPrism<A, B, C, D>): POptional<S, T, C, D>
+  /**
+   * @rewrite compose_ from "@principia/base/Lens"
+   */
+  compose<S, T, A, B, C, D>(this: L.PLens<S, T, A, B>, that: POptional<A, B, C, D>): POptional<S, T, C, D>
+  /**
+   * @rewrite compose_ from "@principia/base/Lens"
+   */
+  compose<S, T, A, B, C, D>(this: L.PLens<S, T, A, B>, that: PTraversal<A, B, C, D>): PTraversal<S, T, C, D>
+  /**
+   * @rewrite compose_ from "@principia/base/Lens"
+   */
+  compose<S, T, A, B, C, D>(this: L.PLens<S, T, A, B>, that: L.PLens<A, B, C, D>): L.PLens<S, T, C, D>
   /**
    * @rewrite filter_ from "@principia/base/Lens"
    */

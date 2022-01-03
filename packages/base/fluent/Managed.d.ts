@@ -385,12 +385,6 @@ declare module '@principia/base/Managed/core' {
     ): M.Managed<R & R1, E | E1, B>
 
     /**
-     * @rewrite andThen_ from "@principia/base/Managed"
-     * @trace call
-     */
-    andThen<R, E, A, E1, B>(this: M.Managed<R, E, A>, that: M.Managed<A, E1, B>): M.Managed<R, E | E1, B>
-
-    /**
      * @rewrite apFirst_ from "@principia/base/Managed"
      * @trace call
      */
@@ -529,7 +523,7 @@ declare module '@principia/base/Managed/core' {
      * @rewrite compose_ from "@principia/base/Managed"
      * @trace call
      */
-    compose<R, E, A, R1, E1>(this: M.Managed<R, E, A>, that: M.Managed<R1, E1, R>): M.Managed<R1, E | E1, A>
+    compose<R, E, A, E1, B>(this: M.Managed<R, E, A>, that: M.Managed<A, E1, B>): M.Managed<R, E | E1, B>
 
     /**
      * @rewrite cross_ from "@principia/base/Managed"

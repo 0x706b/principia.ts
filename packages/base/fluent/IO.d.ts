@@ -778,7 +778,7 @@ export interface IOOps<R, E, A> {
    * @rewrite compose_ from "@principia/base/IO"
    * @trace call
    */
-  ['<<<']<R, E, A, R0, E1>(this: I.IO<R, E, A>, that: I.IO<R0, E1, R>): I.IO<R0, E | E1, A>
+  // ['<<<']<R, E, A, R0, E1>(this: I.IO<R, E, A>, that: I.IO<R0, E1, R>): I.IO<R0, E | E1, A>
 
   /**
    * @rewrite orElse_ from "@principia/base/IO"
@@ -799,7 +799,7 @@ export interface IOOps<R, E, A> {
   ['>>=']<R, E, A, R1, E1, B>(this: I.IO<R, E, A>, f: (a: A) => I.IO<R1, E1, B>): I.IO<R & R1, E | E1, B>
 
   /**
-   * @rewrite andThen_ from "@principia/base/IO"
+   * @rewrite compose_ from "@principia/base/IO"
    * @trace call
    */
   ['>>>']<R, E, A, E1, B>(this: I.IO<R, E, A>, that: I.IO<A, E1, B>): I.IO<R, E | E1, B>
@@ -809,12 +809,6 @@ export interface IOOps<R, E, A> {
    * @trace 0
    */
   absorbWith<R, E, A>(this: I.IO<R, E, A>, f: (e: E) => unknown): I.IO<R, unknown, A>
-
-  /**
-   * @rewrite andThen_ from "@principia/base/IO"
-   * @trace call
-   */
-  andThen<R, E, A, E1, B>(this: I.IO<R, E, A>, that: I.IO<A, E1, B>): I.IO<R, E | E1, B>
 
   /**
    * @rewrite apFirstC_ from "@principia/base/IO"
@@ -1006,7 +1000,7 @@ export interface IOOps<R, E, A> {
    * @rewrite compose_ from "@principia/base/IO"
    * @trace call
    */
-  compose<R, E, A, R0, E1>(this: I.IO<R, E, A>, that: I.IO<R0, E1, R>): I.IO<R0, E | E1, A>
+  compose<R, E, A, E1, B>(this: I.IO<R, E, A>, that: I.IO<A, E1, B>): I.IO<R, E | E1, B>
 
   /**
    * @rewrite cross_ from "@principia/base/IO"

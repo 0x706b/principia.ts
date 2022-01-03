@@ -104,10 +104,6 @@ declare module '@principia/base/Schedule/core' {
     /**
      * @rewrite andThen_ from "@principia/base/Schedule"
      */
-    andThen<R, I, O, R1, I1, O1>(this: Schedule<R, I, O>, that: Schedule<R1, I1, O1>): Schedule<R & R1, I & I1, O | O1>
-    /**
-     * @rewrite andThen_ from "@principia/base/Schedule"
-     */
     andThenEither<R, I, O, R1, I1, O1>(
       this: Schedule<R, I, O>,
       that: Schedule<R1, I1, O1>
@@ -152,7 +148,7 @@ declare module '@principia/base/Schedule/core' {
     /**
      * @rewrite compose_ from "@principia/base/Schedule"
      */
-    compose<R, I, O, R1, O1>(this: Schedule<R, I, O>, that: Schedule<R1, O, O1>): Schedule<R & R1, I, O1>
+    compose<R, I, O, R1, I1, O1>(this: Schedule<R, I, O>, that: Schedule<R1, I1, O1>): Schedule<R & R1, I & I1, O | O1>
     /**
      * @rewrite delayed_ from "@principia/base/Schedule"
      */

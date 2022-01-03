@@ -47,25 +47,25 @@ export interface PPrismStaticOps {
 
 export interface PPrismOps {
   /**
-   * @rewrite andThen_ from "@principia/base/Prism"
-   */
-  andThen<S, T, A, B, C, D>(this: Pr.PPrism<S, T, A, B>, that: Pr.PPrism<A, B, C, D>): Pr.PPrism<S, T, C, D>
-  /**
-   * @rewrite andThenLens_ from "@principia/base/Prism"
-   */
-  andThen<S, T, A, B, C, D>(this: Pr.PPrism<S, T, A, B>, that: PLens<A, B, C, D>): POptional<S, T, C, D>
-  /**
-   * @rewrite andThenOptional_ from "@principia/base/Prism"
-   */
-  andThen<S, T, A, B, C, D>(this: Pr.PPrism<S, T, A, B>, that: POptional<A, B, C, D>): POptional<S, T, C, D>
-  /**
-   * @rewrite andThenTraversal_ from "@principia/base/Prism"
-   */
-  andThen<S, T, A, B, C, D>(this: Pr.PPrism<S, T, A, B>, that: PTraversal<A, B, C, D>): PTraversal<S, T, C, D>
-  /**
    * @rewrite component_ from "@principia/base/Prism"
    */
   component<S, A extends ReadonlyArray<unknown>, P extends keyof A>(this: Pr.Prism<S, A>, props: P): Optional<S, A[P]>
+  /**
+   * @rewrite compose_ from "@principia/base/Prism"
+   */
+  compose<S, T, A, B, C, D>(this: Pr.PPrism<S, T, A, B>, that: PLens<A, B, C, D>): POptional<S, T, C, D>
+  /**
+   * @rewrite compose_ from "@principia/base/Prism"
+   */
+  compose<S, T, A, B, C, D>(this: Pr.PPrism<S, T, A, B>, that: POptional<A, B, C, D>): POptional<S, T, C, D>
+  /**
+   * @rewrite compose_ from "@principia/base/Prism"
+   */
+  compose<S, T, A, B, C, D>(this: Pr.PPrism<S, T, A, B>, that: PTraversal<A, B, C, D>): PTraversal<S, T, C, D>
+  /**
+   * @rewrite compose_ from "@principia/base/Prism"
+   */
+  compose<S, T, A, B, C, D>(this: Pr.PPrism<S, T, A, B>, that: Pr.PPrism<A, B, C, D>): Pr.PPrism<S, T, C, D>
   /**
    * @rewrite filter_ from "@principia/base/Prism"
    */

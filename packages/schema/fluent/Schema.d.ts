@@ -182,9 +182,9 @@ export interface SchemaOps {
    */
   mapConstructorError<S extends s.AnyS, E>(this: S, f: (e: s.CErrorOf<S>) => E): s.MapConstructorErrorS<S, E>
   /**
-   * @rewrite andThen_ from "@principia/schema/Schema"
+   * @rewrite compose_ from "@principia/schema/Schema"
    */
-  andThen<From extends s.AnyS, To extends s.AnyS>(this: From, that: To): s.AndThenS<From, To>
+  compose<From extends s.AnyS, To extends s.AnyS>(this: From, that: To): s.AndThenS<From, To>
   /**
    * @rewrite decoder_ from "@principia/schema/Schema"
    */
