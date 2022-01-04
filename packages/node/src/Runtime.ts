@@ -5,12 +5,12 @@ import * as Ex from '@principia/base/Exit'
 import * as Fiber from '@principia/base/Fiber'
 import { interruptAllAs_ } from '@principia/base/Fiber'
 import { pipe } from '@principia/base/function'
+import { AtomicBoolean } from '@principia/base/internal/AtomicBoolean'
 import * as I from '@principia/base/IO'
 import { defaultRuntime, defaultSupervisor } from '@principia/base/IO'
 import * as Cause from '@principia/base/IO/Cause'
 import * as L from '@principia/base/List'
 import * as S from '@principia/base/Sync'
-import { AtomicBoolean } from '@principia/base/util/support/AtomicBoolean'
 import path from 'path'
 
 export function defaultTeardown(status: number, id: Fiber.FiberId, onExit: (status: number) => void) {

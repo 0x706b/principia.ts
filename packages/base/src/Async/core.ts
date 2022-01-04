@@ -1,7 +1,7 @@
 import type { Has, Tag } from '../Has'
 import type * as HKT from '../HKT'
+import type { Stack } from '../internal/Stack'
 import type { Maybe } from '../Maybe'
-import type { Stack } from '../util/support/Stack'
 
 import * as A from '../Array/core'
 import * as C from '../Cause/core'
@@ -11,11 +11,11 @@ import * as Ex from '../Exit/core'
 import { flow, identity, pipe, unsafeCoerce } from '../function'
 import { genF, GenHKT } from '../Gen'
 import { isTag, mergeEnvironments } from '../Has'
+import { makeStack } from '../internal/Stack'
 import { isMaybe } from '../Maybe'
 import * as P from '../prelude'
 import * as R from '../Record'
 import { tuple as mkTuple } from '../tuple/core'
-import { makeStack } from '../util/support/Stack'
 
 /*
  * -------------------------------------------------------------------------------------------------

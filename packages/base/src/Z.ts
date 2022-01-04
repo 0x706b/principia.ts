@@ -3,9 +3,9 @@
  */
 import type { Eq } from './Eq'
 import type * as HKT from './HKT'
+import type { Stack } from './internal/Stack'
 import type { Predicate } from './Predicate'
 import type { _E, _R } from './prelude'
-import type { Stack } from './util/support/Stack'
 
 import * as A from './Array/core'
 import * as Ca from './Cause'
@@ -13,13 +13,13 @@ import * as C from './Chunk/core'
 import * as E from './Either'
 import * as Ex from './Exit'
 import { flow, identity, pipe } from './function'
+import { makeStack } from './internal/Stack'
 import * as I from './Iterable/core'
 import * as L from './List/core'
 import * as M from './Maybe'
 import * as P from './prelude'
 import { tuple } from './tuple/core'
 import { isObject } from './util/predicates'
-import { makeStack } from './util/support/Stack'
 
 /*
  * -------------------------------------------------------------------------------------------------

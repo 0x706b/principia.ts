@@ -1,9 +1,9 @@
 import type { Platform } from '../internal/Platform'
+import type { Stack } from '../internal/Stack'
 import type { Exit } from '../IO/Exit/core'
 import type { Instruction, IO, Match, Race, UIO } from '../IO/primitives'
 import type { Maybe } from '../Maybe'
 import type { Supervisor } from '../Supervisor'
-import type { Stack } from '../util/support/Stack'
 import type { Fiber, InterruptStatus, RuntimeFiber } from './core'
 import type { FiberId } from './FiberId'
 import type { TraceElement } from './Trace'
@@ -13,6 +13,10 @@ import { traceAs } from '@principia/compile/util'
 import * as E from '../Either'
 import * as FR from '../FiberRef'
 import { constVoid, identity, pipe } from '../function'
+import { AtomicReference } from '../internal/AtomicReference'
+import * as MQ from '../internal/MutableQueue'
+import { defaultScheduler } from '../internal/Scheduler'
+import { makeStack } from '../internal/Stack'
 import * as C from '../IO/Cause'
 import { interruptAs } from '../IO/combinators/interrupt'
 import {
@@ -37,10 +41,6 @@ import * as L from '../List/core'
 import * as M from '../Maybe'
 import * as Scope from '../Scope'
 import * as Super from '../Supervisor'
-import { AtomicReference } from '../util/support/AtomicReference'
-import { RingBuffer } from '../util/support/RingBuffer'
-import { defaultScheduler } from '../util/support/Scheduler'
-import { makeStack } from '../util/support/Stack'
 import * as CS from './CancellerState'
 import { FiberDescriptor, interruptStatus } from './core'
 import { newFiberId } from './FiberId'
@@ -112,11 +112,9 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   private currentSupervisor = this.initialSupervisor
   private traceStatusEnabled = this.platform.traceExecution || this.platform.traceStack
   private executionTraces = this.traceStatusEnabled
-    ? new RingBuffer<TraceElement>(this.platform.executionTraceLength)
+    ? MQ.bounded<TraceElement>(this.platform.executionTraceLength)
     : undefined
-  private stackTraces = this.traceStatusEnabled
-    ? new RingBuffer<TraceElement>(this.platform.stackTraceLength)
-    : undefined
+  private stackTraces = this.traceStatusEnabled ? MQ.bounded<TraceElement>(this.platform.stackTraceLength) : undefined
   private traceStatusStack = this.traceStatusEnabled ? makeStack(true) : undefined
   nextIO: Instruction | null = null
 
@@ -572,13 +570,13 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
   private unsafeAddTrace(f: Function) {
     if (this.unsafeIsInTracingRegion && '$trace' in f) {
-      this.executionTraces!.push(new SourceLocation(f['$trace']))
+      this.executionTraces!.offer(new SourceLocation(f['$trace']))
     }
   }
 
   private unsafeAddTraceValue(trace: string | undefined | TraceElement) {
     if (this.unsafeIsInTracingRegion && trace) {
-      this.executionTraces!.push(typeof trace === 'string' ? new SourceLocation(trace) : trace)
+      this.executionTraces!.offer(typeof trace === 'string' ? new SourceLocation(trace) : trace)
     }
   }
 
@@ -669,7 +667,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
   private unsafePushStackFrame(k: Frame) {
     if (this.platform.traceStack && this.unsafeIsInTracingRegion) {
-      this.stackTraces!.push(traceLocation(k.apply))
+      this.stackTraces!.offer(traceLocation(k.apply))
     }
     this.stack = makeStack(k, this.stack)
   }
@@ -699,7 +697,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   private unsafePopStackTrace() {
-    this.stackTraces!.pop()
+    this.stackTraces!.poll(undefined)
   }
 
   private unsafeAddSuppressedCause(cause: C.Cause<never>): void {
@@ -1108,9 +1106,19 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   private unsafeCaptureTrace(last: TraceElement | undefined): Trace {
-    const exec   = this.executionTraces ? this.executionTraces.listReverse : L.empty()
-    const stack_ = this.stackTraces ? this.stackTraces.listReverse : L.empty()
-    const stack  = last ? L.prepend_(stack_, last) : stack_
+    let exec = L.empty<TraceElement>()
+    if (this.executionTraces) {
+      this.executionTraces.forEach((el) => {
+        exec = L.prepend_(exec, el)
+      })
+    }
+    let stack_ = L.empty<TraceElement>()
+    if (this.stackTraces) {
+      this.stackTraces.forEach((el) => {
+        L.prepend_(stack_, el)
+      })
+    }
+    const stack = last ? L.prepend_(stack_, last) : stack_
     return new Trace(this.id, exec, stack, this.parentTrace)
   }
 

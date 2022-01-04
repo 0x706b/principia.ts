@@ -5,7 +5,7 @@ import * as R from 'fp-ts/lib/ReadonlyRecord'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as Path from 'path'
 
-import { copy, glob, onLeft, onRight, readFile, writeFile } from './common'
+import { copy, onLeft, onRight, readFile, writeFile } from './common'
 
 const esmJSON = (sideEffects: string[]) =>
   JSON.stringify({ type: 'module', sideEffects: sideEffects.length === 0 ? false : sideEffects })
@@ -22,10 +22,8 @@ const loadPackageJson: TE.TaskEither<Error, any> = pipe(
 )
 
 const copyLicenses: TE.TaskEither<Error, void> = pipe(
-  glob('LICENSE*'),
-  TE.chain((globs) =>
-    TE.sequenceArray(globs.map((glob) => copy(Path.resolve(process.cwd(), glob), Path.resolve(process.cwd(), 'dist'))))
-  ),
+  copy(Path.resolve(process.cwd(), '../../doc/licenses/**/*'), Path.resolve(process.cwd(), 'dist/licenses')),
+  TE.apSecond(copy(Path.resolve(process.cwd(), '../../doc/LICENSE.md'), Path.resolve(process.cwd(), 'dist'))),
   TE.map(() => void 0)
 )
 

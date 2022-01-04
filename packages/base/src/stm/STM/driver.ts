@@ -1,9 +1,9 @@
 import type { FiberId } from '../../Fiber/FiberId'
-import type { Stack } from '../../util/support/Stack'
+import type { Stack } from '../../internal/Stack'
 import type { Journal } from '../Journal'
 import type { OnFailure, OnRetry, OnSuccess } from './primitives'
 
-import { makeStack } from '../../util/support/Stack'
+import { makeStack } from '../../internal/Stack'
 import * as TEx from '../TExit'
 import * as STM from './primitives'
 

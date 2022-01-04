@@ -1,4 +1,4 @@
-import { AtomicNumber } from '../util/support/AtomicNumber'
+import { AtomicNumber } from '../internal/AtomicNumber'
 
 export type TxnId = number
 

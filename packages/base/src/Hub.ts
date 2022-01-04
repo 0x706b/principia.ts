@@ -1,4 +1,4 @@
-import type { MutableQueue } from './util/support/MutableQueue'
+import type { MutableQueue } from './internal/MutableQueue'
 
 import * as C from './Chunk'
 import { concurrent } from './ExecutionStrategy'
@@ -6,6 +6,8 @@ import * as Fi from './Fiber'
 import { identity, pipe } from './function'
 import * as F from './Future'
 import * as HM from './HashMap'
+import { AtomicBoolean } from './internal/AtomicBoolean'
+import * as MQ from './internal/MutableQueue'
 import * as I from './IO'
 import * as Ex from './IO/Exit'
 import * as M from './Managed'
@@ -15,9 +17,6 @@ import * as Q from './Queue'
 import { QueueInternal } from './Queue'
 import * as Ref from './Ref'
 import * as St from './Structural'
-import { AtomicBoolean } from './util/support/AtomicBoolean'
-import { Unbounded } from './util/support/MutableQueue'
-import * as MQ from './util/support/MutableQueue'
 
 export type HubDequeue<R, E, A> = Q.Queue<never, R, unknown, E, never, A>
 
@@ -396,7 +395,7 @@ function subscription<A>(
       hub,
       subscribers,
       hub.subscribe(),
-      new Unbounded<F.Future<never, A>>(),
+      MQ.unbounded<F.Future<never, A>>(),
       future,
       new AtomicBoolean(false),
       strategy
@@ -996,7 +995,7 @@ export abstract class Strategy<A> {
  * are published and received by other subscribers.
  */
 export class BackPressure<A> extends Strategy<A> {
-  publishers: MQ.MutableQueue<readonly [A, F.Future<never, boolean>, boolean]> = new MQ.Unbounded()
+  publishers: MQ.MutableQueue<readonly [A, F.Future<never, boolean>, boolean]> = MQ.unbounded()
 
   handleSurplus(
     hub: UHubInternal<A>,

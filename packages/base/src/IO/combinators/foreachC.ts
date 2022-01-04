@@ -12,6 +12,7 @@ import * as FiberId from '../../Fiber/FiberId'
 import * as FR from '../../FiberRef/core'
 import { flow, identity, pipe } from '../../function'
 import * as F from '../../Future'
+import { AtomicNumber } from '../../internal/AtomicNumber'
 import * as It from '../../Iterable'
 import * as Ma from '../../Managed/core'
 import * as RM from '../../Managed/ReleaseMap/core'
@@ -19,7 +20,6 @@ import * as M from '../../Maybe'
 import * as Q from '../../Queue'
 import * as Ref from '../../Ref/core'
 import { tuple } from '../../tuple/core'
-import { AtomicNumber } from '../../util/support/AtomicNumber'
 import * as C from '../Cause'
 import * as I from '../core'
 import * as Ex from '../Exit'
@@ -93,29 +93,41 @@ function foreachConcurrentUnboundedUnit_<R, E, A>(as: Iterable<A>, f: (a: A) => 
   })
 }
 
-function foreachConcurrentBoundedUnit_<R, E, A>(
-  as: Iterable<A>,
-  n: number,
-  f: (a: A) => I.IO<R, E, A>
+function foreachConcurrentUnboundedUnitWorker_<R, E, A>(
+  queue: Q.UQueue<A>,
+  f: (a: A) => I.IO<R, E, any>
 ): I.IO<R, E, void> {
-  const size   = 'length' in as && typeof as['length'] === 'number' ? as['length'] : It.size(as)
-  const worker = (queue: Q.UQueue<A>): I.IO<R, E, void> =>
-    pipe(
-      Q.poll(queue),
-      I.chain(
-        M.match(
-          () => I.unit(),
-          flow(
-            f,
-            I.chain(() => worker(queue))
-          )
+  return pipe(
+    Q.poll(queue),
+    I.chain(
+      M.match(
+        () => I.unit(),
+        flow(
+          f,
+          I.chain(() => foreachConcurrentUnboundedUnitWorker_(queue, f))
         )
       )
     )
-  return I.gen(function* (_) {
-    const queue = yield* _(Q.makeBounded<A>(size))
-    yield* _(Q.offerAll_(queue, as))
-    yield* _(foreachConcurrentUnboundedUnit_(I.replicate_(worker(queue), n), identity))
+  )
+}
+
+function foreachConcurrentBoundedUnit_<R, E, A>(
+  as: Iterable<A>,
+  n: number,
+  f: (a: A) => I.IO<R, E, any>
+): I.IO<R, E, void> {
+  return I.defer(() => {
+    const size = 'length' in as && typeof as['length'] === 'number' ? as['length'] : It.size(as)
+    if (size === 0) {
+      return I.unit()
+    }
+    return I.gen(function* (_) {
+      const queue = yield* _(Q.makeBounded<A>(size))
+      yield* _(Q.offerAll_(queue, as))
+      yield* _(
+        foreachConcurrentUnboundedUnit_(I.replicate_(foreachConcurrentUnboundedUnitWorker_(queue, f), n), identity)
+      )
+    })
   })
 }
 
@@ -138,41 +150,53 @@ function foreachConcurrentUnbounded_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I
   )
 }
 
+function foreachConcurrentBoundedWorker_<R, E, A, B>(
+  queue: Q.UQueue<readonly [number, A]>,
+  array: Array<any>,
+  f: (a: A) => I.IO<R, E, B>
+): I.IO<R, E, void> {
+  return pipe(
+    Q.poll(queue),
+    I.chain(
+      traceAs(
+        f,
+        M.match(
+          () => I.unit(),
+          ([n, a]) =>
+            pipe(
+              f(a),
+              I.tap((b) =>
+                I.succeedLazy(() => {
+                  array[n] = b
+                })
+              ),
+              I.chain(() => foreachConcurrentBoundedWorker_(queue, array, f))
+            )
+        )
+      )
+    )
+  )
+}
+
 function foreachConcurrentBounded_<R, E, A, B>(
   as: Iterable<A>,
   n: number,
   f: (a: A) => I.IO<R, E, B>
 ): I.IO<R, E, Chunk<B>> {
-  const size   = 'length' in as && typeof as['length'] === 'number' ? as['length'] : It.size(as)
-  const worker = (queue: Q.UQueue<readonly [number, A]>, array: Array<any>): I.IO<R, E, void> =>
-    pipe(
-      Q.poll(queue),
-      I.chain(
-        traceAs(
-          f,
-          M.match(
-            () => I.unit(),
-            ([n, a]) =>
-              pipe(
-                f(a),
-                I.tap((b) =>
-                  I.succeedLazy(() => {
-                    array[n] = b
-                  })
-                ),
-                I.chain(() => worker(queue, array))
-              )
-          )
-        )
+  return I.defer(() => {
+    const size = 'length' in as && typeof as['length'] === 'number' ? as['length'] : It.size(as)
+    if (size === 0) {
+      return I.succeed(Ch.empty())
+    }
+    return I.gen(function* (_) {
+      const array = yield* _(I.succeedLazy(() => new Array(size)))
+      const queue = yield* _(Q.makeBounded<readonly [number, A]>(size))
+      yield* _(pipe(Q.offerAll_(queue, pipe(as, It.zipWithIndex))))
+      yield* _(
+        foreachConcurrentUnboundedUnit_(I.replicate_(foreachConcurrentBoundedWorker_(queue, array, f), n), identity)
       )
-    )
-
-  return I.gen(function* (_) {
-    const array = yield* _(I.succeedLazy(() => new Array(size)))
-    const queue = yield* _(Q.makeBounded<readonly [number, A]>(size))
-    yield* _(pipe(Q.offerAll_(queue, pipe(as, It.zipWithIndex))))
-    yield* _(foreachConcurrentUnboundedUnit_(I.replicate_(worker(queue, array), n), identity))
-    return Ch.from(array)
+      return Ch.from(array)
+    })
   })
 }
 

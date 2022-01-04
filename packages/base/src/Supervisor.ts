@@ -1,8 +1,8 @@
 import type { RuntimeFiber } from './Fiber'
+import type { AtomicReference } from './internal/AtomicReference'
 import type { IO, UIO } from './IO'
 import type { Exit } from './IO/Exit'
 import type * as M from './Maybe'
-import type { AtomicReference } from './util/support/AtomicReference'
 
 import { pipe } from './function'
 import * as HS from './HashSet'

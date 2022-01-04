@@ -3,7 +3,7 @@ import type { HashSet } from '../HashSet'
 import type { Predicate } from '../Predicate'
 import type * as P from '../prelude'
 import type { Equatable, Hashable } from '../Structural'
-import type { Stack } from '../util/support/Stack'
+import type { Stack } from '../internal/Stack'
 
 import * as A from '../Array/core'
 import * as B from '../boolean'
@@ -20,7 +20,7 @@ import * as Equ from '../Structural/Equatable'
 import * as Ha from '../Structural/Hashable'
 import { tuple } from '../tuple/core'
 import { isObject } from '../util/predicates'
-import { makeStack } from '../util/support/Stack'
+import { makeStack } from '../internal/Stack'
 
 export const CauseTypeId = Symbol.for('@principia/base/Cause')
 export type CauseTypeId = typeof CauseTypeId

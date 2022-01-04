@@ -7,13 +7,13 @@ import type { AsyncInputConsumer, AsyncInputProducer } from './producer'
 import * as E from '../../Either'
 import { pipe } from '../../function'
 import * as F from '../../Future'
+import { ImmutableQueue } from '../../internal/ImmutableQueue'
 import * as T from '../../IO'
 import * as Ca from '../../IO/Cause'
 import * as Ex from '../../IO/Exit'
 import * as M from '../../Maybe'
 import * as Ref from '../../Ref'
 import { tuple } from '../../tuple/core'
-import { ImmutableQueue } from '../../util/support/ImmutableQueue'
 
 export const StateDoneTag = Symbol()
 export type StateDoneTag = typeof StateDoneTag

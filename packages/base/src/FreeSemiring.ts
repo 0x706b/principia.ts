@@ -10,13 +10,13 @@ import * as E from './Either'
 import * as Ev from './Eval'
 import { flow, hole, identity, pipe } from './function'
 import * as HS from './HashSet'
+import { LinkedList, LinkedListNode } from './internal/LinkedList'
 import * as L from './List/core'
 import * as P from './prelude'
 import * as Eq from './Structural/Equatable'
 import * as Ha from './Structural/Hashable'
 import { tuple } from './tuple/core'
 import { isObject } from './util/predicates'
-import { LinkedList, LinkedListNode } from './util/support/LinkedList'
 
 /*
  * -------------------------------------------------------------------------------------------------

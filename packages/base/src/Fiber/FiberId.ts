@@ -1,10 +1,10 @@
 import * as A from '../Array/core'
 import { pipe } from '../function'
 import * as HS from '../HashSet'
+import { AtomicNumber } from '../internal/AtomicNumber'
 import * as P from '../prelude'
 import { isObject } from '../prelude'
 import { $equals, $hash, combineHash, equals, hash, hashString } from '../Structural'
-import { AtomicNumber } from '../util/support/AtomicNumber'
 
 /*
  * -------------------------------------------------------------------------------------------------

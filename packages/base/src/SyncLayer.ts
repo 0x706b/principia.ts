@@ -3,8 +3,8 @@ import type * as P from './prelude'
 
 import * as A from './Array/core'
 import { pipe } from './function'
+import { AtomicReference } from './internal/AtomicReference'
 import * as Sy from './Sync'
-import { AtomicReference } from './util/support/AtomicReference'
 
 export abstract class SyncLayer<R, E, A> {
   readonly hash = new AtomicReference<PropertyKey>(Symbol())

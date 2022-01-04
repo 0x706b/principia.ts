@@ -1,10 +1,10 @@
 import * as E from '../Either'
 import { flow, identity, pipe } from '../function'
+import { AtomicReference } from '../internal/AtomicReference'
 import * as M from '../Maybe'
 import * as S from '../Sync'
 import { tuple } from '../tuple/core'
 import { matchTag } from '../util/match'
-import { AtomicReference } from '../util/support/AtomicReference'
 import * as At from './atomic'
 
 export interface SyncRef<EA, EB, A, B> {

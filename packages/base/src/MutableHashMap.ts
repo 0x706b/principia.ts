@@ -1,10 +1,10 @@
 import type { Eq } from './Eq'
 import type { Hash } from './Hash'
 
+import { AtomicNumber } from './internal/AtomicNumber'
 import * as I from './Iterable'
 import * as M from './Maybe'
 import { DefaultEq, DefaultHash } from './Structural'
-import { AtomicNumber } from './util/support/AtomicNumber'
 
 export const HashMapTypeId = Symbol.for('@principia/base/MutableHashMap')
 export type HashMapTypeId = typeof HashMapTypeId
@@ -42,8 +42,8 @@ class Node<K, V> implements Iterable<readonly [K, V]> {
  */
 export class HashMap<K, V> implements Iterable<readonly [K, V]> {
   readonly _typeId: HashMapTypeId = HashMapTypeId
-  readonly backingMap             = new Map<number, Node<K, V>>()
-  readonly length                 = new AtomicNumber(0)
+  readonly backingMap = new Map<number, Node<K, V>>()
+  readonly length = new AtomicNumber(0)
   private hashEqK: Hash<K> & Eq<K>
 
   constructor(hashEqK?: Hash<K> & Eq<K>) {

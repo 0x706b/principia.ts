@@ -1,15 +1,15 @@
 import type { Chunk } from '../Chunk'
 import type { Future } from '../Future'
+import type { MutableQueue } from '../internal/MutableQueue'
 import type { IO, UIO } from '../IO'
-import type { MutableQueue } from '../util/support/MutableQueue'
 
 import * as C from '../Chunk/core'
 import { flow, identity, pipe } from '../function'
 import * as F from '../Future'
+import { AtomicBoolean } from '../internal/AtomicBoolean'
+import { bounded, unbounded } from '../internal/MutableQueue'
 import * as M from '../Maybe'
 import { tuple } from '../tuple/core'
-import { AtomicBoolean } from '../util/support/AtomicBoolean'
-import { Bounded, Unbounded } from '../util/support/MutableQueue'
 import * as I from './internal/io'
 
 /**
@@ -138,28 +138,28 @@ export interface Enqueue<A> extends Queue<unknown, never, never, unknown, A, any
 
 export function makeSliding<A>(capacity: number): I.UIO<UQueue<A>> {
   return I.chain_(
-    I.succeedLazy(() => new Bounded<A>(capacity)),
+    I.succeedLazy(() => bounded<A>(capacity)),
     _makeQueue(new SlidingStrategy())
   )
 }
 
 export function makeUnbounded<A>(): I.UIO<UQueue<A>> {
   return I.chain_(
-    I.succeedLazy(() => new Unbounded<A>()),
+    I.succeedLazy(() => unbounded<A>()),
     _makeQueue(new DroppingStrategy())
   )
 }
 
 export function makeDropping<A>(capacity: number): I.UIO<UQueue<A>> {
   return I.chain_(
-    I.succeedLazy(() => new Bounded<A>(capacity)),
+    I.succeedLazy(() => bounded<A>(capacity)),
     _makeQueue(new DroppingStrategy())
   )
 }
 
 export function makeBounded<A>(capacity: number): I.UIO<UQueue<A>> {
   return I.chain_(
-    I.succeedLazy(() => new Bounded<A>(capacity)),
+    I.succeedLazy(() => bounded<A>(capacity)),
     _makeQueue(new BackPressureStrategy())
   )
 }
@@ -1043,7 +1043,7 @@ function _unsafeQueue<A>(
 
 function _makeQueue<A>(strategy: Strategy<A>): (queue: MutableQueue<A>) => I.IO<unknown, never, UQueue<A>> {
   return (queue) =>
-    I.map_(F.make<never, void>(), (p) => _unsafeQueue(queue, new Unbounded(), p, new AtomicBoolean(false), strategy))
+    I.map_(F.make<never, void>(), (p) => _unsafeQueue(queue, unbounded(), p, new AtomicBoolean(false), strategy))
 }
 
 function _unsafeOfferAll<A>(q: MutableQueue<A>, as: Chunk<A>): Chunk<A> {
@@ -1147,7 +1147,7 @@ export interface Strategy<A> {
 }
 
 export class BackPressureStrategy<A> implements Strategy<A> {
-  private putters = new Unbounded<[A, Future<never, boolean>, boolean]>()
+  private putters = unbounded<[A, Future<never, boolean>, boolean]>()
 
   handleSurplus(
     as: Chunk<A>,

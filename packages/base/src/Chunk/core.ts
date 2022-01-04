@@ -1,15 +1,17 @@
 import type { Byte } from '../Byte'
 import type { Either } from '../Either'
 import type { Eq } from '../Eq'
+import type { Stack } from '../internal/Stack'
 import type { Predicate } from '../Predicate'
 import type { These } from '../These'
-import type { Stack } from '../util/support/Stack'
 
 import * as A from '../Array/core'
 import * as E from '../Either'
 import { IndexOutOfBoundsError } from '../Error'
 import { identity, pipe, unsafeCoerce } from '../function'
 import * as HKT from '../HKT'
+import { AtomicNumber } from '../internal/AtomicNumber'
+import { makeStack } from '../internal/Stack'
 import * as It from '../Iterable/core'
 import * as M from '../Maybe'
 import * as N from '../number'
@@ -20,8 +22,6 @@ import * as Ha from '../Structural/Hashable'
 import * as Th from '../These'
 import { tuple } from '../tuple/core'
 import { isByte } from '../util/predicates'
-import { AtomicNumber } from '../util/support/AtomicNumber'
-import { makeStack } from '../util/support/Stack'
 
 export interface ChunkF extends HKT.HKT {
   readonly type: Chunk<this['A']>

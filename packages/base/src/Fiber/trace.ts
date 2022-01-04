@@ -1,9 +1,9 @@
-import type { Stack } from '../util/support/Stack'
+import type { Stack } from '../internal/Stack'
 import type { FiberId } from './FiberId'
 
+import { makeStack } from '../internal/Stack'
 import * as L from '../List/core'
 import * as M from '../Maybe'
-import { makeStack } from '../util/support/Stack'
 import { prettyFiberId } from './FiberId'
 
 export type TraceElement = NoLocation | SourceLocation
@@ -106,7 +106,7 @@ export function prettyTrace(trace: Trace): string {
       '',
       ...execPrint,
       '',
-      `Fiber ${prettyFiberId(trace.fiberId)} was spawned by:`,
+      `Fiber ${prettyFiberId(trace.fiberId)} was spawned by:`
     ])
   }
 

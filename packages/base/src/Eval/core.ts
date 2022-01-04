@@ -1,9 +1,9 @@
+import type { Stack } from '../internal/Stack'
 import type { _A } from '../prelude'
-import type { Stack } from '../util/support/Stack'
 
 import { identity } from '../function'
+import { makeStack } from '../internal/Stack'
 import { tuple } from '../internal/tuple'
-import { makeStack } from '../util/support/Stack'
 
 export const EvalTypeId = Symbol.for('@principia/base/Eval')
 export type EvalTypeId = typeof EvalTypeId

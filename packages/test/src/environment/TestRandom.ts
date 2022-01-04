@@ -13,6 +13,7 @@ import { IllegalArgumentError } from '@principia/base/Error'
 import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import { intersect } from '@principia/base/HeterogeneousRecord'
+import { ImmutableQueue } from '@principia/base/internal/ImmutableQueue'
 import * as I from '@principia/base/IO'
 import * as L from '@principia/base/Layer'
 import * as Li from '@principia/base/List'
@@ -20,7 +21,6 @@ import * as M from '@principia/base/Maybe'
 import { RandomTag } from '@principia/base/Random'
 import * as Ref from '@principia/base/Ref'
 import { Mash } from '@principia/base/util/Mash'
-import { ImmutableQueue } from '@principia/base/util/support/ImmutableQueue'
 
 const TestRandomTag = tag<TestRandom>()
 

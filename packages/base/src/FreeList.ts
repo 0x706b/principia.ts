@@ -1,7 +1,7 @@
-import type { Stack } from './util/support/Stack'
+import type { Stack } from './internal/Stack'
 
+import { makeStack } from './internal/Stack'
 import * as P from './prelude'
-import { makeStack } from './util/support/Stack'
 
 /*
  * -------------------------------------------------------------------------------------------------

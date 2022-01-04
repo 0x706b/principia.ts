@@ -22,12 +22,12 @@ import type * as https from 'https'
 import * as Fi from '@principia/base/Fiber'
 import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
+import { AtomicBoolean } from '@principia/base/internal/AtomicBoolean'
 import * as IO from '@principia/base/IO'
 import { defaultPrettyPrint, halted } from '@principia/base/IO/Cause'
 import * as L from '@principia/base/Layer'
 import * as Ma from '@principia/base/Managed'
 import * as Supervisor from '@principia/base/Supervisor'
-import { AtomicBoolean } from '@principia/base/util/support/AtomicBoolean'
 import fastify from 'fastify'
 
 export class NodeServerCloseError {

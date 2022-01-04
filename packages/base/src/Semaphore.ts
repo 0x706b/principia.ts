@@ -6,12 +6,12 @@ import * as E from './Either'
 import { IllegalArgumentError } from './Error'
 import { pipe } from './function'
 import * as F from './Future'
+import { ImmutableQueue } from './internal/ImmutableQueue'
 import { bracket_ } from './IO/combinators/bracket'
 import * as I from './IO/core'
 import * as Ma from './Managed/core'
 import * as M from './Maybe'
 import * as Ref from './Ref/core'
-import { ImmutableQueue } from './util/support/ImmutableQueue'
 
 export type Entry = [Future<never, void>, number]
 export type State = Either<ImmutableQueue<Entry>, number>

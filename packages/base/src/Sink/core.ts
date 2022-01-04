@@ -8,12 +8,12 @@ import { Clock } from '../Clock'
 import * as E from '../Either'
 import { flow, pipe } from '../function'
 import * as H from '../Hub'
+import { AtomicReference } from '../internal/AtomicReference'
 import * as I from '../IO'
 import * as Ex from '../IO/Exit'
 import * as Ma from '../Managed'
 import * as M from '../Maybe'
 import { tuple } from '../tuple/core'
-import { AtomicReference } from '../util/support/AtomicReference'
 
 /**
  * Sink is a data type that represent a channel that reads elements
