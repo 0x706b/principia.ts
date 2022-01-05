@@ -46,9 +46,9 @@ import type { Newtype } from '@principia/base/Newtype'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 
 import * as A from '@principia/base/Array'
+import { HashMap } from '@principia/base/collection/mutable/HashMap'
 import { pipe, unsafeCoerce } from '@principia/base/function'
 import * as M from '@principia/base/Maybe'
-import * as MHM from '@principia/base/MutableHashMap'
 import * as NA from '@principia/base/NonEmptyArray'
 import * as R from '@principia/base/Record'
 
@@ -134,7 +134,7 @@ export type Interpreter = (
   interpreters: ReadonlyArray<Interpreter>
 ) => <U extends URIS>(S: Schemable<U>) => <U1 extends URIS>(schema: AnySOf<U1>) => M.Maybe<AnyKind<U>>
 
-const CACHE = MHM.hashMap<URIS, WeakMap<AnyS, any>>()
+const CACHE = new Map<URIS, WeakMap<AnyS, any>>()
 
 export const defaultInterpreter: Interpreter =
   (interpreters) =>
@@ -345,14 +345,13 @@ export const defaultInterpreter: Interpreter =
 
 export function makeTo(...interpreters: ReadonlyArray<Interpreter>) {
   return <U extends URIS>(S: Schemable<U>) => {
-    const map: WeakMap<AnyS, AnyKind<U>> = pipe(
-      CACHE.get(S.URI),
-      M.getOrElse(() => {
-        const m = new WeakMap<AnyS, AnyKind<any>>()
-        CACHE.set(S.URI, m)
-        return m
-      })
-    )
+    let map: WeakMap<AnyS, AnyKind<U>>
+    if (CACHE.has(S.URI)) {
+      map = CACHE.get(S.URI)!
+    } else {
+      map = new WeakMap()
+      CACHE.set(S.URI, map)
+    }
     return <U1 extends URIS, In, CIn, Err, CErr, Type, Out, Api>(
       schema: U extends U1 ? Schema<U1, In, CIn, Err, CErr, Type, Out, Api> : never
     ): Kind<U, In, CIn, Err, CErr, Type, Out> => {

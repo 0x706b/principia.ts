@@ -12,13 +12,13 @@ import type { Eq, Predicate, PredicateWithIndex, Refinement, RefinementWithIndex
 
 import * as A from '@principia/base/Array'
 import * as Ca from '@principia/base/Cause'
+import { HashSet } from '@principia/base/collection/mutable/HashSet'
 import * as E from '@principia/base/Either'
 import * as Ex from '@principia/base/Exit'
 import * as Fi from '@principia/base/Fiber'
 import { flow, identity, pipe } from '@principia/base/function'
 import * as IO from '@principia/base/IO'
 import * as M from '@principia/base/Maybe'
-import * as HS from '@principia/base/MutableHashSet'
 import { tuple } from '@principia/base/tuple'
 import { isFunction, isIterable, isObject } from '@principia/base/util/predicates'
 
@@ -2750,12 +2750,12 @@ export function unique_<E, A, K, E1 = never>(
   flushes?: Observable<E1, any>
 ): Observable<E | E1, A> {
   return operate_(fa, (source, subscriber) => {
-    let distinctKeys = new HS.HashSet<A | K>()
+    let distinctKeys = HashSet.empty<A | K>()
     source.subscribe(
       operatorSubscriber(subscriber, {
         next: (value) => {
           const key = toKey ? toKey(value) : value
-          if (!distinctKeys.contains(key)) {
+          if (!distinctKeys.has(key)) {
             distinctKeys.add(key)
             subscriber.next(value)
           }
@@ -2763,7 +2763,7 @@ export function unique_<E, A, K, E1 = never>(
       })
     )
     flushes?.subscribe(
-      operatorSubscriber(subscriber, { next: () => (distinctKeys = new HS.HashSet<A>()), complete: noop })
+      operatorSubscriber(subscriber, { next: () => (distinctKeys = HashSet.empty<A>()), complete: noop })
     )
   })
 }

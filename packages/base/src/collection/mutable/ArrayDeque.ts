@@ -15,8 +15,8 @@
 import { IndexOutOfBoundsError } from '../../Error'
 import * as M from '../../Maybe'
 
-export const STABLE_SIZE          = 128
-export const DEFAULT_INITIAL_SIZE = 16
+const STABLE_SIZE          = 128
+const DEFAULT_INITIAL_SIZE = 16
 
 export class ArrayDeque<A> {
   constructor(protected array: Array<A>, private start: number, private end: number) {}
