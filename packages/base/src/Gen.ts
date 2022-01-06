@@ -1,8 +1,8 @@
 import type * as HKT from './HKT'
 import type * as P from './prelude'
 
+import * as L from './collection/immutable/List'
 import { PrematureGeneratorExitError } from './Error'
-import * as L from './List/core'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -143,7 +143,7 @@ export function genWithHistoryF<F>(
       function run(replayStack: L.List<any>): HKT.FK1<F, AEff> {
         const iterator = f((config?.adapter ? config.adapter : lazyAdapter) as any)
         let state      = iterator.next()
-        L.forEach_(replayStack, (a) => {
+        L.forEach_(L.reverse(replayStack), (a) => {
           if (state.done) {
             throw new PrematureGeneratorExitError('GenHKT.genWithHistoryF')
           }
@@ -153,10 +153,10 @@ export function genWithHistoryF<F>(
           return F.pure(state.value)
         }
         return F.chain_(state.value.T(), (val) => {
-          return run(L.append_(replayStack, val))
+          return run(L.prepend_(replayStack, val))
         })
       }
-      return run(L.empty())
+      return run(L.nil())
     })
   }
 }

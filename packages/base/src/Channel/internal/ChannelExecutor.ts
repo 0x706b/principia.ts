@@ -7,9 +7,9 @@ import type { List } from '../../List'
 import type { ChannelState } from './ChannelState'
 import type * as UPS from './UpstreamPullStrategy'
 
+import * as Q from '../../collection/immutable/Queue'
 import * as F from '../../Fiber'
 import { constVoid, identity, pipe } from '../../function'
-import { ImmutableQueue } from '../../internal/ImmutableQueue'
 import { makeStack } from '../../internal/Stack'
 import * as I from '../../IO'
 import * as Ex from '../../IO/Exit'
@@ -47,7 +47,7 @@ class PullFromUpstream<R> {
     readonly upstreamExecutor: ErasedExecutor<R>,
     readonly createChild: (_: any) => ErasedChannel<R>,
     readonly lastDone: any,
-    readonly activeChildExecutors: ImmutableQueue<PullFromChild<R> | null>,
+    readonly activeChildExecutors: Q.Queue<PullFromChild<R> | null>,
     readonly combineChildResults: (x: any, y: any) => any,
     readonly combineWithChildResult: (x: any, y: any) => any,
     readonly onPull: (_: UPR.UpstreamPullRequest<any>) => UPS.UpstreamPullStrategy<any>,
@@ -55,24 +55,29 @@ class PullFromUpstream<R> {
   ) {}
   close(ex: Ex.Exit<any, any>): I.URIO<R, Ex.Exit<any, any>> | null {
     const fin1 = this.upstreamExecutor.close(ex)
-    const fins = this.activeChildExecutors
-      .map((child) => (child !== null ? child.childExecutor.close(ex) : null))
-      .enqueue(fin1)
-    return fins.foldl(null as I.URIO<R, Exit<any, any>> | null, (acc, next): I.URIO<R, Exit<any, any>> | null => {
-      if (acc === null) {
-        if (next === null) {
-          return null
+    const fins = pipe(
+      this.activeChildExecutors,
+      Q.map((child) => (child !== null ? child.childExecutor.close(ex) : null)),
+      Q.enqueue(fin1)
+    )
+    return pipe(
+      fins,
+      Q.foldl(null as I.URIO<R, Exit<any, any>> | null, (acc, next): I.URIO<R, Exit<any, any>> | null => {
+        if (acc === null) {
+          if (next === null) {
+            return null
+          } else {
+            return I.result(next)
+          }
         } else {
-          return I.result(next)
+          if (next === null) {
+            return acc
+          } else {
+            return I.crossWith_(acc, I.result(next), Ex.apSecond_)
+          }
         }
-      } else {
-        if (next === null) {
-          return acc
-        } else {
-          return I.crossWith_(acc, I.result(next), Ex.apSecond_)
-        }
-      }
-    })
+      })
+    )
   }
 
   enqueuePullFromChild(child: PullFromChild<R>): Subexecutor<R> {
@@ -80,7 +85,7 @@ class PullFromUpstream<R> {
       this.upstreamExecutor,
       this.createChild,
       this.lastDone,
-      this.activeChildExecutors.enqueue(child),
+      pipe(this.activeChildExecutors, Q.enqueue(child)),
       this.combineChildResults,
       this.combineWithChildResult,
       this.onPull,
@@ -125,7 +130,7 @@ class DrainChildExecutors<R> {
   constructor(
     readonly upstreamExecutor: ErasedExecutor<R>,
     readonly lastDone: any,
-    readonly activeChildExecutors: ImmutableQueue<PullFromChild<R> | null>,
+    readonly activeChildExecutors: Q.Queue<PullFromChild<R> | null>,
     readonly upstreamDone: Ex.Exit<any, any>,
     readonly combineChildResults: (x: any, y: any) => any,
     readonly combineWithChildResult: (x: any, y: any) => any,
@@ -134,31 +139,36 @@ class DrainChildExecutors<R> {
 
   close(ex: Ex.Exit<any, any>): I.URIO<R, Ex.Exit<any, any>> | null {
     const fin1 = this.upstreamExecutor.close(ex)
-    const fins = this.activeChildExecutors
-      .map((child) => (child !== null ? child.childExecutor.close(ex) : null))
-      .enqueue(fin1)
-    return fins.foldl(null as I.URIO<R, Exit<any, any>> | null, (acc, next): I.URIO<R, Exit<any, any>> | null => {
-      if (acc === null) {
-        if (next === null) {
-          return null
+    const fins = pipe(
+      this.activeChildExecutors,
+      Q.map((child) => (child !== null ? child.childExecutor.close(ex) : null)),
+      Q.enqueue(fin1)
+    )
+    return pipe(
+      fins,
+      Q.foldl(null as I.URIO<R, Exit<any, any>> | null, (acc, next): I.URIO<R, Exit<any, any>> | null => {
+        if (acc === null) {
+          if (next === null) {
+            return null
+          } else {
+            return I.result(next)
+          }
         } else {
-          return I.result(next)
+          if (next === null) {
+            return acc
+          } else {
+            return I.crossWith_(acc, I.result(next), Ex.apSecond_)
+          }
         }
-      } else {
-        if (next === null) {
-          return acc
-        } else {
-          return I.crossWith_(acc, I.result(next), Ex.apSecond_)
-        }
-      }
-    })
+      })
+    )
   }
 
   enqueuePullFromChild(child: PullFromChild<R>): Subexecutor<R> {
     return new DrainChildExecutors(
       this.upstreamExecutor,
       this.lastDone,
-      this.activeChildExecutors.enqueue(child),
+      pipe(this.activeChildExecutors, Q.enqueue(child)),
       this.upstreamDone,
       this.combineChildResults,
       this.combineWithChildResult,
@@ -472,7 +482,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
                 exec,
                 currentChannel.k,
                 null,
-                ImmutableQueue.empty(),
+                Q.empty(),
                 currentChannel.combineInners,
                 currentChannel.combineAll,
                 currentChannel.onPull,
@@ -698,20 +708,20 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
 
   private applyUpstreamPullStrategy(
     upstreamFinished: boolean,
-    queue: ImmutableQueue<PullFromChild<Env> | null>,
+    queue: Q.Queue<PullFromChild<Env> | null>,
     strategy: UPS.UpstreamPullStrategy<any>
-  ): readonly [M.Maybe<any>, ImmutableQueue<PullFromChild<Env> | null>] {
+  ): readonly [M.Maybe<any>, Q.Queue<PullFromChild<Env> | null>] {
     switch (strategy._tag) {
       case 'PullAfterNext': {
         return [
           strategy.emitSeparator,
-          !upstreamFinished || queue.exists((_) => _ !== null) ? queue.prepend(null) : queue
+          !upstreamFinished || Q.exists_(queue, (_) => _ !== null) ? Q.prepend_(queue, null) : queue
         ]
       }
       case 'PullAfterAllEnqueued': {
         return [
           strategy.emitSeparator,
-          !upstreamFinished || queue.exists((_) => _ !== null) ? queue.enqueue(null) : queue
+          !upstreamFinished || Q.exists_(queue, (_) => _ !== null) ? Q.enqueue_(queue, null) : queue
         ]
       }
     }
@@ -719,7 +729,8 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
 
   private pullFromUpstream(subexec: PullFromUpstream<Env>): ChannelState<Env, any> | null {
     return pipe(
-      subexec.activeChildExecutors.dequeue(),
+      subexec.activeChildExecutors,
+      Q.dequeue,
       M.match(
         () => this.performPullFromUpstream(subexec),
         ([activeChild, rest]) => {
@@ -841,11 +852,11 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
         }
       },
       (exit) => {
-        if (subexec.activeChildExecutors.exists((_) => _ !== null)) {
+        if (Q.exists_(subexec.activeChildExecutors, (_) => _ !== null)) {
           const drain = new DrainChildExecutors(
             subexec.upstreamExecutor,
             subexec.lastDone,
-            subexec.activeChildExecutors.enqueue(null),
+            pipe(subexec.activeChildExecutors, Q.enqueue(null)),
             subexec.upstreamExecutor.getDone(),
             subexec.combineChildResults,
             subexec.combineWithChildResult,
@@ -885,7 +896,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
 
   private drainChildExecutors(subexec: DrainChildExecutors<Env>): ChannelState<Env, any> | null {
     return pipe(
-      subexec.activeChildExecutors.dequeue(),
+      Q.dequeue(subexec.activeChildExecutors),
       M.match(
         () => {
           const lastClose = this.closeLastSubstream
@@ -903,7 +914,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
             const [emitSeparator, remainingExecutors] = this.applyUpstreamPullStrategy(
               true,
               rest,
-              subexec.onPull(new UPR.NoUpstream(rest.count((_) => _ !== null)))
+              subexec.onPull(new UPR.NoUpstream(Q.count_(rest, (_) => _ !== null)))
             )
             this.replaceSubexecutor(
               new DrainChildExecutors(

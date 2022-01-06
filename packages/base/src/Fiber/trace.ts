@@ -1,8 +1,8 @@
-import type { Stack } from '../internal/Stack'
 import type { FiberId } from './FiberId'
 
-import { makeStack } from '../internal/Stack'
-import * as L from '../List/core'
+import * as L from '../collection/immutable/List'
+import * as Ev from '../Eval'
+import { pipe } from '../function'
 import * as M from '../Maybe'
 import { prettyFiberId } from './FiberId'
 
@@ -43,19 +43,23 @@ function ancestryLength(trace: Trace): number {
 }
 
 export function parents(trace: Trace): L.List<Trace> {
-  const pushable = L.emptyPushable<Trace>()
-  let parent     = M.toUndefined(trace.parentTrace)
+  let pushable = L.nil<Trace>()
+  let parent   = M.toUndefined(trace.parentTrace)
   while (parent != null) {
-    L.push(parent, pushable)
-    parent = M.toUndefined(parent.parentTrace)
+    pushable = L.prepend_(pushable, parent)
+    parent   = M.toUndefined(parent.parentTrace)
   }
   return pushable
 }
 
 export function truncatedParentTrace(trace: Trace, maxAncestors: number): M.Maybe<Trace> {
   if (ancestryLength(trace) > maxAncestors) {
-    return L.foldr_(L.take_(parents(trace), maxAncestors), M.nothing() as M.Maybe<Trace>, (trace, parent) =>
-      M.just(new Trace(trace.fiberId, trace.executionTrace, trace.stackTrace, parent))
+    return pipe(
+      parents(trace),
+      L.take(maxAncestors),
+      L.foldl(M.nothing<Trace>(), (parent, trace) =>
+        M.just(new Trace(trace.fiberId, trace.executionTrace, trace.stackTrace, parent))
+      )
     )
   } else {
     return trace.parentTrace
@@ -67,20 +71,11 @@ export function prettyLocation(traceElement: TraceElement) {
 }
 
 export function prettyTrace(trace: Trace): string {
-  let stack: Stack<Trace> | undefined = undefined
-  let current: Trace | null           = trace
-  while (current) {
-    stack = makeStack(current, stack)
-    if (M.isJust(current.parentTrace)) {
-      current = current.parentTrace.value
-    } else {
-      current = null
-    }
-  }
-  let traces: L.List<Array<string>> = L.emptyPushable()
-  while (stack) {
-    const trace      = stack.value
-    stack            = stack.previous
+  return Ev.run(prettyTraceEval(trace))
+}
+
+export function prettyTraceEval(trace: Trace): Ev.Eval<string> {
+  return Ev.gen(function* (_) {
     const execTrace  = !L.isEmpty(trace.executionTrace)
     const stackTrace = !L.isEmpty(trace.stackTrace)
 
@@ -88,7 +83,7 @@ export function prettyTrace(trace: Trace): string {
       ? [
           `Fiber: ${prettyFiberId(trace.fiberId)} Execution trace:`,
           '',
-          ...L.toArray(L.map_(trace.executionTrace, (a) => `  ${prettyLocation(a)}`))
+          ...L.reverse(L.map_(trace.executionTrace, (a) => `  ${prettyLocation(a)}`))
         ]
       : [`Fiber: ${prettyFiberId(trace.fiberId)} Execution trace: <empty trace>`]
 
@@ -96,25 +91,17 @@ export function prettyTrace(trace: Trace): string {
       ? [
           `Fiber: ${prettyFiberId(trace.fiberId)} was supposed to continue to:`,
           '',
-          ...L.toArray(L.map_(trace.stackTrace, (e) => `  a future continuation at ${prettyLocation(e)}`))
+          ...L.reverse(L.map_(trace.stackTrace, (e) => `  a future continuation at ${prettyLocation(e)}`))
         ]
       : [`Fiber: ${prettyFiberId(trace.fiberId)} was supposed to continue to: <empty trace>`]
 
-    traces = L.prepend_(traces, [
-      '',
-      ...stackPrint,
-      '',
-      ...execPrint,
-      '',
-      `Fiber ${prettyFiberId(trace.fiberId)} was spawned by:`
-    ])
-  }
+    const parent = trace.parentTrace
 
-  return L.ifoldl_(traces, '' as string, (index, acc, trace) => {
-    if (L.get_(traces, index + 1)._tag === 'Nothing') {
-      return acc + `${trace.join('\n')} <empty trace>`
-    } else {
-      return acc + `${trace.join('\n')}\n`
-    }
+    const ancestry =
+      parent._tag === 'Nothing'
+        ? [`Fiber: ${prettyFiberId(trace.fiberId)} was spawned by: <empty trace>`]
+        : [`Fiber: ${prettyFiberId(trace.fiberId)} was spawned by:\n`, yield* _(prettyTraceEval(parent.value))]
+
+    return ['', ...stackPrint, '', ...execPrint, '', ...ancestry].join('\n')
   })
 }

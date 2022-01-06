@@ -6,12 +6,12 @@ import type * as HKT from './HKT'
 
 import * as A from './Array/core'
 import * as B from './boolean'
+import * as L from './collection/immutable/List'
 import * as E from './Either'
 import * as Ev from './Eval'
 import { flow, hole, identity, pipe } from './function'
 import * as HS from './HashSet'
 import { LinkedList, LinkedListNode } from './internal/LinkedList'
-import * as L from './List/core'
 import * as P from './prelude'
 import * as Eq from './Structural/Equatable'
 import * as Ha from './Structural/Hashable'
@@ -899,7 +899,7 @@ function stepLoop<A>(
           return tuple(parallel, sequential)
         } else {
           fa    = L.unsafeHead(stack)!
-          stack = L.tail(stack)
+          stack = L.unsafeTail(stack)
         }
         break
       }
@@ -936,7 +936,7 @@ function stepLoop<A>(
           return tuple(HS.add_(parallel, fa), sequential)
         } else {
           fa       = L.unsafeHead(stack)!
-          stack    = L.tail(stack)
+          stack    = L.unsafeTail(stack)
           parallel = HS.add_(parallel, fa)
           break
         }
@@ -948,7 +948,7 @@ function stepLoop<A>(
 }
 
 function step<A>(fa: FreeSemiring<any, A>): readonly [HashSet<FreeSemiring<any, A>>, L.List<FreeSemiring<any, A>>] {
-  return stepLoop(fa, L.empty(), HS.makeDefault(), L.empty())
+  return stepLoop(fa, L.nil(), HS.makeDefault(), L.nil())
 }
 
 function flattenLoop<A>(
@@ -959,7 +959,7 @@ function flattenLoop<A>(
   while (1) {
     const [parallel, sequential] = L.foldl_(
       fas,
-      tuple(HS.makeDefault<FreeSemiring<any, A>>(), L.empty<FreeSemiring<any, A>>()),
+      tuple(HS.makeDefault<FreeSemiring<any, A>>(), L.nil<FreeSemiring<any, A>>()),
       ([parallel, sequential], fa) => {
         const [set, seq] = step(fa)
         return tuple(HS.union_(parallel, set), L.concat_(sequential, seq))
@@ -979,7 +979,7 @@ function flattenLoop<A>(
 }
 
 function flat<A>(fa: FreeSemiring<any, A>): L.List<HashSet<FreeSemiring<any, A>>> {
-  return flattenLoop(L.single(fa), L.empty())
+  return flattenLoop(L.cons(fa), L.nil())
 }
 
 function hashCode<A>(fa: FreeSemiring<any, A>): number {

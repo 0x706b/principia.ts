@@ -1,26 +1,26 @@
 import type { Trace } from '../Fiber/Trace'
 import type { HashSet } from '../HashSet'
+import type { Stack } from '../internal/Stack'
 import type { Predicate } from '../Predicate'
 import type * as P from '../prelude'
 import type { Equatable, Hashable } from '../Structural'
-import type { Stack } from '../internal/Stack'
 
 import * as A from '../Array/core'
 import * as B from '../boolean'
+import * as L from '../collection/immutable/List'
 import * as E from '../Either'
 import { Eq, makeEq } from '../Eq'
 import * as Ev from '../Eval'
 import { InterruptedException } from '../Exception'
 import { flow, hole, identity, pipe } from '../function'
 import * as HS from '../HashSet'
-import * as L from '../List/core'
+import { makeStack } from '../internal/Stack'
 import * as M from '../Maybe'
 import { tailRec_ } from '../prelude'
 import * as Equ from '../Structural/Equatable'
 import * as Ha from '../Structural/Hashable'
 import { tuple } from '../tuple/core'
 import { isObject } from '../util/predicates'
-import { makeStack } from '../internal/Stack'
 
 export const CauseTypeId = Symbol.for('@principia/base/Cause')
 export type CauseTypeId = typeof CauseTypeId
@@ -2115,7 +2115,7 @@ function stepLoop<Id, A>(
           return tuple(parallel, sequential)
         } else {
           cause = L.unsafeHead(stack)!
-          stack = L.tail(stack)
+          stack = L.unsafeTail(stack)
         }
         break
       }
@@ -2160,7 +2160,7 @@ function stepLoop<Id, A>(
           return tuple(HS.add_(parallel, cause), sequential)
         } else {
           cause    = L.unsafeHead(stack)!
-          stack    = L.tail(stack)
+          stack    = L.unsafeTail(stack)
           parallel = HS.add_(parallel, cause)
           break
         }
@@ -2172,7 +2172,7 @@ function stepLoop<Id, A>(
 }
 
 function step<Id, A>(cause: PCause<Id, A>): readonly [HashSet<PCause<Id, A>>, L.List<PCause<Id, A>>] {
-  return stepLoop(cause, L.empty(), HS.makeDefault(), L.empty())
+  return stepLoop(cause, L.nil(), HS.makeDefault(), L.nil())
 }
 
 function flattenLoop<Id, A>(
@@ -2183,7 +2183,7 @@ function flattenLoop<Id, A>(
   while (1) {
     const [parallel, sequential] = L.foldl_(
       causes,
-      tuple(HS.makeDefault<PCause<Id, A>>(), L.empty<PCause<Id, A>>()),
+      tuple(HS.makeDefault<PCause<Id, A>>(), L.nil<PCause<Id, A>>()),
       ([parallel, sequential], cause) => {
         const [set, seq] = step(cause)
         return tuple(HS.union_(parallel, set), L.concat_(sequential, seq))
@@ -2203,7 +2203,7 @@ function flattenLoop<Id, A>(
 }
 
 function flat<Id, A>(cause: PCause<Id, A>): L.List<HashSet<PCause<Id, A>>> {
-  return flattenLoop(L.single(cause), L.empty())
+  return flattenLoop(L.cons(cause), L.nil())
 }
 
 function hashCode<Id, A>(cause: PCause<Id, A>): number {

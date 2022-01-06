@@ -9,11 +9,11 @@ import type { ArrayInt } from '@principia/base/util/pure-rand/distribution/inter
 
 import { Byte } from '@principia/base/Byte'
 import { ClockTag } from '@principia/base/Clock'
+import * as Q from '@principia/base/collection/immutable/Queue'
 import { IllegalArgumentError } from '@principia/base/Error'
 import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import { intersect } from '@principia/base/HeterogeneousRecord'
-import { ImmutableQueue } from '@principia/base/internal/ImmutableQueue'
 import * as I from '@principia/base/IO'
 import * as L from '@principia/base/Layer'
 import * as Li from '@principia/base/List'
@@ -60,7 +60,7 @@ export class TestRandom implements Random {
     const newSeed = mash(seed)
     const seed1   = Math.floor(newSeed >>> 24)
     const seed2   = Math.floor(newSeed) & ((1 << 24) - 1)
-    return this.randomState.set(new Data(seed1, seed2, new ImmutableQueue(Li.empty())))
+    return this.randomState.set(new Data(seed1, seed2, Q.empty()))
   }
 
   private bufferedBoolean = (buffer: Buffer): readonly [Maybe<boolean>, Buffer] => {
@@ -312,7 +312,7 @@ class Data {
   constructor(
     readonly seed1: number,
     readonly seed2: number,
-    readonly nextNextGaussians: ImmutableQueue<number> = new ImmutableQueue(Li.empty())
+    readonly nextNextGaussians: Q.Queue<number> = Q.empty()
   ) {}
 }
 

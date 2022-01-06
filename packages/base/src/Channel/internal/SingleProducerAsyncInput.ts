@@ -4,10 +4,10 @@ import type { Cause } from '../../IO/Cause'
 import type { Exit } from '../../IO/Exit'
 import type { AsyncInputConsumer, AsyncInputProducer } from './producer'
 
+import * as Q from '../../collection/immutable/Queue'
 import * as E from '../../Either'
 import { pipe } from '../../function'
 import * as F from '../../Future'
-import { ImmutableQueue } from '../../internal/ImmutableQueue'
 import * as T from '../../IO'
 import * as Ca from '../../IO/Cause'
 import * as Ex from '../../IO/Exit'
@@ -48,7 +48,7 @@ export class StateEmpty {
 
 export class StateEmit<Err, Elem, Done> {
   readonly _stateTag: StateEmitTag = StateTag.Emit
-  constructor(readonly notifyConsumers: ImmutableQueue<F.Future<Err, E.Either<Done, Elem>>>) {}
+  constructor(readonly notifyConsumers: Q.Queue<F.Future<Err, E.Either<Done, Elem>>>) {}
 }
 
 export type State<Err, Elem, Done> = StateEmpty | StateEmit<Err, Elem, Done> | StateError<Err> | StateDone<Done>
@@ -79,14 +79,14 @@ export class SingleProducerAsyncInput<Err, Elem, Done>
         Ref.modify_(this.ref, (state) => {
           switch (state._stateTag) {
             case StateTag.Emit: {
-              const x = state.notifyConsumers.dequeue()
+              const x = Q.dequeue(state.notifyConsumers)
               if (M.isNothing(x)) {
                 return tuple(T.unit(), new StateEmpty(p))
               } else {
                 const [notifyConsumer, notifyConsumers] = x.value
                 return tuple(
                   F.succeed_(notifyConsumer, E.right(el)),
-                  notifyConsumers.size === 0 ? new StateEmpty(p) : new StateEmit(notifyConsumers)
+                  Q.length(notifyConsumers) === 0 ? new StateEmpty(p) : new StateEmit(notifyConsumers)
                 )
               }
             }
@@ -155,7 +155,7 @@ export class SingleProducerAsyncInput<Err, Elem, Done>
             case StateTag.Emit: {
               return tuple(
                 pipe(F.await(p), T.matchCause(onError, E.match(onDone, onElement))),
-                new StateEmit(state.notifyConsumers.enqueue(p))
+                new StateEmit(Q.enqueue_(state.notifyConsumers, p))
               )
             }
             case StateTag.Error: {
@@ -171,7 +171,7 @@ export class SingleProducerAsyncInput<Err, Elem, Done>
                   F.succeed<void>(undefined),
                   T.apSecond(pipe(F.await(p), T.matchCause(onError, E.match(onDone, onElement))))
                 ),
-                new StateEmit(ImmutableQueue.single(p))
+                new StateEmit(Q.single(p))
               )
             }
           }

@@ -2,11 +2,11 @@ import type { Either } from './Either'
 import type { Future } from './Future'
 import type { URef } from './Ref/core'
 
+import * as Q from './collection/immutable/Queue'
 import * as E from './Either'
 import { IllegalArgumentError } from './Error'
 import { pipe } from './function'
 import * as F from './Future'
-import { ImmutableQueue } from './internal/ImmutableQueue'
 import { bracket_ } from './IO/combinators/bracket'
 import * as I from './IO/core'
 import * as Ma from './Managed/core'
@@ -14,7 +14,7 @@ import * as M from './Maybe'
 import * as Ref from './Ref/core'
 
 export type Entry = [Future<never, void>, number]
-export type State = Either<ImmutableQueue<Entry>, number>
+export type State = Either<Q.Queue<Entry>, number>
 
 export class Acquisition {
   constructor(readonly waitAcquire: I.UIO<void>, readonly release: I.UIO<void>) {}
@@ -49,15 +49,15 @@ export class Semaphore {
       }
       case 'Left': {
         return M.match_(
-          state.left.dequeue(),
-          (): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [acc, E.right(n)],
-          ([[p, m], q]): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => {
+          Q.dequeue(state.left),
+          (): [I.UIO<void>, E.Either<Q.Queue<Entry>, number>] => [acc, E.right(n)],
+          ([[p, m], q]): [I.UIO<void>, E.Either<Q.Queue<Entry>, number>] => {
             if (n > m) {
               return this.loop(n - m, E.left(q), I.apFirst_(acc, F.succeed_(p, undefined)))
             } else if (n === m) {
               return [I.apFirst_(acc, F.succeed_(p, undefined)), E.left(q)]
             } else {
-              return [acc, E.left(q.prepend([p, m - n]))]
+              return [acc, E.left(Q.prepend_(q, [p, m - n]))]
             }
           }
         )
@@ -84,14 +84,14 @@ export class Semaphore {
           E.match(
             (q) =>
               M.match_(
-                q.find(([a]) => a === p),
-                (): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [this.releaseN(n), E.left(q)],
-                (x): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [
+                Q.find_(q, ([a]) => a === p),
+                (): [I.UIO<void>, E.Either<Q.Queue<Entry>, number>] => [this.releaseN(n), E.left(q)],
+                (x): [I.UIO<void>, E.Either<Q.Queue<Entry>, number>] => [
                   this.releaseN(n - x[1]),
-                  E.left(q.filter(([a]) => a != p))
+                  E.left(Q.filter_(q, ([a]) => a != p))
                 ]
               ),
-            (m): [I.UIO<void>, E.Either<ImmutableQueue<Entry>, number>] => [I.unit(), E.right(n + m)]
+            (m): [I.UIO<void>, E.Either<Q.Queue<Entry>, number>] => [I.unit(), E.right(n + m)]
           )
         )
       )
@@ -107,15 +107,15 @@ export class Semaphore {
           this.state,
           Ref.modify(
             E.match(
-              (q): [Acquisition, E.Either<ImmutableQueue<Entry>, number>] => [
+              (q): [Acquisition, E.Either<Q.Queue<Entry>, number>] => [
                 new Acquisition(F.await(p), this.restore(p, n)),
-                E.left(q.enqueue([p, n]))
+                E.left(Q.enqueue_(q, [p, n]))
               ],
-              (m): [Acquisition, E.Either<ImmutableQueue<Entry>, number>] => {
+              (m): [Acquisition, E.Either<Q.Queue<Entry>, number>] => {
                 if (m >= n) {
                   return [new Acquisition(I.unit(), this.releaseN(n)), E.right(m - n)]
                 }
-                return [new Acquisition(F.await(p), this.restore(p, n)), E.left(ImmutableQueue.single([p, n - m]))]
+                return [new Acquisition(F.await(p), this.restore(p, n)), E.left(Q.single([p, n - m]))]
               }
             )
           )

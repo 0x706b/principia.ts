@@ -10,6 +10,7 @@ import type { TraceElement } from './Trace'
 
 import { traceAs } from '@principia/compile/util'
 
+import * as L from '../collection/immutable/List'
 import * as E from '../Either'
 import * as FR from '../FiberRef'
 import { constVoid, identity, pipe } from '../function'
@@ -37,7 +38,6 @@ import {
 } from '../IO/core'
 import * as Ex from '../IO/Exit/core'
 import { concrete, IOTag, isIOError, Succeed } from '../IO/primitives'
-import * as L from '../List/core'
 import * as M from '../Maybe'
 import * as Scope from '../Scope'
 import * as Super from '../Supervisor'
@@ -1106,13 +1106,13 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   private unsafeCaptureTrace(last: TraceElement | undefined): Trace {
-    let exec = L.empty<TraceElement>()
+    let exec = L.nil<TraceElement>()
     if (this.executionTraces) {
       this.executionTraces.forEach((el) => {
         exec = L.prepend_(exec, el)
       })
     }
-    let stack_ = L.empty<TraceElement>()
+    let stack_ = L.nil<TraceElement>()
     if (this.stackTraces) {
       this.stackTraces.forEach((el) => {
         L.prepend_(stack_, el)
