@@ -170,10 +170,7 @@ export function makeBounded<A>(capacity: number): I.UIO<UQueue<A>> {
  * -------------------------------------------------------------------------------------------------
  */
 
-function takeRemainingLoop<RA, RB, EA, EB, A, B>(
-  queue: Queue<RA, RB, EA, EB, A, B>,
-  n: number
-): I.IO<RB, EB, Conc<B>> {
+function takeRemainingLoop<RA, RB, EA, EB, A, B>(queue: Queue<RA, RB, EA, EB, A, B>, n: number): I.IO<RB, EB, Conc<B>> {
   concrete(queue)
   if (n <= 0) {
     return I.pure(C.empty())
@@ -905,13 +902,13 @@ class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A>
       if (this.shutdownFlag.get) {
         return I.interrupt
       } else {
-        const taker = this.takers.poll(undefined)
+        const taker = this.takers.dequeue(undefined)
 
         if (taker != null) {
           _unsafeCompletePromise(taker, a)
           return I.pure(true)
         } else {
-          const succeeded = this.queue.offer(a)
+          const succeeded = this.queue.enqueue(a)
 
           if (succeeded) {
             return I.pure(true)
@@ -980,7 +977,7 @@ class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A>
         return I.interrupt
       }
 
-      const item = this.queue.poll(undefined)
+      const item = this.queue.dequeue(undefined)
 
       if (item != null) {
         this.strategy.unsafeOnQueueEmptySpace(this.queue, this.takers)
@@ -990,7 +987,7 @@ class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A>
 
         return I.onInterrupt_(
           I.defer(() => {
-            this.takers.offer(p)
+            this.takers.enqueue(p)
             _unsafeCompleteTakers(this.strategy, this.queue, this.takers)
             if (this.shutdownFlag.get) {
               return I.interrupt
@@ -1050,7 +1047,7 @@ function _unsafeOfferAll<A>(q: MutableQueue<A>, as: Conc<A>): Conc<A> {
   let bs = as
 
   while (bs.length > 0) {
-    if (!q.offer(C.unsafeGet_(bs, 0))) {
+    if (!q.enqueue(C.unsafeGet_(bs, 0))) {
       return bs
     } else {
       bs = C.drop_(bs, 1)
@@ -1065,7 +1062,7 @@ function _unsafePollAll<A>(q: MutableQueue<A>): Conc<A> {
 
   while (!q.isEmpty) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    as = C.append_(as, q.poll(undefined)!)
+    as = C.append_(as, q.dequeue(undefined)!)
   }
 
   return as
@@ -1084,7 +1081,7 @@ function _unsafePollN<A>(q: MutableQueue<A>, max: number): Conc<A> {
   let as = C.empty<A>()
 
   while (j < max) {
-    const p = q.poll(undefined)
+    const p = q.dequeue(undefined)
 
     if (p != null) {
       as = C.append_(as, p)
@@ -1106,10 +1103,10 @@ function _unsafeCompleteTakers<A>(
   let keepPolling = true
 
   while (keepPolling && !queue.isEmpty) {
-    const taker = takers.poll(undefined)
+    const taker = takers.dequeue(undefined)
 
     if (taker != null) {
-      const element = queue.poll(undefined)
+      const element = queue.dequeue(undefined)
 
       if (element != null) {
         _unsafeCompletePromise(taker, element)
@@ -1192,9 +1189,9 @@ export class BackPressureStrategy<A> implements Strategy<A> {
       bs         = C.drop_(bs, 1)
 
       if (bs.length === 0) {
-        this.putters.offer([head, p, true])
+        this.putters.enqueue([head, p, true])
       } else {
-        this.putters.offer([head, p, false])
+        this.putters.enqueue([head, p, false])
       }
     }
   }
@@ -1203,10 +1200,10 @@ export class BackPressureStrategy<A> implements Strategy<A> {
     let keepPolling = true
 
     while (keepPolling && !queue.isFull) {
-      const putter = this.putters.poll(undefined)
+      const putter = this.putters.dequeue(undefined)
 
       if (putter != null) {
-        const offered = queue.offer(putter[0])
+        const offered = queue.enqueue(putter[0])
 
         if (offered && putter[2]) {
           _unsafeCompletePromise(putter[1], true)
@@ -1291,9 +1288,9 @@ export class SlidingStrategy<A> implements Strategy<A> {
         return
       }
       // poll 1 and retry
-      queue.poll(undefined)
+      queue.dequeue(undefined)
 
-      if (queue.offer(C.unsafeGet_(bs, 0))) {
+      if (queue.enqueue(C.unsafeGet_(bs, 0))) {
         bs = C.drop_(bs, 1)
       }
     }

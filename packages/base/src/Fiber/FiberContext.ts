@@ -570,13 +570,13 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
   private unsafeAddTrace(f: Function) {
     if (this.unsafeIsInTracingRegion && '$trace' in f) {
-      this.executionTraces!.offer(new SourceLocation(f['$trace']))
+      this.executionTraces!.enqueue(new SourceLocation(f['$trace']))
     }
   }
 
   private unsafeAddTraceValue(trace: string | undefined | TraceElement) {
     if (this.unsafeIsInTracingRegion && trace) {
-      this.executionTraces!.offer(typeof trace === 'string' ? new SourceLocation(trace) : trace)
+      this.executionTraces!.enqueue(typeof trace === 'string' ? new SourceLocation(trace) : trace)
     }
   }
 
@@ -667,7 +667,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
   private unsafePushStackFrame(k: Frame) {
     if (this.platform.traceStack && this.unsafeIsInTracingRegion) {
-      this.stackTraces!.offer(traceLocation(k.apply))
+      this.stackTraces!.enqueue(traceLocation(k.apply))
     }
     this.stack = makeStack(k, this.stack)
   }
@@ -697,7 +697,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   private unsafePopStackTrace() {
-    this.stackTraces!.poll(undefined)
+    this.stackTraces!.dequeue(undefined)
   }
 
   private unsafeAddSuppressedCause(cause: C.Cause<never>): void {

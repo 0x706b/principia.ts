@@ -7,11 +7,11 @@ import type * as HKT from './HKT'
 import * as A from './Array/core'
 import * as B from './boolean'
 import * as L from './collection/immutable/List'
+import { ListBuffer } from './collection/mutable/ListBuffer'
 import * as E from './Either'
 import * as Ev from './Eval'
 import { flow, hole, identity, pipe } from './function'
 import * as HS from './HashSet'
-import { LinkedList, LinkedListNode } from './internal/LinkedList'
 import * as P from './prelude'
 import * as Eq from './Structural/Equatable'
 import * as Ha from './Structural/Hashable'
@@ -186,13 +186,13 @@ function foldLoop<A, B>(
   onSingle: (a: A) => B,
   onThen: (l: B, r: B) => B,
   onBoth: (l: B, r: B) => B,
-  input: LinkedList<FreeSemiring<any, A>>,
-  output: LinkedList<E.Either<boolean, B>>
-): LinkedList<B> {
+  input: ListBuffer<FreeSemiring<any, A>>,
+  output: ListBuffer<E.Either<boolean, B>>
+): ListBuffer<B> {
   /* eslint-disable @typescript-eslint/no-non-null-assertion */
   for (;;) {
-    if (input.empty) {
-      return output.foldl(new LinkedList(), (acc, val) => {
+    if (input.isEmpty) {
+      return output.foldl(new ListBuffer(), (acc, val) => {
         if (val._tag === 'Right') {
           acc.prepend(val.right)
           return acc
@@ -211,29 +211,24 @@ function foldLoop<A, B>(
         }
       })
     } else {
-      const head    = input.head!.value!
-      const parSeqs = input.head!.next!
+      const head = input.unprepend()
       /* eslint-disable no-param-reassign */
       switch (head._tag) {
         case FreeSemiringTag.Empty: {
-          input = new LinkedList(parSeqs)
           output.prepend(E.right(onEmpty))
           break
         }
         case FreeSemiringTag.Single: {
-          input = new LinkedList(parSeqs)
           output.prepend(E.right(onSingle(head.value)))
           break
         }
         case FreeSemiringTag.Then: {
-          input = new LinkedList(parSeqs)
           input.prepend(head.right)
           input.prepend(head.left)
           output.prepend(E.left(false))
           break
         }
         case FreeSemiringTag.Both: {
-          input = new LinkedList(parSeqs)
           input.prepend(head.right)
           input.prepend(head.left)
           output.prepend(E.left(true))
@@ -262,9 +257,9 @@ export function fold_<Z, A, B>(
     singleCase,
     thenCase,
     bothCase,
-    new LinkedList<FreeSemiring<any, A>>(new LinkedListNode(fs)),
-    new LinkedList()
-  ).head!.value!
+    new ListBuffer<FreeSemiring<any, A>>().append(fs),
+    new ListBuffer()
+  ).unsafeHead
 }
 
 /**

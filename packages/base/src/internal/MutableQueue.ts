@@ -12,22 +12,18 @@ export abstract class MutableQueue<A> {
    */
   abstract readonly capacity: number
   /**
-   * A non-blocking enqueue.
-   *
    * @return whether the enqueue was successful or not.
    */
-  abstract offer(a: A): boolean
+  abstract enqueue(a: A): boolean
   /**
-   * A non-blocking enqueue.
-   *
    * @return elements that were not enqueued
    */
-  offerAll(as: Iterable<A>): Conc<A> {
+  enqueueAll(as: Iterable<A>): Conc<A> {
     let out      = C.empty<A>()
     let iterator = as[Symbol.iterator]()
     let result: IteratorResult<A>
     while (!(result = iterator.next()).done) {
-      if (!this.offer(result.value)) {
+      if (!this.enqueue(result.value)) {
         out = C.append_(out, result.value)
         break
       }
@@ -47,18 +43,18 @@ export abstract class MutableQueue<A> {
    * can always use `poll(undefined)`. Not the best, but reasonable price
    * to pay for lower heap churn.
    */
-  abstract poll(a: A): A
-  abstract poll(a: A | undefined): A | undefined
-  abstract poll(a: A | undefined): A | undefined
+  abstract dequeue(a: A): A
+  abstract dequeue(a: A | undefined): A | undefined
+  abstract dequeue(a: A | undefined): A | undefined
   /**
    * A non-blocking dequeue.
    *
    * @return an array of up to `n` elements
    */
-  pollUpTo(n: number): Conc<A> {
+  dequeueUpTo(n: number): Conc<A> {
     let result = C.empty<A>()
     for (let i = n; i > 0; i--) {
-      const a = this.poll(undefined)
+      const a = this.dequeue(undefined)
       if (a === undefined) {
         break
       }
@@ -84,7 +80,7 @@ export abstract class MutableQueue<A> {
 
   forEach(f: (a: A) => void): void {
     let a: A
-    while ((a = this.poll(undefined)!) !== undefined) {
+    while ((a = this.dequeue(undefined)!) !== undefined) {
       f(a)
     }
   }
@@ -107,7 +103,7 @@ export class OneElementMutableQueue<A> extends MutableQueue<A> {
     return this.isEmpty ? 0 : 1
   }
 
-  offer(a: A): boolean {
+  enqueue(a: A): boolean {
     if (this.isFull) {
       return false
     } else {
@@ -116,9 +112,9 @@ export class OneElementMutableQueue<A> extends MutableQueue<A> {
     }
   }
 
-  poll(a: A): A
-  poll(a: A | undefined): A | undefined
-  poll(a: A | undefined): A | undefined {
+  dequeue(a: A): A
+  dequeue(a: A | undefined): A | undefined
+  dequeue(a: A | undefined): A | undefined {
     if (this.isEmpty) {
       return a
     } else {
@@ -152,7 +148,7 @@ export class LinkedQueue<A> extends MutableQueue<A> {
   get isEmpty() {
     return this.size === 0
   }
-  offer(a: A): boolean {
+  enqueue(a: A): boolean {
     const newNode = new Node(a)
     if (this.size === 0) {
       this.head = newNode
@@ -162,9 +158,9 @@ export class LinkedQueue<A> extends MutableQueue<A> {
     this.size     += 1
     return true
   }
-  poll(def: A): A
-  poll(def: A | undefined): A | undefined
-  poll(def: A | undefined): A | undefined {
+  dequeue(def: A): A
+  dequeue(def: A | undefined): A | undefined
+  dequeue(def: A | undefined): A | undefined {
     if (this.size === 0) {
       return def
     }
@@ -197,7 +193,7 @@ export abstract class RingBuffer<A> extends MutableQueue<A> {
     return this.head
   }
 
-  offer(a: A): boolean {
+  enqueue(a: A): boolean {
     if (this.tail < this.head + this.capacity) {
       const curIdx     = this.posToIdx(this.tail, this.capacity)
       this.buf[curIdx] = a
@@ -208,9 +204,9 @@ export abstract class RingBuffer<A> extends MutableQueue<A> {
     }
   }
 
-  poll(def: A): A
-  poll(def: A | undefined): A | undefined
-  poll(def: A): A {
+  dequeue(def: A): A
+  dequeue(def: A | undefined): A | undefined
+  dequeue(def: A): A {
     if (this.head < this.tail) {
       const curIdx     = this.posToIdx(this.head, this.capacity)
       const deqElement = this.buf[curIdx]

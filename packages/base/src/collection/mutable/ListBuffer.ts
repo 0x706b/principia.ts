@@ -12,7 +12,7 @@
  * for more information regarding copyright ownership
  */
 
-import { IndexOutOfBoundsError } from '../../Error'
+import { IndexOutOfBoundsError, NoSuchElementError } from '../../Error'
 import * as L from '../immutable/List'
 
 export class ListBuffer<A> implements Iterable<A> {
@@ -32,6 +32,20 @@ export class ListBuffer<A> implements Iterable<A> {
     return this.len === 0
   }
 
+  get unsafeHead(): A {
+    if (this.isEmpty) {
+      throw new NoSuchElementError('head on empty ListBuffer')
+    }
+    return (this.first as L.Cons<A>).head
+  }
+
+  get unsafeTail(): L.List<A> {
+    if (this.isEmpty) {
+      throw new NoSuchElementError('tail on empty ListBuffer')
+    }
+    return (this.first as L.Cons<A>).tail
+  }
+
   append(elem: A): this {
     const last1 = new L.Cons(elem, L._Nil)
     if (this.len === 0) {
@@ -47,6 +61,16 @@ export class ListBuffer<A> implements Iterable<A> {
   prepend(elem: A): this {
     this.insert(0, elem)
     return this
+  }
+
+  unprepend(): A {
+    if (this.isEmpty) {
+      throw new NoSuchElementError('unprepend on empty ListBuffer')
+    }
+    const h    = (this.first as L.Cons<A>).head
+    this.first = (this.first as L.Cons<A>).tail
+    this.len  -= 1
+    return h
   }
 
   get toList(): L.List<A> {
@@ -70,6 +94,10 @@ export class ListBuffer<A> implements Iterable<A> {
       this.len += 1
     }
     return this
+  }
+
+  foldl<B>(b: B, f: (b: B, a: A) => B): B {
+    return L.foldl_(this.first, b, f)
   }
 
   private getNext(p: L.List<A> | undefined): L.List<A> {

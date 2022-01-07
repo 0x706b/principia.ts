@@ -464,7 +464,7 @@ class UnsafeSubscription<A> extends Q.QueueInternal<never, unknown, unknown, nev
 
           return I.onInterrupt_(
             I.defer(() => {
-              this.pollers.offer(future)
+              this.pollers.enqueue(future)
               this.subscribers.add(new HashedPair(this.subscription, this.pollers))
               this.strategy.unsafeCompletePollers(this.hub, this.subscribers, this.subscription, this.pollers)
               if (this.shutdownFlag.get) {
@@ -949,7 +949,7 @@ export abstract class Strategy<A> {
     const empty      = null as unknown as A
 
     while (keepPolling && !subscription.isEmpty()) {
-      const poller = pollers.poll(nullPoller)!
+      const poller = pollers.dequeue(nullPoller)!
 
       if (poller === nullPoller) {
         const subPollerPair = new HashedPair(subscription, pollers)
@@ -1046,7 +1046,7 @@ export class BackPressure<A> extends Strategy<A> {
     let keepPolling = true
 
     while (keepPolling && !hub.isFull()) {
-      const publisher = this.publishers.poll(empty)!
+      const publisher = this.publishers.dequeue(empty)!
 
       if (publisher === null) {
         keepPolling = false
@@ -1070,10 +1070,10 @@ export class BackPressure<A> extends Strategy<A> {
     if (!curr.done) {
       let next
       while ((next = it.next()) && !next.done) {
-        this.publishers.offer([curr.value, future, false] as const)
+        this.publishers.enqueue([curr.value, future, false] as const)
         curr = next
       }
-      this.publishers.offer([curr.value, future, true] as const)
+      this.publishers.enqueue([curr.value, future, true] as const)
     }
   }
 
@@ -1925,14 +1925,14 @@ function _unsafeCompleteFuture<A>(future: F.Future<never, A>, a: A): void {
  * Unsafely offers the specified values to a queue.
  */
 function _unsafeOfferAll<A>(queue: MutableQueue<A>, as: Iterable<A>): C.Conc<A> {
-  return queue.offerAll(as)
+  return queue.enqueueAll(as)
 }
 
 /**
  * Unsafely polls all values from a queue.
  */
 function _unsafePollAllQueue<A>(queue: MutableQueue<A>): C.Conc<A> {
-  return queue.pollUpTo(Number.MAX_SAFE_INTEGER)
+  return queue.dequeueUpTo(Number.MAX_SAFE_INTEGER)
 }
 
 /**
