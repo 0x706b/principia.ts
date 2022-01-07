@@ -4,10 +4,10 @@ import type * as Eq from '@principia/base/Eq'
 import type { Has } from '@principia/base/Has'
 import type { Random } from '@principia/base/Random'
 
-import * as C from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import { pipe } from '@principia/base/function'
 
-import { chunkN_, uniqueChunk_, uniqueChunkN_ } from './chunk'
+import { concN_, uniqueConc_, uniqueConcN_ } from './conc'
 import * as G from './core'
 
 export function array<R, A>(
@@ -21,7 +21,7 @@ export function array<R, A>(
 }
 
 export function arrayN_<R, A>(g: Gen<R, A>, n: number): Gen<R, ReadonlyArray<A>> {
-  return pipe(chunkN_(g, n), G.map(C.toArray))
+  return pipe(concN_(g, n), G.map(C.toArray))
 }
 
 export function arrayN(n: number): <R, A>(g: Gen<R, A>) => Gen<R, ReadonlyArray<A>> {
@@ -32,7 +32,7 @@ export function uniqueArray_<R, A>(
   gen: Gen<R, A>,
   constraints: LengthConstraints & EqConstraint<A> = {}
 ): Gen<Has<Random> & Has<Sized> & R, ReadonlyArray<A>> {
-  return pipe(uniqueChunk_(gen, constraints), G.map(C.toArray))
+  return pipe(uniqueConc_(gen, constraints), G.map(C.toArray))
 }
 
 export function uniqueArray<A>(
@@ -42,7 +42,7 @@ export function uniqueArray<A>(
 }
 
 export function uniqueArrayN_<A>(E: Eq.Eq<A>): <R>(g: Gen<R, A>, n: number) => Gen<R, ReadonlyArray<A>> {
-  return <R>(g: Gen<R, A>, n: number) => pipe(uniqueChunkN_(E)(g, n), G.map(C.toArray))
+  return <R>(g: Gen<R, A>, n: number) => pipe(uniqueConcN_(E)(g, n), G.map(C.toArray))
 }
 
 export function uniqueArrayN<A>(E: Eq.Eq<A>): (n: number) => <R>(g: Gen<R, A>) => Gen<R, ReadonlyArray<A>> {

@@ -1,10 +1,10 @@
 import type { Byte } from '@principia/base/Byte'
-import type { Chunk } from '@principia/base/Chunk'
+import type { Conc } from '@principia/base/collection/immutable/Conc'
 import type { IO } from '@principia/base/IO'
 
 import * as Ca from '@principia/base/Cause'
 import * as Ch from '@principia/base/Channel'
-import * as C from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/function'
 import { Integer } from '@principia/base/Integer'
@@ -146,7 +146,7 @@ export function createWriteSink<InErr>(
         const maybeError = yield* _(errorRef.get)
         if (!st && M.isJust(maybeError)) {
           const reader = Ch.readWith(
-            (_: C.Chunk<Byte>) => Ch.crossSecond_(Ch.fail(maybeError.value), Ch.end(undefined)),
+            (_: C.Conc<Byte>) => Ch.crossSecond_(Ch.fail(maybeError.value), Ch.end(undefined)),
             (err: InErr) => Ch.failCause(Ca.then(Ca.fail(maybeError.value), Ca.fail(err))),
             (_: unknown) => Ch.fail(maybeError.value)
           )
@@ -155,13 +155,13 @@ export function createWriteSink<InErr>(
           const reader: Ch.Channel<
             unknown,
             InErr,
-            C.Chunk<Byte>,
+            C.Conc<Byte>,
             unknown,
             InErr | ErrnoException,
-            C.Chunk<never>,
+            C.Conc<never>,
             void
           > = Ch.readWith(
-            (inp: C.Chunk<Byte>) =>
+            (inp: C.Conc<Byte>) =>
               Ch.unwrap(
                 pipe(
                   st![1].get,
@@ -477,7 +477,7 @@ export function utimes(
   })
 }
 
-export function write(fd: FileDescriptor, buffer: Chunk<Byte>, position?: number): I.FIO<ErrnoException, number> {
+export function write(fd: FileDescriptor, buffer: Conc<Byte>, position?: number): I.FIO<ErrnoException, number> {
   return I.async<unknown, ErrnoException, number>((cb) => {
     const b = C.toBuffer(buffer)
     fs.write(FileDescriptor.reverseGet(fd), b, position ?? null, b.byteLength, (err, bytesWritten) =>

@@ -1,6 +1,6 @@
 import * as A from '@principia/base/Array'
 import { CaseClass, CaseTypeId } from '@principia/base/Case'
-import * as C from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import { pipe } from '@principia/base/function'
 import * as St from '@principia/base/Structural'
 import * as Z from '@principia/base/Z'

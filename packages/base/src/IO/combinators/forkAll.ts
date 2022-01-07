@@ -1,11 +1,11 @@
 // tracing: off
 
-import type { Chunk } from '../../Chunk/core'
+import type { Conc } from '../../collection/immutable/Conc/core'
 import type { IO, URIO } from '../core'
 
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
-import * as Ch from '../../Chunk/core'
+import * as Ch from '../../collection/immutable/Conc/core'
 import * as Fiber from '../../Fiber'
 import * as I from '../../Iterable'
 import { chain_, foreach_, fork, map_, unit } from '../core'
@@ -16,14 +16,14 @@ import { chain_, foreach_, fork, map_, unit } from '../core'
  *
  * @trace call
  */
-export function forkAll<R, E, A>(mas: Iterable<IO<R, E, A>>): URIO<R, Fiber.Fiber<E, Chunk<A>>> {
+export function forkAll<R, E, A>(mas: Iterable<IO<R, E, A>>): URIO<R, Fiber.Fiber<E, Conc<A>>> {
   const trace = accessCallTrace()
   return map_(
     foreach_(
       mas,
       traceFrom(trace, (_) => fork(_))
     ),
-    Ch.foldl(Fiber.succeed(Ch.empty()) as Fiber.Fiber<E, Chunk<A>>, (b, a) =>
+    Ch.foldl(Fiber.succeed(Ch.empty()) as Fiber.Fiber<E, Conc<A>>, (b, a) =>
       Fiber.crossWith_(b, a, (_a, _b) => Ch.append_(_a, _b))
     )
   )

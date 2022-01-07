@@ -1,11 +1,11 @@
 // tracing: off
 
-import type { Chunk } from '../../Chunk/core'
+import type { Conc } from '../../collection/immutable/Conc/core'
 import type { IO } from '../core'
 
 import { traceAs } from '@principia/compile/util'
 
-import * as C from '../../Chunk/core'
+import * as C from '../../collection/immutable/Conc/core'
 import { pipe } from '../../function'
 import * as M from '../../Maybe'
 import * as I from '../core'
@@ -17,7 +17,7 @@ import { foreachC } from './foreachC'
  *
  * @trace 1
  */
-export function filterC_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boolean>): IO<R, E, Chunk<A>> {
+export function filterC_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boolean>): IO<R, E, Conc<A>> {
   return pipe(as, foreachC(traceAs(f, (a) => I.map_(f(a), (b) => (b ? M.just(a) : M.nothing())))), I.map(C.compact))
 }
 
@@ -27,6 +27,6 @@ export function filterC_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boolean
  *
  * @trace 0
  */
-export function filterC<A, R, E>(f: (a: A) => IO<R, E, boolean>): (as: Iterable<A>) => IO<R, E, Chunk<A>> {
+export function filterC<A, R, E>(f: (a: A) => IO<R, E, boolean>): (as: Iterable<A>) => IO<R, E, Conc<A>> {
   return (as) => filterC_(as, f)
 }

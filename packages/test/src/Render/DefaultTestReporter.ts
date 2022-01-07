@@ -6,7 +6,7 @@ import type { TestAnnotationRenderer } from './TestAnnotationRenderer'
 import type { Cause } from '@principia/base/IO/Cause'
 import type { USync } from '@principia/base/Sync'
 
-import * as C from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import * as V from '@principia/base/collection/immutable/Vector'
 import * as E from '@principia/base/Either'
 import { absurd, identity, pipe } from '@principia/base/function'

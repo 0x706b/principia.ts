@@ -15,7 +15,7 @@ import type {
 } from './Schema/properties'
 import type { TaggedUnionS } from './Schema/taggedUnion'
 import type { CastToNumber } from './util'
-import type { Chunk } from '@principia/base/Chunk'
+import type { Conc } from '@principia/base/collection/immutable/Conc'
 import type { Iso } from '@principia/base/Iso'
 import type { Maybe } from '@principia/base/Maybe'
 import type { Newtype } from '@principia/base/Newtype'
@@ -147,7 +147,7 @@ export interface RequiredSchemable<F extends URIS> {
     ReadonlyArray<O>
   >
 
-  readonly chunk: <CI, E, CE, A, O>(
+  readonly conc: <CI, E, CE, A, O>(
     item: Kind<F, unknown, CI, E, CE, A, O>,
     _: Schema<CoreURIS | F, unknown, CI, E, CE, A, O, any>
   ) => Kind<
@@ -156,7 +156,7 @@ export interface RequiredSchemable<F extends URIS> {
     Iterable<CI>,
     PE.UnknownIterableLE | PE.CompoundE<PE.OptionalIndexE<number, E>>,
     PE.CompoundE<PE.OptionalIndexE<number, CE>>,
-    Chunk<A>,
+    Conc<A>,
     ReadonlyArray<O>
   >
 

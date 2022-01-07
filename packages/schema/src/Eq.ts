@@ -1,10 +1,10 @@
 import type * as S from './Schemable'
-import type { Chunk } from '@principia/base/Chunk'
+import type { Conc } from '@principia/base/collection/immutable/Conc'
 import type { Maybe } from '@principia/base/Maybe'
 import type { UnionToIntersection } from '@principia/base/prelude'
 
 import * as A from '@principia/base/Array'
-import * as C from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import * as E from '@principia/base/Either'
 import * as _ from '@principia/base/Eq'
 import { flow } from '@principia/base/function'
@@ -96,11 +96,11 @@ export function array<A>(item: Eq<A>): Eq<ReadonlyArray<A>> {
 
 /*
  * -------------------------------------------
- * chunk
+ * conc
  * -------------------------------------------
  */
 
-export function chunk<A>(item: Eq<A>): Eq<Chunk<A>> {
+export function conc<A>(item: Eq<A>): Eq<Conc<A>> {
   return _.Eq((x, y) => C.corresponds_(x, y, item.equals_))
 }
 
@@ -208,7 +208,7 @@ export const Schemable: S.Schemable<EqSURI> = {
   struct: (properties) => struct(properties),
   partial: (properties) => partial(properties),
   array: (item) => array(item),
-  chunk: (item) => chunk(item),
+  conc: (item) => conc(item),
   record: (codomain) => record(codomain),
   tuple: (components) => tuple(...components),
   sum: (tag) => (members) => sum(tag)(members),

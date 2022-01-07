@@ -1,6 +1,6 @@
 import type { HttpContentType } from './utils'
 import type { Byte } from '@principia/base/Byte'
-import type { Chunk } from '@principia/base/Chunk'
+import type { Conc } from '@principia/base/collection/immutable/Conc'
 import type { IO } from '@principia/base/IO'
 
 import * as I from '@principia/base/IO'
@@ -24,7 +24,7 @@ export class Strict extends HttpEntity<unknown, never, ReadonlyArray<Byte>> {
   }
 }
 
-export class Stream<R, E, A> extends HttpEntity<R, E, Chunk<A>> {
+export class Stream<R, E, A> extends HttpEntity<R, E, Conc<A>> {
   readonly _tag = 'Stream'
   constructor(readonly contentType: HttpContentType, readonly stream: S.Stream<R, E, A>) {
     super()

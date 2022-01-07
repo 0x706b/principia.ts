@@ -1,12 +1,12 @@
 import type { Byte } from '@principia/base/Byte'
-import type { Chunk } from '@principia/base/Chunk'
+import type { Conc } from '@principia/base/collection/immutable/Conc'
 import type { FIO, IO, UIO } from '@principia/base/IO'
 import type { ReadonlyRecord } from '@principia/base/Record'
 import type * as http from 'http'
 import type { Readable } from 'stream'
 
 import * as Ch from '@principia/base/Channel'
-import * as C from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as Ma from '@principia/base/Managed'
@@ -90,7 +90,7 @@ export class HttpResponse {
                     })
                   })
                 )
-                const writer: Ch.Channel<unknown, unknown, unknown, unknown, never, Chunk<ResponseEvent>, void> = pipe(
+                const writer: Ch.Channel<unknown, unknown, unknown, unknown, never, Conc<ResponseEvent>, void> = pipe(
                   Q.take(queue),
                   I.chain((event) => {
                     if (event._tag === 'Close') {

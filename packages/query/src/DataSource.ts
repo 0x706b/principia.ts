@@ -1,10 +1,10 @@
 import type { DataSourceAspect } from './DataSourceAspect'
 import type { AnyRequest, Request } from './Request'
-import type { Chunk } from '@principia/base/Chunk'
+import type { Conc } from '@principia/base/collection/immutable/Conc'
 import type * as M from '@principia/base/Maybe'
 import type { _A, _E } from '@principia/base/prelude'
 
-import * as C from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import * as E from '@principia/base/Either'
 import { IllegalArgumentError } from '@principia/base/Error'
 import { flow, pipe } from '@principia/base/function'
@@ -27,7 +27,7 @@ export class DataSource<R, A> implements St.Equatable, St.Hashable {
 
   constructor(
     readonly identifier: string,
-    readonly runAll: (requests: Chunk<Chunk<A>>) => I.IO<R, never, CompletedRequestMap>
+    readonly runAll: (requests: Conc<Conc<A>>) => I.IO<R, never, CompletedRequestMap>
   ) {}
 
   [St.$equals](that: unknown): boolean {
@@ -103,7 +103,7 @@ export function race_<R, A, R1, A1 extends A>(ds1: DataSource<R, A>, ds2: DataSo
 }
 
 export class Batched<R, A> extends DataSource<R, A> {
-  constructor(readonly identifier: string, readonly run: (requests: Chunk<A>) => I.IO<R, never, CompletedRequestMap>) {
+  constructor(readonly identifier: string, readonly run: (requests: Conc<A>) => I.IO<R, never, CompletedRequestMap>) {
     super(
       identifier,
       I.foldl(CompletedRequestMap.empty(), (m, r) => {
@@ -123,7 +123,7 @@ export class Batched<R, A> extends DataSource<R, A> {
 
 export function makeBatched<R, A>(
   name: string,
-  f: (requests: Chunk<A>) => I.IO<R, never, CompletedRequestMap>
+  f: (requests: Conc<A>) => I.IO<R, never, CompletedRequestMap>
 ): Batched<R, A> {
   return new Batched(name, f)
 }
@@ -140,14 +140,14 @@ export function fromFunction<A extends Request<never, any>>(name: string, f: (a:
 
 export function fromFunctionIOBatched<R, A extends AnyRequest>(
   name: string,
-  f: (a: Chunk<A>) => I.IO<R, _E<A>, Chunk<_A<A>>>
+  f: (a: Conc<A>) => I.IO<R, _E<A>, Conc<_A<A>>>
 ): DataSource<R, A> {
-  return new Batched<R, A>(name, (requests: Chunk<A>) =>
+  return new Batched<R, A>(name, (requests: Conc<A>) =>
     pipe(
       f(requests),
       I.match(
-        (e): Chunk<readonly [A, E.Either<_E<A>, _A<A>>]> => C.map_(requests, (_) => tuple(_, E.left(e))),
-        (bs): Chunk<readonly [A, E.Either<_E<A>, _A<A>>]> => C.zip_(requests, C.map_(bs, E.right))
+        (e): Conc<readonly [A, E.Either<_E<A>, _A<A>>]> => C.map_(requests, (_) => tuple(_, E.left(e))),
+        (bs): Conc<readonly [A, E.Either<_E<A>, _A<A>>]> => C.zip_(requests, C.map_(bs, E.right))
       ),
       I.map(C.foldl(CompletedRequestMap.empty(), (map, [k, v]) => map.insert(k, v)))
     )
@@ -156,21 +156,21 @@ export function fromFunctionIOBatched<R, A extends AnyRequest>(
 
 export function fromFunctionBatched<A extends Request<never, any>>(
   name: string,
-  f: (a: Chunk<A>) => Chunk<_A<A>>
+  f: (a: Conc<A>) => Conc<_A<A>>
 ): DataSource<unknown, A> {
   return fromFunctionIOBatched(name, flow(f, I.succeed))
 }
 
 export function fromFunctionIOBatchedOption<R, A extends AnyRequest>(
   name: string,
-  f: (a: Chunk<A>) => I.IO<R, _E<A>, Chunk<M.Maybe<_A<A>>>>
+  f: (a: Conc<A>) => I.IO<R, _E<A>, Conc<M.Maybe<_A<A>>>>
 ): DataSource<R, A> {
-  return new Batched<R, A>(name, (requests: Chunk<A>) =>
+  return new Batched<R, A>(name, (requests: Conc<A>) =>
     pipe(
       f(requests),
       I.match(
-        (e): Chunk<readonly [A, E.Either<_E<A>, M.Maybe<_A<A>>>]> => C.map_(requests, (a) => tuple(a, E.left(e))),
-        (bs): Chunk<readonly [A, E.Either<_E<A>, M.Maybe<_A<A>>>]> => C.zip_(requests, C.map_(bs, E.right))
+        (e): Conc<readonly [A, E.Either<_E<A>, M.Maybe<_A<A>>>]> => C.map_(requests, (a) => tuple(a, E.left(e))),
+        (bs): Conc<readonly [A, E.Either<_E<A>, M.Maybe<_A<A>>>]> => C.zip_(requests, C.map_(bs, E.right))
       ),
       I.map(C.foldl(CompletedRequestMap.empty(), (map, [k, v]) => map.insertOption(k, v)))
     )
@@ -179,22 +179,22 @@ export function fromFunctionIOBatchedOption<R, A extends AnyRequest>(
 
 export function fromFunctionBatchedOption<A extends Request<never, any>>(
   name: string,
-  f: (a: Chunk<A>) => Chunk<M.Maybe<_A<A>>>
+  f: (a: Conc<A>) => Conc<M.Maybe<_A<A>>>
 ): DataSource<unknown, A> {
   return fromFunctionIOBatchedOption(name, flow(f, I.succeed))
 }
 
 export function fromFunctionIOBatchedWith<R, A extends AnyRequest>(
   name: string,
-  f: (a: Chunk<A>) => I.IO<R, _E<A>, Chunk<_A<A>>>,
+  f: (a: Conc<A>) => I.IO<R, _E<A>, Conc<_A<A>>>,
   g: (b: _A<A>) => A
 ): DataSource<R, A> {
-  return new Batched<R, A>(name, (requests: Chunk<A>) =>
+  return new Batched<R, A>(name, (requests: Conc<A>) =>
     pipe(
       f(requests),
       I.match(
-        (e): Chunk<readonly [A, E.Either<_E<A>, _A<A>>]> => C.map_(requests, (a) => tuple(a, E.left(e))),
-        (bs): Chunk<readonly [A, E.Either<_E<A>, _A<A>>]> => C.map_(bs, (b) => tuple(g(b), E.right(b)))
+        (e): Conc<readonly [A, E.Either<_E<A>, _A<A>>]> => C.map_(requests, (a) => tuple(a, E.left(e))),
+        (bs): Conc<readonly [A, E.Either<_E<A>, _A<A>>]> => C.map_(bs, (b) => tuple(g(b), E.right(b)))
       ),
       I.map(C.foldl(CompletedRequestMap.empty(), (map, [k, v]) => map.insert(k, v)))
     )
@@ -203,7 +203,7 @@ export function fromFunctionIOBatchedWith<R, A extends AnyRequest>(
 
 export function fromFunctionBatchedWith<A extends Request<never, any>>(
   name: string,
-  f: (a: Chunk<A>) => Chunk<_A<A>>,
+  f: (a: Conc<A>) => Conc<_A<A>>,
   g: (b: _A<A>) => A
 ): DataSource<unknown, A> {
   return fromFunctionIOBatchedWith(name, flow(f, I.succeed), g)

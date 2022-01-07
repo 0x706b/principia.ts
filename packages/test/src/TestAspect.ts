@@ -8,7 +8,7 @@ import type { IO } from '@principia/base/IO'
 import type { Schedule } from '@principia/base/Schedule'
 
 import * as A from '@principia/base/Array'
-import * as C from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import { Console } from '@principia/base/Console'
 import * as Ex from '@principia/base/Exit'
 import * as Fi from '@principia/base/Fiber'

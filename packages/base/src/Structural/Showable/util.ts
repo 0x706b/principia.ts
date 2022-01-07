@@ -1,6 +1,6 @@
-import type { Chunk } from '../../Chunk'
+import type { Conc } from '../../collection/immutable/Conc'
 
-import * as C from '../../Chunk/core'
+import * as C from '../../collection/immutable/Conc/core'
 import * as str from '../../string'
 import { isFunction } from '../../util/predicates'
 
@@ -174,7 +174,7 @@ export function isZeroWidthCodePoint(code: number): boolean {
   ) // Variation Selectors
 }
 
-export function getConstructorName(value: object): [string | null, Chunk<PropertyKey>] {
+export function getConstructorName(value: object): [string | null, Conc<PropertyKey>] {
   let obj        = value
   const tmp      = obj
   let firstProto
@@ -202,7 +202,7 @@ export function getConstructorName(value: object): [string | null, Chunk<Propert
   return [null, C.empty()]
 }
 
-export function getPrototypeProperties(main: object, obj: object): Chunk<PropertyKey> {
+export function getPrototypeProperties(main: object, obj: object): Conc<PropertyKey> {
   let proto                 = obj
   let keySet                = new Set<PropertyKey>()
   let keys: PropertyKey[]   = []

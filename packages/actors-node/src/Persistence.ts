@@ -3,7 +3,7 @@ import type { IOEnv } from '@principia/base/IOEnv'
 import type { QueryResultRow } from 'pg'
 
 import { CaseClass } from '@principia/base/Case'
-import * as Chunk from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import { identity, pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as HM from '@principia/base/HashMap'
@@ -37,7 +37,7 @@ export interface Persistence {
 
   readonly emit: (
     persistenceId: string,
-    events: Chunk.Chunk<{ value: unknown, eventSequence: number }>
+    events: C.Conc<{ value: unknown, eventSequence: number }>
   ) => T.IO<Has<ShardContext>, never, void>
 
   readonly events: (
@@ -47,7 +47,7 @@ export interface Persistence {
   ) => T.IO<
     Has<ShardContext>,
     never,
-    Chunk.Chunk<{
+    C.Conc<{
       persistenceId: string
       domain: string
       shard: number
@@ -65,7 +65,7 @@ export interface Persistence {
       delay?: number
       perPage?: number
     }
-  ) => (offsets: Chunk.Chunk<Offset>) => ST.Stream<IOEnv, S.CondemnException, Event<Offset, S>>
+  ) => (offsets: C.Conc<Offset>) => ST.Stream<IOEnv, S.CondemnException, Event<Offset, S>>
 }
 
 export class Event<Offset, S> extends CaseClass<{ offset: Offset, event: S }> {}
@@ -133,7 +133,7 @@ export const LivePersistence = L.fromManaged(Persistence)(
           perPage?: number
         }
       ) =>
-      (offsets: Chunk.Chunk<Offset>) =>
+      (offsets: C.Conc<Offset>) =>
         T.gen(function* (_) {
           const parse = P.for(messages)['|>'](S.condemnException)
 
@@ -145,7 +145,7 @@ export const LivePersistence = L.fromManaged(Persistence)(
             yield* _(Ref.update_(currentRef, HM.set(`${offset.domain}-${offset.shard}` as const, offset)))
           }
 
-          const poll: T.IO<IOEnv, M.Maybe<never>, Chunk.Chunk<QueryResultRow>> = pipe(
+          const poll: T.IO<IOEnv, M.Maybe<never>, C.Conc<QueryResultRow>> = pipe(
             T.cross_(
               Ref.get(currentRef),
               Ref.getAndUpdate_(delayRef, () => opts?.delay ?? 1_000)
@@ -177,11 +177,11 @@ export const LivePersistence = L.fromManaged(Persistence)(
                     }
                     return T.unit()
                   }),
-                  T.map(Chunk.from)
+                  T.map(C.from)
                 )
               )
             ),
-            T.map(Chunk.flatten)
+            T.map(C.flatten)
           )
 
           return pipe(
@@ -227,7 +227,7 @@ export const LivePersistence = L.fromManaged(Persistence)(
         )
 
         yield* _(
-          T.foreach_(Chunk.range(1, shards), (i) =>
+          T.foreach_(C.range(1, shards), (i) =>
             cli.query(
               'INSERT INTO "shard_journal" ("domain", "shard", "sequence") VALUES($1::text, $2::integer, 0) ON CONFLICT ("domain","shard") DO NOTHING',
               [domain, i]
@@ -279,7 +279,7 @@ export const LivePersistence = L.fromManaged(Persistence)(
     ) => T.IO<
       Has<ShardContext>,
       never,
-      Chunk.Chunk<{
+      C.Conc<{
         persistenceId: string
         domain: string
         shard: number
@@ -298,8 +298,8 @@ export const LivePersistence = L.fromManaged(Persistence)(
         ),
         T.map((res) =>
           pipe(
-            Chunk.from(res.rows),
-            Chunk.map((row) => ({
+            C.from(res.rows),
+            C.map((row) => ({
               persistenceId: row.actor_name,
               domain: row.domain,
               shard: row.shard,
@@ -343,7 +343,7 @@ export const LivePersistence = L.fromManaged(Persistence)(
 
     const emit: (
       persistenceId: string,
-      events: Chunk.Chunk<{ value: unknown, eventSequence: number }>
+      events: C.Conc<{ value: unknown, eventSequence: number }>
     ) => T.IO<Has<ShardContext>, never, void> = (persistenceId, events) =>
       events.length > 0
         ? T.asksServiceIO(ShardContext)(({ domain }) =>
@@ -352,7 +352,7 @@ export const LivePersistence = L.fromManaged(Persistence)(
               T.chain(([shard, shard_sequence]) =>
                 pipe(
                   T.foreach_(
-                    Chunk.zipWithIndexOffset_(events, shard_sequence + 1),
+                    C.zipWithIndexOffset_(events, shard_sequence + 1),
                     ([{ eventSequence, value }, shard_sequence_i]) =>
                       cli.query(
                         `INSERT INTO "event_journal" ("persistence_id", "shard", "event", "event_sequence", "shard_sequence", "domain") VALUES('${persistenceId}', $2::integer, $1::jsonb, $3::integer, $4::integer, $5::text)`,

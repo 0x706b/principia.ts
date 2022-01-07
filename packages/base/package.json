@@ -50,13 +50,13 @@
       "import": "./dist/dist/esm/Channel/index.js",
       "require": "./dist/dist/cjs/Channel/index.js"
     },
-    "./Chunk": {
+    "./collection/immutable/Conc": {
       "traced": {
-        "import": "./dist/dist-traced/esm/Chunk/index.js",
-        "require": "./dist/dist-traced/cjs/Chunk/index.js"
+        "import": "./dist/dist-traced/esm/collection/immutable/Conc/index.js",
+        "require": "./dist/dist-traced/cjs/collection/immutable/Conc/index.js"
       },
-      "import": "./dist/dist/esm/Chunk/index.js",
-      "require": "./dist/dist/cjs/Chunk/index.js"
+      "import": "./dist/dist/esm/collection/immutable/Conc/index.js",
+      "require": "./dist/dist/cjs/collection/immutable/Conc/index.js"
     },
     "./collection/immutable/Vector": {
       "traced": {

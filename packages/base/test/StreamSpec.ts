@@ -2,8 +2,8 @@ import type { Has } from '@principia/base/Has'
 import type { TestResult } from '@principia/test/Render'
 
 import * as A from '@principia/base/Array'
-import * as C from '@principia/base/Chunk'
 import { Clock } from '@principia/base/Clock'
+import * as C from '@principia/base/collection/immutable/Conc'
 import * as Fi from '@principia/base/Fiber'
 import { pipe } from '@principia/base/function'
 import * as F from '@principia/base/Future'
@@ -18,25 +18,25 @@ import { assertCompletes, assertIO, DefaultRunnableSpec, equalTo, suite, testIO 
 import { TestClock } from '@principia/test/environment/TestClock'
 
 interface ChunkCoordination<A> {
-  readonly queue: Q.UQueue<Ex.Exit<Mb.Maybe<never>, C.Chunk<A>>>
+  readonly queue: Q.UQueue<Ex.Exit<Mb.Maybe<never>, C.Conc<A>>>
   readonly offer: I.UIO<boolean>
   readonly proceed: I.UIO<void>
   readonly awaitNext: I.UIO<void>
 }
 
 export function assertWithChunkCoordination<A>(
-  chunks: ReadonlyArray<C.Chunk<A>>,
+  chunks: ReadonlyArray<C.Conc<A>>,
   assertion: (c: ChunkCoordination<A>) => I.IO<Has<Clock> & Has<TestClock>, never, TestResult>
 ): I.IO<Has<Clock> & Has<TestClock>, never, TestResult> {
   return I.gen(function* (_) {
-    const q   = yield* _(Q.makeUnbounded<Ex.Exit<Mb.Maybe<never>, C.Chunk<A>>>())
+    const q   = yield* _(Q.makeUnbounded<Ex.Exit<Mb.Maybe<never>, C.Conc<A>>>())
     const ps  = yield* _(Q.makeUnbounded<void>())
     const ref = yield* _(
-      Ref.make<ReadonlyArray<ReadonlyArray<Ex.Exit<Mb.Maybe<never>, C.Chunk<A>>>>>(
+      Ref.make<ReadonlyArray<ReadonlyArray<Ex.Exit<Mb.Maybe<never>, C.Conc<A>>>>>(
         pipe(
           chunks,
           A.init,
-          Mb.getOrElse((): ReadonlyArray<C.Chunk<A>> => []),
+          Mb.getOrElse((): ReadonlyArray<C.Conc<A>> => []),
           A.map((chunk) => [Ex.succeed(chunk)]),
           A.concat(
             pipe(
@@ -60,8 +60,8 @@ export function assertWithChunkCoordination<A>(
             Mb.getOrElse(
               () =>
                 [[], []] as [
-                  ReadonlyArray<Ex.Exit<Mb.Maybe<never>, C.Chunk<A>>>,
-                  ReadonlyArray<ReadonlyArray<Ex.Exit<Mb.Maybe<never>, C.Chunk<A>>>>
+                  ReadonlyArray<Ex.Exit<Mb.Maybe<never>, C.Conc<A>>>,
+                  ReadonlyArray<ReadonlyArray<Ex.Exit<Mb.Maybe<never>, C.Conc<A>>>>
                 ]
             )
           )

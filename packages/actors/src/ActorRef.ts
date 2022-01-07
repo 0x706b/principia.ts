@@ -4,7 +4,7 @@ import type { IOEnv } from '@principia/base/IOEnv'
 
 import '@principia/base/Operators'
 
-import * as Chunk from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import { pipe } from '@principia/base/function'
 import * as T from '@principia/base/IO'
 import * as RT from '@principia/base/RoseTree'
@@ -97,7 +97,7 @@ export interface ActorRef<F1 extends AM.AnyMessage> {
   /**
    * Stops actor and all its children
    */
-  readonly stop: T.IO<IOEnv, ActorSystemException, Chunk.Chunk<void>>
+  readonly stop: T.IO<IOEnv, ActorSystemException, C.Conc<void>>
 }
 
 export class ActorRefLocal<F1 extends AM.AnyMessage> implements ActorRef<F1> {
@@ -161,7 +161,7 @@ export class ActorRefRemote<F1 extends AM.AnyMessage> implements ActorRef<F1> {
             )(response.response)
           )
         : envOp._tag === 'Stop'
-        ? Chunk.from(response.stops)
+        ? C.from(response.stops)
         : yield* _(T.unit())
     })
   }
@@ -182,7 +182,7 @@ export class ActorRefRemote<F1 extends AM.AnyMessage> implements ActorRef<F1> {
     })
   }
 
-  readonly stop: T.IO<IOEnv, ActorSystemException, Chunk.Chunk<void>> = this.runEnvelope({
+  readonly stop: T.IO<IOEnv, ActorSystemException, C.Conc<void>> = this.runEnvelope({
     command: Envelope.stop(),
     recipient: this.address
   })

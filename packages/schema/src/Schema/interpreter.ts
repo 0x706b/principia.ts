@@ -1,5 +1,5 @@
 import type { AnyKind, Kind, Schemable, URIS } from '../Schemable'
-import type { ChunkS } from './chunk'
+import type { ConcS } from './conc'
 import type {
   AnyS,
   AnySOf,
@@ -97,7 +97,7 @@ type ConcreteOf<U extends URIS> =
   | StructS<Record<string, AnyUSOf<U>>>
   | PartialS<Record<string, AnyUSOf<U>>>
   | ArrayS<AnyUSOf<U>>
-  | ChunkS<AnyUSOf<U>>
+  | ConcS<AnyUSOf<U>>
   | RecordS<AnyUSOf<U>>
   | TupleS<ReadonlyArray<AnyUSOf<U>>>
   | UnionS<NonEmptyArray<AnyUSOf<U>>>
@@ -200,8 +200,8 @@ export const defaultInterpreter: Interpreter =
           instance = S.array(toS(schema.item), schema.item)
           break
         }
-        case 'Chunk': {
-          instance = S.chunk(toS(schema.item), schema.item)
+        case 'Conc': {
+          instance = S.conc(toS(schema.item), schema.item)
           break
         }
         case 'Record': {

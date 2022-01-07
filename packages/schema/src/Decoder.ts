@@ -310,7 +310,7 @@ export const Schemable: S.Schemable<DecoderSURI> = {
   struct: (properties) => Pr.struct(properties),
   partial: (properties) => Pr.partial(properties),
   array: (item) => Pr.array(item),
-  chunk: (item) => Pr.chunk(item),
+  conc: (item) => Pr.conc(item),
   record: (codomain) => Pr.record(codomain),
   tuple: (components) => Pr.tuple(...components),
   sum: (tag) => (members) => Pr.sum(tag)(members),

@@ -15,7 +15,7 @@ import type { Stream } from '@principia/base/Stream'
 import type { _E, _R, UnionToIntersection } from '@principia/base/util/types'
 
 import * as As from '@principia/base/Async'
-import * as C from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import * as E from '@principia/base/Either'
 import * as Ev from '@principia/base/Eval'
 import { flow, pipe } from '@principia/base/function'

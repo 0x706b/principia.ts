@@ -1,5 +1,5 @@
 import type { CastToNumber } from './util'
-import type { Chunk } from '@principia/base/Chunk'
+import type { Conc } from '@principia/base/collection/immutable/Conc'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type { Predicate } from '@principia/base/Predicate'
 import type { Primitive, Refinement } from '@principia/base/prelude'
@@ -9,7 +9,7 @@ import type { These } from '@principia/base/These'
 import type { UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
-import * as C from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import * as Ev from '@principia/base/Eval'
 import { flow, memoize, pipe } from '@principia/base/function'
 import * as G from '@principia/base/Guard'
@@ -1070,23 +1070,23 @@ export function array<Item extends AnyUParser>(item: Item): ArrayP<Item> {
 
 /*
  * -------------------------------------------
- * chunk
+ * conc
  * -------------------------------------------
  */
 
-export interface FromChunkP<I> extends Parser<Iterable<InputOf<I>>, ArrayE<I>, Chunk<TypeOf<I>>> {
-  readonly _tag: 'FromChunk'
+export interface FromConcP<I> extends Parser<Iterable<InputOf<I>>, ArrayE<I>, Conc<TypeOf<I>>> {
+  readonly _tag: 'FromConc'
   readonly item: I
 }
 
-export function fromChunk<I extends AnyParser>(item: I): FromChunkP<I> {
+export function fromConc<I extends AnyParser>(item: I): FromConcP<I> {
   return {
-    _tag: 'FromChunk',
+    _tag: 'FromConc',
     item,
-    label: `Chunk<${item.label}>`,
+    label: `Conc<${item.label}>`,
     parse: (is) => {
       const errors: Array<PE.OptionalIndexE<number, any>> = []
-      const builder: C.ChunkBuilder<TypeOf<I>>            = C.builder()
+      const builder: C.ConcBuilder<TypeOf<I>>             = C.builder()
 
       let isBoth = true
       let i      = 0
@@ -1117,21 +1117,21 @@ export function fromChunk<I extends AnyParser>(item: I): FromChunkP<I> {
   }
 }
 
-export interface ChunkP<I> extends Parser<unknown, PE.UnknownIterableLE | ArrayE<I>, Chunk<TypeOf<I>>> {
-  readonly _tag: 'Chunk'
+export interface ConcP<I> extends Parser<unknown, PE.UnknownIterableLE | ArrayE<I>, Conc<TypeOf<I>>> {
+  readonly _tag: 'Conc'
   readonly item: I
 }
 
-export function chunk<I extends AnyParser>(item: I): ChunkP<I> {
+export function conc<I extends AnyParser>(item: I): ConcP<I> {
   return {
-    _tag: 'Chunk',
+    _tag: 'Conc',
     item,
-    label: `(UnknownIterable >>> Chunk<${item.label}>)`,
+    label: `(UnknownIterable >>> Conc<${item.label}>)`,
     parse: (u) => {
       if (!isIterable(u)) {
         return Th.left(PE.leafE(PE.unknownIterableE(u)))
       }
-      return fromChunk(item).parse(u as Iterable<any>)
+      return fromConc(item).parse(u as Iterable<any>)
     }
   }
 }

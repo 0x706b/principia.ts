@@ -1,4 +1,4 @@
-import type { Chunk } from '../Chunk'
+import type { Conc } from '../collection/immutable/Conc'
 import type { Fiber } from '../Fiber'
 import type { HandoffSignal } from './Handoff'
 
@@ -15,7 +15,7 @@ export const PreviousTag = Symbol()
 export type PreviousTag = typeof PreviousTag
 export class Previous<A> {
   readonly _tag: PreviousTag = PreviousTag
-  constructor(readonly fiber: Fiber<never, Chunk<A>>) {}
+  constructor(readonly fiber: Fiber<never, Conc<A>>) {}
 }
 
 export const CurrentTag = Symbol()

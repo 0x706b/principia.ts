@@ -1,7 +1,7 @@
 import type { ExecutionStrategy } from '../../ExecutionStrategy'
 import type { Stream } from '../core'
 
-import * as C from '../../Chunk'
+import * as C from '../../collection/immutable/Conc'
 import * as E from '../../Either'
 import { flow, pipe } from '../../function'
 import * as IO from '../../IO'
@@ -25,16 +25,16 @@ interface End {
   readonly _tag: 'End'
 }
 type Status = Running | LeftDone | RightDone | End
-type State<A, B> = readonly [Status, E.Either<C.Chunk<A>, C.Chunk<B>>]
+type State<A, B> = readonly [Status, E.Either<C.Conc<A>, C.Conc<B>>]
 
 const handleSuccess = <A, B, C>(
-  maybeA: M.Maybe<C.Chunk<A>>,
-  maybeB: M.Maybe<C.Chunk<B>>,
-  excess: E.Either<C.Chunk<A>, C.Chunk<B>>,
+  maybeA: M.Maybe<C.Conc<A>>,
+  maybeB: M.Maybe<C.Conc<B>>,
+  excess: E.Either<C.Conc<A>, C.Conc<B>>,
   left: (a: A) => C,
   right: (b: B) => C,
   both: (a: A, b: B) => C
-): Ex.Exit<never, readonly [C.Chunk<C>, State<A, B>]> => {
+): Ex.Exit<never, readonly [C.Conc<C>, State<A, B>]> => {
   const [excessL, excessR] = E.match_(
     excess,
     (l) => tuple(l, C.empty<B>()),
@@ -83,7 +83,7 @@ export function zipAllWithExec_<R, E, A, R1, E1, B, C>(
   return combineChunks_(
     ma,
     mb,
-    tuple(<Status>{ _tag: 'Running' }, E.left<C.Chunk<A>, C.Chunk<B>>(C.empty())),
+    tuple(<Status>{ _tag: 'Running' }, E.left<C.Conc<A>, C.Conc<B>>(C.empty())),
     ([state, excess], pullL, pullR) => {
       switch (state._tag) {
         case 'Running': {

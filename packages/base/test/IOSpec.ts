@@ -1,6 +1,6 @@
 import * as A from '@principia/base/Array'
 import * as Ca from '@principia/base/Cause'
-import * as Ch from '@principia/base/Chunk'
+import * as Co from '@principia/base/collection/immutable/Conc'
 import * as E from '@principia/base/Either'
 import { IllegalArgumentError, isIllegalArgumentError, isIllegalStateError } from '@principia/base/Error'
 import { RuntimeException } from '@principia/base/Exception'
@@ -429,7 +429,7 @@ class IOSpec extends DefaultRunnableSpec {
       testIO('returns the list in the same order', () => {
         const list = [1, 2, 3].map(I.succeed)
         const res  = I.sequenceIterableC(list)
-        return assertIO_(res, equalTo(Ch.make(1, 2, 3)))
+        return assertIO_(res, equalTo(Co.make(1, 2, 3)))
       }),
       testIO('is referentially transparent', () =>
         I.gen(function* (_) {
@@ -447,7 +447,7 @@ class IOSpec extends DefaultRunnableSpec {
       testIO('returns results in the same order', () => {
         const list = [1, 2, 3].map(I.succeed)
         const res  = pipe(I.sequenceIterableC(list), I.withConcurrency(2))
-        return assertIO_(res, equalTo(Ch.make(1, 2, 3)))
+        return assertIO_(res, equalTo(Co.make(1, 2, 3)))
       })
     ),
     suite(
@@ -682,17 +682,17 @@ class IOSpec extends DefaultRunnableSpec {
       testIO('filters a collection using an effectual predicate', () => {
         const as = [2, 4, 6, 3, 5, 6]
         return I.gen(function* (_) {
-          const ref     = yield* _(Ref.make(Ch.empty<number>()))
+          const ref     = yield* _(Ref.make(Co.empty<number>()))
           const results = yield* _(
             pipe(
               as,
-              I.filter((a) => pipe(ref, Ref.update(Ch.append(a)), I.as(a % 2 === 0)))
+              I.filter((a) => pipe(ref, Ref.update(Co.append(a)), I.as(a % 2 === 0)))
             )
           )
           const effects = yield* _(ref.get)
           return all(
-            pipe(results, assert(equalTo(Ch.make(2, 4, 6, 6)))),
-            pipe(effects, assert(equalTo(Ch.make(2, 4, 6, 3, 5, 6))))
+            pipe(results, assert(equalTo(Co.make(2, 4, 6, 6)))),
+            pipe(effects, assert(equalTo(Co.make(2, 4, 6, 3, 5, 6))))
           )
         })
       }),
@@ -708,7 +708,7 @@ class IOSpec extends DefaultRunnableSpec {
           )
           const effects = yield* _(pipe(ref, Ref.get, I.map(S.map(N.Eq)(increment))))
           return all(
-            pipe(results, assert(equalTo(Ch.make(2, 4, 6)))),
+            pipe(results, assert(equalTo(Co.make(2, 4, 6)))),
             pipe(effects, assert(deepStrictEqualTo(new Set([3, 4, 5, 6, 7, 8]))))
           )
         })
@@ -720,7 +720,7 @@ class IOSpec extends DefaultRunnableSpec {
         pipe(
           [1, 2, 3, 4, 5, 6],
           I.foreach((a) => I.succeed(a + 1)),
-          assertIO(equalTo(Ch.make(2, 3, 4, 5, 6, 7)))
+          assertIO(equalTo(Co.make(2, 3, 4, 5, 6, 7)))
         )
       ),
       testIO('both evaluates effects and returns the list of results in the same order', () => {
@@ -740,7 +740,7 @@ class IOSpec extends DefaultRunnableSpec {
             )
           )
           const effects = yield* _(Ref.get(ref))
-          return all(pipe(effects, assert(deepStrictEqualTo(list))), pipe(res, assert(equalTo(Ch.make(1, 2, 3)))))
+          return all(pipe(effects, assert(deepStrictEqualTo(list))), pipe(res, assert(equalTo(Co.make(1, 2, 3)))))
         })
       })
     ),
@@ -756,20 +756,20 @@ class IOSpec extends DefaultRunnableSpec {
       testIO('runs single task', () => {
         const as      = [2]
         const results = I.foreachC_(as, (n) => I.succeed(2 * n))
-        return assertIO_(results, equalTo(Ch.single(4)))
+        return assertIO_(results, equalTo(Co.single(4)))
       }),
       testIO('runs two tasks', () => {
         const as      = [2, 3]
         const results = I.foreachC_(as, (n) => I.succeed(2 * n))
-        return assertIO_(results, equalTo(Ch.make(4, 6)))
+        return assertIO_(results, equalTo(Co.make(4, 6)))
       }),
       testIO('runs many tasks', () => {
-        const as      = Ch.range(1, 1000)
+        const as      = Co.range(1, 1000)
         const results = I.foreachC_(as, (n) => I.succeed(2 * n))
-        return assertIO_(results, equalTo(Ch.map_(as, (n) => 2 * n)))
+        return assertIO_(results, equalTo(Co.map_(as, (n) => 2 * n)))
       }),
       testIO('runs a task that fails', () => {
-        const as      = Ch.range(1, 10)
+        const as      = Co.range(1, 10)
         const results = pipe(
           as,
           I.foreachC((n) => (n === 5 ? I.fail('boom!') : I.succeed(2 * n))),
@@ -778,7 +778,7 @@ class IOSpec extends DefaultRunnableSpec {
         return assertIO_(results, equalTo('boom!'))
       }),
       testIO('runs two failed tasks', () => {
-        const as      = Ch.range(1, 10)
+        const as      = Co.range(1, 10)
         const results = pipe(
           as,
           I.foreachC((n) => (n === 5 ? I.fail('boom1!') : n === 8 ? I.fail('bool2!') : I.succeed(2 * n))),
@@ -787,7 +787,7 @@ class IOSpec extends DefaultRunnableSpec {
         return assertIO_(results, equalTo('boom1!')['||'](equalTo('boom2!')))
       }),
       testIO('runs a task that is interrupted', () => {
-        const as      = Ch.range(1, 10)
+        const as      = Co.range(1, 10)
         const results = pipe(
           as,
           I.foreachC((n) => (n === 5 ? I.interrupt : I.succeed(2 * n))),
@@ -796,7 +796,7 @@ class IOSpec extends DefaultRunnableSpec {
         return assertIO_(results, isInterrupted)
       }),
       testIO('runs a task that halts', () => {
-        const as      = Ch.range(1, 10)
+        const as      = Co.range(1, 10)
         const results = pipe(
           as,
           I.foreachC((n) => (n === 5 ? I.halt('boom!') : I.succeed(2 * n))),
@@ -813,11 +813,11 @@ class IOSpec extends DefaultRunnableSpec {
           I.foreachC_(list, (x) => I.succeedLazy(() => x.toString())),
           I.withConcurrency(2)
         )
-        return assertIO_(res, equalTo(Ch.make('1', '2', '3')))
+        return assertIO_(res, equalTo(Co.make('1', '2', '3')))
       }),
       testIO('works on large lists', () => {
         const n   = 10
-        const seq = Ch.range(0, 100000)
+        const seq = Co.range(0, 100000)
         const res = pipe(I.foreachC_(seq, I.succeed), I.withConcurrency(n))
         return assertIO_(res, equalTo(seq))
       }),
@@ -849,7 +849,7 @@ class IOSpec extends DefaultRunnableSpec {
       testIO('returns the list of results in the same order', () => {
         const list = [1, 2, 3].map((n) => I.succeedLazy(() => n))
         const res  = pipe(I.forkAll(list), I.chain(Fi.join))
-        return assertIO_(res, equalTo(Ch.make(1, 2, 3)))
+        return assertIO_(res, equalTo(Co.make(1, 2, 3)))
       }),
       testIO('happy path', () => {
         const list = A.range(1, 1000)
@@ -858,11 +858,11 @@ class IOSpec extends DefaultRunnableSpec {
           A.map((n) => I.succeedLazy(() => n)),
           I.forkAll,
           I.chain(Fi.join),
-          assertIO(equalTo(Ch.range(1, 1000)))
+          assertIO(equalTo(Co.range(1, 1000)))
         )
       }),
       testIO('empty input', () => {
-        return assertIO_(pipe(I.forkAll(A.empty<I.IO<unknown, never, void>>()), I.chain(Fi.join)), equalTo(Ch.empty()))
+        return assertIO_(pipe(I.forkAll(A.empty<I.IO<unknown, never, void>>()), I.chain(Fi.join)), equalTo(Co.empty()))
       }),
       testIO('propagates failures', () => {
         const boom = new Error()

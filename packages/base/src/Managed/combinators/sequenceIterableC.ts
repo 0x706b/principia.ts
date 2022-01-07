@@ -1,6 +1,6 @@
 // tracing: off
 
-import type { Chunk } from '../../Chunk/core'
+import type { Conc } from '../../collection/immutable/Conc/core'
 import type { Managed } from '../core'
 
 import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
@@ -11,7 +11,7 @@ import { foreachC_, foreachUnitC_ } from './foreachC'
 /**
  * @trace call
  */
-export function sequenceIterableC<R, E, A>(mas: Iterable<Managed<R, E, A>>): Managed<R, E, Chunk<A>> {
+export function sequenceIterableC<R, E, A>(mas: Iterable<Managed<R, E, A>>): Managed<R, E, Conc<A>> {
   const trace = accessCallTrace()
   return foreachC_(
     mas,

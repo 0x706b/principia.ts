@@ -3,8 +3,8 @@ import type { Predicate } from '../Predicate'
 
 import * as Ch from '../Channel'
 import * as MD from '../Channel/internal/MergeDecision'
-import * as C from '../Chunk'
 import { Clock } from '../Clock'
+import * as C from '../collection/immutable/Conc'
 import * as E from '../Either'
 import { flow, pipe } from '../function'
 import * as H from '../Hub'
@@ -22,7 +22,7 @@ import { tuple } from '../tuple/core'
  * of type `Z`.
  */
 export class Sink<R, E, In, L, Z> {
-  constructor(readonly channel: Ch.Channel<R, never, C.Chunk<In>, unknown, E, C.Chunk<L>, Z>) {}
+  constructor(readonly channel: Ch.Channel<R, never, C.Conc<In>, unknown, E, C.Conc<L>, Z>) {}
 }
 
 export function succeedLazy<A>(a: () => A): Sink<unknown, unknown, never, never, A> {
@@ -59,10 +59,10 @@ export function succeed<A>(a: A): Sink<unknown, unknown, never, never, A> {
 }
 
 function pullFromPush<R, E, I, L, Z>(
-  push: (_: M.Maybe<C.Chunk<I>>) => I.IO<R, readonly [E.Either<E, Z>, C.Chunk<L>], void>
-): Ch.Channel<R, never, C.Chunk<I>, any, E, C.Chunk<L>, Z> {
+  push: (_: M.Maybe<C.Conc<I>>) => I.IO<R, readonly [E.Either<E, Z>, C.Conc<L>], void>
+): Ch.Channel<R, never, C.Conc<I>, any, E, C.Conc<L>, Z> {
   return Ch.readWith(
-    (inp: C.Chunk<I>) =>
+    (inp: C.Conc<I>) =>
       pipe(
         M.just(inp),
         push,
@@ -100,7 +100,7 @@ function pullFromPush<R, E, I, L, Z>(
 }
 
 export function fromPush<R, E, I, L, Z>(
-  push: Ma.Managed<R, never, (_: M.Maybe<C.Chunk<I>>) => I.IO<R, readonly [E.Either<E, Z>, C.Chunk<L>], void>>
+  push: Ma.Managed<R, never, (_: M.Maybe<C.Conc<I>>) => I.IO<R, readonly [E.Either<E, Z>, C.Conc<L>], void>>
 ): Sink<R, E, I, L, Z> {
   return new Sink(pipe(push, Ma.map(pullFromPush), Ch.unwrapManaged))
 }
@@ -152,9 +152,9 @@ export function contramapIO<In, R1, E1, In1>(
  */
 export function contramapChunks_<R, E, In, L, Z, In1>(
   sink: Sink<R, E, In, L, Z>,
-  f: (chunk: C.Chunk<In1>) => C.Chunk<In>
+  f: (chunk: C.Conc<In1>) => C.Conc<In>
 ): Sink<R, E, In1, L, Z> {
-  const loop: Ch.Channel<R, never, C.Chunk<In1>, unknown, never, C.Chunk<In>, unknown> = Ch.readWith(
+  const loop: Ch.Channel<R, never, C.Conc<In1>, unknown, never, C.Conc<In>, unknown> = Ch.readWith(
     (chunk) => Ch.crossSecond_(Ch.write(f(chunk)), loop),
     Ch.fail,
     Ch.succeed
@@ -167,7 +167,7 @@ export function contramapChunks_<R, E, In, L, Z, In1>(
  * `f` must preserve chunking-invariance
  */
 export function contramapChunks<In, In1>(
-  f: (chunk: C.Chunk<In1>) => C.Chunk<In>
+  f: (chunk: C.Conc<In1>) => C.Conc<In>
 ): <R, E, L, Z>(sink: Sink<R, E, In, L, Z>) => Sink<R, E, In1, L, Z> {
   return (sink) => contramapChunks_(sink, f)
 }
@@ -178,15 +178,15 @@ export function contramapChunks<In, In1>(
  */
 export function contramapChunksIO_<R, E, In, L, Z, R1, E1, In1>(
   sink: Sink<R, E, In, L, Z>,
-  f: (chunk: C.Chunk<In1>) => I.IO<R1, E1, C.Chunk<In>>
+  f: (chunk: C.Conc<In1>) => I.IO<R1, E1, C.Conc<In>>
 ): Sink<R & R1, E | E1, In1, L, Z> {
-  const loop: Ch.Channel<R & R1, never, C.Chunk<In1>, unknown, E | E1, C.Chunk<In>, unknown> = Ch.readWith(
+  const loop: Ch.Channel<R & R1, never, C.Conc<In1>, unknown, E | E1, C.Conc<In>, unknown> = Ch.readWith(
     (chunk) => pipe(Ch.fromIO(f(chunk)), Ch.chain(Ch.write), Ch.crossSecond(loop)),
     Ch.fail,
     Ch.succeed
   )
   return new Sink(
-    Ch.pipeToOrFail_(loop, sink.channel as Ch.Channel<R, never, C.Chunk<In>, unknown, E | E1, C.Chunk<L>, Z>)
+    Ch.pipeToOrFail_(loop, sink.channel as Ch.Channel<R, never, C.Conc<In>, unknown, E | E1, C.Conc<L>, Z>)
   )
 }
 
@@ -195,7 +195,7 @@ export function contramapChunksIO_<R, E, In, L, Z, R1, E1, In1>(
  * `f` must preserve chunking-invariance
  */
 export function contramapChunksIO<In, R1, E1, In1>(
-  f: (chunk: C.Chunk<In1>) => I.IO<R1, E1, C.Chunk<In>>
+  f: (chunk: C.Conc<In1>) => I.IO<R1, E1, C.Conc<In>>
 ): <R, E, L, Z>(sink: Sink<R, E, In, L, Z>) => Sink<R & R1, E | E1, In1, L, Z> {
   return (sink) => contramapChunksIO_(sink, f)
 }
@@ -282,14 +282,14 @@ export function matchSink_<
         (err) => onFailure(err).channel,
         ([leftovers, z]) =>
           Ch.deferTotal(() => {
-            const leftoversRef = new AtomicReference<C.Chunk<C.Chunk<L1 | L2>>>(
+            const leftoversRef = new AtomicReference<C.Conc<C.Conc<L1 | L2>>>(
               C.filter_(leftovers, (a) => C.isNonEmpty(a))
             )
             const refReader = Ch.chain_(
               Ch.succeedLazy(() => leftoversRef.getAndSet(C.empty())),
-              (chunk) => Ch.writeChunk(chunk as unknown as C.Chunk<C.Chunk<In1 & In2>>)
+              (chunk) => Ch.writeChunk(chunk as unknown as C.Conc<C.Conc<In1 & In2>>)
             )
-            const passthrough      = Ch.id<never, C.Chunk<In1 & In2>, unknown>()
+            const passthrough      = Ch.id<never, C.Conc<In1 & In2>, unknown>()
             const continuationSink = pipe(refReader, Ch.crossSecond(passthrough), Ch.pipeTo(onSuccess(z).channel))
 
             return Ch.chain_(Ch.doneCollect(continuationSink), ([newLeftovers, z1]) =>
@@ -369,7 +369,7 @@ export function apSecond_<R, E, In, L extends In1 & L1, Z, R1, E1, In1 extends I
 
 export function exposeLeftover<R, E, In, L, Z>(
   sink: Sink<R, E, In, L, Z>
-): Sink<R, E, In, never, readonly [Z, C.Chunk<L>]> {
+): Sink<R, E, In, never, readonly [Z, C.Conc<L>]> {
   return new Sink(
     pipe(
       Ch.doneCollect(sink.channel),
@@ -401,8 +401,8 @@ export function unwrapManaged<R, E, R1, E1, In, L, Z>(
  */
 
 function collectLoop<Err, A>(
-  state: C.Chunk<A>
-): Ch.Channel<unknown, Err, C.Chunk<A>, unknown, Err, C.Chunk<never>, C.Chunk<A>> {
+  state: C.Conc<A>
+): Ch.Channel<unknown, Err, C.Conc<A>, unknown, Err, C.Conc<never>, C.Conc<A>> {
   return Ch.readWithCause(
     (i) => collectLoop(C.concat_(state, i)),
     Ch.failCause,
@@ -421,7 +421,7 @@ export function collectAll<Err, A>() {
  * A sink that ignores all of its inputs.
  */
 export function drain() {
-  const drain: Ch.Channel<unknown, never, C.Chunk<unknown>, unknown, never, C.Chunk<never>, void> = Ch.readWithCause(
+  const drain: Ch.Channel<unknown, never, C.Conc<unknown>, unknown, never, C.Conc<never>, void> = Ch.readWithCause(
     (_) => drain,
     Ch.failCause,
     (_) => Ch.unit()
@@ -431,14 +431,14 @@ export function drain() {
 }
 
 export function dropWhile<Err, In>(predicate: Predicate<In>): Sink<unknown, never, In, In, any> {
-  const loop: Ch.Channel<unknown, never, C.Chunk<In>, any, never, C.Chunk<In>, any> = Ch.readWith(
-    (inp: C.Chunk<In>) => {
+  const loop: Ch.Channel<unknown, never, C.Conc<In>, any, never, C.Conc<In>, any> = Ch.readWith(
+    (inp: C.Conc<In>) => {
       const leftover = C.dropWhile_(inp, predicate)
       const more     = C.isEmpty(leftover)
       if (more) {
         return loop
       } else {
-        return pipe(Ch.write(leftover), Ch.crossSecond(Ch.id<never, C.Chunk<In>, any>()))
+        return pipe(Ch.write(leftover), Ch.crossSecond(Ch.id<never, C.Conc<In>, any>()))
       }
     },
     (err: never) => Ch.fail(err),
@@ -449,10 +449,10 @@ export function dropWhile<Err, In>(predicate: Predicate<In>): Sink<unknown, neve
 
 function foldChunkSplit<In, S>(
   s0: S,
-  chunk: C.Chunk<In>,
+  chunk: C.Conc<In>,
   cont: (s: S) => boolean,
   f: (s: S, inp: In) => S
-): readonly [S, C.Chunk<In>] {
+): readonly [S, C.Conc<In>] {
   let idx = 0
   let len = chunk.length
   let s   = s0
@@ -471,12 +471,12 @@ function foldReader<In, S>(
   s0: S,
   cont: (s: S) => boolean,
   f: (s: S, inp: In) => S
-): Ch.Channel<unknown, never, C.Chunk<In>, unknown, never, C.Chunk<In>, S> {
+): Ch.Channel<unknown, never, C.Conc<In>, unknown, never, C.Conc<In>, S> {
   if (!cont(s0)) {
     return Ch.end(s0)
   } else {
     return Ch.readWith(
-      (inp: C.Chunk<In>) => {
+      (inp: C.Conc<In>) => {
         const [nextS, leftovers] = foldChunkSplit(s0, inp, cont, f)
         return C.isNonEmpty(leftovers) ? Ch.as_(Ch.write(leftovers), nextS) : foldReader(nextS, cont, f)
       },
@@ -500,10 +500,10 @@ export function fold<Err, In, S>(
 function foldChunksReader<In, S>(
   s: S,
   cont: (s: S) => boolean,
-  f: (s: S, inp: C.Chunk<In>) => S
-): Ch.Channel<unknown, never, C.Chunk<In>, unknown, never, never, S> {
+  f: (s: S, inp: C.Conc<In>) => S
+): Ch.Channel<unknown, never, C.Conc<In>, unknown, never, never, S> {
   return Ch.readWith(
-    (inp: C.Chunk<In>) => {
+    (inp: C.Conc<In>) => {
       const nextS = f(s, inp)
       return cont(nextS) ? foldChunksReader(nextS, cont, f) : Ch.end(nextS)
     },
@@ -520,7 +520,7 @@ function foldChunksReader<In, S>(
 export function foldChunks<Err, In, S>(
   s: S,
   cont: (s: S) => boolean,
-  f: (s: S, inp: C.Chunk<In>) => S
+  f: (s: S, inp: C.Conc<In>) => S
 ): Sink<unknown, never, In, never, S> {
   return new Sink(cont(s) ? foldChunksReader(s, cont, f) : Ch.end(s))
 }
@@ -528,10 +528,10 @@ export function foldChunks<Err, In, S>(
 function foldChunksIOReader<Env, Err, In, S>(
   s: S,
   cont: (s: S) => boolean,
-  f: (s: S, inp: C.Chunk<In>) => I.IO<Env, Err, S>
-): Ch.Channel<Env, Err, C.Chunk<In>, unknown, Err, never, S> {
+  f: (s: S, inp: C.Conc<In>) => I.IO<Env, Err, S>
+): Ch.Channel<Env, Err, C.Conc<In>, unknown, Err, never, S> {
   return Ch.readWith(
-    (inp: C.Chunk<In>) =>
+    (inp: C.Conc<In>) =>
       Ch.chain_(Ch.fromIO(f(s, inp)), (nextS) => (cont(nextS) ? foldChunksIOReader(nextS, cont, f) : Ch.end(nextS))),
     Ch.fail,
     () => Ch.end(s)
@@ -546,18 +546,18 @@ function foldChunksIOReader<Env, Err, In, S>(
 export function foldChunksIO<Env, Err, In, S>(
   s: S,
   cont: (s: S) => boolean,
-  f: (s: S, inp: C.Chunk<In>) => I.IO<Env, Err, S>
+  f: (s: S, inp: C.Conc<In>) => I.IO<Env, Err, S>
 ): Sink<Env, Err, In, In, S> {
   return new Sink(cont(s) ? foldChunksIOReader(s, cont, f) : Ch.end(s))
 }
 
 function foldChunkSplitIO<Env, Err, In, S>(
   s: S,
-  chunk: C.Chunk<In>,
+  chunk: C.Conc<In>,
   cont: (s: S) => boolean,
   f: (s: S, inp: In) => I.IO<Env, Err, S>
-): I.IO<Env, Err, readonly [S, M.Maybe<C.Chunk<In>>]> {
-  function go(s: S, chunk: C.Chunk<In>, idx: number, len: number): I.IO<Env, Err, readonly [S, M.Maybe<C.Chunk<In>>]> {
+): I.IO<Env, Err, readonly [S, M.Maybe<C.Conc<In>>]> {
+  function go(s: S, chunk: C.Conc<In>, idx: number, len: number): I.IO<Env, Err, readonly [S, M.Maybe<C.Conc<In>>]> {
     if (idx === len) {
       return I.succeed([s, M.nothing()])
     } else {
@@ -573,9 +573,9 @@ function foldIOReader<Env, Err, In, S>(
   s: S,
   cont: (s: S) => boolean,
   f: (s: S, inp: In) => I.IO<Env, Err, S>
-): Ch.Channel<Env, Err, C.Chunk<In>, unknown, Err, C.Chunk<In>, S> {
+): Ch.Channel<Env, Err, C.Conc<In>, unknown, Err, C.Conc<In>, S> {
   return Ch.readWith(
-    (inp: C.Chunk<In>) =>
+    (inp: C.Conc<In>) =>
       Ch.chain_(Ch.fromIO(foldChunkSplitIO(s, inp, cont, f)), ([nextS, leftovers]) =>
         M.match_(
           leftovers,
@@ -610,7 +610,7 @@ export function foldl<Err, In, S>(s: S, f: (s: S, inp: In) => S): Sink<unknown, 
  * A sink that folds its input chunks with the provided function and initial state.
  * `f` must preserve chunking-invariance.
  */
-export function foldlChunks<Err, In, S>(s: S, f: (s: S, inp: C.Chunk<In>) => S): Sink<unknown, Err, In, never, S> {
+export function foldlChunks<Err, In, S>(s: S, f: (s: S, inp: C.Conc<In>) => S): Sink<unknown, Err, In, never, S> {
   return foldChunks(s, () => true, f)
 }
 
@@ -620,7 +620,7 @@ export function foldlChunks<Err, In, S>(s: S, f: (s: S, inp: C.Chunk<In>) => S):
  */
 export function foldlChunksIO<R, Err, In, S>(
   s: S,
-  f: (s: S, inp: C.Chunk<In>) => I.IO<R, Err, S>
+  f: (s: S, inp: C.Conc<In>) => I.IO<R, Err, S>
 ): Sink<R, Err, In, never, S> {
   return dropLeftover(foldChunksIO(s, () => true, f))
 }
@@ -692,13 +692,13 @@ function foldWeightedDecomposeLoop<In, S>(
   s0: S,
   costFn: (s: S, inp: In) => number,
   max: number,
-  decompose: (inp: In) => C.Chunk<In>,
+  decompose: (inp: In) => C.Conc<In>,
   f: (s: S, inp: In) => S,
   cost0: number,
   dirty0: boolean
-): Ch.Channel<unknown, never, C.Chunk<In>, unknown, never, C.Chunk<In>, S> {
+): Ch.Channel<unknown, never, C.Conc<In>, unknown, never, C.Conc<In>, S> {
   return Ch.readWith(
-    (inp: C.Chunk<In>) => {
+    (inp: C.Conc<In>) => {
       let idx   = 0
       let dirty = dirty0
       let chunk = inp
@@ -767,7 +767,7 @@ export function foldWeightedDecompose<In, S>(
   s: S,
   costFn: (s: S, inp: In) => number,
   max: number,
-  decompose: (inp: In) => C.Chunk<In>,
+  decompose: (inp: In) => C.Conc<In>,
   f: (s: S, inp: In) => S
 ): Sink<unknown, never, In, In, S> {
   return new Sink(foldWeightedDecomposeLoop(s, costFn, max, decompose, f, 0, false))
@@ -795,20 +795,20 @@ function foldWeightedDecomposeIOLoop<Env, Err, In, S, Env1, Err1, Env2, Err2, En
   s0: S,
   costFn: (s: S, inp: In) => I.IO<Env1, Err1, number>,
   max: number,
-  decompose: (inp: In) => I.IO<Env2, Err2, C.Chunk<In>>,
+  decompose: (inp: In) => I.IO<Env2, Err2, C.Conc<In>>,
   f: (s: S, inp: In) => I.IO<Env3, Err3, S>,
   cost0: number,
   dirty0: boolean
-): Ch.Channel<Env & Env1 & Env2 & Env3, Err, C.Chunk<In>, unknown, Err | Err1 | Err2 | Err3, C.Chunk<In>, S> {
+): Ch.Channel<Env & Env1 & Env2 & Env3, Err, C.Conc<In>, unknown, Err | Err1 | Err2 | Err3, C.Conc<In>, S> {
   return Ch.readWith(
-    (inp: C.Chunk<In>) => {
+    (inp: C.Conc<In>) => {
       const go = (
-        inp: C.Chunk<In>,
+        inp: C.Conc<In>,
         s: S,
         dirty: boolean,
         cost: number,
         idx: number
-      ): I.IO<Env1 & Env2 & Env3, Err1 | Err2 | Err3, readonly [S, number, boolean, C.Chunk<In>]> => {
+      ): I.IO<Env1 & Env2 & Env3, Err1 | Err2 | Err3, readonly [S, number, boolean, C.Conc<In>]> => {
         if (idx === inp.length) {
           return I.succeed([s, cost, dirty, C.empty()])
         } else {
@@ -867,7 +867,7 @@ export function foldWeightedDecomposeIO<Env, Err, In, S, Env1, Err1, Env2, Err2,
   s: S,
   costFn: (s: S, inp: In) => I.IO<Env1, Err1, number>,
   max: number,
-  decompose: (inp: In) => I.IO<Env2, Err2, C.Chunk<In>>,
+  decompose: (inp: In) => I.IO<Env2, Err2, C.Conc<In>>,
   f: (s: S, inp: In) => I.IO<Env3, Err3, S>
 ): Sink<Env & Env1 & Env2 & Env3, Err | Err1 | Err2 | Err3, In, In, S> {
   return new Sink(foldWeightedDecomposeIOLoop(s, costFn, max, decompose, f, 0, false))
@@ -883,17 +883,17 @@ export function foreach<R, Err, In>(f: (inp: In) => I.IO<R, Err, any>): Sink<R, 
 /**
  * A sink that executes the provided effectful function for every chunk fed to it.
  */
-export function foreachChunk<R, Err, In>(f: (inp: C.Chunk<In>) => I.IO<R, Err, any>): Sink<R, Err, In, In, void> {
+export function foreachChunk<R, Err, In>(f: (inp: C.Conc<In>) => I.IO<R, Err, any>): Sink<R, Err, In, In, void> {
   return foreachChunkWhile(flow(f, I.as(true)))
 }
 
 function foreachWhileLoop<R, Err, In>(
   f: (_: In) => I.IO<R, Err, boolean>,
-  chunk: C.Chunk<In>,
+  chunk: C.Conc<In>,
   idx: number,
   len: number,
-  cont: Ch.Channel<R, Err, C.Chunk<In>, unknown, Err, C.Chunk<In>, void>
-): Ch.Channel<R, Err, C.Chunk<In>, unknown, Err, C.Chunk<In>, void> {
+  cont: Ch.Channel<R, Err, C.Conc<In>, unknown, Err, C.Conc<In>, void>
+): Ch.Channel<R, Err, C.Conc<In>, unknown, Err, C.Conc<In>, void> {
   if (idx === len) {
     return cont
   }
@@ -909,8 +909,8 @@ function foreachWhileLoop<R, Err, In>(
  * until `f` evaluates to `false`.
  */
 export function foreachWhile<R, Err, In>(f: (_: In) => I.IO<R, Err, boolean>): Sink<R, Err, In, In, void> {
-  const process: Ch.Channel<R, Err, C.Chunk<In>, unknown, Err, C.Chunk<In>, void> = Ch.readWithCause(
-    (inp: C.Chunk<In>) => foreachWhileLoop(f, inp, 0, inp.length, process),
+  const process: Ch.Channel<R, Err, C.Conc<In>, unknown, Err, C.Conc<In>, void> = Ch.readWithCause(
+    (inp: C.Conc<In>) => foreachWhileLoop(f, inp, 0, inp.length, process),
     Ch.failCause,
     () => Ch.unit()
   )
@@ -922,10 +922,10 @@ export function foreachWhile<R, Err, In>(f: (_: In) => I.IO<R, Err, boolean>): S
  * until `f` evaluates to `false`.
  */
 export function foreachChunkWhile<R, Err, In>(
-  f: (chunk: C.Chunk<In>) => I.IO<R, Err, boolean>
+  f: (chunk: C.Conc<In>) => I.IO<R, Err, boolean>
 ): Sink<R, Err, In, In, void> {
-  const reader: Ch.Channel<R, Err, C.Chunk<In>, unknown, Err, C.Chunk<In>, void> = Ch.readWith(
-    (inp: C.Chunk<In>) => Ch.chain_(Ch.fromIO(f(inp)), (cont) => (cont ? reader : Ch.end(undefined))),
+  const reader: Ch.Channel<R, Err, C.Conc<In>, unknown, Err, C.Conc<In>, void> = Ch.readWith(
+    (inp: C.Conc<In>) => Ch.chain_(Ch.fromIO(f(inp)), (cont) => (cont ? reader : Ch.end(undefined))),
     (err: Err) => Ch.fail(err),
     () => Ch.unit()
   )
@@ -946,13 +946,13 @@ export function last<Err, In>(): Sink<unknown, Err, In, In, M.Maybe<In>> {
   return foldl(M.nothing(), (_, i) => M.just(i))
 }
 
-export function leftover<L>(c: C.Chunk<L>): Sink<unknown, never, unknown, L, void> {
+export function leftover<L>(c: C.Conc<L>): Sink<unknown, never, unknown, L, void> {
   return new Sink(Ch.write(c))
 }
 
-export function take<Err, In>(n: number): Sink<unknown, Err, In, In, C.Chunk<In>> {
+export function take<Err, In>(n: number): Sink<unknown, Err, In, In, C.Conc<In>> {
   return chain_(
-    foldChunks<Err, In, C.Chunk<In>>(C.empty(), (c) => c.length < n, C.concat_),
+    foldChunks<Err, In, C.Conc<In>>(C.empty(), (c) => c.length < n, C.concat_),
     (acc) => {
       const [taken, leftover] = C.splitAt_(acc, n)
       return new Sink(Ch.crossSecond_(Ch.write(leftover), Ch.end(taken)))
@@ -986,10 +986,10 @@ export function raceWith_<R, E, In, L extends In1 & L1, Z, R1, E1, In1 extends I
   capacity = 16
 ): Sink<R & R1 & R2 & R3, E | E1 | E2 | E3, In & In1, L | L1, Z2 | Z3> {
   const managed = Ma.gen(function* (_) {
-    const hub    = yield* _(H.makeBounded<E.Either<Ex.Exit<never, any>, C.Chunk<In & In1>>>(capacity))
+    const hub    = yield* _(H.makeBounded<E.Either<Ex.Exit<never, any>, C.Conc<In & In1>>>(capacity))
     const left   = yield* _(Ch.fromHubManaged(hub))
     const right  = yield* _(Ch.fromHubManaged(hub))
-    const reader = Ch.toHub<never, any, C.Chunk<In1>>(hub)
+    const reader = Ch.toHub<never, any, C.Conc<In1>>(hub)
     const writer = pipe(
       left,
       Ch.pipeTo(sink.channel),

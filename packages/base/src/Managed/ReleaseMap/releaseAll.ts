@@ -5,7 +5,7 @@ import type { Exit } from '../../IO/Exit'
 
 import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
-import * as Ch from '../../Chunk/core'
+import * as Co from '../../collection/immutable/Conc/core'
 import { pipe } from '../../function'
 import { foreachExec as foreachExecIO } from '../../IO/combinators/foreachExec'
 import * as Ex from '../../IO/Exit'
@@ -41,7 +41,7 @@ export function releaseAll_(
               I.chain((exits) =>
                 pipe(
                   execStrategy._tag === 'Sequential' ? Ex.collectAll(exits) : Ex.collectAllC(exits),
-                  M.getOrElse(() => Ex.succeed(Ch.empty())),
+                  M.getOrElse(() => Ex.succeed(Co.empty())),
                   I.fromExit
                 )
               )

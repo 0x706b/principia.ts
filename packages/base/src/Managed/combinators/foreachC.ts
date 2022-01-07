@@ -1,6 +1,6 @@
 // tracing: off
 
-import type { Chunk } from '../../Chunk/core'
+import type { Conc } from '../../collection/immutable/Conc/core'
 import type { Managed } from '../core'
 
 import { traceAs } from '@principia/compile/util'
@@ -22,7 +22,7 @@ import * as RM from '../ReleaseMap'
  *
  * @trace 1
  */
-export function foreachC_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E, B>): Managed<R, E, Chunk<B>> {
+export function foreachC_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E, B>): Managed<R, E, Conc<B>> {
   return pipe(
     RM.makeManagedC,
     Ma.mapIO((parallelReleaseMap) => {
@@ -70,7 +70,7 @@ export function foreachC_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E
  * @dataFirst foreachC_
  * @trace 0
  */
-export function foreachC<R, E, A, B>(f: (a: A) => Managed<R, E, B>): (as: Iterable<A>) => Managed<R, E, Chunk<B>> {
+export function foreachC<R, E, A, B>(f: (a: A) => Managed<R, E, B>): (as: Iterable<A>) => Managed<R, E, Conc<B>> {
   return (as) => foreachC_(as, f)
 }
 

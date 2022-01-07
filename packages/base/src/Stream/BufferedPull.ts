@@ -1,4 +1,4 @@
-import * as C from '../Chunk'
+import * as C from '../collection/immutable/Conc'
 import { pipe } from '../function'
 import * as I from '../IO'
 import * as M from '../Maybe'
@@ -8,13 +8,13 @@ import * as Pull from './Pull'
 
 export class BufferedPull<R, E, A> {
   constructor(
-    readonly upstream: I.IO<R, M.Maybe<E>, C.Chunk<A>>,
+    readonly upstream: I.IO<R, M.Maybe<E>, C.Conc<A>>,
     readonly done: Ref.URef<boolean>,
-    readonly cursor: Ref.URef<readonly [C.Chunk<A>, number]>
+    readonly cursor: Ref.URef<readonly [C.Conc<A>, number]>
   ) {}
 }
 
-export function make<R, E, A>(upstream: I.IO<R, M.Maybe<E>, C.Chunk<A>>): I.UIO<BufferedPull<R, E, A>> {
+export function make<R, E, A>(upstream: I.IO<R, M.Maybe<E>, C.Conc<A>>): I.UIO<BufferedPull<R, E, A>> {
   return I.gen(function* (_) {
     const done   = yield* _(Ref.make(false))
     const cursor = yield* _(Ref.make(tuple(C.empty<A>(), 0)))
@@ -70,7 +70,7 @@ export function pullElement<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, M.May
   )
 }
 
-export function pullChunk<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, M.Maybe<E>, C.Chunk<A>> {
+export function pullChunk<R, E, A>(self: BufferedPull<R, E, A>): I.IO<R, M.Maybe<E>, C.Conc<A>> {
   return ifNotDone_(
     self,
     pipe(

@@ -2,7 +2,7 @@ import type { Byte } from '@principia/base/Byte'
 import type { FSync, USync } from '@principia/base/Sync'
 
 import * as Ch from '@principia/base/Channel'
-import * as C from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as M from '@principia/base/Maybe'
@@ -56,9 +56,9 @@ export class StdoutError {
   constructor(readonly error: Error) {}
 }
 
-function stdoutLoop<E>(): Ch.Channel<unknown, E, C.Chunk<Buffer>, unknown, StdoutError | E, C.Chunk<never>, void> {
+function stdoutLoop<E>(): Ch.Channel<unknown, E, C.Conc<Buffer>, unknown, StdoutError | E, C.Conc<never>, void> {
   return Ch.readWith(
-    (is: C.Chunk<Buffer>) =>
+    (is: C.Conc<Buffer>) =>
       pipe(
         Ch.fromIO(
           I.async<unknown, StdoutError, void>(async (cb) => {

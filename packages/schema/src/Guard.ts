@@ -1,7 +1,7 @@
 import type { Schema } from './Schema/core'
 import type * as S from './Schemable'
 import type { TypeOfPrism } from './util'
-import type { Chunk } from '@principia/base/Chunk'
+import type { Conc } from '@principia/base/collection/immutable/Conc'
 import type * as _ from '@principia/base/Guard'
 import type { Maybe } from '@principia/base/Maybe'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
@@ -10,7 +10,7 @@ import type { Primitive, UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/Array'
 import * as B from '@principia/base/boolean'
-import * as C from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import * as E from '@principia/base/Either'
 import { flow, unsafeCoerce } from '@principia/base/function'
 import * as O from '@principia/base/Maybe'
@@ -135,9 +135,9 @@ export function array<A>(item: Guard<A>): Guard<ReadonlyArray<A>> {
   })
 }
 
-export function chunk<A>(item: Guard<A>): Guard<Chunk<A>> {
-  return Guard((u): u is Chunk<A> => {
-    if (!C.isChunk(u)) {
+export function conc<A>(item: Guard<A>): Guard<Conc<A>> {
+  return Guard((u): u is Conc<A> => {
+    if (!C.isConc(u)) {
       return false
     }
     for (const a of u) {
@@ -243,7 +243,7 @@ export const Schemable: S.Schemable<GuardSURI> = {
   struct: (properties) => struct(properties),
   partial: (properties) => partial(properties),
   array: (item) => array(item),
-  chunk: (item) => chunk(item),
+  conc: (item) => conc(item),
   record: (codomain) => record(codomain),
   tuple: (components) => tuple(...components),
   sum: (tag) => (members) => sum(tag)(members),

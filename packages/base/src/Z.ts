@@ -9,7 +9,7 @@ import type { _E, _R } from './prelude'
 
 import * as A from './Array/core'
 import * as Ca from './Cause'
-import * as C from './Chunk/core'
+import * as C from './collection/immutable/Conc/core'
 import * as V from './collection/immutable/Vector/core'
 import * as E from './Either'
 import * as Ex from './Exit'
@@ -141,8 +141,8 @@ class Match<W, S1, S2, S5, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C> extend
   readonly _tag = ZTag.Match
   constructor(
     readonly z: Z<W, S1, S2, R, E, A>,
-    readonly onFailure: (ws: C.Chunk<W>, e: Cause<E>) => Z<W1, S5, S3, R1, E1, B>,
-    readonly onSuccess: (ws: C.Chunk<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
+    readonly onFailure: (ws: C.Conc<W>, e: Cause<E>) => Z<W1, S5, S3, R1, E1, B>,
+    readonly onSuccess: (ws: C.Conc<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
   ) {
     super()
   }
@@ -167,7 +167,7 @@ class Give<W, S1, S2, R, E, A> extends Z<W, S1, S2, unknown, E, A> {
 class Tell<W> extends Z<W, unknown, never, unknown, never, void> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
   readonly _tag = ZTag.Tell
-  constructor(readonly log: C.Chunk<W>) {
+  constructor(readonly log: C.Conc<W>) {
     super()
   }
 }
@@ -175,7 +175,7 @@ class Tell<W> extends Z<W, unknown, never, unknown, never, void> {
 class Censor<W, S1, S2, R, E, A, W1> extends Z<W1, S1, S2, R, E, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
   readonly _tag = ZTag.Censor
-  constructor(readonly ma: Z<W, S1, S2, R, E, A>, readonly modifyLog: (ws: C.Chunk<W>) => C.Chunk<W1>) {
+  constructor(readonly ma: Z<W, S1, S2, R, E, A>, readonly modifyLog: (ws: C.Conc<W>) => C.Conc<W1>) {
     super()
   }
 }
@@ -464,8 +464,8 @@ export function giveState<S1>(s: S1): <W, S2, R, E, A>(ma: Z<W, S1, S2, R, E, A>
  */
 export function matchLogCauseZ_<W, S1, S2, R, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
   fa: Z<W, S1, S2, R, E, A>,
-  onFailure: (ws: C.Chunk<W>, e: Cause<E>) => Z<W1, S0, S3, R1, E1, B>,
-  onSuccess: (ws: C.Chunk<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
+  onFailure: (ws: C.Conc<W>, e: Cause<E>) => Z<W1, S0, S3, R1, E1, B>,
+  onSuccess: (ws: C.Conc<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
 ): Z<W1 | W2, S0 & S1, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
   return new Match(fa, onFailure, onSuccess)
 }
@@ -481,8 +481,8 @@ export function matchLogCauseZ_<W, S1, S2, R, E, A, W1, S0, S3, R1, E1, B, W2, S
  * @dataFirst matchLogCauseZ_
  */
 export function matchLogCauseZ<W, S1, S2, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2, C>(
-  onFailure: (ws: C.Chunk<W>, e: Cause<E>) => Z<W1, S0, S3, R1, E1, B>,
-  onSuccess: (ws: C.Chunk<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
+  onFailure: (ws: C.Conc<W>, e: Cause<E>) => Z<W1, S0, S3, R1, E1, B>,
+  onSuccess: (ws: C.Conc<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
 ): <R>(fa: Z<W, S1, S2, R, E, A>) => Z<W1 | W2, S0 & S1, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
   return (fa) => matchLogCauseZ_(fa, onFailure, onSuccess)
 }
@@ -519,8 +519,8 @@ export function matchCauseZ<S1, S2, E, A, W1, S0, S3, R1, E1, B, W2, S4, R2, E2,
 
 export function matchLogZ_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
   fa: Z<W, S1, S2, R, E, A>,
-  onFailure: (ws: C.Chunk<W>, e: E) => Z<W1, S5, S3, R1, E1, B>,
-  onSuccess: (ws: C.Chunk<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
+  onFailure: (ws: C.Conc<W>, e: E) => Z<W1, S5, S3, R1, E1, B>,
+  onSuccess: (ws: C.Conc<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
 ): Z<W | W1 | W2, S1 & S5, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
   return matchLogCauseZ_(
     fa,
@@ -537,8 +537,8 @@ export function matchLogZ_<W, S1, S5, S2, R, E, A, W1, S3, R1, E1, B, W2, S4, R2
  * @dataFirst matchLogZ_
  */
 export function matchLogZ<W, S1, S2, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C>(
-  onFailure: (ws: C.Chunk<W>, e: E) => Z<W1, S1, S3, R1, E1, B>,
-  onSuccess: (ws: C.Chunk<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
+  onFailure: (ws: C.Conc<W>, e: E) => Z<W1, S1, S3, R1, E1, B>,
+  onSuccess: (ws: C.Conc<W>, a: A) => Z<W2, S2, S4, R2, E2, C>
 ): <R>(fa: Z<W, S1, S2, R, E, A>) => Z<W | W1 | W2, S1, S3 | S4, R & R1 & R2, E1 | E2, B | C> {
   return (fa) => matchLogZ_(fa, onFailure, onSuccess)
 }
@@ -1079,7 +1079,7 @@ export function erase<W, S1, S2, R, E, A>(wa: Z<W, S1, S2, R, E, A>): Z<never, S
  */
 export function censor_<W, S1, S2, R, E, A, W1>(
   wa: Z<W, S1, S2, R, E, A>,
-  f: (ws: C.Chunk<W>) => C.Chunk<W1>
+  f: (ws: C.Conc<W>) => C.Conc<W1>
 ): Z<W1, S1, S2, R, E, A> {
   return new Censor(wa, f)
 }
@@ -1090,7 +1090,7 @@ export function censor_<W, S1, S2, R, E, A, W1>(
  * @dataFirst censor_
  */
 export function censor<W, W1>(
-  f: (ws: C.Chunk<W>) => C.Chunk<W1>
+  f: (ws: C.Conc<W>) => C.Conc<W1>
 ): <S1, S2, R, E, A>(wa: Z<W, S1, S2, R, E, A>) => Z<W1, S1, S2, R, E, A> {
   return (wa) => censor_(wa, f)
 }
@@ -1098,7 +1098,7 @@ export function censor<W, W1>(
 /**
  * Constructs a computation
  */
-export function tellAll<W>(ws: C.Chunk<W>): Z<W, unknown, never, unknown, never, void> {
+export function tellAll<W>(ws: C.Conc<W>): Z<W, unknown, never, unknown, never, void> {
   return new Tell(ws)
 }
 
@@ -1108,7 +1108,7 @@ export function tell<W>(w: W): Z<W, unknown, never, unknown, never, void> {
 
 export function writeAll_<W, S1, S2, R, E, A, W1>(
   ma: Z<W, S1, S2, R, E, A>,
-  ws: C.Chunk<W1>
+  ws: C.Conc<W1>
 ): Z<W | W1, S1, S2, R, E, A> {
   return censor_(ma, C.concat<W | W1>(ws))
 }
@@ -1117,7 +1117,7 @@ export function writeAll_<W, S1, S2, R, E, A, W1>(
  * @dataFirst writeAll_
  */
 export function writeAll<W1>(
-  ws: C.Chunk<W1>
+  ws: C.Conc<W1>
 ): <W, S1, S2, R, E, A>(ma: Z<W, S1, S2, R, E, A>) => Z<W | W1, S1, S2, R, E, A> {
   return (ma) => writeAll_(ma, ws)
 }
@@ -1133,7 +1133,7 @@ export function write<W1>(w: W1): <W, S1, S2, R, E, A>(ma: Z<W, S1, S2, R, E, A>
   return (ma) => write_(ma, w)
 }
 
-export function listen<W, S1, S2, R, E, A>(wa: Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, E, readonly [A, C.Chunk<W>]> {
+export function listen<W, S1, S2, R, E, A>(wa: Z<W, S1, S2, R, E, A>): Z<W, S1, S2, R, E, readonly [A, C.Conc<W>]> {
   return matchLogCauseZ_(
     wa,
     (_, e) => failCause(e),
@@ -1143,7 +1143,7 @@ export function listen<W, S1, S2, R, E, A>(wa: Z<W, S1, S2, R, E, A>): Z<W, S1, 
 
 export function listens_<W, S1, S2, R, E, A, B>(
   wa: Z<W, S1, S2, R, E, A>,
-  f: (l: C.Chunk<W>) => B
+  f: (l: C.Conc<W>) => B
 ): Z<W, S1, S2, R, E, readonly [A, B]> {
   return pipe(
     wa,
@@ -1156,7 +1156,7 @@ export function listens_<W, S1, S2, R, E, A, B>(
  * @dataFirst listens_
  */
 export function listens<W, B>(
-  f: (l: C.Chunk<W>) => B
+  f: (l: C.Conc<W>) => B
 ): <S1, S2, R, E, A>(wa: Z<W, S1, S2, R, E, A>) => Z<W, S1, S2, R, E, readonly [A, B]> {
   return (wa) => listens_(wa, f)
 }
@@ -1406,8 +1406,8 @@ export function foreachUnit<A, W, S, R, E>(
 export function iforeach_<W, S, R, E, A, B>(
   as: Iterable<A>,
   f: (i: number, a: A) => Z<W, S, S, R, E, B>
-): Z<W, S, S, R, E, C.Chunk<B>> {
-  return I.ifoldl_(as, succeed(C.empty()) as Z<W, S, S, R, E, C.Chunk<B>>, (i, b, a) =>
+): Z<W, S, S, R, E, C.Conc<B>> {
+  return I.ifoldl_(as, succeed(C.empty()) as Z<W, S, S, R, E, C.Conc<B>>, (i, b, a) =>
     crossWith_(
       b,
       defer(() => f(i, a)),
@@ -1421,14 +1421,14 @@ export function iforeach_<W, S, R, E, A, B>(
  */
 export function iforeach<A, W, S, R, E, B>(
   f: (i: number, a: A) => Z<W, S, S, R, E, B>
-): (as: Iterable<A>) => Z<W, S, S, R, E, C.Chunk<B>> {
+): (as: Iterable<A>) => Z<W, S, S, R, E, C.Conc<B>> {
   return (as) => iforeach_(as, f)
 }
 
 export function foreach_<W, S, R, E, A, B>(
   as: Iterable<A>,
   f: (a: A) => Z<W, S, S, R, E, B>
-): Z<W, S, S, R, E, C.Chunk<B>> {
+): Z<W, S, S, R, E, C.Conc<B>> {
   return iforeach_(as, (_, a) => f(a))
 }
 
@@ -1437,7 +1437,7 @@ export function foreach_<W, S, R, E, A, B>(
  */
 export function foreach<A, W, S, R, E, B>(
   f: (a: A) => Z<W, S, S, R, E, B>
-): (as: Iterable<A>) => Z<W, S, S, R, E, C.Chunk<B>> {
+): (as: Iterable<A>) => Z<W, S, S, R, E, C.Conc<B>> {
   return (as) => foreach_(as, f)
 }
 
@@ -1583,7 +1583,7 @@ type Frame = MatchFrame | ApplyFrame
 export function runAll_<W, S1, S2, E, A>(
   ma: Z<W, S1, S2, unknown, E, A>,
   s: S1
-): readonly [C.Chunk<W>, Exit<E, readonly [S2, A]>] {
+): readonly [C.Conc<W>, Exit<E, readonly [S2, A]>] {
   let stack: Stack<Frame> | undefined = undefined
   let s0          = s as any
   let result: any = null
@@ -1795,7 +1795,7 @@ export function runAll_<W, S1, S2, E, A>(
  */
 export function runAll<S1>(
   s: S1
-): <W, S2, E, A>(fa: Z<W, S1, S2, unknown, E, A>) => readonly [C.Chunk<W>, Exit<E, readonly [S2, A]>] {
+): <W, S2, E, A>(fa: Z<W, S1, S2, unknown, E, A>) => readonly [C.Conc<W>, Exit<E, readonly [S2, A]>] {
   return (fa) => runAll_(fa, s)
 }
 
@@ -1914,7 +1914,7 @@ export function runReaderExit<R>(env: R): <E, A>(ma: Z<never, unknown, unknown, 
   return (ma) => runReaderExit_(ma, env)
 }
 
-export function runWriter<W, A>(ma: Z<W, unknown, unknown, unknown, never, A>): readonly [C.Chunk<W>, A] {
+export function runWriter<W, A>(ma: Z<W, unknown, unknown, unknown, never, A>): readonly [C.Conc<W>, A] {
   return pipe(ma, runAll({}), ([w, exit]) =>
     pipe(
       exit,

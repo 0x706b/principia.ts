@@ -5,7 +5,7 @@ import type * as http from 'http'
 import type { Socket } from 'net'
 
 import * as Ch from '@principia/base/Channel'
-import * as C from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import * as E from '@principia/base/Either'
 import { flow, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
@@ -102,7 +102,7 @@ export class HttpRequest {
                     })
                   })
                 )
-                const writer: Ch.Channel<unknown, unknown, unknown, unknown, never, C.Chunk<RequestEvent>, void> = pipe(
+                const writer: Ch.Channel<unknown, unknown, unknown, unknown, never, C.Conc<RequestEvent>, void> = pipe(
                   Q.take(queue),
                   I.chain((event) => {
                     if (event._tag === 'Close') {

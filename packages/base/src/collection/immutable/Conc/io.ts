@@ -1,8 +1,8 @@
-import type { Chunk, ChunkBuilder } from './core'
+import type { Conc, ConcBuilder } from './core'
 
-import { identity, pipe } from '../function'
-import * as I from '../IO'
-import * as M from '../Maybe'
+import { identity, pipe } from '../../../function'
+import * as I from '../../../IO'
+import * as M from '../../../Maybe'
 import * as C from './core'
 
 /*
@@ -11,7 +11,7 @@ import * as C from './core'
  * -------------------------------------------------------------------------------------------------
  */
 
-export function mapIO_<A, R, E, B>(as: Chunk<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Chunk<B>> {
+export function mapIO_<A, R, E, B>(as: Conc<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Conc<B>> {
   return I.defer(() => {
     const out = C.builder<B>()
     return pipe(
@@ -26,11 +26,11 @@ export function mapIO_<A, R, E, B>(as: Chunk<A>, f: (a: A) => I.IO<R, E, B>): I.
   })
 }
 
-export function mapIO<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, Chunk<B>> {
+export function mapIO<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: Conc<A>) => I.IO<R, E, Conc<B>> {
   return (as) => mapIO_(as, f)
 }
 
-export function mapIOC_<A, R, E, B>(as: Chunk<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Chunk<B>> {
+export function mapIOC_<A, R, E, B>(as: Conc<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Conc<B>> {
   return I.chain_(I.succeed<B[]>(Array(as.length)), (bs) => {
     function fn([a, n]: readonly [A, number]) {
       return I.chain_(
@@ -45,11 +45,11 @@ export function mapIOC_<A, R, E, B>(as: Chunk<A>, f: (a: A) => I.IO<R, E, B>): I
   })
 }
 
-export function mapIOC<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, Chunk<B>> {
+export function mapIOC<A, R, E, B>(f: (a: A) => I.IO<R, E, B>): (as: Conc<A>) => I.IO<R, E, Conc<B>> {
   return (as) => mapIOC_(as, f)
 }
 
-export function sequenceIO<R, E, A>(as: Chunk<I.IO<R, E, A>>): I.IO<R, E, Chunk<A>> {
+export function sequenceIO<R, E, A>(as: Conc<I.IO<R, E, A>>): I.IO<R, E, Conc<A>> {
   return mapIO_(as, identity)
 }
 
@@ -73,7 +73,7 @@ function findIOLoop_<R, E, A>(
   return I.succeed(M.nothing())
 }
 
-export function findIO_<R, E, A>(as: Chunk<A>, f: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, M.Maybe<A>> {
+export function findIO_<R, E, A>(as: Conc<A>, f: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, M.Maybe<A>> {
   C.concrete(as)
   const iterator = as.arrayIterator()
   let result
@@ -86,19 +86,19 @@ export function findIO_<R, E, A>(as: Chunk<A>, f: (a: A) => I.IO<R, E, boolean>)
   }
 }
 
-export function findIO<R, E, A>(f: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, M.Maybe<A>> {
+export function findIO<R, E, A>(f: (a: A) => I.IO<R, E, boolean>): (as: Conc<A>) => I.IO<R, E, M.Maybe<A>> {
   return (as) => findIO_(as, f)
 }
 
-export function foldlIO_<A, R, E, B>(as: Chunk<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
+export function foldlIO_<A, R, E, B>(as: Conc<A>, b: B, f: (b: B, a: A) => I.IO<R, E, B>): I.IO<R, E, B> {
   return C.foldl_(as, I.succeed(b) as I.IO<R, E, B>, (acc, a) => I.chain_(acc, (b) => f(b, a)))
 }
 
-export function foldlIO<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: Chunk<A>) => I.IO<R, E, B> {
+export function foldlIO<A, R, E, B>(b: B, f: (b: B, a: A) => I.IO<R, E, B>): (as: Conc<A>) => I.IO<R, E, B> {
   return (as) => foldlIO_(as, b, f)
 }
 
-export function takeWhileIO_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
+export function takeWhileIO_<A, R, E>(as: Conc<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Conc<A>> {
   return I.defer(() => {
     C.concrete(as)
     let taking: I.IO<R, E, boolean> = I.succeed(true)
@@ -126,11 +126,11 @@ export function takeWhileIO_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, bool
   })
 }
 
-export function takeWhileIO<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, Chunk<A>> {
+export function takeWhileIO<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Conc<A>) => I.IO<R, E, Conc<A>> {
   return (as) => takeWhileIO_(as, p)
 }
 
-export function dropWhileIO_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
+export function dropWhileIO_<A, R, E>(as: Conc<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Conc<A>> {
   return I.defer(() => {
     C.concrete(as)
     let dropping: I.IO<R, E, boolean> = I.succeed(true)
@@ -158,26 +158,26 @@ export function dropWhileIO_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, bool
   })
 }
 
-export function dropWhileIO<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, Chunk<A>> {
+export function dropWhileIO<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Conc<A>) => I.IO<R, E, Conc<A>> {
   return (as) => dropWhileIO_(as, p)
 }
 
-export function filterIO_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Chunk<A>> {
+export function filterIO_<A, R, E>(as: Conc<A>, p: (a: A) => I.IO<R, E, boolean>): I.IO<R, E, Conc<A>> {
   return I.defer(() => {
     C.concrete(as)
     const c = C.builder<A>()
-    let out: I.IO<R, E, ChunkBuilder<A>> = I.succeed(c)
+    let out: I.IO<R, E, ConcBuilder<A>> = I.succeed(c)
     const iterator = as.arrayIterator()
     let result: IteratorResult<ArrayLike<A>>
     while (!(result = iterator.next()).done) {
       const array = result.value
       for (let i = 0; i < array.length; i++) {
         const a = array[i]
-        out     = I.crossWith_(out, p(a), (chunk, res) => {
+        out     = I.crossWith_(out, p(a), (conc, res) => {
           if (res) {
-            return chunk.append(a)
+            return conc.append(a)
           } else {
-            return chunk
+            return conc
           }
         })
       }
@@ -186,6 +186,6 @@ export function filterIO_<A, R, E>(as: Chunk<A>, p: (a: A) => I.IO<R, E, boolean
   })
 }
 
-export function filterIO<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Chunk<A>) => I.IO<R, E, Chunk<A>> {
+export function filterIO<A, R, E>(p: (a: A) => I.IO<R, E, boolean>): (as: Conc<A>) => I.IO<R, E, Conc<A>> {
   return (as) => filterIO_(as, p)
 }

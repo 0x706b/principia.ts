@@ -8,8 +8,8 @@ import * as AI from '../AsyncIterable'
 import { invert } from '../boolean'
 import * as Ch from '../Channel'
 import * as MD from '../Channel/internal/MergeDecision'
-import * as C from '../Chunk'
 import { Clock } from '../Clock'
+import * as C from '../collection/immutable/Conc'
 import * as E from '../Either'
 import { IllegalArgumentError } from '../Error'
 import * as F from '../Fiber'
@@ -64,7 +64,7 @@ export class Stream<R, E, A> {
   readonly _E!: () => E
   readonly _A!: () => A
 
-  constructor(readonly channel: Ch.Channel<R, unknown, unknown, unknown, E, C.Chunk<A>, unknown>) {}
+  constructor(readonly channel: Ch.Channel<R, unknown, unknown, unknown, E, C.Conc<A>, unknown>) {}
 }
 
 /**
@@ -109,14 +109,14 @@ export function failLazy<E>(error: () => E): Stream<unknown, E, never> {
 /**
  * Creates a stream from a `Chunk` of values
  */
-export function fromChunk<O>(c: C.Chunk<O>): Stream<unknown, never, O> {
+export function fromChunk<O>(c: C.Conc<O>): Stream<unknown, never, O> {
   return new Stream(Ch.deferTotal(() => (C.isEmpty(c) ? Ch.unit() : Ch.write(c))))
 }
 
 /**
  * Creates a stream from a `Chunk` of values
  */
-export function fromChunkLazy<O>(c: () => C.Chunk<O>): Stream<unknown, never, O> {
+export function fromChunkLazy<O>(c: () => C.Conc<O>): Stream<unknown, never, O> {
   return new Stream(Ch.unwrap(I.succeedLazy(() => Ch.writeLazy(c))))
 }
 
@@ -127,7 +127,7 @@ export function fromManaged<R, E, A>(stream: Ma.Managed<R, E, A>): Stream<R, E, 
   return new Stream(Ch.managedOut(Ma.map_(stream, C.single)))
 }
 
-export function fromPull<R, E, A>(managedPull: Ma.Managed<R, never, I.IO<R, M.Maybe<E>, C.Chunk<A>>>): Stream<R, E, A> {
+export function fromPull<R, E, A>(managedPull: Ma.Managed<R, never, I.IO<R, M.Maybe<E>, C.Conc<A>>>): Stream<R, E, A> {
   return unwrapManaged(
     pipe(
       managedPull,
@@ -152,8 +152,8 @@ export function succeedLazy<O>(o: () => O): Stream<unknown, never, O> {
 
 function unfoldChunkIOLoop<S, R, E, A>(
   s: S,
-  f: (s: S) => I.IO<R, E, M.Maybe<readonly [C.Chunk<A>, S]>>
-): Ch.Channel<R, unknown, unknown, unknown, E, C.Chunk<A>, unknown> {
+  f: (s: S) => I.IO<R, E, M.Maybe<readonly [C.Conc<A>, S]>>
+): Ch.Channel<R, unknown, unknown, unknown, E, C.Conc<A>, unknown> {
   return Ch.unwrap(
     I.map_(
       f(s),
@@ -170,7 +170,7 @@ function unfoldChunkIOLoop<S, R, E, A>(
  */
 export function unfoldChunkIO<R, E, A, S>(
   s: S,
-  f: (s: S) => I.IO<R, E, M.Maybe<readonly [C.Chunk<A>, S]>>
+  f: (s: S) => I.IO<R, E, M.Maybe<readonly [C.Conc<A>, S]>>
 ): Stream<R, E, A> {
   return new Stream(unfoldChunkIOLoop(s, f))
 }
@@ -189,8 +189,8 @@ export function unfoldIO<S, R, E, A>(s: S, f: (s: S) => I.IO<R, E, M.Maybe<reado
 
 function unfoldChunkLoop<S, A>(
   s: S,
-  f: (s: S) => M.Maybe<readonly [C.Chunk<A>, S]>
-): Ch.Channel<unknown, unknown, unknown, unknown, never, C.Chunk<A>, unknown> {
+  f: (s: S) => M.Maybe<readonly [C.Conc<A>, S]>
+): Ch.Channel<unknown, unknown, unknown, unknown, never, C.Conc<A>, unknown> {
   return pipe(
     f(s),
     M.match(
@@ -204,7 +204,7 @@ function unfoldChunkLoop<S, A>(
   )
 }
 
-export function unfoldChunk<S, A>(s: S, f: (s: S) => M.Maybe<readonly [C.Chunk<A>, S]>): Stream<unknown, never, A> {
+export function unfoldChunk<S, A>(s: S, f: (s: S) => M.Maybe<readonly [C.Conc<A>, S]>): Stream<unknown, never, A> {
   return new Stream(Ch.deferTotal(() => unfoldChunkLoop(s, f)))
 }
 
@@ -311,14 +311,14 @@ export function repeatIOMaybe<R, E, A>(fa: I.IO<R, M.Maybe<E>, A>): Stream<R, E,
 /**
  * Creates a stream from an effect producing chunks of `A` values which repeats forever.
  */
-export function repeatIOChunk<R, E, A>(fa: I.IO<R, E, C.Chunk<A>>): Stream<R, E, A> {
+export function repeatIOChunk<R, E, A>(fa: I.IO<R, E, C.Conc<A>>): Stream<R, E, A> {
   return pipe(fa, I.mapError(M.just), repeatIOChunkMaybe)
 }
 
 /**
  * Creates a stream from an effect producing chunks of `A` values until it fails with None.
  */
-export function repeatIOChunkMaybe<R, E, A>(fa: I.IO<R, M.Maybe<E>, C.Chunk<A>>): Stream<R, E, A> {
+export function repeatIOChunkMaybe<R, E, A>(fa: I.IO<R, M.Maybe<E>, C.Conc<A>>): Stream<R, E, A> {
   return unfoldChunkIO(undefined, (_) => {
     return I.catchAll_(
       I.map_(fa, (chunk) => M.just(tuple(chunk, undefined))),
@@ -376,7 +376,7 @@ export function repeatValueWith<R, A>(a: A, schedule: SC.Schedule<R, A, unknown>
 export function asyncInterrupt<R, E, A>(
   register: (
     resolve: (
-      next: I.IO<R, M.Maybe<E>, C.Chunk<A>>,
+      next: I.IO<R, M.Maybe<E>, C.Conc<A>>,
       offerCb?: (e: Ex.Exit<never, boolean>) => void
     ) => I.UIO<Ex.Exit<never, boolean>>
   ) => E.Either<I.Canceler<R>, Stream<R, E, A>>,
@@ -400,7 +400,7 @@ export function asyncInterrupt<R, E, A>(
       return E.match_(
         eitherStream,
         (canceler) => {
-          const loop: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = pipe(
+          const loop: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Conc<A>, void> = pipe(
             Q.take(output),
             I.chain(Take.done),
             I.match(flow(M.match(() => Ch.end(undefined), Ch.fail)), (a) => Ch.crossSecond_(Ch.write(a), loop)),
@@ -428,7 +428,7 @@ export function asyncInterrupt<R, E, A>(
 export function asyncMaybe<R, E, A>(
   register: (
     resolve: (
-      next: I.IO<R, M.Maybe<E>, C.Chunk<A>>,
+      next: I.IO<R, M.Maybe<E>, C.Conc<A>>,
       offerCb?: (e: Ex.Exit<never, boolean>) => void
     ) => I.UIO<Ex.Exit<never, boolean>>
   ) => M.Maybe<Stream<R, E, A>>,
@@ -440,7 +440,7 @@ export function asyncMaybe<R, E, A>(
 export function async<R, E, A>(
   register: (
     resolve: (
-      next: I.IO<R, M.Maybe<E>, C.Chunk<A>>,
+      next: I.IO<R, M.Maybe<E>, C.Conc<A>>,
       offerCb?: (e: Ex.Exit<never, boolean>) => void
     ) => I.UIO<Ex.Exit<never, boolean>>
   ) => void,
@@ -455,7 +455,7 @@ export function async<R, E, A>(
 export function asyncIO<R, E, A, R1 = R, E1 = E>(
   register: (
     resolve: (
-      next: I.IO<R, M.Maybe<E>, C.Chunk<A>>,
+      next: I.IO<R, M.Maybe<E>, C.Conc<A>>,
       offerCb?: (e: Ex.Exit<never, boolean>) => void
     ) => I.UIO<Ex.Exit<never, boolean>>
   ) => I.IO<R1, E1, unknown>,
@@ -475,7 +475,7 @@ export function asyncIO<R, E, A, R1 = R, E1 = E>(
             )
           )
         )
-        const loop: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = pipe(
+        const loop: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Conc<A>, void> = pipe(
           Q.take(output),
           I.chain(Take.done),
           I.matchCauseIO(
@@ -504,9 +504,9 @@ export function asyncIO<R, E, A, R1 = R, E1 = E>(
 
 function fromAsyncIterableLoop<A>(
   iterator: AsyncIterator<A>
-): Ch.Channel<unknown, unknown, unknown, unknown, never, C.Chunk<A>, unknown> {
+): Ch.Channel<unknown, unknown, unknown, unknown, never, C.Conc<A>, unknown> {
   return Ch.unwrap(
-    I.async<unknown, never, Ch.Channel<unknown, unknown, unknown, unknown, never, C.Chunk<A>, unknown>>((k) => {
+    I.async<unknown, never, Ch.Channel<unknown, unknown, unknown, unknown, never, C.Conc<A>, unknown>>((k) => {
       iterator
         .next()
         .then((result) =>
@@ -525,9 +525,7 @@ export function fromAsyncIterable<A>(iterable: AsyncIterable<A>): Stream<unknown
 export function fromIterable<A>(iterable: Iterable<A>, maxChunkSize = DEFAULT_CHUNK_SIZE): Stream<unknown, never, A> {
   return unwrap(
     I.succeedLazy(() => {
-      const loop = (
-        iterator: Iterator<A>
-      ): Ch.Channel<unknown, unknown, unknown, unknown, never, C.Chunk<A>, unknown> =>
+      const loop = (iterator: Iterator<A>): Ch.Channel<unknown, unknown, unknown, unknown, never, C.Conc<A>, unknown> =>
         Ch.unwrap(
           I.succeedLazy(() => {
             let result = iterator.next()
@@ -708,7 +706,7 @@ export function chain_<R, E, O, R1, E1, O1>(
     Ch.concatMap_(stream.channel, (as) =>
       C.foldl_(
         C.map_(as, (x) => f(x).channel),
-        Ch.unit() as Ch.Channel<R1, unknown, unknown, unknown, E1, C.Chunk<O1>, unknown>,
+        Ch.unit() as Ch.Channel<R1, unknown, unknown, unknown, E1, C.Conc<O1>, unknown>,
         (s, a) => Ch.chain_(s, () => a)
       )
     )
@@ -810,7 +808,7 @@ export function as<A2>(a2: A2) {
  */
 export function mapChunks_<R, E, A, A1>(
   stream: Stream<R, E, A>,
-  f: (chunk: C.Chunk<A>) => C.Chunk<A1>
+  f: (chunk: C.Conc<A>) => C.Conc<A1>
 ): Stream<R, E, A1> {
   return new Stream(Ch.mapOut_(stream.channel, f))
 }
@@ -819,7 +817,7 @@ export function mapChunks_<R, E, A, A1>(
  * Transforms the chunks emitted by this stream.
  */
 export function mapChunks<A, A1>(
-  f: (chunk: C.Chunk<A>) => C.Chunk<A1>
+  f: (chunk: C.Conc<A>) => C.Conc<A1>
 ): <R, E>(stream: Stream<R, E, A>) => Stream<R, E, A1> {
   return (stream) => mapChunks_(stream, f)
 }
@@ -829,7 +827,7 @@ export function mapChunks<A, A1>(
  */
 export function mapChunksIO_<R, E, A, R1, E1, B>(
   stream: Stream<R, E, A>,
-  f: (chunk: C.Chunk<A>) => I.IO<R1, E1, C.Chunk<B>>
+  f: (chunk: C.Conc<A>) => I.IO<R1, E1, C.Conc<B>>
 ): Stream<R & R1, E | E1, B> {
   return new Stream(Ch.mapOutIO_(stream.channel, f))
 }
@@ -838,7 +836,7 @@ export function mapChunksIO_<R, E, A, R1, E1, B>(
  * Effectfully transforms the chunks emitted by this stream.
  */
 export function mapChunksIO<A, R1, E1, B>(
-  f: (chunk: C.Chunk<A>) => I.IO<R1, E1, C.Chunk<B>>
+  f: (chunk: C.Conc<A>) => I.IO<R1, E1, C.Conc<B>>
 ): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
   return (stream) => mapChunksIO_(stream, f)
 }
@@ -1187,7 +1185,7 @@ export function bracketExit<A, R1>(
 function combineChunksProducer<Err, Elem>(
   handoff: HO.Handoff<Take.Take<Err, Elem>>,
   latch: HO.Handoff<void>
-): Ch.Channel<unknown, Err, C.Chunk<Elem>, unknown, never, never, any> {
+): Ch.Channel<unknown, Err, C.Conc<Elem>, unknown, never, never, any> {
   return Ch.crossSecond_(
     Ch.fromIO(HO.take(latch)),
     Ch.readWithCause(
@@ -1211,9 +1209,9 @@ export function combineChunks_<R, E, A, R1, E1, A1, S, R2, A2>(
   s: S,
   f: (
     s: S,
-    l: I.IO<R, M.Maybe<E>, C.Chunk<A>>,
-    r: I.IO<R1, M.Maybe<E1>, C.Chunk<A1>>
-  ) => I.IO<R2, never, Ex.Exit<M.Maybe<E | E1>, readonly [C.Chunk<A2>, S]>>
+    l: I.IO<R, M.Maybe<E>, C.Conc<A>>,
+    r: I.IO<R1, M.Maybe<E1>, C.Conc<A1>>
+  ) => I.IO<R2, never, Ex.Exit<M.Maybe<E | E1>, readonly [C.Conc<A2>, S]>>
 ): Stream<R1 & R & R2, E | E1, A2> {
   return new Stream(
     Ch.managed_(
@@ -1248,19 +1246,19 @@ export function combineChunks<R, E, A, R1, E1, A1, S, R2, A2>(
   s: S,
   f: (
     s: S,
-    l: I.IO<R, M.Maybe<E>, C.Chunk<A>>,
-    r: I.IO<R1, M.Maybe<E1>, C.Chunk<A1>>
-  ) => I.IO<R2, never, Ex.Exit<M.Maybe<E | E1>, readonly [C.Chunk<A2>, S]>>
+    l: I.IO<R, M.Maybe<E>, C.Conc<A>>,
+    r: I.IO<R1, M.Maybe<E1>, C.Conc<A1>>
+  ) => I.IO<R2, never, Ex.Exit<M.Maybe<E | E1>, readonly [C.Conc<A2>, S]>>
 ): (stream: Stream<R, E, A>) => Stream<R1 & R & R2, E | E1, A2> {
   return (stream) => combineChunks_(stream, that, s, f)
 }
 
 function defaultIfEmptyWriter<R, E, A, R1, E1, B>(
   fb: Stream<R1, E1, B>
-): Ch.Channel<R & R1, E, C.Chunk<A>, unknown, E | E1, C.Chunk<A | B>, unknown> {
+): Ch.Channel<R & R1, E, C.Conc<A>, unknown, E | E1, C.Conc<A | B>, unknown> {
   return Ch.readWith(
-    (i: C.Chunk<A>) =>
-      C.isEmpty(i) ? defaultIfEmptyWriter(fb) : pipe(Ch.write(i), Ch.crossSecond(Ch.id<E, C.Chunk<A>, unknown>())),
+    (i: C.Conc<A>) =>
+      C.isEmpty(i) ? defaultIfEmptyWriter(fb) : pipe(Ch.write(i), Ch.crossSecond(Ch.id<E, C.Conc<A>, unknown>())),
     (e: E) => Ch.fail(e),
     () => fb.channel
   )
@@ -1342,9 +1340,9 @@ export function forever<R, E, A>(stream: Stream<R, E, A>): Stream<R, E, A> {
  */
 export function loopOnChunks_<R, E, A, R1, E1, A1>(
   stream: Stream<R, E, A>,
-  f: (a: C.Chunk<A>) => Ch.Channel<R1, E | E1, C.Chunk<A>, unknown, E | E1, C.Chunk<A1>, boolean>
+  f: (a: C.Conc<A>) => Ch.Channel<R1, E | E1, C.Conc<A>, unknown, E | E1, C.Conc<A1>, boolean>
 ): Stream<R & R1, E | E1, A1> {
-  const loop: Ch.Channel<R1, E | E1, C.Chunk<A>, unknown, E | E1, C.Chunk<A1>, boolean> = Ch.readWithCause(
+  const loop: Ch.Channel<R1, E | E1, C.Conc<A>, unknown, E | E1, C.Conc<A1>, boolean> = Ch.readWithCause(
     (chunk) => Ch.chain_(f(chunk), (cont) => (cont ? loop : Ch.end(false))),
     Ch.failCause,
     (_) => Ch.succeed(false)
@@ -1357,7 +1355,7 @@ export function loopOnChunks_<R, E, A, R1, E1, A1>(
  */
 export function loopOnPartialChunks_<R, E, A, R1, E1, A1>(
   stream: Stream<R, E, A>,
-  f: (a: C.Chunk<A>, emit: (a: A1) => I.UIO<void>) => I.IO<R1, E1, boolean>
+  f: (a: C.Conc<A>, emit: (a: A1) => I.UIO<void>) => I.IO<R1, E1, boolean>
 ): Stream<R & R1, E | E1, A1> {
   return loopOnChunks_(stream, (chunk) =>
     Ch.unwrap(
@@ -1446,7 +1444,7 @@ export function runManaged<A, R2, E2, Z>(
 /**
  * Runs the stream and collects all of its elements to a chunk.
  */
-export function runCollect<R, E, A>(stream: Stream<R, E, A>): I.IO<R, E, C.Chunk<A>> {
+export function runCollect<R, E, A>(stream: Stream<R, E, A>): I.IO<R, E, C.Conc<A>> {
   return run_(stream, Sink.collectAll())
 }
 
@@ -1494,7 +1492,7 @@ export function runForeach<A, R1, E1>(
  */
 export function runForeachChunk_<R, E, A, R1, E1>(
   sa: Stream<R, E, A>,
-  f: (as: C.Chunk<A>) => I.IO<R1, E1, any>
+  f: (as: C.Conc<A>) => I.IO<R1, E1, any>
 ): I.IO<R & R1, E | E1, void> {
   return run_(sa, Sink.foreachChunk<R1, E | E1, A>(f))
 }
@@ -1503,12 +1501,12 @@ export function runForeachChunk_<R, E, A, R1, E1>(
  * Consumes all elements of the stream, passing them to the specified callback.
  */
 export function runForeachChunk<A, R1, E1>(
-  f: (as: C.Chunk<A>) => I.IO<R1, E1, any>
+  f: (as: C.Conc<A>) => I.IO<R1, E1, any>
 ): <R, E>(sa: Stream<R, E, A>) => I.IO<R & R1, E | E1, void> {
   return (sa) => runForeachChunk_(sa, f)
 }
 
-function takeLoop<E, A>(n: number): Ch.Channel<unknown, E, C.Chunk<A>, unknown, E, C.Chunk<A>, unknown> {
+function takeLoop<E, A>(n: number): Ch.Channel<unknown, E, C.Conc<A>, unknown, E, C.Conc<A>, unknown> {
   return Ch.readWithCause(
     (i) => {
       const taken = C.take_(i, n)
@@ -1568,9 +1566,9 @@ export function takeUntilIO<A, R1, E1>(
   return (ma) => takeUntilIO_(ma, f)
 }
 
-function takeUntilLoop<R, E, A>(f: (a: A) => boolean): Ch.Channel<R, E, C.Chunk<A>, unknown, E, C.Chunk<A>, unknown> {
+function takeUntilLoop<R, E, A>(f: (a: A) => boolean): Ch.Channel<R, E, C.Conc<A>, unknown, E, C.Conc<A>, unknown> {
   return Ch.readWith(
-    (chunk: C.Chunk<A>) => {
+    (chunk: C.Conc<A>) => {
       const taken = pipe(chunk, C.takeWhile(not(f)))
       const last  = pipe(chunk, C.drop(taken.length), C.take(1))
       if (C.isEmpty(last)) {
@@ -1604,7 +1602,7 @@ export function takeUntil<A>(pa: Predicate<A>): <R, E>(fa: Stream<R, E, A>) => S
 /**
  * Interpret the stream as a managed pull
  */
-export function toPull<R, E, A>(stream: Stream<R, E, A>): Ma.Managed<R, never, I.IO<R, M.Maybe<E>, C.Chunk<A>>> {
+export function toPull<R, E, A>(stream: Stream<R, E, A>): Ma.Managed<R, never, I.IO<R, M.Maybe<E>, C.Conc<A>>> {
   return pipe(
     stream.channel,
     Ch.toPull,
@@ -1723,13 +1721,13 @@ export function aggregateAsyncWithinEither_<R, E, A extends A1, R1, E1, A1, B, R
   )
 
   return chain_(fromIO(deps), ([handoff, sinkEndReason, sinkLeftovers, scheduleDriver]) => {
-    const handoffProducer: Ch.Channel<unknown, E | E1, C.Chunk<A1>, unknown, never, never, any> = Ch.readWithCause(
-      (_in: C.Chunk<A1>) => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, new HO.Emit(_in))), handoffProducer),
+    const handoffProducer: Ch.Channel<unknown, E | E1, C.Conc<A1>, unknown, never, never, any> = Ch.readWithCause(
+      (_in: C.Conc<A1>) => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, new HO.Emit(_in))), handoffProducer),
       (cause: Ca.Cause<E | E1>) => Ch.fromIO(HO.offer(handoff, new HO.Halt(cause))),
       (_: any) => Ch.fromIO(HO.offer(handoff, new HO.End(new SER.UpstreamEnd())))
     )
 
-    const handoffConsumer: Ch.Channel<unknown, unknown, unknown, unknown, E | E1, C.Chunk<A1>, void> = Ch.unwrap(
+    const handoffConsumer: Ch.Channel<unknown, unknown, unknown, unknown, E | E1, C.Conc<A1>, void> = Ch.unwrap(
       I.chain_(Ref.getAndSet_(sinkLeftovers, C.empty<A>()), (leftovers) => {
         if (C.isEmpty(leftovers)) {
           return I.succeed(Ch.crossSecond_(Ch.write(leftovers), handoffConsumer))
@@ -1750,7 +1748,7 @@ export function aggregateAsyncWithinEither_<R, E, A extends A1, R1, E1, A1, B, R
 
     const scheduledAggregator = (
       lastB: M.Maybe<B>
-    ): Ch.Channel<R1 & R2 & Has<Clock>, unknown, unknown, unknown, E | E1, C.Chunk<E.Either<C, B>>, any> => {
+    ): Ch.Channel<R1 & R2 & Has<Clock>, unknown, unknown, unknown, E | E1, C.Conc<E.Either<C, B>>, any> => {
       const timeout = I.matchCauseIO_(
         scheduleDriver.next(lastB),
         (_) =>
@@ -1867,7 +1865,7 @@ export function broadcast_<R, E, A>(
   stream: Stream<R, E, A>,
   n: number,
   maximumLag: number
-): Ma.Managed<R, never, C.Chunk<Stream<unknown, E, A>>> {
+): Ma.Managed<R, never, C.Conc<Stream<unknown, E, A>>> {
   return pipe(stream, broadcastedQueues(n, maximumLag), Ma.map(C.map(flow(fromQueueWithShutdown(), flattenTake))))
 }
 
@@ -1879,7 +1877,7 @@ export function broadcast_<R, E, A>(
 export function broadcast(
   n: number,
   maximumLag: number
-): <R, E, A>(stream: Stream<R, E, A>) => Ma.Managed<R, never, C.Chunk<Stream<unknown, E, A>>> {
+): <R, E, A>(stream: Stream<R, E, A>) => Ma.Managed<R, never, C.Conc<Stream<unknown, E, A>>> {
   return (stream) => broadcast_(stream, n, maximumLag)
 }
 
@@ -1916,7 +1914,7 @@ export function broadcastedQueues_<R, E, A>(
   stream: Stream<R, E, A>,
   n: number,
   maximumLag: number
-): Ma.Managed<R, never, C.Chunk<H.HubDequeue<unknown, never, Take.Take<E, A>>>> {
+): Ma.Managed<R, never, C.Conc<H.HubDequeue<unknown, never, Take.Take<E, A>>>> {
   return Ma.gen(function* (_) {
     const hub    = yield* _(H.makeBounded<Take.Take<E, A>>(maximumLag))
     const queues = yield* _(Ma.sequenceIterable(C.fill(n, () => H.subscribe(hub))))
@@ -1962,7 +1960,7 @@ export function bufferChunks_<R, E, A>(stream: Stream<R, E, A>, capacity: number
   const queue = toQueue_(stream, capacity)
   return new Stream(
     Ch.managed_(queue, (queue) => {
-      const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = pipe(
+      const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Conc<A>, void> = pipe(
         Ch.fromIO(Q.take(queue)),
         Ch.chain((take: Take.Take<E, A>) =>
           Take.fold_(take, Ch.end(undefined), Ch.failCause, (value) => Ch.crossSecond_(Ch.write(value), process))
@@ -1985,7 +1983,7 @@ export function buffer_<R, E, A>(stream: Stream<R, E, A>, capacity: number): Str
   const queue = toQueueOfElements_(stream, capacity)
   return new Stream(
     Ch.managed_(queue, (queue) => {
-      const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = pipe(
+      const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Conc<A>, void> = pipe(
         Ch.fromIO(Q.take(queue)),
         Ch.chain((exit: Ex.Exit<M.Maybe<E>, A>) =>
           Ex.match_(
@@ -2050,8 +2048,8 @@ export function bufferChunksSliding(capacity: number): <R, E, A>(stream: Stream<
 function bufferSignalProducer<R, E, A>(
   queue: Q.UQueue<readonly [Take.Take<E, A>, Pr.Future<never, void>]>,
   ref: Ref.URef<Pr.Future<never, void>>
-): Ch.Channel<R, E, C.Chunk<A>, unknown, never, never, unknown> {
-  const terminate = (take: Take.Take<E, A>): Ch.Channel<R, E, C.Chunk<A>, unknown, never, never, unknown> =>
+): Ch.Channel<R, E, C.Conc<A>, unknown, never, never, unknown> {
+  const terminate = (take: Take.Take<E, A>): Ch.Channel<R, E, C.Conc<A>, unknown, never, never, unknown> =>
     Ch.fromIO(
       I.gen(function* (_) {
         const latch = yield* _(ref.get)
@@ -2081,8 +2079,8 @@ function bufferSignalProducer<R, E, A>(
 
 function bufferSignalConsumer<R, E, A>(
   queue: Q.UQueue<readonly [Take.Take<E, A>, Pr.Future<never, void>]>
-): Ch.Channel<R, unknown, unknown, unknown, E, C.Chunk<A>, void> {
-  const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = Ch.chain_(
+): Ch.Channel<R, unknown, unknown, unknown, E, C.Conc<A>, void> {
+  const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Conc<A>, void> = Ch.chain_(
     Ch.fromIO(Q.take(queue)),
     ([take, promise]) =>
       Ch.crossSecond_(
@@ -2095,8 +2093,8 @@ function bufferSignalConsumer<R, E, A>(
 
 function bufferSignal<R, E, A>(
   managed: Ma.UManaged<Q.UQueue<readonly [Take.Take<E, A>, Pr.Future<never, void>]>>,
-  channel: Ch.Channel<R, unknown, unknown, unknown, E, C.Chunk<A>, unknown>
-): Ch.Channel<R, unknown, unknown, unknown, E, C.Chunk<A>, void> {
+  channel: Ch.Channel<R, unknown, unknown, unknown, E, C.Conc<A>, unknown>
+): Ch.Channel<R, unknown, unknown, unknown, E, C.Conc<A>, void> {
   return Ch.managed_(
     Ma.gen(function* (_) {
       const queue = yield* _(managed)
@@ -2119,7 +2117,7 @@ export function bufferUnbounded<R, E, A>(stream: Stream<R, E, A>): Stream<R, E, 
 
   return new Stream(
     Ch.managed_(queue, (queue) => {
-      const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Chunk<A>, void> = Ch.chain_(
+      const process: Ch.Channel<unknown, unknown, unknown, unknown, E, C.Conc<A>, void> = Ch.chain_(
         Ch.fromIO(Q.take(queue)),
         Take.fold(
           Ch.end(undefined),
@@ -2161,7 +2159,7 @@ export function catchAllCause_<R, R1, E, E1, A, A1>(
   stream: Stream<R, E, A>,
   f: (cause: Ca.Cause<E>) => Stream<R1, E1, A1>
 ): Stream<R & R1, E1, A | A1> {
-  const channel: Ch.Channel<R & R1, unknown, unknown, unknown, E1, C.Chunk<A | A1>, unknown> = Ch.catchAllCause_(
+  const channel: Ch.Channel<R & R1, unknown, unknown, unknown, E1, C.Conc<A | A1>, unknown> = Ch.catchAllCause_(
     stream.channel,
     (_) => f(_).channel
   )
@@ -2253,7 +2251,7 @@ class Rechunker<A> {
     return null
   }
 
-  emitOfNotEmpty(): Ch.Channel<unknown, unknown, unknown, unknown, never, C.Chunk<A>, void> {
+  emitOfNotEmpty(): Ch.Channel<unknown, unknown, unknown, unknown, never, C.Conc<A>, void> {
     if (this.pos !== 0) {
       return Ch.write(C.from(this.builder))
     } else {
@@ -2270,9 +2268,9 @@ class Rechunker<A> {
 function changesWithWriter<R, E, A>(
   f: (x: A, y: A) => boolean,
   last: M.Maybe<A>
-): Ch.Channel<R, E, C.Chunk<A>, unknown, E, C.Chunk<A>, void> {
+): Ch.Channel<R, E, C.Conc<A>, unknown, E, C.Conc<A>, void> {
   return Ch.readWithCause(
-    (chunk: C.Chunk<A>) => {
+    (chunk: C.Conc<A>) => {
       const [newLast, newChunk] = C.foldl_(chunk, [last, C.empty<A>()], ([maybeLast, os], o1) =>
         M.match_(
           maybeLast,
@@ -2317,14 +2315,14 @@ export function changes<A>(E: P.Eq<A>): <R, E>(stream: Stream<R, E, A>) => Strea
 function rechunkProcess<E, In>(
   rechunker: Rechunker<In>,
   target: number
-): Ch.Channel<unknown, E, C.Chunk<In>, unknown, E, C.Chunk<In>, unknown> {
+): Ch.Channel<unknown, E, C.Conc<In>, unknown, E, C.Conc<In>, unknown> {
   return Ch.readWithCause(
-    (chunk: C.Chunk<In>) => {
+    (chunk: C.Conc<In>) => {
       if (chunk.length === target && rechunker.isEmpty) {
         return pipe(Ch.write(chunk), Ch.crossSecond(rechunkProcess<E, In>(rechunker, target)))
       } else if (chunk.length > 0) {
-        const chunks: Array<C.Chunk<In>> = []
-        let result: C.Chunk<In> | null   = null
+        const chunks: Array<C.Conc<In>> = []
+        let result: C.Conc<In> | null   = null
         let i = 0
         while (i < chunk.length) {
           while (i < chunk.length && result === null) {
@@ -2368,7 +2366,7 @@ export function rechunk(n: number) {
 /**
  * Exposes the underlying chunks of the stream as a stream of chunks of elements
  */
-export function chunks<R, E, A>(stream: Stream<R, E, A>): Stream<R, E, C.Chunk<A>> {
+export function chunks<R, E, A>(stream: Stream<R, E, A>): Stream<R, E, C.Conc<A>> {
   return mapChunks_(stream, C.single)
 }
 
@@ -2459,7 +2457,7 @@ export function collectIO<R1, E1, A, A1>(pf: (a: A) => M.Maybe<I.IO<R1, E1, A1>>
  * Transforms all elements of the stream for as long as the specified partial function is defined.
  */
 export function collectWhile_<R, E, A, A1>(stream: Stream<R, E, A>, pf: (a: A) => M.Maybe<A1>): Stream<R, E, A1> {
-  const loop: Ch.Channel<R, E, C.Chunk<A>, unknown, E, C.Chunk<A1>, any> = Ch.readWith(
+  const loop: Ch.Channel<R, E, C.Conc<A>, unknown, E, C.Conc<A1>, any> = Ch.readWith(
     (_in) => {
       const mapped = C.collectWhile_(_in, pf)
 
@@ -2511,7 +2509,7 @@ export function collectWhileIO_<R, R1, E, E1, A, A1>(
         (_) => I.as_(I.chain_(_, emit), true)
       )
 
-    const loop = (chunk: C.Chunk<A>): I.IO<R1, E1, boolean> => {
+    const loop = (chunk: C.Conc<A>): I.IO<R1, E1, boolean> => {
       if (C.isEmpty(chunk)) {
         return I.succeed(true)
       } else {
@@ -2683,7 +2681,7 @@ export function debounce_<R, E, A>(stream: Stream<R, E, A>, duration: number): S
     I.gen(function* (_) {
       const scope   = yield* _(I.forkScope)
       const handoff = yield* _(HO.make<HO.HandoffSignal<void, E, A>>())
-      function enqueue(last: C.Chunk<A>) {
+      function enqueue(last: C.Conc<A>) {
         return pipe(
           Clock.sleep(duration),
           I.as(last),
@@ -2691,8 +2689,8 @@ export function debounce_<R, E, A>(stream: Stream<R, E, A>, duration: number): S
           I.map((f) => consumer(new DS.Previous(f)))
         )
       }
-      const producer: Ch.Channel<R & Has<Clock>, E, C.Chunk<A>, unknown, E, never, unknown> = Ch.readWithCause(
-        (inp: C.Chunk<A>) =>
+      const producer: Ch.Channel<R & Has<Clock>, E, C.Conc<A>, unknown, E, never, unknown> = Ch.readWithCause(
+        (inp: C.Conc<A>) =>
           pipe(
             C.last(inp),
             M.match(
@@ -2705,7 +2703,7 @@ export function debounce_<R, E, A>(stream: Stream<R, E, A>, duration: number): S
       )
       function consumer(
         state: DS.DebounceState<E, A>
-      ): Ch.Channel<R & Has<Clock>, unknown, unknown, unknown, E, C.Chunk<A>, unknown> {
+      ): Ch.Channel<R & Has<Clock>, unknown, unknown, unknown, E, C.Conc<A>, unknown> {
         return Ch.unwrap(
           DS.match_(state, {
             NotStarted: () =>
@@ -2897,7 +2895,7 @@ export function distributedWith_<R, E, A>(
   n: number,
   maximumLag: number,
   decide: (_: A) => I.UIO<(_: number) => boolean>
-): Ma.Managed<R, never, C.Chunk<Q.Dequeue<Ex.Exit<M.Maybe<E>, A>>>> {
+): Ma.Managed<R, never, C.Conc<Q.Dequeue<Ex.Exit<M.Maybe<E>, A>>>> {
   return pipe(
     Pr.make<never, (_: A) => I.UIO<(_: symbol) => boolean>>(),
     Ma.fromIO,
@@ -2950,13 +2948,13 @@ export function distributedWith<A>(
   n: number,
   maximumLag: number,
   decide: (_: A) => I.UIO<(_: number) => boolean>
-): <R, E>(stream: Stream<R, E, A>) => Ma.Managed<R, never, C.Chunk<Q.Dequeue<Ex.Exit<M.Maybe<E>, A>>>> {
+): <R, E>(stream: Stream<R, E, A>) => Ma.Managed<R, never, C.Conc<Q.Dequeue<Ex.Exit<M.Maybe<E>, A>>>> {
   return (stream) => distributedWith_(stream, n, maximumLag, decide)
 }
 
-function dropLoop<R, E, A>(r: number): Ch.Channel<R, E, C.Chunk<A>, unknown, E, C.Chunk<A>, unknown> {
+function dropLoop<R, E, A>(r: number): Ch.Channel<R, E, C.Conc<A>, unknown, E, C.Conc<A>, unknown> {
   return Ch.readWith(
-    (inp: C.Chunk<A>) => {
+    (inp: C.Conc<A>) => {
       const dropped  = C.drop_(inp, r)
       const leftover = Math.max(0, r - inp.length)
       const more     = C.isEmpty(inp) || leftover > 0
@@ -3028,7 +3026,7 @@ export function either<R, E, A>(stream: Stream<R, E, A>): Stream<R, never, E.Eit
  * Finds the first element emitted by this stream that satisfies the provided predicate.
  */
 export function find_<R, E, A>(stream: Stream<R, E, A>, f: Predicate<A>): Stream<R, E, A> {
-  const loop: Ch.Channel<R, E, C.Chunk<A>, unknown, E, C.Chunk<A>, unknown> = Ch.readWith(
+  const loop: Ch.Channel<R, E, C.Conc<A>, unknown, E, C.Conc<A>, unknown> = Ch.readWith(
     flow(
       C.find(f),
       M.match(() => loop, flow(C.single, Ch.write))
@@ -3053,7 +3051,7 @@ export function findIO_<R, E, A, R1, E1>(
   stream: Stream<R, E, A>,
   f: (a: A) => I.IO<R1, E1, boolean>
 ): Stream<R & R1, E | E1, A> {
-  const loop: Ch.Channel<R & R1, E, C.Chunk<A>, unknown, E | E1, C.Chunk<A>, unknown> = Ch.readWith(
+  const loop: Ch.Channel<R & R1, E, C.Conc<A>, unknown, E | E1, C.Conc<A>, unknown> = Ch.readWith(
     flow(C.findIO(f), I.map(M.match(() => loop, flow(C.single, Ch.write))), Ch.unwrap),
     Ch.fail,
     () => Ch.unit()
@@ -3072,14 +3070,14 @@ export function findIO<A, R1, E1>(
 
 function endWhenWriter<E, A, E1>(
   fiber: F.Fiber<E1, any>
-): Ch.Channel<unknown, E | E1, C.Chunk<A>, unknown, E | E1, C.Chunk<A>, void> {
+): Ch.Channel<unknown, E | E1, C.Conc<A>, unknown, E | E1, C.Conc<A>, void> {
   return Ch.unwrap(
     I.map_(
       fiber.poll,
       M.match(
         () =>
           Ch.readWith(
-            (inp: C.Chunk<A>) => Ch.crossSecond_(Ch.write(inp), endWhenWriter(fiber)),
+            (inp: C.Conc<A>) => Ch.crossSecond_(Ch.write(inp), endWhenWriter(fiber)),
             Ch.fail,
             () => Ch.unit()
           ),
@@ -3121,7 +3119,7 @@ export function endWhen<R1, E1>(
 
 function haltWhenWriter<R, E, A, R1, E1>(
   fiber: F.Fiber<E1, any>
-): Ch.Channel<R & R1, E | E1, C.Chunk<A>, unknown, E | E1, C.Chunk<A>, void> {
+): Ch.Channel<R & R1, E | E1, C.Conc<A>, unknown, E | E1, C.Conc<A>, void> {
   return Ch.unwrap(
     pipe(
       fiber.poll,
@@ -3129,7 +3127,7 @@ function haltWhenWriter<R, E, A, R1, E1>(
         M.match(
           () =>
             Ch.readWith(
-              (i: C.Chunk<A>) => pipe(Ch.write(i), Ch.crossSecond(haltWhenWriter<R, E, A, R1, E1>(fiber))),
+              (i: C.Conc<A>) => pipe(Ch.write(i), Ch.crossSecond(haltWhenWriter<R, E, A, R1, E1>(fiber))),
               (err: E | E1) => Ch.fail(err),
               () => Ch.unit()
             ),
@@ -3183,7 +3181,7 @@ export function haltWhen<R1, E1>(io: I.IO<R1, E1, any>): <R, E, A>(fa: Stream<R,
 
 function haltWhenFutureWriter<R, E, A, E1>(
   future: Pr.Future<E1, unknown>
-): Ch.Channel<R, E | E1, C.Chunk<A>, unknown, E | E1, C.Chunk<A>, void> {
+): Ch.Channel<R, E | E1, C.Conc<A>, unknown, E | E1, C.Conc<A>, void> {
   return Ch.unwrap(
     pipe(
       Pr.poll(future),
@@ -3191,7 +3189,7 @@ function haltWhenFutureWriter<R, E, A, E1>(
         M.match(
           () =>
             Ch.readWith(
-              (i: C.Chunk<A>) => pipe(Ch.write(i), Ch.crossSecond(haltWhenFutureWriter<R, E, A, E1>(future))),
+              (i: C.Conc<A>) => pipe(Ch.write(i), Ch.crossSecond(haltWhenFutureWriter<R, E, A, E1>(future))),
               (err: E | E1) => Ch.fail(err),
               () => Ch.unit()
             ),
@@ -3284,7 +3282,7 @@ export function interleaveWith_<R, E, A, R1, E1, B, R2, E2>(
         const process = (
           leftDone: boolean,
           rightDone: boolean
-        ): Ch.Channel<R & R1 & R2, E | E1 | E2, boolean, unknown, E | E1 | E2, C.Chunk<A | B>, void> =>
+        ): Ch.Channel<R & R1 & R2, E | E1 | E2, boolean, unknown, E | E1 | E2, C.Conc<A | B>, void> =>
           Ch.readWithCause(
             (b: boolean) => {
               if (b && leftDone) {
@@ -3328,9 +3326,9 @@ export function interleaveWith<R1, E1, B, R2, E2>(
 function intersperseWriter<R, E, A, A1>(
   middle: A1,
   isFirst: boolean
-): Ch.Channel<R, E, C.Chunk<A>, unknown, E, C.Chunk<A | A1>, void> {
+): Ch.Channel<R, E, C.Conc<A>, unknown, E, C.Conc<A | A1>, void> {
   return Ch.readWith(
-    (inp: C.Chunk<A>) => {
+    (inp: C.Conc<A>) => {
       const builder  = C.builder<A | A1>()
       let flagResult = isFirst
       C.forEach_(inp, (a) => {
@@ -3408,9 +3406,9 @@ export function interruptWhenFuture<E1>(
 function mapAccumAccumulator<S, E = never, A = never, B = never>(
   currS: S,
   f: (s: S, a: A) => readonly [B, S]
-): Ch.Channel<unknown, E, C.Chunk<A>, unknown, E, C.Chunk<B>, void> {
+): Ch.Channel<unknown, E, C.Conc<A>, unknown, E, C.Conc<B>, void> {
   return Ch.readWith(
-    (inp: C.Chunk<A>) => {
+    (inp: C.Conc<A>) => {
       const [bs, nextS] = C.mapAccum_(inp, currS, f)
       return Ch.crossSecond_(Ch.write(bs), mapAccumAccumulator(nextS, f))
     },
@@ -3443,9 +3441,9 @@ export function mapAccum<A, S, B>(
 function mapAccumIOAccumulator<R, E, A, R1, E1, S, B>(
   s: S,
   f: (s: S, a: A) => I.IO<R1, E1, readonly [B, S]>
-): Ch.Channel<R & R1, E, C.Chunk<A>, unknown, E | E1, C.Chunk<B>, void> {
+): Ch.Channel<R & R1, E, C.Conc<A>, unknown, E | E1, C.Conc<B>, void> {
   return Ch.readWith(
-    (inp: C.Chunk<A>) =>
+    (inp: C.Conc<A>) =>
       Ch.unwrap(
         I.defer(() => {
           const outputChunk = C.builder<B>()
@@ -3505,7 +3503,7 @@ export function mapAccumIO<A, S, R1, E1, B>(
  * Maps each element to a chunk, and flattens the chunks into the output of
  * this stream.
  */
-export function mapConcatChunk_<R, E, A, B>(stream: Stream<R, E, A>, f: (a: A) => C.Chunk<B>): Stream<R, E, B> {
+export function mapConcatChunk_<R, E, A, B>(stream: Stream<R, E, A>, f: (a: A) => C.Conc<B>): Stream<R, E, B> {
   return mapChunks_(stream, C.chain(f))
 }
 
@@ -3513,7 +3511,7 @@ export function mapConcatChunk_<R, E, A, B>(stream: Stream<R, E, A>, f: (a: A) =
  * Maps each element to a chunk, and flattens the chunks into the output of
  * this stream.
  */
-export function mapConcatChunk<A, B>(f: (a: A) => C.Chunk<B>): <R, E>(stream: Stream<R, E, A>) => Stream<R, E, B> {
+export function mapConcatChunk<A, B>(f: (a: A) => C.Conc<B>): <R, E>(stream: Stream<R, E, A>) => Stream<R, E, B> {
   return (stream) => mapConcatChunk_(stream, f)
 }
 
@@ -3539,7 +3537,7 @@ export function mapConcat<A, B>(f: (a: A) => Iterable<B>): <R, E>(stream: Stream
  */
 export function mapConcatChunkIO_<R, E, A, R1, E1, B>(
   stream: Stream<R, E, A>,
-  f: (a: A) => I.IO<R1, E1, C.Chunk<B>>
+  f: (a: A) => I.IO<R1, E1, C.Conc<B>>
 ): Stream<R & R1, E | E1, B> {
   return pipe(stream, mapIO(f), mapConcatChunk(identity))
 }
@@ -3549,7 +3547,7 @@ export function mapConcatChunkIO_<R, E, A, R1, E1, B>(
  * the output of this stream.
  */
 export function mapConcatChunkIO<A, R1, E1, B>(
-  f: (a: A) => I.IO<R1, E1, C.Chunk<B>>
+  f: (a: A) => I.IO<R1, E1, C.Conc<B>>
 ): <R, E>(stream: Stream<R, E, A>) => Stream<R & R1, E | E1, B> {
   return (stream) => mapConcatChunkIO_(stream, f)
 }
@@ -3853,7 +3851,7 @@ export function orElseSucceed<A1>(a: () => A1): <R, E, A>(stream: Stream<R, E, A
 
 class PeelEmit<A> {
   readonly _tag = 'Emit'
-  constructor(readonly els: C.Chunk<A>) {}
+  constructor(readonly els: C.Conc<A>) {}
 }
 class PeelHalt<E> {
   readonly _tag = 'Halt'
@@ -3883,8 +3881,8 @@ export function peel_<R, E, A extends A1, R1, E1, A1, Z>(
       Sink.matchSink(
         (e) => Sink.apSecond_(Sink.fromIO(Pr.fail_(p, e)), Sink.fail(e)),
         ([z1, leftovers]) => {
-          const loop: Ch.Channel<unknown, E, C.Chunk<A1>, unknown, E | E1, C.Chunk<A1>, void> = Ch.readWithCause(
-            (inp: C.Chunk<A1>) => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, new PeelEmit(inp))), loop),
+          const loop: Ch.Channel<unknown, E, C.Conc<A1>, unknown, E | E1, C.Conc<A1>, void> = Ch.readWithCause(
+            (inp: C.Conc<A1>) => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, new PeelEmit(inp))), loop),
             (cause) => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, new PeelHalt(cause))), Ch.failCause(cause)),
             () => Ch.crossSecond_(Ch.fromIO(HO.offer(handoff, new PeelEnd())), Ch.unit())
           )
@@ -3898,7 +3896,7 @@ export function peel_<R, E, A extends A1, R1, E1, A1, Z>(
         }
       )
     )
-    const producer: Ch.Channel<unknown, unknown, unknown, unknown, E | E1, C.Chunk<A1>, void> = Ch.unwrap(
+    const producer: Ch.Channel<unknown, unknown, unknown, unknown, E | E1, C.Conc<A1>, void> = Ch.unwrap(
       I.map_(HO.take(handoff), (signal) => {
         switch (signal._tag) {
           case 'Emit':
@@ -4111,8 +4109,8 @@ export function repeatElementsWith_<R, E, A, R1, B, C, D>(
         I.gen(function* (_) {
           const driver = yield* _(SC.driver(schedule))
           const feed   = (
-            inp: C.Chunk<A>
-          ): Ch.Channel<R & R1 & Has<Clock>, E, C.Chunk<A>, unknown, E, C.Chunk<C> | C.Chunk<D>, void> =>
+            inp: C.Conc<A>
+          ): Ch.Channel<R & R1 & Has<Clock>, E, C.Conc<A>, unknown, E, C.Conc<C> | C.Conc<D>, void> =>
             pipe(
               inp,
               C.head,
@@ -4122,9 +4120,9 @@ export function repeatElementsWith_<R, E, A, R1, B, C, D>(
               )
             )
           const step = (
-            inp: C.Chunk<A>,
+            inp: C.Conc<A>,
             a: A
-          ): Ch.Channel<R & R1 & Has<Clock>, E, C.Chunk<A>, unknown, E, C.Chunk<C> | C.Chunk<D>, void> => {
+          ): Ch.Channel<R & R1 & Has<Clock>, E, C.Conc<A>, unknown, E, C.Conc<C> | C.Conc<D>, void> => {
             const advance = I.as_(driver.next(a), Ch.crossSecond_(Ch.write(C.single(f(a))), step(inp, a)))
             const reset   = I.gen(function* (_) {
               const b = yield* _(I.orHalt(driver.last))
@@ -4137,10 +4135,10 @@ export function repeatElementsWith_<R, E, A, R1, B, C, D>(
           const loop: Ch.Channel<
             R & R1 & Has<Clock>,
             E,
-            C.Chunk<A>,
+            C.Conc<A>,
             unknown,
             E,
-            C.Chunk<C> | C.Chunk<D>,
+            C.Conc<C> | C.Conc<D>,
             void
           > = Ch.readWith(feed, Ch.fail, () => Ch.unit())
 
@@ -4187,7 +4185,7 @@ export function repeatWith_<R, E, A, R1, B, C, D>(
       const scheduleOutput = pipe(driver.last, I.orHalt, I.map(g))
       const process        = map_(stream, f).channel
 
-      const loop: Ch.Channel<R & R1 & Has<Clock>, unknown, unknown, unknown, E, C.Chunk<C | D>, void> = pipe(
+      const loop: Ch.Channel<R & R1 & Has<Clock>, unknown, unknown, unknown, E, C.Conc<C | D>, void> = pipe(
         driver.next(undefined),
         I.match(
           () => Ch.unit(),
@@ -4278,8 +4276,8 @@ export function runIntoElementsManaged_<R, E, A, R1, E1>(
   stream: Stream<R, E, A>,
   queue: Q.Queue<R1, unknown, never, never, Ex.Exit<M.Maybe<E | E1>, A>, unknown>
 ): Ma.Managed<R & R1, E | E1, void> {
-  const writer: Ch.Channel<R & R1, E, C.Chunk<A>, unknown, never, Ex.Exit<M.Maybe<E | E1>, A>, unknown> = Ch.readWith(
-    (inp: C.Chunk<A>) =>
+  const writer: Ch.Channel<R & R1, E, C.Conc<A>, unknown, never, Ex.Exit<M.Maybe<E | E1>, A>, unknown> = Ch.readWith(
+    (inp: C.Conc<A>) =>
       Ch.crossSecond_(
         C.foldl_(
           inp,
@@ -4359,7 +4357,7 @@ export function runIntoManaged_<R, R1, E extends E1, E1, A>(
   stream: Stream<R, E, A>,
   queue: Q.Queue<R1, never, never, unknown, Take.Take<E1, A>, any>
 ): Ma.Managed<R & R1, E | E1, void> {
-  const writer: Ch.Channel<R, E, C.Chunk<A>, unknown, E, Take.Take<E | E1, A>, any> = Ch.readWithCause(
+  const writer: Ch.Channel<R, E, C.Conc<A>, unknown, E, Take.Take<E | E1, A>, any> = Ch.readWithCause(
     (in_) => Ch.crossSecond_(Ch.write(Take.chunk(in_)), writer),
     (cause) => Ch.write(Take.failCause(cause)),
     (_) => Ch.write(Take.end)
@@ -4526,7 +4524,7 @@ function scheduleWithLoop<R, E, A, R1, E1, B, C, D>(
   index: number,
   f: (a: A) => C,
   g: (b: B) => D
-): Ch.Channel<R & R1, E | E1, C.Chunk<A>, unknown, E | E1, C.Chunk<C | D>, unknown> {
+): Ch.Channel<R & R1, E | E1, C.Conc<A>, unknown, E | E1, C.Conc<C | D>, unknown> {
   const next = iterator.next()
   if (next.done) {
     return Ch.readWithCause(
@@ -4608,9 +4606,9 @@ export function scheduleWith<A, R1, B, C, D>(
  */
 export function flattenExitOption<R, E, E1, A>(stream: Stream<R, E, Ex.Exit<M.Maybe<E1>, A>>): Stream<R, E | E1, A> {
   const processChunk = (
-    chunk: C.Chunk<Ex.Exit<M.Maybe<E1>, A>>,
-    cont: Ch.Channel<R, E, C.Chunk<Ex.Exit<M.Maybe<E1>, A>>, unknown, E | E1, C.Chunk<A>, any>
-  ): Ch.Channel<R, E, C.Chunk<Ex.Exit<M.Maybe<E1>, A>>, unknown, E | E1, C.Chunk<A>, any> => {
+    chunk: C.Conc<Ex.Exit<M.Maybe<E1>, A>>,
+    cont: Ch.Channel<R, E, C.Conc<Ex.Exit<M.Maybe<E1>, A>>, unknown, E | E1, C.Conc<A>, any>
+  ): Ch.Channel<R, E, C.Conc<Ex.Exit<M.Maybe<E1>, A>>, unknown, E | E1, C.Conc<A>, any> => {
     const [toEmit, rest] = C.splitWhere_(chunk, (_) => !Ex.isSuccess(_))
     const next           = M.match_(
       C.head(rest),
@@ -4640,15 +4638,7 @@ export function flattenExitOption<R, E, E1, A>(stream: Stream<R, E, Ex.Exit<M.Ma
     )
   }
 
-  const process: Ch.Channel<
-    R,
-    E,
-    C.Chunk<Ex.Exit<M.Maybe<E1>, A>>,
-    unknown,
-    E | E1,
-    C.Chunk<A>,
-    any
-  > = Ch.readWithCause(
+  const process: Ch.Channel<R, E, C.Conc<Ex.Exit<M.Maybe<E1>, A>>, unknown, E | E1, C.Conc<A>, any> = Ch.readWithCause(
     (chunk) => processChunk(chunk, process),
     (cause) => Ch.failCause(cause),
     (_) => Ch.end(undefined)
@@ -4673,7 +4663,7 @@ export function flattenTake<R, E, E1, A>(stream: Stream<R, E, Take.Take<E1, A>>)
  * Submerges the chunks carried by this stream into the stream's structure, while
  * still preserving them.
  */
-export function flattenChunks<R, E, A>(stream: Stream<R, E, C.Chunk<A>>): Stream<R, E, A> {
+export function flattenChunks<R, E, A>(stream: Stream<R, E, C.Conc<A>>): Stream<R, E, A> {
   return new Stream(Ch.mapOut_(stream.channel, C.flatten))
 }
 
@@ -4743,15 +4733,15 @@ export function ensuring<R1>(fin: I.IO<R1, never, any>): <R, E, A>(sa: Stream<R,
 }
 
 function throttleEnforceIOLoop<E, A, R1, E1>(
-  costFn: (chunk: C.Chunk<A>) => I.IO<R1, E1, number>,
+  costFn: (chunk: C.Conc<A>) => I.IO<R1, E1, number>,
   units: number,
   duration: number,
   burst: number,
   tokens: number,
   timestamp: number
-): Ch.Channel<R1 & Has<Clock>, E | E1, C.Chunk<A>, unknown, E | E1, C.Chunk<A>, void> {
+): Ch.Channel<R1 & Has<Clock>, E | E1, C.Conc<A>, unknown, E | E1, C.Conc<A>, void> {
   return Ch.readWith(
-    (inp: C.Chunk<A>) =>
+    (inp: C.Conc<A>) =>
       Ch.unwrap(
         pipe(
           costFn(inp),
@@ -4788,7 +4778,7 @@ function throttleEnforceIOLoop<E, A, R1, E1>(
  */
 export function throttleEnforce_<R, E, A>(
   sa: Stream<R, E, A>,
-  costFn: (chunk: C.Chunk<A>) => number,
+  costFn: (chunk: C.Conc<A>) => number,
   units: number,
   duration: number,
   burst = 0
@@ -4803,7 +4793,7 @@ export function throttleEnforce_<R, E, A>(
  * The weight of each chunk is determined by the `costFn` function.
  */
 export function throttleEnforce<A>(
-  costFn: (chunk: C.Chunk<A>) => number,
+  costFn: (chunk: C.Conc<A>) => number,
   units: number,
   duration: number,
   burst = 0
@@ -4819,7 +4809,7 @@ export function throttleEnforce<A>(
  */
 export function throttleEnforceIO_<R, E, A, R1, E1>(
   sa: Stream<R, E, A>,
-  costFn: (chunk: C.Chunk<A>) => I.IO<R1, E1, number>,
+  costFn: (chunk: C.Conc<A>) => I.IO<R1, E1, number>,
   units: number,
   duration: number,
   burst = 0
@@ -4838,7 +4828,7 @@ export function throttleEnforceIO_<R, E, A, R1, E1>(
  * The weight of each chunk is determined by the `costFn` effectful function.
  */
 export function throttleEnforceIO<A, R1, E1>(
-  costFn: (chunk: C.Chunk<A>) => I.IO<R1, E1, number>,
+  costFn: (chunk: C.Conc<A>) => I.IO<R1, E1, number>,
   units: number,
   duration: number,
   burst = 0
@@ -4942,7 +4932,7 @@ export function toAsyncIterable<R, E, A>(ma: Stream<R, E, A>): Ma.Managed<R, nev
     const runtime = yield* _(I.runtime<R>())
     const pull    = yield* _(toPull(ma))
     return AI.asyncIterable(() => {
-      let currentChunk: C.Chunk<A> = C.empty()
+      let currentChunk: C.Conc<A> = C.empty()
       return {
         async next(): Promise<IteratorResult<E.Either<E, A>>> {
           if (currentChunk.length === 1) {
@@ -4985,15 +4975,15 @@ export function toAsyncIterable<R, E, A>(ma: Stream<R, E, A>): Ma.Managed<R, nev
 
 class Running<W1, W2> {
   readonly _tag = 'Running'
-  constructor(readonly excess: E.Either<C.Chunk<W1>, C.Chunk<W2>>) {}
+  constructor(readonly excess: E.Either<C.Conc<W1>, C.Conc<W2>>) {}
 }
 class LeftDone<W1> {
   readonly _tag = 'LeftDone'
-  constructor(readonly excessL: C.Chunk<W1>) {}
+  constructor(readonly excessL: C.Conc<W1>) {}
 }
 class RightDone<W2> {
   readonly _tag = 'RightDone'
-  constructor(readonly excessR: C.Chunk<W2>) {}
+  constructor(readonly excessR: C.Conc<W2>) {}
 }
 class End {
   readonly _tag = 'End'
@@ -5002,10 +4992,10 @@ type State<W1, W2> = Running<W1, W2> | LeftDone<W1> | RightDone<W2> | End
 
 function handleSuccess<A, A1, B>(
   f: (a: A, a1: A1) => B,
-  leftUpd: M.Maybe<C.Chunk<A>>,
-  rightUpd: M.Maybe<C.Chunk<A1>>,
-  excess: E.Either<C.Chunk<A>, C.Chunk<A1>>
-): Ex.Exit<M.Maybe<never>, readonly [C.Chunk<B>, State<A, A1>]> {
+  leftUpd: M.Maybe<C.Conc<A>>,
+  rightUpd: M.Maybe<C.Conc<A1>>,
+  excess: E.Either<C.Conc<A>, C.Conc<A1>>
+): Ex.Exit<M.Maybe<never>, readonly [C.Conc<B>, State<A, A1>]> {
   const [leftExcess, rightExcess] = E.match_(
     excess,
     (l) => [l, C.empty<A1>()] as const,
@@ -5176,7 +5166,7 @@ export function zipWithLatest_<R, E, A, R1, E1, B, C>(
   fb: Stream<R1, E1, B>,
   f: (a: A, b: B) => C
 ): Stream<R & R1, E | E1, C> {
-  function pullNonEmpty<R, E, A>(pull: I.IO<R, M.Maybe<E>, C.Chunk<A>>): I.IO<R, M.Maybe<E>, C.Chunk<A>> {
+  function pullNonEmpty<R, E, A>(pull: I.IO<R, M.Maybe<E>, C.Conc<A>>): I.IO<R, M.Maybe<E>, C.Conc<A>> {
     return pipe(
       pull,
       I.chain((chunk) => (C.isNonEmpty(chunk) ? pullNonEmpty(pull) : I.succeed(chunk)))
@@ -5191,7 +5181,7 @@ export function zipWithLatest_<R, E, A, R1, E1, B, C>(
           left,
           I.raceWith(
             right,
-            (leftDone, rightFiber): I.IO<unknown, M.Maybe<E | E1>, readonly [C.Chunk<A>, C.Chunk<B>, boolean]> =>
+            (leftDone, rightFiber): I.IO<unknown, M.Maybe<E | E1>, readonly [C.Conc<A>, C.Conc<B>, boolean]> =>
               pipe(
                 leftDone,
                 I.fromExit,

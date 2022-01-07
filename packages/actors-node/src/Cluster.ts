@@ -7,7 +7,7 @@ import * as AS from '@principia/actors/ActorSystem'
 import { Message, messages } from '@principia/actors/Message'
 import * as SUP from '@principia/actors/Supervisor'
 import { Tagged } from '@principia/base/Case'
-import * as Chunk from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as T from '@principia/base/IO'
@@ -89,21 +89,21 @@ export class Leave extends Message(
 export type Protocol = GetMembers | Join | Init | Leave
 
 export function sortedSet<X extends S.AnyUS>(child: X, ord: Ord.Ord<S.TypeOf<X>>) {
-  return S.chunk(child)['>>>'](
+  return S.conc(child)['>>>'](
     pipe(
       S.identity<OSet.OrderedSet<S.TypeOf<X>>>()({
         [G.GuardSURI]: G.Guard(
           (u): u is OSet.OrderedSet<S.TypeOf<X>> => u instanceof OSet.OrderedSet && OSet.every_(u, G.for(child))
         )
       }),
-      S.decode((u: Chunk.Chunk<S.TypeOf<X>>) => Th.right(Chunk.foldl_(u, OSet.make<S.TypeOf<X>>(ord), OSet.add_))),
-      S.encode(Chunk.from)
+      S.decode((u: C.Conc<S.TypeOf<X>>) => Th.right(C.foldl_(u, OSet.make<S.TypeOf<X>>(ord), OSet.add_))),
+      S.encode(C.from)
     )
   )
 }
 
-export function fromChunk(u: Chunk.Chunk<Member>): OSet.OrderedSet<Member> {
-  return Chunk.foldl_(u, OSet.make(OrdMember), OSet.add_)
+export function fromChunk(u: C.Conc<Member>): OSet.OrderedSet<Member> {
+  return C.foldl_(u, OSet.make(OrdMember), OSet.add_)
 }
 
 export const makeCluster = Ma.gen(function* (_) {
@@ -160,7 +160,7 @@ export const makeCluster = Ma.gen(function* (_) {
 
               switch (m._tag) {
                 case 'Init': {
-                  const members = Chunk.map_(
+                  const members = C.map_(
                     yield* _(cli.getChildren(membersDir)),
                     (s) => new Member({ id: s as MemberId })
                   )
@@ -239,7 +239,7 @@ export const makeCluster = Ma.gen(function* (_) {
   ): T.IO<R & R2 & IOEnv, K.ZooError | E | E2, never> => {
     return T.gen(function* (_) {
       while (1) {
-        const leader = Chunk.head(yield* _(cli.getChildren(membersDir)))
+        const leader = C.head(yield* _(cli.getChildren(membersDir)))
         if (M.isJust(leader)) {
           if (leader.value === nodeId) {
             yield* _(onLeader)
@@ -351,7 +351,7 @@ export const makeCluster = Ma.gen(function* (_) {
 
   const leave = (nodePath: string) => cli.remove(nodePath)
 
-  const leaderPath = (scope: string) => pipe(cli.getChildren(`${clusterDir}/elections/${scope}`), T.map(Chunk.head))
+  const leaderPath = (scope: string) => pipe(cli.getChildren(`${clusterDir}/elections/${scope}`), T.map(C.head))
 
   const leaderId = (scope: string) =>
     pipe(

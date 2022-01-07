@@ -1,5 +1,5 @@
 import type * as S from './Schemable'
-import type { Chunk } from '@principia/base/Chunk'
+import type { Conc } from '@principia/base/collection/immutable/Conc'
 import type * as HKT from '@principia/base/HKT'
 import type * as O from '@principia/base/Maybe'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
@@ -189,11 +189,11 @@ export function array<A, O>(item: Encoder<A, O>): Encoder<ReadonlyArray<A>, Arra
 
 /*
  * -------------------------------------------
- * chunk
+ * conc
  * -------------------------------------------
  */
 
-export function chunk<A, O>(item: Encoder<A, O>): Encoder<Chunk<A>, Array<O>> {
+export function conc<A, O>(item: Encoder<A, O>): Encoder<Conc<A>, Array<O>> {
   return Encoder((as) => {
     const out: Array<O> = Array(as.length)
     let i               = 0
@@ -373,7 +373,7 @@ export const Schemable: S.Schemable<EncoderSURI> = {
   struct: (properties) => struct(properties),
   partial: (properties) => partial(properties),
   array: (item) => array(item),
-  chunk: (item) => chunk(item),
+  conc: (item) => conc(item),
   record: (codomain) => record(codomain),
   tuple: (components) => tuple(...components),
   sum: (tag) => (members) => sum(tag)(members),

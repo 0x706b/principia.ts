@@ -1,6 +1,6 @@
 // tracing: off
 
-import type { Chunk } from '../Chunk/core'
+import type { Conc } from '../collection/immutable/Conc/core'
 import type { FiberId } from '../Fiber/FiberId'
 import type { Trace } from '../Fiber/Trace'
 import type { Has, Tag } from '../Has'
@@ -13,7 +13,7 @@ import type { Finalizer, ReleaseMap } from './ReleaseMap'
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
 
 import * as A from '../Array/core'
-import * as Ch from '../Chunk/core'
+import * as Co from '../collection/immutable/Conc/core'
 import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
 import * as FR from '../FiberRef/core'
@@ -1480,7 +1480,7 @@ export function collect<A, E1, B>(
  *
  * @trace call
  */
-export function sequenceIterable<R, E, A>(mas: Iterable<Managed<R, E, A>>): Managed<R, E, Chunk<A>> {
+export function sequenceIterable<R, E, A>(mas: Iterable<Managed<R, E, A>>): Managed<R, E, Conc<A>> {
   const trace = accessCallTrace()
   return traceCall(foreach_, trace)(mas, identityFn)
 }
@@ -1626,17 +1626,17 @@ export function foldMap<M>(M: P.Monoid<M>) {
  * @trace 1
  */
 export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E, B>) {
-  return new Managed<R, E, Chunk<B>>(
+  return new Managed<R, E, Conc<B>>(
     I.map_(
       I.foreach_(
         as,
         traceAs(f, (a) => f(a).io)
       ),
       (res) => {
-        const fins = Ch.map_(res, (k) => k[0])
-        const as   = Ch.map_(res, (k) => k[1])
+        const fins = Co.map_(res, (k) => k[0])
+        const as   = Co.map_(res, (k) => k[1])
 
-        return [(e) => I.foreach_(Ch.reverse(fins), (fin) => fin(e)), as]
+        return [(e) => I.foreach_(Co.reverse(fins), (fin) => fin(e)), as]
       }
     )
   )
@@ -1652,7 +1652,7 @@ export function foreach_<R, E, A, B>(as: Iterable<A>, f: (a: A) => Managed<R, E,
  * @dataFirst foreach_
  * @trace 0
  */
-export function foreach<R, E, A, B>(f: (a: A) => Managed<R, E, B>): (as: Iterable<A>) => Managed<R, E, Chunk<B>> {
+export function foreach<R, E, A, B>(f: (a: A) => Managed<R, E, B>): (as: Iterable<A>) => Managed<R, E, Conc<B>> {
   return (as) => foreach_(as, f)
 }
 
@@ -1671,9 +1671,9 @@ export function foreachUnit_<R, E, A>(as: Iterable<A>, f: (a: A) => Managed<R, E
       as,
       I.foreach(traceAs(f, (a) => f(a).io)),
       I.map((result) => {
-        const fins = Ch.map_(result, (k) => k[0])
+        const fins = Co.map_(result, (k) => k[0])
 
-        return [(e) => I.foreach_(Ch.reverse(fins), (fin) => fin(e)), undefined]
+        return [(e) => I.foreach_(Co.reverse(fins), (fin) => fin(e)), undefined]
       })
     )
   )

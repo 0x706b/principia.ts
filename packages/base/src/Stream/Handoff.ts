@@ -1,4 +1,4 @@
-import type * as C from '../Chunk'
+import type * as C from '../collection/immutable/Conc'
 import type * as Ca from '../IO/Cause'
 import type * as SER from './SinkEndReason'
 
@@ -97,7 +97,7 @@ export class Emit<A> {
   readonly _handoffSignalTypeId: typeof HandoffSignalTypeId = HandoffSignalTypeId
   readonly _typeId: typeof EmitTypeId = EmitTypeId
 
-  constructor(readonly els: C.Chunk<A>) {}
+  constructor(readonly els: C.Conc<A>) {}
 }
 
 export const HaltTypeId = Symbol.for('@principia/base/IO/Stream/HandoffSignal/Halt')

@@ -117,7 +117,7 @@ export const Schemable: S.Schemable<GenSURI> = {
   struct: (properties) => G.struct(properties) as any,
   partial: (properties) => G.partial(properties) as any,
   array: (item) => G.array(item),
-  chunk: (item) => G.chunk(item),
+  conc: (item) => G.conc(item),
   record: (codomain) => record(codomain),
   tuple: (components) => G.tuple(...components) as any,
   sum: (tag) => (members) => sum(tag)(members) as any,

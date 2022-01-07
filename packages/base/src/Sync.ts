@@ -1,4 +1,4 @@
-import type { Chunk } from './Chunk'
+import type { Conc } from './collection/immutable/Conc'
 import type { Vector } from './collection/immutable/Vector'
 import type { Has, Tag } from './Has'
 import type * as HKT from './HKT'
@@ -747,7 +747,7 @@ export const foreachUnit_: <A, R, E>(as: Iterable<A>, f: (a: A) => Sync<R, E, vo
 export const foreachUnit: <A, R, E>(f: (a: A) => Sync<R, E, void>) => (as: Iterable<A>) => Sync<R, E, void> =
   Z.foreachUnit
 
-export const iforeach_: <A, R, E, B>(as: Iterable<A>, f: (i: number, a: A) => Sync<R, E, B>) => Sync<R, E, Chunk<B>> =
+export const iforeach_: <A, R, E, B>(as: Iterable<A>, f: (i: number, a: A) => Sync<R, E, B>) => Sync<R, E, Conc<B>> =
   Z.iforeach_
 
 /**
@@ -755,14 +755,14 @@ export const iforeach_: <A, R, E, B>(as: Iterable<A>, f: (i: number, a: A) => Sy
  */
 export const iforeach: <A, R, E, B>(
   f: (i: number, a: A) => Sync<R, E, B>
-) => (as: Iterable<A>) => Sync<R, E, Chunk<B>> = Z.iforeach
+) => (as: Iterable<A>) => Sync<R, E, Conc<B>> = Z.iforeach
 
-export const foreach_: <A, R, E, B>(as: Iterable<A>, f: (a: A) => Sync<R, E, B>) => Sync<R, E, Chunk<B>> = Z.foreach_
+export const foreach_: <A, R, E, B>(as: Iterable<A>, f: (a: A) => Sync<R, E, B>) => Sync<R, E, Conc<B>> = Z.foreach_
 
 /**
  * @dataFirst foreach_
  */
-export const foreach: <A, R, E, B>(f: (a: A) => Sync<R, E, B>) => (as: Iterable<A>) => Sync<R, E, Chunk<B>> = Z.foreach
+export const foreach: <A, R, E, B>(f: (a: A) => Sync<R, E, B>) => (as: Iterable<A>) => Sync<R, E, Conc<B>> = Z.foreach
 
 export const iforeachArrayUnit_: <A, R, E>(
   as: ReadonlyArray<A>,
@@ -830,7 +830,7 @@ export const foreachVector_: <A, R, E, B>(as: Iterable<A>, f: (a: A) => Sync<R, 
 export const foreachVector: <A, R, E, B>(f: (a: A) => Sync<R, E, B>) => (as: Iterable<A>) => Sync<R, E, Vector<B>> =
   Z.foreachVector
 
-export function sequenceIterable<R, E, A>(as: Iterable<Sync<R, E, A>>): Sync<R, E, Chunk<A>> {
+export function sequenceIterable<R, E, A>(as: Iterable<Sync<R, E, A>>): Sync<R, E, Conc<A>> {
   return iforeach_(as, (_, a) => a)
 }
 

@@ -10,7 +10,7 @@ import { pipe } from '@principia/base/function'
 import * as St from '@principia/base/Structural'
 
 import { array } from './array'
-import { uniqueChunk } from './chunk'
+import { uniqueConc } from './conc'
 import * as G from './core'
 import { date } from './date'
 import { dictionary } from './dictionary'
@@ -45,14 +45,14 @@ export function anything<C extends ObjectConstraints>(
   const mapOf = <R, K, R1, V>(key: Gen<R, K>, value: Gen<R1, V>) =>
     pipe(
       tuple(key, value),
-      uniqueChunk({ eq: Eq.contramap_(St.DefaultEq, ([k]) => k) }),
+      uniqueConc({ eq: Eq.contramap_(St.DefaultEq, ([k]) => k) }),
       G.map((c) => new Map(c))
     )
 
   const setOf = <R, V>(value: Gen<R, V>) =>
     pipe(
       value,
-      uniqueChunk({ eq: St.DefaultEq, maxLength: maxKeys }),
+      uniqueConc({ eq: St.DefaultEq, maxLength: maxKeys }),
       G.map((c) => new Set(c))
     )
 

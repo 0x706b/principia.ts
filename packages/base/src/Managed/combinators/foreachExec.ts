@@ -1,6 +1,6 @@
 // tracing: off
 
-import type { Chunk } from '../../Chunk/core'
+import type { Conc } from '../../collection/immutable/Conc/core'
 import type { Managed } from '../core'
 
 import * as ES from '../../ExecutionStrategy'
@@ -21,7 +21,7 @@ export function foreachExec_<R, E, A, B>(
   as: Iterable<A>,
   strategy: ES.ExecutionStrategy,
   f: (a: A) => Managed<R, E, B>
-): Managed<R, E, Chunk<B>> {
+): Managed<R, E, Conc<B>> {
   return ES.match_(
     strategy,
     () => foreach_(as, f),
@@ -42,6 +42,6 @@ export function foreachExec_<R, E, A, B>(
 export function foreachExec<R, E, A, B>(
   strategy: ES.ExecutionStrategy,
   f: (a: A) => Managed<R, E, B>
-): (as: Iterable<A>) => Managed<R, E, Chunk<B>> {
+): (as: Iterable<A>) => Managed<R, E, Conc<B>> {
   return (as) => foreachExec_(as, strategy, f)
 }

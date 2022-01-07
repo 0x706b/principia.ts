@@ -6,7 +6,7 @@ import type { Managed } from '../Managed/core'
 import type { Finalizer } from '../Managed/ReleaseMap'
 import type { Erase, UnionToIntersection } from '../util/types'
 
-import * as Ch from '../Chunk/core'
+import * as Co from '../collection/immutable/Conc/core'
 import * as E from '../Either'
 import { sequential } from '../ExecutionStrategy'
 import * as FR from '../FiberRef/core'
@@ -285,7 +285,7 @@ function scope<R, E, A>(l: Layer<R, E, A>): Managed<unknown, never, (_: MemoMap)
       return Ma.succeed((memo) => {
         return pipe(
           Ma.foreachC_(l.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
-          Ma.map(Ch.foldl({} as any, (b, a) => ({ ...b, ...a })))
+          Ma.map(Co.foldl({} as any, (b, a) => ({ ...b, ...a })))
         )
       })
     }
@@ -293,7 +293,7 @@ function scope<R, E, A>(l: Layer<R, E, A>): Managed<unknown, never, (_: MemoMap)
       return Ma.succeed((memo) => {
         return pipe(
           Ma.foreach_(l.layers as Layer<any, any, any>[], memo.getOrElseMemoize),
-          Ma.map(Ch.foldl({} as any, (b, a) => ({ ...b, ...a })))
+          Ma.map(Co.foldl({} as any, (b, a) => ({ ...b, ...a })))
         )
       })
     }

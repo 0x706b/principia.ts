@@ -5,7 +5,7 @@ import type { Equatable, Hashable } from '../Structural'
 
 import * as A from '../Array/core'
 import * as C from '../Cause'
-import * as Ch from '../Chunk/core'
+import * as Co from '../collection/immutable/Conc/core'
 import * as E from '../Either'
 import { flow, identity, pipe } from '../function'
 import * as M from '../Maybe'
@@ -544,25 +544,25 @@ export function unit(): PExit<never, never, void> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function collectAll<Id, E, A>(exits: Ch.Chunk<PExit<Id, E, A>>): M.Maybe<PExit<Id, E, Ch.Chunk<A>>> {
+export function collectAll<Id, E, A>(exits: Co.Conc<PExit<Id, E, A>>): M.Maybe<PExit<Id, E, Co.Conc<A>>> {
   return pipe(
-    Ch.head(exits),
+    Co.head(exits),
     M.map((head) =>
       pipe(
-        Ch.drop_(exits, 1),
-        Ch.foldl(pipe(head, map(Ch.single)), (acc, el) => crossWithCause_(acc, el, Ch.append_, C.then))
+        Co.drop_(exits, 1),
+        Co.foldl(pipe(head, map(Co.single)), (acc, el) => crossWithCause_(acc, el, Co.append_, C.then))
       )
     )
   )
 }
 
-export function collectAllC<Id, E, A>(exits: Ch.Chunk<PExit<Id, E, A>>): M.Maybe<PExit<Id, E, Ch.Chunk<A>>> {
+export function collectAllC<Id, E, A>(exits: Co.Conc<PExit<Id, E, A>>): M.Maybe<PExit<Id, E, Co.Conc<A>>> {
   return pipe(
-    Ch.head(exits),
+    Co.head(exits),
     M.map((head) =>
       pipe(
-        Ch.drop_(exits, 1),
-        Ch.foldl(pipe(head, map(Ch.single)), (acc, el) => crossWithCause_(acc, el, Ch.append_, C.both))
+        Co.drop_(exits, 1),
+        Co.foldl(pipe(head, map(Co.single)), (acc, el) => crossWithCause_(acc, el, Co.append_, C.both))
       )
     )
   )

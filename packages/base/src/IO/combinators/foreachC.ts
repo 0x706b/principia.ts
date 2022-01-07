@@ -1,12 +1,12 @@
 // tracing: off
 
-import type { Chunk } from '../../Chunk/core'
+import type { Conc } from '../../collection/immutable/Conc/core'
 import type { Fiber, RuntimeFiber } from '../../Fiber/core'
 import type { Exit } from '../Exit/core'
 
 import { accessCallTrace, traceAs, traceFrom } from '@principia/compile/util'
 
-import * as Ch from '../../Chunk/core'
+import * as Co from '../../collection/immutable/Conc/core'
 import { interrupt as interruptFiber } from '../../Fiber/combinators/interrupt'
 import * as FiberId from '../../Fiber/FiberId'
 import * as FR from '../../FiberRef/core'
@@ -131,7 +131,7 @@ function foreachConcurrentBoundedUnit_<R, E, A>(
   })
 }
 
-function foreachConcurrentUnbounded_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Chunk<B>> {
+function foreachConcurrentUnbounded_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Conc<B>> {
   return pipe(
     I.succeedLazy<B[]>(() => []),
     I.chain((array) =>
@@ -146,7 +146,7 @@ function foreachConcurrentUnbounded_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I
         () => I.succeedLazy(() => array)
       )
     ),
-    I.map(Ch.from)
+    I.map(Co.from)
   )
 }
 
@@ -182,11 +182,11 @@ function foreachConcurrentBounded_<R, E, A, B>(
   as: Iterable<A>,
   n: number,
   f: (a: A) => I.IO<R, E, B>
-): I.IO<R, E, Chunk<B>> {
+): I.IO<R, E, Conc<B>> {
   return I.defer(() => {
     const size = 'length' in as && typeof as['length'] === 'number' ? as['length'] : It.size(as)
     if (size === 0) {
-      return I.succeed(Ch.empty())
+      return I.succeed(Co.empty())
     }
     return I.gen(function* (_) {
       const array = yield* _(I.succeedLazy(() => new Array(size)))
@@ -195,7 +195,7 @@ function foreachConcurrentBounded_<R, E, A, B>(
       yield* _(
         foreachConcurrentUnboundedUnit_(I.replicate_(foreachConcurrentBoundedWorker_(queue, array, f), n), identity)
       )
-      return Ch.from(array)
+      return Co.from(array)
     })
   })
 }
@@ -250,7 +250,7 @@ export function foreachUnitC<R, E, A>(f: (a: A) => I.IO<R, E, any>): (as: Iterab
  *
  * @trace 1
  */
-export function foreachC_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Ch.Chunk<B>> {
+export function foreachC_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B>): I.IO<R, E, Co.Conc<B>> {
   return concurrencyWith(
     M.match(
       () => foreachConcurrentUnbounded_(as, f),
@@ -268,7 +268,7 @@ export function foreachC_<R, E, A, B>(as: Iterable<A>, f: (a: A) => I.IO<R, E, B
  * @trace 0
  * @dataFirst foreachC_
  */
-export function foreachC<R, E, A, B>(f: (a: A) => I.IO<R, E, B>): (as: Iterable<A>) => I.IO<R, E, Ch.Chunk<B>> {
+export function foreachC<R, E, A, B>(f: (a: A) => I.IO<R, E, B>): (as: Iterable<A>) => I.IO<R, E, Co.Conc<B>> {
   return (as) => foreachC_(as, f)
 }
 
@@ -283,14 +283,14 @@ export function foreachC<R, E, A, B>(f: (a: A) => I.IO<R, E, B>): (as: Iterable<
  * Attempting to join a fiber that has erred will result in
  * a catchable error, _if_ that error does not result from interruption.
  */
-export function joinAll<E, A>(as: Iterable<Fiber<E, A>>): I.IO<unknown, E, Chunk<A>> {
+export function joinAll<E, A>(as: Iterable<Fiber<E, A>>): I.IO<unknown, E, Conc<A>> {
   return I.tap_(I.chain_(awaitAll(as), I.fromExit), () => I.foreach_(as, (f) => f.inheritRefs))
 }
 
 /**
  * Awaits on all fibers to be completed, successfully or not.
  */
-export function awaitAll<E, A>(as: Iterable<Fiber<E, A>>): I.IO<unknown, never, Exit<E, Chunk<A>>> {
+export function awaitAll<E, A>(as: Iterable<Fiber<E, A>>): I.IO<unknown, never, Exit<E, Conc<A>>> {
   return I.result(foreachC_(as, (f) => I.chain_(f.await, I.fromExit)))
 }
 
@@ -388,7 +388,7 @@ function releaseAllSequential_(releaseMap: RM.ReleaseMap, exit: Exit<any, any>):
           return [
             I.chain_(
               I.foreach_(Array.from(s.finalizers).reverse(), ([_, f]) => I.result(s.update(f)(exit))),
-              (e) => I.fromExit(M.getOrElse_(Ex.collectAll(e), () => Ex.succeed(Ch.empty())))
+              (e) => I.fromExit(M.getOrElse_(Ex.collectAll(e), () => Ex.succeed(Co.empty())))
             ),
             new RM.Exited(s.nextKey, exit, s.update)
           ]

@@ -6,7 +6,7 @@ import type { BlockedRequest } from './BlockedRequest'
 import type { Sequential } from './Sequential'
 import type { List } from '@principia/base/collection/immutable/List'
 
-import * as C from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import * as L from '@principia/base/collection/immutable/List'
 import * as Ev from '@principia/base/Eval'
 import { identity, pipe } from '@principia/base/function'

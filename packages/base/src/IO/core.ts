@@ -1,6 +1,6 @@
 // tracing: off
 
-import type { Chunk } from '../Chunk'
+import type { Conc } from '../collection/immutable/Conc'
 import type { Eval } from '../Eval'
 import type { Platform } from '../Fiber'
 import type { FiberDescriptor, InterruptStatus } from '../Fiber/core'
@@ -28,7 +28,7 @@ import type { FailureReporter, FIO, IO, UIO, URIO } from './primitives'
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
 
 import * as A from '../Array/core'
-import * as Ch from '../Chunk/core'
+import * as Ch from '../collection/immutable/Conc/core'
 import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
 import * as Ev from '../Eval'
@@ -1915,7 +1915,7 @@ export function collect<A, E1, A1>(f: () => E1, pf: (a: A) => Maybe<A1>): <R, E>
 /**
  * @trace call
  */
-export function sequenceIterable<R, E, A>(as: Iterable<IO<R, E, A>>): IO<R, E, Chunk<A>> {
+export function sequenceIterable<R, E, A>(as: Iterable<IO<R, E, A>>): IO<R, E, Conc<A>> {
   const trace = accessCallTrace()
   return foreach_(as, traceFrom(trace, flow(identity)))
 }
@@ -2111,10 +2111,10 @@ export function evaluate<A>(a: Eval<A>): UIO<A> {
  *
  * @trace 1
  */
-export function filter_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boolean>): IO<R, E, Chunk<A>> {
+export function filter_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boolean>): IO<R, E, Conc<A>> {
   return pipe(
     as,
-    I.foldl(succeed(Ch.builder<A>()) as IO<R, E, Ch.ChunkBuilder<A>>, (ma, a) =>
+    I.foldl(succeed(Ch.builder<A>()) as IO<R, E, Ch.ConcBuilder<A>>, (ma, a) =>
       crossWith_(
         ma,
         f(a),
@@ -2136,7 +2136,7 @@ export function filter_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boolean>
  * @dataFirst filter_
  * @trace 0
  */
-export function filter<A, R, E>(f: (a: A) => IO<R, E, boolean>): (as: Iterable<A>) => IO<R, E, Chunk<A>> {
+export function filter<A, R, E>(f: (a: A) => IO<R, E, boolean>): (as: Iterable<A>) => IO<R, E, Conc<A>> {
   return (as) => filter_(as, f)
 }
 
@@ -2146,7 +2146,7 @@ export function filter<A, R, E>(f: (a: A) => IO<R, E, boolean>): (as: Iterable<A
 export function ifilterMap_<A, R, E, B>(
   as: Iterable<A>,
   f: (i: number, a: A) => IO<R, E, M.Maybe<B>>
-): IO<R, E, Chunk<B>> {
+): IO<R, E, Conc<B>> {
   return defer(() => {
     const bs: Array<B> = []
     return pipe(
@@ -2168,14 +2168,14 @@ export function ifilterMap_<A, R, E, B>(
  */
 export function ifilterMap<A, R, E, B>(
   f: (i: number, a: A) => IO<R, E, M.Maybe<B>>
-): (as: Iterable<A>) => IO<R, E, Chunk<B>> {
+): (as: Iterable<A>) => IO<R, E, Conc<B>> {
   return (as) => ifilterMap_(as, f)
 }
 
 /**
  * @trace 1
  */
-export function filterMap_<A, R, E, B>(as: Iterable<A>, f: (a: A) => IO<R, E, M.Maybe<B>>): IO<R, E, Chunk<B>> {
+export function filterMap_<A, R, E, B>(as: Iterable<A>, f: (a: A) => IO<R, E, M.Maybe<B>>): IO<R, E, Conc<B>> {
   return ifilterMap_(
     as,
     traceAs(f, (_, a) => f(a))
@@ -2185,7 +2185,7 @@ export function filterMap_<A, R, E, B>(as: Iterable<A>, f: (a: A) => IO<R, E, M.
 /**
  * @trace 0
  */
-export function filterMap<A, R, E, B>(f: (a: A) => IO<R, E, M.Maybe<B>>): (as: Iterable<A>) => IO<R, E, Chunk<B>> {
+export function filterMap<A, R, E, B>(f: (a: A) => IO<R, E, M.Maybe<B>>): (as: Iterable<A>) => IO<R, E, Conc<B>> {
   return (as) => filterMap_(as, f)
 }
 
@@ -2195,7 +2195,7 @@ export function filterMap<A, R, E, B>(f: (a: A) => IO<R, E, M.Maybe<B>>): (as: I
  *
  * @trace 1
  */
-export function filterNot_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boolean>): IO<R, E, Chunk<A>> {
+export function filterNot_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boolean>): IO<R, E, Conc<A>> {
   return filter_(
     as,
     traceAs(
@@ -2215,7 +2215,7 @@ export function filterNot_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boole
  * @dataFirst filterNot_
  * @trace 0
  */
-export function filterNot<A, R, E>(f: (a: A) => IO<R, E, boolean>): (as: Iterable<A>) => IO<R, E, Chunk<A>> {
+export function filterNot<A, R, E>(f: (a: A) => IO<R, E, boolean>): (as: Iterable<A>) => IO<R, E, Conc<A>> {
   return (as) => filterNot_(as, f)
 }
 
@@ -2518,7 +2518,7 @@ export function foreachUnit<A, R, E, A1>(f: (a: A) => IO<R, E, A1>): (as: Iterab
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` and
- * returns the results in a new `Chunk<B>`.
+ * returns the results in a new `Conc<B>`.
  *
  * For a parallel version of this method, see `foreachPar`.
  * If you do not need the results, see `foreachUnit` for a more efficient implementation.
@@ -2528,7 +2528,7 @@ export function foreachUnit<A, R, E, A1>(f: (a: A) => IO<R, E, A1>): (as: Iterab
  *
  * @trace 1
  */
-export function iforeach_<A, R, E, B>(as: Iterable<A>, f: (i: number, a: A) => IO<R, E, B>): IO<R, E, Chunk<B>> {
+export function iforeach_<A, R, E, B>(as: Iterable<A>, f: (i: number, a: A) => IO<R, E, B>): IO<R, E, Conc<B>> {
   return defer(() => {
     const acc: Array<B> = []
     return map_(
@@ -2555,13 +2555,13 @@ export function iforeach_<A, R, E, B>(as: Iterable<A>, f: (i: number, a: A) => I
  * @dataFirst iforeach_
  * @trace 0
  */
-export function iforeach<R, E, A, B>(f: (i: number, a: A) => IO<R, E, B>): (as: Iterable<A>) => IO<R, E, Chunk<B>> {
+export function iforeach<R, E, A, B>(f: (i: number, a: A) => IO<R, E, B>): (as: Iterable<A>) => IO<R, E, Conc<B>> {
   return (as) => iforeach_(as, f)
 }
 
 /**
  * Applies the function `f` to each element of the `Iterable<A>` and
- * returns the results in a new `Chunk<B>`.
+ * returns the results in a new `Conc<B>`.
  *
  * For a parallel version of this method, see `foreachPar`.
  * If you do not need the results, see `foreachUnit` for a more efficient implementation.
@@ -2571,7 +2571,7 @@ export function iforeach<R, E, A, B>(f: (i: number, a: A) => IO<R, E, B>): (as: 
  *
  * @trace 1
  */
-export function foreach_<A, R, E, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>): IO<R, E, Chunk<B>> {
+export function foreach_<A, R, E, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>): IO<R, E, Conc<B>> {
   return defer(() => {
     const acc: Array<B> = []
     return map_(
@@ -2598,7 +2598,7 @@ export function foreach_<A, R, E, B>(as: Iterable<A>, f: (a: A) => IO<R, E, B>):
  * @dataFirst foreach_
  * @trace 0
  */
-export function foreach<R, E, A, B>(f: (a: A) => IO<R, E, B>): (as: Iterable<A>) => IO<R, E, Chunk<B>> {
+export function foreach<R, E, A, B>(f: (a: A) => IO<R, E, B>): (as: Iterable<A>) => IO<R, E, Conc<B>> {
   return (as) => foreach_(as, f)
 }
 

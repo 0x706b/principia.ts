@@ -4,7 +4,7 @@ import type { Has } from '@principia/base/Has'
 import type { IO, UIO, URIO } from '@principia/base/IO'
 import type { Layer } from '@principia/base/Layer'
 
-import * as C from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import * as E from '@principia/base/Either'
 import { eqFiberId } from '@principia/base/Fiber'
 import * as FR from '@principia/base/FiberRef'

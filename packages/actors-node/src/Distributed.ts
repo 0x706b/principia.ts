@@ -8,8 +8,8 @@ import '@principia/base/Operators'
 import * as A from '@principia/actors/Actor'
 import * as AS from '@principia/actors/ActorSystem'
 import * as SUP from '@principia/actors/Supervisor'
-import * as C from '@principia/base/Chunk'
 import { Clock } from '@principia/base/Clock'
+import * as C from '@principia/base/collection/immutable/Conc'
 import { pipe } from '@principia/base/function'
 import * as HM from '@principia/base/HashMap'
 import * as I from '@principia/base/IO'
@@ -105,7 +105,7 @@ export function runner<R, E, R2, E2, F1 extends Msg.AnyMessage>(
         )
     }
 
-    function passivate(now: number, _: C.Chunk<string>, passivateAfter: number) {
+    function passivate(now: number, _: C.Conc<string>, passivateAfter: number) {
       return I.foreachUnitC_(_, (path) =>
         pipe(
           I.gen(function* (_) {
@@ -334,7 +334,7 @@ export const distributed = <R, S, F1 extends Msg.AnyMessage>(
               )
             )
 
-            const slots: Record<string, C.Chunk<A.PendingMessage<F1>>> = {}
+            const slots: Record<string, C.Conc<A.PendingMessage<F1>>> = {}
 
             for (const r of all) {
               const id = messageToId(r[0])

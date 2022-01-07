@@ -10,7 +10,7 @@ import type * as S from '@principia/schema'
 
 import '@principia/base/Operators'
 
-import * as C from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import { pipe } from '@principia/base/function'
 import * as F from '@principia/base/Future'
 import * as I from '@principia/base/IO'

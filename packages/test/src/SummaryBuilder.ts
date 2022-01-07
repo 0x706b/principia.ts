@@ -4,7 +4,7 @@ import type { TestSuccess } from './TestSuccess'
 import type { Either } from '@principia/base/Either'
 
 import * as A from '@principia/base/Array'
-import * as C from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import * as V from '@principia/base/collection/immutable/Vector'
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/function'

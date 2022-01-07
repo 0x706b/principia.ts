@@ -9,7 +9,7 @@ import type { Cause } from '@principia/base/IO/Cause'
 import type { Maybe } from '@principia/base/Maybe'
 
 import * as A from '@principia/base/Array'
-import * as C from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import { flow, identity, pipe } from '@principia/base/function'
 import * as Set from '@principia/base/HashSet'
 import * as I from '@principia/base/IO'
@@ -53,7 +53,7 @@ export class ManagedCase<R, E, Spec> {
 
 export class MultipleCase<Spec> {
   readonly _tag = 'Multiple'
-  constructor(readonly specs: C.Chunk<Spec>) {}
+  constructor(readonly specs: C.Conc<Spec>) {}
 }
 
 function isMultiple<R, E, T, A>(s: SpecCase<R, E, T, A>): s is MultipleCase<A> {
@@ -87,7 +87,7 @@ export function managed<R, E, T>(managed: Ma.Managed<R, E, PSpec<R, E, T>>): PSp
   return new PSpec(new ManagedCase(managed))
 }
 
-export function multiple<R, E, T>(specs: C.Chunk<PSpec<R, E, T>>): PSpec<R, E, T> {
+export function multiple<R, E, T>(specs: C.Conc<PSpec<R, E, T>>): PSpec<R, E, T> {
   return new PSpec(new MultipleCase(specs))
 }
 
@@ -541,7 +541,7 @@ export function annotate_<R, E, T, V>(spec: PSpec<R, E, T>, key: TestAnnotation<
 
 export function combine_<R, E, A, R1, E1, B>(sa: PSpec<R, E, A>, sb: PSpec<R1, E1, B>): PSpec<R & R1, E | E1, A | B> {
   if (isMultiple(sa.caseValue) && isMultiple(sb.caseValue)) {
-    return multiple(C.concat_(sa.caseValue.specs as C.Chunk<PSpec<R & R1, E | E1, A | B>>, sb.caseValue.specs))
+    return multiple(C.concat_(sa.caseValue.specs as C.Conc<PSpec<R & R1, E | E1, A | B>>, sb.caseValue.specs))
   }
   if (isMultiple(sa.caseValue)) {
     return multiple(C.append_<PSpec<R & R1, E | E1, A | B>, PSpec<R & R1, E | E1, A | B>>(sa.caseValue.specs, sb))

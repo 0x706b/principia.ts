@@ -4,7 +4,7 @@ import '@principia/base/Operators'
 
 import * as A from '@principia/base/Array'
 import { Tagged } from '@principia/base/Case'
-import * as Chunk from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import * as F from '@principia/base/Future'
 import { tag } from '@principia/base/Has'
 import * as T from '@principia/base/IO'
@@ -163,12 +163,12 @@ export const makeKeeperClient = Ma.gen(function* (_) {
   }
 
   function getChildren(path: string) {
-    return T.async<unknown, ZooError, Chunk.Chunk<string>>((cb) => {
+    return T.async<unknown, ZooError, C.Conc<string>>((cb) => {
       client.getChildren(path, (e, b) => {
         if (e) {
           cb(T.fail(new ZooError({ op: 'GET_DATA', message: JSON.stringify(e) })))
         } else {
-          cb(T.succeed(Chunk.from(A.sort(Str.Ord)(b))))
+          cb(T.succeed(C.from(A.sort(Str.Ord)(b))))
         }
       })
     })

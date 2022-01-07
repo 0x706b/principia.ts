@@ -1,13 +1,13 @@
 // tracing: off
 
-import type { Chunk } from '../../Chunk/core'
+import type { Conc } from '../../collection/immutable/Conc/core'
 import type { NonEmptyArray } from '../../NonEmptyArray'
 import type { IO, UIO } from '../core'
 import type { Exit } from '../Exit'
 
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
-import * as C from '../../Chunk/core'
+import * as C from '../../collection/immutable/Conc/core'
 import * as Fiber from '../../Fiber'
 import { flow, pipe } from '../../function'
 import * as F from '../../Future'
@@ -19,7 +19,7 @@ import { interruptible, onInterrupt, uninterruptibleMask } from './interrupt'
 
 const arbiter =
   <E, A>(
-    fibers: Chunk<Fiber.Fiber<E, A>>,
+    fibers: Conc<Fiber.Fiber<E, A>>,
     winner: Fiber.Fiber<E, A>,
     promise: F.Future<E, readonly [A, Fiber.Fiber<E, A>]>,
     fails: Ref.URef<number>

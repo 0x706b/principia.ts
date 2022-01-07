@@ -1,9 +1,9 @@
-import type { Chunk } from '../Chunk'
+import type { Conc } from '../collection/immutable/Conc'
 import type { Future } from '../Future'
 import type { MutableQueue } from '../internal/MutableQueue'
 import type { IO, UIO } from '../IO'
 
-import * as C from '../Chunk/core'
+import * as C from '../collection/immutable/Conc/core'
 import { flow, identity, pipe } from '../function'
 import * as F from '../Future'
 import { AtomicBoolean } from '../internal/AtomicBoolean'
@@ -107,11 +107,11 @@ export abstract class QueueInternal<RA, RB, EA, EB, A, B> implements Queue<RA, R
    * Removes all the values in the queue and returns the list of the values. If the queue
    * is empty returns empty list.
    */
-  abstract readonly takeAll: IO<RB, EB, Chunk<B>>
+  abstract readonly takeAll: IO<RB, EB, Conc<B>>
   /**
    * Takes up to max number of values in the queue.
    */
-  abstract takeUpTo(n: number): IO<RB, EB, Chunk<B>>
+  abstract takeUpTo(n: number): IO<RB, EB, Conc<B>>
 }
 
 /**
@@ -173,7 +173,7 @@ export function makeBounded<A>(capacity: number): I.UIO<UQueue<A>> {
 function takeRemainingLoop<RA, RB, EA, EB, A, B>(
   queue: Queue<RA, RB, EA, EB, A, B>,
   n: number
-): I.IO<RB, EB, Chunk<B>> {
+): I.IO<RB, EB, Conc<B>> {
   concrete(queue)
   if (n <= 0) {
     return I.pure(C.empty())
@@ -191,7 +191,7 @@ export function takeBetween_<RA, RB, EA, EB, A, B>(
   queue: Queue<RA, RB, EA, EB, A, B>,
   min: number,
   max: number
-): I.IO<RB, EB, Chunk<B>> {
+): I.IO<RB, EB, Conc<B>> {
   concrete(queue)
   if (max < min) {
     return I.pure(C.empty())
@@ -221,7 +221,7 @@ export function takeBetween_<RA, RB, EA, EB, A, B>(
  * @dataFirst takeBetween_
  */
 export function takeBetween(min: number, max: number) {
-  return <RA, RB, EA, EB, A, B>(queue: Queue<RA, RB, EA, EB, A, B>): I.IO<RB, EB, Chunk<B>> =>
+  return <RA, RB, EA, EB, A, B>(queue: Queue<RA, RB, EA, EB, A, B>): I.IO<RB, EB, Conc<B>> =>
     takeBetween_(queue, min, max)
 }
 
@@ -372,7 +372,7 @@ export function takeAllUpTo_<RA, RB, EA, EB, A, B>(queue: Queue<RA, RB, EA, EB, 
  */
 export function takeAllUpTo(
   n: number
-): <RA, RB, EA, EB, A, B>(queue: Queue<RA, RB, EA, EB, A, B>) => I.IO<RB, EB, Chunk<B>> {
+): <RA, RB, EA, EB, A, B>(queue: Queue<RA, RB, EA, EB, A, B>) => I.IO<RB, EB, Conc<B>> {
   return (queue) => takeAllUpTo_(queue, n)
 }
 
@@ -420,12 +420,12 @@ export class CrossWithIO<RA, RB, EA, EB, RA1, RB1, EA1, EB1, A1 extends A, C, B,
     this.f(b, c)
   )
 
-  takeAll: I.IO<RB & RB1 & R3, E3 | EB | EB1, Chunk<D>> = I.chain_(
+  takeAll: I.IO<RB & RB1 & R3, E3 | EB | EB1, Conc<D>> = I.chain_(
     I.crossC_(this.fa.takeAll, this.fb.takeAll),
     ([bs, cs]) => I.foreach_(C.zip_(bs, cs), ([b, c]) => this.f(b, c))
   )
 
-  takeUpTo(max: number): I.IO<RB & RB1 & R3, E3 | EB | EB1, Chunk<D>> {
+  takeUpTo(max: number): I.IO<RB & RB1 & R3, E3 | EB | EB1, Conc<D>> {
     return pipe(
       this.fa.takeUpTo(max),
       I.crossC(this.fb.takeUpTo(max)),
@@ -583,9 +583,9 @@ export class DimapIO<RA, RB, EA, EB, A, B, C, RC, EC, RD, ED, D> extends QueueIn
 
   take: I.IO<RD & RB, ED | EB, D> = I.chain_(this.queue.take, this.g)
 
-  takeAll: I.IO<RD & RB, ED | EB, Chunk<D>> = I.chain_(this.queue.takeAll, I.foreach(this.g))
+  takeAll: I.IO<RD & RB, ED | EB, Conc<D>> = I.chain_(this.queue.takeAll, I.foreach(this.g))
 
-  takeUpTo(n: number): I.IO<RD & RB, ED | EB, Chunk<D>> {
+  takeUpTo(n: number): I.IO<RD & RB, ED | EB, Conc<D>> {
     return pipe(this.queue.takeUpTo(n), I.chain(I.foreach(this.g)))
   }
 }
@@ -710,9 +710,9 @@ export class FilterInputIO<RA, RB, EA, EB, B, A, A1 extends A, R2, E2> extends Q
 
   take: I.IO<RB, EB, B> = this.queue.take
 
-  takeAll: I.IO<RB, EB, Chunk<B>> = this.queue.takeAll
+  takeAll: I.IO<RB, EB, Conc<B>> = this.queue.takeAll
 
-  takeUpTo(max: number): I.IO<RB, EB, Chunk<B>> {
+  takeUpTo(max: number): I.IO<RB, EB, Conc<B>> {
     return this.queue.takeUpTo(max)
   }
 }
@@ -789,9 +789,9 @@ export class FilterOutputIO<RA, RB, EA, EB, A, B, RB1, EB1> extends QueueInterna
     I.chain_(this.f(b), (p) => (p ? I.succeed(b) : this.take))
   )
 
-  takeAll: IO<RB & RB1, EB | EB1, Chunk<B>> = I.chain_(this.queue.takeAll, (bs) => I.filter_(bs, this.f))
+  takeAll: IO<RB & RB1, EB | EB1, Conc<B>> = I.chain_(this.queue.takeAll, (bs) => I.filter_(bs, this.f))
 
-  loop(max: number, acc: Chunk<B>): IO<RB & RB1, EB | EB1, Chunk<B>> {
+  loop(max: number, acc: Conc<B>): IO<RB & RB1, EB | EB1, Conc<B>> {
     return I.chain_(this.queue.takeUpTo(max), (bs) => {
       if (C.isEmpty(bs)) {
         return I.succeed(acc)
@@ -809,7 +809,7 @@ export class FilterOutputIO<RA, RB, EA, EB, A, B, RB1, EB1> extends QueueInterna
     })
   }
 
-  takeUpTo(n: number): IO<RB & RB1, EB | EB1, C.Chunk<B>> {
+  takeUpTo(n: number): IO<RB & RB1, EB | EB1, C.Conc<B>> {
     return I.defer(() => this.loop(n, C.empty()))
   }
 }
@@ -1004,7 +1004,7 @@ class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A>
     })
   )
 
-  takeAll: I.IO<unknown, never, Chunk<A>> = I.defer(() => {
+  takeAll: I.IO<unknown, never, Conc<A>> = I.defer(() => {
     if (this.shutdownFlag.get) {
       return I.interrupt
     } else {
@@ -1016,7 +1016,7 @@ class UnsafeQueue<A> extends QueueInternal<unknown, unknown, never, never, A, A>
     }
   })
 
-  takeUpTo(max: number): I.IO<unknown, never, Chunk<A>> {
+  takeUpTo(max: number): I.IO<unknown, never, Conc<A>> {
     return I.defer(() => {
       if (this.shutdownFlag.get) {
         return I.interrupt
@@ -1046,7 +1046,7 @@ function _makeQueue<A>(strategy: Strategy<A>): (queue: MutableQueue<A>) => I.IO<
     I.map_(F.make<never, void>(), (p) => _unsafeQueue(queue, unbounded(), p, new AtomicBoolean(false), strategy))
 }
 
-function _unsafeOfferAll<A>(q: MutableQueue<A>, as: Chunk<A>): Chunk<A> {
+function _unsafeOfferAll<A>(q: MutableQueue<A>, as: Conc<A>): Conc<A> {
   let bs = as
 
   while (bs.length > 0) {
@@ -1060,7 +1060,7 @@ function _unsafeOfferAll<A>(q: MutableQueue<A>, as: Chunk<A>): Chunk<A> {
   return bs
 }
 
-function _unsafePollAll<A>(q: MutableQueue<A>): Chunk<A> {
+function _unsafePollAll<A>(q: MutableQueue<A>): Conc<A> {
   let as = C.empty<A>()
 
   while (!q.isEmpty) {
@@ -1079,7 +1079,7 @@ function _unsafeRemove<A>(q: MutableQueue<A>, a: A) {
   C.filter_(_unsafeOfferAll(q, _unsafePollAll(q)), (b) => a !== b)
 }
 
-function _unsafePollN<A>(q: MutableQueue<A>, max: number): Chunk<A> {
+function _unsafePollN<A>(q: MutableQueue<A>, max: number): Conc<A> {
   let j  = 0
   let as = C.empty<A>()
 
@@ -1133,7 +1133,7 @@ function _unsafeCompleteTakers<A>(
 
 export interface Strategy<A> {
   readonly handleSurplus: (
-    as: Chunk<A>,
+    as: Conc<A>,
     queue: MutableQueue<A>,
     takers: MutableQueue<Future<never, A>>,
     isShutdown: AtomicBoolean
@@ -1150,7 +1150,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
   private putters = unbounded<[A, Future<never, boolean>, boolean]>()
 
   handleSurplus(
-    as: Chunk<A>,
+    as: Conc<A>,
     queue: MutableQueue<A>,
     takers: MutableQueue<Future<never, A>>,
     isShutdown: AtomicBoolean
@@ -1183,7 +1183,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
     )
   }
 
-  unsafeOffer(as: Chunk<A>, p: Future<never, boolean>) {
+  unsafeOffer(as: Conc<A>, p: Future<never, boolean>) {
     let bs = as
 
     while (bs.length > 0) {
@@ -1236,7 +1236,7 @@ export class BackPressureStrategy<A> implements Strategy<A> {
 
 export class DroppingStrategy<A> implements Strategy<A> {
   handleSurplus(
-    _as: Chunk<A>,
+    _as: Conc<A>,
     _queue: MutableQueue<A>,
     _takers: MutableQueue<Future<never, A>>,
     _isShutdown: AtomicBoolean
@@ -1259,7 +1259,7 @@ export class DroppingStrategy<A> implements Strategy<A> {
 
 export class SlidingStrategy<A> implements Strategy<A> {
   handleSurplus(
-    as: Chunk<A>,
+    as: Conc<A>,
     queue: MutableQueue<A>,
     takers: MutableQueue<Future<never, A>>,
     _isShutdown: AtomicBoolean
@@ -1283,7 +1283,7 @@ export class SlidingStrategy<A> implements Strategy<A> {
     return 0
   }
 
-  private unsafeSlidingOffer(queue: MutableQueue<A>, as: Chunk<A>) {
+  private unsafeSlidingOffer(queue: MutableQueue<A>, as: Conc<A>) {
     let bs = as
 
     while (bs.length > 0) {

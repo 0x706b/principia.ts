@@ -3,7 +3,7 @@ import type { TestFailure } from './TestFailure'
 import type { TestSuccess } from './TestSuccess'
 import type { Either } from '@principia/base/Either'
 
-import * as C from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import { identity, pipe } from '@principia/base/function'
 import { matchTag, matchTag_ } from '@principia/base/util/match'
 
@@ -23,7 +23,7 @@ class LabeledCase<A> {
 
 class MultipleCase<A> {
   readonly _tag = 'Multiple'
-  constructor(readonly specs: C.Chunk<A>) {}
+  constructor(readonly specs: C.Conc<A>) {}
 }
 
 type SpecCase<E, A> = TestCase<E> | LabeledCase<A> | MultipleCase<A>
@@ -47,7 +47,7 @@ export function labeled<E>(label: string, spec: ExecutedSpec<E>): ExecutedSpec<E
   return new ExecutedSpec(new LabeledCase(label, spec))
 }
 
-export function multiple<E>(specs: C.Chunk<ExecutedSpec<E>>): ExecutedSpec<E> {
+export function multiple<E>(specs: C.Conc<ExecutedSpec<E>>): ExecutedSpec<E> {
   return new ExecutedSpec(new MultipleCase(specs))
 }
 

@@ -65,7 +65,7 @@ export const Schemable: S.Schemable<ConstructorSURI> = {
   struct: (properties) => Pr.fromStruct(properties),
   partial: (properties) => Pr.fromPartial(properties),
   array: (item) => pipe(item, Pr.fromArray, Pr.contramap(A.from)),
-  chunk: (item) => Pr.fromChunk(item),
+  conc: (item) => Pr.fromConc(item),
   record: (codomain) => Pr.fromRecord(codomain),
   tuple: (components) => Pr.fromTuple(...components),
   sum: (tag) => (members) => Pr.fromSum(tag)(members),

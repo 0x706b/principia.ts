@@ -1,6 +1,6 @@
 // tracing: off
 
-import type { Chunk } from '../../Chunk/core'
+import type { Conc } from '../../collection/immutable/Conc/core'
 
 import * as ES from '../../ExecutionStrategy'
 import { pipe } from '../../function'
@@ -20,7 +20,7 @@ export function foreachExec_<R, E, A, B>(
   as: Iterable<A>,
   es: ES.ExecutionStrategy,
   f: (a: A) => I.IO<R, E, B>
-): I.IO<R, E, Chunk<B>> {
+): I.IO<R, E, Conc<B>> {
   return ES.match_(
     es,
     () => I.foreach_(as, f),
@@ -40,6 +40,6 @@ export function foreachExec_<R, E, A, B>(
 export function foreachExec<R, E, A, B>(
   es: ES.ExecutionStrategy,
   f: (a: A) => I.IO<R, E, B>
-): (as: Iterable<A>) => I.IO<R, E, Chunk<B>> {
+): (as: Iterable<A>) => I.IO<R, E, Conc<B>> {
   return (as) => foreachExec_(as, es, f)
 }

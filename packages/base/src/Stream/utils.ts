@@ -1,12 +1,12 @@
-import * as C from '../Chunk'
+import * as C from '../collection/immutable/Conc'
 import * as E from '../Either'
 import { tuple } from '../tuple/core'
 
 export function zipChunks_<A, B, C>(
-  fa: C.Chunk<A>,
-  fb: C.Chunk<B>,
+  fa: C.Conc<A>,
+  fb: C.Conc<B>,
   f: (a: A, b: B) => C
-): readonly [C.Chunk<C>, E.Either<C.Chunk<A>, C.Chunk<B>>] {
+): readonly [C.Conc<C>, E.Either<C.Conc<A>, C.Conc<B>>] {
   let fc    = C.empty<C>()
   const len = Math.min(fa.length, fb.length)
   for (let i = 0; i < len; i++) {

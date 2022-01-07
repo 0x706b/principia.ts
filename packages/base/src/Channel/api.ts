@@ -1,4 +1,4 @@
-import type { Chunk } from '../Chunk'
+import type { Conc } from '../collection/immutable/Conc'
 import type { IO, URIO } from '../IO'
 import type { Cause } from '../IO/Cause'
 import type { Exit } from '../IO/Exit'
@@ -8,7 +8,7 @@ import type { ChannelState } from './internal/ChannelState'
 import type { AsyncInputConsumer, AsyncInputProducer } from './internal/producer'
 import type { UpstreamPullRequest } from './internal/UpstreamPullRequest'
 
-import * as C from '../Chunk'
+import * as C from '../collection/immutable/Conc'
 import * as E from '../Either'
 import { sequential } from '../ExecutionStrategy'
 import * as F from '../Fiber'
@@ -1150,7 +1150,7 @@ export function contramapInIO<Env1, InErr, InElem0, InElem>(f: (a: InElem0) => I
 }
 
 function doneCollectReader<Env, OutErr, OutElem, OutDone>(
-  builder: C.ChunkBuilder<OutElem>
+  builder: C.ConcBuilder<OutElem>
 ): Channel<Env, OutErr, OutElem, OutDone, OutErr, never, OutDone> {
   return readWith(
     (out) =>
@@ -1177,7 +1177,7 @@ function doneCollectReader<Env, OutErr, OutElem, OutDone>(
  */
 export function doneCollect<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
-): Channel<Env, InErr, InElem, InDone, OutErr, never, readonly [C.Chunk<OutElem>, OutDone]> {
+): Channel<Env, InErr, InElem, InDone, OutErr, never, readonly [C.Conc<OutElem>, OutDone]> {
   return unwrap(
     I.succeedLazy(() => {
       const builder = C.builder<OutElem>()
@@ -1256,7 +1256,7 @@ export function interruptWhenP<OutErr1, OutDone1>(promise: PR.Future<OutErr1, Ou
  */
 export function emitCollect<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>(
   self: Channel<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone>
-): Channel<Env, InErr, InElem, InDone, OutErr, readonly [C.Chunk<OutElem>, OutDone], void> {
+): Channel<Env, InErr, InElem, InDone, OutErr, readonly [C.Conc<OutElem>, OutDone], void> {
   return chain_(doneCollect(self), (t) => write(t))
 }
 
@@ -2281,7 +2281,7 @@ export function run<Env, InErr, InDone, OutErr, OutDone>(
 
 export function runCollect<Env, InErr, InDone, OutErr, OutElem, OutDone>(
   self: Channel<Env, InErr, unknown, InDone, OutErr, OutElem, OutDone>
-): IO<Env, OutErr, readonly [C.Chunk<OutElem>, OutDone]> {
+): IO<Env, OutErr, readonly [C.Conc<OutElem>, OutDone]> {
   return run(doneCollect(self))
 }
 
@@ -2531,9 +2531,9 @@ export function buffer<InElem, InErr, InDone>(
 }
 
 export function bufferChunk<InElem, InErr, InDone>(
-  ref: Ref.URef<C.Chunk<InElem>>
-): Channel<unknown, InErr, C.Chunk<InElem>, InDone, InErr, C.Chunk<InElem>, InDone> {
-  return buffer<C.Chunk<InElem>, InErr, InDone>(C.empty<InElem>(), (_) => C.isEmpty(_), ref)
+  ref: Ref.URef<C.Conc<InElem>>
+): Channel<unknown, InErr, C.Conc<InElem>, InDone, InErr, C.Conc<InElem>, InDone> {
+  return buffer<C.Conc<InElem>, InErr, InDone>(C.empty<InElem>(), (_) => C.isEmpty(_), ref)
 }
 
 export function concatAll<Env, InErr, InElem, InDone, OutErr, OutElem>(
@@ -2658,14 +2658,12 @@ export function toQueue<Err, Done, Elem>(
   )
 }
 
-export function writeAll<Out>(
-  outs: ReadonlyArray<Out>
-): Channel<unknown, unknown, unknown, unknown, never, Out, void> {
+export function writeAll<Out>(outs: ReadonlyArray<Out>): Channel<unknown, unknown, unknown, unknown, never, Out, void> {
   return writeChunk(C.from(outs))
 }
 
 function writeChunkWriter<Out>(
-  outs: Chunk<Out>,
+  outs: Conc<Out>,
   idx: number,
   len: number
 ): Channel<unknown, unknown, unknown, unknown, never, Out, void> {
@@ -2673,6 +2671,6 @@ function writeChunkWriter<Out>(
   return crossSecond_(write(C.unsafeGet_(outs, idx)), writeChunkWriter(outs, idx + 1, len))
 }
 
-export function writeChunk<Out>(outs: Chunk<Out>): Channel<unknown, unknown, unknown, unknown, never, Out, void> {
+export function writeChunk<Out>(outs: Conc<Out>): Channel<unknown, unknown, unknown, unknown, never, Out, void> {
   return writeChunkWriter(outs, 0, outs.length)
 }

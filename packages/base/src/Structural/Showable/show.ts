@@ -1,10 +1,10 @@
-import type { Chunk } from '../../Chunk'
+import type { Conc } from '../../collection/immutable/Conc'
 import type { TypedArray } from '../../prelude'
 import type { StyleFunction } from './styles'
 
 import * as A from '../../Array/core'
 import { CaseClass } from '../../Case'
-import * as C from '../../Chunk/core'
+import * as C from '../../collection/immutable/Conc/core'
 import { pipe } from '../../function'
 import * as HM from '../../HashMap'
 import * as It from '../../Iterable'
@@ -84,7 +84,7 @@ export class ShowContext extends CaseClass<ShowContextArgs> {}
 
 export type ShowComputationZ<A> = Z.Z<never, ShowContext, ShowContext, unknown, never, A>
 export type ShowComputation = ShowComputationZ<string>
-export type ShowComputationChunk = ShowComputationZ<Chunk<string>>
+export type ShowComputationChunk = ShowComputationZ<Conc<string>>
 
 export interface ShowComputationPrimitive {
   readonly _tag: 'Primitive'
@@ -191,7 +191,7 @@ interface InspectionInfo {
   readonly noIterator: boolean
   readonly extrasType: number
   readonly keys: ReadonlyArray<PropertyKey>
-  readonly protoProps: Chunk<PropertyKey>
+  readonly protoProps: Conc<PropertyKey>
 }
 function inspectionInfo(args: Omit<InspectionInfo, '_tag'>): InspectionInfo {
   return {
@@ -255,7 +255,7 @@ function getInspectionInfo(context: ShowContext, value: object, typedArray?: str
 
   if (value[Symbol.iterator] || constructor === null) {
     noIterator = false
-    if (C.isChunk(value)) {
+    if (C.isConc(value)) {
       braces = [`Chunk (${value.length}) [`, ']']
       if (value.length == 0) {
         return inspectionEarlyReturn(`${braces[0]}]`)
@@ -509,7 +509,7 @@ function showRaw(value: object, typedArray?: string): ShowComputation {
  */
 function reduceToSingleString(
   context: ShowContext,
-  input: Chunk<string>,
+  input: Conc<string>,
   base: string,
   braces: [string, string],
   extrasType: number,
@@ -535,7 +535,7 @@ function reduceToSingleString(
   )
 }
 
-function isBelowBreakLength(context: ShowContext, input: Chunk<string>, start: number, base: string): boolean {
+function isBelowBreakLength(context: ShowContext, input: Conc<string>, start: number, base: string): boolean {
   let totalLength = input.length + start
   if (totalLength + input.length > context.breakLength) {
     return false
@@ -560,7 +560,7 @@ function removeColors(str: string): string {
 function showSet(value: Set<unknown>): ShowComputationChunk {
   return pipe(
     Z.update((_: ShowContext) => _.copy({ indentationLevel: _.indentationLevel + 2 })),
-    Z.apSecond(It.traverseChunk_(Z.Applicative)(value, _show)),
+    Z.apSecond(It.traverseConc_(Z.Applicative)(value, _show)),
     Z.apFirst(Z.update((_: ShowContext) => _.copy({ indentationLevel: _.indentationLevel - 2 })))
   )
 }
@@ -569,7 +569,7 @@ function showMap(value: Map<unknown, unknown>): ShowComputationChunk {
   return pipe(
     Z.update((_: ShowContext) => _.copy({ indentationLevel: _.indentationLevel + 2 })),
     Z.apSecond(
-      It.traverseChunk_(Z.Applicative)(value, ([k, v]) => Z.crossWith_(_show(k), _show(v), (k, v) => `${k} => ${v}`))
+      It.traverseConc_(Z.Applicative)(value, ([k, v]) => Z.crossWith_(_show(k), _show(v), (k, v) => `${k} => ${v}`))
     ),
     Z.apFirst(
       Z.update((_: ShowContext) =>
@@ -718,7 +718,7 @@ function showArray(value: ReadonlyArray<unknown>): ShowComputationChunk {
   )
 }
 
-function showChunk(value: Chunk<unknown>): ShowComputationChunk {
+function showChunk(value: Conc<unknown>): ShowComputationChunk {
   return pipe(
     Z.gets((context: ShowContext) => {
       const valLen    = value.length
@@ -808,7 +808,7 @@ export function showProperty(
  * Groups the formatted elements of an array-like structure into chunks limited by the
  * maximum character width set in the context
  */
-function groupElements(context: ShowContext, input: Chunk<string>, value?: unknown): Chunk<string> {
+function groupElements(context: ShowContext, input: Conc<string>, value?: unknown): Conc<string> {
   let totalLength      = 0
   let maxLength        = 0
   let i                = 0

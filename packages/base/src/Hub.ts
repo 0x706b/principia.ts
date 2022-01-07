@@ -1,6 +1,6 @@
 import type { MutableQueue } from './internal/MutableQueue'
 
-import * as C from './Chunk'
+import * as C from './collection/immutable/Conc'
 import { HashSet } from './collection/mutable/HashSet'
 import { concurrent } from './ExecutionStrategy'
 import * as Fi from './Fiber'
@@ -371,7 +371,7 @@ export class ToQueue<RA, RB, EA, EB, A, B> extends QueueInternal<RA, never, EA, 
   takeAll = I.succeed(C.empty<never>())
   offer = (a: A): I.IO<RA, EA, boolean> => this.source.publish(a)
   offerAll = (as: Iterable<A>): I.IO<RA, EA, boolean> => this.source.publishAll(as)
-  takeUpTo = (): I.IO<unknown, never, C.Chunk<never>> => I.succeed(C.empty())
+  takeUpTo = (): I.IO<unknown, never, C.Conc<never>> => I.succeed(C.empty())
 }
 
 /**
@@ -486,7 +486,7 @@ class UnsafeSubscription<A> extends Q.QueueInternal<never, unknown, unknown, nev
     )
   )
 
-  takeAll: I.IO<unknown, never, C.Chunk<A>> = I.defer(() => {
+  takeAll: I.IO<unknown, never, C.Conc<A>> = I.defer(() => {
     if (this.shutdownFlag.get) {
       return I.interrupt
     }
@@ -498,7 +498,7 @@ class UnsafeSubscription<A> extends Q.QueueInternal<never, unknown, unknown, nev
     return I.succeed(as)
   })
 
-  takeUpTo = (n: number): I.IO<unknown, never, C.Chunk<A>> => {
+  takeUpTo = (n: number): I.IO<unknown, never, C.Conc<A>> => {
     return I.defer(() => {
       if (this.shutdownFlag.get) {
         return I.interrupt
@@ -1172,7 +1172,7 @@ export class Sliding<A> extends Strategy<A> {
 export abstract class SubscriptionInternal<A> {
   abstract isEmpty(): boolean
   abstract poll(default_: A): A
-  abstract pollUpTo(n: number): C.Chunk<A>
+  abstract pollUpTo(n: number): C.Conc<A>
   abstract size(): number
   abstract unsubscribe(): void
 }
@@ -1182,7 +1182,7 @@ export abstract class UHubInternal<A> {
   abstract isEmpty(): boolean
   abstract isFull(): boolean
   abstract publish(a: A): boolean
-  abstract publishAll(as: Iterable<A>): C.Chunk<A>
+  abstract publishAll(as: Iterable<A>): C.Conc<A>
   abstract size(): number
   abstract slide(): void
   abstract subscribe(): SubscriptionInternal<A>
@@ -1229,7 +1229,7 @@ export class BoundedHubArb<A> extends UHubInternal<A> {
     return true
   }
 
-  publishAll(as: Iterable<A>): C.Chunk<A> {
+  publishAll(as: Iterable<A>): C.Conc<A> {
     const asArray   = C.from(as)
     const n         = asArray.length
     const size      = this.publisherIndex - this.subscribersIndex
@@ -1312,7 +1312,7 @@ class BoundedHubArbSubscription<A> extends SubscriptionInternal<A> {
     return default_
   }
 
-  pollUpTo(n: number): C.Chunk<A> {
+  pollUpTo(n: number): C.Conc<A> {
     if (this.unsubscribed) {
       return C.empty()
     }
@@ -1411,7 +1411,7 @@ export class BoundedHubPow2<A> extends UHubInternal<A> {
     return true
   }
 
-  publishAll(as: Iterable<A>): C.Chunk<A> {
+  publishAll(as: Iterable<A>): C.Conc<A> {
     const asArray   = C.from(as)
     const n         = asArray.length
     const size      = this.publisherIndex - this.subscribersIndex
@@ -1494,7 +1494,7 @@ class BoundedHubPow2Subcription<A> extends SubscriptionInternal<A> {
     return default_
   }
 
-  pollUpTo(n: number): C.Chunk<A> {
+  pollUpTo(n: number): C.Conc<A> {
     if (this.unsubscribed) {
       return C.empty()
     }
@@ -1583,7 +1583,7 @@ export class BoundedHubSingle<A> extends UHubInternal<A> {
     return true
   }
 
-  publishAll(as: Iterable<A>): C.Chunk<A> {
+  publishAll(as: Iterable<A>): C.Conc<A> {
     const list = C.from(as)
 
     if (C.isEmpty(list)) {
@@ -1642,7 +1642,7 @@ class BoundedHubSingleSubscription<A> extends SubscriptionInternal<A> {
     return a
   }
 
-  pollUpTo(n: number): C.Chunk<A> {
+  pollUpTo(n: number): C.Conc<A> {
     if (this.isEmpty() || n < 1) {
       return C.empty()
     }
@@ -1718,7 +1718,7 @@ export class UnboundedHub<A> extends UHubInternal<A> {
     return true
   }
 
-  publishAll(as: Iterable<A>): C.Chunk<A> {
+  publishAll(as: Iterable<A>): C.Conc<A> {
     for (const a of as) {
       this.publish(a)
     }
@@ -1814,7 +1814,7 @@ class UnboundedHubSubscription<A> extends SubscriptionInternal<A> {
     return polled
   }
 
-  pollUpTo(n: number): C.Chunk<A> {
+  pollUpTo(n: number): C.Conc<A> {
     let builder    = C.empty<A>()
     const default_ = null
     let i          = 0
@@ -1924,35 +1924,35 @@ function _unsafeCompleteFuture<A>(future: F.Future<never, A>, a: A): void {
 /**
  * Unsafely offers the specified values to a queue.
  */
-function _unsafeOfferAll<A>(queue: MutableQueue<A>, as: Iterable<A>): C.Chunk<A> {
+function _unsafeOfferAll<A>(queue: MutableQueue<A>, as: Iterable<A>): C.Conc<A> {
   return queue.offerAll(as)
 }
 
 /**
  * Unsafely polls all values from a queue.
  */
-function _unsafePollAllQueue<A>(queue: MutableQueue<A>): C.Chunk<A> {
+function _unsafePollAllQueue<A>(queue: MutableQueue<A>): C.Conc<A> {
   return queue.pollUpTo(Number.MAX_SAFE_INTEGER)
 }
 
 /**
  * Unsafely polls all values from a subscription.
  */
-function _unsafePollAllSubscription<A>(subscription: SubscriptionInternal<A>): C.Chunk<A> {
+function _unsafePollAllSubscription<A>(subscription: SubscriptionInternal<A>): C.Conc<A> {
   return subscription.pollUpTo(Number.MAX_SAFE_INTEGER)
 }
 
 /**
  * Unsafely polls the specified number of values from a subscription.
  */
-function _unsafePollN<A>(subscription: SubscriptionInternal<A>, max: number): C.Chunk<A> {
+function _unsafePollN<A>(subscription: SubscriptionInternal<A>, max: number): C.Conc<A> {
   return subscription.pollUpTo(max)
 }
 
 /**
  * Unsafely publishes the specified values to a hub.
  */
-function _unsafePublishAll<A>(hub: UHubInternal<A>, as: Iterable<A>): C.Chunk<A> {
+function _unsafePublishAll<A>(hub: UHubInternal<A>, as: Iterable<A>): C.Conc<A> {
   return hub.publishAll(as)
 }
 

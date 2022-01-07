@@ -37,7 +37,7 @@ export const CaseClass: CaseConstructor = class<T> implements Hashable, Equatabl
   private [$keys]: ReadonlyArray<string> = []
   constructor(args: T) {
     this[$args] = args
-    this[$keys] = Object.keys(args)
+    this[$keys] = args ? Object.keys(args) : []
     Object.assign(this, args)
   }
 

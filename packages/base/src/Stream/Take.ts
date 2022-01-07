@@ -1,6 +1,6 @@
 import type { Pull } from './Pull'
 
-import * as A from '../Chunk'
+import * as Co from '../collection/immutable/Conc'
 import { RuntimeException } from '../Exception'
 import * as T from '../IO'
 import * as C from '../IO/Cause'
@@ -16,13 +16,13 @@ export class Take<E, A> {
   readonly _E!: () => E
   readonly _A!: () => A
 
-  constructor(readonly exit: Ex.Exit<M.Maybe<E>, A.Chunk<A>>) {}
+  constructor(readonly exit: Ex.Exit<M.Maybe<E>, Co.Conc<A>>) {}
 }
 
 /**
  * Transforms `Take[E, A]` to `Effect[R, E, B]`.
  */
-export function done<E, A>(self: Take<E, A>): T.FIO<M.Maybe<E>, A.Chunk<A>> {
+export function done<E, A>(self: Take<E, A>): T.FIO<M.Maybe<E>, Co.Conc<A>> {
   return T.fromExit(self.exit)
 }
 
@@ -34,7 +34,7 @@ export function fold_<E, A, Z>(
   self: Take<E, A>,
   end: Z,
   error: (cause: C.Cause<E>) => Z,
-  value: (chunk: A.Chunk<A>) => Z
+  value: (chunk: Co.Conc<A>) => Z
 ): Z {
   return Ex.match_(self.exit, (_) => M.match_(C.flipCauseOption(_), () => end, error), value)
 }
@@ -43,7 +43,7 @@ export function fold_<E, A, Z>(
  * Folds over the failure cause, success value and end-of-stream marker to
  * yield a value.
  */
-export function fold<E, A, Z>(end: Z, error: (cause: C.Cause<E>) => Z, value: (chunk: A.Chunk<A>) => Z) {
+export function fold<E, A, Z>(end: Z, error: (cause: C.Cause<E>) => Z, value: (chunk: Co.Conc<A>) => Z) {
   return (self: Take<E, A>) => fold_(self, end, error, value)
 }
 
@@ -57,7 +57,7 @@ export function foldIO_<R, R1, R2, E, E1, E2, E3, A, Z>(
   self: Take<E, A>,
   end: T.IO<R, E1, Z>,
   error: (cause: C.Cause<E>) => T.IO<R1, E2, Z>,
-  value: (chunk: A.Chunk<A>) => T.IO<R2, E3, Z>
+  value: (chunk: Co.Conc<A>) => T.IO<R2, E3, Z>
 ): T.IO<R & R1 & R2, E1 | E2 | E3, Z> {
   return Ex.matchIO_(
     self.exit,
@@ -75,7 +75,7 @@ export function foldIO_<R, R1, R2, E, E1, E2, E3, A, Z>(
 export function foldIO<R, R1, R2, E, E1, E2, E3, A, Z>(
   end: T.IO<R, E1, Z>,
   error: (cause: C.Cause<E>) => T.IO<R1, E2, Z>,
-  value: (chunk: A.Chunk<A>) => T.IO<R2, E3, Z>
+  value: (chunk: Co.Conc<A>) => T.IO<R2, E3, Z>
 ) {
   return (self: Take<E, A>) => foldIO_(self, end, error, value)
 }
@@ -117,7 +117,7 @@ export function isSuccess<E, A>(self: Take<E, A>): boolean {
  * Transforms `Take<E, A>` to `Take<E, B>` by applying function `f`.
  */
 export function map_<E, A, B>(self: Take<E, A>, f: (a: A) => B): Take<E, B> {
-  return new Take(Ex.map_(self.exit, A.map(f)))
+  return new Take(Ex.map_(self.exit, Co.map(f)))
 }
 
 /**
@@ -130,14 +130,14 @@ export function map<A, B>(f: (a: A) => B) {
 /**
  * Returns an effect that effectfully "peeks" at the success of this take.
  */
-export function tap_<R, E, E1, A>(self: Take<E, A>, f: (chunk: A.Chunk<A>) => T.IO<R, E1, any>): T.IO<R, E1, void> {
+export function tap_<R, E, E1, A>(self: Take<E, A>, f: (chunk: Co.Conc<A>) => T.IO<R, E1, any>): T.IO<R, E1, void> {
   return T.asUnit(Ex.foreachIO_(self.exit, f))
 }
 
 /**
  * Returns an effect that effectfully "peeks" at the success of this take.
  */
-export function tap<R, E1, A>(f: (chunk: A.Chunk<A>) => T.IO<R, E1, any>) {
+export function tap<R, E1, A>(f: (chunk: Co.Conc<A>) => T.IO<R, E1, any>) {
   return <E>(self: Take<E, A>) => tap_(self, f)
 }
 
@@ -145,13 +145,13 @@ export function tap<R, E1, A>(f: (chunk: A.Chunk<A>) => T.IO<R, E1, any>) {
  * Creates a `Take<never, A>` with a singleton chunk.
  */
 export function single<A>(a: A): Take<never, A> {
-  return new Take(Ex.succeed(A.single(a)))
+  return new Take(Ex.succeed(Co.single(a)))
 }
 
 /**
  * Creates a `Take[Nothing, A]` with the specified chunk.
  */
-export function chunk<A>(as: A.Chunk<A>): Take<never, A> {
+export function chunk<A>(as: Co.Conc<A>): Take<never, A> {
   return new Take(Ex.succeed(as))
 }
 
@@ -203,7 +203,7 @@ export function haltMessage(msg: string): Take<never, never> {
  * Creates a `Take<E, A>` from `Exit<E, A>`.
  */
 export function fromExit<E, A>(exit: Ex.Exit<E, A>): Take<E, A> {
-  return new Take(Ex.map_(Ex.mapError_(exit, M.just), A.single))
+  return new Take(Ex.map_(Ex.mapError_(exit, M.just), Co.single))
 }
 
 /**

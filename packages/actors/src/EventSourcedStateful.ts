@@ -8,7 +8,7 @@ import type { IOEnv } from '@principia/base/IOEnv'
 import type { IsEqualTo } from '@principia/base/util/types'
 import type * as SCH from '@principia/schema'
 
-import * as CH from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import { pipe } from '@principia/base/function'
 import * as F from '@principia/base/Future'
 import * as T from '@principia/base/IO'
@@ -26,7 +26,7 @@ type EventSourcedEnvelope<S, F1 extends AM.AnyMessage, EV> = {
     _tag: Tag
     payload: AM.RequestOf<AM.ExtractTagged<F1, Tag>>
     return: (
-      ev: CH.Chunk<EV>,
+      ev: C.Conc<EV>,
       r: IsEqualTo<AM.ResponseOf<AM.ExtractTagged<F1, Tag>>, void> extends true
         ? void
         : (state: S) => AM.ResponseOf<AM.ExtractTagged<F1, Tag>>
@@ -35,7 +35,7 @@ type EventSourcedEnvelope<S, F1 extends AM.AnyMessage, EV> = {
 }[AM.TagsOf<F1>]
 
 type EventSourcedResponse<S, F1 extends AM.AnyMessage, EV> = {
-  [Tag in AM.TagsOf<F1>]: readonly [CH.Chunk<EV>, (state: S) => AM.ResponseOf<AM.ExtractTagged<F1, Tag>>]
+  [Tag in AM.TagsOf<F1>]: readonly [C.Conc<EV>, (state: S) => AM.ResponseOf<AM.ExtractTagged<F1, Tag>>]
 }[AM.TagsOf<F1>]
 
 export function eventSourcedStateful<S, F1 extends AM.AnyMessage, EV>(
@@ -78,8 +78,8 @@ export class EventSourcedStateful<R, S, F1 extends AM.AnyMessage, EV> extends A.
 
   defaultMailboxSize = 10000
 
-  applyEvents(events: CH.Chunk<EV>, state: S) {
-    return CH.foldl_(events, state, (s, e) => this.sourceEvent(s)(e))
+  applyEvents(events: C.Conc<EV>, state: S) {
+    return C.foldl_(events, state, (s, e) => this.sourceEvent(s)(e))
   }
 
   makeActor(
@@ -103,7 +103,7 @@ export class EventSourcedStateful<R, S, F1 extends AM.AnyMessage, EV> extends A.
         )({
           _tag: fa._tag,
           payload: fa,
-          return: (ev: CH.Chunk<EV>, r: (s: S) => AM.ResponseOf<F1> = () => undefined as any) => T.succeed(tuple(ev, r))
+          return: (ev: C.Conc<EV>, r: (s: S) => AM.ResponseOf<F1> = () => undefined as any) => T.succeed(tuple(ev, r))
         } as any)
         const effectfulCompleter = (s: S, a: AM.ResponseOf<F1>) =>
           pipe(
@@ -111,7 +111,7 @@ export class EventSourcedStateful<R, S, F1 extends AM.AnyMessage, EV> extends A.
             T.chain(() => F.succeed_(promise, a))
           )
         const idempotentCompleter = (a: AM.ResponseOf<F1>) => T.asUnit(F.succeed_(promise, a))
-        const fullCompleter       = ([ev, sa]: readonly [CH.Chunk<EV>, (s: S) => AM.ResponseOf<F1>]) =>
+        const fullCompleter       = ([ev, sa]: readonly [C.Conc<EV>, (s: S) => AM.ResponseOf<F1>]) =>
           ev.length === 0
             ? idempotentCompleter(sa(s))
             : T.gen(function* (_) {

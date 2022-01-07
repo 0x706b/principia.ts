@@ -1,6 +1,6 @@
 // tracing: off
 
-import type { Chunk } from '../../Chunk/core'
+import type { Conc } from '../../collection/immutable/Conc/core'
 import type { IO } from '../core'
 
 import { traceAs } from '@principia/compile/util'
@@ -15,7 +15,7 @@ import { filterC_ } from './filterC'
  *
  * @trace 1
  */
-export function filterNotC_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boolean>): IO<R, E, Chunk<A>> {
+export function filterNotC_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, boolean>): IO<R, E, Conc<A>> {
   return filterC_(
     as,
     traceAs(
@@ -34,6 +34,6 @@ export function filterNotC_<A, R, E>(as: Iterable<A>, f: (a: A) => IO<R, E, bool
  *
  * @trace 0
  */
-export function filterNotC<A, R, E>(f: (a: A) => IO<R, E, boolean>): (as: Iterable<A>) => IO<R, E, Chunk<A>> {
+export function filterNotC<A, R, E>(f: (a: A) => IO<R, E, boolean>): (as: Iterable<A>) => IO<R, E, Conc<A>> {
   return (as) => filterNotC_(as, f)
 }

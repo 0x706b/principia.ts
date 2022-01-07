@@ -2,7 +2,7 @@ import type { Byte } from '@principia/base/Byte'
 import type * as stream from 'stream'
 
 import * as Ch from '@principia/base/Channel'
-import * as C from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as Ma from '@principia/base/Managed'
@@ -89,13 +89,13 @@ export function sinkFromWritable<InErr>(
           const reader: Ch.Channel<
             unknown,
             InErr,
-            C.Chunk<Byte>,
+            C.Conc<Byte>,
             unknown,
             WritableError | InErr,
             never,
             void
           > = Ch.readWith(
-            (chunk: C.Chunk<Byte>) =>
+            (chunk: C.Conc<Byte>) =>
               Ch.unwrap(
                 I.async<unknown, WritableError, typeof reader>((cb) => {
                   writable.write(C.toBuffer(chunk), (err) =>
@@ -138,18 +138,18 @@ export function transform(
         const reader: Ch.Channel<
           unknown,
           E,
-          C.Chunk<Byte>,
+          C.Conc<Byte>,
           unknown,
           E | TransformError,
-          C.Chunk<Byte>,
+          C.Conc<Byte>,
           void
         > = Ch.readWith(
-          (inp: C.Chunk<Byte>) =>
+          (inp: C.Conc<Byte>) =>
             Ch.unwrap(
               I.async<
                 unknown,
                 TransformError,
-                Ch.Channel<unknown, E, C.Chunk<Byte>, unknown, E | TransformError, C.Chunk<Byte>, void>
+                Ch.Channel<unknown, E, C.Conc<Byte>, unknown, E | TransformError, C.Conc<Byte>, void>
               >((cb) => {
                 transform.write(C.toBuffer(inp), (err) =>
                   err ? cb(I.fail(new TransformError(err))) : cb(I.succeed(reader))

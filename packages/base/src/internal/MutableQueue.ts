@@ -1,6 +1,6 @@
-import type { Chunk } from '../Chunk/core'
+import type { Conc } from '../collection/immutable/Conc/core'
 
-import * as C from '../Chunk/core'
+import * as C from '../collection/immutable/Conc/core'
 import { assert } from '../util/assert'
 
 export abstract class MutableQueue<A> {
@@ -22,7 +22,7 @@ export abstract class MutableQueue<A> {
    *
    * @return elements that were not enqueued
    */
-  offerAll(as: Iterable<A>): Chunk<A> {
+  offerAll(as: Iterable<A>): Conc<A> {
     let out      = C.empty<A>()
     let iterator = as[Symbol.iterator]()
     let result: IteratorResult<A>
@@ -55,7 +55,7 @@ export abstract class MutableQueue<A> {
    *
    * @return an array of up to `n` elements
    */
-  pollUpTo(n: number): Chunk<A> {
+  pollUpTo(n: number): Conc<A> {
     let result = C.empty<A>()
     for (let i = n; i > 0; i--) {
       const a = this.poll(undefined)

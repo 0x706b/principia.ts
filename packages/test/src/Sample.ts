@@ -7,7 +7,7 @@ import * as Ch from '@principia/base/Channel'
 import * as CED from '@principia/base/Channel/internal/ChildExecutorDecision'
 import * as UPR from '@principia/base/Channel/internal/UpstreamPullRequest'
 import * as UPS from '@principia/base/Channel/internal/UpstreamPullStrategy'
-import * as C from '@principia/base/Chunk'
+import * as C from '@principia/base/collection/immutable/Conc'
 import * as E from '@principia/base/Either'
 import { constVoid, flow, identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
@@ -308,7 +308,7 @@ export function chainStream<R, A, R1, B>(
                 )
               ),
               C.foldl(
-                Ch.unit() as Ch.Channel<R1, unknown, unknown, unknown, never, C.Chunk<E.Either<boolean, B>>, unknown>,
+                Ch.unit() as Ch.Channel<R1, unknown, unknown, unknown, never, C.Conc<E.Either<boolean, B>>, unknown>,
                 Ch.crossSecond_
               )
             ),
@@ -326,7 +326,7 @@ export function chainStream<R, A, R1, B>(
             (activeDownstreamCount) =>
               UPS.PullAfterAllEnqueued(activeDownstreamCount > 0 ? M.just(C.single(E.left(false))) : M.nothing())
           ),
-          (chunk: C.Chunk<E.Either<boolean, B>>) =>
+          (chunk: C.Conc<E.Either<boolean, B>>) =>
             pipe(
               C.head(chunk),
               M.match(

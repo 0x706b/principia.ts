@@ -1,7 +1,7 @@
 import { withSystem } from '@principia/actors/ActorRef'
 import { ActorSystem, ActorSystemTag, RemoteConfig } from '@principia/actors/ActorSystem'
 import { Tagged } from '@principia/base/Case'
-import * as Chunk from '@principia/base/Chunk'
+import * as Chunk from '@principia/base/collection/immutable/Conc'
 import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import * as T from '@principia/base/IO'
