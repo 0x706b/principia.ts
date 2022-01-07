@@ -1,16 +1,16 @@
 import type { AssertionValue } from '../Assertion'
 import type { GenFailureDetails } from '../GenFailureDetails'
 import type { FailureDetails } from './FailureDetails'
+import type { Vector } from '@principia/base/collection/immutable/Vector'
 import type { Cause } from '@principia/base/IO/Cause'
-import type { List } from '@principia/base/List'
 import type { Maybe } from '@principia/base/Maybe'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 
 import * as A from '@principia/base/Array'
+import * as V from '@principia/base/collection/immutable/Vector'
 import * as Ev from '@principia/base/Eval'
 import { pipe } from '@principia/base/function'
 import * as C from '@principia/base/IO/Cause'
-import * as L from '@principia/base/List'
 import * as O from '@principia/base/Maybe'
 import { BLUE, CYAN, RED, YELLOW } from '@principia/base/util/AnsiFormat'
 
@@ -19,52 +19,52 @@ import { TestTimeoutException } from '../TestTimeoutException'
 
 const tabSize = 2
 export class Message {
-  constructor(readonly lines: List<Line> = L.empty()) {}
+  constructor(readonly lines: Vector<Line> = V.empty()) {}
 
   ['+:'](line: Line): Message {
-    return new Message(L.prepend_(this.lines, line))
+    return new Message(V.prepend_(this.lines, line))
   }
   [':+'](line: Line): Message {
-    return new Message(L.append(line)(this.lines))
+    return new Message(V.append(line)(this.lines))
   }
   ['++'](message: Message): Message {
-    return new Message(L.concat_(this.lines, message.lines))
+    return new Message(V.concat_(this.lines, message.lines))
   }
   drop(n: number): Message {
-    return new Message(L.drop_(this.lines, n))
+    return new Message(V.drop_(this.lines, n))
   }
   map(f: (line: Line) => Line): Message {
-    return new Message(L.map_(this.lines, f))
+    return new Message(V.map_(this.lines, f))
   }
   withOffset(offset: number): Message {
-    return new Message(L.map_(this.lines, (l) => l.withOffset(offset)))
+    return new Message(V.map_(this.lines, (l) => l.withOffset(offset)))
   }
   static empty = new Message()
 }
 
 export class Line {
-  constructor(readonly fragments: List<Fragment> = L.empty(), readonly offset: number = 0) {}
+  constructor(readonly fragments: Vector<Fragment> = V.empty(), readonly offset: number = 0) {}
 
   [':+'](fragment: Fragment): Line {
-    return new Line(L.append(fragment)(this.fragments))
+    return new Line(V.append(fragment)(this.fragments))
   }
   prepend(this: Line, message: Message): Message {
-    return new Message(L.prepend_(message.lines, this))
+    return new Message(V.prepend_(message.lines, this))
   }
   ['+'](fragment: Fragment): Line {
-    return new Line(L.append(fragment)(this.fragments))
+    return new Line(V.append(fragment)(this.fragments))
   }
   ['+|'](line: Line): Message {
-    return new Message(L.list(this, line))
+    return new Message(V.vector(this, line))
   }
   ['++'](line: Line): Line {
-    return new Line(L.concat_(this.fragments, line.fragments), this.offset)
+    return new Line(V.concat_(this.fragments, line.fragments), this.offset)
   }
   withOffset(shift: number): Line {
     return new Line(this.fragments, this.offset + shift)
   }
   toMessage(): Message {
-    return new Message(L.single(this))
+    return new Message(V.single(this))
   }
 
   static fromString(text: string, offset = 0): Line {
@@ -81,13 +81,13 @@ export class Fragment {
     return this.prependTo(line)
   }
   prependTo(this: Fragment, line: Line): Line {
-    return new Line(L.prepend(this)(line.fragments), line.offset)
+    return new Line(V.prepend(this)(line.fragments), line.offset)
   }
   ['+'](f: Fragment): Line {
-    return new Line(L.list(this, f))
+    return new Line(V.vector(this, f))
   }
   toLine(): Line {
-    return new Line(L.single(this))
+    return new Line(V.single(this))
   }
 }
 
@@ -146,7 +146,7 @@ function renderFragment(fragment: AssertionValue<any>, offset: number): Message 
   const assertionMessage = pipe(
     Ev.run(fragment.assertion).rendered.split(/\n/),
     A.map((s) => withOffset(offset + tabSize)(cyan(s).toLine())),
-    (lines) => new Message(L.from(lines))
+    (lines) => new Message(V.from(lines))
   )
   return withOffset(offset + tabSize)(blue(fragment.showValue(offset + tabSize))['+'](renderSatisfied(fragment)))
     .toMessage()
@@ -175,7 +175,7 @@ export function renderCause(cause: Cause<any>, offset: number): Message {
     pipe(
       C.defaultPrettyPrint(cause).split('\n'),
       A.map((s) => withOffset(offset + tabSize)(Line.fromString(s))),
-      (lines) => new Message(L.from(lines))
+      (lines) => new Message(V.from(lines))
     )
   return O.match_(C.haltOption(cause), printCause, (_) => {
     if (_ instanceof TestTimeoutException) {

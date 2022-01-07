@@ -1,19 +1,20 @@
+import type { List } from '../../collection/immutable/List'
 import type { Stack } from '../../internal/Stack'
 import type { IO, URIO } from '../../IO'
 import type { Cause } from '../../IO/Cause'
 import type * as Ca from '../../IO/Cause'
 import type { Exit } from '../../IO/Exit'
-import type { List } from '../../List'
 import type { ChannelState } from './ChannelState'
 import type * as UPS from './UpstreamPullStrategy'
 
+import * as L from '../../collection/immutable/List'
 import * as Q from '../../collection/immutable/Queue'
+import { ListBuffer } from '../../collection/mutable/ListBuffer'
 import * as F from '../../Fiber'
 import { constVoid, identity, pipe } from '../../function'
 import { makeStack } from '../../internal/Stack'
 import * as I from '../../IO'
 import * as Ex from '../../IO/Exit'
-import * as L from '../../List'
 import * as M from '../../Maybe'
 import * as C from '../core'
 import * as State from './ChannelState'
@@ -275,7 +276,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
   private input: ErasedExecutor<Env> | null = null
   private inProgressFinalizer: URIO<Env, Exit<unknown, unknown>> | null = null
   private activeSubexecutor: Subexecutor<Env> | null = null
-  private doneStack: List<ErasedContinuation<Env>> = L.empty()
+  private doneStack: List<ErasedContinuation<Env>> = L.nil()
   private done: Exit<unknown, unknown> | null = null
   private cancelled: Exit<OutErr, OutDone> | null = null
   private emitted: unknown | null
@@ -533,40 +534,40 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
         const head = L.unsafeHead(conts)!
         C.concreteContinuation(head)
         if (head._tag === C.ChannelTag.ContinuationK) {
-          return unwind(acc, L.tail(conts))
+          return unwind(acc, L.unsafeTail(conts))
         } else {
           return pipe(
             head.finalizer(exit),
             I.result,
-            I.chain((finExit) => unwind(Ex.apSecond_(acc, finExit), L.tail(conts)))
+            I.chain((finExit) => unwind(Ex.apSecond_(acc, finExit), L.unsafeTail(conts)))
           )
         }
       }
     }
     const effect   = I.result(unwind(Ex.unit(), this.doneStack))
-    this.doneStack = L.empty()
+    this.doneStack = L.nil()
     this.storeInProgressFinalizer(effect)
     return effect
   }
 
   private popNextFinalizers(): L.List<C.ContinuationFinalizer<Env, unknown, unknown>> {
-    const builder = L.emptyPushable<C.ContinuationFinalizer<Env, unknown, unknown>>()
+    const builder = new ListBuffer<C.ContinuationFinalizer<Env, unknown, unknown>>()
     const go      = (stack: L.List<ErasedContinuation<Env>>): L.List<ErasedContinuation<Env>> => {
       if (L.isEmpty(stack)) {
-        return L.empty()
+        return L.nil()
       } else {
         const head = L.unsafeHead(stack)!
         C.concreteContinuation(head)
         if (head._tag === C.ChannelTag.ContinuationK) {
           return stack
         } else {
-          L.push(head, builder)
-          return go(L.tail(stack))
+          builder.append(head)
+          return go(L.unsafeTail(stack))
         }
       }
     }
     this.doneStack = go(this.doneStack)
-    return builder
+    return builder.toList
   }
 
   private storeInProgressFinalizer(effect: URIO<Env, Exit<unknown, unknown>>): void {
@@ -1053,7 +1054,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     C.concreteContinuation(head)
 
     if (head._tag === C.ChannelTag.ContinuationK) {
-      this.doneStack      = L.tail(this.doneStack)
+      this.doneStack      = L.unsafeTail(this.doneStack)
       this.currentChannel = head.onSuccess(z)
       return null
     } else {
@@ -1096,7 +1097,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     C.concreteContinuation(head)
 
     if (head._tag === C.ChannelTag.ContinuationK) {
-      this.doneStack      = L.tail(this.doneStack)
+      this.doneStack      = L.unsafeTail(this.doneStack)
       this.currentChannel = head.onHalt(cause)
       return null
     } else {

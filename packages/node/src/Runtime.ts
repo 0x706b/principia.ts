@@ -1,16 +1,16 @@
+import type * as Fiber from '@principia/base/Fiber'
 import type { Trace, TraceElement } from '@principia/base/Fiber/trace'
 import type { CustomRuntime } from '@principia/base/IO'
 
+import * as L from '@principia/base/collection/immutable/List'
+import * as Ev from '@principia/base/Eval'
 import * as Ex from '@principia/base/Exit'
-import * as Fiber from '@principia/base/Fiber'
-import { interruptAllAs_ } from '@principia/base/Fiber'
+import { interruptAllAs_, prettyFiberId } from '@principia/base/Fiber'
 import { pipe } from '@principia/base/function'
 import { AtomicBoolean } from '@principia/base/internal/AtomicBoolean'
 import * as I from '@principia/base/IO'
 import { defaultRuntime, defaultSupervisor } from '@principia/base/IO'
 import * as Cause from '@principia/base/IO/Cause'
-import * as L from '@principia/base/List'
-import * as S from '@principia/base/Sync'
 import path from 'path'
 
 export function defaultTeardown(status: number, id: Fiber.FiberId, onExit: (status: number) => void) {
@@ -61,35 +61,35 @@ export function prettyLocationNode(traceElement: TraceElement, adapt: (path: str
   return traceElement._tag === 'NoLocation' ? 'No Location Present' : `${traceElement.location}`
 }
 
-export function prettyTraceNodeSafe(trace: Trace, adapt: (path: string, mod?: string) => string): S.USync<string> {
-  return S.gen(function* ($) {
+function prettyTraceNodeEval(trace: Trace, adapt: (path: string, mod?: string) => string): Ev.Eval<string> {
+  return Ev.gen(function* (_) {
     const execTrace  = !L.isEmpty(trace.executionTrace)
     const stackTrace = !L.isEmpty(trace.stackTrace)
 
     const execPrint = execTrace
       ? [
-          `Fiber: ${Fiber.prettyFiberId(trace.fiberId)} Execution trace:`,
+          `Fiber: ${prettyFiberId(trace.fiberId)} Execution trace:`,
           '',
-          ...L.toArray(L.map_(trace.executionTrace, (a) => `  ${prettyLocationNode(a, adapt)}`))
+          ...L.reverse(L.map_(trace.executionTrace, (a) => `  ${prettyLocationNode(a, adapt)}`))
         ]
-      : [`Fiber: ${Fiber.prettyFiberId(trace.fiberId)} Execution trace: <empty trace>`]
+      : [`Fiber: ${prettyFiberId(trace.fiberId)} Execution trace: <empty trace>`]
 
     const stackPrint = stackTrace
       ? [
-          `Fiber: ${Fiber.prettyFiberId(trace.fiberId)} was supposed to continue to:`,
+          `Fiber: ${prettyFiberId(trace.fiberId)} was supposed to continue to:`,
           '',
-          ...L.toArray(L.map_(trace.stackTrace, (e) => `  a future continuation at ${prettyLocationNode(e, adapt)}`))
+          ...L.reverse(L.map_(trace.stackTrace, (e) => `  a future continuation at ${prettyLocationNode(e, adapt)}`))
         ]
-      : [`Fiber: ${Fiber.prettyFiberId(trace.fiberId)} was supposed to continue to: <empty trace>`]
+      : [`Fiber: ${prettyFiberId(trace.fiberId)} was supposed to continue to: <empty trace>`]
 
     const parent = trace.parentTrace
 
     const ancestry =
       parent._tag === 'Nothing'
-        ? [`Fiber: ${Fiber.prettyFiberId(trace.fiberId)} was spawned by: <empty trace>`]
+        ? [`Fiber: ${prettyFiberId(trace.fiberId)} was spawned by: <empty trace>`]
         : [
-            `Fiber: ${Fiber.prettyFiberId(trace.fiberId)} was spawned by:\n`,
-            yield* $(prettyTraceNodeSafe(parent.value, adapt))
+            `Fiber: ${prettyFiberId(trace.fiberId)} was spawned by:\n`,
+            yield* _(prettyTraceNodeEval(parent.value, adapt))
           ]
 
     return ['', ...stackPrint, '', ...execPrint, '', ...ancestry].join('\n')
@@ -97,7 +97,7 @@ export function prettyTraceNodeSafe(trace: Trace, adapt: (path: string, mod?: st
 }
 
 export function prettyTraceNode(trace: Trace, adapt: (path: string, mod?: string) => string) {
-  return S.run(prettyTraceNodeSafe(trace, adapt))
+  return Ev.run(prettyTraceNodeEval(trace, adapt))
 }
 
 export const nodeTracer = (trace: Trace) =>

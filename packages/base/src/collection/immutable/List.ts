@@ -55,9 +55,9 @@ export class Cons<A> implements Iterable<A> {
   }
 }
 
-export class Nil implements Iterable<never> {
+export class Nil<A> implements Iterable<A> {
   readonly _tag = 'Nil';
-  [Symbol.iterator](): Iterator<never> {
+  [Symbol.iterator](): Iterator<A> {
     return {
       next() {
         return { done: true, value: undefined }
@@ -66,9 +66,9 @@ export class Nil implements Iterable<never> {
   }
 }
 
-export const _Nil = new Nil()
+export const _Nil = new Nil<never>()
 
-export type List<A> = Cons<A> | Nil
+export type List<A> = Cons<A> | Nil<A>
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -107,7 +107,7 @@ export function from<A>(prefix: Iterable<A>): List<A> {
  * -------------------------------------------------------------------------------------------------
  */
 
-export function isEmpty<A>(list: List<A>): list is Nil {
+export function isEmpty<A>(list: List<A>): list is Nil<A> {
   return list._tag === 'Nil'
 }
 
@@ -250,7 +250,7 @@ export function concat<B>(ys: List<B>): <A>(xs: List<A>) => List<A | B> {
 
 export function map_<A, B>(fa: List<A>, f: (a: A) => B): List<B> {
   if (isEmpty(fa)) {
-    return fa
+    return fa as List<B>
   } else {
     const h        = new Cons(f(fa.head), _Nil)
     let t: Cons<B> = h

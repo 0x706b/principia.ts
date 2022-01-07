@@ -7,10 +7,10 @@ import type { Cause } from '@principia/base/IO/Cause'
 import type { USync } from '@principia/base/Sync'
 
 import * as C from '@principia/base/Chunk'
+import * as V from '@principia/base/collection/immutable/Vector'
 import * as E from '@principia/base/Either'
 import { absurd, identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
-import * as L from '@principia/base/List'
 import * as M from '@principia/base/Maybe'
 import * as Sy from '@principia/base/Sync'
 import { cyan, green, red, RESET } from '@principia/base/util/AnsiFormat'
@@ -24,9 +24,9 @@ import * as FM from './FailureMessage'
 
 export function report<E>(testAnnotationRenderer: TestAnnotationRenderer): TestReporter<E> {
   return (duration, executedSpec) => {
-    const rendered = L.chain_(render(executedSpec, testAnnotationRenderer), (r) => r.rendered)
+    const rendered = V.chain_(render(executedSpec, testAnnotationRenderer), (r) => r.rendered)
     const stats    = logStats(duration, executedSpec)
-    return I.asksServiceIO(TestLoggerTag)((l) => l.logLine(pipe(rendered, L.append(stats), L.join('\n'))))
+    return I.asksServiceIO(TestLoggerTag)((l) => l.logLine(pipe(rendered, V.append(stats), V.join('\n'))))
   }
 }
 
@@ -62,16 +62,16 @@ export function logStats<E>(duration: number, executedSpec: ExecutedSpec<E>): st
 export function render<E>(
   executedSpec: ExecutedSpec<E>,
   testAnnotationRenderer: TestAnnotationRenderer
-): L.List<RenderedResult<string>> {
+): V.Vector<RenderedResult<string>> {
   const loop = (
     executedSpec: USync<ExecutedSpec<E>>,
     depth: number,
-    ancestors: L.List<TestAnnotationMap>,
-    labels: L.List<string>
-  ): USync<L.List<RenderedResult<string>>> =>
+    ancestors: V.Vector<TestAnnotationMap>,
+    labels: V.Vector<string>
+  ): USync<V.Vector<RenderedResult<string>>> =>
     Sy.chain_(executedSpec, (executedSpec) =>
       matchTag_(executedSpec.caseValue, {
-        Labeled: ({ label, spec }) => loop(Sy.succeed(spec), depth, ancestors, L.prepend_(labels, label)),
+        Labeled: ({ label, spec }) => loop(Sy.succeed(spec), depth, ancestors, V.prepend_(labels, label)),
         Multiple: ({ specs }) => {
           const hasFailures = ES.exists_(
             executedSpec,
@@ -92,25 +92,25 @@ export function render<E>(
           )
           const status: Status = hasFailures ? Failed : Passed
           const renderedLabel  = C.isEmpty(specs)
-            ? L.empty()
+            ? V.empty()
             : hasFailures
-            ? L.single(renderFailureLabel(pipe(labels, L.reverse, L.join(' - ')), depth))
-            : L.single(renderSuccessLabel(pipe(labels, L.reverse, L.join(' - ')), depth))
+            ? V.single(renderFailureLabel(pipe(labels, V.reverse, V.join(' - ')), depth))
+            : V.single(renderSuccessLabel(pipe(labels, V.reverse, V.join(' - ')), depth))
 
           const renderedAnnotations = testAnnotationRenderer.run(ancestors, annotations)
 
           const rest = pipe(
             specs,
-            Sy.foreachList((es) =>
-              loop(Sy.succeed(es), depth + tabSize, L.prepend_(ancestors, annotations), L.empty())
+            Sy.foreachVector((es) =>
+              loop(Sy.succeed(es), depth + tabSize, V.prepend_(ancestors, annotations), V.empty())
             ),
-            Sy.map(L.flatten)
+            Sy.map(V.flatten)
           )
 
           return Sy.map_(rest, (rest) =>
-            L.prepend_(
+            V.prepend_(
               rest,
-              rendered(Suite, pipe(labels, L.reverse, L.join(' - ')), status, depth, renderedLabel).withAnnotations(
+              rendered(Suite, pipe(labels, V.reverse, V.join(' - ')), status, depth, renderedLabel).withAnnotations(
                 renderedAnnotations
               )
             )
@@ -128,10 +128,10 @@ export function render<E>(
                     (details: FailureDetails) =>
                       rendered(
                         Test,
-                        pipe(labels, L.reverse, L.join(' - ')),
+                        pipe(labels, V.reverse, V.join(' - ')),
                         Failed,
                         depth,
-                        renderFailure(pipe(labels, L.reverse, L.join(' - ')), depth, details)
+                        renderFailure(pipe(labels, V.reverse, V.join(' - ')), depth, details)
                       ),
                     (_, __) => _['&&'](__),
                     (_, __) => _['||'](__),
@@ -142,10 +142,13 @@ export function render<E>(
                 Sy.succeed(
                   rendered(
                     Test,
-                    pipe(labels, L.reverse, L.join(' - ')),
+                    pipe(labels, V.reverse, V.join(' - ')),
                     Failed,
                     depth,
-                    L.list(renderFailureLabel(pipe(labels, L.reverse, L.join(' - ')), depth), renderCause(cause, depth))
+                    V.vector(
+                      renderFailureLabel(pipe(labels, V.reverse, V.join(' - ')), depth),
+                      renderCause(cause, depth)
+                    )
                   )
                 )
             }),
@@ -154,23 +157,23 @@ export function render<E>(
                 Sy.succeed(
                   rendered(
                     Test,
-                    pipe(labels, L.reverse, L.join(' - ')),
+                    pipe(labels, V.reverse, V.join(' - ')),
                     Passed,
                     depth,
-                    L.single(withOffset(depth)(`${green('+')} ${pipe(labels, L.reverse, L.join(' - '))}`))
+                    V.single(withOffset(depth)(`${green('+')} ${pipe(labels, V.reverse, V.join(' - '))}`))
                   )
                 ),
               Ignored: () =>
-                Sy.succeed(rendered(Test, pipe(labels, L.reverse, L.join(' - ')), Ignored, depth, L.empty()))
+                Sy.succeed(rendered(Test, pipe(labels, V.reverse, V.join(' - ')), Ignored, depth, V.empty()))
             })
           )
 
-          return Sy.map_(renderedResult, (r) => L.single(r.withAnnotations(renderedAnnotations)))
+          return Sy.map_(renderedResult, (r) => V.single(r.withAnnotations(renderedAnnotations)))
         }
       })
     )
 
-  return Sy.run(loop(Sy.succeed(executedSpec), 0, L.empty(), L.empty()))
+  return Sy.run(loop(Sy.succeed(executedSpec), 0, V.empty(), V.empty()))
 }
 
 function rendered(
@@ -178,13 +181,13 @@ function rendered(
   label: string,
   status: Status,
   offset: number,
-  rendered: L.List<string>
+  rendered: V.Vector<string>
 ): RenderedResult<string> {
   return new RenderedResult(caseType, label, status, offset, rendered)
 }
 
-function renderFailure(label: string, offset: number, details: FailureDetails): L.List<string> {
-  return L.prepend_(renderFailureDetails(details, offset), renderFailureLabel(label, offset))
+function renderFailure(label: string, offset: number, details: FailureDetails): V.Vector<string> {
+  return V.prepend_(renderFailureDetails(details, offset), renderFailureLabel(label, offset))
 }
 
 function renderSuccessLabel(label: string, offset: number): string {
@@ -195,22 +198,22 @@ function renderFailureLabel(label: string, offset: number): string {
   return withOffset(offset)(red(`- ${label}`))
 }
 
-function renderFailureDetails(failureDetails: FailureDetails, offset: number): L.List<string> {
+function renderFailureDetails(failureDetails: FailureDetails, offset: number): V.Vector<string> {
   return renderToStringLines(FM.renderFailureDetails(failureDetails, offset))
 }
 
 function renderCause(cause: Cause<any>, offset: number): string {
-  return L.join_(renderToStringLines(FM.renderCause(cause, offset)), '\n')
+  return V.join_(renderToStringLines(FM.renderCause(cause, offset)), '\n')
 }
 
 function withOffset(n: number): (s: string) => string {
   return (s) => ' '.repeat(n) + s
 }
 
-function renderToStringLines(message: Message): L.List<string> {
+function renderToStringLines(message: Message): V.Vector<string> {
   const renderFragment = (f: Fragment) => (f.colorCode !== '' ? f.colorCode + f.text + RESET : f.text)
-  return L.map_(message.lines, (line) =>
-    withOffset(line.offset)(L.foldl_(line.fragments, '', (str, f) => str + renderFragment(f)))
+  return V.map_(message.lines, (line) =>
+    withOffset(line.offset)(V.foldl_(line.fragments, '', (str, f) => str + renderFragment(f)))
   )
 }
 
@@ -222,7 +225,7 @@ class RenderedResult<T> {
     readonly label: string,
     readonly status: Status,
     readonly offset: number,
-    readonly rendered: L.List<T>
+    readonly rendered: V.Vector<T>
   ) {}
 
   ['&&'](that: RenderedResult<T>): RenderedResult<T> {
@@ -239,7 +242,7 @@ class RenderedResult<T> {
           this.label,
           this.status,
           this.offset,
-          L.concat_(this.rendered, L.tail(that.rendered))
+          V.concat_(this.rendered, V.tail(that.rendered))
         )
       : selfTag === 'Passed'
       ? that
@@ -262,7 +265,7 @@ class RenderedResult<T> {
           this.label,
           this.status,
           this.offset,
-          L.concat_(this.rendered, L.tail(that.rendered))
+          V.concat_(this.rendered, V.tail(that.rendered))
         )
       : selfTag === 'Passed'
       ? this
@@ -279,14 +282,14 @@ class RenderedResult<T> {
     })
   }
 
-  withAnnotations(this: RenderedResult<string>, annotations: L.List<string>): RenderedResult<string> {
-    if (L.isEmpty(this.rendered) || L.isEmpty(annotations)) {
+  withAnnotations(this: RenderedResult<string>, annotations: V.Vector<string>): RenderedResult<string> {
+    if (V.isEmpty(this.rendered) || V.isEmpty(annotations)) {
       return this
     } else {
-      const renderedAnnotations     = ` - ${L.join_(annotations, ', ')}`
-      const head                    = M.match_(L.head(this.rendered), () => '', identity)
-      const tail                    = L.tail(this.rendered)
-      const renderedWithAnnotations = L.prepend_(tail, head + renderedAnnotations)
+      const renderedAnnotations     = ` - ${V.join_(annotations, ', ')}`
+      const head                    = M.match_(V.head(this.rendered), () => '', identity)
+      const tail                    = V.tail(this.rendered)
+      const renderedWithAnnotations = V.prepend_(tail, head + renderedAnnotations)
       return new RenderedResult(this.caseType, this.label, this.status, this.offset, renderedWithAnnotations)
     }
   }

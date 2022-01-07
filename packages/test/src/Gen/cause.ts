@@ -3,10 +3,10 @@ import type { Has } from '@principia/base/Has'
 import type { Random } from '@principia/base/Random'
 
 import * as C from '@principia/base/Cause'
+import * as L from '@principia/base/collection/immutable/List'
 import { none } from '@principia/base/Fiber'
 import { Trace } from '@principia/base/Fiber/Trace'
 import { pipe } from '@principia/base/function'
-import * as L from '@principia/base/List'
 import * as M from '@principia/base/Maybe'
 
 import * as G from './core'
@@ -24,7 +24,7 @@ export function cause<R, Id, R1, E, R2>(
     G.defer(() =>
       pipe(
         causesN(n - 1),
-        G.map((c) => C.traced(c, new Trace(none, L.empty(), L.empty(), M.nothing())))
+        G.map((c) => C.traced(c, new Trace(none, L.nil(), L.nil(), M.nothing())))
       )
     )
 

@@ -58,6 +58,14 @@
       "import": "./dist/dist/esm/Chunk/index.js",
       "require": "./dist/dist/cjs/Chunk/index.js"
     },
+    "./collection/immutable/Vector": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/collection/immutable/Vector/index.js",
+        "require": "./dist/dist-traced/cjs/collection/immutable/Vector/index.js"
+      },
+      "import": "./dist/dist/esm/collection/immutable/Vector/index.js",
+      "require": "./dist/dist/cjs/collection/immutable/Vector/index.js"
+    },
     "./Eval": {
       "traced": {
         "import": "./dist/dist-traced/esm/Eval/index.js",
@@ -161,14 +169,6 @@
       },
       "import": "./dist/dist/esm/Lens/index.js",
       "require": "./dist/dist/cjs/Lens/index.js"
-    },
-    "./List": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/List/index.js",
-        "require": "./dist/dist-traced/cjs/List/index.js"
-      },
-      "import": "./dist/dist/esm/List/index.js",
-      "require": "./dist/dist/cjs/List/index.js"
     },
     "./Managed/combinators": {
       "traced": {

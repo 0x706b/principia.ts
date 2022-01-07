@@ -1,8 +1,8 @@
 import type { Maybe } from '@principia/base/Maybe'
 
 import * as A from '@principia/base/Array'
+import * as V from '@principia/base/collection/immutable/Vector'
 import { pipe } from '@principia/base/function'
-import * as L from '@principia/base/List'
 import * as M from '@principia/base/Maybe'
 import * as Str from '@principia/base/string'
 
@@ -10,13 +10,13 @@ import * as TA from '../Annotation'
 
 export class LeafRenderer<V> {
   readonly _tag = 'LeafRenderer'
-  constructor(readonly annotation: TA.TestAnnotation<V>, readonly render: (_: L.List<V>) => Maybe<string>) {}
+  constructor(readonly annotation: TA.TestAnnotation<V>, readonly render: (_: V.Vector<V>) => Maybe<string>) {}
 
-  run(ancestors: L.List<TA.TestAnnotationMap>, child: TA.TestAnnotationMap) {
+  run(ancestors: V.Vector<TA.TestAnnotationMap>, child: TA.TestAnnotationMap) {
     return M.match_(
-      this.render(L.prepend(child.get(this.annotation))(L.map_(ancestors, (m) => m.get(this.annotation)))),
-      () => L.empty<string>(),
-      L.single
+      this.render(V.prepend(child.get(this.annotation))(V.map_(ancestors, (m) => m.get(this.annotation)))),
+      () => V.empty<string>(),
+      V.single
     )
   }
 }
@@ -25,8 +25,8 @@ export class CompositeRenderer {
   readonly _tag = 'CompositeRenderer'
   constructor(readonly renderers: ReadonlyArray<TestAnnotationRenderer>) {}
 
-  run(ancestors: L.List<TA.TestAnnotationMap>, child: TA.TestAnnotationMap): L.List<string> {
-    return L.chain_(L.from(this.renderers), (r) => r.run(ancestors, child))
+  run(ancestors: V.Vector<TA.TestAnnotationMap>, child: TA.TestAnnotationMap): V.Vector<string> {
+    return V.chain_(V.from(this.renderers), (r) => r.run(ancestors, child))
   }
 }
 
@@ -67,7 +67,7 @@ export const timed: TestAnnotationRenderer = new LeafRenderer(TA.timing, ([child
 export const silent: TestAnnotationRenderer = {
   _tag: 'CompositeRenderer',
   renderers: [],
-  run: (ancestors, child) => L.empty()
+  run: (ancestors, child) => V.empty()
 }
 
 export const defaultTestAnnotationRenderer: TestAnnotationRenderer = new CompositeRenderer([

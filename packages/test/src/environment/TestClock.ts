@@ -1,6 +1,7 @@
 import type { Annotations } from '../Annotation'
 import type { Live } from './Live'
 import type { Clock } from '@principia/base/Clock'
+import type { Vector } from '@principia/base/collection/immutable/Vector'
 import type { Fiber, FiberId, RuntimeFiber } from '@principia/base/Fiber'
 import type { FiberStatus } from '@principia/base/Fiber/FiberStatus'
 import type { Has } from '@principia/base/Has'
@@ -8,12 +9,12 @@ import type { HashMap } from '@principia/base/HashMap'
 import type { HashSet } from '@principia/base/HashSet'
 import type { IO, UIO } from '@principia/base/IO'
 import type { Layer } from '@principia/base/Layer'
-import type { List } from '@principia/base/List'
 import type { URef } from '@principia/base/Ref'
 import type { USRef } from '@principia/base/SRef'
 
 import * as C from '@principia/base/Chunk'
 import { ClockTag, ProxyClock } from '@principia/base/Clock'
+import * as V from '@principia/base/collection/immutable/Vector'
 import { Console } from '@principia/base/Console'
 import * as E from '@principia/base/Either'
 import { eqFiberId } from '@principia/base/Fiber'
@@ -25,7 +26,6 @@ import * as HM from '@principia/base/HashMap'
 import * as HS from '@principia/base/HashSet'
 import * as I from '@principia/base/IO'
 import * as L from '@principia/base/Layer'
-import * as Li from '@principia/base/List'
 import * as Ma from '@principia/base/Managed'
 import * as M from '@principia/base/Maybe'
 import * as N from '@principia/base/number'
@@ -40,7 +40,7 @@ import { HashEqFiber, HashEqFiberId } from '../util/util'
 import { LiveTag } from './Live'
 
 export class Data {
-  constructor(readonly duration: number, readonly sleeps: List<readonly [number, F.Future<never, void>]>) {}
+  constructor(readonly duration: number, readonly sleeps: Vector<readonly [number, F.Future<never, void>]>) {}
 }
 
 export class Sleep {
@@ -90,7 +90,7 @@ export class TestClock implements Clock {
         Ref.modify_(self.clockState, (data) => {
           const end = data.duration + ms
           if (end > data.duration) {
-            return tuple(true, new Data(data.duration, Li.append_(data.sleeps, tuple(end, promise))))
+            return tuple(true, new Data(data.duration, V.append_(data.sleeps, tuple(end, promise))))
           } else {
             return tuple(false, data)
           }
@@ -122,7 +122,7 @@ export class TestClock implements Clock {
     return pipe(this.warningDone, I.apSecond(this.run((_) => time)))
   }
 
-  sleeps = I.map_(this.clockState.get, (data) => Li.map_(data.sleeps, ([_]) => _))
+  sleeps = I.map_(this.clockState.get, (data) => V.map_(data.sleeps, ([_]) => _))
 
   get supervizedFibers(): UIO<HashSet<RuntimeFiber<any, any>>> {
     return I.descriptorWith((descriptor) =>
@@ -184,13 +184,13 @@ export class TestClock implements Clock {
       I.apSecond(
         Ref.modify_(this.clockState, (data) => {
           const end    = f(data.duration)
-          const sorted = Li.sortWith_(data.sleeps, ([x], [y]) => N.Ord.compare_(x, y))
+          const sorted = V.sortWith_(data.sleeps, ([x], [y]) => N.Ord.compare_(x, y))
           return pipe(
             sorted,
-            Li.head,
+            V.head,
             M.chain(([duration, promise]) =>
               duration <= end
-                ? M.just(tuple(M.just(tuple(end, promise)), new Data(duration, Li.tail(sorted))))
+                ? M.just(tuple(M.just(tuple(end, promise)), new Data(duration, V.tail(sorted))))
                 : M.nothing()
             ),
             M.getOrElse(() => tuple(M.nothing(), new Data(end, data.sleeps)))
@@ -270,6 +270,6 @@ export class TestClock implements Clock {
   static adjust = I.deriveLifted(TestClockTag)(['adjust'], [], []).adjust
 
   static default: Layer<Has<Live> & Has<Annotations>, never, Has<Clock> & Has<TestClock>> = TestClock.live(
-    new Data(0, Li.empty())
+    new Data(0, V.empty())
   )
 }

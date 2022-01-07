@@ -1,7 +1,7 @@
 import type { Chunk } from './Chunk'
+import type { Vector } from './collection/immutable/Vector'
 import type { Has, Tag } from './Has'
 import type * as HKT from './HKT'
-import type { List } from './List'
 
 import * as A from './Array/core'
 import * as E from './Either'
@@ -809,26 +809,26 @@ export const foreachArray: <A, R, E, B>(
   f: (a: A) => Sync<R, E, B>
 ) => (as: ReadonlyArray<A>) => Sync<R, E, ReadonlyArray<B>> = Z.foreachArray
 
-export const iforeachList_: <A, R, E, B>(
+export const iforeachVector_: <A, R, E, B>(
   as: Iterable<A>,
   f: (i: number, a: A) => Sync<R, E, B>
-) => Sync<R, E, List<B>> = Z.iforeachList_
+) => Sync<R, E, Vector<B>> = Z.iforeachVector_
 
 /**
- * @dataFirst iforeachList_
+ * @dataFirst iforeachVector_
  */
-export const iforeachList: <A, R, E, B>(
+export const iforeachVector: <A, R, E, B>(
   f: (i: number, a: A) => Sync<R, E, B>
-) => (as: Iterable<A>) => Sync<R, E, List<B>> = Z.iforeachList
+) => (as: Iterable<A>) => Sync<R, E, Vector<B>> = Z.iforeachVector
 
-export const foreachList_: <A, R, E, B>(as: Iterable<A>, f: (a: A) => Sync<R, E, B>) => Sync<R, E, List<B>> =
-  Z.foreachList_
+export const foreachVector_: <A, R, E, B>(as: Iterable<A>, f: (a: A) => Sync<R, E, B>) => Sync<R, E, Vector<B>> =
+  Z.foreachVector_
 
 /**
- * @dataFirst foreachList_
+ * @dataFirst foreachVector_
  */
-export const foreachList: <A, R, E, B>(f: (a: A) => Sync<R, E, B>) => (as: Iterable<A>) => Sync<R, E, List<B>> =
-  Z.foreachList
+export const foreachVector: <A, R, E, B>(f: (a: A) => Sync<R, E, B>) => (as: Iterable<A>) => Sync<R, E, Vector<B>> =
+  Z.foreachVector
 
 export function sequenceIterable<R, E, A>(as: Iterable<Sync<R, E, A>>): Sync<R, E, Chunk<A>> {
   return iforeach_(as, (_, a) => a)
@@ -838,8 +838,8 @@ export function sequenceArray<R, E, A>(as: ReadonlyArray<Sync<R, E, A>>): Sync<R
   return iforeachArray_(as, (_, a) => a)
 }
 
-export function sequenceList<R, E, A>(as: Iterable<Sync<R, E, A>>): Sync<R, E, List<A>> {
-  return iforeachList_(as, (_, a) => a)
+export function sequenceList<R, E, A>(as: Iterable<Sync<R, E, A>>): Sync<R, E, Vector<A>> {
+  return iforeachVector_(as, (_, a) => a)
 }
 
 /*

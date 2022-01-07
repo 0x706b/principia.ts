@@ -10,12 +10,12 @@ import type { _E, _R } from './prelude'
 import * as A from './Array/core'
 import * as Ca from './Cause'
 import * as C from './Chunk/core'
+import * as V from './collection/immutable/Vector/core'
 import * as E from './Either'
 import * as Ex from './Exit'
 import { flow, identity, pipe } from './function'
 import { makeStack } from './internal/Stack'
 import * as I from './Iterable/core'
-import * as L from './List/core'
 import * as M from './Maybe'
 import * as P from './prelude'
 import { tuple } from './tuple/core'
@@ -1514,16 +1514,16 @@ export function foreachArray<A, W, S, R, E, B>(
   return (as) => foreachArray_(as, f)
 }
 
-export function iforeachList_<A, W, S, R, E, B>(
+export function iforeachVector_<A, W, S, R, E, B>(
   as: Iterable<A>,
   f: (i: number, a: A) => Z<W, S, S, R, E, B>
-): Z<W, S, S, R, E, L.List<B>> {
-  return I.ifoldl_(as, succeed(L.emptyPushable()) as Z<W, S, S, R, E, L.MutableList<B>>, (i, b, a) =>
+): Z<W, S, S, R, E, V.Vector<B>> {
+  return I.ifoldl_(as, succeed(V.emptyPushable()) as Z<W, S, S, R, E, V.MutableVector<B>>, (i, b, a) =>
     crossWith_(
       b,
       defer(() => f(i, a)),
       (acc, a) => {
-        L.push(a, acc)
+        V.push(a, acc)
         return acc
       }
     )
@@ -1531,28 +1531,28 @@ export function iforeachList_<A, W, S, R, E, B>(
 }
 
 /**
- * @dataFirst iforeachList_
+ * @dataFirst iforeachVector_
  */
-export function iforeachList<A, W, S, R, E, B>(
+export function iforeachVector<A, W, S, R, E, B>(
   f: (i: number, a: A) => Z<W, S, S, R, E, B>
-): (as: Iterable<A>) => Z<W, S, S, R, E, L.List<B>> {
-  return (as) => iforeachList_(as, f)
+): (as: Iterable<A>) => Z<W, S, S, R, E, V.Vector<B>> {
+  return (as) => iforeachVector_(as, f)
 }
 
-export function foreachList_<A, W, S, R, E, B>(
+export function foreachVector_<A, W, S, R, E, B>(
   as: Iterable<A>,
   f: (a: A) => Z<W, S, S, R, E, B>
-): Z<W, S, S, R, E, L.List<B>> {
-  return iforeachList_(as, (_, a) => f(a))
+): Z<W, S, S, R, E, V.Vector<B>> {
+  return iforeachVector_(as, (_, a) => f(a))
 }
 
 /**
- * @dataFirst foreachList_
+ * @dataFirst foreachVector_
  */
-export function foreachList<A, W, S, R, E, B>(
+export function foreachVector<A, W, S, R, E, B>(
   f: (a: A) => Z<W, S, S, R, E, B>
-): (as: Iterable<A>) => Z<W, S, S, R, E, L.List<B>> {
-  return (as) => foreachList_(as, f)
+): (as: Iterable<A>) => Z<W, S, S, R, E, V.Vector<B>> {
+  return (as) => foreachVector_(as, f)
 }
 
 /*

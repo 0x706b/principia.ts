@@ -4,14 +4,14 @@ import type { DataSourceAspect } from '../DataSourceAspect'
 import type { Described } from '../Described'
 import type { BlockedRequest } from './BlockedRequest'
 import type { Sequential } from './Sequential'
-import type { List } from '@principia/base/List'
+import type { List } from '@principia/base/collection/immutable/List'
 
 import * as C from '@principia/base/Chunk'
+import * as L from '@principia/base/collection/immutable/List'
 import * as Ev from '@principia/base/Eval'
 import { identity, pipe } from '@principia/base/function'
 import * as HS from '@principia/base/HashSet'
 import * as I from '@principia/base/IO'
-import * as L from '@principia/base/List'
 import * as Ref from '@principia/base/Ref'
 
 import * as DS from '../DataSource'
@@ -151,7 +151,7 @@ function flatten<R>(blockedRequests: BlockedRequests<R>): List<Sequential<R>> {
     Ev.gen(function* (_) {
       const [parallel, sequential] = L.foldl_(
         brs,
-        [Par.empty<R>(), L.empty<BlockedRequests<R>>()] as const,
+        [Par.empty<R>(), L.nil<BlockedRequests<R>>()] as const,
         ([parallel, sequential], blockedRequest) => {
           const [par, seq] = step(blockedRequest)
           return [parallel['++'](par), L.concat_(sequential, seq)] as const
@@ -166,7 +166,7 @@ function flatten<R>(blockedRequests: BlockedRequests<R>): List<Sequential<R>> {
       }
     })
 
-  return Ev.run(go(L.list(blockedRequests), L.empty()))
+  return Ev.run(go(L.cons(blockedRequests), L.nil()))
 }
 
 function step<R>(c: BlockedRequests<R>): readonly [Par.Parallel<R>, List<BlockedRequests<R>>] {
@@ -182,7 +182,7 @@ function step<R>(c: BlockedRequests<R>): readonly [Par.Parallel<R>, List<Blocked
           if (L.isEmpty(stack)) {
             return [parallel, sequential]
           } else {
-            return yield* _(go(L.unsafeHead(stack) as BlockedRequests<R>, L.tail(stack), parallel, sequential))
+            return yield* _(go(L.unsafeHead(stack) as BlockedRequests<R>, L.unsafeTail(stack), parallel, sequential))
           }
         }
         case 'Then': {
@@ -214,13 +214,13 @@ function step<R>(c: BlockedRequests<R>): readonly [Par.Parallel<R>, List<Blocked
               )
             }
             case 'Single': {
-              return yield* _(go(blockedRequests.left, stack, parallel, L.append(blockedRequests.right)(sequential)))
+              return yield* _(go(blockedRequests.left, stack, parallel, L.prepend(blockedRequests.right)(sequential)))
             }
           }
         }
         // eslint-disable-next-line no-fallthrough
         case 'Both': {
-          return yield* _(go(blockedRequests.left, L.append(blockedRequests.right)(stack), parallel, sequential))
+          return yield* _(go(blockedRequests.left, L.prepend(blockedRequests.right)(stack), parallel, sequential))
         }
         case 'Single': {
           if (L.isEmpty(stack)) {
@@ -229,7 +229,7 @@ function step<R>(c: BlockedRequests<R>): readonly [Par.Parallel<R>, List<Blocked
             return yield* _(
               go(
                 L.unsafeHead(stack) as BlockedRequests<R>,
-                L.tail(stack),
+                L.unsafeTail(stack),
                 parallel['++'](Par.from(blockedRequests.dataSource, blockedRequests.blockedRequest)),
                 sequential
               )
@@ -239,23 +239,23 @@ function step<R>(c: BlockedRequests<R>): readonly [Par.Parallel<R>, List<Blocked
       }
     })
 
-  return Ev.run(go(c, L.empty(), Par.empty(), L.empty()))
+  return Ev.run(go(c, L.nil(), Par.empty(), L.nil()))
 }
 
 const getIterableSize = (it: Iterable<any> | undefined): number => (it ? Array.from(it).length : 0)
 
 function merge<R>(sequential: List<Sequential<R>>, parallel: Par.Parallel<R>): List<Sequential<R>> {
   if (L.isEmpty(sequential)) {
-    return L.list(parallel.sequential)
+    return L.cons(parallel.sequential)
   } else if (parallel.isEmpty) {
     return sequential
   } else if (getIterableSize(L.unsafeHead(sequential)?.keys) === 1 && getIterableSize(parallel.keys) === 1) {
     return pipe(
       L.unsafeHead(sequential) as Sequential<R>,
       (s) => s['++'](parallel.sequential),
-      (s) => L.append(s)(L.tail(sequential))
+      (s) => L.prepend(s)(L.unsafeTail(sequential))
     )
   } else {
-    return L.append(parallel.sequential)(sequential)
+    return L.prepend(parallel.sequential)(sequential)
   }
 }

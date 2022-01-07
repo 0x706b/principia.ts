@@ -1,8 +1,8 @@
 import type { RenderParam } from './RenderParam'
-import type { List } from '@principia/base/List'
+import type { Vector } from '@principia/base/collection/immutable/Vector'
 
+import * as V from '@principia/base/collection/immutable/Vector'
 import { flow, pipe } from '@principia/base/function'
-import * as L from '@principia/base/List'
 
 export const RenderFunctionTypeId = Symbol('@principia/test/Render/RenderFunction')
 export type RenderFunctionTypeId = typeof RenderFunctionTypeId
@@ -10,22 +10,22 @@ export type RenderFunctionTypeId = typeof RenderFunctionTypeId
 export class RenderFunction {
   readonly [RenderFunctionTypeId]: RenderFunctionTypeId = RenderFunctionTypeId
 
-  constructor(readonly name: string, readonly paramLists: List<List<RenderParam>>) {}
+  constructor(readonly name: string, readonly paramLists: Vector<Vector<RenderParam>>) {}
   get rendered(): string {
     return `${this.name}(${pipe(
       this.paramLists,
-      L.map(
+      V.map(
         flow(
-          L.map((p) => p.rendered),
-          L.join(', ')
+          V.map((p) => p.rendered),
+          V.join(', ')
         )
       ),
-      L.join('')
+      V.join('')
     )})`
   }
 }
 
-export function fn(name: string, paramLists: List<List<RenderParam>>): Render {
+export function fn(name: string, paramLists: Vector<Vector<RenderParam>>): Render {
   return new RenderFunction(name, paramLists)
 }
 

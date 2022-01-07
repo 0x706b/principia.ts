@@ -1,10 +1,10 @@
 import type { Render, RenderParam } from '../Render'
 import type { WidenLiteral } from '../util/util'
 import type { Eq } from '@principia/base/Eq'
-import type { Exit } from '@principia/base/IO/Exit'
 import type { Show } from '@principia/base/Show'
 
 import * as A from '@principia/base/Array'
+import * as V from '@principia/base/collection/immutable/Vector'
 import * as E from '@principia/base/Either'
 import * as Ev from '@principia/base/Eval'
 import * as Ex from '@principia/base/Exit'
@@ -12,7 +12,6 @@ import { flow, identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'
 import * as C from '@principia/base/IO/Cause'
 import * as It from '@principia/base/Iterable'
-import * as L from '@principia/base/List'
 import * as O from '@principia/base/Maybe'
 import * as N from '@principia/base/number'
 import * as S from '@principia/base/Show'
@@ -98,7 +97,7 @@ export function assertionDirect<A>(
   params: ReadonlyArray<RenderParam>,
   run: (actual: A) => BA.FreeBooleanAlgebra<AssertionValue<A>>
 ): Assertion<A> {
-  return new Assertion(fn(name, L.single(L.from(params))), run)
+  return new Assertion(fn(name, V.single(V.from(params))), run)
 }
 
 export function assertionRec<A, B>(

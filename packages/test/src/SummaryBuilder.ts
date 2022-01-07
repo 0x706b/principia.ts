@@ -5,10 +5,10 @@ import type { Either } from '@principia/base/Either'
 
 import * as A from '@principia/base/Array'
 import * as C from '@principia/base/Chunk'
+import * as V from '@principia/base/collection/immutable/Vector'
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/function'
 import * as F from '@principia/base/function'
-import * as L from '@principia/base/List'
 import { matchTag } from '@principia/base/util/match'
 
 import * as ES from './ExecutedSpec'
@@ -38,10 +38,10 @@ export function buildSummary<E>(executedSpec: ExecutedSpec<E>): Summary {
   const failures = extractFailures(executedSpec)
   const rendered = pipe(
     failures,
-    L.from,
-    L.chain((spec) => render(spec, silent)),
-    L.chain((_) => _.rendered),
-    L.join('\n')
+    V.from,
+    V.chain((spec) => render(spec, silent)),
+    V.chain((_) => _.rendered),
+    V.join('\n')
   )
   return new Summary(success, fail, ignore, rendered)
 }

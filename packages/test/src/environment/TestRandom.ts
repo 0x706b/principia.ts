@@ -1,7 +1,7 @@
 import type { Clock } from '@principia/base/Clock'
+import type { Vector } from '@principia/base/collection/immutable/Vector'
 import type { Has } from '@principia/base/Has'
 import type { UIO } from '@principia/base/IO'
-import type { List } from '@principia/base/List'
 import type { Maybe } from '@principia/base/Maybe'
 import type { Random } from '@principia/base/Random'
 import type { URef } from '@principia/base/Ref'
@@ -10,13 +10,13 @@ import type { ArrayInt } from '@principia/base/util/pure-rand/distribution/inter
 import { Byte } from '@principia/base/Byte'
 import { ClockTag } from '@principia/base/Clock'
 import * as Q from '@principia/base/collection/immutable/Queue'
+import * as Li from '@principia/base/collection/immutable/Vector'
 import { IllegalArgumentError } from '@principia/base/Error'
 import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import { intersect } from '@principia/base/HeterogeneousRecord'
 import * as I from '@principia/base/IO'
 import * as L from '@principia/base/Layer'
-import * as Li from '@principia/base/List'
 import * as M from '@principia/base/Maybe'
 import { RandomTag } from '@principia/base/Random'
 import * as Ref from '@principia/base/Ref'
@@ -111,7 +111,7 @@ export class TestRandom implements Random {
   private randomBoolean = I.map_(this.randomBits(1), (n) => n !== 0)
 
   private randomBytes = (length: number): UIO<ReadonlyArray<Byte>> => {
-    const loop = (i: number, rnd: UIO<number>, n: number, acc: UIO<List<Byte>>): UIO<List<Byte>> => {
+    const loop = (i: number, rnd: UIO<number>, n: number, acc: UIO<Vector<Byte>>): UIO<Vector<Byte>> => {
       if (i === length) {
         return I.map_(acc, Li.reverse)
       } else if (n > 0) {
@@ -320,12 +320,12 @@ const defaultData = new Data(1071905196, 1911589680)
 
 class Buffer {
   constructor(
-    readonly booleans: List<boolean> = Li.empty(),
-    readonly bytes: List<ReadonlyArray<Byte>> = Li.empty(),
-    readonly chars: List<string> = Li.empty(),
-    readonly doubles: List<number> = Li.empty(),
-    readonly integers: List<number> = Li.empty(),
-    readonly strings: List<string> = Li.empty()
+    readonly booleans: Vector<boolean> = Li.empty(),
+    readonly bytes: Vector<ReadonlyArray<Byte>> = Li.empty(),
+    readonly chars: Vector<string> = Li.empty(),
+    readonly doubles: Vector<number> = Li.empty(),
+    readonly integers: Vector<number> = Li.empty(),
+    readonly strings: Vector<string> = Li.empty()
   ) {}
 
   copy(_: Partial<Buffer>): Buffer {
