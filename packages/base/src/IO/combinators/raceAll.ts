@@ -1,7 +1,7 @@
 // tracing: off
 
 import type { Conc } from '../../collection/immutable/Conc/core'
-import type { NonEmptyArray } from '../../NonEmptyArray'
+import type { NonEmptyArray } from '../../collection/immutable/NonEmptyArray'
 import type { IO, UIO } from '../core'
 import type { Exit } from '../Exit'
 

@@ -6,10 +6,10 @@
  * and the _Right_ constructor is used to hold a correct value
  */
 
+import type { NonEmptyArray } from './collection/immutable/NonEmptyArray'
 import type { FunctionN } from './function'
 import type { Either, Left, Right } from './internal/Either'
 import type { Maybe } from './Maybe'
-import type { NonEmptyArray } from './NonEmptyArray'
 import type { These } from './These'
 
 import { NoSuchElementError } from './Error'

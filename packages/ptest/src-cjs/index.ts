@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import { showFiberId } from '@principia/base/Fiber'
 import { pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'

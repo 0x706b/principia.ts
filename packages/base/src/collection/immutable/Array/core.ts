@@ -1,9 +1,9 @@
 import type { Byte } from '../../../Byte'
 import type { Either } from '../../../Either'
 import type { Maybe } from '../../../Maybe'
-import type { NonEmptyArray } from '../../../NonEmptyArray'
 import type { ReadonlyRecord } from '../../../Record'
 import type { These } from '../../../These'
+import type { NonEmptyArray } from '../NonEmptyArray'
 
 import * as Ev from '../../../Eval/core'
 import { Applicative as ApplicativeEval } from '../../../Eval/instances'
@@ -16,11 +16,11 @@ import * as E from '../../../internal/Either'
 import * as Th from '../../../internal/These'
 import { tuple } from '../../../internal/tuple'
 import * as M from '../../../Maybe'
-import * as NEA from '../../../NonEmptyArray/core'
 import * as N from '../../../number'
 import * as Ord from '../../../Ord'
 import { EQ } from '../../../Ordering'
 import * as P from '../../../prelude'
+import * as NEA from '../NonEmptyArray/core'
 
 /*
  * -------------------------------------------------------------------------------------------------

@@ -1,5 +1,5 @@
+import type { NonEmptyArray } from '../collection/immutable/NonEmptyArray'
 import type { Trace } from '../Fiber/Trace'
-import type { NonEmptyArray } from '../NonEmptyArray'
 import type { PCause } from './core'
 
 import * as A from '../collection/immutable/Array/core'

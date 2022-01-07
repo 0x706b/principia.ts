@@ -1,4 +1,4 @@
-import type { MutableNonEmptyArray, NonEmptyArray } from '../NonEmptyArray'
+import type { MutableNonEmptyArray, NonEmptyArray } from '../collection/immutable/NonEmptyArray'
 import type { Mutable } from '../prelude'
 
 export function appendW_<A, B>(init: ReadonlyArray<A>, last: B): NonEmptyArray<A | B> {

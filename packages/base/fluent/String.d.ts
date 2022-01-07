@@ -1,5 +1,5 @@
+import type { NonEmptyArray } from '@principia/base/collection/immutable/NonEmptyArray'
 import type { Maybe } from '@principia/base/Maybe'
-import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 
 /* eslint typescript-sort-keys/interface: "error" */
 

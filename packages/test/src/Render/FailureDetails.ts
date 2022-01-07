@@ -1,8 +1,8 @@
 import type { AssertionValue } from '../Assertion'
 import type { FreeBooleanAlgebra } from '../FreeBooleanAlgebra'
 import type { GenFailureDetails } from '../GenFailureDetails'
+import type { NonEmptyArray } from '@principia/base/collection/immutable/NonEmptyArray'
 import type { Maybe } from '@principia/base/Maybe'
-import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 
 import * as M from '@principia/base/Maybe'
 

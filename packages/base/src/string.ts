@@ -1,10 +1,10 @@
-import type { NonEmptyArray } from './NonEmptyArray'
+import type { NonEmptyArray } from './collection/immutable/NonEmptyArray'
 
 import * as A from './collection/immutable/Array/core'
+import * as NA from './collection/immutable/NonEmptyArray'
 import { flow, identity, pipe } from './function'
 import * as G from './Guard'
 import * as M from './Maybe'
-import * as NA from './NonEmptyArray'
 import * as N from './number'
 import { max_ } from './Ord'
 import * as P from './prelude'

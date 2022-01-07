@@ -1,10 +1,10 @@
 import type { AssertionValue } from '../Assertion'
 import type { GenFailureDetails } from '../GenFailureDetails'
 import type { FailureDetails } from './FailureDetails'
+import type { NonEmptyArray } from '@principia/base/collection/immutable/NonEmptyArray'
 import type { Vector } from '@principia/base/collection/immutable/Vector'
 import type { Cause } from '@principia/base/IO/Cause'
 import type { Maybe } from '@principia/base/Maybe'
-import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 
 import * as A from '@principia/base/collection/immutable/Array'
 import * as V from '@principia/base/collection/immutable/Vector'

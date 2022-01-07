@@ -1,8 +1,8 @@
 import type { AnyUParser, LiteralP, Parser, SumP } from './Parser'
 import type * as S from './Schemable'
 import type { InputOfPrism } from './util'
+import type { NonEmptyArray } from '@principia/base/collection/immutable/NonEmptyArray'
 import type * as HKT from '@principia/base/HKT'
-import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type * as P from '@principia/base/prelude'
 
 import * as A from '@principia/base/collection/immutable/Array'

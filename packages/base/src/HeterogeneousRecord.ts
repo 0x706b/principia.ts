@@ -1,8 +1,8 @@
 /**
  * Operations on heterogeneous records
  */
+import type { NonEmptyArray } from './collection/immutable/NonEmptyArray'
 import type * as HKT from './HKT'
-import type { NonEmptyArray } from './NonEmptyArray'
 import type { EnforceNonEmptyRecord, UnionToIntersection } from './prelude'
 import type { ReadonlyRecord } from './Record'
 import type { List } from '@principia/typelevel/List'

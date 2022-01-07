@@ -1,6 +1,6 @@
 import type * as S from './Schemable'
+import type { NonEmptyArray } from '@principia/base/collection/immutable/NonEmptyArray'
 import type { Has } from '@principia/base/Has'
-import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type { Random } from '@principia/base/Random'
 import type { _A, _R, Primitive } from '@principia/base/util/types'
 import type { Sized } from '@principia/test/Sized'

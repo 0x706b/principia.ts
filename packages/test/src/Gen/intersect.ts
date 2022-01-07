@@ -1,5 +1,5 @@
 import type { Gen } from './core'
-import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
+import type { NonEmptyArray } from '@principia/base/collection/immutable/NonEmptyArray'
 import type { _A, _R, UnionToIntersection } from '@principia/base/prelude'
 
 import * as A from '@principia/base/collection/immutable/Array'

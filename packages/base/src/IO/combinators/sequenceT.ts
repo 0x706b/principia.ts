@@ -1,6 +1,6 @@
 // tracing: off
 
-import type { NonEmptyArray } from '../../NonEmptyArray'
+import type { NonEmptyArray } from '../../collection/immutable/NonEmptyArray'
 import type { _E, _R } from '../../util/types'
 import type { IO } from '../core'
 

@@ -1,11 +1,11 @@
-import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
+import type { NonEmptyArray } from '@principia/base/collection/immutable/NonEmptyArray'
 import type { Predicate } from '@principia/base/Predicate'
 import type { Refinement } from '@principia/base/Refinement'
 import type { These } from '@principia/base/These'
 
+import * as NEA from '@principia/base/collection/immutable/NonEmptyArray'
 import { flow, pipe } from '@principia/base/function'
 import * as M from '@principia/base/Maybe'
-import * as NEA from '@principia/base/NonEmptyArray'
 import * as Th from '@principia/base/These'
 
 export interface Parse<I, E, A> {

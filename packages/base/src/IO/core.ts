@@ -1,6 +1,7 @@
 // tracing: off
 
 import type { Conc } from '../collection/immutable/Conc'
+import type { NonEmptyArray } from '../collection/immutable/NonEmptyArray'
 import type { Eval } from '../Eval'
 import type { Platform } from '../Fiber'
 import type { FiberDescriptor, InterruptStatus } from '../Fiber/core'
@@ -11,7 +12,6 @@ import type { Has, Tag } from '../Has'
 import type * as HKT from '../HKT'
 import type { Maybe } from '../Maybe'
 import type { Monoid } from '../Monoid'
-import type { NonEmptyArray } from '../NonEmptyArray'
 import type { Predicate } from '../Predicate'
 /*
  * import type { Foldable, HasStruct, HasTuple, ServicesStruct, ServicesTuple, Traversable, Witherable } from '../prelude'
@@ -29,6 +29,7 @@ import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compi
 
 import * as A from '../collection/immutable/Array/core'
 import * as Ch from '../collection/immutable/Conc/core'
+import * as NEA from '../collection/immutable/NonEmptyArray'
 import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
 import * as Ev from '../Eval'
@@ -38,7 +39,6 @@ import { constant, constVoid, flow, identity, pipe } from '../function'
 import { isTag, mergeEnvironments } from '../Has'
 import * as I from '../Iterable'
 import * as M from '../Maybe'
-import * as NEA from '../NonEmptyArray'
 import { Applicative } from '../prelude'
 import * as R from '../Record'
 import * as S from '../Sync'

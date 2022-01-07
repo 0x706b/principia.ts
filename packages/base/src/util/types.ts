@@ -1,5 +1,5 @@
+import type { NonEmptyArray } from '../collection/immutable/NonEmptyArray'
 import type { Has, Tag } from '../Has'
-import type { NonEmptyArray } from '../NonEmptyArray'
 
 export type Primitive = string | number | boolean | null | symbol
 

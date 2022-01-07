@@ -1,11 +1,11 @@
 import type { Applicative } from '@principia/base/Applicative'
 import type { Byte } from '@principia/base/Byte'
 import type * as A from '@principia/base/collection/immutable/Array'
+import type { MutableNonEmptyArray, NonEmptyArray } from '@principia/base/collection/immutable/NonEmptyArray'
 import type { Either } from '@principia/base/Either'
 import type * as HKT from '@principia/base/HKT'
 import type { Maybe } from '@principia/base/Maybe'
 import type { Monoid } from '@principia/base/Monoid'
-import type { MutableNonEmptyArray, NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type { Predicate, PredicateWithIndex } from '@principia/base/Predicate'
 import type { Eq } from '@principia/base/prelude'
 import type { ReadonlyRecord } from '@principia/base/Record'
@@ -157,7 +157,7 @@ interface ArrayStaticOps {
 
 export interface ArrayOps {
   /**
-   * @rewrite align_ from "@principia/base/NonEmptyArray"
+   * @rewrite align_ from "@principia/base/collection/immutable/NonEmptyArray"
    */
   align<A, B>(this: NonEmptyArray<A>, fb: NonEmptyArray<B>): NonEmptyArray<These<A, B>>
 
@@ -167,7 +167,7 @@ export interface ArrayOps {
   align<T, B>(this: ReadonlyArray<T>, fb: ReadonlyArray<B>): ReadonlyArray<These<T, B>>
 
   /**
-   * @rewrite alignWith_ from "@principia/base/NonEmptyArray"
+   * @rewrite alignWith_ from "@principia/base/collection/immutable/NonEmptyArray"
    */
   alignWith<A, B, C>(this: NonEmptyArray<A>, fb: NonEmptyArray<B>, f: (_: These<A, B>) => C): ReadonlyArray<C>
 
@@ -177,7 +177,7 @@ export interface ArrayOps {
   alignWith<T, B, C>(this: ReadonlyArray<T>, fb: ReadonlyArray<B>, f: (_: These<T, B>) => C): ReadonlyArray<C>
 
   /**
-   * @rewrite ap_ from "@principia/base/NonEmptyArray"
+   * @rewrite ap_ from "@principia/base/collection/immutable/NonEmptyArray"
    */
   ap<A, B>(this: NonEmptyArray<(a: A) => B>, fa: NonEmptyArray<A>): NonEmptyArray<B>
 
@@ -187,7 +187,7 @@ export interface ArrayOps {
   ap<A, B>(this: ReadonlyArray<(a: A) => B>, fa: ReadonlyArray<A>): ReadonlyArray<B>
 
   /**
-   * @rewrite append_ from "@principia/base/NonEmptyArray"
+   * @rewrite append_ from "@principia/base/collection/immutable/NonEmptyArray"
    */
   append<A>(this: NonEmptyArray<A>, a: A): NonEmptyArray<A>
 
@@ -197,7 +197,7 @@ export interface ArrayOps {
   append<T>(this: ReadonlyArray<T>, a: T): ReadonlyArray<T>
 
   /**
-   * @rewrite chain_ from "@principia/base/NonEmptyArray"
+   * @rewrite chain_ from "@principia/base/collection/immutable/NonEmptyArray"
    */
   chain<A, B>(this: NonEmptyArray<A>, f: (a: A) => NonEmptyArray<B>): NonEmptyArray<B>
 
@@ -207,7 +207,7 @@ export interface ArrayOps {
   chain<T, B>(this: ReadonlyArray<T>, f: (a: T) => ReadonlyArray<B>): ReadonlyArray<B>
 
   /**
-   * @rewrite chop_ from "@principia/base/NonEmptyArray"
+   * @rewrite chop_ from "@principia/base/collection/immutable/NonEmptyArray"
    */
   chop<A, B>(this: NonEmptyArray<A>, f: (as: NonEmptyArray<A>) => readonly [B, ReadonlyArray<A>]): NonEmptyArray<B>
 
@@ -262,7 +262,7 @@ export interface ArrayOps {
   concat<T, B>(this: ReadonlyArray<T>, bs: ReadonlyArray<B>): ReadonlyArray<T | B>
 
   /**
-   * @rewrite cross_ from "@principia/base/NonEmptyArray"
+   * @rewrite cross_ from "@principia/base/collection/immutable/NonEmptyArray"
    */
   cross<A, B>(this: NonEmptyArray<A>, fb: NonEmptyArray<B>): NonEmptyArray<readonly [A, B]>
 
@@ -272,7 +272,7 @@ export interface ArrayOps {
   cross<T, B>(this: ReadonlyArray<T>, fb: ReadonlyArray<B>): ReadonlyArray<readonly [T, B]>
 
   /**
-   * @rewrite crossWith_ from "@principia/base/NonEmptyArray"
+   * @rewrite crossWith_ from "@principia/base/collection/immutable/NonEmptyArray"
    */
   crossWith<A, B, C>(this: NonEmptyArray<A>, fb: NonEmptyArray<B>, f: (a: A, b: B) => C): NonEmptyArray<C>
 
@@ -337,7 +337,7 @@ export interface ArrayOps {
   elem<T>(this: ReadonlyArray<T>, E: Eq<T>): (a: T) => boolean
 
   /**
-   * @rewrite extend_ from "@principia/base/NonEmptyArray"
+   * @rewrite extend_ from "@principia/base/collection/immutable/NonEmptyArray"
    */
   extend<A, B>(this: NonEmptyArray<A>, f: (as: NonEmptyArray<A>) => B): NonEmptyArray<B>
 
@@ -401,7 +401,7 @@ export interface ArrayOps {
   findMap<T, B>(this: ReadonlyArray<T>, f: (a: T) => Maybe<B>): Maybe<B>
 
   /**
-   * @rewrite flatten from "@principia/base/NonEmptyArray"
+   * @rewrite flatten from "@principia/base/collection/immutable/NonEmptyArray"
    */
   flatten<T>(this: NonEmptyArray<NonEmptyArray<T>>): NonEmptyArray<T>
 
@@ -456,7 +456,7 @@ export interface ArrayOps {
   groupBy<T>(this: ReadonlyArray<T>, f: (a: T) => string): ReadonlyRecord<string, NonEmptyArray<T>>
 
   /**
-   * @rewriteGetter head from "@principia/base/NonEmptyArray"
+   * @rewriteGetter head from "@principia/base/collection/immutable/NonEmptyArray"
    */
   head<T>(this: NonEmptyArray<T>): T
 
@@ -511,7 +511,7 @@ export interface ArrayOps {
   ifoldrWhile<T, B>(this: ReadonlyArray<T>, b: B, predicate: Predicate<B>, f: (i: number, a: T, b: B) => B): B
 
   /**
-   * @rewriteGetter init from "@principia/base/NonEmptyArray"
+   * @rewriteGetter init from "@principia/base/collection/immutable/NonEmptyArray"
    */
   init<T>(this: NonEmptyArray<T>): ReadonlyArray<T>
 
@@ -541,7 +541,7 @@ export interface ArrayOps {
   intersection<T>(this: ReadonlyArray<T>, E: Eq<T>): (ys: ReadonlyArray<T>) => ReadonlyArray<T>
 
   /**
-   * @rewrite intersperse_ from "@principia/base/NonEmptyArray"
+   * @rewrite intersperse_ from "@principia/base/collection/immutable/NonEmptyArray"
    */
   intersperse<A>(this: NonEmptyArray<A>, a: A): NonEmptyArray<A>
 
@@ -639,7 +639,7 @@ export interface ArrayOps {
   ) => HKT.Kind<F, C, K, Q, W, X, I, S, R, E, ReadonlyArray<A>>
 
   /**
-   * @rewrite last from "@principia/base/NonEmptyArray"
+   * @rewrite last from "@principia/base/collection/immutable/NonEmptyArray"
    */
   last<T>(this: NonEmptyArray<T>): T
 
@@ -754,7 +754,7 @@ export interface ArrayOps {
   rotate<T>(this: ReadonlyArray<T>, n: number): ReadonlyArray<T>
 
   /**
-   * @rewrite rotate_ from "@principia/base/NonEmptyArray"
+   * @rewrite rotate_ from "@principia/base/collection/immutable/NonEmptyArray"
    */
   rotate<A>(this: NonEmptyArray<A>, n: number): NonEmptyArray<A>
 
@@ -820,7 +820,7 @@ export interface ArrayOps {
   splitWhere<T>(this: ReadonlyArray<T>, predicate: Predicate<T>): readonly [ReadonlyArray<T>, ReadonlyArray<T>]
 
   /**
-   * @rewriteGetter tail from "@principia/base/NonEmptyArray"
+   * @rewriteGetter tail from "@principia/base/collection/immutable/NonEmptyArray"
    */
   tail<T>(this: NonEmptyArray<T>): ReadonlyArray<T>
 

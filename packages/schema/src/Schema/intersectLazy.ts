@@ -1,4 +1,4 @@
-import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
+import type { NonEmptyArray } from '@principia/base/collection/immutable/NonEmptyArray'
 
 import * as S from './core'
 
