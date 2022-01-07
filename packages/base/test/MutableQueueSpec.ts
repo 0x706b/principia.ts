@@ -25,22 +25,22 @@ class MutableQueueSpec extends DefaultRunnableSpec {
       test('`offer` of 2 items succeeds, further offers fail', () => {
         const q = MQ.bounded<number>(2)
         return all(
-          assert_(q.offer(1), isTrue),
+          assert_(q.enqueue(1), isTrue),
           assert_(q.size, equalTo(1)),
-          assert_(q.offer(2), isTrue),
+          assert_(q.enqueue(2), isTrue),
           assert_(q.size, equalTo(2)),
-          assert_(q.offer(3), isFalse),
+          assert_(q.enqueue(3), isFalse),
           assert_(q.isFull, isTrue)
         )
       }),
       test('`poll` of 2 items from full queue succeeds, further `poll`s return default value', () => {
         const q = MQ.bounded<number>(2)
-        q.offer(1)
-        q.offer(2)
+        q.enqueue(1)
+        q.enqueue(2)
         return all(
-          assert_(q.poll(-1), equalTo(1)),
-          assert_(q.poll(-1), equalTo(2)),
-          assert_(q.poll(-1), equalTo(-1)),
+          assert_(q.dequeue(-1), equalTo(1)),
+          assert_(q.dequeue(-1), equalTo(2)),
+          assert_(q.dequeue(-1), equalTo(-1)),
           assert_(q.isEmpty, isTrue)
         )
       })
