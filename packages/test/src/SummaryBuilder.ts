@@ -3,7 +3,7 @@ import type { TestFailure } from './TestFailure'
 import type { TestSuccess } from './TestSuccess'
 import type { Either } from '@principia/base/Either'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as C from '@principia/base/collection/immutable/Conc'
 import * as V from '@principia/base/collection/immutable/Vector'
 import * as E from '@principia/base/Either'

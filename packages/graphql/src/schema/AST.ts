@@ -36,7 +36,7 @@ import type {
   VariableDefinitionNode
 } from 'graphql'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as R from '@principia/base/Record'
 import { Kind } from 'graphql'
 

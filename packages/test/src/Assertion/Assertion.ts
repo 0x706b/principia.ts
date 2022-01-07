@@ -3,7 +3,7 @@ import type { WidenLiteral } from '../util/util'
 import type { Eq } from '@principia/base/Eq'
 import type { Show } from '@principia/base/Show'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as V from '@principia/base/collection/immutable/Vector'
 import * as E from '@principia/base/Either'
 import * as Ev from '@principia/base/Eval'

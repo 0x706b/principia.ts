@@ -3,7 +3,7 @@ import type * as Fiber from '@principia/base/Fiber'
 import type { Tag } from '@principia/base/Has'
 import type { URef } from '@principia/base/Ref'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as E from '@principia/base/Either'
 import { absurd } from '@principia/base/function'
 import { tag } from '@principia/base/Has'

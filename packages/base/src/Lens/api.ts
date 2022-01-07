@@ -1,6 +1,6 @@
 import type * as O from '../Optional'
 
-import * as A from '../Array'
+import * as A from '../collection/immutable/Array'
 import * as HR from '../HeterogeneousRecord'
 import * as R from '../Record'
 import * as Tu from '../tuple'

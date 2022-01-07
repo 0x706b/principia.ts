@@ -2,7 +2,7 @@ import type * as HKT from './HKT'
 import type { Predicate } from './Predicate'
 import type { Refinement } from './Refinement'
 
-import * as A from './Array/core'
+import * as A from './collection/immutable/Array/core'
 import * as C from './Const'
 import { Fold } from './Fold'
 import { identity } from './function'

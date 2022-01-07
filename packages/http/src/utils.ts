@@ -1,4 +1,4 @@
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import { pipe } from '@principia/base/function'
 import * as S from '@principia/schema'
 import * as D from '@principia/schema/Decoder'

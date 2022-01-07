@@ -4,7 +4,7 @@ import type { Has } from '@principia/base/Has'
 import type { Random } from '@principia/base/Random'
 import type { _R } from '@principia/base/util/types'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as Eq from '@principia/base/Eq'
 import { pipe } from '@principia/base/function'
 import * as St from '@principia/base/Structural'

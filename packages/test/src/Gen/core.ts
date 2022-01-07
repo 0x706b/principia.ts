@@ -7,7 +7,7 @@ import type { _A, _R } from '@principia/base/prelude'
 import type { Refinement } from '@principia/base/Refinement'
 import type { Stream } from '@principia/base/Stream'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import { IllegalArgumentError, NoSuchElementError } from '@principia/base/Error'
 import { flow, identity, pipe } from '@principia/base/function'
 import * as I from '@principia/base/IO'

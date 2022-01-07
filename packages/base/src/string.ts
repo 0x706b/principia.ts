@@ -1,6 +1,6 @@
 import type { NonEmptyArray } from './NonEmptyArray'
 
-import * as A from './Array/core'
+import * as A from './collection/immutable/Array/core'
 import { flow, identity, pipe } from './function'
 import * as G from './Guard'
 import * as M from './Maybe'

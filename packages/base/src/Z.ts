@@ -7,7 +7,7 @@ import type { Stack } from './internal/Stack'
 import type { Predicate } from './Predicate'
 import type { _E, _R } from './prelude'
 
-import * as A from './Array/core'
+import * as A from './collection/immutable/Array/core'
 import * as Ca from './Cause'
 import * as C from './collection/immutable/Conc/core'
 import * as V from './collection/immutable/Vector/core'

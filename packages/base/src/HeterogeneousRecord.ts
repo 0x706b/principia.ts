@@ -8,7 +8,7 @@ import type { ReadonlyRecord } from './Record'
 import type { List } from '@principia/typelevel/List'
 import type { AutoPath, Path } from '@principia/typelevel/Object'
 
-import * as A from './Array/core'
+import * as A from './collection/immutable/Array/core'
 import * as Eq from './Eq'
 import * as Ev from './Eval'
 import { pipe, unsafeCoerce } from './function'

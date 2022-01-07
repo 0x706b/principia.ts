@@ -2,8 +2,8 @@ import type { _A } from '@principia/base/util/types'
 
 import '@principia/base/Operators'
 
-import * as A from '@principia/base/Array'
 import { Tagged } from '@principia/base/Case'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as C from '@principia/base/collection/immutable/Conc'
 import * as F from '@principia/base/Future'
 import { tag } from '@principia/base/Has'

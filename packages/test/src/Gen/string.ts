@@ -3,7 +3,7 @@ import type { Gen, LengthConstraints } from './core'
 import type { Has } from '@principia/base/Has'
 import type { Random } from '@principia/base/Random'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 
 import { arrayN_ } from './array'
 import { alphaNumericChar, asciiChar, base64Char, char16, fullUnicodeChar, hexChar, unicodeChar } from './char'

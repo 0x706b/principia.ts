@@ -1,6 +1,6 @@
 import type { FiberId } from '../Fiber/FiberId'
 
-import * as A from '../Array/core'
+import * as A from '../collection/immutable/Array/core'
 import * as C from '../Cause'
 import { prettyTrace } from '../Fiber/Trace'
 import { pipe } from '../function'

@@ -17,7 +17,7 @@ import type {
 } from './core'
 import type { UnionToIntersection } from '@principia/base/util/types'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as M from '@principia/base/Maybe'
 import { isObject } from '@principia/base/util/predicates'
 
@@ -283,7 +283,7 @@ export class PropertiesS<P extends AnyUPRecord> extends Schema<
   PropertiesOptput<P>,
   { properties: P }
 > {
-  readonly _tag = 'Properties';
+  readonly _tag = 'Properties'
 
   readonly [PropertiesSTypeId]: PropertiesSTypeId = PropertiesSTypeId
   constructor(readonly properties: P) {

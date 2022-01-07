@@ -2,7 +2,7 @@ import type * as PE from '../ParseError'
 import type { Maybe } from '@principia/base/Maybe'
 import type { EnforceNonEmptyRecord } from '@principia/base/prelude'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import { pipe } from '@principia/base/function'
 import * as M from '@principia/base/Maybe'
 import * as R from '@principia/base/Record'

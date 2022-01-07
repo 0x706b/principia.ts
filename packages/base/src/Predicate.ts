@@ -1,4 +1,4 @@
-import * as A from './Array/core'
+import * as A from './collection/immutable/Array/core'
 import { constFalse, constTrue } from './function'
 import { Monoid } from './Monoid'
 import { Semigroup } from './Semigroup'

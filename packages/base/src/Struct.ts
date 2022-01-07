@@ -6,7 +6,7 @@ import type * as P from './prelude'
 import type { UnionToIntersection } from './prelude'
 import type { ReadonlyRecord } from './Record'
 
-import * as A from './Array/core'
+import * as A from './collection/immutable/Array/core'
 import { unsafeCoerce } from './function'
 import * as HR from './HeterogeneousRecord'
 import { isObject } from './util/predicates'

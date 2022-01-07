@@ -1,6 +1,6 @@
 import type { Maybe } from '@principia/base/Maybe'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import { pipe } from '@principia/base/function'
 import * as M from '@principia/base/Maybe'
 import { tuple } from '@principia/base/tuple'

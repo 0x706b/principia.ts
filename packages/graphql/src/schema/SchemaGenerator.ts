@@ -22,7 +22,7 @@ import type {
   UnionTypeDefinitionNode
 } from 'graphql'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as R from '@principia/base/Record'
 
 import { createDocumentNode, createObjectTypeDefinitionNode, createSchemaDefinitionNode } from './AST'

@@ -4,7 +4,7 @@
 import type { HashSet } from './HashSet'
 import type * as HKT from './HKT'
 
-import * as A from './Array/core'
+import * as A from './collection/immutable/Array/core'
 import * as B from './boolean'
 import * as L from './collection/immutable/List'
 import { ListBuffer } from './collection/mutable/ListBuffer'

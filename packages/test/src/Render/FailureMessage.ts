@@ -6,7 +6,7 @@ import type { Cause } from '@principia/base/IO/Cause'
 import type { Maybe } from '@principia/base/Maybe'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as V from '@principia/base/collection/immutable/Vector'
 import * as Ev from '@principia/base/Eval'
 import { pipe } from '@principia/base/function'

@@ -7,7 +7,7 @@ import type { Has } from '@principia/base/Has'
 import type { IO } from '@principia/base/IO'
 import type { Schedule } from '@principia/base/Schedule'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as C from '@principia/base/collection/immutable/Conc'
 import { Console } from '@principia/base/Console'
 import * as Ex from '@principia/base/Exit'

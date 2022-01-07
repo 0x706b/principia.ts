@@ -1,6 +1,6 @@
 import type * as O from '../Optional/core'
 
-import * as A from '../Array'
+import * as A from '../collection/immutable/Array'
 import * as HR from '../HeterogeneousRecord'
 import * as L from '../internal/Lens'
 import * as R from '../Record'

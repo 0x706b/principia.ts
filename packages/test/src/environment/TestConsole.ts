@@ -4,7 +4,7 @@ import type { Has } from '@principia/base/Has'
 import type { IO, UIO } from '@principia/base/IO'
 import type { URef } from '@principia/base/Ref'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as V from '@principia/base/collection/immutable/Vector'
 import { Console, ConsoleTag } from '@principia/base/Console'
 import * as FR from '@principia/base/FiberRef'

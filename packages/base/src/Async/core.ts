@@ -3,7 +3,7 @@ import type * as HKT from '../HKT'
 import type { Stack } from '../internal/Stack'
 import type { Maybe } from '../Maybe'
 
-import * as A from '../Array/core'
+import * as A from '../collection/immutable/Array/core'
 import * as C from '../Cause/core'
 import * as E from '../Either'
 import { NoSuchElementError } from '../Error'

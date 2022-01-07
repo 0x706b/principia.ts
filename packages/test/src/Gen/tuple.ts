@@ -1,7 +1,7 @@
 import type { Gen } from './core'
 import type { _A, _R } from '@principia/base/util/types'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 
 import * as G from './core'
 

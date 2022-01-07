@@ -1,6 +1,6 @@
 import type * as HKT from '@principia/base/HKT'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import { flow, identity, pipe, unsafeCoerce } from '@principia/base/function'
 import * as P from '@principia/base/prelude'
 import * as R from '@principia/base/Reader'

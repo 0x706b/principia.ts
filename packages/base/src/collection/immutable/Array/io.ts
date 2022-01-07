@@ -1,9 +1,9 @@
-import type { Maybe } from '../Maybe'
+import type { Maybe } from '../../../Maybe'
 
-import { constVoid, pipe } from '../function'
-import * as I from '../IO'
-import * as It from '../Iterable/core'
-import * as M from '../Maybe'
+import { constVoid, pipe } from '../../../function'
+import * as I from '../../../IO'
+import * as It from '../../../Iterable/core'
+import * as M from '../../../Maybe'
 import * as A from './core'
 
 /**

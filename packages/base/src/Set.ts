@@ -1,7 +1,7 @@
 import type * as E from './Either'
 import type * as M from './Maybe'
 
-import * as A from './Array/core'
+import * as A from './collection/immutable/Array/core'
 import { identity } from './function'
 import { not } from './Predicate'
 import * as P from './prelude'

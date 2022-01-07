@@ -5,7 +5,7 @@ import type { Predicate } from '../Predicate'
 import type * as P from '../prelude'
 import type { Equatable, Hashable } from '../Structural'
 
-import * as A from '../Array/core'
+import * as A from '../collection/immutable/Array/core'
 import * as B from '../boolean'
 import * as L from '../collection/immutable/List'
 import * as E from '../Either'

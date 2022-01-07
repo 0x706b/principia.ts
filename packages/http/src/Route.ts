@@ -5,7 +5,7 @@ import type { Has } from '@principia/base/Has'
 import type { FIO, IO } from '@principia/base/IO'
 import type { URL } from 'url'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as Ev from '@principia/base/Eval'
 import * as FR from '@principia/base/FiberRef'
 import * as FL from '@principia/base/FreeList'

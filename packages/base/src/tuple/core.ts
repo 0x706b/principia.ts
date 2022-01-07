@@ -1,4 +1,4 @@
-import * as A from '../Array/core'
+import * as A from '../collection/immutable/Array/core'
 import * as E from '../Eq'
 import { pipe } from '../function'
 import * as G from '../Guard'

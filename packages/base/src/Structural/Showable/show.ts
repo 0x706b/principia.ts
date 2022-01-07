@@ -2,7 +2,7 @@ import type { Conc } from '../../collection/immutable/Conc'
 import type { TypedArray } from '../../prelude'
 import type { StyleFunction } from './styles'
 
-import * as A from '../../Array/core'
+import * as A from '../../collection/immutable/Array/core'
 import { CaseClass } from '../../Case'
 import * as C from '../../collection/immutable/Conc/core'
 import { pipe } from '../../function'

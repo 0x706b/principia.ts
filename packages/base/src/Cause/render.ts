@@ -2,7 +2,7 @@ import type { Trace } from '../Fiber/Trace'
 import type { NonEmptyArray } from '../NonEmptyArray'
 import type { PCause } from './core'
 
-import * as A from '../Array/core'
+import * as A from '../collection/immutable/Array/core'
 import * as Ev from '../Eval'
 import { pipe } from '../function'
 import * as M from '../Maybe'

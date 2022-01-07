@@ -2,7 +2,7 @@ import type { Prism } from '@principia/base/Prism'
 import type { RoseTree } from '@principia/base/RoseTree'
 import type { Mutable } from '@principia/base/util/types'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as P from '@principia/base/prelude'
 import * as RT from '@principia/base/RoseTree'
 

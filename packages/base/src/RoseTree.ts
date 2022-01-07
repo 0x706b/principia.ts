@@ -2,7 +2,7 @@ import type * as Ev from './Eval/core'
 import type * as HKT from './HKT'
 import type { Show } from './Show'
 
-import * as A from './Array/core'
+import * as A from './collection/immutable/Array/core'
 import { identity } from './function'
 import * as It from './Iterable/core'
 import * as P from './prelude'

@@ -1,6 +1,6 @@
 import type { Eval } from './core'
 
-import * as A from '../Array/core'
+import * as A from '../collection/immutable/Array/core'
 import * as Ev from './core'
 
 /*

@@ -3,7 +3,7 @@ import type * as S from './Schemable'
 import type { InputOfPrism } from './util'
 import type * as HKT from '@principia/base/HKT'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import { flow, pipe } from '@principia/base/function'
 import * as M from '@principia/base/Maybe'
 import * as R from '@principia/base/Record'

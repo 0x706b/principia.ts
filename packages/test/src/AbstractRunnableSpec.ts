@@ -7,7 +7,7 @@ import type { Clock } from '@principia/base/Clock'
 import type { Has } from '@principia/base/Has'
 import type { URIO } from '@principia/base/IO'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 
 export abstract class AbstractRunnableSpec<R, E> {
   abstract aspects: ReadonlyArray<TestAspect<R, any>>

@@ -1,12 +1,12 @@
-import type { PredicateWithIndex } from '../prelude'
-import type { RefinementWithIndex } from '../Refinement'
+import type { PredicateWithIndex } from '../../../prelude'
+import type { RefinementWithIndex } from '../../../Refinement'
 
-import * as E from '../Either'
-import { pipe } from '../function'
-import * as Ix from '../Ix'
-import * as M from '../Maybe'
-import * as O from '../Optional'
-import * as Pr from '../Prism'
+import * as E from '../../../Either'
+import { pipe } from '../../../function'
+import * as Ix from '../../../Ix'
+import * as M from '../../../Maybe'
+import * as O from '../../../Optional'
+import * as Pr from '../../../Prism'
 import * as A from './core'
 
 export function findP<A, B extends A>(refinement: RefinementWithIndex<number, A, B>): Pr.Prism<ReadonlyArray<A>, B>

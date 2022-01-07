@@ -8,7 +8,7 @@ import type { FSync } from '@principia/base/Sync'
 import type { These } from '@principia/base/These'
 import type { UnionToIntersection } from '@principia/base/util/types'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as C from '@principia/base/collection/immutable/Conc'
 import * as Ev from '@principia/base/Eval'
 import { flow, memoize, pipe } from '@principia/base/function'

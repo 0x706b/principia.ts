@@ -1,7 +1,7 @@
 import type { Has, Tag } from './Has'
 import type * as P from './prelude'
 
-import * as A from './Array/core'
+import * as A from './collection/immutable/Array/core'
 import { pipe } from './function'
 import { AtomicReference } from './internal/AtomicReference'
 import * as Sy from './Sync'

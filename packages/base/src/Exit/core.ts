@@ -3,7 +3,7 @@ import type { IO } from '../IO/core'
 import type { Predicate } from '../prelude'
 import type { Equatable, Hashable } from '../Structural'
 
-import * as A from '../Array/core'
+import * as A from '../collection/immutable/Array/core'
 import * as C from '../Cause'
 import * as Co from '../collection/immutable/Conc/core'
 import * as E from '../Either'

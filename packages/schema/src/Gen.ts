@@ -5,7 +5,7 @@ import type { Random } from '@principia/base/Random'
 import type { _A, _R, Primitive } from '@principia/base/util/types'
 import type { Sized } from '@principia/test/Sized'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/function'
 import * as O from '@principia/base/Maybe'

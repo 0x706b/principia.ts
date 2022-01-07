@@ -5,7 +5,7 @@ import type * as HKT from '@principia/base/HKT'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type * as P from '@principia/base/prelude'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import { Either } from '@principia/base/Either'
 import * as E from '@principia/base/Either'
 import { flow, pipe } from '@principia/base/function'

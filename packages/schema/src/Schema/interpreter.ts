@@ -45,7 +45,7 @@ import type { TaggedUnionS } from './taggedUnion'
 import type { Newtype } from '@principia/base/Newtype'
 import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import { HashMap } from '@principia/base/collection/mutable/HashMap'
 import { pipe, unsafeCoerce } from '@principia/base/function'
 import * as M from '@principia/base/Maybe'

@@ -10,7 +10,7 @@ import type { Server } from 'http'
 
 import '@principia/base/Operators'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as Fi from '@principia/base/Fiber'
 import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'

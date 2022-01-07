@@ -6,7 +6,7 @@ import type { NonEmptyArray } from '@principia/base/NonEmptyArray'
 import type * as P from '@principia/base/prelude'
 import type { UnionToIntersection } from '@principia/base/util/types'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as E from '@principia/base/Either'
 import { flow, identity, pipe, unsafeCoerce } from '@principia/base/function'
 import * as HS from '@principia/base/HashSet'

@@ -27,7 +27,7 @@ import type { FailureReporter, FIO, IO, UIO, URIO } from './primitives'
 
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
 
-import * as A from '../Array/core'
+import * as A from '../collection/immutable/Array/core'
 import * as Ch from '../collection/immutable/Conc/core'
 import * as E from '../Either'
 import { NoSuchElementError } from '../Error'

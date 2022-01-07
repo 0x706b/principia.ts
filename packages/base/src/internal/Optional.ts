@@ -1,7 +1,7 @@
 import type { GetMaybeFn, ModifyMaybeFn_, Optional, POptional, POptionalMin } from '../Optional'
 import type { Predicate } from '../Predicate'
 
-import * as A from '../Array/core'
+import * as A from '../collection/immutable/Array/core'
 import * as E from '../Either'
 import { flow, identity, pipe } from '../function'
 import * as M from '../Maybe'

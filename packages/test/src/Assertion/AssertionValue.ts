@@ -3,7 +3,7 @@ import type { AssertionIO } from './AssertionM'
 import type { Eval } from '@principia/base/Eval'
 import type * as S from '@principia/base/Show'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as Ev from '@principia/base/Eval'
 import { pipe } from '@principia/base/function'
 import * as str from '@principia/base/string'

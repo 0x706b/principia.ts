@@ -18,14 +18,6 @@
       "import": "./dist/dist/esm/index.js",
       "require": "./dist/dist/cjs/index.js"
     },
-    "./Array": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/Array/index.js",
-        "require": "./dist/dist-traced/cjs/Array/index.js"
-      },
-      "import": "./dist/dist/esm/Array/index.js",
-      "require": "./dist/dist/cjs/Array/index.js"
-    },
     "./Async": {
       "traced": {
         "import": "./dist/dist-traced/esm/Async/index.js",
@@ -49,6 +41,14 @@
       },
       "import": "./dist/dist/esm/Channel/index.js",
       "require": "./dist/dist/cjs/Channel/index.js"
+    },
+    "./collection/immutable/Array": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/collection/immutable/Array/index.js",
+        "require": "./dist/dist-traced/cjs/collection/immutable/Array/index.js"
+      },
+      "import": "./dist/dist/esm/collection/immutable/Array/index.js",
+      "require": "./dist/dist/cjs/collection/immutable/Array/index.js"
     },
     "./collection/immutable/Conc": {
       "traced": {

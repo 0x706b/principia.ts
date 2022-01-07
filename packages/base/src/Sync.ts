@@ -3,7 +3,7 @@ import type { Vector } from './collection/immutable/Vector'
 import type { Has, Tag } from './Has'
 import type * as HKT from './HKT'
 
-import * as A from './Array/core'
+import * as A from './collection/immutable/Array/core'
 import * as E from './Either'
 import { NoSuchElementError } from './Error'
 import { flow, identity, pipe } from './function'

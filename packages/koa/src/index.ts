@@ -15,7 +15,7 @@ import type { DefaultContext, DefaultState, Middleware, Next, ParameterizedConte
 import '@principia/base/Operators'
 
 import KoaRouter from '@koa/router'
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import { putStrLnErr } from '@principia/base/Console'
 import * as Fi from '@principia/base/Fiber'
 import { flow } from '@principia/base/function'

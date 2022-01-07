@@ -3,7 +3,7 @@ import type { Conc } from '@principia/base/collection/immutable/Conc'
 import type { Maybe } from '@principia/base/Maybe'
 import type { UnionToIntersection } from '@principia/base/prelude'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as C from '@principia/base/collection/immutable/Conc'
 import * as E from '@principia/base/Either'
 import * as _ from '@principia/base/Eq'

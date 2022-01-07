@@ -8,7 +8,7 @@ import type { IO } from '@principia/base/IO'
 import type { _A, _E } from '@principia/base/prelude'
 import type * as P from '@principia/base/prelude'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as E from '@principia/base/Either'
 import * as Ex from '@principia/base/Exit'
 import * as FR from '@principia/base/FiberRef'

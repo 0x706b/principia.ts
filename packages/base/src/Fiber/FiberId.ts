@@ -1,4 +1,4 @@
-import * as A from '../Array/core'
+import * as A from '../collection/immutable/Array/core'
 import { pipe } from '../function'
 import * as HS from '../HashSet'
 import { AtomicNumber } from '../internal/AtomicNumber'

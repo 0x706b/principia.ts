@@ -8,7 +8,7 @@ import type { Has } from '@principia/base/Has'
 import type { Cause } from '@principia/base/IO/Cause'
 import type { Maybe } from '@principia/base/Maybe'
 
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as C from '@principia/base/collection/immutable/Conc'
 import { flow, identity, pipe } from '@principia/base/function'
 import * as Set from '@principia/base/HashSet'
