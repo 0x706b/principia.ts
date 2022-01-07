@@ -275,6 +275,38 @@ export function map<A, B>(f: (a: A) => B): (fa: List<A>) => List<B> {
 
 /*
  * -------------------------------------------------------------------------------------------------
+ * Monad
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function chain_<A, B>(ma: List<A>, f: (a: A) => List<B>): List<B> {
+  let rest       = ma
+  let h: Cons<B> = undefined!
+  let t: Cons<B> = undefined!
+  while (!isEmpty(rest)) {
+    let bs = f(rest.head)
+    while (!isEmpty(bs)) {
+      const nx = new Cons(bs.head, _Nil)
+      if (t === undefined) {
+        h = nx
+      } else {
+        t.tail = nx
+      }
+      t  = nx
+      bs = bs.tail
+    }
+    rest = rest.tail
+  }
+  if (h === undefined) return _Nil
+  else return h
+}
+
+export function chain<A, B>(f: (a: A) => List<B>): (ma: List<A>) => List<B> {
+  return (ma) => chain_(ma, f)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
  * combinators
  * -------------------------------------------------------------------------------------------------
  */
