@@ -12,11 +12,12 @@
  * for more information regarding copyright ownership
  */
 
-import type { Predicate } from '../../prelude'
+import type { Ord, Ordering, Predicate } from '../../prelude'
 
 import { NoSuchElementError } from '../../Error'
 import { unsafeCoerce } from '../../function'
 import * as M from '../../Maybe'
+import { ListBuffer } from '../mutable/ListBuffer'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -360,6 +361,36 @@ export function take(n: number): <A>(list: List<A>) => List<A> {
   return (list) => take_(list, n)
 }
 
+export function sort<A>(O: Ord<A>): (list: List<A>) => List<A> {
+  return (list) => sortWith_(list, O.compare_)
+}
+
+export function sortWith_<A>(list: List<A>, compare: (x: A, y: A) => Ordering): List<A> {
+  const len = length(list)
+  const b   = new ListBuffer<A>()
+  if (len === 1) {
+    b.append(unsafeHead(list))
+  } else if (len > 1) {
+    const arr = new Array<[number, A]>(len)
+    copyToArrayWithIndex(list, arr)
+    arr.sort(([i, x], [j, y]) => {
+      const c = compare(x, y)
+      return c !== 0 ? c : i < j ? -1 : 1
+    })
+    for (let i = 0; i < len; i++) {
+      b.append(arr[i][1])
+    }
+  }
+  return b.toList
+}
+
+/**
+ * @dataFirst sortWith_
+ */
+export function sortWith<A>(compare: (x: A, y: A) => Ordering): (list: List<A>) => List<A> {
+  return (list) => sortWith_(list, compare)
+}
+
 /*
  * -------------------------------------------------------------------------------------------------
  * filter
@@ -448,4 +479,14 @@ function partialFill<A>(origStart: List<A>, firstMiss: List<A>, p: Predicate<A>,
 
 function filterCommon_<A>(list: List<A>, p: Predicate<A>, isFlipped: boolean): List<A> {
   return noneIn(list, p, isFlipped)
+}
+
+function copyToArrayWithIndex<A>(list: List<A>, arr: Array<[number, A]>): void {
+  let these = list
+  let i     = 0
+  while (!isEmpty(these)) {
+    arr[i] = [i, these.head]
+    these  = these.tail
+    i++
+  }
 }
