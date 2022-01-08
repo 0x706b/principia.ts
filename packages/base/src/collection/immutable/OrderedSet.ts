@@ -1,7 +1,7 @@
-import type * as P from './prelude'
+import type * as P from '../../prelude'
 
+import { not } from '../../Predicate'
 import * as OM from './OrderedMap'
-import { not } from './Predicate'
 
 export class OrderedSet<A> implements Iterable<A> {
   constructor(readonly keyMap: OM.OrderedMap<A, null>) {}

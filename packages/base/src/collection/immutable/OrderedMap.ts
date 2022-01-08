@@ -4,12 +4,12 @@
  * Forked from https://github.com/mikolalysenko/functional-red-black-tree
  */
 
-import type { Stack } from './internal/Stack'
-import type { Maybe } from './Maybe'
-import type * as P from './prelude'
+import type { Stack } from '../../internal/Stack'
+import type { Maybe } from '../../Maybe'
+import type * as P from '../../prelude'
 
-import { makeStack } from './internal/Stack'
-import * as M from './Maybe'
+import { makeStack } from '../../internal/Stack'
+import * as M from '../../Maybe'
 
 export class OrderedMap<K, V> implements OrderedMapIterable<K, V> {
   constructor(readonly ord: P.Ord<K>, readonly root: Node<K, V> | Leaf) {}

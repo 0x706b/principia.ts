@@ -12,8 +12,8 @@ import * as Equ from '../../../Structural/Equatable'
 import * as Ha from '../../../Structural/Hashable'
 import { tuple } from '../../../tuple/core'
 import * as It from '../../Iterable/core'
-import { HashSet } from '../HashSet'
-import { _EmptyNode, EmptyNode, fromBitmap, hashFragment, isEmptyNode, SIZE, toBitmap } from './internal'
+import * as HS from '../HashSet'
+import { _EmptyNode, fromBitmap, hashFragment, isEmptyNode, SIZE, toBitmap } from './internal'
 
 type Eq<A> = Eq.Eq<A>
 
@@ -159,7 +159,7 @@ export function get<K>(key: K) {
  * Does an entry exist for `key` in `map`? Uses custom `hash`.
  */
 export function hasHash_<K, V>(map: HashMap<K, V>, key: K, hash: number): boolean {
-  return M.isNothing(tryGetHash(map, key, hash))
+  return M.isJust(tryGetHash(map, key, hash))
 }
 
 /**
@@ -325,8 +325,15 @@ export function keys<K, V>(map: HashMap<K, V>): IterableIterator<K> {
 /**
  * Get the set of keys
  */
-export function keySet<K, V>(self: HashMap<K, V>): HashSet<K> {
-  return new HashSet(self)
+export function keySet<K, V>(self: HashMap<K, V>): HS.HashSet<K> {
+  return pipe(
+    HS.make(self.config),
+    HS.mutate((set) => {
+      iforEach_(self, (k) => {
+        HS.add_(set, k)
+      })
+    })
+  )
 }
 
 /**
