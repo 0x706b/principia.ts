@@ -15,8 +15,8 @@
 import type { Predicate } from '../../prelude'
 
 import { NoSuchElementError } from '../../Error'
-import * as Iter from '../../Iterable'
 import * as M from '../../Maybe'
+import * as Iter from '../Iterable'
 import * as L from './List'
 
 /*

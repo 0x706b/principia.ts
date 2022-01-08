@@ -3,8 +3,8 @@ import type * as HKT from './HKT'
 import type { Show } from './Show'
 
 import * as A from './collection/immutable/Array/core'
+import * as It from './collection/Iterable/core'
 import { identity } from './function'
-import * as It from './Iterable/core'
 import * as P from './prelude'
 
 /*

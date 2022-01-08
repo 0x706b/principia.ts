@@ -7,7 +7,7 @@ import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
 import * as Ch from '../../collection/immutable/Conc/core'
 import * as Fiber from '../../Fiber'
-import * as I from '../../Iterable'
+import * as I from '../../collection/Iterable'
 import { chain_, foreach_, fork, map_, unit } from '../core'
 
 /**

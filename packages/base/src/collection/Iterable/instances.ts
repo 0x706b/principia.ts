@@ -1,6 +1,6 @@
-import type * as HKT from '../HKT'
+import type * as HKT from '../../HKT'
 
-import * as P from '../prelude'
+import * as P from '../../prelude'
 import {
   ap_,
   chain_,

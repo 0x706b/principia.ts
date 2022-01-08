@@ -7,7 +7,7 @@ import * as A from '../../collection/immutable/Array/core'
 import * as C from '../../collection/immutable/Conc/core'
 import * as HM from '../../collection/immutable/HashMap'
 import { pipe } from '../../function'
-import * as It from '../../Iterable'
+import * as It from '../../collection/Iterable'
 import * as M from '../../Maybe'
 import {
   isAnyArrayBuffer,

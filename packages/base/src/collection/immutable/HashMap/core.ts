@@ -6,12 +6,12 @@ import type { Node, UpdateFn } from './internal'
 
 import * as E from '../../../Either'
 import { constant, identity, pipe } from '../../../function'
-import * as It from '../../../Iterable/core'
 import * as M from '../../../Maybe'
 import * as P from '../../../prelude'
 import * as Equ from '../../../Structural/Equatable'
 import * as Ha from '../../../Structural/Hashable'
 import { tuple } from '../../../tuple/core'
+import * as It from '../../Iterable/core'
 import { HashSet } from '../HashSet'
 import { Empty, fromBitmap, hashFragment, isEmptyNode, SIZE, toBitmap } from './internal'
 

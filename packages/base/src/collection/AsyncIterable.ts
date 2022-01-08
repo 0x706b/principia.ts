@@ -1,10 +1,10 @@
-import type { Either } from './Either'
-import type * as HKT from './HKT'
-import type { Maybe } from './Maybe'
+import type { Either } from '../Either'
+import type * as HKT from '../HKT'
+import type { Maybe } from '../Maybe'
 
-import { identity } from './function'
-import * as P from './prelude'
-import { tuple } from './tuple/core'
+import { identity } from '../function'
+import * as P from '../prelude'
+import { tuple } from '../tuple/core'
 
 export interface AsyncIterableF extends HKT.HKT {
   readonly type: AsyncIterable<this['A']>

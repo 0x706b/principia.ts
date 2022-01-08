@@ -3,7 +3,7 @@ import type { Fiber } from '../core'
 import type { FiberId } from '../FiberId'
 
 import * as I from '../../IO/core'
-import * as Iter from '../../Iterable'
+import * as Iter from '../../collection/Iterable'
 
 /**
  * Interrupts all fibers as by the specified fiber, awaiting their interruption.

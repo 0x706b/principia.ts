@@ -1,7 +1,7 @@
-import type * as HKT from '../HKT'
-import type * as P from '../prelude'
+import type * as HKT from '../../HKT'
+import type * as P from '../../prelude'
 
-import * as C from '../collection/immutable/Conc/core'
+import * as C from '../immutable/Conc/core'
 
 /*
  * -------------------------------------------------------------------------------------------------
