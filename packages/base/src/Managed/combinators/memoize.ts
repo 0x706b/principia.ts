@@ -4,7 +4,7 @@ import { traceAs } from '@principia/compile/util'
 
 import { pipe } from '../../function'
 import * as F from '../../Future'
-import * as HM from '../../HashMap'
+import * as HM from '../../collection/immutable/HashMap'
 import { fulfill } from '../../IO/combinators/fulfill'
 import * as I from '../../IO/core'
 import * as M from '../../Maybe'

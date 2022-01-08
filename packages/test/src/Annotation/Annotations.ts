@@ -5,12 +5,12 @@ import type { IO, UIO, URIO } from '@principia/base/IO'
 import type { Layer } from '@principia/base/Layer'
 
 import * as C from '@principia/base/collection/immutable/Conc'
+import * as HS from '@principia/base/collection/immutable/HashSet'
 import * as E from '@principia/base/Either'
 import { eqFiberId } from '@principia/base/Fiber'
 import * as FR from '@principia/base/FiberRef'
 import { flow, pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
-import * as HS from '@principia/base/HashSet'
 import * as I from '@principia/base/IO'
 import * as L from '@principia/base/Layer'
 

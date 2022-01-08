@@ -1,6 +1,6 @@
 import * as A from '../collection/immutable/Array/core'
 import { pipe } from '../function'
-import * as HS from '../HashSet'
+import * as HS from '../collection/immutable/HashSet'
 import { AtomicNumber } from '../internal/AtomicNumber'
 import * as P from '../prelude'
 import { isObject } from '../prelude'

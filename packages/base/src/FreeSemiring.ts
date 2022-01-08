@@ -1,17 +1,17 @@
 /*
  * Ported from https://github.com/zio/zio-prelude/blob/master/core/shared/src/main/scala/zio/prelude/ParSeq.scala
  */
-import type { HashSet } from './HashSet'
+import type { HashSet } from './collection/immutable/HashSet'
 import type * as HKT from './HKT'
 
-import * as A from './collection/immutable/Array/core'
 import * as B from './boolean'
+import * as A from './collection/immutable/Array/core'
+import * as HS from './collection/immutable/HashSet'
 import * as L from './collection/immutable/List'
 import { ListBuffer } from './collection/mutable/ListBuffer'
 import * as E from './Either'
 import * as Ev from './Eval'
 import { flow, hole, identity, pipe } from './function'
-import * as HS from './HashSet'
 import * as P from './prelude'
 import * as Eq from './Structural/Equatable'
 import * as Ha from './Structural/Hashable'

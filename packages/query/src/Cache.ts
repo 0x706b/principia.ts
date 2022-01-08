@@ -1,11 +1,11 @@
 import type { AnyRequest, Request } from './Request'
-import type { HashMap } from '@principia/base/HashMap'
+import type { HashMap } from '@principia/base/collection/immutable/HashMap'
 import type { _A, _E } from '@principia/base/prelude'
 import type { URef } from '@principia/base/Ref'
 
+import * as HM from '@principia/base/collection/immutable/HashMap'
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/function'
-import * as HM from '@principia/base/HashMap'
 import * as I from '@principia/base/IO'
 import * as M from '@principia/base/Maybe'
 import * as Ref from '@principia/base/Ref'

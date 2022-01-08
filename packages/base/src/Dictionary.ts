@@ -1,5 +1,5 @@
+import type { HashMap } from './collection/immutable/HashMap'
 import type { Either } from './Either'
-import type { HashMap } from './HashMap'
 import type * as HKT from './HKT'
 import type { Maybe } from './Maybe'
 import type { Predicate, PredicateWithIndex, Refinement, RefinementWithIndex } from './prelude'

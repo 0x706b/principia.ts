@@ -2,11 +2,11 @@ import type { Conc } from '../../collection/immutable/Conc'
 import type { TypedArray } from '../../prelude'
 import type { StyleFunction } from './styles'
 
-import * as A from '../../collection/immutable/Array/core'
 import { CaseClass } from '../../Case'
+import * as A from '../../collection/immutable/Array/core'
 import * as C from '../../collection/immutable/Conc/core'
+import * as HM from '../../collection/immutable/HashMap'
 import { pipe } from '../../function'
-import * as HM from '../../HashMap'
 import * as It from '../../Iterable'
 import * as M from '../../Maybe'
 import {

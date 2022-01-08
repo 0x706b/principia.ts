@@ -1,9 +1,9 @@
 import type { TestAnnotation } from './TestAnnotation'
-import type { HashMap } from '@principia/base/HashMap'
+import type { HashMap } from '@principia/base/collection/immutable/HashMap'
 
 import * as A from '@principia/base/collection/immutable/Array'
+import * as Map from '@principia/base/collection/immutable/HashMap'
 import { identity, pipe } from '@principia/base/function'
-import * as Map from '@principia/base/HashMap'
 import * as M from '@principia/base/Maybe'
 
 export class TestAnnotationMap {

@@ -1,7 +1,7 @@
+import type { HashMap } from '@principia/base/collection/immutable/HashMap'
 import type { Dictionary } from '@principia/base/Dictionary'
 import type * as Dict from '@principia/base/Dictionary'
 import type { Either } from '@principia/base/Either'
-import type { HashMap } from '@principia/base/HashMap'
 import type * as HKT from '@principia/base/HKT'
 import type { Maybe } from '@principia/base/Maybe'
 import type {

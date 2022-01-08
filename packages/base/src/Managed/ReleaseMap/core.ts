@@ -3,7 +3,7 @@ import type { Maybe } from '../../Maybe'
 import type { URef } from '../../Ref/core'
 
 import { absurd, flow, identity, increment, pipe } from '../../function'
-import * as HM from '../../HashMap'
+import * as HM from '../../collection/immutable/HashMap'
 import * as I from '../../IO/core'
 import * as M from '../../Maybe'
 import * as NT from '../../Newtype'

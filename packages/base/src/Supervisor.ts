@@ -5,7 +5,7 @@ import type { Exit } from './IO/Exit'
 import type * as M from './Maybe'
 
 import { pipe } from './function'
-import * as HS from './HashSet'
+import * as HS from './collection/immutable/HashSet'
 import * as I from './IO/core'
 
 export abstract class Supervisor<A> {

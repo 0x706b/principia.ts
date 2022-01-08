@@ -7,7 +7,7 @@ import { traceAs } from '@principia/compile/util'
 
 import { pipe } from '../../function'
 import * as F from '../../Future'
-import * as HM from '../../HashMap'
+import * as HM from '../../collection/immutable/HashMap'
 import * as M from '../../Maybe'
 import * as RefM from '../../SRef'
 import { tuple } from '../../tuple/core'

@@ -6,7 +6,7 @@ import type { Atomic } from './TRef'
 import type { TryCommit } from './TryCommit'
 import type { TxnId } from './TxnId'
 
-import * as HM from '../HashMap'
+import * as HM from '../collection/immutable/HashMap'
 import { defaultScheduler } from '../internal/Scheduler'
 import * as I from '../IO'
 import * as Ex from '../IO/Exit'

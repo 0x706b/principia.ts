@@ -7,10 +7,10 @@ import type { Sequential } from './Sequential'
 import type { List } from '@principia/base/collection/immutable/List'
 
 import * as C from '@principia/base/collection/immutable/Conc'
+import * as HS from '@principia/base/collection/immutable/HashSet'
 import * as L from '@principia/base/collection/immutable/List'
 import * as Ev from '@principia/base/Eval'
 import { identity, pipe } from '@principia/base/function'
-import * as HS from '@principia/base/HashSet'
 import * as I from '@principia/base/IO'
 import * as Ref from '@principia/base/Ref'
 

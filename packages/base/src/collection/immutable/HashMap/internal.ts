@@ -1,6 +1,6 @@
-import type { Eq } from '../Eq'
+import type { Eq } from '../../../Eq'
 
-import * as M from '../Maybe'
+import * as M from '../../../Maybe'
 
 /*
  * -------------------------------------------------------------------------------------------------

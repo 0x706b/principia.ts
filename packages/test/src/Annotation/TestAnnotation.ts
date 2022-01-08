@@ -4,10 +4,10 @@ import type { Tag } from '@principia/base/Has'
 import type { URef } from '@principia/base/Ref'
 
 import * as A from '@principia/base/collection/immutable/Array'
+import * as Set from '@principia/base/collection/immutable/HashSet'
 import * as E from '@principia/base/Either'
 import { absurd } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
-import * as Set from '@principia/base/HashSet'
 import * as St from '@principia/base/Structural'
 import { isObject } from '@principia/base/util/predicates'
 

@@ -1,9 +1,9 @@
 import type { SchemaAnnotation } from './SchemaAnnotation'
-import type { HashMap } from '@principia/base/HashMap'
+import type { HashMap } from '@principia/base/collection/immutable/HashMap'
 
 import * as A from '@principia/base/collection/immutable/Array'
+import * as HM from '@principia/base/collection/immutable/HashMap'
 import { identity, pipe } from '@principia/base/function'
-import * as HM from '@principia/base/HashMap'
 import * as O from '@principia/base/Maybe'
 
 export class SchemaAnnotationMap {

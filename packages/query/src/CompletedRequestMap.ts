@@ -1,9 +1,9 @@
 import type { AnyRequest, Request } from './Request'
-import type { HashMap } from '@principia/base/HashMap'
-import type { HashSet } from '@principia/base/HashSet'
+import type { HashMap } from '@principia/base/collection/immutable/HashMap'
+import type { HashSet } from '@principia/base/collection/immutable/HashSet'
 
+import * as HM from '@principia/base/collection/immutable/HashMap'
 import * as E from '@principia/base/Either'
-import * as HM from '@principia/base/HashMap'
 import * as M from '@principia/base/Maybe'
 
 export class CompletedRequestMap {

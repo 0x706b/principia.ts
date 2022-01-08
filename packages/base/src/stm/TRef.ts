@@ -1,4 +1,4 @@
-import type { HashMap } from '../HashMap'
+import type { HashMap } from '../collection/immutable/HashMap'
 import type * as T from '../IO'
 import type { Entry } from './Entry'
 import type { Journal, Todo } from './Journal'
