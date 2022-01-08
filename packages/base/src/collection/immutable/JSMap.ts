@@ -1,9 +1,9 @@
-import type * as HKT from './HKT'
+import type * as HKT from '../../HKT'
 
-import * as E from './Either'
-import { pipe } from './function'
-import * as M from './Maybe'
-import * as P from './prelude'
+import * as E from '../../Either'
+import { pipe } from '../../function'
+import * as M from '../../Maybe'
+import * as P from '../../prelude'
 
 export interface MapF extends HKT.HKT {
   readonly type: ReadonlyMap<this['K'], this['A']>

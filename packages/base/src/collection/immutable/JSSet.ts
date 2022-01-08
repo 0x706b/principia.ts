@@ -1,11 +1,11 @@
-import type * as E from './Either'
-import type * as M from './Maybe'
+import type * as E from '../../Either'
+import type * as M from '../../Maybe'
 
-import * as A from './collection/immutable/Array/core'
-import { identity } from './function'
-import { not } from './Predicate'
-import * as P from './prelude'
-import { tuple } from './tuple/core'
+import { identity } from '../../function'
+import { not } from '../../Predicate'
+import * as P from '../../prelude'
+import { tuple } from '../../tuple/core'
+import * as A from './Array/core'
 
 /*
  * -------------------------------------------------------------------------------------------------
