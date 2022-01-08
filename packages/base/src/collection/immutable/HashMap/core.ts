@@ -13,7 +13,7 @@ import * as Ha from '../../../Structural/Hashable'
 import { tuple } from '../../../tuple/core'
 import * as It from '../../Iterable/core'
 import { HashSet } from '../HashSet'
-import { Empty, fromBitmap, hashFragment, isEmptyNode, SIZE, toBitmap } from './internal'
+import { _EmptyNode, EmptyNode, fromBitmap, hashFragment, isEmptyNode, SIZE, toBitmap } from './internal'
 
 type Eq<A> = Eq.Eq<A>
 
@@ -94,7 +94,7 @@ export function isEmpty<K, V>(map: HashMap<K, V>): boolean {
  * Creates a new map
  */
 export function make<K, V>(K: Hash<K> & Eq<K>) {
-  return new HashMap<K, V>(false, 0, K, Empty, 0)
+  return new HashMap<K, V>(false, 0, K, _EmptyNode, 0)
 }
 
 /**
@@ -226,7 +226,7 @@ export function modify_<K, V>(map: HashMap<K, V>, key: K, f: UpdateFn<V>) {
  *
  * @dataFirst modify_
  */
-export function modify<K, V>(key: K, f: UpdateFn<V>) {
+export function modify<K, V>(key: K, f: (v: M.Maybe<V>) => M.Maybe<V>) {
   return (map: HashMap<K, V>) => modify_(map, key, f)
 }
 
@@ -726,7 +726,7 @@ export function partition<K, V>(
 export function ifoldl_<K, V, Z>(map: HashMap<K, V>, z: Z, f: (r: K, z: Z, v: V) => Z): Z {
   const root = map.root
   if (root._tag === 'LeafNode') return M.isJust(root.value) ? f(root.key, z, root.value.value) : z
-  if (root._tag === 'Empty') {
+  if (root._tag === 'EmptyNode') {
     return z
   }
   const toVisit = [root.children]

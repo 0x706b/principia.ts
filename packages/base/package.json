@@ -58,6 +58,22 @@
       "import": "./dist/dist/esm/collection/immutable/Conc/index.js",
       "require": "./dist/dist/cjs/collection/immutable/Conc/index.js"
     },
+    "./collection/immutable/HashMap": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/collection/immutable/HashMap/index.js",
+        "require": "./dist/dist-traced/cjs/collection/immutable/HashMap/index.js"
+      },
+      "import": "./dist/dist/esm/collection/immutable/HashMap/index.js",
+      "require": "./dist/dist/cjs/collection/immutable/HashMap/index.js"
+    },
+    "./collection/immutable/NonEmptyArray": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/collection/immutable/NonEmptyArray/index.js",
+        "require": "./dist/dist-traced/cjs/collection/immutable/NonEmptyArray/index.js"
+      },
+      "import": "./dist/dist/esm/collection/immutable/NonEmptyArray/index.js",
+      "require": "./dist/dist/cjs/collection/immutable/NonEmptyArray/index.js"
+    },
     "./collection/immutable/Vector": {
       "traced": {
         "import": "./dist/dist-traced/esm/collection/immutable/Vector/index.js",
@@ -65,6 +81,14 @@
       },
       "import": "./dist/dist/esm/collection/immutable/Vector/index.js",
       "require": "./dist/dist/cjs/collection/immutable/Vector/index.js"
+    },
+    "./collection/Iterable": {
+      "traced": {
+        "import": "./dist/dist-traced/esm/collection/Iterable/index.js",
+        "require": "./dist/dist-traced/cjs/collection/Iterable/index.js"
+      },
+      "import": "./dist/dist/esm/collection/Iterable/index.js",
+      "require": "./dist/dist/cjs/collection/Iterable/index.js"
     },
     "./Eval": {
       "traced": {
@@ -138,14 +162,6 @@
       "import": "./dist/dist/esm/IO/index.js",
       "require": "./dist/dist/cjs/IO/index.js"
     },
-    "./Iterable": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/Iterable/index.js",
-        "require": "./dist/dist-traced/cjs/Iterable/index.js"
-      },
-      "import": "./dist/dist/esm/Iterable/index.js",
-      "require": "./dist/dist/cjs/Iterable/index.js"
-    },
     "./Layer/combinators": {
       "traced": {
         "import": "./dist/dist-traced/esm/Layer/combinators/index.js",
@@ -193,14 +209,6 @@
       },
       "import": "./dist/dist/esm/Managed/ReleaseMap/index.js",
       "require": "./dist/dist/cjs/Managed/ReleaseMap/index.js"
-    },
-    "./NonEmptyArray": {
-      "traced": {
-        "import": "./dist/dist-traced/esm/NonEmptyArray/index.js",
-        "require": "./dist/dist-traced/cjs/NonEmptyArray/index.js"
-      },
-      "import": "./dist/dist/esm/NonEmptyArray/index.js",
-      "require": "./dist/dist/cjs/NonEmptyArray/index.js"
     },
     "./Optional": {
       "traced": {

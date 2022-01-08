@@ -1,8 +1,8 @@
 import type { Has } from '@principia/base/Has'
 import type { TestResult } from '@principia/test/Render'
 
-import * as A from '@principia/base/Array'
 import { Clock } from '@principia/base/Clock'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as C from '@principia/base/collection/immutable/Conc'
 import * as Fi from '@principia/base/Fiber'
 import { pipe } from '@principia/base/function'

@@ -1,6 +1,7 @@
-import * as A from '@principia/base/Array'
 import * as Ca from '@principia/base/Cause'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as Co from '@principia/base/collection/immutable/Conc'
+import * as S from '@principia/base/collection/immutable/JSSet'
 import * as E from '@principia/base/Either'
 import { IllegalArgumentError, isIllegalArgumentError, isIllegalStateError } from '@principia/base/Error'
 import { RuntimeException } from '@principia/base/Exception'
@@ -13,7 +14,6 @@ import * as I from '@principia/base/IO'
 import * as M from '@principia/base/Maybe'
 import * as N from '@principia/base/number'
 import * as Ref from '@principia/base/Ref'
-import * as S from '@principia/base/Set'
 import {
   all,
   anything,

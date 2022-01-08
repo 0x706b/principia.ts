@@ -1,4 +1,4 @@
-import * as A from '@principia/base/Array'
+import * as A from '@principia/base/collection/immutable/Array'
 import * as E from '@principia/base/Either'
 import { identity, pipe } from '@principia/base/function'
 import * as Id from '@principia/base/Identity'
