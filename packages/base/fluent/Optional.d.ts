@@ -1,7 +1,7 @@
+import type { ReadonlyRecord } from '@principia/base/collection/immutable/Record'
 import type * as HKT from '@principia/base/HKT'
 import type * as Op from '@principia/base/Optional'
 import type { Predicate } from '@principia/base/Predicate'
-import type { ReadonlyRecord } from '@principia/base/Record'
 import type { Refinement } from '@principia/base/Refinement'
 import type { Traversable } from '@principia/base/Traversable'
 import type { PTraversal, Traversal } from '@principia/base/Traversal'

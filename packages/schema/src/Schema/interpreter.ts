@@ -47,10 +47,10 @@ import type { Newtype } from '@principia/base/Newtype'
 
 import * as A from '@principia/base/collection/immutable/Array'
 import * as NA from '@principia/base/collection/immutable/NonEmptyArray'
+import * as R from '@principia/base/collection/immutable/Record'
 import { HashMap } from '@principia/base/collection/mutable/HashMap'
 import { pipe, unsafeCoerce } from '@principia/base/function'
 import * as M from '@principia/base/Maybe'
-import * as R from '@principia/base/Record'
 
 import { cacheThunk } from '../util'
 import { hasContinuation, SchemaContinuation } from './core'

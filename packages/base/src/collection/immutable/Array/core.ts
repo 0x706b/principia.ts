@@ -1,9 +1,9 @@
 import type { Byte } from '../../../Byte'
 import type { Either } from '../../../Either'
 import type { Maybe } from '../../../Maybe'
-import type { ReadonlyRecord } from '../../../Record'
 import type { These } from '../../../These'
 import type { NonEmptyArray } from '../NonEmptyArray'
+import type { ReadonlyRecord } from '../Record'
 
 import * as Ev from '../../../Eval/core'
 import { Applicative as ApplicativeEval } from '../../../Eval/instances'

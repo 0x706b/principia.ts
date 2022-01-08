@@ -8,11 +8,11 @@ import type { UnionToIntersection } from '@principia/base/util/types'
 
 import * as A from '@principia/base/collection/immutable/Array'
 import * as HS from '@principia/base/collection/immutable/HashSet'
+import * as HR from '@principia/base/collection/immutable/HeterogeneousRecord'
 import * as NA from '@principia/base/collection/immutable/NonEmptyArray'
+import * as R from '@principia/base/collection/immutable/Record'
 import * as E from '@principia/base/Either'
 import { flow, identity, pipe, unsafeCoerce } from '@principia/base/function'
-import * as HR from '@principia/base/HeterogeneousRecord'
-import * as R from '@principia/base/Record'
 import * as Set from '@principia/base/Set'
 
 import * as G from './Guard'

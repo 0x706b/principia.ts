@@ -4,13 +4,13 @@ import type { Has, Tag } from './Has'
 import type * as HKT from './HKT'
 
 import * as A from './collection/immutable/Array/core'
+import * as R from './collection/immutable/Record'
 import * as E from './Either'
 import { NoSuchElementError } from './Error'
 import { flow, identity, pipe } from './function'
 import { isTag, mergeEnvironments } from './Has'
 import * as M from './Maybe'
 import * as P from './prelude'
-import * as R from './Record'
 import * as Z from './Z'
 
 /*
@@ -753,9 +753,8 @@ export const iforeach_: <A, R, E, B>(as: Iterable<A>, f: (i: number, a: A) => Sy
 /**
  * @dataFirst iforeach_
  */
-export const iforeach: <A, R, E, B>(
-  f: (i: number, a: A) => Sync<R, E, B>
-) => (as: Iterable<A>) => Sync<R, E, Conc<B>> = Z.iforeach
+export const iforeach: <A, R, E, B>(f: (i: number, a: A) => Sync<R, E, B>) => (as: Iterable<A>) => Sync<R, E, Conc<B>> =
+  Z.iforeach
 
 export const foreach_: <A, R, E, B>(as: Iterable<A>, f: (a: A) => Sync<R, E, B>) => Sync<R, E, Conc<B>> = Z.foreach_
 

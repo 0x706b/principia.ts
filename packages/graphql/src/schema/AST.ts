@@ -37,7 +37,7 @@ import type {
 } from 'graphql'
 
 import * as A from '@principia/base/collection/immutable/Array'
-import * as R from '@principia/base/Record'
+import * as R from '@principia/base/collection/immutable/Record'
 import { Kind } from 'graphql'
 
 interface FieldDefinitionNodeArgs {

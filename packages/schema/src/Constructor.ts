@@ -4,9 +4,9 @@ import type { InputOfPrism } from './util'
 import type * as HKT from '@principia/base/HKT'
 
 import * as A from '@principia/base/collection/immutable/Array'
+import * as R from '@principia/base/collection/immutable/Record'
 import { flow, pipe } from '@principia/base/function'
 import * as M from '@principia/base/Maybe'
-import * as R from '@principia/base/Record'
 import * as Th from '@principia/base/These'
 import { isString } from '@principia/base/util/predicates'
 

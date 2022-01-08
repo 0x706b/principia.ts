@@ -1,4 +1,4 @@
-import * as R from '../Record'
+import * as R from '../collection/immutable/Record'
 import * as Str from '../string'
 
 const ANSI_BACKGROUND_OFFSET = 10

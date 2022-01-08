@@ -23,7 +23,7 @@ import type {
 } from 'graphql'
 
 import * as A from '@principia/base/collection/immutable/Array'
-import * as R from '@principia/base/Record'
+import * as R from '@principia/base/collection/immutable/Record'
 
 import { createDocumentNode, createObjectTypeDefinitionNode, createSchemaDefinitionNode } from './AST'
 import { BaseMutation, BaseQuery } from './SchemaBuilder'

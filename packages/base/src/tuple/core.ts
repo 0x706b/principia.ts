@@ -8,6 +8,31 @@ import * as S from '../Show'
 
 export const tuple = _.tuple
 
+export function updateAt_<C extends ReadonlyArray<unknown>, I extends keyof C & number, B>(
+  tuple: C,
+  i: I,
+  f: (a: C[I]) => B
+): { [J in keyof C]: J extends `${I}` ? B : C[J] } {
+  const length = tuple.length
+  const out    = Array(length)
+
+  for (let j = 0; j < length; j++) {
+    if (j === i) {
+      out[j] = f(tuple[j])
+    } else {
+      out[j] = tuple[j]
+    }
+  }
+  return out as any
+}
+
+export function updateAt<C extends ReadonlyArray<unknown>, I extends keyof C & number, B>(
+  i: I,
+  f: (a: C[I]) => B
+): (tuple: C) => { [J in keyof C]: J extends `${I}` ? B : C[J] } {
+  return (tuple) => updateAt_(tuple, i, f)
+}
+
 /*
  * -------------------------------------------------------------------------------------------------
  * Eq

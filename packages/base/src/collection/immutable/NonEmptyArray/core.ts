@@ -2,7 +2,7 @@ import type { Guard } from '../../../Guard'
 import type * as HKT from '../../../HKT'
 import type { These } from '../../../internal/These'
 import type { Endomorphism } from '../../../prelude'
-import type { ReadonlyRecord } from '../../../Record'
+import type { ReadonlyRecord } from '../Record'
 
 import * as Ev from '../../../Eval/core'
 import { Applicative as ApplicativeEval } from '../../../Eval/instances'

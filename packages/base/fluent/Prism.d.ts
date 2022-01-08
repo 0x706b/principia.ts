@@ -1,7 +1,7 @@
+import type { ReadonlyRecord } from '@principia/base/collection/immutable/Record'
 import type { Optional, POptional } from '@principia/base/Optional'
 import type { Predicate } from '@principia/base/Predicate'
 import type * as Pr from '@principia/base/Prism'
-import type { ReadonlyRecord } from '@principia/base/Record'
 import type { Refinement } from '@principia/base/Refinement'
 import type { PTraversal } from '@principia/base/Traversal'
 

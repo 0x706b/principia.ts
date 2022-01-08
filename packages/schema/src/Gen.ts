@@ -6,10 +6,10 @@ import type { _A, _R, Primitive } from '@principia/base/util/types'
 import type { Sized } from '@principia/test/Sized'
 
 import * as A from '@principia/base/collection/immutable/Array'
+import * as R from '@principia/base/collection/immutable/Record'
 import * as E from '@principia/base/Either'
 import { pipe } from '@principia/base/function'
 import * as O from '@principia/base/Maybe'
-import * as R from '@principia/base/Record'
 import * as G from '@principia/test/Gen'
 
 import { GenSURI, GuardSURI } from './Modules'

@@ -2,7 +2,7 @@ import type { UnnamedFieldDefinitionNode, UnnamedInputValueDefinitionNode } from
 import type { InputTypeConfig, OutputTypeConfig } from './config'
 import type { Resolver, Subscription, TypeResolver } from './Resolver'
 import type { ScalarFunctions } from './Scalar'
-import type { ReadonlyRecord } from '@principia/base/Record'
+import type { ReadonlyRecord } from '@principia/base/collection/immutable/Record'
 import type { Compute } from '@principia/base/util/compute'
 import type { _A, ExcludeMatchingProperties } from '@principia/base/util/types'
 import type {
@@ -16,7 +16,7 @@ import type {
 } from 'graphql'
 
 import * as A from '@principia/base/collection/immutable/Array'
-import * as R from '@principia/base/Record'
+import * as R from '@principia/base/collection/immutable/Record'
 
 import {
   addNameToUnnamedFieldDefinitionNode,

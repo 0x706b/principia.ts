@@ -1,23 +1,23 @@
 /**
  * Operations on heterogeneous records
  */
-import type { NonEmptyArray } from './collection/immutable/NonEmptyArray'
-import type * as HKT from './HKT'
-import type { EnforceNonEmptyRecord, UnionToIntersection } from './prelude'
+import type * as HKT from '../../HKT'
+import type { EnforceNonEmptyRecord, UnionToIntersection } from '../../prelude'
+import type { NonEmptyArray } from './NonEmptyArray'
 import type { ReadonlyRecord } from './Record'
 import type { List } from '@principia/typelevel/List'
 import type { AutoPath, Path } from '@principia/typelevel/Object'
 
-import * as A from './collection/immutable/Array/core'
-import * as Eq from './Eq'
-import * as Ev from './Eval'
-import { pipe, unsafeCoerce } from './function'
-import * as G from './Guard'
-import * as L from './Lens/core'
-import * as P from './prelude'
+import * as Eq from '../../Eq'
+import * as Ev from '../../Eval'
+import { pipe, unsafeCoerce } from '../../function'
+import * as G from '../../Guard'
+import * as L from '../../Lens/core'
+import * as P from '../../prelude'
+import * as S from '../../Show'
+import * as Str from '../../string'
+import * as A from './Array/core'
 import * as R from './Record'
-import * as S from './Show'
-import * as Str from './string'
 
 type Eq<A> = Eq.Eq<A>
 
@@ -27,15 +27,15 @@ type Eq<A> = Eq.Eq<A>
  * -------------------------------------------------------------------------------------------------
  */
 
-type EnsureLiteral<N> = string extends N ? never : [N] extends [P.UnionToIntersection<N>] ? N : never
+export type EnsureLiteral<N> = string extends N ? never : [N] extends [P.UnionToIntersection<N>] ? N : never
 
-type TestLiteral<N> = string extends N ? unknown : [N] extends [P.UnionToIntersection<N>] ? N : unknown
+export type TestLiteral<N> = string extends N ? unknown : [N] extends [P.UnionToIntersection<N>] ? N : unknown
 
-type EnsureNonexistentProperty<T, N extends string> = Extract<keyof T, N> extends never ? T : never
+export type EnsureNonexistentProperty<T, N extends string> = Extract<keyof T, N> extends never ? T : never
 
-type EnsureLiteralKeys<O> = string extends keyof O ? never : O
+export type EnsureLiteralKeys<O> = string extends keyof O ? never : O
 
-type EnsureLiteralTuple<A extends ReadonlyArray<unknown>> = unknown extends {
+export type EnsureLiteralTuple<A extends ReadonlyArray<unknown>> = unknown extends {
   [K in keyof A]: A[K] extends string ? TestLiteral<A[K]> : unknown
 }[number]
   ? never

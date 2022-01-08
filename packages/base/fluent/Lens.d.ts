@@ -1,10 +1,10 @@
+import type { ReadonlyRecord } from '@principia/base/collection/immutable/Record'
 import type * as HKT from '@principia/base/HKT'
 import type * as L from '@principia/base/Lens'
 import type { Optional, POptional } from '@principia/base/Optional'
 import type { Predicate } from '@principia/base/Predicate'
 import type * as P from '@principia/base/prelude'
 import type { PPrism } from '@principia/base/Prism'
-import type { ReadonlyRecord } from '@principia/base/Record'
 import type { Refinement } from '@principia/base/Refinement'
 import type { PTraversal, Traversal } from '@principia/base/Traversal'
 

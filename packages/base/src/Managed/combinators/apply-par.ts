@@ -1,6 +1,6 @@
 // tracing: off
 
-import type { ReadonlyRecord } from '../../Record'
+import type { ReadonlyRecord } from '../../collection/immutable/Record'
 import type { _E, _R, EnforceNonEmptyRecord } from '../../util/types'
 import type { Managed } from '../core'
 
@@ -9,7 +9,7 @@ import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compi
 import { concurrent, sequential } from '../../ExecutionStrategy'
 import * as FR from '../../FiberRef/core'
 import { identity, pipe } from '../../function'
-import * as R from '../../Record'
+import * as R from '../../collection/immutable/Record'
 import { tuple } from '../../tuple/core'
 import * as Ma from '../core'
 import * as I from '../internal/io'

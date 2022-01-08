@@ -3,7 +3,7 @@ import type { NonEmptyArray } from '@principia/base/collection/immutable/NonEmpt
 import type { _A, _R, UnionToIntersection } from '@principia/base/prelude'
 
 import * as A from '@principia/base/collection/immutable/Array'
-import * as HR from '@principia/base/HeterogeneousRecord'
+import * as HR from '@principia/base/collection/immutable/HeterogeneousRecord'
 
 import * as G from './core'
 

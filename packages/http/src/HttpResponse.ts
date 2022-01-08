@@ -1,7 +1,7 @@
 import type { Byte } from '@principia/base/Byte'
 import type { Conc } from '@principia/base/collection/immutable/Conc'
+import type { ReadonlyRecord } from '@principia/base/collection/immutable/Record'
 import type { FIO, IO, UIO } from '@principia/base/IO'
-import type { ReadonlyRecord } from '@principia/base/Record'
 import type * as http from 'http'
 import type { Readable } from 'stream'
 

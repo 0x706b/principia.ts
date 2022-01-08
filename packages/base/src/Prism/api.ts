@@ -1,9 +1,9 @@
 import type * as O from '../Optional/core'
 
 import * as A from '../collection/immutable/Array'
-import * as HR from '../HeterogeneousRecord'
+import * as HR from '../collection/immutable/HeterogeneousRecord'
 import * as L from '../internal/Lens'
-import * as R from '../Record'
+import * as R from '../collection/immutable/Record'
 import * as Tu from '../tuple'
 import * as Pr from './core'
 

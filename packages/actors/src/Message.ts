@@ -1,9 +1,9 @@
 import type { IsEqualTo } from '@principia/base/util/types'
 
+import * as D from '@principia/base/collection/immutable/Record'
 import { identity, pipe } from '@principia/base/function'
 import * as T from '@principia/base/IO'
 import * as M from '@principia/base/Maybe'
-import * as D from '@principia/base/Record'
 import * as TH from '@principia/base/These'
 import { tuple } from '@principia/base/tuple'
 import * as S from '@principia/schema'

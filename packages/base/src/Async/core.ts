@@ -3,8 +3,9 @@ import type * as HKT from '../HKT'
 import type { Stack } from '../internal/Stack'
 import type { Maybe } from '../Maybe'
 
-import * as A from '../collection/immutable/Array/core'
 import * as C from '../Cause/core'
+import * as A from '../collection/immutable/Array/core'
+import * as R from '../collection/immutable/Record'
 import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
 import * as Ex from '../Exit/core'
@@ -14,7 +15,6 @@ import { isTag, mergeEnvironments } from '../Has'
 import { makeStack } from '../internal/Stack'
 import { isMaybe } from '../Maybe'
 import * as P from '../prelude'
-import * as R from '../Record'
 import { tuple as mkTuple } from '../tuple/core'
 
 /*
