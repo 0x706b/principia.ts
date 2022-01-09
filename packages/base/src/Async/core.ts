@@ -15,6 +15,7 @@ import { isTag, mergeEnvironments } from '../Has'
 import { makeStack } from '../internal/Stack'
 import { isMaybe } from '../Maybe'
 import * as P from '../prelude'
+import { isObject } from '../prelude'
 import { tuple as mkTuple } from '../tuple/core'
 
 /*
@@ -51,14 +52,12 @@ export interface AsyncF extends HKT.HKT {
 
 export const AsyncTag = {
   Succeed: 'Succeed',
-  Total: 'Total',
-  Partial: 'Partial',
+  SucceedLazy: 'SucceedLazy',
   Defer: 'Defer',
-  Promise: 'Promise',
+  LiftPromise: 'LiftPromise',
   Chain: 'Chain',
   Match: 'Match',
   Asks: 'Asks',
-  Done: 'Done',
   Give: 'Give',
   Ensuring: 'Ensuring',
   All: 'All',
@@ -77,13 +76,11 @@ export type Concrete =
   | Chain<any, any, any, any, any, any>
   | Match<any, any, any, any, any, any, any, any, any>
   | Asks<any, any, any, any>
-  | Done<any, any>
   | Give<any, any, any>
   | Ensuring<any, any, any, any, any>
   | All<any, any, any>
   | Fail<any>
-  | Total<any>
-  | Partial<any, any>
+  | SucceedLazy<any>
   | Interrupt
 
 /**
@@ -101,26 +98,10 @@ export class Succeed<A> extends Async<unknown, never, A> {
   }
 }
 
-export class Total<A> extends Async<unknown, never, A> {
-  readonly _asyncTag = AsyncTag.Total
+export class SucceedLazy<A> extends Async<unknown, never, A> {
+  readonly _asyncTag = AsyncTag.SucceedLazy
 
   constructor(readonly thunk: () => A) {
-    super()
-  }
-}
-
-export class Partial<E, A> extends Async<unknown, E, A> {
-  readonly _asyncTag = AsyncTag.Partial
-
-  constructor(readonly thunk: () => A, readonly onThrow: (error: unknown) => E) {
-    super()
-  }
-}
-
-export class Done<E, A> extends Async<unknown, E, A> {
-  readonly _asyncTag = AsyncTag.Done
-
-  constructor(readonly exit: Exit<E, A>) {
     super()
   }
 }
@@ -170,7 +151,7 @@ export class Defer<R, E, A> extends Async<R, E, A> {
 }
 
 export class LiftPromise<E, A> extends Async<unknown, E, A> {
-  readonly _asyncTag = AsyncTag.Promise
+  readonly _asyncTag = AsyncTag.LiftPromise
 
   constructor(
     readonly promise: (onInterrupt: (f: () => void) => void) => Promise<A>,
@@ -208,6 +189,18 @@ export class Ensuring<R, E, A, R1, B> extends Async<R & R1, E, A> {
   }
 }
 
+const AsyncErrorTypeId = Symbol.for('@principia/base/Async/AsyncError')
+type AsyncErrorTypeId = typeof AsyncErrorTypeId
+
+export class AsyncError<E> {
+  readonly _typeId: AsyncErrorTypeId = AsyncErrorTypeId
+  constructor(readonly cause: Cause<E>) {}
+}
+
+function isAsyncError(u: unknown): u is AsyncError<unknown> {
+  return isObject(u) && '_typeId' in u && u['_typeId'] === AsyncErrorTypeId
+}
+
 /*
  * -------------------------------------------------------------------------------------------------
  * Constructors
@@ -238,12 +231,12 @@ export function haltLazy(defect: () => unknown): Async<unknown, never, never> {
   return defer(() => halt(defect()))
 }
 
-export function done<E, A>(exit: Exit<E, A>): Async<unknown, E, A> {
-  return new Done(exit)
+export function fromExit<E, A>(exit: Exit<E, A>): Async<unknown, E, A> {
+  return Ex.match_(exit, failCause, succeed)
 }
 
-export function doneLazy<E, A>(exit: () => Exit<E, A>): Async<unknown, E, A> {
-  return defer(() => done(exit()))
+export function fromExitLazy<E, A>(exit: () => Exit<E, A>): Async<unknown, E, A> {
+  return defer(() => fromExit(exit()))
 }
 
 export function defer<R, E, A>(factory: () => Async<R, E, A>): Async<R, E, A> {
@@ -277,11 +270,17 @@ export function async<E, A>(
 }
 
 export function succeedLazy<A>(thunk: () => A): Async<unknown, never, A> {
-  return new Total(thunk)
+  return new SucceedLazy(thunk)
 }
 
 export function tryCatch<E, A>(thunk: () => A, onThrow: (error: unknown) => E): Async<unknown, E, A> {
-  return new Partial(thunk, onThrow)
+  return succeedLazy(() => {
+    try {
+      return thunk()
+    } catch (e) {
+      throw new AsyncError(C.fail(onThrow(e)))
+    }
+  })
 }
 
 export function interrupt(): Async<unknown, never, never> {
@@ -944,7 +943,7 @@ export function bracket_<R, E, A, R1, E1, A1, R2, E2>(
               () => cause2
             )
           ),
-        () => done(ex)
+        () => fromExit(ex)
       )
     )
   )
@@ -1106,16 +1105,8 @@ export function runPromiseExitEnv_<R, E, A>(
                 current = continuation(nested.value)
                 break
               }
-              case AsyncTag.Total: {
+              case AsyncTag.SucceedLazy: {
                 current = continuation(nested.thunk())
-                break
-              }
-              case AsyncTag.Partial: {
-                try {
-                  current = continuation(nested.thunk())
-                } catch (e) {
-                  current = fail(nested.onThrow(e))
-                }
                 break
               }
               default: {
@@ -1144,16 +1135,8 @@ export function runPromiseExitEnv_<R, E, A>(
             }
             break
           }
-          case AsyncTag.Total: {
+          case AsyncTag.SucceedLazy: {
             current = succeed(I.thunk())
-            break
-          }
-          case AsyncTag.Partial: {
-            try {
-              current = succeed(I.thunk())
-            } catch (e) {
-              current = fail(I.onThrow(e))
-            }
             break
           }
           case AsyncTag.Fail: {
@@ -1166,24 +1149,6 @@ export function runPromiseExitEnv_<R, E, A>(
               failed  = true
               result  = fullCause
               current = undefined
-            }
-            break
-          }
-          case AsyncTag.Done: {
-            switch (I.exit._tag) {
-              case 'Failure': {
-                if (C.interrupted(I.exit.cause)) {
-                  interrupted = true
-                  current     = undefined
-                } else {
-                  current = failCause(I.exit.cause)
-                }
-                break
-              }
-              case 'Success': {
-                current = succeed(I.exit.value)
-                break
-              }
             }
             break
           }
@@ -1245,7 +1210,7 @@ export function runPromiseExitEnv_<R, E, A>(
             }
             break
           }
-          case AsyncTag.Promise: {
+          case AsyncTag.LiftPromise: {
             try {
               current = succeed(
                 await new CancellablePromise(
@@ -1270,7 +1235,11 @@ export function runPromiseExitEnv_<R, E, A>(
           }
         }
       } catch (e) {
-        current = halt(e)
+        if (isAsyncError(e)) {
+          current = failCause(e.cause)
+        } else {
+          current = halt(e)
+        }
       }
     }
     if (interruptionState.interrupted) {
