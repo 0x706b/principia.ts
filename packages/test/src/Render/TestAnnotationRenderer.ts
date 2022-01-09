@@ -55,7 +55,7 @@ export const retried: TestAnnotationRenderer = new LeafRenderer(TA.retried, ([ch
 )
 
 export const tagged: TestAnnotationRenderer = new LeafRenderer(TA.tagged, ([child, ..._]) =>
-  child.keyMap.size === 0
+  child.size === 0
     ? M.nothing()
     : M.just(`tagged: ${pipe(A.from(child), A.map(Str.surround('"')), A.join(', '))}`)
 )
