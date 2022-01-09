@@ -1213,30 +1213,31 @@ export function runPromiseExitEnv_<R, E, A>(
             const removeInterruptionListener = interruptionState.addListener(() => {
               innerInterruptionState.interrupt()
             })
-            const exits: ReadonlyArray<Exit<any, any>> = await Promise.all(
-              A.map_(I.asyncs, (a) =>
+            const exits: ReadonlyArray<readonly [number, Exit<any, any>]> = await Promise.all(
+              A.imap_(I.asyncs, (i, a) =>
                 runPromiseExitEnv_(a, currentEnvironment, innerInterruptionState).then((exit) => {
                   if (Ex.isFailure(exit)) {
                     innerInterruptionState.interrupt()
                   }
-                  return exit
+                  return [i, exit] as const
                 })
               )
             )
             removeInterruptionListener()
-            const results: Array<any>        = []
+            const results: Array<any>        = new Array(I.asyncs.length)
             let accumulatedCause: Cause<any> = C.empty
-            exits.forEach((exit) => {
+            for (let i = 0; i < exits.length; i++) {
+              const [index, exit] = exits[i]
               Ex.match_(
                 exit,
-                (c) => {
-                  accumulatedCause = C.both(accumulatedCause, c)
+                (cause) => {
+                  accumulatedCause = C.both(accumulatedCause, cause)
                 },
                 (value) => {
-                  results.push(value)
+                  results[index] = value
                 }
               )
-            })
+            }
             if (C.isEmpty(accumulatedCause)) {
               current = succeed(results)
             } else {
