@@ -7,6 +7,7 @@ import identity from './identity'
 import rewrite from './rewrite'
 import specifierExtension from './specifierExtension'
 import tag from './tag'
+import tco from './tco'
 import trace from './trace'
 import unflow from './unflow'
 import unpipe from './unpipe'
@@ -43,7 +44,8 @@ export default function bundle(
     addSpecifierExtension: specifierExtension(program, opts),
     computedCtorFields: classFields(program, opts),
     tag: tag(program, opts),
-    gen: gen(program, opts)
+    gen: gen(program, opts),
+    tco: tco(program)
   }
 
   return {
@@ -58,7 +60,8 @@ export default function bundle(
         untrace: B0.untrace.before(ctx),
         computedCtorFields: B0.computedCtorFields.before(ctx),
         tag: B0.tag.before(ctx),
-        gen: B0.gen.before(ctx)
+        gen: B0.gen.before(ctx),
+        tco: B0.tco.before(ctx)
       }
 
       return (sourceFile: ts.SourceFile) => {
@@ -72,8 +75,9 @@ export default function bundle(
         const df       = B1.dataFirst(unid)
         const tagged   = B1.tag(df)
         const gen      = B1.gen(tagged)
+        const tco      = B1.tco(gen)
 
-        return gen
+        return tco
       }
     },
     after(ctx: ts.TransformationContext) {
