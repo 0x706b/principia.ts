@@ -48,7 +48,7 @@ import * as FId from './FiberId'
 import { fiberName } from './fiberName'
 import * as State from './FiberState'
 import * as Status from './FiberStatus'
-import { SourceLocation, Trace, traceLocation, truncatedParentTrace } from './trace'
+import { SourceLocation, Trace, traceLocation, truncatedParentTrace } from './Trace'
 
 export type FiberRefLocals = Map<FR.Runtime<any>, unknown>
 
