@@ -92,8 +92,8 @@
     "@principia/compile": "^0.21.0"
   },
   "devDependencies": {
-    "@babel/cli": "^7.16.0",
-    "concurrently": "^6.5.1",
+    "@babel/cli": "^7.16.7",
+    "concurrently": "^7.0.0",
     "cpx": "^1.5.0",
     "prettier": "^2.5.1",
     "sort-package-json": "^1.53.1",

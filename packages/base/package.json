@@ -402,11 +402,11 @@
     "@principia/typelevel": "^0.1.1"
   },
   "devDependencies": {
-    "@babel/cli": "^7.16.0",
-    "@babel/core": "^7.16.5",
-    "@effect-ts/core": "^0.48.6",
+    "@babel/cli": "^7.16.7",
+    "@babel/core": "^7.16.7",
+    "@effect-ts/core": "^0.51.0",
     "babel-plugin-annotate-pure-calls": "^0.4.0",
-    "concurrently": "^6.5.1",
+    "concurrently": "^7.0.0",
     "cpx": "^1.5.0",
     "prettier": "^2.5.1",
     "sort-package-json": "^1.53.1",

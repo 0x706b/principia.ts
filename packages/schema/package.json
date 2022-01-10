@@ -62,7 +62,7 @@
     "fast-check": "^2.20.0"
   },
   "devDependencies": {
-    "concurrently": "^6.5.1",
+    "concurrently": "^7.0.0",
     "ts-patch": "^2.0.1",
     "typescript": "^4.5.4"
   },

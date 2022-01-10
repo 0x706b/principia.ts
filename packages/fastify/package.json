@@ -51,7 +51,7 @@
   "dependencies": {
     "@principia/base": "^0.30.0",
     "@principia/http": "^0.22.1",
-    "fastify": "^3.25.2"
+    "fastify": "^3.25.3"
   },
   "devDependencies": {
     "ts-patch": "^2.0.1",
