@@ -15,7 +15,7 @@ export const TestAnnotationTypeId = Symbol()
 export type TestAnnotationTypeId = typeof TestAnnotationTypeId
 
 export class TestAnnotation<V> {
-  readonly _V!: () => V;
+  readonly _V!: () => V
 
   readonly [TestAnnotationTypeId]: TestAnnotationTypeId = TestAnnotationTypeId
 

@@ -268,7 +268,7 @@ export const TagSTypeId = Symbol('@principia/schema/Schema/TagS')
 export type TagSTypeId = typeof TagSTypeId
 
 export class TagS<T extends string> extends Schema<URIS, unknown, T, PE.LiteralLE<T>, never, T, T, TagApi<T>> {
-  readonly _tag                     = 'Tag';
+  readonly _tag                     = 'Tag'
   readonly [TagSTypeId]: TagSTypeId = TagSTypeId
 
   constructor(readonly tag: T) {

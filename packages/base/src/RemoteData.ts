@@ -24,14 +24,14 @@ export type RemoteDataTypeId = typeof RemoteDataTypeId
 
 export class Initial {
   readonly _E!: () => never
-  readonly _A!: () => never;
+  readonly _A!: () => never
   readonly [RemoteDataTypeId]: RemoteDataTypeId = RemoteDataTypeId
   readonly _tag = 'Initial'
 }
 
 export class Loading {
   readonly _E!: () => never
-  readonly _A!: () => never;
+  readonly _A!: () => never
   readonly [RemoteDataTypeId]: RemoteDataTypeId = RemoteDataTypeId
   readonly _tag = 'Loading'
   constructor(readonly progress: Maybe<Progress>) {}
@@ -39,7 +39,7 @@ export class Loading {
 
 export class Success<A> {
   readonly _E!: () => never
-  readonly _A!: () => A;
+  readonly _A!: () => A
   readonly [RemoteDataTypeId]: RemoteDataTypeId = RemoteDataTypeId
   readonly _tag = 'Success'
   constructor(readonly value: A) {}
@@ -47,7 +47,7 @@ export class Success<A> {
 
 export class Failure<E> {
   readonly _E!: () => E
-  readonly _A!: () => never;
+  readonly _A!: () => never
   readonly [RemoteDataTypeId]: RemoteDataTypeId = RemoteDataTypeId
   readonly _tag = 'Failure'
   constructor(readonly error: E) {}

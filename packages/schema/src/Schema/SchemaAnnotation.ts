@@ -7,7 +7,7 @@ export const SchemaAnnotationTypeId = Symbol()
 export type SchemaAnnotationTypeId = typeof SchemaAnnotationTypeId
 
 export class SchemaAnnotation<V> implements Hashable, Equatable {
-  readonly _V!: () => V;
+  readonly _V!: () => V
 
   readonly [SchemaAnnotationTypeId]: SchemaAnnotationTypeId = SchemaAnnotationTypeId
 

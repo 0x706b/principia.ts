@@ -75,7 +75,7 @@ export abstract class Layer<R, E, A> {
    * layer, resulting in a new layer with the inputs of this layer, and the
    * outputs of the specified layer.
    */
-  ['>>>']<R1, E1, A1>(to: Layer<R1, E1, A1>): Layer<Erase<R1, A> & R, E | E1, A1>
+  ['>>>']<R1, E1, A1>(to: Layer<R1, E1, A1>): Layer<Erase<R1, A> & R, E | E1, A1>;
   ['>>>']<R1, E1, A1>(to: Layer<R1 & A, E1, A1>): Layer<R1 & R, E | E1, A1> {
     return this['+++'](identity<R1>())['>=>'](to)
   }

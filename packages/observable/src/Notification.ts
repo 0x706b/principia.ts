@@ -4,7 +4,7 @@ export const NextTypeId = Symbol.for('@principia/observable/Notification/Next')
 export type NextTypeId = typeof NextTypeId
 
 export class Next<A> {
-  readonly _tag                     = 'Next';
+  readonly _tag                     = 'Next'
   readonly [NextTypeId]: NextTypeId = NextTypeId
   constructor(readonly value: A) {}
 }
@@ -13,7 +13,7 @@ export const FailTypeId = Symbol.for('@principia/observable/Notification/Fail')
 export type FailTypeId = typeof FailTypeId
 
 export class Fail<E> {
-  readonly _tag                     = 'Fail';
+  readonly _tag                     = 'Fail'
   readonly [FailTypeId]: FailTypeId = FailTypeId
   constructor(readonly error: E) {}
 }
@@ -22,7 +22,7 @@ export const DefectTypeId = Symbol.for('@principia/observable/Notification/Defec
 export type DefectTypeId = typeof DefectTypeId
 
 export class Defect {
-  readonly _tag = 'Defect';
+  readonly _tag = 'Defect'
   readonly [DefectTypeId]: DefectTypeId = DefectTypeId
   constructor(readonly defect: unknown) {}
 }
@@ -31,7 +31,7 @@ export const CompleteTypeId = Symbol.for('@principia/observable/Notification/Com
 export type CompleteTypeId = typeof CompleteTypeId
 
 export class Complete {
-  readonly _tag = 'Complete';
+  readonly _tag = 'Complete'
   readonly [CompleteTypeId]: CompleteTypeId = CompleteTypeId
 }
 

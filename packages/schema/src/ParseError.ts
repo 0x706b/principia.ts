@@ -91,7 +91,7 @@ export function isDefaultLeaf<T extends object>(t: T): t is T & DefaultLeafE<T> 
 export const CompositionETypeId = Symbol()
 export type CompositionETypeId = typeof CompositionETypeId
 export class CompositionE<E> extends CaseClass<{ errors: NonEmptyArray<E> }> {
-  readonly _tag = 'CompositionE';
+  readonly _tag = 'CompositionE'
 
   readonly [CompositionETypeId]: CompositionETypeId = CompositionETypeId
 }

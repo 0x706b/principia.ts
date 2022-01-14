@@ -39,9 +39,9 @@ export const ManagedTypeId = Symbol.for('@principia/base/IO/Managed')
 export type ManagedTypeId = typeof ManagedTypeId
 
 export class Managed<R, E, A> {
-  readonly [ManagedTypeId]: ManagedTypeId = ManagedTypeId;
-  readonly [I._R]: (_: R) => void;
-  readonly [I._E]: () => E;
+  readonly [ManagedTypeId]: ManagedTypeId = ManagedTypeId
+  readonly [I._R]: (_: R) => void
+  readonly [I._E]: () => E
   readonly [I._A]: () => A
   constructor(readonly io: I.IO<R, E, readonly [Finalizer, A]>) {}
 }

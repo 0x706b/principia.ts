@@ -51,7 +51,7 @@ export interface Empty extends Equatable, Hashable {
 }
 
 export const EmptyConstructor = class Empty {
-  readonly _E!: () => never;
+  readonly _E!: () => never
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
   readonly _tag = CauseTag.Empty
@@ -93,7 +93,7 @@ export interface Fail<E> extends Equatable, Hashable {
 }
 
 export const FailConstructor = class Fail<E> implements Fail<E> {
-  readonly _E!: () => E;
+  readonly _E!: () => E
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
   readonly _tag = CauseTag.Fail
@@ -138,7 +138,7 @@ export interface Halt extends Equatable, Hashable {
 }
 
 export const HaltConstructor = class Halt implements Halt {
-  readonly _E!: () => never;
+  readonly _E!: () => never
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
   readonly _tag = CauseTag.Halt
@@ -183,7 +183,7 @@ export interface Interrupt<Id> extends Equatable, Hashable {
 }
 
 export const InterruptConstructor = class Interrupt<Id> implements Interrupt<Id> {
-  readonly _E!: () => never;
+  readonly _E!: () => never
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
   readonly _tag = CauseTag.Interrupt
@@ -230,7 +230,7 @@ export interface Then<Id, E> {
 }
 
 export const ThenConstructor = class Then<Id, E> {
-  readonly _E!: () => E;
+  readonly _E!: () => E
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
   readonly _tag = CauseTag.Then
@@ -275,7 +275,7 @@ export interface Both<Id, E> {
 }
 
 export const BothConstructor = class Both<Id, E> {
-  readonly _E!: () => E;
+  readonly _E!: () => E
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
   readonly _tag = CauseTag.Both
@@ -320,7 +320,7 @@ export interface Traced<Id, E> extends Equatable, Hashable {
 }
 
 export const TracedConstructor = class Traced<Id, E> {
-  readonly _E!: () => E;
+  readonly _E!: () => E
 
   readonly [CauseTypeId]: CauseTypeId = CauseTypeId
   readonly _tag = CauseTag.Traced

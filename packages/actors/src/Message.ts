@@ -78,10 +78,10 @@ export function Message<Tag extends string, Req extends S.AnyUS, Res extends S.A
     static ErrorSchema = M.fromNullable(Err)
     static Tag = Tag
 
-    readonly _tag = Tag;
+    readonly _tag = Tag
 
-    readonly [ResponseSchemaSymbol] = Res;
-    readonly [RequestSchemaSymbol] = Req;
+    readonly [ResponseSchemaSymbol] = Res
+    readonly [RequestSchemaSymbol] = Req
     readonly [ErrorSchemaSymbol] = M.fromNullable(Err)
 
     constructor(ps?: any) {

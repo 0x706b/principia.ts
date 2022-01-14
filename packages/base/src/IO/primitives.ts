@@ -67,9 +67,9 @@ export const IOURI = 'IO'
 export type IOURI = typeof IOURI
 
 export abstract class IO<R, E, A> {
-  readonly [_U]: IOURI;
-  readonly [_E]: () => E;
-  readonly [_A]: () => A;
+  readonly [_U]: IOURI
+  readonly [_E]: () => E
+  readonly [_A]: () => A
   readonly [_R]: (_: R) => void
 }
 
@@ -479,11 +479,11 @@ export type Canceler<R> = URIO<R, void>
 export abstract class FFI<R, E, A> extends IO<R, E, A> {
   readonly _tag = IOTag.FFI
   readonly _S1!: (_: unknown) => void
-  readonly _S2!: () => never;
+  readonly _S2!: () => never
 
-  readonly [_U]!: IOURI;
-  readonly [_E]!: () => E;
-  readonly [_A]!: () => A;
+  readonly [_U]!: IOURI
+  readonly [_E]!: () => E
+  readonly [_A]!: () => A
   readonly [_R]!: (_: R) => void
 
   get [_I](): Instruction {

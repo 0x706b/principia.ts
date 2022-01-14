@@ -81,7 +81,7 @@
         "avoidEscape": true
       }
     ],
-    "semi": [
+    "@typescript-eslint/semi": [
       "error",
       "never",
       {

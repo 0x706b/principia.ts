@@ -283,7 +283,7 @@ export class PropertiesS<P extends AnyUPRecord> extends Schema<
   PropertiesOptput<P>,
   { properties: P }
 > {
-  readonly _tag = 'Properties';
+  readonly _tag = 'Properties'
 
   readonly [PropertiesSTypeId]: PropertiesSTypeId = PropertiesSTypeId
   constructor(readonly properties: P) {
