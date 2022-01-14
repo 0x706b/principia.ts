@@ -1462,7 +1462,7 @@ interface RemoveListener {
 
 class InterruptionState {
   private isInterrupted = false
-  readonly listeners = new Set<() => void>()
+  readonly listeners    = new Set<() => void>()
 
   addListener(f: () => void): RemoveListener {
     this.listeners.add(f)

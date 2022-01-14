@@ -275,10 +275,10 @@ export function readUpstream<R, E, A>(r: State.Read<R, E>, cont: () => IO<R, E, 
 export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> {
   private input: ErasedExecutor<Env> | null = null
   private inProgressFinalizer: URIO<Env, Exit<unknown, unknown>> | null = null
-  private activeSubexecutor: Subexecutor<Env> | null = null
-  private doneStack: List<ErasedContinuation<Env>> = L.nil()
-  private done: Exit<unknown, unknown> | null = null
-  private cancelled: Exit<OutErr, OutDone> | null = null
+  private activeSubexecutor: Subexecutor<Env> | null                    = null
+  private doneStack: List<ErasedContinuation<Env>>                      = L.nil()
+  private done: Exit<unknown, unknown> | null                           = null
+  private cancelled: Exit<OutErr, OutDone> | null                       = null
   private emitted: unknown | null
   private currentChannel: ErasedChannel<Env> | null
   private closeLastSubstream: I.URIO<Env, unknown> | null = null

@@ -4,8 +4,8 @@ import type { IO } from '../core'
 
 import { traceAs } from '@principia/compile/util'
 
-import { flow, identity } from '../../function'
 import * as I from '../../collection/Iterable'
+import { flow, identity } from '../../function'
 import { either, map_ } from '../core'
 import { foreachC_ } from './foreachC'
 

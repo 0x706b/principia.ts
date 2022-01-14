@@ -3,8 +3,8 @@ import type { IO } from '../IO/core'
 import type { Predicate } from '../prelude'
 import type { Equatable, Hashable } from '../Structural'
 
-import * as A from '../collection/immutable/Array/core'
 import * as C from '../Cause'
+import * as A from '../collection/immutable/Array/core'
 import * as Co from '../collection/immutable/Conc/core'
 import * as E from '../Either'
 import { flow, identity, pipe } from '../function'
@@ -41,7 +41,7 @@ export interface Failure<Id, E> extends Equatable, Hashable {
 
 export const FailureConstructor = class Failure<Id, E> {
   readonly _E!: () => E
-  readonly _A!: () => never
+  readonly _A!: () => never;
 
   readonly [ExitTypeId]: ExitTypeId = ExitTypeId
   readonly _tag = ExitTag.Failure
@@ -69,7 +69,7 @@ export interface Success<A> extends Equatable, Hashable {
 
 export const SuccessConstructor = class Success<A> implements Hashable, Equatable {
   readonly _E!: () => never
-  readonly _A!: () => A
+  readonly _A!: () => A;
 
   readonly [ExitTypeId]: ExitTypeId = ExitTypeId
   readonly _tag = ExitTag.Success

@@ -53,13 +53,13 @@ export abstract class Random {
   abstract readonly nextBigIntBetween: (low: bigint, high: bigint) => I.UIO<bigint>
   abstract readonly nextArrayInt: (low: ArrayInt, high: ArrayInt) => I.UIO<ArrayInt>
 
-  static next = I.deriveLifted(RandomTag)([], ['next'], []).next
-  static nextBoolean = I.deriveLifted(RandomTag)([], ['nextBoolean'], []).nextBoolean
-  static nextIntBetween = I.deriveLifted(RandomTag)(['nextIntBetween'], [], []).nextIntBetween
-  static nextInt = I.deriveLifted(RandomTag)([], ['nextInt'], []).nextInt
-  static nextRange = I.deriveLifted(RandomTag)(['nextRange'], [], []).nextRange
+  static next              = I.deriveLifted(RandomTag)([], ['next'], []).next
+  static nextBoolean       = I.deriveLifted(RandomTag)([], ['nextBoolean'], []).nextBoolean
+  static nextIntBetween    = I.deriveLifted(RandomTag)(['nextIntBetween'], [], []).nextIntBetween
+  static nextInt           = I.deriveLifted(RandomTag)([], ['nextInt'], []).nextInt
+  static nextRange         = I.deriveLifted(RandomTag)(['nextRange'], [], []).nextRange
   static nextBigIntBetween = I.deriveLifted(RandomTag)(['nextBigIntBetween'], [], []).nextBigIntBetween
-  static nextArrayInt = I.deriveLifted(RandomTag)(['nextArrayInt'], [], []).nextArrayInt
+  static nextArrayInt      = I.deriveLifted(RandomTag)(['nextArrayInt'], [], []).nextArrayInt
 }
 
 export function withSeed(seed: number) {

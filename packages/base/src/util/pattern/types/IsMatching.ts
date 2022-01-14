@@ -50,8 +50,7 @@ export type IsMatching<A, P> =
       ? true
       : false
     : IsPlainObject<P> extends true
-    ? true extends (
-        // `true extends union` means "if some cases of the a union are matching"
+    ? true extends ( // `true extends union` means "if some cases of the a union are matching"
         A extends any // loop over the `a` union
           ? [keyof P & keyof A] extends [never] // if no common keys
             ? false

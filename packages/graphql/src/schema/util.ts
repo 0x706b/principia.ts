@@ -14,10 +14,9 @@ export type RequiredInputKeys<T extends InputRecord> = Exclude<keyof T, NonRequi
 export type TypeofInputRecord<T extends InputRecord> = Compute<
   {
     [k in NonRequiredInputKeys<T>]?: _A<T[k]>
-  } &
-    {
-      [k in RequiredInputKeys<T>]: _A<T[k]>
-    },
+  } & {
+    [k in RequiredInputKeys<T>]: _A<T[k]>
+  },
   'flat'
 >
 

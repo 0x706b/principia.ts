@@ -128,7 +128,7 @@ export abstract class KoaApp {
 
   private static _derived = I.deriveLifted(KoaAppTag)([], [], ['app', 'server'])
 
-  static app = KoaApp._derived.app
+  static app    = KoaApp._derived.app
   static server = KoaApp._derived.server
 
   static live: L.Layer<Has<KoaAppConfig> & Has<KoaRouterConfig>, never, Has<KoaApp>> = L.fromManaged(KoaAppTag)(

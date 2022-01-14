@@ -240,9 +240,9 @@ class Empty<A> extends ConcImplementation<A> {
   readonly _concTag = ConcTag.Empty
 
   length = 0
-  depth = 0
-  left = this
-  right = this
+  depth  = 0
+  left   = this
+  right  = this
   binary = false
   get(_: number): A {
     throw new ArrayIndexOutOfBoundsException(_)
@@ -286,7 +286,7 @@ class Concat<A> extends ConcImplementation<A> {
   readonly _concTag = ConcTag.Concat
 
   length = this.left.length + this.right.length
-  depth = 1 + Math.max(this.left.depth, this.right.depth)
+  depth  = 1 + Math.max(this.left.depth, this.right.depth)
   binary = this.left.binary && this.right.binary
   constructor(readonly left: ConcImplementation<A>, readonly right: ConcImplementation<A>) {
     super()
@@ -322,9 +322,9 @@ class AppendN<A> extends ConcImplementation<A> {
   readonly _concTag = ConcTag.AppendN
 
   length = this.start.length + this.bufferUsed
-  depth = 0
-  left = _Empty
-  right = _Empty
+  depth  = 0
+  left   = _Empty
+  right  = _Empty
 
   constructor(
     readonly start: ConcImplementation<A>,
@@ -400,8 +400,8 @@ class PrependN<A> extends ConcImplementation<A> {
   readonly _concTag = ConcTag.PrependN
 
   length = this.end.length + this.bufferUsed
-  left = _Empty
-  right = _Empty
+  left   = _Empty
+  right  = _Empty
 
   constructor(
     readonly end: ConcImplementation<A>,
@@ -475,8 +475,8 @@ class Update<A> extends ConcImplementation<A> {
   readonly _concTag = ConcTag.Update
 
   length = this.conc.length
-  left = _Empty
-  right = _Empty
+  left   = _Empty
+  right  = _Empty
 
   constructor(
     readonly conc: ConcImplementation<A>,
@@ -549,9 +549,9 @@ class Singleton<A> extends ConcImplementation<A> {
   readonly _concTag = ConcTag.Singleton
 
   length = 1
-  depth = 0
-  left = _Empty
-  right = _Empty
+  depth  = 0
+  left   = _Empty
+  right  = _Empty
   binary = isByte(this.value)
 
   constructor(readonly value: A) {
@@ -584,9 +584,9 @@ class Slice<A> extends ConcImplementation<A> {
   readonly _concTag = ConcTag.Slice
 
   length = this.l
-  depth = 0
-  left = _Empty
-  right = _Empty
+  depth  = 0
+  left   = _Empty
+  right  = _Empty
   binary = this.conc.binary
 
   constructor(readonly conc: ConcImplementation<A>, readonly offset: number, readonly l: number) {
@@ -620,9 +620,9 @@ class Chunk<A> extends ConcImplementation<A> {
   readonly _concTag = ConcTag.Conc
 
   length = this._array.length
-  depth = 0
-  left = _Empty
-  right = _Empty
+  depth  = 0
+  left   = _Empty
+  right  = _Empty
   binary = false
 
   constructor(readonly _array: ReadonlyArray<A>) {
@@ -659,9 +659,9 @@ class ByteChunk<A> extends ConcImplementation<A> {
   readonly _concTag = ConcTag.ByteChunk
 
   length = this._array.length
-  depth = 0
-  left = _Empty
-  right = _Empty
+  depth  = 0
+  left   = _Empty
+  right  = _Empty
   binary = true
 
   constructor(readonly _array: Uint8Array) {

@@ -1,6 +1,6 @@
+import * as HM from '../collection/immutable/HashMap'
 import { pipe } from '../function'
 import * as F from '../Future'
-import * as HM from '../collection/immutable/HashMap'
 import * as I from '../IO'
 import * as Ex from '../IO/Exit'
 import * as Ma from '../Managed'

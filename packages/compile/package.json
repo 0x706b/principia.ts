@@ -35,7 +35,8 @@
     "clean": "rimraf dist build tsbuildinfo",
     "clean:test": "rimraf build",
     "lint": "eslint .",
-    "postinstall": "ts-patch install"
+    "postinstall": "ts-patch install",
+    "prettier:write": "prettier -w src"
   },
   "publishConfig": {
     "access": "public",

@@ -9,9 +9,9 @@ export abstract class Console {
   abstract readonly putStrLnErr: (line: string) => I.UIO<void>
   abstract readonly putStrLnDebug: (line: string) => I.UIO<void>
 
-  static put = I.deriveLifted(ConsoleTag)(['put'], [], []).put
-  static putStrLn = I.deriveLifted(ConsoleTag)(['putStrLn'], [], []).putStrLn
-  static putStrLnErr = I.deriveLifted(ConsoleTag)(['putStrLnErr'], [], []).putStrLnErr
+  static put           = I.deriveLifted(ConsoleTag)(['put'], [], []).put
+  static putStrLn      = I.deriveLifted(ConsoleTag)(['putStrLn'], [], []).putStrLn
+  static putStrLnErr   = I.deriveLifted(ConsoleTag)(['putStrLnErr'], [], []).putStrLnErr
   static putStrLnDebug = I.deriveLifted(ConsoleTag)(['putStrLnDebug'], [], []).putStrLnDebug
 }
 

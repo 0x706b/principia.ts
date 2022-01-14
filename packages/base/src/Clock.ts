@@ -38,7 +38,7 @@ export abstract class Clock {
   abstract readonly sleep: (ms: number) => I.UIO<void>
 
   static currentTime = I.asksServiceIO(ClockTag)((_) => _.currentTime)
-  static sleep = (ms: number) => I.asksServiceIO(ClockTag)((_) => _.sleep(ms))
+  static sleep       = (ms: number) => I.asksServiceIO(ClockTag)((_) => _.sleep(ms))
 }
 
 /**

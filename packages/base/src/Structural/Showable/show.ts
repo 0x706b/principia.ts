@@ -6,8 +6,8 @@ import { CaseClass } from '../../Case'
 import * as A from '../../collection/immutable/Array/core'
 import * as C from '../../collection/immutable/Conc/core'
 import * as HM from '../../collection/immutable/HashMap'
-import { pipe } from '../../function'
 import * as It from '../../collection/Iterable'
+import { pipe } from '../../function'
 import * as M from '../../Maybe'
 import {
   isAnyArrayBuffer,

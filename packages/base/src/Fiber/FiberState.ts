@@ -26,8 +26,8 @@ export class Executing<E, A> {
 export class Done<E, A> {
   readonly _tag = 'Done'
 
-  readonly interrupted = C.empty
-  readonly status: FS.FiberStatus = new FS.Done()
+  readonly interrupted                = C.empty
+  readonly status: FS.FiberStatus     = new FS.Done()
   readonly interruptors: Set<FiberId> = new Set()
 
   constructor(readonly value: Exit<E, A>) {}

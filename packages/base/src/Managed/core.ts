@@ -1,19 +1,21 @@
 // tracing: off
 
 import type { Conc } from '../collection/immutable/Conc/core'
+import type { ReadonlyRecord } from '../collection/immutable/Record'
 import type { FiberId } from '../Fiber/FiberId'
 import type { Trace } from '../Fiber/Trace'
 import type { Has, Tag } from '../Has'
 import type { Cause } from '../IO/Cause'
 import type { Exit } from '../IO/Exit'
 import type * as P from '../prelude'
-import type { ReadonlyRecord } from '../collection/immutable/Record'
 import type { Finalizer, ReleaseMap } from './ReleaseMap'
 
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
 
 import * as A from '../collection/immutable/Array/core'
 import * as Co from '../collection/immutable/Conc/core'
+import * as R from '../collection/immutable/Record'
+import * as Iter from '../collection/Iterable'
 import * as E from '../Either'
 import { NoSuchElementError } from '../Error'
 import * as FR from '../FiberRef/core'
@@ -21,9 +23,7 @@ import { flow, identity as identityFn, pipe } from '../function'
 import { isTag } from '../Has'
 import * as C from '../IO/Cause'
 import * as Ex from '../IO/Exit/core'
-import * as Iter from '../collection/Iterable'
 import * as M from '../Maybe'
-import * as R from '../collection/immutable/Record'
 import * as Ref from '../Ref/core'
 import { tuple as mkTuple } from '../tuple/core'
 import * as I from './internal/io'
@@ -39,9 +39,9 @@ export const ManagedTypeId = Symbol.for('@principia/base/IO/Managed')
 export type ManagedTypeId = typeof ManagedTypeId
 
 export class Managed<R, E, A> {
-  readonly [ManagedTypeId]: ManagedTypeId = ManagedTypeId
-  readonly [I._R]: (_: R) => void
-  readonly [I._E]: () => E
+  readonly [ManagedTypeId]: ManagedTypeId = ManagedTypeId;
+  readonly [I._R]: (_: R) => void;
+  readonly [I._E]: () => E;
   readonly [I._A]: () => A
   constructor(readonly io: I.IO<R, E, readonly [Finalizer, A]>) {}
 }

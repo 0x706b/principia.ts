@@ -26,4 +26,8 @@ export interface PURItoFieldAlgebras {}
 
 export type InferredInputAlgebra<PURI extends InputPURIS> = InputAlgebra<PURItoInputAlgebras[PURI]>
 
-export type InferredFieldAlgebra<PURI extends FieldPURIS, Root, Ctx> = FieldAlgebra<PURItoFieldAlgebras[PURI], Root, Ctx>
+export type InferredFieldAlgebra<PURI extends FieldPURIS, Root, Ctx> = FieldAlgebra<
+  PURItoFieldAlgebras[PURI],
+  Root,
+  Ctx
+>

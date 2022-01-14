@@ -40,7 +40,7 @@ function uniformBigIntInternal(from: bigint, diff: bigint, rng: RandomGenerator)
  *
  * @public
  */
-function uniformBigIntDistribution(from: bigint, to: bigint): Distribution<bigint>;
+function uniformBigIntDistribution(from: bigint, to: bigint): Distribution<bigint>
 /**
  * Uniformly generate random bigint values between `from` (included) and `to` (included)
  *
@@ -50,7 +50,7 @@ function uniformBigIntDistribution(from: bigint, to: bigint): Distribution<bigin
  *
  * @public
  */
-function uniformBigIntDistribution(from: bigint, to: bigint, rng: RandomGenerator): [bigint, RandomGenerator];
+function uniformBigIntDistribution(from: bigint, to: bigint, rng: RandomGenerator): [bigint, RandomGenerator]
 function uniformBigIntDistribution(from: bigint, to: bigint, rng?: RandomGenerator) {
   const diff = to - from + BigInt(1)
   if (rng != null) {

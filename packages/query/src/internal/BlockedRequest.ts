@@ -8,7 +8,7 @@ export const BlockedRequestTypeId = Symbol('@principia/query/internal/BlockedReq
 export type BlockedRequestTypeId = typeof BlockedRequestTypeId
 
 export class BlockedRequest<A> {
-  readonly _A!: () => A
+  readonly _A!: () => A;
 
   readonly [BlockedRequestTypeId]: BlockedRequestTypeId = BlockedRequestTypeId
 

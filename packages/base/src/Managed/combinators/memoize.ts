@@ -2,9 +2,9 @@
 
 import { traceAs } from '@principia/compile/util'
 
+import * as HM from '../../collection/immutable/HashMap'
 import { pipe } from '../../function'
 import * as F from '../../Future'
-import * as HM from '../../collection/immutable/HashMap'
 import { fulfill } from '../../IO/combinators/fulfill'
 import * as I from '../../IO/core'
 import * as M from '../../Maybe'

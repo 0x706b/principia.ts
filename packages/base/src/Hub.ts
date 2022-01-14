@@ -1,12 +1,12 @@
 import type { MutableQueue } from './internal/MutableQueue'
 
 import * as C from './collection/immutable/Conc'
+import * as HM from './collection/immutable/HashMap'
 import { HashSet } from './collection/mutable/HashSet'
 import { concurrent } from './ExecutionStrategy'
 import * as Fi from './Fiber'
 import { identity, pipe } from './function'
 import * as F from './Future'
-import * as HM from './collection/immutable/HashMap'
 import { AtomicBoolean } from './internal/AtomicBoolean'
 import * as MQ from './internal/MutableQueue'
 import * as I from './IO'
@@ -363,15 +363,15 @@ export class ToQueue<RA, RB, EA, EB, A, B> extends QueueInternal<RA, never, EA, 
     super()
   }
   awaitShutdown = this.source.awaitShutdown
-  capacity = this.source.capacity
-  isShutdown = this.source.isShutdown
-  shutdown = this.source.shutdown
-  size = this.source.size
-  take = I.never
-  takeAll = I.succeed(C.empty<never>())
-  offer = (a: A): I.IO<RA, EA, boolean> => this.source.publish(a)
-  offerAll = (as: Iterable<A>): I.IO<RA, EA, boolean> => this.source.publishAll(as)
-  takeUpTo = (): I.IO<unknown, never, C.Conc<never>> => I.succeed(C.empty())
+  capacity      = this.source.capacity
+  isShutdown    = this.source.isShutdown
+  shutdown      = this.source.shutdown
+  size          = this.source.size
+  take          = I.never
+  takeAll       = I.succeed(C.empty<never>())
+  offer         = (a: A): I.IO<RA, EA, boolean> => this.source.publish(a)
+  offerAll      = (as: Iterable<A>): I.IO<RA, EA, boolean> => this.source.publishAll(as)
+  takeUpTo      = (): I.IO<unknown, never, C.Conc<never>> => I.succeed(C.empty())
 }
 
 /**
@@ -626,13 +626,13 @@ export class DimapIO<RA, RB, RC, RD, EA, EB, EC, ED, A, B, C, D> extends HubInte
     super()
   }
   awaitShutdown = this.source.awaitShutdown
-  capacity = this.source.capacity
-  isShutdown = this.source.isShutdown
-  shutdown = this.source.shutdown
-  size = this.source.size
-  subscribe = M.map_(this.source.subscribe, Q.mapIO(this.g))
-  publish = (c: C) => I.chain_(this.f(c), (a) => this.source.publish(a))
-  publishAll = (cs: Iterable<C>) => I.chain_(I.foreach_(cs, this.f), (as) => this.source.publishAll(as))
+  capacity      = this.source.capacity
+  isShutdown    = this.source.isShutdown
+  shutdown      = this.source.shutdown
+  size          = this.source.size
+  subscribe     = M.map_(this.source.subscribe, Q.mapIO(this.g))
+  publish       = (c: C) => I.chain_(this.f(c), (a) => this.source.publish(a))
+  publishAll    = (cs: Iterable<C>) => I.chain_(I.foreach_(cs, this.f), (as) => this.source.publishAll(as))
 }
 
 /**
@@ -695,13 +695,13 @@ export class FilterInputIO<RA, RA1, RB, EA, EA1, EB, A, B> extends HubInternal<R
     super()
   }
   awaitShutdown = this.source.awaitShutdown
-  capacity = this.source.capacity
-  isShutdown = this.source.isShutdown
-  shutdown = this.source.shutdown
-  size = this.source.size
-  subscribe = this.source.subscribe
-  publish = (a: A) => I.chain_(this.f(a), (b) => (b ? this.source.publish(a) : I.succeed(false)))
-  publishAll = (as: Iterable<A>) =>
+  capacity      = this.source.capacity
+  isShutdown    = this.source.isShutdown
+  shutdown      = this.source.shutdown
+  size          = this.source.size
+  subscribe     = this.source.subscribe
+  publish       = (a: A) => I.chain_(this.f(a), (b) => (b ? this.source.publish(a) : I.succeed(false)))
+  publishAll    = (as: Iterable<A>) =>
     I.chain_(I.filter_(as, this.f), (as) => (C.isNonEmpty(as) ? this.source.publishAll(as) : I.succeed(false)))
 }
 
@@ -748,13 +748,13 @@ export class FilterOutputIO<RA, RB, RB1, EA, EB, EB1, A, B> extends HubInternal<
     super()
   }
   awaitShutdown = this.source.awaitShutdown
-  capacity = this.source.capacity
-  isShutdown = this.source.isShutdown
-  shutdown = this.source.shutdown
-  size = this.source.size
-  subscribe = M.map_(this.source.subscribe, Q.filterOutputIO(this.f))
-  publish = (a: A) => this.source.publish(a)
-  publishAll = (as: Iterable<A>) => this.source.publishAll(as)
+  capacity      = this.source.capacity
+  isShutdown    = this.source.isShutdown
+  shutdown      = this.source.shutdown
+  size          = this.source.size
+  subscribe     = M.map_(this.source.subscribe, Q.filterOutputIO(this.f))
+  publish       = (a: A) => this.source.publish(a)
+  publishAll    = (as: Iterable<A>) => this.source.publishAll(as)
 }
 
 /**
@@ -1192,7 +1192,7 @@ export class BoundedHubArb<A> extends UHubInternal<A> {
   array: Array<A>
   publisherIndex = 0
   subscribers: Array<number>
-  subscriberCount = 0
+  subscriberCount  = 0
   subscribersIndex = 0
 
   readonly capacity: number
@@ -1371,7 +1371,7 @@ export class BoundedHubPow2<A> extends UHubInternal<A> {
   mask: number
   publisherIndex = 0
   subscribers: Array<number>
-  subscriberCount = 0
+  subscriberCount  = 0
   subscribersIndex = 0
 
   readonly capacity: number
@@ -1550,10 +1550,10 @@ class BoundedHubPow2Subcription<A> extends SubscriptionInternal<A> {
 }
 
 export class BoundedHubSingle<A> extends UHubInternal<A> {
-  publisherIndex = 0
+  publisherIndex  = 0
   subscriberCount = 0
-  subscribers = 0
-  value: A = null as unknown as A
+  subscribers     = 0
+  value: A        = null as unknown as A
 
   readonly capacity = 1
 
@@ -1685,7 +1685,7 @@ class Node<A> {
 }
 
 export class UnboundedHub<A> extends UHubInternal<A> {
-  publisherHead = new Node<A>(null, 0, null)
+  publisherHead  = new Node<A>(null, 0, null)
   publisherIndex = 0
   publisherTail: Node<A>
   subscribersIndex = 0

@@ -4,7 +4,7 @@ import type * as P from '@principia/base/prelude'
 
 import * as Eq from '@principia/base/Eq'
 import { eqFiberId } from '@principia/base/Fiber'
-import {DefaultEq, DefaultHash, hash} from '@principia/base/Structural'
+import { DefaultEq, DefaultHash, hash } from '@principia/base/Structural'
 
 export type WidenLiteral<A> = A extends string ? string : A extends number ? number : A extends boolean ? boolean : A
 

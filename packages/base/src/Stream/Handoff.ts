@@ -26,7 +26,7 @@ export const StateTypeId = Symbol.for('@principia/base/IO/Stream/Handoff/State')
 export const EmptyTypeId = Symbol.for('@principia/base/IO/Stream/Handoff/Empty')
 export class Empty {
   readonly [StateTypeId]: typeof StateTypeId = StateTypeId
-  readonly _typeId: typeof EmptyTypeId = EmptyTypeId
+  readonly _typeId: typeof EmptyTypeId       = EmptyTypeId
 
   constructor(readonly notifyConsumer: F.Future<never, void>) {}
 }
@@ -34,7 +34,7 @@ export class Empty {
 export const FullTypeId = Symbol.for('@principia/base/IO/Stream/Handoff/Full')
 export class Full<A> {
   readonly [StateTypeId]: typeof StateTypeId = StateTypeId
-  readonly _typeId: typeof FullTypeId = FullTypeId
+  readonly _typeId: typeof FullTypeId        = FullTypeId
 
   constructor(readonly a: A, readonly notifyConsumer: F.Future<never, void>) {}
 }

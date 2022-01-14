@@ -70,7 +70,7 @@ export function Schemed<S extends S.AnyS>(schema: S): Schemed<S> {
   const create = pipe(to(Ct.Schemable)(schema).parse, unsafeCondemn)
   // @ts-expect-error
   return class Schemed {
-    static [schemaField]   = schema
+    static [schemaField] = schema
     static [SchemedTypeId] = SchemedTypeId
     constructor(i?: S.CInputOf<S>) {
       if (i) {

@@ -46,7 +46,8 @@
     "clean:test": "rimraf build",
     "demo": "ts-node -r tsconfig-paths/register demo/demo.ts",
     "generateSubpaths": "ts-node ../../scripts/subpath.ts && sort-package-json && prettier --write package.json",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "prettier:write": "prettier -w src"
   },
   "dependencies": {
     "@principia/actors": "^0.22.6",

@@ -7,15 +7,15 @@ import type { Stack } from './internal/Stack'
 import type { Predicate } from './Predicate'
 import type { _E, _R } from './prelude'
 
-import * as A from './collection/immutable/Array/core'
 import * as Ca from './Cause'
+import * as A from './collection/immutable/Array/core'
 import * as C from './collection/immutable/Conc/core'
 import * as V from './collection/immutable/Vector/core'
+import * as I from './collection/Iterable/core'
 import * as E from './Either'
 import * as Ex from './Exit'
 import { flow, identity, pipe } from './function'
 import { makeStack } from './internal/Stack'
-import * as I from './collection/Iterable/core'
 import * as M from './Maybe'
 import * as P from './prelude'
 import { tuple } from './tuple/core'
@@ -83,7 +83,7 @@ const ZTag = {
 
 class Succeed<A> extends Z<never, unknown, never, unknown, never, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag = ZTag.Succeed
+  readonly _tag               = ZTag.Succeed
   constructor(readonly value: A) {
     super()
   }
@@ -91,7 +91,7 @@ class Succeed<A> extends Z<never, unknown, never, unknown, never, A> {
 
 class SucceedLazy<A> extends Z<never, unknown, never, unknown, never, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag = ZTag.SucceedLazy
+  readonly _tag               = ZTag.SucceedLazy
   constructor(readonly effect: () => A) {
     super()
   }
@@ -99,7 +99,7 @@ class SucceedLazy<A> extends Z<never, unknown, never, unknown, never, A> {
 
 class Defer<W, S1, S2, R, E, A> extends Z<W, S1, S2, R, E, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag = ZTag.Defer
+  readonly _tag               = ZTag.Defer
   constructor(readonly make: () => Z<W, S1, S2, R, E, A>) {
     super()
   }
@@ -107,7 +107,7 @@ class Defer<W, S1, S2, R, E, A> extends Z<W, S1, S2, R, E, A> {
 
 class Fail<E> extends Z<never, unknown, never, unknown, E, never> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag = ZTag.Fail
+  readonly _tag               = ZTag.Fail
   constructor(readonly cause: Cause<E>) {
     super()
   }
@@ -115,7 +115,7 @@ class Fail<E> extends Z<never, unknown, never, unknown, E, never> {
 
 class Modify<S1, S2, A> extends Z<never, S1, S2, unknown, never, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag = ZTag.Modify
+  readonly _tag               = ZTag.Modify
   constructor(readonly run: (s1: S1) => readonly [A, S2]) {
     super()
   }
@@ -123,7 +123,7 @@ class Modify<S1, S2, A> extends Z<never, S1, S2, unknown, never, A> {
 
 class Chain<W, S1, S2, R, E, A, W1, S3, Q, D, B> extends Z<W | W1, S1, S3, Q & R, D | E, B> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag = ZTag.Chain
+  readonly _tag               = ZTag.Chain
   constructor(readonly ma: Z<W, S1, S2, R, E, A>, readonly f: (a: A) => Z<W1, S2, S3, Q, D, B>) {
     super()
   }
@@ -138,7 +138,7 @@ class Match<W, S1, S2, S5, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C> extend
   B | C
 > {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag = ZTag.Match
+  readonly _tag               = ZTag.Match
   constructor(
     readonly z: Z<W, S1, S2, R, E, A>,
     readonly onFailure: (ws: C.Conc<W>, e: Cause<E>) => Z<W1, S5, S3, R1, E1, B>,
@@ -150,7 +150,7 @@ class Match<W, S1, S2, S5, R, E, A, W1, S3, R1, E1, B, W2, S4, R2, E2, C> extend
 
 class Asks<W, R0, S1, S2, R, E, A> extends Z<W, S1, S2, R0 & R, E, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag = ZTag.Asks
+  readonly _tag               = ZTag.Asks
   constructor(readonly asks: (r: R0) => Z<W, S1, S2, R, E, A>) {
     super()
   }
@@ -158,7 +158,7 @@ class Asks<W, R0, S1, S2, R, E, A> extends Z<W, S1, S2, R0 & R, E, A> {
 
 class Give<W, S1, S2, R, E, A> extends Z<W, S1, S2, unknown, E, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag = ZTag.Give
+  readonly _tag               = ZTag.Give
   constructor(readonly ma: Z<W, S1, S2, R, E, A>, readonly env: R) {
     super()
   }
@@ -166,7 +166,7 @@ class Give<W, S1, S2, R, E, A> extends Z<W, S1, S2, unknown, E, A> {
 
 class Tell<W> extends Z<W, unknown, never, unknown, never, void> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag = ZTag.Tell
+  readonly _tag               = ZTag.Tell
   constructor(readonly log: C.Conc<W>) {
     super()
   }
@@ -174,7 +174,7 @@ class Tell<W> extends Z<W, unknown, never, unknown, never, void> {
 
 class Censor<W, S1, S2, R, E, A, W1> extends Z<W1, S1, S2, R, E, A> {
   readonly [ZTypeId]: ZTypeId = ZTypeId
-  readonly _tag = ZTag.Censor
+  readonly _tag               = ZTag.Censor
   constructor(readonly ma: Z<W, S1, S2, R, E, A>, readonly modifyLog: (ws: C.Conc<W>) => C.Conc<W1>) {
     super()
   }

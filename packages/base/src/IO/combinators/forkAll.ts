@@ -6,8 +6,8 @@ import type { IO, URIO } from '../core'
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
 import * as Ch from '../../collection/immutable/Conc/core'
-import * as Fiber from '../../Fiber'
 import * as I from '../../collection/Iterable'
+import * as Fiber from '../../Fiber'
 import { chain_, foreach_, fork, map_, unit } from '../core'
 
 /**

@@ -62,7 +62,7 @@ export interface ETRef<E, A> extends TRef<E, E, A, A> {}
 
 export class Atomic<A> implements TRef<never, never, A, A> {
   readonly [TRefTypeId]: TRefTypeId = TRefTypeId
-  readonly _tag = 'Atomic'
+  readonly _tag                     = 'Atomic'
   readonly _EA!: () => never
   readonly _EB!: () => never
   readonly _A!: (_: A) => void
@@ -93,7 +93,7 @@ export class Atomic<A> implements TRef<never, never, A, A> {
 
 export class Derived<S, EA, EB, A, B> implements TRef<EA, EB, A, B> {
   readonly [TRefTypeId]: TRefTypeId = TRefTypeId
-  readonly _tag = 'Derived'
+  readonly _tag                     = 'Derived'
   readonly _EA!: () => EA
   readonly _EB!: () => EB
   readonly _A!: (_: A) => void
@@ -142,7 +142,7 @@ export class Derived<S, EA, EB, A, B> implements TRef<EA, EB, A, B> {
 
 export class DerivedAll<S, EA, EB, A, B> implements TRef<EA, EB, A, B> {
   readonly [TRefTypeId]: TRefTypeId = TRefTypeId
-  readonly _tag = 'DerivedAll'
+  readonly _tag                     = 'DerivedAll'
   readonly _EA!: () => EA
   readonly _EB!: () => EB
   readonly _A!: (_: A) => void

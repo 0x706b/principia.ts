@@ -18,7 +18,7 @@ export function Semiring<A>(S: SemiringMin<A>): Semiring<A> {
   return {
     ...S,
     add: (y) => (x) => S.add_(x, y),
-    mul: (y) => (x) => S.mul_(x, y),
+    mul: (y) => (x) => S.mul_(x, y)
   }
 }
 

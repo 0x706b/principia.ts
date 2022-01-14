@@ -15,21 +15,21 @@ export interface Eval<A> {
 
 export class Value<A> implements Eval<A> {
   readonly _tag = 0
-  readonly _A!: () => A
+  readonly _A!: () => A;
   readonly [EvalTypeId]: EvalTypeId = EvalTypeId
   constructor(readonly value: A) {}
 }
 
 export class Defer<A> implements Eval<A> {
   readonly _tag = 1
-  readonly _A!: () => A
+  readonly _A!: () => A;
   readonly [EvalTypeId]: EvalTypeId = EvalTypeId
   constructor(readonly make: () => Eval<A>) {}
 }
 
 export class Chain<A, B> implements Eval<B> {
   readonly _tag = 2
-  readonly _A!: () => B
+  readonly _A!: () => B;
   readonly [EvalTypeId]: EvalTypeId = EvalTypeId
   constructor(readonly ma: Eval<A>, readonly f: (a: A) => Eval<B>) {}
 }

@@ -83,7 +83,7 @@ export class TestConsole implements Console {
     )
   }
   constructor(readonly consoleState: URef<ConsoleData>, readonly live: Live, readonly debugState: UFiberRef<boolean>) {}
-  clearInput: UIO<void> = Ref.update_(this.consoleState, (data) => data.copy({ input: V.empty() }))
+  clearInput: UIO<void>  = Ref.update_(this.consoleState, (data) => data.copy({ input: V.empty() }))
   clearOutput: UIO<void> = Ref.update_(this.consoleState, (data) => data.copy({ output: V.empty() }))
   debug<R, E, A>(io: IO<R, E, A>): IO<R, E, A> {
     return FR.locally_(this.debugState, true, io)
@@ -91,8 +91,8 @@ export class TestConsole implements Console {
   feedLines(...lines: ReadonlyArray<string>): UIO<void> {
     return Ref.update_(this.consoleState, (data) => data.copy({ input: V.concat_(V.from(lines), data.input) }))
   }
-  output: UIO<ReadonlyArray<string>> = I.map_(this.consoleState.get, (data) => V.toArray(data.output))
-  outputErr: UIO<ReadonlyArray<string>> = I.map_(this.consoleState.get, (data) => V.toArray(data.errOutput))
+  output: UIO<ReadonlyArray<string>>      = I.map_(this.consoleState.get, (data) => V.toArray(data.output))
+  outputErr: UIO<ReadonlyArray<string>>   = I.map_(this.consoleState.get, (data) => V.toArray(data.errOutput))
   outputDebug: UIO<ReadonlyArray<string>> = I.map_(this.consoleState.get, (data) => V.toArray(data.debugOutput))
   silent<R, E, A>(io: IO<R, E, A>): IO<R, E, A> {
     return FR.locally_(this.debugState, false, io)

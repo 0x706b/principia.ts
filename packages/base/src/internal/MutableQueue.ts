@@ -136,8 +136,8 @@ class Node<A> {
 export class LinkedQueue<A> extends MutableQueue<A> {
   private head: Node<A>
   private tail: Node<A>
-  isFull = false
-  size = 0
+  isFull   = false
+  size     = 0
   capacity = Number.MAX_SAFE_INTEGER
   constructor() {
     super()
@@ -176,8 +176,8 @@ export abstract class RingBuffer<A> extends MutableQueue<A> {
     super()
   }
   private buf: Array<any> = new Array(this.capacity)
-  private head = 0
-  private tail = 0
+  private head            = 0
+  private tail            = 0
 
   abstract posToIdx(pos: number, capacity: number): number
 

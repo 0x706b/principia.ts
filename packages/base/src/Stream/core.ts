@@ -11,6 +11,7 @@ import { Clock } from '../Clock'
 import * as AI from '../collection/AsyncIterable'
 import * as C from '../collection/immutable/Conc'
 import * as HM from '../collection/immutable/HashMap'
+import * as It from '../collection/Iterable'
 import * as E from '../Either'
 import { IllegalArgumentError } from '../Error'
 import * as F from '../Fiber'
@@ -20,7 +21,6 @@ import * as H from '../Hub'
 import * as I from '../IO'
 import * as Ca from '../IO/Cause'
 import * as Ex from '../IO/Exit'
-import * as It from '../collection/Iterable'
 import * as La from '../Layer'
 import * as Ma from '../Managed'
 import * as M from '../Maybe'
@@ -2232,7 +2232,7 @@ export function catchJustCause<R1, E, E1, A1>(pf: (e: Ca.Cause<E>) => M.Maybe<St
 
 class Rechunker<A> {
   private builder: Array<A> = []
-  private pos = 0
+  private pos               = 0
 
   constructor(readonly n: number) {}
 

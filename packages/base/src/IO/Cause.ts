@@ -1,7 +1,7 @@
 import type { FiberId } from '../Fiber/FiberId'
 
-import * as A from '../collection/immutable/Array/core'
 import * as C from '../Cause'
+import * as A from '../collection/immutable/Array/core'
 import { prettyTrace } from '../Fiber/Trace'
 import { pipe } from '../function'
 
@@ -30,7 +30,7 @@ export const defaultRenderer: C.Renderer<FiberId> = {
 export const defaultPrettyPrint = C.makePrettyPrint(defaultRenderer)
 
 export class FiberFailure<E> extends Error {
-  readonly _tag = 'FiberFailure'
+  readonly _tag   = 'FiberFailure'
   readonly pretty = defaultPrettyPrint(this.cause)
 
   constructor(readonly cause: C.PCause<FiberId, E>) {

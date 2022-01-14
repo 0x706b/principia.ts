@@ -64,7 +64,7 @@ export type ObservableTypeId = typeof ObservableTypeId
 
 export class Observable<E, A> implements Subscribable<E, A> {
   readonly _E!: () => E
-  readonly _A!: () => A
+  readonly _A!: () => A;
 
   readonly [ObservableTypeId]: ObservableTypeId = ObservableTypeId
 

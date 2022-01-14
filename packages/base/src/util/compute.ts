@@ -6,12 +6,12 @@
 /**
  * @hidden
  */
-export type ComputeRaw<A extends any> = A extends Function ? A : { [K in keyof A]: A[K] } & unknown
+export type ComputeRaw<A> = A extends Function ? A : { [K in keyof A]: A[K] } & unknown
 
 /**
  * @hidden
  */
-type ComputeFlat<A extends any> = A extends BuiltIn
+type ComputeFlat<A> = A extends BuiltIn
   ? A
   : A extends Array<any>
   ? A extends Array<Record<Key, any>>
@@ -26,7 +26,7 @@ type ComputeFlat<A extends any> = A extends BuiltIn
 /**
  * @hidden
  */
-type ComputeDeep<A extends any, Seen = never> = A extends BuiltIn
+type ComputeDeep<A, Seen = never> = A extends BuiltIn
   ? A
   : If<
       Has<Seen, A>,
@@ -49,7 +49,7 @@ type ComputeDeep<A extends any, Seen = never> = A extends BuiltIn
  * @returns `A`
  * @example
  */
-export type Compute<A extends any, depth extends Depth = 'deep'> = {
+export type Compute<A, depth extends Depth = 'deep'> = {
   flat: ComputeFlat<A>
   deep: ComputeDeep<A>
 }[depth]
@@ -67,7 +67,7 @@ type Key = string | number | symbol
  * @returns [[Boolean]]
  * @example
  */
-type Has<U extends any, U1 extends any> = [U1] extends [U] ? 1 : 0
+type Has<U, U1> = [U1] extends [U] ? 1 : 0
 
 type BuiltIn = Function | Error | Date | { readonly [Symbol.toStringTag]: string } | RegExp | Generator
 

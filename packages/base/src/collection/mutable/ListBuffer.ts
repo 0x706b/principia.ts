@@ -16,7 +16,7 @@ import { IndexOutOfBoundsError, NoSuchElementError } from '../../Error'
 import * as L from '../immutable/List'
 
 export class ListBuffer<A> implements Iterable<A> {
-  private first: L.List<A> = L._Nil
+  private first: L.List<A>             = L._Nil
   private last0: L.Cons<A> | undefined = undefined
   private len = 0;
 

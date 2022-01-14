@@ -58,5 +58,4 @@ export function traceAs<F extends Function>(g: any, f: F): F {
   return f
 }
 
-
 export * from './global'

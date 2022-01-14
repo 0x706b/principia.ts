@@ -106,16 +106,16 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
   private state = State.initial<E, A>()
 
-  private asyncEpoch = 0 | 0
-  private stack = undefined as Stack<Frame> | undefined
-  private interruptStatus = makeStack(this.initialInterruptStatus.toBoolean) as Stack<boolean> | undefined
-  private currentSupervisor = this.initialSupervisor
+  private asyncEpoch         = 0 | 0
+  private stack              = undefined as Stack<Frame> | undefined
+  private interruptStatus    = makeStack(this.initialInterruptStatus.toBoolean) as Stack<boolean> | undefined
+  private currentSupervisor  = this.initialSupervisor
   private traceStatusEnabled = this.platform.traceExecution || this.platform.traceStack
-  private executionTraces = this.traceStatusEnabled
+  private executionTraces    = this.traceStatusEnabled
     ? MQ.bounded<TraceElement>(this.platform.executionTraceLength)
     : undefined
-  private stackTraces = this.traceStatusEnabled ? MQ.bounded<TraceElement>(this.platform.stackTraceLength) : undefined
-  private traceStatusStack = this.traceStatusEnabled ? makeStack(true) : undefined
+  private stackTraces        = this.traceStatusEnabled ? MQ.bounded<TraceElement>(this.platform.stackTraceLength) : undefined
+  private traceStatusStack   = this.traceStatusEnabled ? makeStack(true) : undefined
   nextIO: Instruction | null = null
 
   constructor(

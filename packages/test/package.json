@@ -85,7 +85,8 @@
     "clean": "rimraf dist build tsbuildinfo",
     "clean:test": "rimraf build",
     "generateSubpaths": "ts-node ../../scripts/subpath.ts && sort-package-json && prettier --write package.json",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "prettier:write": "prettier -w src"
   },
   "dependencies": {
     "@principia/base": "^0.30.0",
