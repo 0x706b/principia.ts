@@ -1,6 +1,5 @@
 import * as E from '../Either'
 import { flow, identity, pipe } from '../function'
-import { AtomicReference } from '../internal/AtomicReference'
 import * as M from '../Maybe'
 import * as S from '../Sync'
 import { tuple } from '../tuple/core'
@@ -31,7 +30,7 @@ export interface SyncRef<EA, EB, A, B> {
 export class Atomic<A> implements SyncRef<never, never, A, A> {
   readonly _tag = 'Atomic'
 
-  constructor(readonly value: AtomicReference<A>) {
+  constructor(private value: A) {
     this.match    = this.match.bind(this)
     this.matchAll = this.matchAll.bind(this)
     this.set      = this.set.bind(this)
@@ -57,13 +56,21 @@ export class Atomic<A> implements SyncRef<never, never, A, A> {
   }
 
   get get(): S.USync<A> {
-    return S.succeedLazy(() => this.value.get)
+    return S.succeedLazy(() => this.value)
   }
 
   set(a: A): S.USync<void> {
     return S.succeedLazy(() => {
-      this.value.set(a)
+      this.value = a
     })
+  }
+
+  get unsafeGet(): A {
+    return this.value
+  }
+
+  unsafeSet(a: A): void {
+    this.value = a
   }
 }
 
@@ -240,11 +247,11 @@ export function concrete<EA, EB, A>(ref: SyncRef<EA, EB, A, A>) {
  */
 
 export function make<A>(a: A): S.USync<USyncRef<A>> {
-  return S.succeedLazy(() => new Atomic(new AtomicReference(a)))
+  return S.succeedLazy(() => new Atomic(a))
 }
 
 export function unsafeMake<A>(a: A): USyncRef<A> {
-  return new Atomic(new AtomicReference(a))
+  return new Atomic(a)
 }
 
 /*
