@@ -2,7 +2,6 @@ import type { FiberId } from '../../Fiber'
 import type { Journal } from '../Journal'
 
 import * as E from '../../Either'
-import { pipe } from '../../function'
 import { isObject } from '../../util/predicates'
 
 export const STMTag = {
@@ -24,6 +23,8 @@ export abstract class STM<R, E, A> {
   readonly _E!: () => E
   readonly _A!: () => A
 }
+
+export interface USTM<A> extends STM<unknown, never, A> {}
 
 export class Effect<R, E, A> extends STM<R, E, A> {
   readonly _tag = STMTag.Effect
@@ -230,3 +231,4 @@ export function interruptAs(fiberId: FiberId): STM<unknown, never, never> {
     throw new InterruptException(fiberId)
   })
 }
+

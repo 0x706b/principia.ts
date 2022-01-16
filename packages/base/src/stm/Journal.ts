@@ -8,8 +8,8 @@ import type { TxnId } from './TxnId'
 
 import * as HM from '../collection/immutable/HashMap'
 import { defaultScheduler } from '../internal/Scheduler'
-import * as I from '../IO'
 import * as Ex from '../IO/Exit'
+import * as I from './internal/io'
 import * as CS from './State'
 import { STMDriver } from './STM/driver'
 import { FailTypeId, HaltTypeId, InterruptTypeId, RetryTypeId, SucceedTypeId } from './TExit'
@@ -275,17 +275,17 @@ export function tryCommitAsync<R, E, A>(
     if (CS.isRunning(state.get)) {
       if (journal != null) {
         suspendTryCommit(fiberId, stm, txnId, state, r, k, journal, journal)
-      }
-    } else {
-      const result = tryCommitSync(fiberId, stm, r)
-      switch (result._tag) {
-        case DoneTypeId: {
-          completeTryCommit(result.exit, k)
-          break
-        }
-        case SuspendTypeId: {
-          suspendTryCommit(fiberId, stm, txnId, state, r, k, result.journal, result.journal)
-          break
+      } else {
+        const result = tryCommitSync(fiberId, stm, r)
+        switch (result._tag) {
+          case DoneTypeId: {
+            completeTryCommit(result.exit, k)
+            break
+          }
+          case SuspendTypeId: {
+            suspendTryCommit(fiberId, stm, txnId, state, r, k, result.journal, result.journal)
+            break
+          }
         }
       }
     }

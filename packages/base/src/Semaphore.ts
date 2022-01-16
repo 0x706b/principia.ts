@@ -1,218 +1,31 @@
-import type { Either } from './Either'
-import type { Future } from './Future'
-import type { URef } from './Ref/core'
+import type * as I from './IO/core'
 
-import * as Q from './collection/immutable/Queue'
-import * as E from './Either'
-import { IllegalArgumentError } from './Error'
 import { pipe } from './function'
-import * as F from './Future'
-import { bracket_ } from './IO/combinators/bracket'
-import * as I from './IO/core'
-import * as Ma from './Managed/core'
-import * as M from './Maybe'
-import * as Ref from './Ref/core'
+import * as STM from './stm/STM'
+import * as TS from './stm/TSemaphore'
 
-export type Entry = [Future<never, void>, number]
-export type State = Either<Q.Queue<Entry>, number>
+export interface Semaphore extends TS.TSemaphore {}
 
-export class Acquisition {
-  constructor(readonly waitAcquire: I.UIO<void>, readonly release: I.UIO<void>) {}
+export const unsafeMake = TS.unsafeMake
+
+export function make(permits: number): I.UIO<TS.TSemaphore> {
+  return pipe(TS.make(permits), STM.commit)
 }
+
+export const withPermits_ = TS.withPermits_
 
 /**
- * An asynchronous semaphore, which is a generalization of a mutex. Semaphores
- * have a certain number of permits, which can be held and released
- * concurrently by different parties. Attempts to acquire more permits than
- * available result in the acquiring fiber being suspended until the specified
- * number of permits become available.
- **/
-export class Semaphore {
-  constructor(private readonly state: URef<State>) {
-    this.loop     = this.loop.bind(this)
-    this.restore  = this.restore.bind(this)
-    this.releaseN = this.releaseN.bind(this)
-    this.restore  = this.restore.bind(this)
-  }
-
-  get available() {
-    return I.map_(
-      this.state.get,
-      E.getOrElse(() => 0)
-    )
-  }
-
-  private loop(n: number, state: State, acc: I.UIO<void>): [I.UIO<void>, State] {
-    switch (state._tag) {
-      case 'Right': {
-        return [acc, E.right(n + state.right)]
-      }
-      case 'Left': {
-        return M.match_(
-          Q.dequeue(state.left),
-          (): [I.UIO<void>, E.Either<Q.Queue<Entry>, number>] => [acc, E.right(n)],
-          ([[p, m], q]): [I.UIO<void>, E.Either<Q.Queue<Entry>, number>] => {
-            if (n > m) {
-              return this.loop(n - m, E.left(q), I.apFirst_(acc, F.succeed_(p, undefined)))
-            } else if (n === m) {
-              return [I.apFirst_(acc, F.succeed_(p, undefined)), E.left(q)]
-            } else {
-              return [acc, E.left(Q.prepend_(q, [p, m - n]))]
-            }
-          }
-        )
-      }
-    }
-  }
-
-  private releaseN(toRelease: number): I.UIO<void> {
-    return I.flatten(
-      I.chain_(assertNonNegative(toRelease, 'Semaphore.releaseN'), () =>
-        pipe(
-          this.state,
-          Ref.modify((s) => this.loop(toRelease, s, I.unit()))
-        )
-      )
-    )
-  }
-
-  private restore(p: Future<never, void>, n: number): I.UIO<void> {
-    return I.flatten(
-      pipe(
-        this.state,
-        Ref.modify(
-          E.match(
-            (q) =>
-              M.match_(
-                Q.find_(q, ([a]) => a === p),
-                (): [I.UIO<void>, E.Either<Q.Queue<Entry>, number>] => [this.releaseN(n), E.left(q)],
-                (x): [I.UIO<void>, E.Either<Q.Queue<Entry>, number>] => [
-                  this.releaseN(n - x[1]),
-                  E.left(Q.filter_(q, ([a]) => a != p))
-                ]
-              ),
-            (m): [I.UIO<void>, E.Either<Q.Queue<Entry>, number>] => [I.unit(), E.right(n + m)]
-          )
-        )
-      )
-    )
-  }
-
-  prepare(n: number) {
-    if (n === 0) {
-      return I.pure(new Acquisition(I.unit(), I.unit()))
-    } else {
-      return I.chain_(F.make<never, void>(), (p) =>
-        pipe(
-          this.state,
-          Ref.modify(
-            E.match(
-              (q): [Acquisition, E.Either<Q.Queue<Entry>, number>] => [
-                new Acquisition(F.await(p), this.restore(p, n)),
-                E.left(Q.enqueue_(q, [p, n]))
-              ],
-              (m): [Acquisition, E.Either<Q.Queue<Entry>, number>] => {
-                if (m >= n) {
-                  return [new Acquisition(I.unit(), this.releaseN(n)), E.right(m - n)]
-                }
-                return [new Acquisition(F.await(p), this.restore(p, n)), E.left(Q.single([p, n - m]))]
-              }
-            )
-          )
-        )
-      )
-    }
-  }
-}
-
-export function _withPermits<R, E, A>(s: Semaphore, n: number, io: I.IO<R, E, A>): I.IO<R, E, A> {
-  return bracket_(
-    s.prepare(n),
-    (a) => I.apSecond_(a.waitAcquire, io),
-    (a) => a.release
-  )
-}
-
-export function withPermits_<R, E, A>(io: I.IO<R, E, A>, s: Semaphore, n: number): I.IO<R, E, A> {
-  return _withPermits(s, n, io)
-}
-
-/**
- * Acquires `n` permits, executes the action and releases the permits right after.
- *
  * @dataFirst withPermits_
  */
-export function withPermits(s: Semaphore, n: number): <R, E, A>(io: I.IO<R, E, A>) => I.IO<R, E, A> {
-  return (io) => _withPermits(s, n, io)
-}
+export const withPermits = TS.withPermits
 
-export function _withPermit<R, E, A>(s: Semaphore, io: I.IO<R, E, A>): I.IO<R, E, A> {
-  return _withPermits(s, 1, io)
-}
-
-export function withPermit_<R, E, A>(io: I.IO<R, E, A>, s: Semaphore): I.IO<R, E, A> {
-  return _withPermit(s, io)
-}
+export const withPermit_ = TS.withPermit_
 
 /**
- * Acquires a permit, executes the action and releases the permit right after.
- *
  * @dataFirst withPermit_
  */
-export function withPermit(s: Semaphore): <R, E, A>(io: I.IO<R, E, A>) => I.IO<R, E, A> {
-  return (io) => _withPermit(s, io)
-}
+export const withPermit = TS.withPermit
 
-/**
- * Acquires `n` permits in a `Managed` and releases the permits in the finalizer.
- */
-export function withPermitsManaged_(s: Semaphore, n: number): Ma.Managed<unknown, never, void> {
-  return Ma.fromReservationIO(I.map_(s.prepare(n), (a) => Ma.makeReservation_(a.waitAcquire, () => a.release)))
-}
+export const withPermitsManaged = TS.withPermitsManaged
 
-/**
- * Acquires `n` permits in a `Managed` and releases the permits in the finalizer.
- */
-export function withPermitsManaged(n: number): (s: Semaphore) => Ma.Managed<unknown, never, void> {
-  return (s) => Ma.fromReservationIO(I.map_(s.prepare(n), (a) => Ma.makeReservation(() => a.release)(a.waitAcquire)))
-}
-
-/**
- * Acquires a permit in a `Managed` and releases the permit in the finalizer.
- */
-export function withPermitManaged(s: Semaphore): Ma.Managed<unknown, never, void> {
-  return withPermitsManaged(1)(s)
-}
-
-/**
- * The number of permits currently available.
- */
-export function available(s: Semaphore): I.IO<unknown, never, number> {
-  return s.available
-}
-
-/**
- * Creates a new `Sempahore` with the specified number of permits.
- */
-export function make(permits: number): I.IO<unknown, never, Semaphore> {
-  return I.map_(Ref.make<State>(E.right(permits)), (state) => new Semaphore(state))
-}
-
-/**
- * Creates a new `Sempahore` with the specified number of permits.
- */
-export function unsafeMake(permits: number): Semaphore {
-  const state = Ref.unsafeMake<State>(E.right(permits))
-
-  return new Semaphore(state)
-}
-
-function assertNonNegative(n: number, fn: string): I.UIO<void> {
-  return n < 0 ? I.halt(new NegativeArgument(`Unexpected negative value ${n} passed to ${fn}.`, fn)) : I.unit()
-}
-
-class NegativeArgument extends IllegalArgumentError {
-  constructor(message: string, fn: string) {
-    super(message, fn)
-  }
-}
+export const withPermitManaged = TS.withPermitManaged

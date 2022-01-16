@@ -255,6 +255,10 @@ export function set_<EA, EB, A, B>(self: TRef<EA, EB, A, B>, a: A): _.STM<unknow
   }
 }
 
+export function unsafeSet_<EA, EB, A, B>(tr: TRef<EA, EB, A, B>, journal: Journal, a: A): void {
+  return getOrMakeEntry(tr.atomic, journal).use((entry) => entry.unsafeSet(a))
+}
+
 /**
  * Updates the value of the variable, returning a function of the specified
  * value.

@@ -7,10 +7,10 @@ import type { STM } from './primitives'
 import * as E from '../../Either'
 import { NoSuchElementError } from '../../Error'
 import { RuntimeException } from '../../Exception'
-import { constVoid, identity, pipe } from '../../function'
+import { constVoid, flow, identity, pipe } from '../../function'
 import { AtomicReference } from '../../internal/AtomicReference'
-import * as I from '../../IO'
 import * as M from '../../Maybe'
+import * as I from '../internal/io'
 import { tryCommitAsync, tryCommitSync } from '../Journal'
 import * as CS from '../State'
 import { DoneTypeId, SuspendTypeId } from '../TryCommit'
@@ -19,6 +19,8 @@ import * as _ from './primitives'
 import { Effect, Gives, HaltException, RetryException } from './primitives'
 
 export const MaxFrames = 200
+
+export * from './primitives'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -881,6 +883,54 @@ export function filterOrHaltMessage_<R, E, A>(
 ): STM<R, E, A>
 export function filterOrHaltMessage_<R, E, A>(fa: STM<R, E, A>, p: Predicate<A>, message: unknown) {
   return filterOrHalt_(fa, p, (a) => new RuntimeException((message as (a: A) => string)(a)))
+}
+
+/**
+ * Simultaneously filters and chains the value produced by this effect.
+ * Continues on the effect returned from f.
+ */
+export function filterMapSTM_<R, E, A, R1, E1, B>(
+  stm: STM<R, E, A>,
+  f: (a: A) => M.Maybe<STM<R1, E1, B>>
+): STM<R & R1, E | E1, B> {
+  return pipe(
+    stm,
+    matchSTM(
+      fail,
+      flow(
+        f,
+        M.getOrElse(() => retry)
+      )
+    )
+  )
+}
+
+/**
+ * Simultaneously filters and chains the value produced by this effect.
+ * Continues on the effect returned from f.
+ *
+ * @dataFirst filterMapSTM_
+ */
+export function filterMapSTM<A, R1, E1, B>(
+  f: (a: A) => M.Maybe<STM<R1, E1, B>>
+): <R, E>(stm: STM<R, E, A>) => STM<R & R1, E | E1, B> {
+  return (stm) => filterMapSTM_(stm, f)
+}
+
+/**
+ * Simultaneously filters and maps the value produced by this effect.
+ */
+export function filterMap_<R, E, A, B>(stm: STM<R, E, A>, f: (a: A) => M.Maybe<B>): STM<R, E, B> {
+  return pipe(stm, filterMapSTM(flow(f, M.map(succeed))))
+}
+
+/**
+ * Simultaneously filters and maps the value produced by this effect.
+ *
+ * @dataFirst filterMap_
+ */
+export function filterMap<A, B>(f: (a: A) => M.Maybe<B>): <R, E>(stm: STM<R, E, A>) => STM<R, E, B> {
+  return (stm) => filterMap_(stm, f)
 }
 
 /**

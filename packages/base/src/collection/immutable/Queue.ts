@@ -168,7 +168,7 @@ export function map<A, B>(f: (a: A) => B): (fa: Queue<A>) => Queue<B> {
 export function foldl_<A, B>(fa: Queue<A>, b: B, f: (b: B, a: A) => B): B {
   let acc   = b
   let these = fa
-  while (!isEmpty(fa)) {
+  while (!isEmpty(these)) {
     acc   = f(acc, unsafeHead(these))
     these = unsafeTail(these)
   }
