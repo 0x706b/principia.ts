@@ -285,9 +285,7 @@ export type Intro<F extends HKT, N extends ParamName, A, B> = F['variance'][N] e
  * Type parameter constraint
  */
 
-export type None = {
-  [Fix]: {}
-}
+export type None = {}
 
 export declare const Fix: unique symbol
 
@@ -297,7 +295,19 @@ export interface Fix<N extends ParamName, A> {
   }
 }
 
+export declare const Extend: unique symbol
+
+export interface Extend<N extends ParamName, A> {
+  [Extend]: {
+    [K in N]: () => A
+  }
+}
+
 export type OrFix<C, N extends ParamName, A> = C extends Fix<N, infer X> ? X : A
+
+export type OrExtend<C, N extends ParamName, A> = C extends Extend<N, infer X> ? (A extends X ? A : X) : A
+
+export type GetExtends<C, N extends ParamName, A> = C extends Extend<N, infer X> ? X : A
 
 export type IndexFor<F extends HKT, K> = F extends { readonly index: unknown } ? F['index'] : K
 

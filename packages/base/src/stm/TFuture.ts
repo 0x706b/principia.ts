@@ -1,3 +1,5 @@
+import type * as HKT from '../HKT'
+
 import * as E from '../Either'
 import { pipe } from '../function'
 import * as M from '../Maybe'
@@ -5,28 +7,38 @@ import * as NT from '../Newtype'
 import * as STM from './STM'
 import * as TR from './TRef'
 
-export interface TFuture<E, A> extends NT.Newtype<'@principia/base/stm/TFuture', TR.UTRef<M.Maybe<E.Either<E, A>>>> {}
-export const TFuture = <E, A>() => NT.newtype<TFuture<E, A>>()
+interface TFutureN extends HKT.HKT {
+  readonly type: TFuture<this['E'], this['A']>
+}
+
+export interface TFuture<E, A>
+  extends NT.Newtype<
+    {
+      readonly TFuture: unique symbol
+    },
+    TR.UTRef<M.Maybe<E.Either<E, A>>>
+  > {}
+export const TFuture = NT.newtype<TFutureN>()
 
 export function make<E, A>(): STM.USTM<TFuture<E, A>> {
-  return pipe(TR.make<M.Maybe<E.Either<E, A>>>(M.nothing()), STM.map(TFuture<E, A>().get))
+  return pipe(TR.make<M.Maybe<E.Either<E, A>>>(M.nothing()), STM.map(TFuture.get))
 }
 
 function wait<E, A>(tf: TFuture<E, A>): STM.STM<unknown, E, A> {
-  return pipe(TFuture<E, A>().reverseGet(tf), TR.get, STM.filterMapSTM(M.map(STM.fromEither)))
+  return pipe(TFuture.reverseGet(tf), TR.get, STM.filterMapSTM(M.map(STM.fromEither)))
 }
 
 export { wait as await }
 
 export function done_<E, A>(tf: TFuture<E, A>, v: E.Either<E, A>): STM.USTM<boolean> {
   return pipe(
-    TFuture<E, A>().reverseGet(tf),
+    TFuture.reverseGet(tf),
     TR.get,
     STM.chain(
       M.match(
         () =>
           pipe(
-            TFuture<E, A>().reverseGet(tf),
+            TFuture.reverseGet(tf),
             TR.set(M.just(v)),
             STM.chain(() => STM.succeed(true))
           ),
@@ -45,7 +57,7 @@ export function fail<E, A>(tf: TFuture<E, A>, e: E): STM.USTM<boolean> {
 }
 
 export function poll<E, A>(tf: TFuture<E, A>): STM.USTM<M.Maybe<E.Either<E, A>>> {
-  return TR.get(TFuture<E, A>().reverseGet(tf))
+  return TR.get(TFuture.reverseGet(tf))
 }
 
 export function succeed_<E, A>(tf: TFuture<E, A>, a: A): STM.USTM<boolean> {

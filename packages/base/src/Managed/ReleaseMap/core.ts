@@ -1,3 +1,4 @@
+import type * as HKT from '../../HKT'
 import type { Exit } from '../../IO/Exit'
 import type { Maybe } from '../../Maybe'
 import type { URef } from '../../Ref/core'
@@ -11,8 +12,17 @@ import * as Ref from '../../Ref/core'
 
 export type Finalizer = (exit: Exit<any, any>) => I.IO<unknown, never, any>
 
-export interface ReleaseMap extends NT.Newtype<'ReleaseMap', URef<State>> {}
-export const ReleaseMap = NT.newtype<ReleaseMap>()
+interface ReleaseMapN extends HKT.HKT {
+  readonly type: ReleaseMap
+}
+export interface ReleaseMap
+  extends NT.Newtype<
+    {
+      readonly ReleaseMap: unique symbol
+    },
+    URef<State>
+  > {}
+export const ReleaseMap = NT.newtype<ReleaseMapN>()
 
 export class Exited {
   readonly _tag = 'Exited'

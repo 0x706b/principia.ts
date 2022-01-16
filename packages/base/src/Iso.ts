@@ -128,16 +128,3 @@ export const Invariant: P.Invariant<IsoF> = HKT.instance({
   invmap_,
   invmap
 })
-
-/*
- * -------------------------------------------
- * Combinators
- * -------------------------------------------
- */
-
-export function newtype<T extends NT.Newtype<any, any>>(): NT.NewtypeIso<T> {
-  return PIso({
-    get: (_) => _ as any,
-    reverseGet: (_) => _ as any
-  })
-}

@@ -1,5 +1,6 @@
 import type { Byte } from '@principia/base/Byte'
 import type { Conc } from '@principia/base/collection/immutable/Conc'
+import type * as HKT from '@principia/base/HKT'
 import type { IO } from '@principia/base/IO'
 
 import * as Ca from '@principia/base/Cause'
@@ -20,8 +21,17 @@ import * as fs from 'fs'
 
 type ErrnoException = NodeJS.ErrnoException
 
-export interface FileDescriptor extends N.Newtype<'FileDescriptor', number> {}
-export const FileDescriptor = N.newtype<FileDescriptor>()
+interface FileDescriptorN extends HKT.HKT {
+  readonly type: FileDescriptor
+}
+export interface FileDescriptor
+  extends N.Newtype<
+    {
+      readonly FileDescriptor: unique symbol
+    },
+    number
+  > {}
+export const FileDescriptor = N.newtype<FileDescriptorN>()
 
 function unitErrorCallback(cb: (_: IO<unknown, ErrnoException, void>) => void): (err: ErrnoException | null) => void {
   return (err) => (err ? cb(I.fail(err)) : cb(I.unit()))

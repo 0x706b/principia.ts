@@ -15,7 +15,7 @@ export interface DictionaryF extends HKT.HKT {
 }
 
 export interface Dictionary<A> extends NT.Newtype<'Dictionary', ReadonlyRecord<string, A>> {}
-export const Dictionary = <A>() => NT.newtype<Dictionary<A>>()
+export const Dictionary = NT.newtype<DictionaryF>()
 
 export const empty: Dictionary<never> = fromRecord({})
 
@@ -23,12 +23,12 @@ export const empty: Dictionary<never> = fromRecord({})
  * @optimize identity
  */
 export function fromRecord<A>(_: ReadonlyRecord<string, A>): Dictionary<A> {
-  return Dictionary<A>().get(_)
+  return Dictionary.get(_)
 }
 
 /**
  * @optimize identity
  */
 export function toRecord<A>(dict: Dictionary<A>): ReadonlyRecord<string, A> {
-  return Dictionary<A>().reverseGet(dict)
+  return Dictionary.reverseGet(dict)
 }

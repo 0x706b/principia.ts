@@ -1,3 +1,5 @@
+import type * as HKT from '../HKT'
+
 import { pipe } from '../function'
 import * as NT from '../Newtype'
 import { assert } from '../util/assert'
@@ -6,8 +8,18 @@ import * as M from './internal/managed'
 import * as STM from './STM'
 import * as TR from './TRef'
 
-export interface TSemaphore extends NT.Newtype<'@principia/base/stm/TSemaphore', TR.UTRef<number>> {}
-export const TSemaphore = NT.newtype<TSemaphore>()
+interface TSemaphoreN extends HKT.HKT {
+  readonly type: TSemaphore
+}
+
+export interface TSemaphore
+  extends NT.Newtype<
+    {
+      readonly TSemaphore: unique symbol
+    },
+    TR.UTRef<number>
+  > {}
+export const TSemaphore = NT.newtype<TSemaphoreN>()
 
 export function make(permits: number): STM.USTM<TSemaphore> {
   return pipe(TR.make(permits), STM.map(TSemaphore.get))
