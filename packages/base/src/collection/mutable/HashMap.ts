@@ -126,7 +126,7 @@ export class HashMap<K, V> {
   forEach<U>(f: (k: K, v: V) => U): void {
     for (let i = 0; i < this.table.length; i++) {
       const n = this.table[i]
-      if (n !== undefined) n.forEach(f)
+      if (n) n.forEach(f)
     }
   }
 
