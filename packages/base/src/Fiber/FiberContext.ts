@@ -2,7 +2,7 @@ import type { Stack } from '../internal/Stack'
 import type { Exit } from '../IO/Exit/core'
 import type { Instruction, IO, Match, Race, UIO } from '../IO/primitives'
 import type { Maybe } from '../Maybe'
-import type { Fiber, InterruptStatus, RuntimeFiber } from './core'
+import type { Fiber, RuntimeFiber } from './core'
 import type { FiberId } from './FiberId'
 import type { RuntimeConfig } from './RuntimeConfig/RuntimeConfig'
 import type { TraceElement } from './Trace'
@@ -18,7 +18,6 @@ import * as MQ from '../internal/MutableQueue'
 import { defaultScheduler } from '../internal/Scheduler'
 import { makeStack } from '../internal/Stack'
 import * as C from '../IO/Cause'
-import { interruptAs } from '../IO/op/interrupt'
 import {
   asUnit,
   async,
@@ -36,6 +35,7 @@ import {
   unit
 } from '../IO/core'
 import * as Ex from '../IO/Exit/core'
+import { interruptAs } from '../IO/op/interrupt'
 import { concrete, IOTag, isIOError, Succeed } from '../IO/primitives'
 import * as M from '../Maybe'
 import * as Scope from '../Scope'
@@ -108,7 +108,6 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
   private asyncEpoch         = 0 | 0
   private stack              = undefined as Stack<Frame> | undefined
-  private interruptStatus    = makeStack(this.initialInterruptStatus.toBoolean) as Stack<boolean> | undefined
   private traceStatusEnabled = this.runtimeConfig.traceExecution || this.runtimeConfig.traceStack
   private executionTraces    = this.traceStatusEnabled
     ? MQ.bounded<TraceElement>(this.runtimeConfig.executionTraceLength)
@@ -122,7 +121,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   constructor(
     protected readonly fiberId: FiberId,
     private runtimeConfig: RuntimeConfig,
-    private readonly initialInterruptStatus: InterruptStatus,
+    private interruptStatus: Stack<boolean> | undefined,
     private readonly fiberRefLocals: FiberRefLocals,
     private readonly children: Set<FiberContext<unknown, unknown>>,
     private readonly location: M.Maybe<Trace>
@@ -339,8 +338,11 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     if (this.runtimeConfig.traceExecution && this.unsafeIsInTracingRegion) {
                       this.unsafeAddTraceValue(current.trace)
                     }
-                    this.unsafePushInterruptStatus(current.flag.toBoolean)
-                    this.unsafeRestoreInterruptStatus()
+                    const boolFlag = current.flag.toBoolean
+                    if(this.unsafeIsInterruptible !== boolFlag) {
+                      this.unsafePushInterruptStatus(current.flag.toBoolean)
+                      this.unsafeRestoreInterruptStatus()
+                    }
                     current = concrete(current.io)
                     break
                   }
@@ -989,7 +991,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     const childContext = new FiberContext<any, any>(
       childId,
       this.runtimeConfig,
-      interruptStatus(this.unsafeIsInterruptible),
+      makeStack(this.unsafeIsInterruptible),
       childFiberRefLocals,
       grandChildren,
       ancestry

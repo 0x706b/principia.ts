@@ -7,12 +7,13 @@ import { isTracingEnabled } from '@principia/compile/util'
 
 import { ClockTag, LiveClock } from '../Clock'
 import { ConsoleTag, LiveConsole } from '../Console'
-import { interruptible, newFiberId, showFiberId } from '../Fiber'
+import { newFiberId, showFiberId } from '../Fiber'
 import { FiberContext } from '../Fiber/FiberContext'
 import { RuntimeConfig } from '../Fiber/RuntimeConfig/RuntimeConfig'
 import { RuntimeConfigFlag } from '../Fiber/RuntimeConfig/RuntimeConfigFlag'
 import { RuntimeConfigFlags } from '../Fiber/RuntimeConfig/RuntimeConfigFlags'
 import { constVoid, flow, identity, pipe } from '../function'
+import { makeStack } from '../internal/Stack'
 import * as M from '../Maybe'
 import { defaultRandom, RandomTag } from '../Random'
 import * as Super from '../Supervisor'
@@ -70,7 +71,7 @@ export class Runtime<R> {
 
     const ioWithEnvironment = pipe(effect, I.give(this.env))
 
-    const context = new FiberContext<E, A>(fiberId, this.config, interruptible, new Map(), new Set(), M.nothing())
+    const context = new FiberContext<E, A>(fiberId, this.config, makeStack(true), new Map(), new Set(), M.nothing())
 
     if (supervisor !== Super.none) {
       supervisor.unsafeOnStart(this.env, ioWithEnvironment, M.nothing(), context)
