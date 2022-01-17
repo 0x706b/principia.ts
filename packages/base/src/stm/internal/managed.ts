@@ -1,2 +1,2 @@
-export * from '../../Managed/combinators/bracketExitInterruptible'
+export * from '../../Managed/op/bracketExitInterruptible'
 export * from '../../Managed/core'

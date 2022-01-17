@@ -4,7 +4,7 @@ import type { Managed } from '../core'
 
 import { accessCallTrace, traceFrom } from '@principia/compile/util'
 
-import { use_ } from '../../IO/combinators/foreachC'
+import { use_ } from '../../IO/op/foreachC'
 import * as I from '../internal/io'
 
 export { use_ }

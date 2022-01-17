@@ -2,7 +2,7 @@ import type { Conc } from '../../collection/immutable/Conc/core'
 import type { Exit } from '../../IO/Exit'
 import type { Fiber } from '../core'
 
-import { foreachC_ } from '../../IO/combinators/foreachC'
+import { foreachC_ } from '../../IO/op/foreachC'
 import * as I from '../internal/io'
 
 /**

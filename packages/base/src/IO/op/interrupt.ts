@@ -7,9 +7,9 @@ import type { Canceler, FIO, IO } from '../core'
 import { accessCallTrace, traceAs, traceCall, traceFrom } from '@principia/compile/util'
 
 import { left } from '../../Either'
-import { join } from '../../Fiber/combinators/join'
 import * as F from '../../Fiber/core'
 import { none } from '../../Fiber/FiberId'
+import { join } from '../../Fiber/op/join'
 import { pipe } from '../../function'
 import * as C from '../Cause'
 import {

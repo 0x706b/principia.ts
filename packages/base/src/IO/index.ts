@@ -1,5 +1,5 @@
-export * from './combinators'
-export * from './combinators/apply-concurrent'
+export * from './op'
+export * from './op/apply-concurrent'
 export * from './core'
 export * from './instances'
 export * from './runtime'

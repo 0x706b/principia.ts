@@ -1,2 +1,2 @@
-export * from '../../IO/combinators/bracket'
 export * from '../../IO/core'
+export * from '../../IO/op/bracket'

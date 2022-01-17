@@ -2,7 +2,7 @@ import type { Maybe } from '../../Maybe'
 import type { Managed, UManaged } from '../core'
 
 import * as FR from '../../FiberRef'
-import { Concurrency, concurrency as ioConcurrency } from '../../IO/combinators/concurrency'
+import { Concurrency, concurrency as ioConcurrency } from '../../IO/op/concurrency'
 import * as M from '../../Maybe'
 import { apSecond_, fromIO } from '../core'
 

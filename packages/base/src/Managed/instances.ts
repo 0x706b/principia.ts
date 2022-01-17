@@ -2,7 +2,7 @@ import type * as HKT from '../HKT'
 import type { Managed } from './core'
 
 import * as P from '../prelude'
-import { apC_, crossC_, crossWithC_ } from './combinators/apply-par'
+import { apC_, crossC_, crossWithC_ } from './op/apply-par'
 import {
   ap_,
   bimap_,

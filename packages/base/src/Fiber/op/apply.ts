@@ -1,7 +1,7 @@
 import type { Fiber, SyntheticFiber } from '../core'
 
 import * as C from '../../Cause'
-import { crossWithC_ } from '../../IO/combinators/apply-concurrent'
+import { crossWithC_ } from '../../IO/op/apply-concurrent'
 import * as Ex from '../../IO/Exit'
 import * as M from '../../Maybe'
 import * as I from '../internal/io'

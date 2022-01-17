@@ -3,7 +3,7 @@
 import * as Iter from '../../collection/Iterable'
 import * as FR from '../../FiberRef/core'
 import { pipe } from '../../function'
-import { mergeAllC as ioMergeAllC } from '../../IO/combinators/mergeAllC'
+import { mergeAllC as ioMergeAllC } from '../../IO/op/mergeAllC'
 import * as Ma from '../core'
 import * as I from '../internal/_io'
 import * as RM from '../ReleaseMap'

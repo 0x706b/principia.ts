@@ -1,2 +1,2 @@
-export * from './combinators'
+export * from './op'
 export * from './core'

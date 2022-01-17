@@ -4,7 +4,7 @@ import type { IO } from '../core'
 
 import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
-import { join } from '../../Fiber/combinators/join'
+import { join } from '../../Fiber/op/join'
 import * as C from '../Cause'
 import * as I from '../core'
 import * as Ex from '../Exit'

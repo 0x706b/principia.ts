@@ -6,8 +6,8 @@ import type { Maybe } from './Maybe'
 
 import * as E from './Either'
 import { pipe } from './function'
-import { interruptAs as interruptAsIO, uninterruptibleMask } from './IO/combinators/interrupt'
 import * as I from './IO/core'
+import { interruptAs as interruptAsIO, uninterruptibleMask } from './IO/op/interrupt'
 import * as M from './Maybe'
 
 export class Future<E, A> {

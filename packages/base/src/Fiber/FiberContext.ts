@@ -18,7 +18,7 @@ import * as MQ from '../internal/MutableQueue'
 import { defaultScheduler } from '../internal/Scheduler'
 import { makeStack } from '../internal/Stack'
 import * as C from '../IO/Cause'
-import { interruptAs } from '../IO/combinators/interrupt'
+import { interruptAs } from '../IO/op/interrupt'
 import {
   asUnit,
   async,

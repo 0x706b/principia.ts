@@ -3,7 +3,7 @@ import type { UIO } from './IO/primitives'
 import type { Layer } from './Layer'
 
 import * as FR from './FiberRef'
-import { toLayer } from './IO/combinators/toLayer'
+import { toLayer } from './IO/op/toLayer'
 import * as I from './IO/core'
 
 export const IOStateTypeId = Symbol.for('@principia/base/IO/IOState')

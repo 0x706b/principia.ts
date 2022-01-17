@@ -2,8 +2,8 @@ import type { UIO } from '../../IO/core'
 import type { Exit } from '../../IO/Exit'
 import type { Fiber } from '../core'
 
-import { forkDaemon } from '../../IO/combinators/core-scope'
 import * as I from '../../IO/core'
+import { forkDaemon } from '../../IO/op/core-scope'
 
 /**
  * Interrupts the fiber from whichever fiber is calling this method. If the

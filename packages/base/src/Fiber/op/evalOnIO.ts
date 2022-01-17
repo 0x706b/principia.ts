@@ -2,7 +2,7 @@ import type { Fiber } from '../core'
 
 import { pipe } from '../../function'
 import * as F from '../../Future'
-import { fulfill } from '../../IO/combinators/fulfill'
+import { fulfill } from '../../IO/op/fulfill'
 import * as I from '../../IO/core'
 import { evalOn } from '../core'
 

@@ -6,7 +6,7 @@ import type { IO } from '../core'
 
 import { accessCallTrace, traceCall } from '@principia/compile/util'
 
-import { fork } from '../../Managed/combinators'
+import { fork } from '../../Managed/op'
 import { toManaged } from './toManaged'
 
 /**

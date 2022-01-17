@@ -1,7 +1,7 @@
 import type { ErrorOf, Observable, ObservableInput, TypeOf } from '../core'
 
 import { operate_ } from '../../Operator'
-import { raceInit } from '../constructors/race'
+import { raceInit } from './race'
 
 export function raceWith_<E, A, O extends ReadonlyArray<ObservableInput<any, any>>>(
   fa: Observable<E, A>,

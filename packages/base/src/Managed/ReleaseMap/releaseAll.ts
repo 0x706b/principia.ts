@@ -7,7 +7,7 @@ import { accessCallTrace, traceCall, traceFrom } from '@principia/compile/util'
 
 import * as Co from '../../collection/immutable/Conc/core'
 import { pipe } from '../../function'
-import { foreachExec as foreachExecIO } from '../../IO/combinators/foreachExec'
+import { foreachExec as foreachExecIO } from '../../IO/op/foreachExec'
 import * as Ex from '../../IO/Exit'
 import * as M from '../../Maybe'
 import * as Ref from '../../Ref'

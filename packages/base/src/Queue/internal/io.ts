@@ -1,4 +1,4 @@
-export * from '../../IO/combinators/apply-concurrent'
-export { foreachC_ } from '../../IO/combinators/foreachC'
-export * from '../../IO/combinators/interrupt'
+export * from '../../IO/op/apply-concurrent'
+export { foreachC_ } from '../../IO/op/foreachC'
+export * from '../../IO/op/interrupt'
 export * from '../../IO/core'

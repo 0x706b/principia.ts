@@ -1,5 +1,5 @@
 import { flow } from '../function'
-import { toManaged } from '../IO/combinators/toManaged'
+import { toManaged } from '../IO/op/toManaged'
 import { make } from './core'
 
 /**

@@ -6,7 +6,7 @@ import type { IO } from './core'
 import * as E from '../Either'
 import { apSF, apTF, mapNF, sequenceSF } from '../prelude'
 import * as P from '../prelude'
-import { apC_, crossC_, crossWithC_ } from './combinators'
+import { apC_, crossC_, crossWithC_ } from './op'
 import {
   ap_,
   bimap_,
