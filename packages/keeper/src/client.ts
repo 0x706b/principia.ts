@@ -43,7 +43,7 @@ export const makeKeeperClient = Ma.gen(function* (_) {
       cli.connect()
       cli.on('state', (s) => {
         if (s.code === Z.State.DISCONNECTED.code) {
-          T.unsafeRun_(F.fail_(monitor, new ZooError({ op: 'DISCONNECTED', message: JSON.stringify(s) })))
+          T.unsafeRun(F.fail_(monitor, new ZooError({ op: 'DISCONNECTED', message: JSON.stringify(s) })))
         }
       })
     })['|>'](Ma.bracket((cli) => T.succeedLazy(() => cli.close())))

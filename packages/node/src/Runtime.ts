@@ -7,7 +7,7 @@ import * as Ex from '@principia/base/Exit'
 import { interruptAllAs_, prettyFiberId } from '@principia/base/Fiber'
 import { pipe } from '@principia/base/function'
 import { AtomicBoolean } from '@principia/base/internal/AtomicBoolean'
-import { defaultEnv, defaultRuntime, defaultRuntimeConfig, defaultSupervisor, Runtime } from '@principia/base/IO'
+import { defaultEnv, defaultRuntimeConfig, defaultSupervisor, Runtime } from '@principia/base/IO'
 import * as I from '@principia/base/IO'
 import * as Cause from '@principia/base/IO/Cause'
 import path from 'path'
@@ -16,7 +16,7 @@ export function defaultTeardown(status: number, id: Fiber.FiberId, onExit: (stat
   pipe(
     defaultSupervisor.value,
     I.tap((fibers) => interruptAllAs_(fibers, id)),
-    I.unsafeRun((exit) => {
+    I.unsafeRunWith((exit) => {
       setTimeout(() => {
         if (Ex.isSuccess(exit) && exit.value.length === 0) {
           onExit(status)
@@ -157,7 +157,7 @@ export class NodeRuntime<R> {
         process.removeListener('SIGINT', handler)
 
         if (interrupted.compareAndSet(false, true)) {
-          this.runtime.unsafeRun_(context.interruptAs(context.id))
+          this.runtime.unsafeRun(context.interruptAs(context.id))
         }
       })(signal)
     }

@@ -610,7 +610,7 @@ export function watchFile(
       const queue   = yield* _(Queue.makeUnbounded<[fs.BigIntStats | fs.Stats, fs.BigIntStats | fs.Stats]>())
       const runtime = yield* _(I.runtime<unknown>())
       fs.watchFile(filename, options ?? {}, (curr, prev) => {
-        runtime.unsafeRun_(Queue.offer_(queue, [curr, prev]))
+        runtime.unsafeRun(Queue.offer_(queue, [curr, prev]))
       })
       return queue
     }),

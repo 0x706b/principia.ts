@@ -58,7 +58,7 @@ export const defaultRuntimeConfig = new RuntimeConfig({
 export class Runtime<R> {
   constructor(readonly env: R, readonly config: RuntimeConfig) {
     this.fiberContext         = this.fiberContext.bind(this)
-    this.unsafeRun_           = this.unsafeRun_.bind(this)
+    this.unsafeRunWith_       = this.unsafeRunWith_.bind(this)
     this.unsafeRunCancel_     = this.unsafeRunCancel_.bind(this)
     this.unsafeRunPromise     = this.unsafeRunPromise.bind(this)
     this.unsafeRunPromiseExit = this.unsafeRunPromiseExit.bind(this)
@@ -91,16 +91,23 @@ export class Runtime<R> {
   /**
    * Runs effect until completion, calling cb with the eventual exit state
    */
-  unsafeRun_<E, A>(_: I.IO<R, E, A>, cb?: Callback<E, A>) {
+  unsafeRunWith_<E, A>(_: I.IO<R, E, A>, cb: Callback<E, A>) {
     const context = this.fiberContext<E, A>(_)
-    context.awaitAsync(cb || constVoid)
+    context.awaitAsync(cb)
   }
 
   /**
    * Runs effect until completion, calling cb with the eventual exit state
    */
-  unsafeRun<E, A>(cb?: Callback<E, A>): (_: I.IO<R, E, A>) => void {
-    return (_) => this.unsafeRun_(_, cb)
+  unsafeRunWith<E, A>(cb: Callback<E, A>): (_: I.IO<R, E, A>) => void {
+    return (_) => this.unsafeRunWith_(_, cb)
+  }
+
+  /**
+   * Runs effect until completion
+   */
+  unsafeRun<E, A>(_: I.IO<R, E, A>): void {
+    this.unsafeRunWith_(_, constVoid)
   }
 
   /**
@@ -162,8 +169,9 @@ export const defaultRuntime = new Runtime(defaultEnv, defaultRuntimeConfig)
  * Exports of default runtime
  */
 export const {
-  unsafeRun_,
+  unsafeRunWith_,
   unsafeRunCancel_,
+  unsafeRunWith,
   unsafeRun,
   unsafeRunCancel,
   unsafeRunFiber,

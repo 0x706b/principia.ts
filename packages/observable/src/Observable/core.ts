@@ -575,7 +575,7 @@ export function fromIO<E, A>(io: IO.IO<IOEnv, E, A>): Observable<E, A> {
     })
     return () => {
       scheduled.unsubscribe()
-      fiber && IO.unsafeRun_(Fi.interrupt(fiber))
+      fiber && IO.unsafeRun(Fi.interrupt(fiber))
     }
   })
 }

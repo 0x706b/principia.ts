@@ -40,7 +40,7 @@ export function HttpServer({ host, port }: HttpServerConfig): L.Layer<unknown, n
         const server  = yield* _(
           I.succeedLazy(() => {
             return http.createServer((req, res) => {
-              runtime.unsafeRun_(
+              runtime.unsafeRun(
                 I.gen(function* (_) {
                   const reqRef = yield* _(Ref.make(req))
                   const resRef = yield* _(SRef.make(res))

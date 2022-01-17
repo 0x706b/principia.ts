@@ -76,22 +76,22 @@ export class HttpResponse {
                 yield* $(
                   I.succeedLazy(() => {
                     res.on('close', () => {
-                      runtime.unsafeRun_(Q.offer_(queue, { _tag: 'Close' }))
+                      runtime.unsafeRun(Q.offer_(queue, { _tag: 'Close' }))
                     })
                     res.on('drain', () => {
-                      runtime.unsafeRun_(Q.offer_(queue, { _tag: 'Drain' }))
+                      runtime.unsafeRun(Q.offer_(queue, { _tag: 'Drain' }))
                     })
                     res.on('finish', () => {
-                      runtime.unsafeRun_(Q.offer_(queue, { _tag: 'Finish' }))
+                      runtime.unsafeRun(Q.offer_(queue, { _tag: 'Finish' }))
                     })
                     res.on('error', (error) => {
-                      runtime.unsafeRun_(Q.offer_(queue, { _tag: 'Error', error }))
+                      runtime.unsafeRun(Q.offer_(queue, { _tag: 'Error', error }))
                     })
                     res.on('pipe', (src) => {
-                      runtime.unsafeRun_(Q.offer_(queue, { _tag: 'Pipe', src }))
+                      runtime.unsafeRun(Q.offer_(queue, { _tag: 'Pipe', src }))
                     })
                     res.on('unpipe', (src) => {
-                      runtime.unsafeRun_(Q.offer_(queue, { _tag: 'Unpipe', src }))
+                      runtime.unsafeRun(Q.offer_(queue, { _tag: 'Unpipe', src }))
                     })
                   })
                 )

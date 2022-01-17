@@ -28,7 +28,7 @@ export function asyncIO<R, E, R1, E1, A>(
         traceAs(register, ({ restore }) =>
           pipe(
             register((k) => {
-              r.unsafeRun_(fulfill(p)(k))
+              r.unsafeRun(fulfill(p)(k))
             }),
             I.catchAllCause((c) => F.failCause_(p, c)),
             restore,
