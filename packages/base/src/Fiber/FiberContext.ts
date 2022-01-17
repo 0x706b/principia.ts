@@ -57,8 +57,6 @@ const forkScopeOverride = FR.unsafeMake<M.Maybe<Scope.Scope>>(M.nothing())
 
 const currentEnvironment = FR.unsafeMake<any>(undefined, identity, (a, _) => a)
 
-const currentExecutor = FR.unsafeMake<M.Maybe<Executor>>(M.nothing(), identity, (a, _) => a)
-
 type Erased = IO<any, any, any>
 type ErasedCont = (a: any) => Erased
 
@@ -210,13 +208,14 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     try {
       let current: Instruction | null = this.nextIO
       this.nextIO                     = null
-      const fastPathChainContinuationTrace = new AtomicReference<TraceElement | undefined>(undefined)
+
       const flags        = this.runtimeConfig.flags
       const superviseOps =
         flags.isEnabled(RuntimeConfigFlag.SuperviseOperations) && this.runtimeConfig.supervisor !== Super.none
 
-      currentFiber.set(this)
-      superviseOps && this.runtimeConfig.supervisor.unsafeOnResume(this)
+      this.runtimeConfig.flags.isEnabled(RuntimeConfigFlag.EnableCurrentFiber) && currentFiber.set(this)
+
+      this.runtimeConfig.supervisor !== Super.none && this.runtimeConfig.supervisor.unsafeOnResume(this)
 
       while (current !== null) {
         try {
@@ -288,7 +287,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
                   case IOTag.GetTrace: {
-                    current = this.unsafeNextEffect(this.unsafeCaptureTrace(undefined))
+                    current = this.unsafeNextEffect(this.unsafeCaptureTrace())
                     break
                   }
                   case IOTag.Succeed: {
@@ -316,9 +315,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     if (this.runtimeConfig.traceEffects && this.unsafeIsInTracingRegion) {
                       this.unsafeAddTrace(current.fill)
                     }
-                    const fast = fastPathChainContinuationTrace.get
-                    fastPathChainContinuationTrace.set(undefined)
-                    const tracedCause    = current.fill(() => this.unsafeCaptureTrace(fast))
+                    const tracedCause    = current.fill(() => this.unsafeCaptureTrace())
                     const discardedFolds = this.unsafeUnwindStack()
                     const strippedCause  = discardedFolds ? C.stripFailures(tracedCause) : tracedCause
                     const suppressed     = this.unsafeClearSuppressedCause()
@@ -987,7 +984,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     const childId       = newFiberId()
     const grandChildren = new Set<FiberContext<any, any>>()
     const ancestry      = this.unsafeIsInTracingRegion && (this.runtimeConfig.traceExecution || this.runtimeConfig.traceStack)
-        ? M.just(this.unsafeCutAncestryTrace(this.unsafeCaptureTrace(undefined)))
+        ? M.just(this.unsafeCutAncestryTrace(this.unsafeCaptureTrace()))
         : M.nothing()
 
     const childContext = new FiberContext<any, any>(
@@ -1098,20 +1095,19 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     }
   }
 
-  private unsafeCaptureTrace(last: TraceElement | undefined): Trace {
+  private unsafeCaptureTrace(): Trace {
     let exec = L.nil<TraceElement>()
     if (this.executionTraces) {
       this.executionTraces.forEach((el) => {
         exec = L.prepend_(exec, el)
       })
     }
-    let stack_ = L.nil<TraceElement>()
+    let stack = L.nil<TraceElement>()
     if (this.stackTraces) {
       this.stackTraces.forEach((el) => {
-        L.prepend_(stack_, el)
+        L.prepend_(stack, el)
       })
     }
-    const stack = last ? L.prepend_(stack_, last) : stack_
     return new Trace(this.id, exec, stack, this.location)
   }
 

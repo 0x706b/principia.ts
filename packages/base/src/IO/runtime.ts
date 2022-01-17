@@ -172,16 +172,9 @@ export class Runtime<R> {
 }
 
 /**
- * Construct custom runtime
- */
-export function makeCustomRuntime<R, A>(env: R, config: RuntimeConfig) {
-  return new Runtime(env, config)
-}
-
-/**
  * Default runtime
  */
-export const defaultRuntime = makeCustomRuntime(defaultEnv, defaultRuntimeConfig)
+export const defaultRuntime = new Runtime(defaultEnv, defaultRuntimeConfig)
 
 /**
  * Exports of default runtime
@@ -198,7 +191,7 @@ export const { run_, runAsap_, runCancel_, run, runAsap, runCancel, runFiber, ru
  */
 export function runtime<R0>() {
   return I.asksIO((r0: R0) =>
-    I.runtimeConfig((config) => I.succeedLazy(() => makeCustomRuntime<R0, unknown>(r0, config)))
+    I.runtimeConfig((config) => I.succeedLazy(() => new Runtime<R0>(r0, config)))
   )
 }
 

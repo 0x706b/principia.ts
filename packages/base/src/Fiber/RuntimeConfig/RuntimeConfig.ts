@@ -1,6 +1,5 @@
 import type { Cause, Renderer } from '../../IO/Cause'
 import type { Supervisor } from '../../Supervisor'
-import type { Executor } from '../Executor/Executor'
 import type { FiberId } from '../FiberId'
 import type { RuntimeConfigFlags } from './RuntimeConfigFlags'
 
