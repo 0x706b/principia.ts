@@ -36,7 +36,7 @@ export abstract class RunnableSpec<R, E> extends AbstractRunnableSpec<R, E> {
   }
   main(args: TA.TestArgs): void {
     const filteredSpec = S.filterByArgs_(this.spec, args)
-    I.run_(I.giveLayer_(this.run(filteredSpec), this.runner.bootstrap))
+    I.unsafeRun_(I.giveLayer_(this.run(filteredSpec), this.runner.bootstrap))
   }
 }
 

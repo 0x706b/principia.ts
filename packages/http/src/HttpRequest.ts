@@ -80,25 +80,25 @@ export class HttpRequest {
                 yield* _(
                   I.succeedLazy(() => {
                     req.on('close', () => {
-                      runtime.run_(Q.offer_(queue, { _tag: 'Close' }))
+                      runtime.unsafeRun_(Q.offer_(queue, { _tag: 'Close' }))
                     })
                     req.on('data', (chunk) => {
-                      runtime.run_(Q.offer_(queue, { _tag: 'Data', chunk }))
+                      runtime.unsafeRun_(Q.offer_(queue, { _tag: 'Data', chunk }))
                     })
                     req.on('end', () => {
-                      runtime.run_(Q.offer_(queue, { _tag: 'End' }))
+                      runtime.unsafeRun_(Q.offer_(queue, { _tag: 'End' }))
                     })
                     req.on('pause', () => {
-                      runtime.run_(Q.offer_(queue, { _tag: 'Pause' }))
+                      runtime.unsafeRun_(Q.offer_(queue, { _tag: 'Pause' }))
                     })
                     req.on('error', (error) => {
-                      runtime.run_(Q.offer_(queue, { _tag: 'Error', error }))
+                      runtime.unsafeRun_(Q.offer_(queue, { _tag: 'Error', error }))
                     })
                     req.on('readable', () => {
-                      runtime.run_(Q.offer_(queue, { _tag: 'Readble' }))
+                      runtime.unsafeRun_(Q.offer_(queue, { _tag: 'Readble' }))
                     })
                     req.on('resume', () => {
-                      runtime.run_(Q.offer_(queue, { _tag: 'Resume' }))
+                      runtime.unsafeRun_(Q.offer_(queue, { _tag: 'Resume' }))
                     })
                   })
                 )

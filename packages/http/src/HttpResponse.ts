@@ -1,6 +1,7 @@
 import type { Byte } from '@principia/base/Byte'
 import type { Conc } from '@principia/base/collection/immutable/Conc'
 import type { ReadonlyRecord } from '@principia/base/collection/immutable/Record'
+import type * as HKT from '@principia/base/HKT'
 import type { FIO, IO, UIO } from '@principia/base/IO'
 import type * as http from 'http'
 import type { Readable } from 'stream'
@@ -50,8 +51,12 @@ interface UnpipeEvent {
 
 export type ResponseEvent = CloseEvent | DrainEvent | ErrorEvent | FinishEvent | PipeEvent | UnpipeEvent
 
+export interface HttpResponseCompletedF extends HKT.HKT {
+  readonly type: HttpResponseCompleted
+}
+
 export interface HttpResponseCompleted extends NT.Newtype<'HttpResponseCompleted', void> {}
-export const HttpResponseCompleted = NT.newtype<HttpResponseCompleted>()
+export const HttpResponseCompleted = NT.newtype<HttpResponseCompletedF>()
 
 export class HttpResponse {
   eventStream: Ma.Managed<unknown, never, S.Stream<unknown, never, ResponseEvent>>
@@ -71,22 +76,22 @@ export class HttpResponse {
                 yield* $(
                   I.succeedLazy(() => {
                     res.on('close', () => {
-                      runtime.run_(Q.offer_(queue, { _tag: 'Close' }))
+                      runtime.unsafeRun_(Q.offer_(queue, { _tag: 'Close' }))
                     })
                     res.on('drain', () => {
-                      runtime.run_(Q.offer_(queue, { _tag: 'Drain' }))
+                      runtime.unsafeRun_(Q.offer_(queue, { _tag: 'Drain' }))
                     })
                     res.on('finish', () => {
-                      runtime.run_(Q.offer_(queue, { _tag: 'Finish' }))
+                      runtime.unsafeRun_(Q.offer_(queue, { _tag: 'Finish' }))
                     })
                     res.on('error', (error) => {
-                      runtime.run_(Q.offer_(queue, { _tag: 'Error', error }))
+                      runtime.unsafeRun_(Q.offer_(queue, { _tag: 'Error', error }))
                     })
                     res.on('pipe', (src) => {
-                      runtime.run_(Q.offer_(queue, { _tag: 'Pipe', src }))
+                      runtime.unsafeRun_(Q.offer_(queue, { _tag: 'Pipe', src }))
                     })
                     res.on('unpipe', (src) => {
-                      runtime.run_(Q.offer_(queue, { _tag: 'Unpipe', src }))
+                      runtime.unsafeRun_(Q.offer_(queue, { _tag: 'Unpipe', src }))
                     })
                   })
                 )

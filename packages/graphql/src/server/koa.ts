@@ -147,9 +147,9 @@ export function makeGraphQl<FieldPURI extends FieldAURIS, InputPURI extends Inpu
           apolloConfig.subscriptions = {
             keepAlive: config.subscriptions.keepAlive,
             onConnect: (connectionParams, websocket, context) =>
-              pipe(onConnect(connectionParams, websocket, context), I.give(env), I.runPromise),
+              pipe(onConnect(connectionParams, websocket, context), I.give(env), I.unsafeRunPromise),
             onDisconnect: onDisconnect
-              ? (websocket, context) => pipe(onDisconnect(websocket, context), I.give(env), I.runPromise)
+              ? (websocket, context) => pipe(onDisconnect(websocket, context), I.give(env), I.unsafeRunPromise)
               : undefined,
             path: config.subscriptions.path
           }
@@ -176,7 +176,7 @@ export function makeGraphQl<FieldPURI extends FieldAURIS, InputPURI extends Inpu
           pipe(
             I.try(() => {
               const server = new ApolloServer({
-                context: (ctx) => pipe(context(ctx), I.give(env), I.runPromise),
+                context: (ctx) => pipe(context(ctx), I.give(env), I.unsafeRunPromise),
                 schema,
                 ...apolloConfig,
                 formatError: (error) => {

@@ -23,6 +23,6 @@ export abstract class AbstractRunnableSpec<R, E> {
   }
 
   get platform() {
-    return this.runner.platform
+    return this.runner.runtimeConfig
   }
 }

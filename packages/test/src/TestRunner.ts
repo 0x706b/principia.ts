@@ -4,7 +4,7 @@ import type { ExecutedSpec } from './ExecutedSpec'
 import type { Spec } from './Spec'
 import type { TestExecutor } from './TestExecutor'
 import type { Clock } from '@principia/base/Clock'
-import type { Platform } from '@principia/base/Fiber'
+import type { RuntimeConfig } from '@principia/base/Fiber/RuntimeConfig/RuntimeConfig'
 import type { Has } from '@principia/base/Has'
 import type { URIO } from '@principia/base/IO'
 import type { Layer } from '@principia/base/Layer'
@@ -22,7 +22,7 @@ import { TestLogger } from './TestLogger'
 export class TestRunner<R, E> {
   constructor(
     readonly executor: TestExecutor<R>,
-    readonly platform: Platform<unknown> = I.defaultRuntime.platform,
+    readonly runtimeConfig: RuntimeConfig = I.defaultRuntime.config,
     readonly reporter: TestReporter<E> = report(defaultTestAnnotationRenderer),
     readonly bootstrap: Layer<unknown, never, Has<TestLogger> & Has<Clock>> = L.succeed(ConsoleTag)(new LiveConsole())
       ['>=>'](TestLogger.fromConsole)

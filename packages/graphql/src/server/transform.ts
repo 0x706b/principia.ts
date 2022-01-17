@@ -29,7 +29,7 @@ export function transformResolvers<Ctx>(
     for (const [fieldName, resolver] of entries(fields)) {
       if (typeof resolver === 'function') {
         (resolvers as any)[fieldName] = (root: any, args: any, ctx: any, info: GraphQLResolveInfo) => {
-          return I.runPromise(
+          return I.unsafeRunPromise(
             I.gen(function* (_) {
               const ret = resolver({
                 root,
@@ -55,7 +55,7 @@ export function transformResolvers<Ctx>(
       } else {
         (resolvers as any)[fieldName] = {
           subscribe: (root: {}, args: any, ctx: ConnectionContext, info: GraphQLResolveInfo) =>
-            I.runPromise(
+            I.unsafeRunPromise(
               I.gen(function* (_) {
                 const result = yield* _(
                   pipe(
@@ -81,7 +81,7 @@ export function transformResolvers<Ctx>(
               })
             ),
           resolve: (r: any, ctx: ConnectionContext) =>
-            I.runPromise(
+            I.unsafeRunPromise(
               I.gen(function* (_) {
                 const result = yield* _(pipe(resolver.resolve({ result: r, ctx }), I.give({ ...(env as any) })))
                 return result

@@ -1,6 +1,5 @@
 import type * as Fiber from '@principia/base/Fiber'
 import type { Trace, TraceElement } from '@principia/base/Fiber/trace'
-import type { CustomRuntime } from '@principia/base/IO'
 
 import * as L from '@principia/base/collection/immutable/List'
 import * as Ev from '@principia/base/Eval'
@@ -8,8 +7,8 @@ import * as Ex from '@principia/base/Exit'
 import { interruptAllAs_, prettyFiberId } from '@principia/base/Fiber'
 import { pipe } from '@principia/base/function'
 import { AtomicBoolean } from '@principia/base/internal/AtomicBoolean'
+import { defaultEnv, defaultRuntime, defaultRuntimeConfig, defaultSupervisor, Runtime } from '@principia/base/IO'
 import * as I from '@principia/base/IO'
-import { defaultRuntime, defaultSupervisor } from '@principia/base/IO'
 import * as Cause from '@principia/base/IO/Cause'
 import path from 'path'
 
@@ -17,7 +16,7 @@ export function defaultTeardown(status: number, id: Fiber.FiberId, onExit: (stat
   pipe(
     defaultSupervisor.value,
     I.tap((fibers) => interruptAllAs_(fibers, id)),
-    I.run((exit) => {
+    I.unsafeRun((exit) => {
       setTimeout(() => {
         if (Ex.isSuccess(exit) && exit.value.length === 0) {
           onExit(status)
@@ -103,12 +102,12 @@ export function prettyTraceNode(trace: Trace, adapt: (path: string, mod?: string
 export const nodeTracer = (trace: Trace) =>
   prettyTraceNode(trace, (path) => path.replace('/dist-traced/esm/', '/').replace('/dist-traced/cjs/', '/'))
 
-export class NodeRuntime<R, A> {
-  constructor(readonly custom: CustomRuntime<R, A>) {
+export class NodeRuntime<R> {
+  constructor(readonly runtime: Runtime<R>) {
     this.runMain = this.runMain.bind(this)
   }
 
-  private prettyPrintCause = Cause.makePrettyPrint(this.custom.platform.renderer)
+  private prettyPrintCause = Cause.makePrettyPrint(this.runtime.config.renderer)
 
   /**
    * Runs effect until completion listening for system level termination signals that
@@ -128,7 +127,7 @@ export class NodeRuntime<R, A> {
       process.exit(s)
     }
 
-    const context = this.custom.runFiber(effect)
+    const context = this.runtime.unsafeRunFiber(effect)
 
     context.unsafeRunLater(I.concrete(effect))
     context.awaitAsync((exit) => {
@@ -158,7 +157,7 @@ export class NodeRuntime<R, A> {
         process.removeListener('SIGINT', handler)
 
         if (interrupted.compareAndSet(false, true)) {
-          this.custom.run_(context.interruptAs(context.id))
+          this.runtime.unsafeRun_(context.interruptAs(context.id))
         }
       })(signal)
     }
@@ -169,16 +168,21 @@ export class NodeRuntime<R, A> {
 }
 
 export const nodeRuntime = new NodeRuntime(
-  defaultRuntime.traceRenderer({
-    renderTrace: nodeTracer,
-    renderId: Cause.defaultRenderer.renderId,
-    renderError: Cause.defaultRenderer.renderError,
-    renderUnknown: Cause.defaultRenderer.renderUnknown,
-    renderFailure: Cause.defaultRenderer.renderFailure
-  })
+  new Runtime(
+    defaultEnv,
+    defaultRuntimeConfig.copy({
+      renderer: {
+        renderTrace: nodeTracer,
+        renderId: Cause.defaultRenderer.renderId,
+        renderError: Cause.defaultRenderer.renderError,
+        renderUnknown: Cause.defaultRenderer.renderUnknown,
+        renderFailure: Cause.defaultRenderer.renderFailure
+      }
+    })
+  )
 )
 
 export const {
-  custom: { run, runAsap, runCancel, runFiber, runPromise, runPromiseExit },
+  runtime: { unsafeRun, unsafeRunCancel, unsafeRunFiber, unsafeRunPromise, unsafeRunPromiseExit },
   runMain
 } = nodeRuntime

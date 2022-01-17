@@ -535,7 +535,7 @@ export function fromIO<E, A>(io: IO.IO<IOEnv, E, A>): Observable<E, A> {
   return new Observable((s) => {
     let fiber: FiberContext<E, A>
     const scheduled = asyncScheduler.schedule(() => {
-      fiber = IO.runFiber(io)
+      fiber = IO.unsafeRunFiber(io)
       fiber.awaitAsync((exit) => {
         if (!s.closed) {
           pipe(
@@ -575,7 +575,7 @@ export function fromIO<E, A>(io: IO.IO<IOEnv, E, A>): Observable<E, A> {
     })
     return () => {
       scheduled.unsubscribe()
-      fiber && IO.run_(Fi.interrupt(fiber))
+      fiber && IO.unsafeRun_(Fi.interrupt(fiber))
     }
   })
 }

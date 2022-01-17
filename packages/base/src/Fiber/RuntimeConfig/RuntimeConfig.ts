@@ -6,8 +6,6 @@ import type { RuntimeConfigFlags } from './RuntimeConfigFlags'
 import { CaseClass } from '../../Case'
 
 export class RuntimeConfig extends CaseClass<{
-  readonly fatal: (_: unknown) => boolean
-  readonly reportFatal: (_: unknown) => void
   readonly reportFailure: (e: Cause<unknown>) => void
   readonly supervisor: Supervisor<any>
   readonly flags: RuntimeConfigFlags

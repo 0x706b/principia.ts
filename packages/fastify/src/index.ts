@@ -327,7 +327,7 @@ export function makeFastify<Server extends RawServerBase>(): FastifyServerInstan
         function runtime<R, Url extends string>(handler: IORequestHandler<R, http.Server, Url>) {
           return pipe(
             IO.runtime<R>(),
-            IO.map((r) => r.supervised(supervisor)),
+            IO.map((r) => new IO.Runtime(r.env, r.config.copy({ supervisor }))),
             IO.map(
               (
                   r
@@ -338,7 +338,7 @@ export function makeFastify<Server extends RawServerBase>(): FastifyServerInstan
                   RouteGenericInterface & { Params: RouteParameters<Url> }
                 > =>
                 (request, reply) => {
-                  r.runFiber(
+                  r.unsafeRunFiber(
                     IO.onTermination_(open.get ? handler(request, reply) : IO.interrupt, exitHandler(request, reply))
                   )
                 }

@@ -12,7 +12,7 @@ import { FiberContext } from '../Fiber/FiberContext'
 import { RuntimeConfig } from '../Fiber/RuntimeConfig/RuntimeConfig'
 import { RuntimeConfigFlag } from '../Fiber/RuntimeConfig/RuntimeConfigFlag'
 import { RuntimeConfigFlags } from '../Fiber/RuntimeConfig/RuntimeConfigFlags'
-import { constTrue, constVoid, flow, identity, pipe } from '../function'
+import { constVoid, flow, identity, pipe } from '../function'
 import * as M from '../Maybe'
 import { defaultRandom, RandomTag } from '../Random'
 import * as Super from '../Supervisor'
@@ -38,8 +38,6 @@ export type AsyncCancel<E, A> = I.UIO<Exit<E, A>>
 export const defaultSupervisor = Super.unsafeTrack()
 
 export const defaultRuntimeConfig = new RuntimeConfig({
-  fatal: constTrue,
-  reportFatal: constVoid,
   reportFailure: constVoid,
   executionTraceLength: 25,
   stackTraceLength: 25,
@@ -58,13 +56,12 @@ export const defaultRuntimeConfig = new RuntimeConfig({
 
 export class Runtime<R> {
   constructor(readonly env: R, readonly config: RuntimeConfig) {
-    this.fiberContext   = this.fiberContext.bind(this)
-    this.run_           = this.run_.bind(this)
-    this.runAsap_       = this.runAsap_.bind(this)
-    this.runCancel_     = this.runCancel_.bind(this)
-    this.runPromise     = this.runPromise.bind(this)
-    this.runPromiseExit = this.runPromiseExit.bind(this)
-    this.runFiber       = this.runFiber.bind(this)
+    this.fiberContext         = this.fiberContext.bind(this)
+    this.unsafeRun_           = this.unsafeRun_.bind(this)
+    this.unsafeRunCancel_     = this.unsafeRunCancel_.bind(this)
+    this.unsafeRunPromise     = this.unsafeRunPromise.bind(this)
+    this.unsafeRunPromiseExit = this.unsafeRunPromiseExit.bind(this)
+    this.unsafeRunFiber       = this.unsafeRunFiber.bind(this)
   }
 
   private fiberContext<E, A>(effect: I.IO<R, E, A>) {
@@ -85,7 +82,7 @@ export class Runtime<R> {
     return context
   }
 
-  runFiber<E, A>(self: I.IO<R, E, A>): FiberContext<E, A> {
+  unsafeRunFiber<E, A>(self: I.IO<R, E, A>): FiberContext<E, A> {
     const context = this.fiberContext<E, A>(self)
     return context
   }
@@ -93,7 +90,7 @@ export class Runtime<R> {
   /**
    * Runs effect until completion, calling cb with the eventual exit state
    */
-  run_<E, A>(_: I.IO<R, E, A>, cb?: Callback<E, A>) {
+  unsafeRun_<E, A>(_: I.IO<R, E, A>, cb?: Callback<E, A>) {
     const context = this.fiberContext<E, A>(_)
     context.awaitAsync(cb || constVoid)
   }
@@ -101,31 +98,15 @@ export class Runtime<R> {
   /**
    * Runs effect until completion, calling cb with the eventual exit state
    */
-  run<E, A>(cb?: Callback<E, A>): (_: I.IO<R, E, A>) => void {
-    return (_) => this.run_(_, cb)
-  }
-
-  /**
-   * Runs effect until completion, calling cb with the eventual exit state
-   */
-  runAsap_<E, A>(_: I.IO<R, E, A>, cb?: Callback<E, A>) {
-    const context = this.fiberContext<E, A>(_)
-
-    context.awaitAsync(cb || constVoid)
-  }
-
-  /**
-   * Runs effect until completion, calling cb with the eventual exit state
-   */
-  runAsap<E, A>(cb?: Callback<E, A>): (_: I.IO<R, E, A>) => void {
-    return (_) => this.runAsap_(_, cb)
+  unsafeRun<E, A>(cb?: Callback<E, A>): (_: I.IO<R, E, A>) => void {
+    return (_) => this.unsafeRun_(_, cb)
   }
 
   /**
    * Runs effect until completion returing a cancel effecr that when executed
    * triggers cancellation of the process
    */
-  runCancel_<E, A>(_: I.IO<R, E, A>, cb?: Callback<E, A>): AsyncCancel<E, A> {
+  unsafeRunCancel_<E, A>(_: I.IO<R, E, A>, cb?: Callback<E, A>): AsyncCancel<E, A> {
     const context = this.fiberContext<E, A>(_)
 
     context.awaitAsync(cb || constVoid)
@@ -137,14 +118,14 @@ export class Runtime<R> {
    * Runs effect until completion returing a cancel effecr that when executed
    * triggers cancellation of the process
    */
-  runCancel<E, A>(cb?: Callback<E, A>): (_: I.IO<R, E, A>) => AsyncCancel<E, A> {
-    return (_) => this.runCancel_(_, cb)
+  unsafeRunCancel<E, A>(cb?: Callback<E, A>): (_: I.IO<R, E, A>) => AsyncCancel<E, A> {
+    return (_) => this.unsafeRunCancel_(_, cb)
   }
 
   /**
    * Run effect as a Promise, throwing a the first error or exception
    */
-  runPromise<E, A>(_: I.IO<R, E, A>): Promise<A> {
+  unsafeRunPromise<E, A>(_: I.IO<R, E, A>): Promise<A> {
     const context = this.fiberContext<E, A>(_)
 
     return new Promise((res, rej) => {
@@ -156,7 +137,7 @@ export class Runtime<R> {
    * Run effect as a Promise of the Exit state
    * in case of error.
    */
-  runPromiseExit<E, A>(_: I.IO<R, E, A>): Promise<Exit<E, A>> {
+  unsafeRunPromiseExit<E, A>(_: I.IO<R, E, A>): Promise<Exit<E, A>> {
     const context = this.fiberContext<E, A>(_)
 
     return new Promise((res) => {
@@ -179,8 +160,15 @@ export const defaultRuntime = new Runtime(defaultEnv, defaultRuntimeConfig)
 /**
  * Exports of default runtime
  */
-export const { run_, runAsap_, runCancel_, run, runAsap, runCancel, runFiber, runPromise, runPromiseExit } =
-  defaultRuntime
+export const {
+  unsafeRun_,
+  unsafeRunCancel_,
+  unsafeRun,
+  unsafeRunCancel,
+  unsafeRunFiber,
+  unsafeRunPromise,
+  unsafeRunPromiseExit
+} = defaultRuntime
 
 /**
  * Use current environment to build a runtime that is capable of
@@ -190,15 +178,5 @@ export const { run_, runAsap_, runCancel_, run, runAsap, runCancel, runFiber, ru
  * is valid (i.e. keep attention to closed resources)
  */
 export function runtime<R0>() {
-  return I.asksIO((r0: R0) =>
-    I.runtimeConfig((config) => I.succeedLazy(() => new Runtime<R0>(r0, config)))
-  )
-}
-
-export function withRuntimeM<R0, R, E, A>(f: (r: Runtime<R0>) => I.IO<R, E, A>) {
-  return I.chain_(runtime<R0>(), f)
-}
-
-export function withRuntime<R0, A>(f: (r: Runtime<R0>) => A) {
-  return I.chain_(runtime<R0>(), (r) => I.succeed(f(r)))
+  return I.asksIO((r0: R0) => I.runtimeConfig((config) => I.succeedLazy(() => new Runtime<R0>(r0, config))))
 }

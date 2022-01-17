@@ -49,7 +49,7 @@ const program = pipe(
   )
 )
 
-I.run_(
+I.unsafeRun_(
   program,
   Ex.match(
     C.squash(showFiberId)((e) => {

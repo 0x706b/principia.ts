@@ -8,7 +8,7 @@ import type { Cause } from '@principia/base/IO/Cause'
 import type { Exit } from '@principia/base/IO/Exit'
 import type { IOEnv } from '@principia/base/IOEnv'
 import type { Supervisor } from '@principia/base/Supervisor'
-import type { _R, Erase, UnionToIntersection } from '@principia/base/util/types'
+import type { _R, UnionToIntersection } from '@principia/base/util/types'
 import type * as http from 'http'
 import type { DefaultContext, DefaultState, Middleware, Next, ParameterizedContext } from 'koa'
 
@@ -20,6 +20,7 @@ import { putStrLnErr } from '@principia/base/Console'
 import * as Fi from '@principia/base/Fiber'
 import { flow } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
+import { Runtime } from '@principia/base/IO'
 import * as I from '@principia/base/IO'
 import * as Ca from '@principia/base/IO/Cause'
 import * as Ex from '@principia/base/IO/Exit'
@@ -209,13 +210,13 @@ export abstract class KoaRuntime {
 
       function runtime<R>() {
         return I.runtime<R>()
-          .map((r) => r.supervised(supervisor))
+          .map((r) => new Runtime(r.env, r.config.copy({ supervisor })))
           .map(
             (r) =>
               <E, A>(effect: IO<R & IOEnv, E, A>) =>
                 open.get
                   .ifIO(
-                    I.defer(() => effect['|>'](I.giveSomeLayer(liveIOEnv))['|>'](r.runFiber).await),
+                    I.defer(() => effect['|>'](I.giveSomeLayer(liveIOEnv))['|>'](r.unsafeRunFiber).await),
                     I.succeed(Ex.failCause(Ca.empty))
                   )
                   .runPromiseExit()

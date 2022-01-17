@@ -392,7 +392,7 @@ export function asyncInterrupt<R, E, A>(
             pipe(
               Take.fromPull(k),
               I.chain((a) => Q.offer_(output, a)),
-              runtime.runCancel(cb)
+              runtime.unsafeRunCancel(cb)
             )
           )
         )
@@ -471,7 +471,7 @@ export function asyncIO<R, E, A, R1 = R, E1 = E>(
             pipe(
               Take.fromPull(k),
               I.chain((a) => Q.offer_(output, a)),
-              runtime.runCancel(cb)
+              runtime.unsafeRunCancel(cb)
             )
           )
         )
@@ -4944,7 +4944,7 @@ export function toAsyncIterable<R, E, A>(ma: Stream<R, E, A>): Ma.Managed<R, nev
             currentChunk = C.unsafeTail(currentChunk)
             return { done: false, value: E.right(v) }
           } else {
-            const result = await runtime.runPromiseExit(pull)
+            const result = await runtime.unsafeRunPromiseExit(pull)
             return pipe(
               result,
               Ex.match(

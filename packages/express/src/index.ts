@@ -16,6 +16,7 @@ import { pipe } from '@principia/base/function'
 import { tag } from '@principia/base/Has'
 import { AtomicBoolean } from '@principia/base/internal/AtomicBoolean'
 import * as IO from '@principia/base/IO'
+import { Runtime } from '@principia/base/IO'
 import { defaultPrettyPrint, halted } from '@principia/base/IO/Cause'
 import * as L from '@principia/base/Layer'
 import * as Ma from '@principia/base/Managed'
@@ -137,13 +138,13 @@ export const makeExpressApp: ManagedExpressApp = Ma.gen(function* (_) {
           }[number]
         >
       >(),
-      IO.map((r) => r.supervised(supervisor)),
+      IO.map((r) => new Runtime(r.env, r.config.copy({ supervisor }))),
       IO.map((r) =>
         A.map_(
           handlers,
           (handler): RequestHandler =>
             (req, res, next) =>
-              r.runFiber(
+              r.unsafeRunFiber(
                 IO.onTermination_(open.get ? handler(req, res, next) : IO.interrupt, exitHandler(req, res, next))
               )
         )

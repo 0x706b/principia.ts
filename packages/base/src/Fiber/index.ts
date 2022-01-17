@@ -1,4 +1,3 @@
-export * from '../internal/Platform'
 export * from './combinators'
 export * from './core'
 export * from './FiberContext'
