@@ -36,3 +36,9 @@ This license is used by the following third-party libraries
 - [monocle-ts](https://github.com/gcanti/monocle-ts)
 - [pure-rand](https://github.com/dubzzz/pure-rand)
 - [ts-pattern](https://github.com/gvergnaud/ts-pattern)
+
+## BSD 3-Clause
+
+This license is used by the following third-party libraries
+
+- [MT19937 (MersenneTwister)](http://www.math.sci.hiroshima-u.ac.jp/m-mat/MT/emt.html)

@@ -7,7 +7,7 @@ import type { ArrayInt } from './util/pure-rand/distribution/internals/ArrayInt'
 
 import { tag } from './Has'
 import * as I from './IO/core'
-import * as prand from './util/pure-rand'
+import * as rand from './util/rand'
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -18,7 +18,7 @@ export class LiveRandom implements Random {
   private PRNG
 
   constructor(seed: number) {
-    this.PRNG = new prand.Random(prand.mersenne(seed))
+    this.PRNG = new rand.Random(new rand.MersenneTwister(seed))
   }
 
   next: I.UIO<number> = I.succeedLazy(() => this.PRNG.nextDouble())
