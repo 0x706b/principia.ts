@@ -1,7 +1,8 @@
 import type { FIO, IO, UIO } from '../IO/core'
+import type { Predicate } from '../prelude'
 
 import * as E from '../Either'
-import { flow, identity, pipe } from '../function'
+import { constant, constVoid, flow, identity, pipe } from '../function'
 import { FiberRefDelete, FiberRefLocally, FiberRefModify, FiberRefWith } from '../IO/core'
 import * as M from '../Maybe'
 import { matchTag_ } from '../prelude'
@@ -10,11 +11,15 @@ import * as I from './internal/io'
 
 /*
  * -------------------------------------------------------------------------------------------------
- * Model
+ * model
  * -------------------------------------------------------------------------------------------------
  */
 
 export interface FiberRef<EA, EB, A, B> {
+  readonly _EA: () => EA
+  readonly _EB: () => EB
+  readonly _A: (_: A) => void
+  readonly _B: () => B
   /**
    * Folds over the error and value types of the `FiberRef`. This is a highly
    * polymorphic method that is capable of arbitrarily transforming the error
@@ -67,6 +72,11 @@ export interface FiberRef<EA, EB, A, B> {
 export type UFiberRef<A> = FiberRef<never, never, A, A>
 
 export class Runtime<A> implements FiberRef<never, never, A, A> {
+  readonly _EA!: () => never
+  readonly _EB!: () => never
+  readonly _A!: (_: A) => void
+  readonly _B!: () => A
+
   readonly _tag = 'Runtime'
 
   constructor(readonly initial: A, readonly fork: (a: A) => A, readonly join: (a0: A, a1: A) => A) {}
@@ -119,6 +129,11 @@ export class Runtime<A> implements FiberRef<never, never, A, A> {
 }
 
 export class Derived<EA, EB, A, B> implements FiberRef<EA, EB, A, B> {
+  readonly _EA!: () => EA
+  readonly _EB!: () => EB
+  readonly _A!: (_: A) => void
+  readonly _B!: () => B
+
   readonly _tag = 'Derived'
 
   constructor(
@@ -229,6 +244,11 @@ export class Derived<EA, EB, A, B> implements FiberRef<EA, EB, A, B> {
 }
 
 export class DerivedAll<EA, EB, A, B> implements FiberRef<EA, EB, A, B> {
+  readonly _EA!: () => EA
+  readonly _EB!: () => EB
+  readonly _A!: (_: A) => void
+  readonly _B!: () => B
+
   readonly _tag = 'DerivedAll'
 
   constructor(
@@ -355,7 +375,7 @@ export function concrete<EA, EB, A, B>(_: FiberRef<EA, EB, A, B>): asserts _ is 
 
 /*
  * -------------------------------------------------------------------------------------------------
- * Constructors
+ * constructors
  * -------------------------------------------------------------------------------------------------
  */
 
@@ -380,7 +400,7 @@ export function make<A>(
 
 /*
  * -------------------------------------------------------------------------------------------------
- * Combinators
+ * operations
  * -------------------------------------------------------------------------------------------------
  */
 
@@ -528,4 +548,268 @@ export function getWith<B, R, E, C>(
   f: (b: B) => I.IO<R, E, C>
 ): <EA, EB, A>(fiberRef: FiberRef<EA, EB, A, B>) => I.IO<R, EB | E, C> {
   return (fiberRef) => fiberRef.getWith(f)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Folds
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function match_<EA, EB, A, B, EC, ED, C, D>(
+  ref: FiberRef<EA, EB, A, B>,
+  ea: (_: EA) => EC,
+  eb: (_: EB) => ED,
+  ca: (_: C) => E.Either<EC, A>,
+  bd: (_: B) => E.Either<ED, D>
+): FiberRef<EC, ED, C, D> {
+  return ref.match(ea, eb, ca, bd)
+}
+
+/**
+ * @dataFirst match_
+ */
+export function match<EA, EB, A, B, EC, ED, C, D>(
+  ea: (_: EA) => EC,
+  eb: (_: EB) => ED,
+  ca: (_: C) => E.Either<EC, A>,
+  bd: (_: B) => E.Either<ED, D>
+): (ref: FiberRef<EA, EB, A, B>) => FiberRef<EC, ED, C, D> {
+  return (ref) => ref.match(ea, eb, ca, bd)
+}
+
+export function matchAll_<EA, EB, A, B, EC, ED, C, D>(
+  ref: FiberRef<EA, EB, A, B>,
+  ea: (_: EA) => EC,
+  eb: (_: EB) => ED,
+  ec: (_: EB) => EC,
+  ca: (_: C) => (_: B) => E.Either<EC, A>,
+  bd: (_: B) => E.Either<ED, D>
+): FiberRef<EC, ED, C, D> {
+  return ref.matchAll(ea, eb, ec, ca, bd)
+}
+
+/**
+ * @dataFirst matchAll_
+ */
+export function matchAll<EA, EB, A, B, EC, ED, C, D>(
+  ea: (_: EA) => EC,
+  eb: (_: EB) => ED,
+  ec: (_: EB) => EC,
+  ca: (_: C) => (_: B) => E.Either<EC, A>,
+  bd: (_: B) => E.Either<ED, D>
+): (ref: FiberRef<EA, EB, A, B>) => FiberRef<EC, ED, C, D> {
+  return (ref) => ref.matchAll(ea, eb, ec, ca, bd)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Profunctor
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function dimapEither_<EA, EB, A, B, EC, ED, C, D>(
+  ref: FiberRef<EA, EB, A, B>,
+  f: (inp: C) => E.Either<EC, A>,
+  g: (out: B) => E.Either<ED, D>
+): FiberRef<EA | EC, EB | ED, C, D> {
+  return match_(
+    ref,
+    (ea: EA | EC) => ea,
+    (eb: EB | ED) => eb,
+    f,
+    g
+  )
+}
+
+/**
+ * @dataFirst dimapEither_
+ */
+export function dimapEither<A, B, EC, ED, C, D>(
+  f: (inp: C) => E.Either<EC, A>,
+  g: (out: B) => E.Either<ED, D>
+): <EA, EB>(ref: FiberRef<EA, EB, A, B>) => FiberRef<EA | EC, EB | ED, C, D> {
+  return (ref) => dimapEither_(ref, f, g)
+}
+
+export function dimap_<EA, EB, A, B, C, D>(
+  ref: FiberRef<EA, EB, A, B>,
+  f: (inp: C) => A,
+  g: (out: B) => D
+): FiberRef<EA, EB, C, D> {
+  return dimapEither_(ref, flow(f, E.right), flow(g, E.right))
+}
+
+/**
+ * @dataFirst dimap_
+ */
+export function dimap<A, B, C, D>(
+  f: (inp: C) => A,
+  g: (out: B) => D
+): <EA, EB>(ref: FiberRef<EA, EB, A, B>) => FiberRef<EA, EB, C, D> {
+  return (ref) => dimap_(ref, f, g)
+}
+
+export function dimapError_<EA, EB, A, B, EC, ED>(
+  ref: FiberRef<EA, EB, A, B>,
+  f: (inpError: EA) => EC,
+  g: (outError: EB) => ED
+): FiberRef<EC, ED, A, B> {
+  return match_(ref, f, g, E.right, E.right)
+}
+
+/**
+ * @dataFirst dimapError_
+ */
+export function dimapError<EA, EB, EC, ED>(
+  f: (inpError: EA) => EC,
+  g: (outError: EB) => ED
+): <A, B>(ref: FiberRef<EA, EB, A, B>) => FiberRef<EC, ED, A, B> {
+  return (ref) => dimapError_(ref, f, g)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Contravariant
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function contramapEither_<EA, EB, A, B, EC, C>(
+  ref: FiberRef<EA, EB, A, B>,
+  f: (inp: C) => E.Either<EC, A>
+): FiberRef<EA | EC, EB, C, B> {
+  return dimapEither_(ref, f, E.right)
+}
+
+/**
+ * @dataFirst contramapEither_
+ */
+export function contramapEither<A, EC, C>(
+  f: (inp: C) => E.Either<EC, A>
+): <EA, EB, B>(ref: FiberRef<EA, EB, A, B>) => FiberRef<EA | EC, EB, C, B> {
+  return (ref) => contramapEither_(ref, f)
+}
+
+export function contramap_<EA, EB, A, B, C>(ref: FiberRef<EA, EB, A, B>, f: (inp: C) => A): FiberRef<EA, EB, C, B> {
+  return contramapEither_(ref, flow(f, E.right))
+}
+
+/**
+ * @dataFirst contramap_
+ */
+export function contramap<A, C>(f: (inp: C) => A): <EA, EB, B>(ref: FiberRef<EA, EB, A, B>) => FiberRef<EA, EB, C, B> {
+  return (ref) => contramap_(ref, f)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Filter
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function filterMap_<EA, EB, A, B, C>(
+  ref: FiberRef<EA, EB, A, B>,
+  f: (b: B) => M.Maybe<C>
+): FiberRef<EA, M.Maybe<EB>, A, C> {
+  return match_(
+    ref,
+    identity,
+    M.just,
+    E.right,
+    flow(
+      f,
+      M.match(() => E.left(M.nothing()), E.right)
+    )
+  )
+}
+
+/**
+ * @dataFirst filterMap_
+ */
+export function filterMap<B, C>(
+  f: (b: B) => M.Maybe<C>
+): <EA, EB, A>(ref: FiberRef<EA, EB, A, B>) => FiberRef<EA, M.Maybe<EB>, A, C> {
+  return (ref) => filterMap_(ref, f)
+}
+
+export function filterInput_<EA, EB, A, B>(
+  ref: FiberRef<EA, EB, A, B>,
+  p: Predicate<A>
+): FiberRef<M.Maybe<EA>, EB, A, B> {
+  return match_(ref, M.just, identity, (a) => (p(a) ? E.right(a) : E.left(M.nothing())), E.right)
+}
+
+/**
+ * @dataFirst filterInput_
+ */
+export function filterInput<A>(
+  p: Predicate<A>
+): <EA, EB, B>(ref: FiberRef<EA, EB, A, B>) => FiberRef<M.Maybe<EA>, EB, A, B> {
+  return (ref) => filterInput_(ref, p)
+}
+
+export function filterOutput_<EA, EB, A, B>(
+  ref: FiberRef<EA, EB, A, B>,
+  p: Predicate<B>
+): FiberRef<EA, M.Maybe<EB>, A, B> {
+  return match_(ref, identity, M.just, E.right, (b) => (p(b) ? E.right(b) : E.left(M.nothing())))
+}
+
+/**
+ * @dataFirst filterOutput_
+ */
+export function filterOutput<B>(
+  p: Predicate<B>
+): <EA, EB, A>(ref: FiberRef<EA, EB, A, B>) => FiberRef<EA, M.Maybe<EB>, A, B> {
+  return (ref) => filterOutput_(ref, p)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * Functor
+ * -------------------------------------------------------------------------------------------------
+ */
+
+export function mapEither_<EA, EB, A, B, EC, C>(
+  ref: FiberRef<EA, EB, A, B>,
+  f: (out: B) => E.Either<EC, C>
+): FiberRef<EA, EB | EC, A, C> {
+  return dimapEither_(ref, E.right, f)
+}
+
+/**
+ * @dataFirst mapEither_
+ */
+export function mapEither<B, EC, C>(
+  f: (out: B) => E.Either<EC, C>
+): <EA, EB, A>(ref: FiberRef<EA, EB, A, B>) => FiberRef<EA, EB | EC, A, C> {
+  return (ref) => mapEither_(ref, f)
+}
+
+export function map_<EA, EB, A, B, C>(ref: FiberRef<EA, EB, A, B>, f: (out: B) => C): FiberRef<EA, EB, A, C> {
+  return mapEither_(ref, flow(f, E.right))
+}
+
+/**
+ * @dataFirst map_
+ */
+export function map<B, C>(f: (out: B) => C): <EA, EB, A>(ref: FiberRef<EA, EB, A, B>) => FiberRef<EA, EB, A, C> {
+  return (ref) => map_(ref, f)
+}
+
+/*
+ * -------------------------------------------------------------------------------------------------
+ * util
+ * -------------------------------------------------------------------------------------------------
+ */
+
+/**
+ * @optimize identity
+ */
+export function readOnly<EA, EB, A, B>(ref: FiberRef<EA, EB, A, B>): FiberRef<EA, EB, never, B> {
+  return ref
+}
+
+export function writeOnly<EA, EB, A, B>(ref: FiberRef<EA, EB, A, B>): FiberRef<EA, void, A, never> {
+  return match_(ref, identity, constVoid, E.right, constant(E.left(undefined)))
 }
