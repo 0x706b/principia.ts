@@ -1,7 +1,7 @@
 import type { IO } from '@principia/base/IO'
 import type { Predicate } from '@principia/base/Predicate'
 import type { Stream } from '@principia/base/Stream'
-import type { ArrayInt64 } from '@principia/base/util/pure-rand/distribution/internals/ArrayInt'
+import type { ArrayInt64 } from '@principia/base/util/rand/distribution/internals/ArrayInt'
 
 import * as Ch from '@principia/base/Channel'
 import * as CED from '@principia/base/Channel/internal/ChildExecutorDecision'

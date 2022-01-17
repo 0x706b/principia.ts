@@ -1,4 +1,4 @@
-import * as prand from './prand'
+import * as prand from './rand'
 
 /**
  * Wrapper around an instance of a `pure-rand`'s random number generator

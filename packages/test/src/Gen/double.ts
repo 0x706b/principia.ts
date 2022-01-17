@@ -1,6 +1,6 @@
 import type { FloatConstraints, NumberConstraints } from './core'
 import type { Has } from '@principia/base/Has'
-import type { ArrayInt64 } from '@principia/base/util/pure-rand/distribution/internals/ArrayInt'
+import type { ArrayInt64 } from '@principia/base/util/rand/distribution/internals/ArrayInt'
 
 import { IllegalArgumentError } from '@principia/base/Error'
 import { pipe } from '@principia/base/function'

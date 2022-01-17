@@ -5,7 +5,7 @@ import type { UIO } from '@principia/base/IO'
 import type { Maybe } from '@principia/base/Maybe'
 import type { Random } from '@principia/base/Random'
 import type { URef } from '@principia/base/Ref'
-import type { ArrayInt } from '@principia/base/util/pure-rand/distribution/internals/ArrayInt'
+import type { ArrayInt } from '@principia/base/util/rand/distribution/internals/ArrayInt'
 
 import { Byte } from '@principia/base/Byte'
 import { ClockTag } from '@principia/base/Clock'

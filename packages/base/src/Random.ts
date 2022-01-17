@@ -3,7 +3,7 @@
  *
  * Copyright 2020 Michael Arnaldi and the Matechs Garage Contributors.
  */
-import type { ArrayInt } from './util/pure-rand/distribution/internals/ArrayInt'
+import type { ArrayInt } from './util/rand/distribution/internals/ArrayInt'
 
 import { tag } from './Has'
 import * as I from './IO/core'
