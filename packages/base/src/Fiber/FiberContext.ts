@@ -116,18 +116,17 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     ? MQ.bounded<TraceElement>(this.runtimeConfig.stackTraceLength)
     : undefined
   private traceStatusStack   = this.traceStatusEnabled ? makeStack(true) : undefined
+  private currentSupervisor  = this.runtimeConfig.supervisor
   nextIO: Instruction | null = null
 
   constructor(
     protected readonly fiberId: FiberId,
-    private runtimeConfig: RuntimeConfig,
+    private readonly runtimeConfig: RuntimeConfig,
     private interruptStatus: Stack<boolean> | undefined,
     private readonly fiberRefLocals: FiberRefLocals,
     private readonly children: Set<FiberContext<unknown, unknown>>,
     private readonly location: M.Maybe<Trace>
-  ) {
-    this.runUntil = this.runUntil.bind(this)
-  }
+  ) {}
 
   get poll() {
     return succeedLazy(() => this.unsafePoll())
@@ -209,11 +208,11 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
       const flags        = this.runtimeConfig.flags
       const superviseOps =
-        flags.isEnabled(RuntimeConfigFlag.SuperviseOperations) && this.runtimeConfig.supervisor !== Super.none
+        flags.isEnabled(RuntimeConfigFlag.SuperviseOperations) && this.currentSupervisor !== Super.none
 
       this.runtimeConfig.flags.isEnabled(RuntimeConfigFlag.EnableCurrentFiber) && currentFiber.set(this)
 
-      this.runtimeConfig.supervisor !== Super.none && this.runtimeConfig.supervisor.unsafeOnResume(this)
+      this.currentSupervisor !== Super.none && this.currentSupervisor.unsafeOnResume(this)
 
       while (current !== null) {
         try {
@@ -228,7 +227,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                 this.unsafeRunLater(current)
                 current = null
               } else {
-                superviseOps && this.runtimeConfig.supervisor.unsafeOnEffect(this, current)
+                superviseOps && this.currentSupervisor.unsafeOnEffect(this, current)
                 switch (current._tag) {
                   case IOTag.Chain: {
                     const nested = concrete(current.io)
@@ -339,7 +338,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                       this.unsafeAddTraceValue(current.trace)
                     }
                     const boolFlag = current.flag.toBoolean
-                    if(this.unsafeIsInterruptible !== boolFlag) {
+                    if (this.unsafeIsInterruptible !== boolFlag) {
                       this.unsafePushInterruptStatus(current.flag.toBoolean)
                       this.unsafeRestoreInterruptStatus()
                     }
@@ -489,12 +488,11 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                   }
 
                   case IOTag.Supervise: {
-                    const oldSupervisor = this.runtimeConfig.supervisor
-                    const newSupervisor = Super.cross_(current.supervisor, oldSupervisor)
-                    this.runtimeConfig  = this.runtimeConfig.copy({ supervisor: newSupervisor })
+                    const oldSupervisor    = this.currentSupervisor
+                    this.currentSupervisor = Super.cross_(current.supervisor, oldSupervisor)
                     this.unsafeAddFinalizer(
                       succeedLazy(() => {
-                        this.runtimeConfig = this.runtimeConfig.copy({ supervisor: oldSupervisor })
+                        this.currentSupervisor = oldSupervisor
                       })
                     )
                     current = concrete(current.io)
@@ -556,7 +554,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       }
     } finally {
       currentFiber.set(null)
-      this.runtimeConfig.supervisor !== Super.none && this.runtimeConfig.supervisor.unsafeOnSuspend(this)
+      this.currentSupervisor !== Super.none && this.currentSupervisor.unsafeOnSuspend(this)
     }
   }
 
@@ -997,10 +995,10 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       ancestry
     )
 
-    if (this.runtimeConfig.supervisor !== Super.none) {
-      this.runtimeConfig.supervisor.unsafeOnStart(this.unsafeGetRef(currentEnvironment), io, M.just(this), childContext)
+    if (this.currentSupervisor !== Super.none) {
+      this.currentSupervisor.unsafeOnStart(this.unsafeGetRef(currentEnvironment), io, M.just(this), childContext)
       childContext.unsafeOnDone((exit) => {
-        this.runtimeConfig.supervisor.unsafeOnEnd(Ex.flatten(exit), childContext)
+        this.currentSupervisor.unsafeOnEnd(Ex.flatten(exit), childContext)
       })
     }
 
