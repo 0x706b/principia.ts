@@ -1,4 +1,3 @@
-import type { FiberId } from '../Fiber'
 import type { Callback } from '../Fiber/FiberState'
 import type { FailureReporter } from '../Fiber/internal/io'
 import type { IOEnv } from '../IOEnv'
@@ -10,8 +9,10 @@ import { ClockTag, LiveClock } from '../Clock'
 import { ConsoleTag, LiveConsole } from '../Console'
 import { interruptible, newFiberId, showFiberId } from '../Fiber'
 import { FiberContext } from '../Fiber/FiberContext'
-import { constVoid, flow, identity, pipe } from '../function'
-import { Platform } from '../internal/Platform'
+import { RuntimeConfig } from '../Fiber/RuntimeConfig/RuntimeConfig'
+import { RuntimeConfigFlag } from '../Fiber/RuntimeConfig/RuntimeConfigFlag'
+import { RuntimeConfigFlags } from '../Fiber/RuntimeConfig/RuntimeConfigFlags'
+import { constTrue, constVoid, flow, identity, pipe } from '../function'
 import * as M from '../Maybe'
 import { defaultRandom, RandomTag } from '../Random'
 import * as Super from '../Supervisor'
@@ -36,7 +37,10 @@ export type AsyncCancel<E, A> = I.UIO<Exit<E, A>>
 
 export const defaultSupervisor = Super.unsafeTrack()
 
-export const defaultPlatform = new Platform({
+export const defaultRuntimeConfig = new RuntimeConfig({
+  fatal: constTrue,
+  reportFatal: constVoid,
+  reportFailure: constVoid,
   executionTraceLength: 25,
   stackTraceLength: 25,
   traceExecution: isTracingEnabled(),
@@ -47,13 +51,13 @@ export const defaultPlatform = new Platform({
   ancestorStackTraceLength: 25,
   ancestryLength: 25,
   renderer: C.defaultRenderer,
-  reportFailure: constVoid,
-  maxYieldOp: 128,
-  supervisor: defaultSupervisor
+  supervisor: defaultSupervisor,
+  flags: RuntimeConfigFlags.empty.add(RuntimeConfigFlag.EnableFiberRoots),
+  yieldOpCount: 2048
 })
 
-export class CustomRuntime<R, A> {
-  constructor(readonly env: R, readonly platform: Platform<A>) {
+export class Runtime<R> {
+  constructor(readonly env: R, readonly config: RuntimeConfig) {
     this.fiberContext   = this.fiberContext.bind(this)
     this.run_           = this.run_.bind(this)
     this.runAsap_       = this.runAsap_.bind(this)
@@ -64,25 +68,13 @@ export class CustomRuntime<R, A> {
   }
 
   private fiberContext<E, A>(effect: I.IO<R, E, A>) {
-    const initialIS  = interruptible
     const fiberId    = newFiberId()
-    const supervisor = this.platform.supervisor
+    const supervisor = this.config.supervisor
 
     const ioWithEnvironment = pipe(effect, I.give(this.env))
 
-    const context = new FiberContext<E, A>(
-      fiberId,
-      initialIS,
-      new Map(),
-      supervisor,
-      new Set(),
-      this.platform.maxYieldOp,
-      this.platform.reportFailure,
-      this.platform,
-      M.nothing()
-    )
+    const context = new FiberContext<E, A>(fiberId, this.config, interruptible, new Map(), new Set(), M.nothing())
 
-    // @ts-expect-error
     if (supervisor !== Super.none) {
       supervisor.unsafeOnStart(this.env, ioWithEnvironment, M.nothing(), context)
       context.awaitAsync((exit) => supervisor.unsafeOnEnd(exit, context))
@@ -174,152 +166,22 @@ export class CustomRuntime<R, A> {
     })
   }
 
-  supervised<B>(supervisor: Super.Supervisor<B>): CustomRuntime<R, B> {
-    return new CustomRuntime(
-      this.env,
-      new Platform({
-        ...this.platform,
-        supervisor
-      })
-    )
-  }
-
   withEnvironment<R2>(f: (_: R) => R2) {
-    return new CustomRuntime(f(this.env), this.platform)
-  }
-
-  traceRenderer(renderer: C.Renderer<FiberId>) {
-    return new CustomRuntime(
-      this.env,
-      new Platform({
-        ...this.platform,
-        renderer
-      })
-    )
-  }
-
-  traceExecution(b: boolean) {
-    return new CustomRuntime(
-      this.env,
-      new Platform({
-        ...this.platform,
-        traceExecution: b
-      })
-    )
-  }
-
-  executionTraceLength(n: number) {
-    return new CustomRuntime(
-      this.env,
-      new Platform({
-        ...this.platform,
-        executionTraceLength: n
-      })
-    )
-  }
-
-  traceStack(b: boolean) {
-    return new CustomRuntime(
-      this.env,
-      new Platform({
-        ...this.platform,
-        traceStack: b
-      })
-    )
-  }
-
-  stackTraceLength(n: number) {
-    return new CustomRuntime(
-      this.env,
-      new Platform({
-        ...this.platform,
-        stackTraceLength: n
-      })
-    )
-  }
-
-  traceEffects(b: boolean) {
-    return new CustomRuntime(
-      this.env,
-      new Platform({
-        ...this.platform,
-        traceEffects: b
-      })
-    )
-  }
-
-  initialTracingStatus(b: boolean) {
-    return new CustomRuntime(
-      this.env,
-      new Platform({
-        ...this.platform,
-        initialTracingStatus: b
-      })
-    )
-  }
-
-  ancestorExecutionTraceLength(n: number) {
-    return new CustomRuntime(
-      this.env,
-      new Platform({
-        ...this.platform,
-        ancestorExecutionTraceLength: n
-      })
-    )
-  }
-
-  ancestorStackTraceLength(n: number) {
-    return new CustomRuntime(
-      this.env,
-      new Platform({
-        ...this.platform,
-        ancestorStackTraceLength: n
-      })
-    )
-  }
-
-  ancestryLength(n: number) {
-    return new CustomRuntime(
-      this.env,
-      new Platform({
-        ...this.platform,
-        ancestryLength: n
-      })
-    )
-  }
-
-  reportFailure(reportFailure: (_: C.Cause<unknown>) => void) {
-    return new CustomRuntime(
-      this.env,
-      new Platform({
-        ...this.platform,
-        reportFailure
-      })
-    )
-  }
-
-  maxOp(maxOp: number) {
-    return new CustomRuntime(
-      this.env,
-      new Platform({
-        ...this.platform,
-        maxYieldOp: maxOp
-      })
-    )
+    return new Runtime(f(this.env), this.config)
   }
 }
 
 /**
  * Construct custom runtime
  */
-export function makeCustomRuntime<R, A>(env: R, platform: Platform<A>) {
-  return new CustomRuntime(env, platform)
+export function makeCustomRuntime<R, A>(env: R, config: RuntimeConfig) {
+  return new Runtime(env, config)
 }
 
 /**
  * Default runtime
  */
-export const defaultRuntime = makeCustomRuntime(defaultEnv, defaultPlatform)
+export const defaultRuntime = makeCustomRuntime(defaultEnv, defaultRuntimeConfig)
 
 /**
  * Exports of default runtime
@@ -335,13 +197,15 @@ export const { run_, runAsap_, runCancel_, run, runAsap, runCancel, runFiber, ru
  * is valid (i.e. keep attention to closed resources)
  */
 export function runtime<R0>() {
-  return I.asksIO((r0: R0) => I.platform((p) => I.succeedLazy(() => makeCustomRuntime<R0, unknown>(r0, p))))
+  return I.asksIO((r0: R0) =>
+    I.runtimeConfig((config) => I.succeedLazy(() => makeCustomRuntime<R0, unknown>(r0, config)))
+  )
 }
 
-export function withRuntimeM<R0, R, E, A>(f: (r: CustomRuntime<R0, unknown>) => I.IO<R, E, A>) {
+export function withRuntimeM<R0, R, E, A>(f: (r: Runtime<R0>) => I.IO<R, E, A>) {
   return I.chain_(runtime<R0>(), f)
 }
 
-export function withRuntime<R0, A>(f: (r: CustomRuntime<R0, unknown>) => A) {
+export function withRuntime<R0, A>(f: (r: Runtime<R0>) => A) {
   return I.chain_(runtime<R0>(), (r) => I.succeed(f(r)))
 }

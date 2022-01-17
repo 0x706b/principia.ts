@@ -1,11 +1,11 @@
-import type { Platform } from '../internal/Platform'
 import type { Stack } from '../internal/Stack'
 import type { Exit } from '../IO/Exit/core'
 import type { Instruction, IO, Match, Race, UIO } from '../IO/primitives'
 import type { Maybe } from '../Maybe'
-import type { Supervisor } from '../Supervisor'
 import type { Fiber, InterruptStatus, RuntimeFiber } from './core'
+import type { Executor } from './Executor/Executor'
 import type { FiberId } from './FiberId'
+import type { RuntimeConfig } from './RuntimeConfig/RuntimeConfig'
 import type { TraceElement } from './Trace'
 
 import { traceAs } from '@principia/compile/util'
@@ -48,6 +48,7 @@ import * as FId from './FiberId'
 import { fiberName } from './fiberName'
 import * as State from './FiberState'
 import * as Status from './FiberStatus'
+import { RuntimeConfigFlag } from './RuntimeConfig/RuntimeConfigFlag'
 import { SourceLocation, Trace, traceLocation, truncatedParentTrace } from './Trace'
 
 export type FiberRefLocals = Map<FR.Runtime<any>, unknown>
@@ -55,6 +56,8 @@ export type FiberRefLocals = Map<FR.Runtime<any>, unknown>
 const forkScopeOverride = FR.unsafeMake<M.Maybe<Scope.Scope>>(M.nothing())
 
 const currentEnvironment = FR.unsafeMake<any>(undefined, identity, (a, _) => a)
+
+const currentExecutor = FR.unsafeMake<M.Maybe<Executor>>(M.nothing(), identity, (a, _) => a)
 
 type Erased = IO<any, any, any>
 type ErasedCont = (a: any) => Erased
@@ -109,25 +112,23 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   private asyncEpoch         = 0 | 0
   private stack              = undefined as Stack<Frame> | undefined
   private interruptStatus    = makeStack(this.initialInterruptStatus.toBoolean) as Stack<boolean> | undefined
-  private currentSupervisor  = this.initialSupervisor
-  private traceStatusEnabled = this.platform.traceExecution || this.platform.traceStack
+  private traceStatusEnabled = this.runtimeConfig.traceExecution || this.runtimeConfig.traceStack
   private executionTraces    = this.traceStatusEnabled
-    ? MQ.bounded<TraceElement>(this.platform.executionTraceLength)
+    ? MQ.bounded<TraceElement>(this.runtimeConfig.executionTraceLength)
     : undefined
-  private stackTraces        = this.traceStatusEnabled ? MQ.bounded<TraceElement>(this.platform.stackTraceLength) : undefined
+  private stackTraces = this.traceStatusEnabled
+    ? MQ.bounded<TraceElement>(this.runtimeConfig.stackTraceLength)
+    : undefined
   private traceStatusStack   = this.traceStatusEnabled ? makeStack(true) : undefined
   nextIO: Instruction | null = null
 
   constructor(
     protected readonly fiberId: FiberId,
+    private runtimeConfig: RuntimeConfig,
     private readonly initialInterruptStatus: InterruptStatus,
     private readonly fiberRefLocals: FiberRefLocals,
-    private readonly initialSupervisor: Supervisor<any>,
     private readonly children: Set<FiberContext<unknown, unknown>>,
-    private readonly maxOperations: number,
-    private readonly reportFailure: (e: C.Cause<E>) => void,
-    private readonly platform: Platform<unknown>,
-    private readonly parentTrace: M.Maybe<Trace>
+    private readonly location: M.Maybe<Trace>
   ) {
     this.runUntil = this.runUntil.bind(this)
   }
@@ -177,7 +178,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   run(): void {
-    this.runUntil(this.platform.maxYieldOp)
+    this.runUntil(this.runtimeConfig.yieldOpCount)
   }
 
   get scope(): Scope.Scope {
@@ -210,10 +211,12 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       let current: Instruction | null = this.nextIO
       this.nextIO                     = null
       const fastPathChainContinuationTrace = new AtomicReference<TraceElement | undefined>(undefined)
-      const superviseOps                   = this.currentSupervisor !== Super.none
+      const flags        = this.runtimeConfig.flags
+      const superviseOps =
+        flags.isEnabled(RuntimeConfigFlag.SuperviseOperations) && this.runtimeConfig.supervisor !== Super.none
 
       currentFiber.set(this)
-      superviseOps && this.currentSupervisor.unsafeOnResume(this)
+      superviseOps && this.runtimeConfig.supervisor.unsafeOnResume(this)
 
       while (current !== null) {
         try {
@@ -228,7 +231,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                 this.unsafeRunLater(current)
                 current = null
               } else {
-                superviseOps && this.currentSupervisor.unsafeOnEffect(this, current)
+                superviseOps && this.runtimeConfig.supervisor.unsafeOnEffect(this, current)
                 switch (current._tag) {
                   case IOTag.Chain: {
                     const nested = concrete(current.io)
@@ -236,24 +239,24 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
 
                     switch (nested._tag) {
                       case IOTag.Succeed: {
-                        if (this.platform.traceEffects && this.unsafeIsInTracingRegion) {
+                        if (this.runtimeConfig.traceEffects && this.unsafeIsInTracingRegion) {
                           this.unsafeAddTraceValue(nested.trace)
                         }
                         current = concrete(k(nested.value))
                         break
                       }
                       case IOTag.SucceedLazy: {
-                        if (this.platform.traceEffects && this.unsafeIsInTracingRegion) {
+                        if (this.runtimeConfig.traceEffects && this.unsafeIsInTracingRegion) {
                           this.unsafeAddTrace(nested.effect)
                         }
                         current = concrete(k(nested.effect()))
                         break
                       }
                       case IOTag.SucceedLazyWith: {
-                        if (this.platform.traceEffects && this.unsafeIsInTracingRegion) {
+                        if (this.runtimeConfig.traceEffects && this.unsafeIsInTracingRegion) {
                           this.unsafeAddTrace(nested.effect)
                         }
-                        current = concrete(k(nested.effect(this.platform, this.fiberId)))
+                        current = concrete(k(nested.effect(this.runtimeConfig, this.fiberId)))
                         break
                       }
                       case IOTag.Yield: {
@@ -278,7 +281,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
                   case IOTag.GetTracingStatus: {
-                    if (this.platform.traceExecution && this.unsafeIsInTracingRegion) {
+                    if (this.runtimeConfig.traceExecution && this.unsafeIsInTracingRegion) {
                       this.unsafeAddTrace(current.f)
                     }
                     current = concrete(current.f(this.unsafeIsInTracingRegion))
@@ -289,28 +292,28 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
                   case IOTag.Succeed: {
-                    if (this.platform.traceEffects && this.unsafeIsInTracingRegion) {
+                    if (this.runtimeConfig.traceEffects && this.unsafeIsInTracingRegion) {
                       this.unsafeAddTraceValue(current.trace)
                     }
                     current = this.unsafeNextEffect(current.value)
                     break
                   }
                   case IOTag.SucceedLazy: {
-                    if (this.platform.traceEffects && this.unsafeIsInTracingRegion) {
+                    if (this.runtimeConfig.traceEffects && this.unsafeIsInTracingRegion) {
                       this.unsafeAddTrace(current.effect)
                     }
                     current = this.unsafeNextEffect(current.effect())
                     break
                   }
                   case IOTag.SucceedLazyWith: {
-                    if (this.platform.traceEffects && this.unsafeIsInTracingRegion) {
+                    if (this.runtimeConfig.traceEffects && this.unsafeIsInTracingRegion) {
                       this.unsafeAddTrace(current.effect)
                     }
-                    current = this.unsafeNextEffect(current.effect(this.platform, this.fiberId))
+                    current = this.unsafeNextEffect(current.effect(this.runtimeConfig, this.fiberId))
                     break
                   }
                   case IOTag.Fail: {
-                    if (this.platform.traceEffects && this.unsafeIsInTracingRegion) {
+                    if (this.runtimeConfig.traceEffects && this.unsafeIsInTracingRegion) {
                       this.unsafeAddTrace(current.fill)
                     }
                     const fast = fastPathChainContinuationTrace.get
@@ -337,7 +340,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
                   case IOTag.SetInterrupt: {
-                    if (this.platform.traceExecution && this.unsafeIsInTracingRegion) {
+                    if (this.runtimeConfig.traceExecution && this.unsafeIsInTracingRegion) {
                       this.unsafeAddTraceValue(current.trace)
                     }
                     this.unsafePushInterruptStatus(current.flag.toBoolean)
@@ -346,14 +349,14 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
                   case IOTag.GetInterrupt: {
-                    if (this.platform.traceExecution && this.unsafeIsInTracingRegion) {
+                    if (this.runtimeConfig.traceExecution && this.unsafeIsInTracingRegion) {
                       this.unsafeAddTrace(current.f)
                     }
                     current = concrete(current.f(interruptStatus(this.unsafeIsInterruptible)))
                     break
                   }
                   case IOTag.Async: {
-                    if (this.unsafeIsInTracingRegion && this.platform.traceEffects) {
+                    if (this.unsafeIsInTracingRegion && this.runtimeConfig.traceEffects) {
                       this.unsafeAddTrace(current.register)
                     }
                     const epoch     = this.asyncEpoch
@@ -386,16 +389,14 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
                   case IOTag.Fork: {
-                    if (current.trace && this.platform.traceExecution && this.unsafeIsInTracingRegion) {
+                    if (current.trace && this.runtimeConfig.traceExecution && this.unsafeIsInTracingRegion) {
                       this.unsafeAddTraceValue(current.trace)
                     }
-                    current = this.unsafeNextEffect(
-                      this.unsafeFork(concrete(current.io), current.scope, current.reportFailure)
-                    )
+                    current = this.unsafeNextEffect(this.unsafeFork(concrete(current.io), current.scope))
                     break
                   }
                   case IOTag.GetDescriptor: {
-                    if (this.platform.traceExecution && this.unsafeIsInTracingRegion) {
+                    if (this.runtimeConfig.traceExecution && this.unsafeIsInTracingRegion) {
                       this.unsafeAddTrace(current.f)
                     }
                     current = concrete(current.f(this.unsafeGetDescriptor()))
@@ -407,7 +408,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
                   case IOTag.Access: {
-                    if (this.platform.traceExecution && this.unsafeIsInTracingRegion) {
+                    if (this.runtimeConfig.traceExecution && this.unsafeIsInTracingRegion) {
                       this.unsafeAddTrace(current.f)
                     }
                     current = concrete(current.f(this.unsafeGetRef(currentEnvironment)))
@@ -425,17 +426,17 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
                   case IOTag.Defer: {
-                    if (this.platform.traceExecution && this.unsafeIsInTracingRegion) {
+                    if (this.runtimeConfig.traceExecution && this.unsafeIsInTracingRegion) {
                       this.unsafeAddTrace(current.make)
                     }
                     current = concrete(current.make())
                     break
                   }
                   case IOTag.DeferWith: {
-                    if (this.platform.traceExecution && this.unsafeIsInTracingRegion) {
+                    if (this.runtimeConfig.traceExecution && this.unsafeIsInTracingRegion) {
                       this.unsafeAddTrace(current.make)
                     }
-                    current = concrete(current.make(this.platform, this.fiberId))
+                    current = concrete(current.make(this.runtimeConfig, this.fiberId))
                     break
                   }
 
@@ -476,11 +477,11 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                     break
                   }
 
-                  case IOTag.GetPlatform: {
-                    if (this.platform.traceExecution && this.unsafeIsInTracingRegion) {
+                  case IOTag.GetRuntimeConfig: {
+                    if (this.runtimeConfig.traceExecution && this.unsafeIsInTracingRegion) {
                       this.unsafeAddTrace(current.f)
                     }
-                    current = concrete(current.f(this.platform))
+                    current = concrete(current.f(this.runtimeConfig))
                     break
                   }
 
@@ -490,12 +491,12 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                   }
 
                   case IOTag.Supervise: {
-                    const oldSupervisor    = this.currentSupervisor
-                    const newSupervisor    = Super.cross_(current.supervisor, oldSupervisor)
-                    this.currentSupervisor = newSupervisor
+                    const oldSupervisor = this.runtimeConfig.supervisor
+                    const newSupervisor = Super.cross_(current.supervisor, oldSupervisor)
+                    this.runtimeConfig  = this.runtimeConfig.copy({ supervisor: newSupervisor })
                     this.unsafeAddFinalizer(
                       succeedLazy(() => {
-                        this.currentSupervisor = oldSupervisor
+                        this.runtimeConfig = this.runtimeConfig.copy({ supervisor: oldSupervisor })
                       })
                     )
                     current = concrete(current.io)
@@ -515,7 +516,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
                   }
 
                   case IOTag.OverrideForkScope: {
-                    if (current.trace && this.platform.traceExecution && this.unsafeIsInTracingRegion) {
+                    if (current.trace && this.runtimeConfig.traceExecution && this.unsafeIsInTracingRegion) {
                       this.unsafeAddTraceValue(current.trace)
                     }
 
@@ -557,14 +558,14 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       }
     } finally {
       currentFiber.set(null)
-      this.currentSupervisor !== Super.none && this.currentSupervisor.unsafeOnSuspend(this)
+      this.runtimeConfig.supervisor !== Super.none && this.runtimeConfig.supervisor.unsafeOnSuspend(this)
     }
   }
 
   unsafeRunLater(i0: Instruction) {
     defaultScheduler(() => {
       this.nextIO = i0
-      this.runUntil(this.platform.maxYieldOp)
+      this.runUntil(this.runtimeConfig.yieldOpCount)
     })
   }
 
@@ -653,7 +654,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   private get unsafeIsInTracingRegion() {
     return (
       this.traceStatusEnabled &&
-      (this.traceStatusStack ? this.traceStatusStack.value : this.platform.initialTracingStatus)
+      (this.traceStatusStack ? this.traceStatusStack.value : this.runtimeConfig.initialTracingStatus)
     )
   }
 
@@ -666,7 +667,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
   }
 
   private unsafePushStackFrame(k: Frame) {
-    if (this.platform.traceStack && this.unsafeIsInTracingRegion) {
+    if (this.runtimeConfig.traceStack && this.unsafeIsInTracingRegion) {
       this.stackTraces!.enqueue(traceLocation(k.apply))
     }
     this.stack = makeStack(k, this.stack)
@@ -752,7 +753,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
           break
         }
         case IOTag.Match: {
-          if (this.platform.traceStack && this.unsafeIsInTracingRegion) {
+          if (this.runtimeConfig.traceStack && this.unsafeIsInTracingRegion) {
             this.unsafePopStackTrace()
           }
           if (!this.unsafeShouldInterrupt) {
@@ -765,7 +766,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
           break
         }
         default: {
-          if (this.platform.traceStack && this.unsafeIsInTracingRegion) {
+          if (this.runtimeConfig.traceStack && this.unsafeIsInTracingRegion) {
             this.unsafePopStackTrace()
           }
         }
@@ -792,10 +793,10 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const k = this.unsafePopStackFrame()!
 
-      if (this.unsafeIsInTracingRegion && this.platform.traceExecution) {
+      if (this.unsafeIsInTracingRegion && this.runtimeConfig.traceExecution) {
         this.unsafeAddTrace(k.apply)
       }
-      if (this.platform.traceStack && k._tag !== 'InterruptExit' && k._tag !== 'TracingExit') {
+      if (this.runtimeConfig.traceStack && k._tag !== 'InterruptExit' && k._tag !== 'TracingExit') {
         this.unsafePopStackTrace()
       }
 
@@ -918,9 +919,9 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     }
   }
 
-  private unsafeReportUnhandled(exit: Ex.Exit<E, A>) {
+  private unsafeReportUnhandled(exit: Ex.Exit<E, A>): void {
     if (exit._tag === Ex.ExitTag.Failure) {
-      this.reportFailure(exit.cause)
+      this.runtimeConfig.reportFailure(exit.cause)
     }
   }
 
@@ -970,11 +971,7 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     }
   }
 
-  private unsafeFork(
-    io: Instruction,
-    forkScope: Maybe<Scope.Scope>,
-    reportFailure: M.Maybe<(e: C.Cause<E>) => void>
-  ): FiberContext<any, any> {
+  private unsafeFork(io: Instruction, forkScope: Maybe<Scope.Scope>): FiberContext<any, any> {
     const childFiberRefLocals: FiberRefLocals = new Map()
 
     this.fiberRefLocals.forEach((v, k) => {
@@ -987,36 +984,32 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       M.getOrElse(() => this.scope)
     )
 
-    const currentSupervisor = this.currentSupervisor
-    const childId           = newFiberId()
-    const grandChildren     = new Set<FiberContext<any, any>>()
-    const ancestry          = this.unsafeIsInTracingRegion && (this.platform.traceExecution || this.platform.traceStack)
+    const childId       = newFiberId()
+    const grandChildren = new Set<FiberContext<any, any>>()
+    const ancestry      = this.unsafeIsInTracingRegion && (this.runtimeConfig.traceExecution || this.runtimeConfig.traceStack)
         ? M.just(this.unsafeCutAncestryTrace(this.unsafeCaptureTrace(undefined)))
         : M.nothing()
 
     const childContext = new FiberContext<any, any>(
       childId,
+      this.runtimeConfig,
       interruptStatus(this.unsafeIsInterruptible),
       childFiberRefLocals,
-      currentSupervisor,
       grandChildren,
-      this.maxOperations,
-      M.getOrElse_(reportFailure, () => this.reportFailure),
-      this.platform,
       ancestry
     )
 
-    if (currentSupervisor !== Super.none) {
-      currentSupervisor.unsafeOnStart(this.unsafeGetRef(currentEnvironment), io, M.just(this), childContext)
+    if (this.runtimeConfig.supervisor !== Super.none) {
+      this.runtimeConfig.supervisor.unsafeOnStart(this.unsafeGetRef(currentEnvironment), io, M.just(this), childContext)
       childContext.unsafeOnDone((exit) => {
-        currentSupervisor.unsafeOnEnd(Ex.flatten(exit), childContext)
+        this.runtimeConfig.supervisor.unsafeOnEnd(Ex.flatten(exit), childContext)
       })
     }
 
     const childIO = !parentScope.unsafeAdd(childContext) ? interruptAs(parentScope.fiberId) : io
 
     childContext.nextIO = concrete(childIO)
-    defaultScheduler(() => childContext.runUntil(this.platform.maxYieldOp))
+    defaultScheduler(() => childContext.runUntil(this.runtimeConfig.yieldOpCount))
 
     return childContext
   }
@@ -1057,8 +1050,8 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
     race: Race<R, E, A, R1, E1, A1, R2, E2, A2, R3, E3, A3>
   ): IO<R & R1 & R2 & R3, E2 | E3, A2 | A3> {
     const raceIndicator = new AtomicReference(true)
-    const left          = this.unsafeFork(concrete(race.left), race.scope, M.just(constVoid))
-    const right         = this.unsafeFork(concrete(race.right), race.scope, M.just(constVoid))
+    const left          = this.unsafeFork(concrete(race.left), race.scope)
+    const right         = this.unsafeFork(concrete(race.right), race.scope)
 
     return async<R & R1 & R2 & R3, E2 | E3, A2 | A3>(
       traceAs(race.trace, (cb) => {
@@ -1119,13 +1112,13 @@ export class FiberContext<E, A> implements RuntimeFiber<E, A> {
       })
     }
     const stack = last ? L.prepend_(stack_, last) : stack_
-    return new Trace(this.id, exec, stack, this.parentTrace)
+    return new Trace(this.id, exec, stack, this.location)
   }
 
   private unsafeCutAncestryTrace(trace: Trace): Trace {
-    const maxExecLength  = this.platform.ancestorExecutionTraceLength
-    const maxStackLength = this.platform.ancestorStackTraceLength
-    const maxAncestors   = this.platform.ancestryLength - 1
+    const maxExecLength  = this.runtimeConfig.ancestorExecutionTraceLength
+    const maxStackLength = this.runtimeConfig.ancestorStackTraceLength
+    const maxAncestors   = this.runtimeConfig.ancestryLength - 1
 
     const truncated = truncatedParentTrace(trace, maxAncestors)
 

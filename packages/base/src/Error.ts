@@ -54,3 +54,11 @@ export class ArrayIndexOutOfBoundsError extends Error {
     this.name = this._tag
   }
 }
+
+export class RejectedExecutionError extends Error {
+  readonly _tag = 'RejectedExecutionError'
+  constructor(message: string) {
+    super(message)
+    this.name = this._tag
+  }
+}

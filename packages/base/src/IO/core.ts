@@ -3,10 +3,10 @@
 import type { Conc } from '../collection/immutable/Conc'
 import type { NonEmptyArray } from '../collection/immutable/NonEmptyArray'
 import type { Eval } from '../Eval'
-import type { Platform } from '../Fiber'
 import type { FiberDescriptor, InterruptStatus } from '../Fiber/core'
 import type { FiberContext } from '../Fiber/FiberContext'
 import type { FiberId } from '../Fiber/FiberId'
+import type { RuntimeConfig } from '../Fiber/RuntimeConfig/RuntimeConfig'
 import type { Trace } from '../Fiber/Trace'
 import type { Has, Tag } from '../Has'
 import type * as HKT from '../HKT'
@@ -88,7 +88,7 @@ export function succeedLazy<A>(lazyValue: () => A): UIO<A> {
  * @since 1.0.0
  * @trace 0
  */
-export function succeedLazyWith<A>(effect: (platform: Platform<unknown>, fiberId: FiberId) => A): UIO<A> {
+export function succeedLazyWith<A>(effect: (runtimeConfig: RuntimeConfig, fiberId: FiberId) => A): UIO<A> {
   return new Primitives.SucceedLazyWith(effect)
 }
 
@@ -230,11 +230,11 @@ export function deferTry<R, E, A>(io: () => IO<R, E, A>): IO<R, unknown, A> {
  * @trace 0
  */
 export function deferTryWith<R, E, A>(
-  io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>
+  io: (runtimeConfig: RuntimeConfig, id: FiberId) => IO<R, E, A>
 ): IO<R, unknown, A> {
-  return deferWith((platform, id) => {
+  return deferWith((runtimeConfig, id) => {
     try {
-      return io(platform, id)
+      return io(runtimeConfig, id)
     } catch (u) {
       throw new Primitives.IOError(C.fail(u))
     }
@@ -270,12 +270,12 @@ export function deferTryCatch<R, E, A, E1>(io: () => IO<R, E, A>, onThrow: (erro
  * @trace 1
  */
 export function deferTryCatchWith<R, E, A, E1>(
-  io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>,
+  io: (runtimeConfig: RuntimeConfig, id: FiberId) => IO<R, E, A>,
   onThrow: (error: unknown) => E1
 ): IO<R, E | E1, A> {
-  return deferWith((platform, id) => {
+  return deferWith((runtimeConfig, id) => {
     try {
-      return io(platform, id)
+      return io(runtimeConfig, id)
     } catch (u) {
       throw new Primitives.IOError(C.fail(onThrow(u)))
     }
@@ -306,7 +306,7 @@ export function defer<R, E, A>(io: () => IO<R, E, A>): IO<R, E, A> {
  * @since 1.0.0
  * @trace 0
  */
-export function deferWith<R, E, A>(io: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>): IO<R, E, A> {
+export function deferWith<R, E, A>(io: (runtimeConfig: RuntimeConfig, id: FiberId) => IO<R, E, A>): IO<R, E, A> {
   return new Primitives.DeferWith(io)
 }
 
@@ -319,10 +319,10 @@ export function deferWith<R, E, A>(io: (platform: Platform<unknown>, id: FiberId
 export const fiberId: IO<unknown, never, FiberId> = descriptorWith((d) => succeed(d.id))
 
 /**
- * Checks the current `Platform`
+ * Checks the current `RuntimeConfig`
  */
-export function platform<R, E, A>(f: (p: Platform<unknown>) => IO<R, E, A>): IO<R, E, A> {
-  return new Primitives.GetPlatform(f)
+export function runtimeConfig<R, E, A>(f: (runtimeConfig: RuntimeConfig) => IO<R, E, A>): IO<R, E, A> {
+  return new Primitives.GetRuntimeConfig(f)
 }
 
 /**

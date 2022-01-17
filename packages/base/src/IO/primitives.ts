@@ -1,8 +1,9 @@
 // tracing: off
 
 import type { Either } from '../Either'
-import type { Fiber, FiberContext, FiberDescriptor, InterruptStatus, Platform } from '../Fiber'
+import type { Fiber, FiberContext, FiberDescriptor, InterruptStatus } from '../Fiber'
 import type { FiberId } from '../Fiber/FiberId'
+import type { RuntimeConfig } from '../Fiber/RuntimeConfig/RuntimeConfig'
 import type { Trace } from '../Fiber/Trace'
 import type * as FR from '../FiberRef'
 import type { Maybe } from '../Maybe'
@@ -56,7 +57,7 @@ export const IOTag = {
   GetTrace: 'GetTrace',
   SetTracingStatus: 'SetTracingStatus',
   GetTracingStatus: 'GetTracingStatus',
-  GetPlatform: 'GetPlatform',
+  GetRuntimeConfig: 'GetRuntimeConfig',
   Ensuring: 'Ensuring'
 } as const
 
@@ -145,7 +146,7 @@ export class SucceedLazy<A> extends IO<unknown, never, A> {
 export class SucceedLazyWith<A> extends IO<unknown, never, A> {
   readonly [IOTypeId]: IOTypeId = IOTypeId
   readonly _tag                 = IOTag.SucceedLazyWith
-  constructor(readonly effect: (platform: Platform<unknown>, fiberId: FiberId) => A) {
+  constructor(readonly effect: (runtimeConfig: RuntimeConfig, fiberId: FiberId) => A) {
     super()
   }
 }
@@ -266,7 +267,7 @@ export class DeferWith<R, E, A> extends IO<R, E, A> {
   readonly [IOTypeId]: IOTypeId = IOTypeId
   readonly _tag                 = IOTag.DeferWith
 
-  constructor(readonly make: (platform: Platform<unknown>, id: FiberId) => IO<R, E, A>) {
+  constructor(readonly make: (runtimeConfig: RuntimeConfig, id: FiberId) => IO<R, E, A>) {
     super()
   }
 }
@@ -410,11 +411,11 @@ export class OverrideForkScope<R, E, A> extends IO<R, E, A> {
   }
 }
 
-export class GetPlatform<R, E, A> extends IO<R, E, A> {
+export class GetRuntimeConfig<R, E, A> extends IO<R, E, A> {
   readonly [IOTypeId]: IOTypeId = IOTypeId
-  readonly _tag                 = IOTag.GetPlatform
+  readonly _tag                 = IOTag.GetRuntimeConfig
 
-  constructor(readonly f: (_: Platform<unknown>) => IO<R, E, A>) {
+  constructor(readonly f: (_: RuntimeConfig) => IO<R, E, A>) {
     super()
   }
 }
@@ -459,7 +460,7 @@ export type Instruction =
   | GetTrace
   | GetTracingStatus<any, any, any>
   | SetTracingStatus<any, any, any>
-  | GetPlatform<any, any, any>
+  | GetRuntimeConfig<any, any, any>
   | Ensuring<any, any, any, any>
 
 /**

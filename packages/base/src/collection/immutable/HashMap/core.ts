@@ -337,6 +337,20 @@ export function keySet<K, V>(self: HashMap<K, V>): HS.HashSet<K> {
 }
 
 /**
+ * Get the set of values
+ */
+export function toSetDefault<K, V>(map: HashMap<K, V>): HS.HashSet<V> {
+  return pipe(
+    HS.makeDefault<V>(),
+    HS.mutate((set) => {
+      forEach_(map, (v) => {
+        HS.add_(set, v)
+      })
+    })
+  )
+}
+
+/**
  * Get an IterableIterator of the map values
  */
 export function values<K, V>(map: HashMap<K, V>): IterableIterator<V> {
