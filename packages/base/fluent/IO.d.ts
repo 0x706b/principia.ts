@@ -1639,16 +1639,6 @@ export interface IOOps<R, E, A> {
   retryWhileIO<R, E, A, R1, E1>(this: I.IO<R, E, A>, f: (e: E) => I.IO<R1, E1, boolean>): I.IO<R & R1, E | E1, A>
 
   /**
-   * @rewrite run_ from "@principia/base/IO"
-   */
-  run<E, A>(this: I.IO<IOEnv, E, A>, callback?: (_: Exit<E, A>) => void): void
-
-  /**
-   * @rewrite runPromiseExit from "@principia/base/IO"
-   */
-  runPromiseExit<E, A>(this: I.IO<IOEnv, E, A>): globalThis.Promise<Exit<E, A>>
-
-  /**
    * @rewriteGetter sandbox from "@principia/base/IO"
    * @trace getter
    */
@@ -1832,6 +1822,31 @@ export interface IOOps<R, E, A> {
     pf: (u: unknown) => Maybe<E1>,
     f: (e: E) => E2
   ): I.IO<R, E1 | E2, A>
+
+  /**
+   * @rewrite unsafeRun_ from "@principia/base/IO"
+   */
+  unsafeRun<E, A>(this: I.IO<IOEnv, E, A>): void
+
+  /**
+   * @rewrite unsafeRunFiber from "@principia/base/IO"
+   */
+  unsafeRunFiber<E, A>(this: I.IO<IOEnv, E, A>): FiberContext<E, A>
+
+  /**
+   * @rewrite unsafeRunPromise from "@principia/base/IO"
+   */
+  unsafeRunPromise<E, A>(this: I.IO<IOEnv, E, A>): globalThis.Promise<A>
+
+  /**
+   * @rewrite unsafeRunPromiseExit from "@principia/base/IO"
+   */
+  unsafeRunPromiseExit<E, A>(this: I.IO<IOEnv, E, A>): globalThis.Promise<Exit<E, A>>
+
+  /**
+   * @rewrite unsafeRunWith_ from "@principia/base/IO"
+   */
+  unsafeRunWith<E, A>(this: I.IO<IOEnv, E, A>, cb?: (exit: Exit<E, A>) => void): void
 
   /**
    * @rewrite unsandbox from "@principia/base/IO"
