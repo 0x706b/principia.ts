@@ -7,7 +7,7 @@
     "sourceMap": true,
     "plugins": [
       {
-        "transform": "../src/index.ts",
+        "transform": "../src/tco.ts",
         "moduleMap": {
           "^test/(.*)": ["@principia/compile", "test", "$1"]
         }

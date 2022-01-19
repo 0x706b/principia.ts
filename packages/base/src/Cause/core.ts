@@ -16,7 +16,7 @@ import { InterruptedException } from '../Exception'
 import { flow, hole, identity, pipe } from '../function'
 import { makeStack } from '../internal/Stack'
 import * as M from '../Maybe'
-import { tailRec_ } from '../prelude'
+import { matchTag_, tailRec_ } from '../prelude'
 import * as Equ from '../Structural/Equatable'
 import * as Ha from '../Structural/Hashable'
 import { tuple } from '../tuple/core'
@@ -632,45 +632,27 @@ export function failureOption<Id, E>(cause: PCause<Id, E>): M.Maybe<E> {
 }
 
 /**
- * @internal
+ * @tailrec
  */
-export function findEval<Id, E, A>(cause: PCause<Id, E>, f: (cause: PCause<Id, E>) => M.Maybe<A>): Ev.Eval<M.Maybe<A>> {
-  const apply = f(cause)
-  if (apply._tag === 'Just') {
-    return Ev.now(apply)
-  }
-  switch (cause._tag) {
-    case CauseTag.Then: {
-      return pipe(
-        Ev.defer(() => findEval(cause.left, f)),
-        Ev.chain((isLeft) => {
-          if (isLeft._tag === 'Just') {
-            return Ev.now(isLeft)
-          } else {
-            return findEval(cause.right, f)
-          }
-        })
-      )
-    }
-    case CauseTag.Both: {
-      return pipe(
-        Ev.defer(() => findEval(cause.left, f)),
-        Ev.chain((isLeft) => {
-          if (isLeft._tag === 'Just') {
-            return Ev.now(isLeft)
-          } else {
-            return findEval(cause.right, f)
-          }
-        })
-      )
-    }
-    case CauseTag.Traced: {
-      return Ev.defer(() => findEval(cause.cause, f))
-    }
-    default: {
-      return Ev.now(apply)
-    }
-  }
+function findLoop<Id, A, B>(
+  cause: PCause<Id, A>,
+  f: (cause: PCause<Id, A>) => M.Maybe<B>,
+  stack: L.List<PCause<Id, A>>
+): M.Maybe<B> {
+  return M.match_(
+    f(cause),
+    () =>
+      matchTag_(
+        cause,
+        {
+          Both: (c) => findLoop(c.left, f, L.prepend_(stack, c.right)),
+          Then: (c) => findLoop(c.left, f, L.prepend_(stack, c.right)),
+          Traced: (c) => findLoop(c.cause, f, stack)
+        },
+        () => (L.isNonEmpty(stack) ? findLoop(L.unsafeHead(stack), f, L.unsafeTail(stack)) : M.nothing())
+      ),
+    M.just
+  )
 }
 
 /**
@@ -680,7 +662,7 @@ export function findEval<Id, E, A>(cause: PCause<Id, E>, f: (cause: PCause<Id, E
  * @since 1.0.0
  */
 export function find_<Id, E, A>(cause: PCause<Id, E>, f: (cause: PCause<Id, E>) => M.Maybe<A>): M.Maybe<A> {
-  return Ev.run(findEval(cause, f))
+  return findLoop(cause, f, L.nil())
 }
 
 /**
@@ -696,43 +678,37 @@ export function find<Id, A, E>(f: (cause: PCause<Id, E>) => M.Maybe<A>): (cause:
 }
 
 /**
+ * @tailrec
+ */
+function foldlLoop<Id, A, B>(
+  cause: PCause<Id, A>,
+  b: B,
+  f: (b: B, a: PCause<Id, A>) => M.Maybe<B>,
+  stack: L.List<PCause<Id, A>>
+): B {
+  const z = pipe(
+    f(b, cause),
+    M.getOrElse(() => b)
+  )
+  return matchTag_(
+    cause,
+    {
+      Both: (c) => foldlLoop(c.left, z, f, L.prepend_(stack, c.right)),
+      Then: (c) => foldlLoop(c.left, z, f, L.prepend_(stack, c.right)),
+      Traced: (c) => foldlLoop(c.cause, z, f, stack)
+    },
+    () => (L.isNonEmpty(stack) ? foldlLoop(L.unsafeHead(stack), z, f, L.unsafeTail(stack)) : z)
+  )
+}
+
+/**
  * Accumulates a state over a `Cause`
  *
  * @category Destructors
  * @since 1.0.0
  */
 export function foldl_<Id, E, A>(cause: PCause<Id, E>, a: A, f: (a: A, cause: PCause<Id, E>) => M.Maybe<A>): A {
-  let causes: Stack<PCause<Id, E>> | undefined = undefined
-  let current: PCause<Id, E> | undefined       = cause
-  let acc = a
-
-  while (current) {
-    const x = f(acc, current)
-    acc     = x._tag === 'Just' ? x.value : acc
-
-    switch (current._tag) {
-      case CauseTag.Then: {
-        causes  = makeStack(current.right, causes)
-        current = current.left
-        break
-      }
-      case CauseTag.Both: {
-        causes  = makeStack(current.right, causes)
-        current = current.left
-        break
-      }
-      default: {
-        current = undefined
-        break
-      }
-    }
-
-    if (!current && causes) {
-      current = causes.value
-      causes  = causes.previous
-    }
-  }
-  return acc
+  return foldlLoop(cause, a, f, L.nil())
 }
 
 /**
