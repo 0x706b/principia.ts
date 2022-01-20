@@ -77,13 +77,15 @@ export type List<A> = Cons<A> | Nil<A>
  * -------------------------------------------------------------------------------------------------
  */
 
-export function nil<A>(): List<A> {
+export function nil<A>(): Nil<A> {
   return _Nil
 }
 
-export function cons<A>(head: A, tail: List<A> = nil()): List<A> {
+export function cons<A>(head: A, tail: List<A>): Cons<A> {
   return new Cons(head, tail)
 }
+
+export const empty: <A>() => List<A> = nil
 
 export function from<A>(prefix: Iterable<A>): List<A> {
   const iter = prefix[Symbol.iterator]()
@@ -187,10 +189,7 @@ export function unsafeHead<A>(list: List<A>): A {
 }
 
 export function head<A>(list: List<A>): M.Maybe<A> {
-  if (isEmpty(list)) {
-    return M.nothing()
-  }
-  return M.just(list.head)
+  return isEmpty(list) ? M.nothing() : M.just(list.head)
 }
 
 export function unsafeLast<A>(list: List<A>): A {
@@ -280,9 +279,9 @@ export function map<A, B>(f: (a: A) => B): (fa: List<A>) => List<B> {
  */
 
 export function chain_<A, B>(ma: List<A>, f: (a: A) => List<B>): List<B> {
-  let rest       = ma
-  let h: Cons<B> = undefined!
-  let t: Cons<B> = undefined!
+  let rest = ma
+  let h: Cons<B> | undefined
+  let t: Cons<B> | undefined
   while (!isEmpty(rest)) {
     let bs = f(rest.head)
     while (!isEmpty(bs)) {
@@ -478,7 +477,7 @@ function partialFill<A>(origStart: List<A>, firstMiss: List<A>, p: Predicate<A>,
   let currentLast = newHead
 
   while (!(toProcess === firstMiss)) {
-    const newElem    = cons(unsafeHead(toProcess))
+    const newElem    = cons(unsafeHead(toProcess), _Nil)
     currentLast.tail = newElem
     currentLast      = unsafeCoerce(newElem)
     toProcess        = unsafeCoerce(toProcess.tail)
