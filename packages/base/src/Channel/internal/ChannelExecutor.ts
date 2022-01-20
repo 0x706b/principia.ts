@@ -25,7 +25,7 @@ type ErasedChannel<R> = C.Channel<R, unknown, unknown, unknown, unknown, unknown
 export type ErasedExecutor<R> = ChannelExecutor<R, unknown, unknown, unknown, unknown, unknown, unknown>
 type ErasedContinuation<R> = C.Continuation<R, unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown>
 
-type Finalizer<R> = (exit: Exit<any, any>) => I.URIO<R, any>
+type Finalizer<R> = (exit: Exit<unknown, unknown>) => I.URIO<R, unknown>
 
 /*
  * -------------------------------------------------------------------------------------------------
@@ -46,24 +46,24 @@ class PullFromUpstream<R> {
   readonly _tag = SubexecutorStackTag.PullFromUpstream
   constructor(
     readonly upstreamExecutor: ErasedExecutor<R>,
-    readonly createChild: (_: any) => ErasedChannel<R>,
-    readonly lastDone: any,
+    readonly createChild: (_: unknown) => ErasedChannel<R>,
+    readonly lastDone: unknown,
     readonly activeChildExecutors: Q.Queue<PullFromChild<R> | null>,
-    readonly combineChildResults: (x: any, y: any) => any,
-    readonly combineWithChildResult: (x: any, y: any) => any,
-    readonly onPull: (_: UPR.UpstreamPullRequest<any>) => UPS.UpstreamPullStrategy<any>,
-    readonly onEmit: (_: any) => CED.ChildExecutorDecision
+    readonly combineChildResults: (x: unknown, y: unknown) => unknown,
+    readonly combineWithChildResult: (x: unknown, y: unknown) => unknown,
+    readonly onPull: (_: UPR.UpstreamPullRequest<unknown>) => UPS.UpstreamPullStrategy<unknown>,
+    readonly onEmit: (_: unknown) => CED.ChildExecutorDecision
   ) {}
-  close(ex: Ex.Exit<any, any>): I.URIO<R, Ex.Exit<any, any>> | null {
+  close(ex: Ex.Exit<unknown, unknown>): I.URIO<R, unknown> | null {
     const fin1 = this.upstreamExecutor.close(ex)
     const fins = pipe(
       this.activeChildExecutors,
       Q.map((child) => (child !== null ? child.childExecutor.close(ex) : null)),
       Q.enqueue(fin1)
     )
-    return pipe(
+    const finalizer = pipe(
       fins,
-      Q.foldl(null as I.URIO<R, Exit<any, any>> | null, (acc, next): I.URIO<R, Exit<any, any>> | null => {
+      Q.foldl(null as I.URIO<R, Exit<never, any>> | null, (acc, next): I.URIO<R, Exit<never, any>> | null => {
         if (acc === null) {
           if (next === null) {
             return null
@@ -79,6 +79,11 @@ class PullFromUpstream<R> {
         }
       })
     )
+    if (finalizer) {
+      return I.chain_(finalizer, I.fromExit)
+    } else {
+      return null
+    }
   }
 
   enqueuePullFromChild(child: PullFromChild<R>): Subexecutor<R> {
@@ -100,10 +105,10 @@ class PullFromChild<R> {
   constructor(
     readonly childExecutor: ErasedExecutor<R>,
     readonly parentSubexecutor: Subexecutor<R>,
-    readonly onEmit: (_: any) => CED.ChildExecutorDecision
+    readonly onEmit: (_: unknown) => CED.ChildExecutorDecision
   ) {}
 
-  close(ex: Ex.Exit<any, any>): I.URIO<R, Ex.Exit<any, any>> | null {
+  close(ex: Ex.Exit<unknown, unknown>): I.URIO<R, unknown> | null {
     const fin1 = this.childExecutor.close(ex)
     const fin2 = this.parentSubexecutor.close(ex)
     if (fin1 === null) {
@@ -116,7 +121,7 @@ class PullFromChild<R> {
       if (fin2 === null) {
         return I.result(fin1)
       } else {
-        return I.crossWith_(I.result(fin1), fin2, Ex.apSecond_)
+        return pipe(I.result(fin1), I.crossWith(I.result(fin2), Ex.apSecond_), I.chain(I.fromExit))
       }
     }
   }
@@ -132,13 +137,13 @@ class DrainChildExecutors<R> {
     readonly upstreamExecutor: ErasedExecutor<R>,
     readonly lastDone: any,
     readonly activeChildExecutors: Q.Queue<PullFromChild<R> | null>,
-    readonly upstreamDone: Ex.Exit<any, any>,
-    readonly combineChildResults: (x: any, y: any) => any,
-    readonly combineWithChildResult: (x: any, y: any) => any,
-    readonly onPull: (_: UPR.UpstreamPullRequest<any>) => UPS.UpstreamPullStrategy<any>
+    readonly upstreamDone: Ex.Exit<unknown, unknown>,
+    readonly combineChildResults: (x: unknown, y: unknown) => unknown,
+    readonly combineWithChildResult: (x: unknown, y: unknown) => unknown,
+    readonly onPull: (_: UPR.UpstreamPullRequest<unknown>) => UPS.UpstreamPullStrategy<unknown>
   ) {}
 
-  close(ex: Ex.Exit<any, any>): I.URIO<R, Ex.Exit<any, any>> | null {
+  close(ex: Ex.Exit<unknown, unknown>): I.URIO<R, Ex.Exit<unknown, unknown>> | null {
     const fin1 = this.upstreamExecutor.close(ex)
     const fins = pipe(
       this.activeChildExecutors,
@@ -147,21 +152,24 @@ class DrainChildExecutors<R> {
     )
     return pipe(
       fins,
-      Q.foldl(null as I.URIO<R, Exit<any, any>> | null, (acc, next): I.URIO<R, Exit<any, any>> | null => {
-        if (acc === null) {
-          if (next === null) {
-            return null
+      Q.foldl(
+        null as I.URIO<R, Exit<unknown, unknown>> | null,
+        (acc, next): I.URIO<R, Exit<unknown, unknown>> | null => {
+          if (acc === null) {
+            if (next === null) {
+              return null
+            } else {
+              return I.result(next)
+            }
           } else {
-            return I.result(next)
-          }
-        } else {
-          if (next === null) {
-            return acc
-          } else {
-            return I.crossWith_(acc, I.result(next), Ex.apSecond_)
+            if (next === null) {
+              return acc
+            } else {
+              return I.crossWith_(acc, I.result(next), Ex.apSecond_)
+            }
           }
         }
-      })
+      )
     )
   }
 
@@ -180,8 +188,8 @@ class DrainChildExecutors<R> {
 
 class Emit<R> {
   readonly _tag = SubexecutorStackTag.Emit
-  constructor(readonly value: any, readonly next: Subexecutor<R> | null) {}
-  close(ex: Ex.Exit<any, any>): I.URIO<R, Exit<any, any>> | null {
+  constructor(readonly value: unknown, readonly next: Subexecutor<R> | null) {}
+  close(ex: Ex.Exit<unknown, unknown>): I.URIO<R, unknown> | null {
     return this.next !== null ? this.next.close(ex) : null
   }
 
@@ -273,12 +281,12 @@ export function readUpstream<R, E, A>(r: State.Read<R, E>, cont: () => IO<R, E, 
 }
 
 export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDone> {
-  private input: ErasedExecutor<Env> | null = null
-  private inProgressFinalizer: URIO<Env, Exit<unknown, unknown>> | null = null
-  private activeSubexecutor: Subexecutor<Env> | null                    = null
-  private doneStack: List<ErasedContinuation<Env>>                      = L.nil()
-  private done: Exit<unknown, unknown> | null                           = null
-  private cancelled: Exit<OutErr, OutDone> | null                       = null
+  private input: ErasedExecutor<Env> | null              = null
+  private inProgressFinalizer: URIO<Env, unknown> | null = null
+  private activeSubexecutor: Subexecutor<Env> | null     = null
+  private doneStack: List<ErasedContinuation<Env>>       = L.nil()
+  private done: Exit<unknown, unknown> | null            = null
+  private cancelled: Exit<OutErr, OutDone> | null        = null
   private emitted: unknown | null
   private currentChannel: ErasedChannel<Env> | null
   private closeLastSubstream: I.URIO<Env, unknown> | null = null
@@ -527,24 +535,26 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
   }
 
   private popAllFinalizers(exit: Exit<unknown, unknown>): URIO<Env, Exit<unknown, unknown>> {
-    const unwind = (acc: Exit<unknown, unknown>, conts: L.List<ErasedContinuation<Env>>): IO<Env, unknown, unknown> => {
+    /**
+     * @tailrec
+     */
+    const unwind = (
+      acc: I.IO<Env, never, Exit<never, any>>,
+      conts: L.List<ErasedContinuation<Env>>
+    ): IO<Env, never, Ex.Exit<never, unknown>> => {
       if (L.isEmpty(conts)) {
-        return I.fromExit(acc)
+        return acc
       } else {
         const head = L.unsafeHead(conts)!
         C.concreteContinuation(head)
         if (head._tag === C.ChannelTag.ContinuationK) {
           return unwind(acc, L.unsafeTail(conts))
         } else {
-          return pipe(
-            head.finalizer(exit),
-            I.result,
-            I.chain((finExit) => unwind(Ex.apSecond_(acc, finExit), L.unsafeTail(conts)))
-          )
+          return unwind(pipe(acc, I.apSecond(pipe(head.finalizer(exit), I.result))), L.unsafeTail(conts))
         }
       }
     }
-    const effect   = I.result(unwind(Ex.unit(), this.doneStack))
+    const effect   = I.result(unwind(I.succeed(Ex.unit()), this.doneStack))
     this.doneStack = L.nil()
     this.storeInProgressFinalizer(effect)
     return effect
@@ -570,7 +580,7 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     return builder.toList
   }
 
-  private storeInProgressFinalizer(effect: URIO<Env, Exit<unknown, unknown>>): void {
+  private storeInProgressFinalizer(effect: URIO<Env, unknown> | null): void {
     this.inProgressFinalizer = effect
   }
 
@@ -578,8 +588,8 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     this.inProgressFinalizer = null
   }
 
-  private ifNotNull<R, E>(io: URIO<R, Exit<E, unknown>> | null): URIO<R, Exit<E, unknown>> {
-    return io !== null ? io : I.succeed(Ex.unit())
+  private ifNotNull<R>(io: URIO<R, any> | null): IO<R, never, any> {
+    return io !== null ? io : I.unit()
   }
 
   close(exit: Exit<unknown, unknown>): IO<Env, never, unknown> | null {
@@ -591,10 +601,10 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
           )
         : null
 
-    let closeSubexecutors: URIO<Env, Exit<unknown, unknown>> | null =
+    let closeSubexecutors: URIO<Env, unknown> | null =
       this.activeSubexecutor === null ? null : this.activeSubexecutor.close(exit)
 
-    let closeSelf: URIO<Env, Exit<unknown, unknown>> | null = null
+    let closeSelf: URIO<Env, unknown> | null = null
 
     const selfFinalizers = this.popAllFinalizers(exit)
 
@@ -610,12 +620,13 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
     } else {
       return pipe(
         I.sequenceT(
-          this.ifNotNull(closeSubexecutors),
-          this.ifNotNull(runInProgressFinalizers),
-          this.ifNotNull(closeSelf)
+          pipe(this.ifNotNull(closeSubexecutors), I.result),
+          pipe(this.ifNotNull(runInProgressFinalizers), I.result),
+          pipe(this.ifNotNull(closeSelf), I.result)
         ),
         I.map(([a, b, c]) => pipe(a, Ex.apSecond(b), Ex.apSecond(c))),
-        I.uninterruptible
+        I.uninterruptible,
+        I.chain(I.fromExit)
       )
     }
   }
@@ -662,9 +673,9 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
   private runFinalizers(
     finalizers: List<(e: Exit<unknown, unknown>) => URIO<Env, unknown>>,
     exit: Exit<unknown, unknown>
-  ): URIO<Env, Exit<unknown, unknown>> {
+  ): URIO<Env, unknown> {
     if (L.isEmpty(finalizers)) {
-      return I.succeed(Ex.unit())
+      return I.unit()
     }
     return pipe(
       finalizers,
@@ -672,9 +683,10 @@ export class ChannelExecutor<Env, InErr, InElem, InDone, OutErr, OutElem, OutDon
       I.map((results) =>
         pipe(
           Ex.collectAll(results),
-          M.getOrElse(() => Ex.unit())
+          M.getOrElse(() => Ex.unit() as Ex.Exit<never, unknown>)
         )
-      )
+      ),
+      I.chain(I.fromExit)
     )
   }
 
